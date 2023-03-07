@@ -7,67 +7,41 @@
   import Input from '$lib/components/Input.svelte';
   import type { DomainMetadata } from '../../../types/domain/metadata';
 
-  // async function createUser(node_id, client) {
-  //   if (!guestCredentials) {
-  //     await fetch('http://localhost:8081/api/v1/guest', {
-  //       method: 'POST',
-  //       headers: { 'content-type': 'application/json' }
-  //     })
-  //       .then((response) => response.json())
-  //       .then(function (response) {
-  //         guestCredentials = response['access_token'];
-  //       });
+  // async function createUser(client) {
+  //     let email = document.getElementById('email') ? document.getElementById('email').value : null;
+  //     let password = document.getElementById('password')
+  //       ? document.getElementById('password').value
+  //       : null;
+  //     let passwordConfirmation = document.getElementById('password')
+  //       ? document.getElementById('confirm').value
+  //       : null;
+  //     let name = document.getElementById('fullname')
+  //       ? document.getElementById('fullname').value
+  //       : null;
+  //     let institution = document.getElementById('company')
+  //       ? document.getElementById('company').value
+  //       : null;
+  //     let website = document.getElementById('website')
+  //       ? document.getElementById('website').value
+  //       : null;
+
+  //     if (password !== passwordConfirmation) {
+  //       throw Error('Password and password confirmation mismatch');
+  //     }
+
+  //     let newUser = {
+  //       email: email,
+  //       password: password,
+  //       password_verify: passwordConfirmation,
+  //       name: name,
+  //       institution: institution,
+  //       website: website
+  //     };
+
+  //     // Filter attributes that doesn't exist
+  //     Object.keys(newUser).forEach((k) => newUser[k] == null && delete newUser[k]);
+  //     await client.register(newUser); // This will return a success message and the new user info
   //   }
-
-  //   let email = document.getElementById('email') ? document.getElementById('email').value : null;
-  //   let password = document.getElementById('password')
-  //     ? document.getElementById('password').value
-  //     : null;
-  //   let passwordConfirmation = document.getElementById('password')
-  //     ? document.getElementById('confirm').value
-  //     : null;
-  //   let name = document.getElementById('fullname')
-  //     ? document.getElementById('fullname').value
-  //     : null;
-  //   let institution = document.getElementById('company')
-  //     ? document.getElementById('company').value
-  //     : null;
-  //   let website = document.getElementById('website')
-  //     ? document.getElementById('website').value
-  //     : null;
-
-  //   if (password !== passwordConfirmation) {
-  //     throw Error('Password and password confirmation mismatch');
-  //   }
-
-  //   let newUser = {
-  //     email: email,
-  //     password: password,
-  //     name: name,
-  //     institution: institution,
-  //     role: 'Data Scientist',
-  //     website: website
-  //   };
-  //   // Filter attributes that doesn't exist
-  //   Object.keys(newUser).forEach((k) => newUser[k] == null && delete newUser[k]);
-
-  //   let msg = new SyftMessageWithoutReply(
-  //     node_id,
-  //     newUser,
-  //     'syft.core.node.common.node_service.user_manager.new_user_messages.CreateUserMessage'
-  //   );
-
-  //   let client_bytes = client.serde.serialize(msg);
-
-  //   let token = 'Bearer ' + guestCredentials;
-  //   await fetch('http://localhost:8081/api/v1/syft/js', {
-  //     method: 'POST',
-  //     headers: { 'content-type': 'application/octect-stream', Authorization: token },
-  //     body: client_bytes
-  //   })
-  //     .then((response) => response.arrayBuffer())
-  //     .then((byte_msg) => client.serde.deserialize(byte_msg));
-  // }
 
   let metadata: DomainMetadata = {
     title: 'OpenMined',
@@ -77,7 +51,8 @@
     id: {
       value: 'openmined'
     },
-    deployed_on: '2021-08-01T00:00:00.000Z'
+    deployed_on: '2021-08-01T00:00:00.000Z',
+    tags: []
   };
 </script>
 
