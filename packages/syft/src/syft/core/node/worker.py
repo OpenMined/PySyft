@@ -38,7 +38,7 @@ from .new.action_store import SQLiteActionStore
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
-from .new.api import SyftAPIResponse
+from .new.api import SyftAPIData
 from .new.context import AuthedServiceContext
 from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
@@ -378,13 +378,13 @@ class Worker(NewNode):
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
-        result = self._handle_api_call_with_unsigned_result(api_call)
+        result = self.handle_api_call_with_unsigned_result(api_call)
         # Sign the result
-        signed_result = SyftAPIResponse(result=result).sign(self.signing_key)
+        signed_result = SyftAPIData(data=result).sign(self.signing_key)
 
         return signed_result
 
-    def _handle_api_call_with_unsigned_result(
+    def handle_api_call_with_unsigned_result(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
@@ -503,6 +503,7 @@ def task_runner(
     try:
         with pipe:
             api_call = pipe.get()
+
             result = worker.handle_api_call(api_call)
             if blocking:
                 pipe.put(result)

@@ -132,13 +132,13 @@ class SyftAPICall(SyftObject):
 
 @instrument
 @serializable(recursive_serde=True)
-class SyftAPIResponse(SyftBaseObject):
+class SyftAPIData(SyftBaseObject):
     # version
-    __canonical_name__ = "SyftAPIResponse"
+    __canonical_name__ = "SyftAPIData"
     __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
-    result: Any
+    data: Any
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
         signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
@@ -150,10 +150,10 @@ class SyftAPIResponse(SyftBaseObject):
         )
 
     def unwrap(self) -> Any:
-        if isinstance(self.result, SignedSyftAPICall):
-            return self.result.message.result
+        if isinstance(self.data, SignedSyftAPICall):
+            return self.data.message.data
 
-        return self.result
+        return self.data
 
 
 def generate_remote_function(
