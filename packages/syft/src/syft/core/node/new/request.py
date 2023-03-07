@@ -164,10 +164,10 @@ class Request(SyftObject):
                 f"accept_by_depositing_result can only be run on {UserCode} not "
                 f"{change.linked_obj.object_type}"
             )
-        if not change.enum_type == UserCodeStatus:
+        if not type(change) == UserCodeStatusChange:
             raise Exception(
-                f"accept_by_depositing_result can only be run on {UserCodeStatus} not "
-                f"{change.enum_type}"
+                f"accept_by_depositing_result can only be run on {UserCodeStatusChange} not "
+                f"{type(change)}"
             )
 
         api = APIRegistry.api_for(self.node_uid)

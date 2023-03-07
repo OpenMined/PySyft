@@ -98,8 +98,12 @@ class InputPolicy(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
+        node_view = UserNodeView(
+            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        )
+        inputs = self.inputs[node_view]
         all_assets = []
-        for k, uid in self.inputs.items():
+        for k, uid in inputs.items():
             if isinstance(uid, UID):
                 assets = api.services.dataset.get_assets_by_action_id(uid)
                 if not isinstance(assets, list):
@@ -443,7 +447,6 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
 
     # fetches the all the current api's connected
     api_list = APIRegistry.get_all_api()
-
     output_kwargs = {}
     for k, v in kwargs.items():
         uid = v
@@ -461,11 +464,11 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
         for api in api_list:
             if api.services.action.exists(uid):
                 user_node_view = UserNodeView.from_api(api)
-                output_kwargs[user_node_view] = (
+                if user_node_view not in output_kwargs:
+                    output_kwargs[user_node_view] = {k: uid}
+                else:
                     output_kwargs[user_node_view].update({k: uid})
-                    if user_node_view in output_kwargs
-                    else {k: uid}
-                )
+
                 _obj_exists = True
                 break
 
