@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 
 # third party
+from nacl.exceptions import BadSignatureError
 import numpy as np
 import pytest
 
@@ -18,6 +19,7 @@ from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.queue_stash import QueueItem
+from syft.core.node.new.response import SyftError
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserView
@@ -236,20 +238,73 @@ def test_worker_serde() -> None:
         ("data_subject.get_by_name", {"name": "test"}),
         ("dataset.get_all", {}),
         ("dataset.search", {"name": "test"}),
-        ("dataset.get_by_id", {"uid": UID()}),
+        ("metadata", {}),
     ],
 )
 @pytest.mark.parametrize("blocking", [False, True])
-def test_worker_handle_api(path: str, kwargs: Dict, blocking: bool) -> None:
+@pytest.mark.parametrize("n_processes", [0, 1])
+def test_worker_handle_api_request(
+    path: str, kwargs: Dict, blocking: bool, n_processes: int
+) -> None:
     node_uid = UID()
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    print(test_signing_key)
 
     worker = Worker(
-        name="test-domain-1", processes=1, id=node_uid, signing_key=test_signing_key
+        name="test-domain-1",
+        processes=n_processes,
+        id=node_uid,
+        signing_key=test_signing_key,
     )
     root_client = worker.root_client
+    assert root_client.api is not None
 
+    api_call = SyftAPICall(
+        node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
+    )
+    # should fail on unsigned requests
+    result = worker.handle_api_call(api_call).message.data
+    assert isinstance(result, SyftError)
+
+    test_signing_key_req = SyftSigningKey.from_string(test_signing_key_string_2)
+    signed_api_call = api_call.sign(test_signing_key_req)
+
+    # should work on signed api calls
+    result = worker.handle_api_call(signed_api_call).message.data
+    assert not isinstance(result, SyftError)
+
+    # should fail on altered requests
+    bogus_api_call = signed_api_call
+    bogus_api_call.serialized_message += b"hacked"
+
+    result = worker.handle_api_call(bogus_api_call).message.data
+    assert isinstance(result, SyftError)
+
+
+@pytest.mark.parametrize(
+    "path, kwargs",
+    [
+        ("data_subject.get_all", {}),
+        ("data_subject.get_by_name", {"name": "test"}),
+        ("dataset.get_all", {}),
+        ("dataset.search", {"name": "test"}),
+        ("metadata", {}),
+    ],
+)
+@pytest.mark.parametrize("blocking", [False, True])
+@pytest.mark.parametrize("n_processes", [0, 1])
+def test_worker_handle_api_response(
+    path: str, kwargs: Dict, blocking: bool, n_processes: int
+) -> None:
+    node_uid = UID()
+    test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
+
+    worker = Worker(
+        name="test-domain-1",
+        processes=n_processes,
+        id=node_uid,
+        signing_key=test_signing_key,
+    )
+    root_client = worker.root_client
     assert root_client.api is not None
 
     test_signing_key_req = SyftSigningKey.from_string(test_signing_key_string_2)
@@ -258,20 +313,32 @@ def test_worker_handle_api(path: str, kwargs: Dict, blocking: bool) -> None:
     )
     signed_api_call = call.sign(test_signing_key_req)
 
+    # handle_api_call_with_unsigned_result should returned an unsigned result
     us_result = worker.handle_api_call_with_unsigned_result(signed_api_call)
     assert not isinstance(us_result, SignedSyftAPICall)
 
+    # handle_api_call should return a signed result
     signed_result = worker.handle_api_call(signed_api_call)
     assert isinstance(signed_result, SignedSyftAPICall)
 
-    test_signing_key.verify_key.verify(
+    # validation should work with the worker key
+    test_signing_key.verify_key.verify_key.verify(
         signed_result.serialized_message, signed_result.signature
     )
+    # the validation should fail with the client key
+    with pytest.raises(BadSignatureError):
+        test_signing_key_req.verify_key.verify_key.verify(
+            signed_result.serialized_message, signed_result.signature
+        )
 
-    result = signed_result.message.unwrap()
+    # the signed result should be the same as the unsigned one
+    result = signed_result.message.data
     assert isinstance(result, type(us_result))
 
-    if not blocking:
+    # the result should not be an error
+    if path == "metadata":
+        assert not isinstance(result, SyftError)
+    elif not blocking and n_processes > 0:
         assert isinstance(result, QueueItem)
     else:
-        print(result)
+        assert not isinstance(result, SyftError)

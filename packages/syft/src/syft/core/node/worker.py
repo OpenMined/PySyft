@@ -392,7 +392,7 @@ class Worker(NewNode):
                 message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
             )
         else:
-            if not api_call.is_valid:
+            if not api_call.is_valid.is_ok():
                 return SyftError(message="Your message signature is invalid")  # type: ignore
 
         if api_call.message.node_uid != self.id:
@@ -444,7 +444,8 @@ class Worker(NewNode):
             )
             if api_call.message.blocking:
                 gevent.joinall([thread])
-                result = thread.value
+                signed_result = thread.value
+                result = signed_result.message.data
             else:
                 result = item
         return result

@@ -149,12 +149,6 @@ class SyftAPIData(SyftBaseObject):
             signature=signed_message.signature,
         )
 
-    def unwrap(self) -> Any:
-        if isinstance(self.data, SignedSyftAPICall):
-            return self.data.message.data
-
-        return self.data
-
 
 def generate_remote_function(
     node_uid: UID,
@@ -347,7 +341,7 @@ class SyftAPI(SyftObject):
         if not signed_result.is_valid:
             return SyftError(message="The result signature is invalid")  # type: ignore
 
-        result = signed_result.message.unwrap()
+        result = signed_result.message.data
 
         if isinstance(result, OkErr):
             if result.is_ok():
