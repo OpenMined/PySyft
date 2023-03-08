@@ -6,7 +6,9 @@ from copy import deepcopy
 import os
 import sqlite3
 import tempfile
+import threading
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -33,6 +35,10 @@ def _repr_debug_(value: Any) -> str:
     return repr(value)
 
 
+def thread_ident() -> int:
+    return threading.current_thread().ident
+
+
 @serializable(recursive_serde=True)
 class SQLiteBackingStore(KeyValueBackingStore):
     __attr_state__ = ["index_name", "settings", "store_config"]
@@ -48,39 +54,47 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.settings = settings
         self.store_config = store_config
         self._ddtype = ddtype
+        self._db: Dict[int, sqlite3.Connection] = {}
+        self._cur: Dict[int, sqlite3.Connection] = {}
+        self.create_table()
 
     @property
     def table_name(self) -> str:
         return f"{self.settings.name}_{self.index_name}"
 
     def _connect(self) -> None:
+        # SQLite is not thread safe by default so we ensure that each connection
+        # comes from a different thread. In cases of Uvicorn and other AWSGI servers
+        # there will be many threads handling incoming requests so we need to ensure
+        # that different connections are used in each thread. By using a dict for the
+        # _db and _cur we can ensure they are never shared
+        print(f"Creating new {type(self)} connection on Thread: {thread_ident()}")
         self.file_path = self.store_config.client_config.file_path
-        self._db = sqlite3.connect(self.file_path)
-        # self._db.set_trace_callback(print)
-        self._cur = self._db.cursor()
+        self._db[thread_ident()] = sqlite3.connect(self.file_path)
+
+    def create_table(self):
         try:
-            self._cur.execute(
+            self.cur.execute(
                 f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                 + "repr TEXT NOT NULL, value BLOB NOT NULL)"  # nosec
             )
-            self._db.commit()
+            self.db.commit()
         except sqlite3.OperationalError as e:
             if f"table {self.table_name} already exists" not in str(e):
                 raise e
 
     @property
     def db(self) -> sqlite3.Connection:
-        if hasattr(self, "_db"):
-            return self._db
-        self._connect()
-        return self._db
+        if thread_ident() not in self._db:
+            self._connect()
+        return self._db[thread_ident()]
 
     @property
     def cur(self) -> sqlite3.Cursor:
-        if hasattr(self, "_cur"):
-            return self._cur
-        self._connect()
-        return self._cur
+        if thread_ident() not in self._cur:
+            self._cur[thread_ident()] = self.db.cursor()
+
+        return self._cur[thread_ident()]
 
     def _close(self) -> None:
         self._commit()
@@ -95,15 +109,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return cursor
 
     def _set(self, key: UID, value: Any) -> None:
-        try:
-            if self._exists(key):
-                self._update(key, value)
-            else:
-                insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
-                data = _serialize(value, to_bytes=True)
-                self._execute(insert_sql, [str(key), _repr_debug_(value), data])
-        except Exception as e:
-            raise e
+        if self._exists(key):
+            self._update(key, value)
+        else:
+            insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
+            data = _serialize(value, to_bytes=True)
+            self._execute(insert_sql, [str(key), _repr_debug_(value), data])
 
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
@@ -111,15 +122,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
 
     def _get(self, key: UID) -> Any:
-        try:
-            select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
-            row = self._execute(select_sql, [str(key)]).fetchone()
-            if row is None or len(row) == 0:
-                raise KeyError(f"{key} not in {type(self)}")
-            data = row[2]
-            return _deserialize(data, from_bytes=True)
-        except Exception as e:
-            raise e
+        select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
+        row = self._execute(select_sql, [str(key)]).fetchone()
+        if row is None or len(row) == 0:
+            raise KeyError(f"{key} not in {type(self)}")
+        data = row[2]
+        return _deserialize(data, from_bytes=True)
 
     def _exists(self, key: UID) -> Any:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
@@ -127,17 +135,14 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return bool(row)
 
     def _get_all(self) -> Any:
-        try:
-            select_sql = f"select * from {self.table_name}"  # nosec
-            keys = []
-            data = []
-            rows = self._execute(select_sql).fetchall()
-            for row in rows:
-                keys.append(UID(row[0]))
-                data.append(_deserialize(row[2], from_bytes=True))
-            return dict(zip(keys, data))
-        except Exception as e:
-            raise e
+        select_sql = f"select * from {self.table_name}"  # nosec
+        keys = []
+        data = []
+        rows = self._execute(select_sql).fetchall()
+        for row in rows:
+            keys.append(UID(row[0]))
+            data.append(_deserialize(row[2], from_bytes=True))
+        return dict(zip(keys, data))
 
     def _get_all_keys(self) -> Any:
         try:
