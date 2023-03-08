@@ -16,6 +16,7 @@ from syft.core.node.new.mongo_document_store import MongoStoreConfig
 from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
 from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 from syft.core.node.worker import Worker
+from syft.core.node.worker import create_worker_metadata
 
 # grid absolute
 from grid.core.config import Settings
@@ -114,6 +115,7 @@ node.loud_print()
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
     worker.name = node.setup.node_name
+    create_worker_metadata(worker)
 
 
 def get_client(signing_key: Optional[SigningKey] = None) -> Client:
