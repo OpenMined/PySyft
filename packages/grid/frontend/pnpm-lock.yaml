@@ -13,6 +13,7 @@ specifiers:
   eslint-plugin-svelte3: ^4.0.0
   flowbite: ^1.6.3
   flowbite-svelte: ^0.29.13
+  ky: ^0.33.2
   libsodium: ^0.7.11
   libsodium-wrappers: ^0.7.11
   postcss: ^8.4.14
@@ -33,6 +34,7 @@ specifiers:
 dependencies:
   '@fortawesome/free-solid-svg-icons': 6.3.0
   capnp-ts: 0.7.0
+  ky: 0.33.2
   libsodium: 0.7.11
   libsodium-wrappers: 0.7.11
   svelte-fa: 3.0.3
@@ -1484,6 +1486,11 @@ packages:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
     dev: true
+
+  /ky/0.33.2:
+    resolution: {integrity: sha512-f6oS2rKUcPu5FzdqCDbFpmzis/JlqFZw8uIHm/jf8Kc3vtnW+VDhuashOAKyBZv8bFiZFZUMNxTC0JtahEvujA==}
+    engines: {node: '>=14.16'}
+    dev: false
 
   /levn/0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}

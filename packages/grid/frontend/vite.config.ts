@@ -11,10 +11,5 @@ export default defineConfig({
     alias: {
       $lib: path.resolve('./src/lib')
     }
-  },
-  server: {
-    fs: {
-      allow: ['..']
-    }
   }
 });
