@@ -2726,6 +2726,42 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=min_vals,
             max_vals=max_vals,
         )
+ 
+
+    def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        # if the tensor being added is also private
+        if isinstance(other, PhiTensor):
+            return self.gamma * other.gamma
+            # if self.data_subjects != other.data_subjects:
+            #     return self.gamma * other.gamma
+
+            # return PhiTensor(
+            #     child=self.child * other.child,
+            #     min_vals=self.min_vals * other.min_vals,
+            #     max_vals=self.max_vals * other.max_vals,
+            #     data_subjects=self.data_subjects,
+            #     # scalar_manager=self.scalar_manager,
+            # )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            return PhiTensor(
+                child=self.child * other,
+                min_vals=self.min_vals * other,
+                max_vals=self.max_vals * other,
+                data_subjects=self.data_subjects,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma * other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
+    def __rmul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return self.__mul__(other) 
 
     def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):

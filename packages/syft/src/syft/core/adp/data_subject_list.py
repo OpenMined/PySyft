@@ -457,13 +457,19 @@ class DataSubjectArray:
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
             return DataSubjectArray(self.data_subjects)
+            
+    def __mul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
+        else:
+            return DataSubjectArray(self.data_subjects)
 
     def __sub__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
             return DataSubjectArray(self.data_subjects)
-
+    
     def __ge__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
