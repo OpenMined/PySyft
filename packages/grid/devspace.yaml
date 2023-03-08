@@ -373,7 +373,7 @@ deployments:
             command:
               - /app/grid/start.sh
             volumeMounts:
-              - containerPath: /credentials
+              - containerPath: /storage
                 volume:
                   name: credentials-data
                   readOnly: true
@@ -474,7 +474,7 @@ deployments:
             command:
               - /app/grid/start.sh
             volumeMounts:
-              - containerPath: /credentials
+              - containerPath: /storage
                 volume:
                   name: credentials-data
                   readOnly: true
@@ -575,7 +575,7 @@ deployments:
             command:
               - /app/grid/worker-start.sh
             volumeMounts:
-              - containerPath: /credentials
+              - containerPath: /storage
                 volume:
                   name: credentials-data
                   readOnly: true

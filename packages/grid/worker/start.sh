@@ -13,8 +13,6 @@ then
     RELOAD="--reload"
 fi
 
-CREDENTIALS_PATH="./credentials.json"
-export CREDENTIALS_PATH=$CREDENTIALS_PATH
 export RUST_BACKTRACE=$RUST_BACKTRACE
 
 set +e

@@ -13,7 +13,7 @@ from syft.core.node.worker import create_admin_new
 API_PATH = "/api/v1/new"
 
 
-client_config = SQLiteStoreClientConfig()
+client_config = SQLiteStoreClientConfig(path="/storage/")
 sql_store_config = SQLiteStoreConfig(client_config=client_config)
 worker = Worker(
     action_store_config=sql_store_config, document_store_config=sql_store_config

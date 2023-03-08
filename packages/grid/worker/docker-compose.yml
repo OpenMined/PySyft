@@ -24,7 +24,7 @@ services:
       - DEV_MODE=${DEV_MODE}
     command: "/app/start.sh"
     volumes:
-      - credentials-data:/credentials
+      - credentials-data:/storage
 
 volumes:
   credentials-data:
