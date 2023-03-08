@@ -68,7 +68,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # there will be many threads handling incoming requests so we need to ensure
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
-        print(f"Creating new {type(self)} connection on Thread: {thread_ident()}")
+        # print(f"Creating new {type(self)} connection on Thread: {thread_ident()}")
         self.file_path = self.store_config.client_config.file_path
         self._db[thread_ident()] = sqlite3.connect(self.file_path)
 
