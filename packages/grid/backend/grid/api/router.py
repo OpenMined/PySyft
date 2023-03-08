@@ -23,9 +23,11 @@ from grid.api.syft import syft
 from grid.api.tasks.routes import router as task_router
 from grid.api.users.routes import router as user_router
 from grid.api.vpn import vpn
+from grid.api.new.new import router as new_router
 
 api_router = APIRouter()
 api_router.include_router(task_router, prefix="/task", tags=["task"])
+api_router.include_router(new_router, prefix="/new", tags=["new"])
 api_router.include_router(login.router, tags=["login"])
 api_router.include_router(register.router, tags=["register"])
 api_router.include_router(user_router, prefix="/users", tags=["users"])
