@@ -1,5 +1,7 @@
 # stdlib
 from typing import Callable
+from typing import List
+from typing import Union
 
 # third party
 import numpy as np
@@ -8,7 +10,58 @@ import pandas as pd
 # relative
 from .action_object import ActionObject
 from .response import SyftError
+from .response import SyftResponseMessage
 from .response import SyftSuccess
+
+
+def verify_result(
+    func: Callable,
+    private_inputs: Union[ActionObject, List[ActionObject]],
+    private_outputs: Union[ActionObject, List[ActionObject]],
+) -> SyftResponseMessage:
+    """Verify a single result of Code Verification"""
+    trace_assets = []
+    if not isinstance(private_inputs, List):
+        private_inputs = [private_inputs]
+
+    for asset in private_inputs:
+        if not isinstance(asset, ActionObject):
+            raise Exception(f"ActionObject expected, instead received: {type(asset)}")
+        # Manual type casting for now, to automate later
+        if isinstance(asset.syft_action_data, np.ndarray):
+            empty_obj: ActionObject = ActionObject(
+                id=asset.id, syft_result_obj=np.ndarray([])
+            )
+        elif isinstance(asset.syft_action_data, pd.DataFrame):
+            empty_obj: ActionObject = ActionObject(
+                id=asset.id, syft_result_obj=pd.DataFrame()
+            )
+        else:
+            raise NotImplementedError(
+                f"Trace mode not yet automated for type: {type(asset.syft_action_data)}"
+            )
+
+        trace_assets.append(empty_obj)
+
+    print("Code Verification in progress.")
+    traced_results = func(*trace_assets)
+
+    if isinstance(private_outputs, List):
+        target_hashes = [output.syft_history_hash for output in private_outputs]
+        traced_hashes = [result.syft_history_hash for result in traced_results]
+    else:
+        target_hashes = private_outputs.syft_history_hash
+        traced_hashes = traced_results.syft_history_hash
+
+    if target_hashes == traced_hashes:
+        msg = "Code Verification passed with matching hashes! Congratulations, and thank you for supporting PySyft!"
+        return SyftSuccess(message=msg)
+    else:
+        msg = (
+            f"Hashes do not match! Target hashes were: {target_hashes} but Traced hashes were: {traced_results}. "
+            f"Please try checking the logs."
+        )
+        return SyftError(message=msg)
 
 
 def code_verification(func: Callable):
@@ -57,10 +110,16 @@ def code_verification(func: Callable):
         # assert len(results) == len(traced_results)
         hashes_match = results == traced_results
         if hashes_match:
-            msg = f"Code Verification passed with matching hashes of {results}! Congratulations, and thank you for supporting PySyft!"
+            msg = (
+                f"Code Verification passed with matching hashes of {results}! Congratulations, and thank you for "
+                f"supporting PySyft!"
+            )
             return SyftSuccess(message=msg)
         else:
-            msg = f"Hashes do not match! Target hashes were: {results} but Traced hashes were: {traced_results}. Please try checking the logs."
+            msg = (
+                f"Hashes do not match! Target hashes were: {results} but Traced hashes were: {traced_results}. "
+                f"Please try checking the logs."
+            )
             return SyftError(message=msg)
 
     return wrapper
