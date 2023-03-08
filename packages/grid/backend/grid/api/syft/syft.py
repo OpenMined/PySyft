@@ -28,7 +28,6 @@ from grid.api.users.models import UserPrivate
 from grid.core.celery_app import celery_app
 from grid.core.config import settings
 from grid.core.node import node
-from grid.core.node import worker
 
 if TRACE_MODE:
     # third party
@@ -59,24 +58,6 @@ def syft_serde() -> Response:
 def syft_metadata() -> Response:
     return Response(
         serialize(node.get_metadata_for_client(), to_bytes=True),
-        media_type="application/octet-stream",
-    )
-
-
-@router.get("/new_api", response_model=str)
-def syft_new_api() -> Response:
-    return Response(
-        serialize(node.get_api(), to_bytes=True),
-        media_type="application/octet-stream",
-    )
-
-
-@router.post("/new_api_call", response_model=str)
-def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Any:
-    obj_msg = deserialize(blob=data, from_bytes=True)
-    result = worker.handle_api_call(api_call=obj_msg)
-    return Response(
-        serialize(result, to_bytes=True),
         media_type="application/octet-stream",
     )
 
