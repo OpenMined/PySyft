@@ -18,13 +18,13 @@ from syft import serialize  # type: ignore
 from syft.core.node.new.context import NodeServiceContext
 from syft.core.node.new.context import UnauthedServiceContext
 from syft.core.node.new.credentials import UserLoginCredentials
+from syft.core.node.new.metadata_service import MetadataService
 from syft.core.node.new.node import NewNode
 from syft.core.node.new.node_metadata import NodeMetadataJSON
 from syft.core.node.new.response import SyftError
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user_service import UserService
-from syft.core.node.new.metadata_service import MetadataService
 from syft.core.node.worker import Worker
 from syft.telemetry import TRACE_MODE
 
