@@ -24,6 +24,7 @@ from syft.core.node.new.response import SyftError
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user_service import UserService
+from syft.core.node.new.metadata_service import MetadataService
 from syft.core.node.worker import Worker
 from syft.telemetry import TRACE_MODE
 
@@ -61,9 +62,11 @@ def make_routes(worker: Worker) -> APIRouter:
 
     @router.get("/metadata_capnp")
     def syft_metadata_capnp() -> Response:
-        # print("what is metadata", str(worker.metadata))
+        context = NodeServiceContext(node=worker)
+        method = worker.get_method_with_context(MetadataService.get, context)
+        result = method()
         return Response(
-            serialize(worker.metadata, to_bytes=True),
+            serialize(result.ok(), to_bytes=True),
             media_type="application/octet-stream",
         )
 
