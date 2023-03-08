@@ -16,6 +16,7 @@ from grid.api.datasets import datasets
 from grid.api.meta import exam
 from grid.api.meta import ping
 from grid.api.meta import status
+from grid.api.new.new import router as new_router
 from grid.api.requests.routes import router as requests_router
 from grid.api.roles import roles
 from grid.api.settings import settings
@@ -23,7 +24,6 @@ from grid.api.syft import syft
 from grid.api.tasks.routes import router as task_router
 from grid.api.users.routes import router as user_router
 from grid.api.vpn import vpn
-from grid.api.new.new import router as new_router
 
 api_router = APIRouter()
 api_router.include_router(task_router, prefix="/task", tags=["task"])
