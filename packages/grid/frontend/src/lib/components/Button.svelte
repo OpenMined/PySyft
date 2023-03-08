@@ -1,74 +1,24 @@
 <script lang="ts">
-  export let variant:
-    | 'solid-primary'
-    | 'solid-gray'
-    | 'outlined'
-    | 'outlined-primary'
-    | 'ghost'
-    | 'link'
-    | 'delete' = 'solid-primary';
-  export let size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
-  export let disabled = false;
-  export let option: 'right' | 'left' | 'margin-x-sm' | 'none' = 'none';
-  export let onClick: () => void = () => {
-    // commenting this to bypass es lint errors
-  };
+  import type { HTMLButtonAttributes } from 'svelte/elements';
+
+  interface $$Props extends HTMLButtonAttributes {
+    disabled?: boolean;
+    variant: 'secondary';
+  }
+
+  export let variant: string;
+  export let disabled: boolean = false;
 </script>
 
 <button
-  class="{variant} {size} {option}"
-  on:click={(e) => {
-    e.preventDefault();
-    onClick();
-  }}
+  class="capitalize font-roboto flex flex-no-wrap justify-center items-center px-4 py-3 rounded-[20px] text-sm font-regular disabled:opacity-50 {variant}"
   aria-disabled={disabled}
 >
   <slot />
 </button>
 
 <style lang="postcss">
-  button {
-    @apply font-roboto flex gap-x-2 rounded justify-center items-center capitalize mx-auto;
-  }
-
-  [aria-disabled='true'] {
-    @apply opacity-40;
-  }
-
-  .solid-primary {
-    @apply bg-primary-500 text-white;
-  }
-
-  .solid-primary:hover {
-    @apply bg-gradient-to-r from-white/50 to-white/0;
-  }
-
-  .outlined-primary {
-    @apply text-primary-500 border-solid border-2 border-primary-500 rounded;
-  }
-  .delete {
-    @apply bg-magenta-500 text-white;
-  }
-
-  .delete:hover {
-    @apply bg-gradient-to-r from-white/50 to-white/0;
-  }
-
-  .md {
-    @apply font-bold leading-normal px-3 py-2;
-  }
-
-  .margin-x-sm {
-    @apply mx-1;
-  }
-
-  .left {
-    @apply ml-0;
-  }
-
-  .right {
-    @apply mr-0;
-  }
-  .none {
+  .secondary {
+    @apply transition-all duration-500 bg-gradient-to-l from-primary-300 to-primary-300 hover:to-marigold-400;
   }
 </style>

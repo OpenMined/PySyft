@@ -68,10 +68,14 @@
 @layer base {
   html,
   body {
-    @apply box-border w-full h-full min-w-screen min-h-screen;
+    @apply box-border w-full h-full min-w-screen min-h-screen text-gray-800 md:text-base font-roboto;
   }
 
   a {
-    @apply text-primary-600 underline;
+    @apply transition-colors duration-300 hover:text-primary-600 no-underline;
+  }
+
+  h2 {
+    @apply text-5xl leading-[1.1] font-rubik;
   }
 }
