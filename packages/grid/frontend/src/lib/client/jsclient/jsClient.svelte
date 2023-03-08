@@ -98,6 +98,28 @@
       })();
     }
 
+    /** Updates the current metadata with new fields using an API call and returns a Promise that resolves to the result of the call.
+     * @param {Object} updatedMetadata - An object of metadata fields to pass to the API call.
+     * @returns {Promise<object>} A Promise that resolves to an object containing the new metadata information.
+     * */
+    updateMetadata(newMetadata) {
+      // Create a new object called 'newMetadata' with updated fields and a new property called 'fqn' with a value.
+      const updateMetadata = {
+        ...newMetadata,
+        fqn: 'syft.core.node.new.node_metadata.NodeMetadataUpdate'
+      };
+
+      // Create a new object called 'reqFields' with one property: 'metadata',  which is set to 'updateMetadata'.
+      const reqFields = { metadata: updateMetadata };
+
+      // Return a new Promise that calls the 'send' method on 'this' with arguments to update metadata and resolves to the result of the call.
+      return new Promise((resolve, reject) => {
+        this.send([], reqFields, 'metadata.update')
+          .then((result) => resolve(result))
+          .catch((error) => reject(error));
+      });
+    }
+
     /**
      * Registers a new user with the server.
      * @param {Object} newUser - An object representing the new user to be registered.
