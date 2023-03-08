@@ -7,8 +7,8 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
-from .policy import ExactMatch
-from .policy import SingleExecutionExactOutput
+from .user_code import ExactMatch
+from .user_code import SingleExecutionExactOutput
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
 from .response import SyftError

@@ -111,9 +111,11 @@ class KeyValueStorePartition(StorePartition):
                     f"pk_key: {pk_key} not in unique_keys: {self.unique_keys.keys()}"
                 )
             ck_col = self.unique_keys[pk_key]
-            if pk_value in ck_col and ck_col[pk_value] == store_query_key.value:
+            if pk_value in ck_col or ck_col.get(pk_value) == store_query_key.value:
                 matches.append(pk_key)
 
+        print(len(matches))
+        print(len(qks))
         if len(matches) == 0:
             return UniqueKeyCheck.EMPTY
         elif len(matches) == len(qks):
@@ -162,7 +164,6 @@ class KeyValueStorePartition(StorePartition):
             exists = store_query_key.value in self.data
             unique_query_keys = self.settings.unique_keys.with_obj(obj)
             searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
-
             ck_check = self.validate_partition_keys(
                 store_query_key=store_query_key, unique_query_keys=unique_query_keys
             )

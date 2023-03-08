@@ -5,6 +5,7 @@ from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import functools
+import hashlib
 from itertools import repeat
 import multiprocessing
 import multiprocessing as mp
@@ -463,6 +464,23 @@ def get_root_data_path() -> Path:
 
     os.makedirs(data_dir, exist_ok=True)
     return data_dir
+
+
+def autocache(
+    url: str, extension: Optional[str] = None, cache: bool = True
+) -> Optional[Path]:
+    try:
+        data_path = get_root_data_path()
+        file_hash = hashlib.sha256(url.encode("utf8")).hexdigest()
+        filename = file_hash
+        if extension:
+            filename += f".{extension}"
+        file_path = data_path / filename
+        if os.path.exists(file_path) and cache:
+            return file_path
+        return download_file(url, file_path)
+    except Exception as e:
+        print(f"Failed to autocache: {url}. {e}")
 
 
 def download_file(url: str, full_path: Union[str, Path]) -> Optional[Path]:

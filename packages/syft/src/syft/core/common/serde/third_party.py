@@ -4,11 +4,17 @@
 from datetime import date
 from datetime import datetime
 from datetime import time
+from io import BytesIO
 
 # third party
 from dateutil import parser
+import flax
+from flax.core.frozen_dict import FrozenDict
+from jax import numpy as jnp
+from jaxlib.xla_extension import DeviceArray
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import numpy as np
 from oblv.oblv_client import OblvClient
 from pandas import DataFrame
 from pandas import Series
@@ -127,5 +133,42 @@ recursive_serde_register(
 )
 
 
+def serialize_bytes_io(io: BytesIO) -> bytes:
+    io.seek(0)
+    return serialize(io.read(), to_bytes=True)
+
+
+recursive_serde_register(
+    BytesIO,
+    serialize=serialize_bytes_io,
+    deserialize=lambda x: BytesIO(deserialize(x, from_bytes=True)),
+)
+
+
 # how else do you import a relative file to execute it?
 NOTHING = None
+
+try:
+    # third party
+    from IPython.display import Image
+
+    recursive_serde_register(Image)
+
+except Exception:  # nosec
+    pass
+
+# jax
+recursive_serde_register(
+    DeviceArray,
+    serialize=lambda x: serialize(np.array(x), to_bytes=True),
+    deserialize=lambda x: jnp.array(deserialize(x, from_bytes=True)),
+)
+
+
+recursive_serde_register(
+    FrozenDict,
+    serialize=lambda x: serialize(flax.serialization.to_state_dict(x), to_bytes=True),
+    deserialize=lambda x: FrozenDict(
+        flax.serialization.from_state_dict(FrozenDict, deserialize(x, from_bytes=True))
+    ),
+)

@@ -17,6 +17,7 @@ from ...common.uid import UID
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
+from .action_object import AnyActionObject
 from .action_store import ActionStore
 from .action_types import action_type_for_type
 from .context import AuthedServiceContext
@@ -400,5 +401,6 @@ def filter_twin_kwargs(kwargs: Dict, twin_mode: TwinMode) -> Any:
 
 TYPE_TO_SERVICE[ActionObject] = ActionService
 TYPE_TO_SERVICE[TwinObject] = ActionService
+TYPE_TO_SERVICE[AnyActionObject] = ActionService
 
-SERVICE_TO_TYPES[ActionService].update({ActionObject, TwinObject})
+SERVICE_TO_TYPES[ActionService].update({ActionObject, TwinObject, AnyActionObject})

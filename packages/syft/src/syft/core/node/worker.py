@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import contextlib
 from functools import partial
 import hashlib
 import os
@@ -42,6 +43,8 @@ from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
+from .new.credentials import SyftVerifyKey
+from .new.data_subject_member_service import DataSubjectMemberService
 from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
@@ -156,6 +159,7 @@ class Worker(NewNode):
                 PolicyService,
                 MessageService,
                 ProjectService,
+                DataSubjectMemberService,
             ]
             if services is None
             else services
@@ -178,11 +182,20 @@ class Worker(NewNode):
         self.post_init()
 
     @staticmethod
-    def named(name: str, processes: int = 0) -> Worker:
+    def named(name: str, processes: int = 0, reset: bool = False) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
+        if reset:
+            store_config = SQLiteStoreClientConfig()
+            store_config.filename = f"{uid}.sqlite"
+            with contextlib.suppress(FileNotFoundError):
+                if os.path.exists(store_config.file_path):
+                    os.unlink(store_config.file_path)
         return Worker(name=name, id=uid, signing_key=key, processes=processes)
+
+    def is_root(self, credentials: SyftVerifyKey) -> bool:
+        return credentials == self.signing_key.verify_key
 
     @property
     def root_client(self) -> Any:
@@ -269,6 +282,7 @@ class Worker(NewNode):
                 PolicyService,
                 MessageService,
                 ProjectService,
+                DataSubjectMemberService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
