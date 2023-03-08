@@ -148,6 +148,7 @@ class UserCodeService(AbstractService):
                         if isinstance(result, str):
                             return SyftError(message=result)
                         if result.is_ok():
+                            result = result.ok()
                             code_item.output_policy_state.update_state(
                                 context=context, outputs=result.id
                             )
@@ -155,7 +156,7 @@ class UserCodeService(AbstractService):
                                 context=context, code_item=code_item
                             )
                             if state_result:
-                                return result.ok()
+                                return result
                             else:
                                 return state_result
                 elif code_item.status == UserCodeStatus.SUBMITTED:

@@ -1,10 +1,9 @@
 <script>
-  import '../../app.postcss';
-  import { goto } from '$app/navigation';
-  import OnBoardModal from '../../components/onBoardModal.svelte';
-  import Sidebar from '../../components/Sidebar.svelte';
-  import Navbar from '../../components/Navbar.svelte';
-  import { store } from '../../lib/store.js';
+  import '../../app.css';
+  import OnBoardModal from '$lib/components/onBoardModal.svelte';
+  import Sidebar from '$lib/components/Sidebar.svelte';
+  import Navbar from '$lib/components/NavBar.svelte';
+  import { getClient } from '$lib/store.js';
 
   let client;
   let activeUrl = '/home';
@@ -13,36 +12,26 @@
   $: user_info = '';
 
   async function loadGlobalInfos() {
-    // Load JSSerde from local Storage
-    store.subscribe(async (value) => {
-      if (value) {
-        client = value.client;
-      } else {
-        goto('/login');
-      }
-    });
+    // Get JSClient
+    client = await getClient();
 
     // Load metadata from session Storage
-    metadata = JSON.parse(window.sessionStorage.getItem('metadata'));
     if (!metadata) {
       metadata = await client.metadata;
-      window.sessionStorage.setItem('metadata', JSON.stringify(metadata));
     }
 
-    user_info = JSON.parse(window.sessionStorage.getItem('user_info'));
+    // Load current user session info
     if (!user_info) {
       user_info = await client.user;
-      window.sessionStorage.setItem('user_info', JSON.stringify(user_info));
     }
   }
 </script>
 
 <main>
   {#await loadGlobalInfos() then none}
-    <Navbar bind:user_info />
+    <Navbar bind:user_info bind:client />
     <Sidebar bind:activeUrl bind:metadata bind:user_info />
     <OnBoardModal {client} bind:user_info bind:metadata />
   {/await}
 </main>
-<svelte:window />
 <slot />
