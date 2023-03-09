@@ -17,7 +17,7 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
-      - TRACE=${TRACE}
+      - TRACE=False # TODO: Trace Mode is set to False, until jaegar is integrated
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
