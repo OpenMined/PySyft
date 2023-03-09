@@ -29,18 +29,11 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import LineageID
 from ...common.uid import UID
+from .action_data_empty import ActionDataEmpty
 from .action_types import action_type_for_type
 from .action_types import action_types
 from .client import SyftClient
 from .response import SyftException
-
-
-@serializable(recursive_serde=True)
-class ActionDataEmpty(SyftObject):
-    __canonical_name__ = "ActionDataEmpty"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    syft_internal_type: Optional[Type] = Any
 
 
 @serializable(recursive_serde=True)
@@ -330,6 +323,7 @@ class ActionObject(SyftObject):
     syft_parent_kwargs: Optional[Any]
     syft_history_hash: Optional[int]
     syft_result_obj: Optional[Any]
+    syft_internal_type: ClassVar[Type[Any]]
 
     @property
     def syft_lineage_id(self) -> LineageID:
@@ -727,10 +721,7 @@ class ActionObject(SyftObject):
             constructor = action_type_for_type(result)
             if not constructor:
                 raise Exception(f"output: {type(result)} no in action_types")
-            output = constructor(syft_action_data=result)
-            if isinstance(result, ActionDataEmpty):
-                output.syft_internal_type = result.syft_internal_type
-            result = output
+            result = constructor(syft_action_data=result)
 
         return result
 
@@ -1066,7 +1057,7 @@ class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type: Any = Any
+    syft_internal_type: ClassVar[Type[Any]] = Any
     syft_passthrough_attrs = []
     syft_dont_wrap_attrs = []
 
