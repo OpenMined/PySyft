@@ -360,8 +360,13 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
 
         from_rendered_dir = bool(kwargs["from_template"]) and EDITABLE_MODE
 
+        node_type = verb.get_named_term_type(name="node_type").input
         execute_commands(
-            cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
+            cmds,
+            dry_run=dry_run,
+            silent=silent,
+            from_rendered_dir=from_rendered_dir,
+            node_type=node_type,
         )
 
         host_term = verb.get_named_term_hostgrammar(name="host")
@@ -535,6 +540,7 @@ def create_thread_logs(process: subprocess.Popen) -> Queue:
 
 def process_cmd(
     cmds: TypeList[str],
+    node_type: str,
     dry_run: bool,
     silent: bool,
     from_rendered_dir: bool,
@@ -542,15 +548,19 @@ def process_cmd(
     cmd_name: str = "",
 ) -> None:
     process_list: TypeList = []
-    cwd = (
-        os.path.join(GRID_SRC_PATH, RENDERED_DIR)
-        if from_rendered_dir
-        else GRID_SRC_PATH
-    )
+
+    if node_type == "enclave":
+        cwd = GRID_SRC_PATH + "/worker"
+    else:
+        cwd = (
+            os.path.join(GRID_SRC_PATH, RENDERED_DIR)
+            if from_rendered_dir
+            else GRID_SRC_PATH
+        )
+
     username, password = (
         extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
     )
-
     # display VM credentials
     console = rich.get_console()
     credentials = generate_user_table(username=username, password=password)
@@ -623,6 +633,7 @@ def process_cmd(
 
 def execute_commands(
     cmds: Union[TypeList[str], TypeDict[str, TypeList[str]]],
+    node_type: str,
     dry_run: bool = False,
     silent: bool = False,
     from_rendered_dir: bool = False,
@@ -652,6 +663,7 @@ def execute_commands(
                     )
                 process_cmd(
                     cmds=cmd,
+                    node_type=node_type,
                     dry_run=dry_run,
                     silent=silent,
                     from_rendered_dir=from_rendered_dir,
@@ -661,6 +673,7 @@ def execute_commands(
     else:
         process_cmd(
             cmds=cmds,
+            node_type=node_type,
             dry_run=dry_run,
             silent=silent,
             from_rendered_dir=from_rendered_dir,
@@ -1778,22 +1791,6 @@ def create_launch_docker_cmd(
 
     cmd += " docker compose -p " + snake_name
 
-    if bool(kwargs["vpn"]):
-        cmd += " --profile vpn"
-
-    if str(node_type.input) == "network":
-        cmd += " --profile network"
-
-    if use_blob_storage:
-        cmd += " --profile blob-storage"
-
-    # no frontend container so expect bad gateway on the / route
-    if not bool(kwargs["headless"]):
-        cmd += " --profile frontend"
-
-    if "trace" in kwargs and kwargs["trace"]:
-        cmd += " --profile telemetry"
-
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
     default_env = f"{GRID_SRC_PATH}/.env"
@@ -1837,6 +1834,25 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
+    if node_type.input == "enclave":
+        return create_launch_enclave_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
+
+    if bool(kwargs["vpn"]):
+        cmd += " --profile vpn"
+
+    if str(node_type.input) == "network":
+        cmd += " --profile network"
+
+    if use_blob_storage:
+        cmd += " --profile blob-storage"
+
+    # no frontend container so expect bad gateway on the / route
+    if not bool(kwargs["headless"]):
+        cmd += " --profile frontend"
+
+    if "trace" in kwargs and kwargs["trace"]:
+        cmd += " --profile telemetry"
+
     final_commands = {}
     final_commands["Pulling"] = pull_command(cmd, kwargs)
 
@@ -1845,6 +1861,28 @@ def create_launch_docker_cmd(
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
+
+    if build:
+        my_build_command = build_command(cmd)
+        final_commands["Building"] = my_build_command
+
+    release_type = kwargs["release"]
+
+    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
+    return final_commands
+
+
+def create_launch_enclave_cmd(
+    cmd: str,
+    kwargs: TypeDict[str, Any],
+    build: bool,
+    tail: bool = True,
+) -> TypeDict[str, TypeList[str]]:
+    release_type = kwargs["release"]
+
+    final_commands = {}
+    final_commands["Pulling"] = pull_command(cmd, kwargs)
+    cmd += " --file docker-compose.yml"
 
     if build:
         my_build_command = build_command(cmd)
