@@ -29,7 +29,7 @@ then
 fi
 
 # 🟣 TODO: Remove
-source install_oblivious.sh
+# source install_oblivious.sh
 
 celery -A grid.worker beat -l info --detach && \
 $RELOAD celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
