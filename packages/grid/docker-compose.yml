@@ -119,7 +119,7 @@ services:
     command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
-      - credentials-data:/credentials
+      - credentials-data:/storage
 
   backend_stream:
     restart: always
@@ -152,7 +152,7 @@ services:
     command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
-      - credentials-data:/credentials
+      - credentials-data:/storage
 
   celeryworker:
     restart: always
@@ -187,7 +187,7 @@ services:
     command: "/app/grid/worker-start.sh"
     network_mode: service:proxy
     volumes:
-      - credentials-data:/credentials
+      - credentials-data:/storage
 
   headscale:
     profiles:
