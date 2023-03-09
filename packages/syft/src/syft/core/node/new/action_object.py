@@ -36,6 +36,14 @@ from .response import SyftException
 
 
 @serializable(recursive_serde=True)
+class ActionDataEmpty(SyftObject):
+    __canonical_name__ = "ActionDataEmpty"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    syft_internal_type: Optional[Type] = Any
+
+
+@serializable(recursive_serde=True)
 class Action(SyftObject):
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -65,7 +73,11 @@ class Action(SyftObject):
     def syft_history_hash(self) -> int:
         hashes = 0
         hashes += hash(self.remote_self.syft_history_hash)
-        hashes += hash(self.path)
+        # 🔵 TODO: resolve this
+        # if the object is ActionDataEmpty then the type might not be equal to the
+        # real thing. This is the same issue with determining the result type from
+        # a pointer operation in the past, so we should think about what we want here
+        # hashes += hash(self.path)
         hashes += hash(self.op)
         for arg in self.args:
             hashes += hash(arg.syft_history_hash)
@@ -327,21 +339,17 @@ class ActionObject(SyftObject):
     def make_id(cls, v: Optional[UID]) -> UID:
         return v if isinstance(v, UID) else UID()
 
-    # @pydantic.validator("syft_action_data", pre=True, always=True)
-    # def check_action_data(
-    #     cls, v: ActionObject.syft_pointer_type
-    # ) -> ActionObject.syft_pointer_type:
-    #     # if cls == AnyActionObject or isinstance(v, cls.syft_internal_type):
-    #     #     return v
-    #     if cls == AnyActionObject:
-    #         return v
-    #     print(cls)
-    #     if isinstance(v, cls.syft_internal_type):
-    #         return v
-    #
-    #     raise SyftException(
-    #         f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
-    #     )
+    @pydantic.validator("syft_action_data", pre=True, always=True)
+    def check_action_data(
+        cls, v: ActionObject.syft_pointer_type
+    ) -> ActionObject.syft_pointer_type:
+        if cls == AnyActionObject or isinstance(
+            v, (cls.syft_internal_type, ActionDataEmpty)
+        ):
+            return v
+        raise SyftException(
+            f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
+        )
 
     def syft_point_to(self, node_uid: UID) -> None:
         self.syft_node_uid = node_uid
@@ -363,11 +371,11 @@ class ActionObject(SyftObject):
         return domain_client.api.services.action.get(self.id).syft_action_data
 
     @staticmethod
-    def from_obj(obj: Any) -> ActionObject:
-        action_type = action_type_for_type(obj)
+    def from_obj(syft_action_data: Any) -> ActionObject:
+        action_type = action_type_for_type(syft_action_data)
         if action_type is None:
-            raise Exception(f"{type(obj)} not in action_types")
-        return action_type(syft_action_data=obj)
+            raise Exception(f"{type(syft_action_data)} not in action_types")
+        return action_type(syft_action_data=syft_action_data)
 
     syft_action_data: Union[Any, Tuple[Any, Any]]
     syft_node_uid: Optional[UID]
@@ -719,7 +727,11 @@ class ActionObject(SyftObject):
             constructor = action_type_for_type(result)
             if not constructor:
                 raise Exception(f"output: {type(result)} no in action_types")
-            result = constructor(syft_action_data=result)
+            output = constructor(syft_action_data=result)
+            if isinstance(result, ActionDataEmpty):
+                output.syft_internal_type = result.syft_internal_type
+            result = output
+
         return result
 
     # def _syft_output_action_object(
@@ -831,11 +843,11 @@ class ActionObject(SyftObject):
                 return result
 
         # check for other types that aren't methods, functions etc
-        if self.syft_action_data is not None:
+        if not isinstance(self.syft_action_data, ActionDataEmpty):
             original_func = getattr(self.syft_action_data, name)
             skip_result = False
         else:
-            original_func = getattr(self.syft_result_obj, name)
+            original_func = getattr(self.syft_internal_type, name)
             skip_result = True
 
         if show_print:
@@ -851,7 +863,7 @@ class ActionObject(SyftObject):
                     context, name, args, kwargs
                 )
                 if skip_result:
-                    result = None
+                    result = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
                 else:
                     result = original_func(*pre_hook_args, **pre_hook_kwargs)
 
@@ -891,7 +903,7 @@ class ActionObject(SyftObject):
                     context, name, args, kwargs
                 )
                 if skip_result:
-                    result = None
+                    result = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
                 else:
                     result = original_func(*pre_hook_args, **pre_hook_kwargs)
 
@@ -995,6 +1007,8 @@ class ActionObject(SyftObject):
         )
 
     def syft_get_path(self) -> str:
+        if isinstance(self, AnyActionObject) and self.syft_internal_type:
+            return f"{self.syft_internal_type.__name__}"
         return f"{type(self).__name__}"
 
     def syft_remote_method(
