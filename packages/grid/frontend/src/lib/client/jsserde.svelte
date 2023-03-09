@@ -222,6 +222,13 @@
         null,
         {}
       ];
+      this.type_bank['builtins.tuple'] = [
+        true,
+        this.type_bank['builtins.list'][1],
+        this.type_bank['builtins.list'][2],
+        null,
+        {}
+      ];
       this.type_bank['builtins.dict'] = [
         true,
         (dict) => {
