@@ -32,6 +32,7 @@ from .datetime import DateTime
 from .linked_obj import LinkedObject
 from .response import SyftError
 from .response import SyftSuccess
+from .task.oblv_service import check_enclave_data_transfer
 from .task.oblv_service import check_enclave_transfer
 from .transforms import TransformContext
 from .transforms import add_node_uid_for_key
@@ -401,6 +402,49 @@ class EnumMutation(ObjectMutation):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+
+@serializable(recursive_serde=True)
+class EnclaveTransferStatusChange(EnumMutation):
+    __canonical_name__ = "EnclaveTransferStatusChange"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    @staticmethod
+    def from_obj(
+        linked_obj: LinkedObject, attr_name: str, value: Optional[Enum] = None
+    ) -> Self:
+        enum_type = type_for_field(linked_obj.object_type, attr_name)
+        return EnclaveTransferStatusChange(
+            linked_obj=linked_obj,
+            attr_name=attr_name,
+            enum_type=enum_type,
+            value=value,
+            match_type=True,
+        )
+
+    def _run(
+        self, context: ChangeContext, apply: bool
+    ) -> Result[SyftSuccess, SyftError]:
+        try:
+            valid = self.valid
+            if not valid:
+                return Err(valid)
+            obj = self.linked_obj.resolve_with_context(context)
+            if obj.is_err():
+                return SyftError(message=obj.err())
+            obj = obj.ok()
+            if apply:
+                obj = self.mutate(obj)
+                check_enclave_data_transfer(
+                    enclave_transfer=obj, value=self.value, context=context
+                )
+                self.linked_obj.update_with_context(context, obj)
+            else:
+                raise NotImplementedError
+            return Ok(SyftSuccess(message=f"{type(self)} Success"))
+        except Exception as e:
+            print(f"failed to apply {type(self)}. {e}")
+            return Err(SyftError(message=e))
 
 
 @serializable(recursive_serde=True)

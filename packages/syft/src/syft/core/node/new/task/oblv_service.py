@@ -432,14 +432,14 @@ class OblvService(AbstractService):
 
         # relative
         from ..linked_obj import LinkedObject
-        from ..request import EnumMutation
+        from ..request import EnclaveTransferStatusChange
         from ..request import SubmitRequest
         from ..request_service import RequestService
 
         linked_obj = LinkedObject.from_obj(
             request, node_uid=context.node.id, stash_name="enclave_transfer_stash"
         )
-        REQUEST_APPROVE = EnumMutation.from_obj(
+        REQUEST_APPROVE = EnclaveTransferStatusChange.from_obj(
             linked_obj=linked_obj,
             attr_name="status",
             value=EnclaveTransferStatus.APPROVED,
@@ -535,6 +535,37 @@ def check_enclave_transfer(
         res = api.services.oblv.send_user_code_inputs_to_enclave(
             user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
         )
+
+        return res
+    else:
+        return Ok()
+
+
+def check_enclave_data_transfer(
+    enclave_transfer: EnclaveTransfer,
+    value: EnclaveTransferStatus,
+    context: ChangeContext,
+):
+    if value == EnclaveTransferStatus.APPROVED:
+        method = context.node.get_service_method(OblvService.get_api_for)
+        api = method(
+            OblvMetadata(
+                deployment_id=enclave_transfer.deployment_id,
+                oblv_client=enclave_transfer.oblv_client,
+            ),
+            context.node.signing_key,
+        )
+        # send data of the current node to enclave
+        action_service = context.node.get_service("actionservice")
+        action_object = action_service.store.get(
+            uid=enclave_transfer.data_id,
+            credentials=context.node.signing_key.verify_key,
+        )
+        if action_object.is_err():
+            return action_object
+        action_object = action_object.ok()
+        # sends to enclave
+        res = api.services.action.set(action_object=action_object)
 
         return res
     else:
