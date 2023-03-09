@@ -5,6 +5,7 @@ from typing import Optional
 
 # relative
 from .cache import DEFAULT_BRANCH
+from .grammar import ALLOWED_NODE_TYPES
 from .grammar import GrammarTerm
 from .grammar import GrammarVerb
 from .grammar import HostGrammarTerm
@@ -26,7 +27,7 @@ def get_launch_verb() -> GrammarVerb:
             "type": "object",
             "klass": GrammarTerm,
             "default": "domain",
-            "options": ["domain", "network", "enclave"],
+            "options": ALLOWED_NODE_TYPES,
         },
         {
             "name": "preposition",

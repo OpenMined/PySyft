@@ -15,6 +15,8 @@ from typing import Union
 from .deps import allowed_hosts
 from .lib import find_available_port
 
+ALLOWED_NODE_TYPES = ["domain", "network", "enclave"]
+
 
 class BadGrammar(Exception):
     pass
@@ -294,13 +296,11 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
     """
 
     # Some mild analysis
-    found_domain_or_network = False
+    found_node_type = False
     preposition_position = 10000
     for i, arg in enumerate(args):
-        if "domain" in arg:
-            found_domain_or_network = True
-        elif "network" in arg:
-            found_domain_or_network = True
+        if arg in ALLOWED_NODE_TYPES:
+            found_node_type = True
 
         if arg.strip() in ["to", "from"]:
             if i < preposition_position:
@@ -309,7 +309,7 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
     _args = list(args)
 
     # Default to domain if it's not provided
-    if not found_domain_or_network:
+    if not found_node_type:
         if preposition_position != 10000:
             _args.insert(preposition_position, "domain")
             preposition_position += 1
@@ -317,21 +317,14 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
             _args = _args + ["domain"]
 
     # if there are no prepositions and the domain/network is the last word
-    if preposition_position == 10000 and _args[-1] in ["domain", "network"]:
-        name = ""
-        for arg in _args[:-1]:
-            name += arg + " "
-        name = name[:-1]
-        _args = [name] + _args[-1:]
+    if preposition_position == 10000 and _args[-1] in ALLOWED_NODE_TYPES:
+        _args = [" ".join(_args[:-1])] + _args[-1:]
 
     # if there are prepositions then combine the words in the name if there are multiple
     elif preposition_position != 10000:
-        name = ""
-        for i in range(preposition_position - 1):
-            name += _args[i] + " "
-        name = name[:-1]
-        pmin1 = preposition_position - 1
-        _args = [name] + _args[pmin1:]
+        _args = [" ".join(_args[: preposition_position - 1])] + _args[
+            preposition_position - 1 :
+        ]
 
     # if there wasn't a name provided - make sure we don't have an empty place in the list
     # so that later logic will generate a name
