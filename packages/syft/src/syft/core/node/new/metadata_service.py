@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Union
 
 # third party
 from result import Err

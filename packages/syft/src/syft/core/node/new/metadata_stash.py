@@ -1,6 +1,5 @@
 # stdlib
 from typing import List
-from typing import Optional
 
 # third party
 from result import Result
@@ -13,7 +12,6 @@ from .document_store import BaseUIDStoreStash
 from .document_store import DocumentStore
 from .document_store import PartitionKey
 from .document_store import PartitionSettings
-from .document_store import QueryKeys
 from .node_metadata import NodeMetadata
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -36,7 +34,3 @@ class MetadataStash(BaseUIDStoreStash):
 
     def update(self, metadata: NodeMetadata) -> Result[NodeMetadata, str]:
         return self.check_type(metadata, self.object_type).and_then(super().update)
-
-    def get(self) -> Result[Optional[NodeMetadata], str]:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
-        return self.query_one(qks=qks)
