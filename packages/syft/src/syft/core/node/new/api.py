@@ -493,7 +493,7 @@ except Exception:
 
 
 @serializable(recursive_serde=True)
-class UserNodeView(BaseModel):
+class NodeView(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
@@ -504,13 +504,13 @@ class UserNodeView(BaseModel):
     def from_api(api: SyftAPI):
         # stores the name root verify key of the domain node
         node_metadata = api.connection.get_node_metadata(api.signing_key)
-        return UserNodeView(
+        return NodeView(
             node_name=node_metadata.name,
             verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
         )
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, UserNodeView):
+        if not isinstance(other, NodeView):
             return False
         return self.node_name == other.node_name and self.verify_key == other.verify_key
 

@@ -157,11 +157,13 @@ class UserCodeService(AbstractService):
                         if result.is_ok():
                             result = result.ok()
                             code_item.output_policy_state.update_state(
-                                context=context, outputs=result.ok().id
+                                context=context, outputs=result.id
                             )
+
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item
                             )
+
                             if state_result:
                                 return result
                             else:
