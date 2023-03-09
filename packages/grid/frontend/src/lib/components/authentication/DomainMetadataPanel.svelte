@@ -2,6 +2,7 @@
   import Avatar from '$lib/components/Avatar.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import TagCloud from '$lib/components/TagCloud.svelte';
+  import { prettyName } from '$lib/utils';
   import type { DomainMetadata } from '../../../types/domain/metadata';
   export let metadata: DomainMetadata;
   export let initials = 'OM';
@@ -12,7 +13,7 @@
   <div class="w-[97.5px]">
     <Avatar {initials} />
   </div>
-  <h2>{metadata.title}</h2>
+  <h2>{prettyName(metadata.name)}</h2>
   {#if metadata.organization}
     <p class="text-lg font-semibold flex-shrink-0">{metadata.organization}</p>
   {/if}
