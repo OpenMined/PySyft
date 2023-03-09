@@ -53,6 +53,7 @@ from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
+from .core.common.uid import LineageID  # noqa: F401
 from .core.common.uid import UID  # noqa: F401
 
 # TFF
