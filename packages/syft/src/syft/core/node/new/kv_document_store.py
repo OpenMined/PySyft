@@ -114,12 +114,14 @@ class KeyValueStorePartition(StorePartition):
             if pk_value in ck_col or ck_col.get(pk_value) == store_query_key.value:
                 matches.append(pk_key)
 
-        print(len(matches))
-        print(len(qks))
-        if len(matches) == 0:
-            return UniqueKeyCheck.EMPTY
-        elif len(matches) == len(qks):
+        # if len(matches) == 0:
+        #     return UniqueKeyCheck.EMPTY
+        # elif len(matches) == len(qks):
+        #     return UniqueKeyCheck.MATCHES
+        if len(matches) == len(qks):
             return UniqueKeyCheck.MATCHES
+        else: #if len(matches) == 0:
+            return UniqueKeyCheck.EMPTY
 
         return UniqueKeyCheck.ERROR
 
