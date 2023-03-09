@@ -102,6 +102,7 @@ class MockStore(DocumentStore):
     pass
 
 
+@serializable(recursive_serde=True)
 class MockSyftObject(SyftObject):
     __canonical_name__ = UID()
     data: Any

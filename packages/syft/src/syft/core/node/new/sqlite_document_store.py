@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from copy import deepcopy
-import os
+from pathlib import Path
 import sqlite3
 import tempfile
 import threading
@@ -12,6 +12,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -236,7 +237,7 @@ class SQLiteDocumentStore(DocumentStore):
 @serializable(recursive_serde=True)
 class SQLiteStoreClientConfig(StoreClientConfig):
     filename: Optional[str]
-    path: Optional[str]
+    path: Optional[Union[str, Path]]
 
     @property
     def temp_path(self) -> str:
@@ -245,7 +246,8 @@ class SQLiteStoreClientConfig(StoreClientConfig):
     @property
     def file_path(self) -> str:
         path = self.path if self.path else self.temp_path
-        return path + os.sep + self.filename
+        path = Path(path)
+        return path / self.filename
 
 
 @serializable(recursive_serde=True)
