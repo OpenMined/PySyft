@@ -98,9 +98,16 @@ class MongoStorePartition(StorePartition):
     ]
     storage_type: StorableObjectType = MongoBsonObject
 
-    def init_store(self):
-        super().init_store()
-        self._init_collection()
+    def init_store(self) -> Result[Ok, Err]:
+        store_status = super().init_store()
+        if store_status.is_err():
+            return store_status
+        try:
+            self._init_collection()
+        except BaseException as e:
+            return Err(str(e))
+
+        return Ok()
 
     def _init_collection(self):
         client = MongoClient.from_config(config=self.store_config.client_config)

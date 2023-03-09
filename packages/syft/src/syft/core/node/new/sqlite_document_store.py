@@ -21,8 +21,8 @@ from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize
 from ...common.uid import UID
-from .document_store import BasePartitionSettings
 from .document_store import DocumentStore
+from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
@@ -46,7 +46,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __init__(
         self,
         index_name: str,
-        settings: BasePartitionSettings,
+        settings: PartitionSettings,
         store_config: StoreConfig,
         ddtype: Optional[type] = None,
     ) -> None:

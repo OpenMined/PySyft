@@ -294,9 +294,14 @@ class StorePartition:
         self.store_config = store_config
         self.init_store()
 
-    def init_store(self) -> None:
-        self.unique_cks = self.settings.unique_keys.all
-        self.searchable_cks = self.settings.searchable_keys.all
+    def init_store(self) -> Result[Ok, Err]:
+        try:
+            self.unique_cks = self.settings.unique_keys.all
+            self.searchable_cks = self.settings.searchable_keys.all
+        except BaseException as e:
+            return Err(str(e))
+
+        return Ok()
 
     def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
         if partition_key in self.unique_cks:
