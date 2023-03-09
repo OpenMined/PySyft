@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from typing import Callable
 from typing import List
+from typing import Optional
 
 # third party
 from packaging import version
@@ -38,6 +39,22 @@ def check_version(
             print(f"Warning: {msg}")
             return False
     return True
+
+
+@serializable(recursive_serde=True)
+class NodeMetadataUpdate(SyftObject):
+    __canonical_name__ = "NodeMetadataUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    name: Optional[str]
+    organization: Optional[str]
+    description: Optional[str]
+    on_board: Optional[bool]
+    id: Optional[UID]
+    verify_key: Optional[SyftVerifyKey]
+    highest_object_version: Optional[int]
+    lowest_object_version: Optional[int]
+    syft_version: Optional[str]
 
 
 @serializable(recursive_serde=True)

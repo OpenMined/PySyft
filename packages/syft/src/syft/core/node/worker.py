@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import contextlib
+from datetime import datetime
 from functools import partial
 import hashlib
 import os
@@ -51,6 +52,8 @@ from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
 from .new.message_service import MessageService
+from .new.metadata_service import MetadataService
+from .new.metadata_stash import MetadataStash
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
@@ -149,6 +152,7 @@ class Worker(NewNode):
         services = (
             [
                 UserService,
+                MetadataService,
                 ActionService,
                 TestService,
                 DatasetService,
@@ -273,6 +277,7 @@ class Worker(NewNode):
                 kwargs["store"] = self.action_store
             if service_klass in [
                 UserService,
+                MetadataService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -548,6 +553,32 @@ def queue_task(
     if blocking:
         return producer.value
     return None
+
+
+def create_worker_metadata(
+    worker: NewNode,
+) -> Optional[NodeMetadata]:
+    try:
+        metadata_stash = MetadataStash(store=worker.document_store)
+        metadata_exists = metadata_stash.get_all().ok()
+        if metadata_exists:
+            return None
+        else:
+            new_metadata = NodeMetadata(
+                name=worker.name,
+                id=worker.id,
+                verify_key=worker.signing_key.verify_key,
+                highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
+                lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
+                syft_version=__version__,
+                deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+            )
+            result = metadata_stash.set(metadata=new_metadata)
+            if result.is_ok():
+                return result.ok()
+            return None
+    except Exception as e:
+        print("create_worker_metadata failed", e)
 
 
 def create_admin_new(
