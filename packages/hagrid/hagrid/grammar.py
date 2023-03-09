@@ -27,7 +27,9 @@ class GrammarVerb:
         full_sentence: TypeList[TypeDict[str, Any]],
         abbreviations: TypeDict[int, TypeList[Optional[str]]],
     ) -> None:
-        self.grammar: TypeList[Union[GrammarTerm, HostGrammarTerm]] = []
+        self.grammar: TypeList[
+            Union[GrammarTerm, HostGrammarTerm, SourceGrammarTerm]
+        ] = []
         self.command = command
         self.full_sentence = full_sentence
         self.abbreviations = abbreviations
@@ -69,7 +71,7 @@ class GrammarVerb:
         self.grammar = new_grammar
 
     def load_grammar(
-        self, grammar: TypeList[Union[GrammarTerm, HostGrammarTerm]]
+        self, grammar: TypeList[Union[GrammarTerm, HostGrammarTerm, SourceGrammarTerm]]
     ) -> None:
         self.grammar = grammar
 
