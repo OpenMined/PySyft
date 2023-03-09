@@ -299,8 +299,8 @@ class UserCode(SyftObject):
     input_policy_init_args: Dict[str, Any]
     output_policy_init_args: Dict[str, Any]
 
-    __attr_searchable__ = ["status", "service_func_name"]
-    __attr_unique__ = ["user_verify_key", "code_hash", "user_unique_func_name"]
+    __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
+    __attr_unique__ = ["code_hash", "user_unique_func_name"]
     __attr_repr_cols__ = ["status", "service_func_name"]
 
     @property

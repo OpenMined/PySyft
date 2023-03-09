@@ -7,7 +7,7 @@
   }
 
   export let variant: string;
-  export let disabled: boolean = false;
+  export let disabled = false;
 </script>
 
 <button

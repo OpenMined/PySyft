@@ -11,9 +11,9 @@
 
   export let label: string;
   export let id: string;
-  export let required: boolean = false;
-  export let error: string = '';
-  export let warning: string = '';
+  export let required = false;
+  export let error = '';
+  export let warning = '';
 </script>
 
 <div class="flex flex-col gap-4 w-full">

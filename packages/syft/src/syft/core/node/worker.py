@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import contextlib
+from datetime import datetime
 from functools import partial
 import hashlib
 import os
@@ -38,6 +39,7 @@ from .new.action_store import SQLiteActionStore
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
+from .new.api import SyftAPIData
 from .new.context import AuthedServiceContext
 from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
@@ -50,6 +52,8 @@ from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
 from .new.message_service import MessageService
+from .new.metadata_service import MetadataService
+from .new.metadata_stash import MetadataStash
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
@@ -149,6 +153,7 @@ class Worker(NewNode):
         services = (
             [
                 UserService,
+                MetadataService,
                 ActionService,
                 TestService,
                 DatasetService,
@@ -274,6 +279,7 @@ class Worker(NewNode):
                 kwargs["store"] = self.action_store
             if service_klass in [
                 UserService,
+                MetadataService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -378,13 +384,23 @@ class Worker(NewNode):
 
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+    ) -> Result[SignedSyftAPICall, Err]:
+        # Get the result
+        result = self.handle_api_call_with_unsigned_result(api_call)
+        # Sign the result
+        signed_result = SyftAPIData(data=result).sign(self.signing_key)
+
+        return signed_result
+
+    def handle_api_call_with_unsigned_result(
+        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
                 message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
             )
         else:
-            if not api_call.is_valid:
+            if not api_call.is_valid.is_ok():
                 return SyftError(message="Your message signature is invalid")  # type: ignore
 
         if api_call.message.node_uid != self.id:
@@ -436,7 +452,12 @@ class Worker(NewNode):
             )
             if api_call.message.blocking:
                 gevent.joinall([thread])
-                result = thread.value
+                signed_result = thread.value
+
+                if not signed_result.is_valid.is_ok():
+                    return SyftError(message="The result signature is invalid")  # type: ignore
+
+                result = signed_result.message.data
             else:
                 result = item
         return result
@@ -495,6 +516,7 @@ def task_runner(
     try:
         with pipe:
             api_call = pipe.get()
+
             result = worker.handle_api_call(api_call)
             if blocking:
                 pipe.put(result)
@@ -534,6 +556,32 @@ def queue_task(
     if blocking:
         return producer.value
     return None
+
+
+def create_worker_metadata(
+    worker: NewNode,
+) -> Optional[NodeMetadata]:
+    try:
+        metadata_stash = MetadataStash(store=worker.document_store)
+        metadata_exists = metadata_stash.get_all().ok()
+        if metadata_exists:
+            return None
+        else:
+            new_metadata = NodeMetadata(
+                name=worker.name,
+                id=worker.id,
+                verify_key=worker.signing_key.verify_key,
+                highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
+                lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
+                syft_version=__version__,
+                deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+            )
+            result = metadata_stash.set(metadata=new_metadata)
+            if result.is_ok():
+                return result.ok()
+            return None
+    except Exception as e:
+        print("create_worker_metadata failed", e)
 
 
 def create_admin_new(

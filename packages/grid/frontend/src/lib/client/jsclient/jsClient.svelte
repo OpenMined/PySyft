@@ -98,20 +98,23 @@
       })();
     }
 
-    /** Updates the current user with new fields using an API call and returns a Promise that resolves to the result of the call.
-     * @param {Object} updatedFields - An object of user fields to pass to the API call.
-     * @returns {Promise<object>} A Promise that resolves to an object containing the new user information.
+    /** Updates the current metadata with new fields using an API call and returns a Promise that resolves to the result of the call.
+     * @param {Object} updatedMetadata - An object of metadata fields to pass to the API call.
+     * @returns {Promise<object>} A Promise that resolves to an object containing the new metadata information.
      * */
-    updateCurrentUser(updatedFields) {
-      // Create a new object called 'userUpdate' with updated fields and a new property called 'fqn' with a value.
-      const userUpdate = { ...updatedFields, fqn: 'syft.core.node.new.user.UserUpdate' };
+    updateMetadata(newMetadata) {
+      // Create a new object called 'newMetadata' with updated fields and a new property called 'fqn' with a value.
+      const updateMetadata = {
+        ...newMetadata,
+        fqn: 'syft.core.node.new.node_metadata.NodeMetadataUpdate'
+      };
 
-      // Create a new object called 'reqFields' with two properties: 'uid', which is set to the value of 'userId', and 'user_update', which is set to 'userUpdate'.
-      const reqFields = { uid: this.userId, user_update: userUpdate };
+      // Create a new object called 'reqFields' with one property: 'metadata',  which is set to 'updateMetadata'.
+      const reqFields = { metadata: updateMetadata };
 
-      // Return a new Promise that calls the 'send' method on 'this' with arguments to update user and resolves to the result of the call.
+      // Return a new Promise that calls the 'send' method on 'this' with arguments to update metadata and resolves to the result of the call.
       return new Promise((resolve, reject) => {
-        this.send([], reqFields, 'user.update')
+        this.send([], reqFields, 'metadata.update')
           .then((result) => resolve(result))
           .catch((error) => reject(error));
       });
@@ -131,8 +134,8 @@
         // Make a POST request to the server with the register payload.
         const response = await fetch(`${this.url}/api/v1/new/register`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(registerPayload)
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: this.serde.serialize(registerPayload)
         });
 
         // If the response is not OK, throw an error with the HTTP status.

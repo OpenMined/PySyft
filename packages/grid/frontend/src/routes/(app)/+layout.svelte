@@ -1,5 +1,4 @@
 <script>
-  import '../../app.css';
   import OnBoardModal from '$lib/components/onBoardModal.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import Navbar from '$lib/components/NavBar.svelte';
