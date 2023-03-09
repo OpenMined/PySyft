@@ -914,6 +914,22 @@ Please install it and then retry again.\
     return True
 
 
+def check_aws_cli_installed() -> bool:
+    try:
+        result = subprocess.run(  # nosec
+            ["aws", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+        )
+        if result.returncode != 0:
+            raise FileNotFoundError("AWS CLI not installed")
+    except Exception:  # nosec
+        msg = "\nYou don't appear to have the AWS CLI installed! \n\n\
+Please install it and then retry your command.\
+\n\nInstallation Instructions: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html\n"
+        raise FileNotFoundError(msg)
+
+    return True
+
+
 def check_gcloud_authed() -> bool:
     try:
         result = subprocess.run(  # nosec
@@ -960,6 +976,28 @@ def generate_gcloud_key_at_path(key_path: str) -> str:
             pass
         if not os.path.exists(key_path):
             raise Exception(f"gcloud failed to generate ssh-key at: {key_path}")
+
+    return key_path
+
+
+def generate_aws_key_at_path(key_path: str, key_name: str) -> str:
+    key_path = os.path.expanduser(key_path)
+    if os.path.exists(key_path):
+        raise Exception(f"Can't generate key since path already exists. {key_path}")
+    else:
+        # TODO we need to do differently for powershell.
+        # Ex: aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial'
+        # --output text | out-file -encoding ascii -filepath MyKeyPair.pem
+
+        print(f"Creating AWS key pair with name {key_name} at path {key_path}..")
+        cmd = f"aws ec2 create-key-pair --key-name {key_name} --query 'KeyMaterial' --output text > {key_path}"
+        try:
+            subprocess.check_call(cmd, shell=True)  # nosec
+            subprocess.check_call(f"chmod 400 {key_path}", shell=True)  # nosec
+        except Exception as e:  # nosec
+            print(f"Failed to create key: {e}")
+        if not os.path.exists(key_path):
+            raise Exception(f"AWS failed to generate key pair at: {key_path}")
 
     return key_path
 
@@ -1499,8 +1537,155 @@ def create_launch_cmd(
             raise MissingDependency(msg)
 
     elif host in ["aws"]:
-        print("Coming soon.")
-        return ""
+        check_aws_cli_installed()
+
+        if DEPENDENCIES["ansible-playbook"]:
+            aws_region = ask(
+                question=Question(
+                    var_name="aws_region",
+                    question="In what region do you want to deploy the EC2 instance?",
+                    default=arg_cache["aws_region"],
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+            aws_security_group_name = ask(
+                question=Question(
+                    var_name="aws_security_group_name",
+                    question="Name of the security group to be created?",
+                    default=arg_cache["aws_security_group_name"],
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+            aws_security_group_cidr = ask(
+                question=Question(
+                    var_name="aws_security_group_cidr",
+                    question="What IP addresses to allow for incoming network traffic? Please use CIDR notation",
+                    default=arg_cache["aws_security_group_cidr"],
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+            ec2_instance_type = ask(
+                question=Question(
+                    var_name="aws_ec2_instance_type",
+                    question="What EC2 instance type do you want to deploy?",
+                    default=arg_cache["aws_ec2_instance_type"],
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            aws_key_name = ask(
+                question=Question(
+                    var_name="aws_key_name",
+                    question="Enter the name of the key pair to use to connect to the EC2 instance",
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            key_path_qn_str = (
+                "Please provide the path of the private key to connect to the instance"
+            )
+            key_path_qn_str += " (if it does not exist, this path corresponds to "
+            key_path_qn_str += "where you want to store the key upon creation)"
+            key_path_question = Question(
+                var_name="aws_key_path",
+                question=key_path_qn_str,
+                kind="path",
+                cache=True,
+            )
+            try:
+                key_path = ask(
+                    key_path_question,
+                    kwargs=kwargs,
+                )
+            except QuestionInputPathError as e:
+                print(e)
+                key_path = str(e).split("is not a valid path")[0].strip()
+
+                create_key_question = Question(
+                    var_name="aws_key_path",
+                    question=f"Key {key_path} does not exist. Do you want AWS to make it? (y/n)",
+                    default="y",
+                    kind="yesno",
+                )
+                create_key = ask(
+                    create_key_question,
+                    kwargs=kwargs,
+                )
+                if create_key == "y":
+                    key_path = generate_aws_key_at_path(
+                        key_path=key_path, key_name=aws_key_name
+                    )
+                else:
+                    raise QuestionInputError(
+                        "Unable to create EC2 instance without key"
+                    )
+
+            repo = ask(
+                Question(
+                    var_name="aws_repo",
+                    question="Repo to fetch source from?",
+                    default=arg_cache["aws_repo"],
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+            branch = ask(
+                Question(
+                    var_name="aws_branch",
+                    question="Branch to monitor for updates?",
+                    default=arg_cache["aws_branch"],
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            use_branch(branch=branch)
+
+            username = arg_cache["aws_ec2_instance_username"]
+            auth = AuthCredentials(username=username, key_path=key_path)
+
+            return create_launch_aws_cmd(
+                verb=verb,
+                region=aws_region,
+                ec2_instance_type=ec2_instance_type,
+                security_group_name=aws_security_group_name,
+                aws_security_group_cidr=aws_security_group_cidr,
+                key_path=key_path,
+                key_name=aws_key_name,
+                repo=repo,
+                branch=branch,
+                ansible_extras=kwargs["ansible_extras"],
+                kwargs=parsed_kwargs,
+                ami_id=arg_cache["aws_image_id"],
+                username=username,
+                auth=auth,
+            )
+
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            msg = "\nERROR!!! MISSING DEPENDENCY!!!"
+            msg += f"\n\nLaunching a Cloud VM requires: {' '.join(errors)}"
+            msg += "\n\nPlease follow installation instructions: "
+            msg += "https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#"
+            msg += "\n\nNote: we've found the 'conda' based installation instructions to work best"
+            msg += " (e.g. something lke 'conda install -c conda-forge ansible'). "
+            msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
+            msg += "\n"
+            raise MissingDependency(msg)
     else:
         if DEPENDENCIES["ansible-playbook"]:
             if host != "localhost":
@@ -2004,6 +2189,190 @@ def check_ip_for_ssh(
         except Exception:  # nosec
             pass
     return False
+
+
+def create_aws_security_group(
+    security_group_name: str, region: str, snake_name: str
+) -> str:
+    sg_description = f"{snake_name} security group"
+    create_cmd = f"aws ec2 create-security-group --group-name {security_group_name} "
+    create_cmd += f'--region {region} --description "{sg_description}" '
+    sg_output = subprocess.check_output(  # nosec
+        create_cmd,
+        shell=True,
+    )
+    sg_output_dict = json.loads(sg_output)
+    if "GroupId" in sg_output_dict:
+        return sg_output_dict["GroupId"]
+
+    return ""
+
+
+def open_port_aws(
+    security_group_name: str, port_no: int, cidr: str, region: str
+) -> None:
+    cmd = f"aws ec2 authorize-security-group-ingress --group-name {security_group_name} --protocol tcp "
+    cmd += f"--port {port_no} --cidr {cidr} --region {region}"
+    subprocess.check_call(  # nosec
+        cmd,
+        shell=True,
+    )
+
+
+def extract_instance_ids_aws(stdout: bytes) -> TypeList:
+    output = stdout.decode("utf-8")
+    output_dict = json.loads(output)
+    instance_ids: TypeList = []
+    if "Instances" in output_dict:
+        for ec2_instance_metadata in output_dict["Instances"]:
+            if "InstanceId" in ec2_instance_metadata:
+                instance_ids.append(ec2_instance_metadata["InstanceId"])
+
+    return instance_ids
+
+
+def get_host_ips_given_instance_ids(
+    instance_ids: TypeList, timeout: int = 600, wait_time: int = 10
+) -> TypeList:
+    checks = int(timeout / wait_time)  # 10 minutes in 10 second chunks
+    instance_ids_str = " ".join(instance_ids)
+    cmd = f"aws ec2 describe-instances --instance-ids {instance_ids_str}"
+    cmd += " --query 'Reservations[*].Instances[*].{StateName:State.Name,PublicIpAddress:PublicIpAddress}'"
+    cmd += " --output json"
+    while checks > 0:
+        checks -= 1
+        time.sleep(wait_time)
+        desc_ec2_output = subprocess.check_output(cmd, shell=True)  # nosec
+        instances_output_json = json.loads(desc_ec2_output.decode("utf-8"))
+        host_ips: TypeList = []
+        all_instances_running = True
+        for reservation in instances_output_json:
+            for instance_metadata in reservation:
+                if instance_metadata["StateName"] != "running":
+                    all_instances_running = False
+                    break
+                else:
+                    host_ips.append(instance_metadata["PublicIpAddress"])
+        if all_instances_running:
+            return host_ips
+        # else, wait another wait_time seconds and try again
+
+    return []
+
+
+def make_aws_ec2_instance(
+    ami_id: str, ec2_instance_type: str, key_name: str, security_group_name: str
+) -> TypeList:
+    # From the docs: "For security groups in a nondefault VPC, you must specify the security group ID".
+    # Right now, since we're using default VPC, we can use security group name instead of ID.
+
+    ebs_size = 200  # gb
+    cmd = f"aws ec2 run-instances --image-id {ami_id} --count 1 --instance-type {ec2_instance_type} "
+    cmd += f"--key-name {key_name} --security-groups {security_group_name} "
+    tmp_cmd = rf"[{{\"DeviceName\":\"/dev/sdf\",\"Ebs\":{{\"VolumeSize\":{ebs_size},\"DeleteOnTermination\":false}}}}]"
+    cmd += f'--block-device-mappings "{tmp_cmd}"'
+
+    host_ips: TypeList = []
+    try:
+        print(f"Creating EC2 instance.\nRunning: {cmd}")
+        create_ec2_output = subprocess.check_output(cmd, shell=True)  # nosec
+        instance_ids = extract_instance_ids_aws(create_ec2_output)
+        host_ips = get_host_ips_given_instance_ids(instance_ids=instance_ids)
+    except Exception as e:
+        print("failed", e)
+
+    if not (host_ips):
+        raise Exception("Failed to create EC2 instance(s) or get public ip(s)")
+
+    return host_ips
+
+
+def create_launch_aws_cmd(
+    verb: GrammarVerb,
+    region: str,
+    ec2_instance_type: str,
+    security_group_name: str,
+    aws_security_group_cidr: str,
+    key_name: str,
+    key_path: str,
+    ansible_extras: str,
+    kwargs: TypeDict[str, Any],
+    repo: str,
+    branch: str,
+    ami_id: str,
+    username: str,
+    auth: AuthCredentials,
+) -> TypeList[str]:
+    node_name = verb.get_named_term_type(name="node_name")
+    snake_name = str(node_name.snake_input)
+    create_aws_security_group(security_group_name, region, snake_name)
+    open_port_aws(
+        security_group_name=security_group_name,
+        port_no=80,
+        cidr=aws_security_group_cidr,
+        region=region,
+    )  # HTTP
+    open_port_aws(
+        security_group_name=security_group_name,
+        port_no=443,
+        cidr=aws_security_group_cidr,
+        region=region,
+    )  # HTTPS
+    open_port_aws(
+        security_group_name=security_group_name,
+        port_no=22,
+        cidr=aws_security_group_cidr,
+        region=region,
+    )  # SSH
+    if kwargs["jupyter"]:
+        open_port_aws(
+            security_group_name=security_group_name,
+            port_no=8888,
+            cidr=aws_security_group_cidr,
+            region=region,
+        )  # Jupyter
+
+    host_ips = make_aws_ec2_instance(
+        ami_id=ami_id,
+        ec2_instance_type=ec2_instance_type,
+        key_name=key_name,
+        security_group_name=security_group_name,
+    )
+
+    launch_cmds: TypeList[str] = []
+
+    for host_ip in host_ips:
+        # get old host
+        host_term = verb.get_named_term_hostgrammar(name="host")
+
+        # replace
+        host_term.parse_input(host_ip)
+        verb.set_named_term_type(name="host", new_term=host_term)
+
+        if not bool(kwargs["provision"]):
+            print("Skipping automatic provisioning.")
+            print("VM created with:")
+            print(f"IP: {host_ip}")
+            print(f"Key: {key_path}")
+            print("\nConnect with:")
+            print(f"ssh -i {key_path} {username}@{host_ip}")
+
+        else:
+            extra_kwargs = {
+                "repo": repo,
+                "branch": branch,
+                "ansible_extras": ansible_extras,
+            }
+            kwargs.update(extra_kwargs)
+
+            # provision
+            host_up = check_ip_for_ssh(host_ip=host_ip)
+            if not host_up:
+                print(f"Warning: {host_ip} ssh not available yet")
+            launch_cmd = create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+            launch_cmds.append(launch_cmd)
+
+    return launch_cmds
 
 
 def make_vm_azure(
