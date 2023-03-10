@@ -39,7 +39,6 @@ class Orchestra:
         name: Optional[str] = None, dev_mode: bool = True, reset: bool = False
     ) -> "Orchestra":
         # Currently by default we launch in dev mode
-
         if reset:
             Orchestra.reset(name)
 
