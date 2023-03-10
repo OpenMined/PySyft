@@ -11,5 +11,11 @@ export default defineConfig({
     alias: {
       $lib: path.resolve('./src/lib')
     }
+  },
+  server: {
+    fs: {
+      // Allow serving files from one level up to the project root
+      allow: ['..']
+    }
   }
 });

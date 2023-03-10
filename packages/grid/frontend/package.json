@@ -3,7 +3,7 @@
   "version": "0.8.0-beta.0",
   "private": true,
   "scripts": {
-    "dev": "vite dev --host --port 80",
+    "dev": "yarn install && vite dev --host --port 80",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

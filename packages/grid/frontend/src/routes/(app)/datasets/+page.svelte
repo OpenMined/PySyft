@@ -24,7 +24,7 @@
           <img
             style="height: 20vh; width: 26vh;"
             alt="upload-dataset.jpg"
-            src="../../public/assets/card_image.jpg"
+            src="/assets/card_image.jpg"
           />
           <h1
             style="margin-left: 7px;margin-top: 7px;color: black; font-size: 10; font-weight: bold"
@@ -44,7 +44,7 @@
           <img
             style="height: 20vh; width: 26vh;"
             alt="create-team-member.jpg"
-            src="../../public/assets/card_image.jpg"
+            src="/assets/card_image.jpg"
           />
           <h1
             style="margin-left: 7px;margin-top: 7px;color: black; font-size: 10; font-weight: bold"
@@ -64,7 +64,7 @@
           <img
             style="height: 20vh; width: 26vh;"
             alt="create-user.jpg"
-            src="../../public/assets/card_image.jpg"
+            src="/assets/card_image.jpg"
           />
           <h1
             style="margin-left: 7px;margin-top: 7px;color: black; font-size: 10; font-weight: bold"

@@ -7,7 +7,6 @@
   import { getClient } from '$lib/store';
   import { goto } from '$app/navigation';
 
-
   async function login({ email, password }, client) {
     await client
       .login(email.value, password.value)
