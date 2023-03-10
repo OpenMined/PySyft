@@ -217,6 +217,9 @@ class HTTPConnection(NodeConnection):
     def __str__(self) -> str:
         return f"{type(self).__name__}: {self.url}"
 
+    def __hash__(self) -> int:
+        return hash(self.proxy_target_uid) + hash(self.url)
+
 
 @serializable(recursive_serde=True)
 class PythonConnection(NodeConnection):

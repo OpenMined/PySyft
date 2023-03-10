@@ -14,20 +14,69 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
 from oblv import OblvClient
+from pydantic import BaseModel
+from pydantic import validator
 import requests
 
 # relative
 from ..core.common.serde.deserialize import _deserialize as deserialize
+from ..core.common.serde.serializable import serializable
+from ..core.common.uid import UID
 from ..core.node.common.exceptions import OblvEnclaveError
 from ..core.node.common.exceptions import OblvUnAuthorizedError
 from ..core.node.new.api import SyftAPI
+from ..core.node.new.client import HTTPConnection
+from ..core.node.new.client import Routes
+from ..core.node.new.client import SyftSigningKey
 from ..util import bcolors
 from .constants import LOCAL_MODE
 from .oblv_proxy import check_oblv_proxy_installation_status
+
+if TYPE_CHECKING:
+    # relative
+    from ..core.node.new.user_code import SubmitUserCode
+
+
+class EnclaveMetadata:
+    """Contains metadata to connect to a specific Enclave"""
+
+    pass
+
+
+@serializable(recursive_serde=True)
+class OblvMetadata(EnclaveMetadata, BaseModel):
+    """Contains Metadata to connect to Oblivious Enclave"""
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    deployment_id: Optional[str]
+    oblv_client: Optional[OblvClient]
+
+    @validator("deployment_id")
+    def check_valid_deployment_id(cls, deployment_id):
+        if not deployment_id and not LOCAL_MODE:
+            raise ValueError(
+                f"Deployment ID should be a valid string: {deployment_id}"
+                + "in cloud deployment of enclave"
+                + "For testing set the LOCAL_MODE variable in constants.py"
+            )
+        return deployment_id
+
+    @validator("oblv_client")
+    def check_valid_oblv_client(cls, oblv_client):
+        if not oblv_client and not LOCAL_MODE:
+            raise ValueError(
+                f"Oblivious Client should be a valid client: {oblv_client}"
+                + "in cloud deployment of enclave"
+                + "For testing set the LOCAL_MODE variable in constants.py"
+            )
+        return oblv_client
 
 
 class DeploymentClient:
@@ -220,6 +269,30 @@ class DeploymentClient:
                 f"Failed to perform the operation  with status {req.status_code}"
             )
 
+    def request_code_execution(self, code: SubmitUserCode):
+        # relative
+        from ..core.node.new.user_code import SubmitUserCode
+
+        if not isinstance(code, SubmitUserCode):
+            raise Exception(
+                f"The input code should be of type: {SubmitUserCode} got:{type(code)}"
+            )
+
+        enclave_metadata = OblvMetadata(
+            deployment_id=self.deployment_id, oblv_client=self.oblv_client
+        )
+
+        code_id = UID()
+        code.id = code_id
+        code.enclave_metadata = enclave_metadata
+
+        for domain_client in self.domain_clients:
+            domain_client.api.services.code.request_code_execution(code=code)
+
+        res = self.api.services.code.request_code_execution(code=code)
+
+        return res
+
     def get_uploaded_datasets(self) -> Dict:
         self.check_connection_string()
 
@@ -286,11 +359,13 @@ class DeploymentClient:
         self.check_connection_string()
         req = self.make_request_to_enclave(
             requests.get,
-            connection_string=self.__conn_string + "/worker/api",
+            connection_string=self.__conn_string + Routes.ROUTE_API.value,
         )
         self.sanity_check_oblv_response(req)
         obj = deserialize(req.content, from_bytes=True)
-        obj.api_url = f"{self.__conn_string}/worker/syft_api_call"
+        # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
+        obj.signing_key = SyftSigningKey.generate()
+        obj.connection = HTTPConnection(self.__conn_string)
         return cast(SyftAPI, obj)
 
     # public attributes
@@ -306,6 +381,9 @@ class DeploymentClient:
             self._set_api()
 
         return self._api
+
+    def refresh(self) -> None:
+        self._set_api()
 
     def check_publish_request_status(self, publish_request_id):
         self.check_connection_string()

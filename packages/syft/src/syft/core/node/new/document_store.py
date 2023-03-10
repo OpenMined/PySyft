@@ -380,6 +380,9 @@ class BaseStash:
     def get_all(self) -> Result[List[BaseStash.object_type], str]:
         return self.partition.all()
 
+    def __len__(self) -> int:
+        return self.partition.__len__()
+
     def set(
         self,
         obj: BaseStash.object_type,

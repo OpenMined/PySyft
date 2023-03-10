@@ -1,7 +1,11 @@
 # stdlib
 from typing import Optional
 
+# third party
+from typing_extensions import Self
+
 # relative
+from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ..common.node_table.syft_object import Context
 from ..common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ..common.node_table.syft_object import SyftObject
@@ -29,3 +33,15 @@ class UnauthedServiceContext(NodeServiceContext):
 
     login_credentials: UserLoginCredentials
     node: Optional[NewNode]
+
+
+class ChangeContext(SyftBaseObject):
+    node: Optional[NewNode] = None
+    approving_user_credentials: Optional[SyftVerifyKey]
+    requesting_user_credentials: Optional[SyftVerifyKey]
+
+    @staticmethod
+    def from_service(context: AuthedServiceContext) -> Self:
+        return ChangeContext(
+            node=context.node, approving_user_credentials=context.credentials
+        )
