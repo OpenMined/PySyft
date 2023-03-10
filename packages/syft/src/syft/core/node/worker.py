@@ -56,6 +56,7 @@ from .new.metadata_service import MetadataService
 from .new.metadata_stash import MetadataStash
 from .new.network_service import NetworkService
 from .new.node import NewNode
+from .new.node import NodeType
 from .new.node_metadata import NodeMetadata
 from .new.policy_service import PolicyService
 from .new.project_service import ProjectService
@@ -67,6 +68,10 @@ from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
+from .new.task.oblv_keys_stash import OblvKeys
+from .new.task.oblv_keys_stash import OblvKeysStash
+from .new.task.oblv_service import OblvService
+from .new.task.oblv_service import generate_oblv_key
 from .new.test_service import TestService
 from .new.user import ServiceRole
 from .new.user import User
@@ -124,6 +129,8 @@ class Worker(NewNode):
         root_password: str = "changethis",
         processes: int = 0,
         is_subprocess: bool = False,
+        node_type: NodeType = NodeType.DOMAIN,
+        local_db: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -156,6 +163,7 @@ class Worker(NewNode):
                 MetadataService,
                 ActionService,
                 TestService,
+                OblvService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -172,6 +180,7 @@ class Worker(NewNode):
         self.services = services
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        self.local_db = local_db
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
@@ -183,11 +192,18 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
+        if os.getenv("INSTALL_OBLV_CLI") == "true":
+            create_oblv_key_pair(worker=self)
+
         self.client_cache = {}
+        self.node_type = node_type
+
         self.post_init()
 
     @staticmethod
-    def named(name: str, processes: int = 0, reset: bool = False) -> Worker:
+    def named(
+        name: str, processes: int = 0, reset: bool = False, local_db: bool = False
+    ) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
@@ -197,7 +213,9 @@ class Worker(NewNode):
             with contextlib.suppress(FileNotFoundError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
-        return Worker(name=name, id=uid, signing_key=key, processes=processes)
+        return Worker(
+            name=name, id=uid, signing_key=key, processes=processes, local_db=local_db
+        )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
         return credentials == self.signing_key.verify_key
@@ -212,7 +230,7 @@ class Worker(NewNode):
         return SyftClient(connection=connection, credentials=self.signing_key)
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
+        return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
         if self.is_subprocess:
@@ -228,7 +246,7 @@ class Worker(NewNode):
         action_store_config: Optional[StoreConfig] = None,
     ):
         if document_store_config is None:
-            if self.processes > 0 and not self.is_subprocess:
+            if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig()
                 document_store_config = SQLiteStoreConfig(client_config=client_config)
             else:
@@ -247,7 +265,7 @@ class Worker(NewNode):
 
         self.document_store = document_store(store_config=document_store_config)
         if action_store_config is None:
-            if self.processes > 0 and not self.is_subprocess:
+            if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig()
                 action_store_config = SQLiteStoreConfig(client_config=client_config)
                 if (
@@ -273,6 +291,7 @@ class Worker(NewNode):
 
     def _construct_services(self):
         self.service_path_map = {}
+
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
@@ -283,6 +302,7 @@ class Worker(NewNode):
                 DatasetService,
                 UserCodeService,
                 RequestService,
+                OblvService,
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
@@ -613,4 +633,23 @@ def create_admin_new(
                 return result.ok()
             return None
     except Exception as e:
-        print("create_admin failed", e)
+        print("Unable to create new admin", e)
+
+
+def create_oblv_key_pair(
+    worker: Worker,
+) -> Optional[str]:
+    try:
+        oblv_keys_stash = OblvKeysStash(store=worker.document_store)
+
+        if not len(oblv_keys_stash):
+            public_key, private_key = generate_oblv_key()
+            oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
+            res = oblv_keys_stash.set(oblv_keys)
+            if res.is_ok():
+                print("Successfully generated Oblv Key pair at startup")
+            return res.err()
+        else:
+            print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
+    except Exception as e:
+        print("Unable to create Oblv Keys.", e)

@@ -24,6 +24,7 @@ from .context import AuthedServiceContext
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
+from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
@@ -104,9 +105,14 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
+        skip_permission: bool = False,
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
-        result = self.store.get(uid=uid, credentials=context.credentials)
+        # TODO 🟣 Temporarily added skip permission arguments for enclave
+        # until permissions are fully integrated
+        result = self.store.get(
+            uid=uid, credentials=context.credentials, skip_permission=skip_permission
+        )
         if result.is_ok():
             obj = result.ok()
             if isinstance(obj, TwinObject):
@@ -141,15 +147,19 @@ class ActionService(AbstractService):
         code_item: UserCode,
         filtered_kwargs: Dict[str, Any],
     ) -> Result[ActionObjectPointer, Err]:
+        # TODO Teo: fix this for UserPolicy
+        filtered_kwargs = code_item.input_policy.filter_kwargs(
+            kwargs=kwargs, context=context, code_item_id=code_item.id
+        )
+        if filtered_kwargs.is_err():
+            return filtered_kwargs
+        filtered_kwargs = filtered_kwargs.ok()
         has_twin_inputs = False
         kwargs = {}
-        for key, arg_id in filtered_kwargs.items():
-            kwarg_value = self.get(context=context, uid=arg_id, twin_mode=TwinMode.NONE)
-            if kwarg_value.is_err():
-                return kwarg_value.err()
-            if isinstance(kwarg_value.ok(), TwinObject):
+        for key, kwarg_value in filtered_kwargs.items():
+            if isinstance(kwarg_value, TwinObject):
                 has_twin_inputs = True
-            kwargs[key] = kwarg_value.ok()
+            kwargs[key] = kwarg_value
 
         result_id = UID()
 
@@ -255,6 +265,16 @@ class ActionService(AbstractService):
         result_action_object.syft_point_to(context.node.id)
 
         return Ok(result_action_object)
+
+    @service_method(path="action.exists", name="exists")
+    def exists(
+        self, context: AuthedServiceContext, obj_id: UID
+    ) -> Result[SyftSuccess, SyftError]:
+        """Checks if the given object id exists in the Action Store"""
+        if self.store.exists(obj_id):
+            return SyftSuccess(message=f"Object: {obj_id} exists")
+        else:
+            return SyftError(message=f"Object: {obj_id} does not exist")
 
 
 def execute_object(

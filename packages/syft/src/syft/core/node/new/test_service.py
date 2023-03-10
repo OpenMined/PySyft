@@ -1,4 +1,5 @@
 # third party
+import requests
 from result import Err
 from result import Ok
 from result import Result
@@ -21,3 +22,8 @@ class TestService(AbstractService):
 
         result = f"Hello {name}"
         return Ok(result)
+
+    @service_method(path="test.request", name="request")
+    def test_request(self, context: AuthedServiceContext, url: str):
+        res = requests.get(url)
+        return Ok(res.status_code)

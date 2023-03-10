@@ -18,12 +18,14 @@ from .linked_obj import LinkedObject
 from .request import EnumMutation
 from .request import Request
 from .request import SubmitRequest
+from .request import UserCodeStatusChange
 from .request_service import RequestService
 from .response import SyftError
 from .service import TYPE_TO_SERVICE
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
+from .user_code import UserCode
 
 
 @serializable(recursive_serde=True)
@@ -89,9 +91,16 @@ def submit_changes(context: TransformContext) -> TransformContext:
                 object_type=change.object_type,
                 object_uid=change.object_uid,
             )
-            mutation = EnumMutation.from_obj(
-                linked_obj=linked_obj, attr_name="status", value=change.permission
-            )
+
+            if change.object_type == UserCode:
+                mutation = UserCodeStatusChange(
+                    value=change.permission, linked_obj=linked_obj
+                )
+            else:
+                mutation = EnumMutation.from_obj(
+                    linked_obj=linked_obj, attr_name="status", value=change.permission
+                )
+
             mutations.append(mutation)
         submit_request = SubmitRequest(changes=mutations)
         request_submit_method = context.node.get_service_method(RequestService.submit)
