@@ -18,6 +18,7 @@ from syft import serialize  # type: ignore
 from syft.core.node.new.context import NodeServiceContext
 from syft.core.node.new.context import UnauthedServiceContext
 from syft.core.node.new.credentials import UserLoginCredentials
+from syft.core.node.new.metadata_service import MetadataService
 from syft.core.node.new.node import NewNode
 from syft.core.node.new.node_metadata import NodeMetadataJSON
 from syft.core.node.new.response import SyftError
@@ -61,9 +62,11 @@ def make_routes(worker: Worker) -> APIRouter:
 
     @router.get("/metadata_capnp")
     def syft_metadata_capnp() -> Response:
-        # print("what is metadata", str(worker.metadata))
+        context = NodeServiceContext(node=worker)
+        method = worker.get_method_with_context(MetadataService.get, context)
+        result = method()
         return Response(
-            serialize(worker.metadata, to_bytes=True),
+            serialize(result.ok(), to_bytes=True),
             media_type="application/octet-stream",
         )
 
