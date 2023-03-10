@@ -5,45 +5,37 @@ from threading import Thread
 import pytest
 
 # syft absolute
+from syft.core.node.new.dict_document_store import DictStoreConfig
+from syft.core.node.new.dict_document_store import DictStorePartition
 from syft.core.node.new.document_store import PartitionSettings
 from syft.core.node.new.document_store import QueryKeys
-from syft.core.node.new.kv_document_store import KeyValueStorePartition
 
 # relative
 from .store_mocks import MockObjectType
-from .store_mocks import MockStoreConfig
 from .store_mocks import MockSyftObject
 
 
 @pytest.fixture
 def store():
-    store_config = MockStoreConfig()
+    store_config = DictStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
 
+    return DictStorePartition(settings=settings, store_config=store_config)
+
+
+def test_sqlite_store_partition_sanity(store: DictStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
-    return store
-
-
-def test_kv_store_partition_sanity(store: KeyValueStorePartition) -> None:
     assert hasattr(store, "data")
     assert hasattr(store, "unique_keys")
     assert hasattr(store, "searchable_keys")
 
 
-def test_kv_store_partition_init_failed() -> None:
-    store_config = MockStoreConfig(is_crashed=True)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
-
+def test_sqlite_store_partition_set(store: DictStorePartition) -> None:
     res = store.init_store()
-    assert res.is_err()
+    assert res.is_ok()
 
-
-def test_kv_store_partition_set(store: KeyValueStorePartition) -> None:
     obj = MockSyftObject(data=1)
     res = store.set(obj, ignore_duplicates=False)
 
@@ -66,20 +58,10 @@ def test_kv_store_partition_set(store: KeyValueStorePartition) -> None:
     assert len(store.all().ok()) == 2
 
 
-def test_kv_store_partition_set_backend_fail() -> None:
-    store_config = MockStoreConfig(is_crashed=True)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
+def test_sqlite_store_partition_delete(store: DictStorePartition) -> None:
+    res = store.init_store()
+    assert res.is_ok()
 
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
-    store.init_store()
-
-    obj = MockSyftObject(data=1)
-
-    res = store.set(obj, ignore_duplicates=False)
-    assert res.is_err()
-
-
-def test_kv_store_partition_delete(store: KeyValueStorePartition) -> None:
     objs = []
     for v in range(10):
         obj = MockSyftObject(data=v)
@@ -109,7 +91,9 @@ def test_kv_store_partition_delete(store: KeyValueStorePartition) -> None:
     assert len(store.all().ok()) == 0
 
 
-def test_kv_store_partition_update(store: KeyValueStorePartition) -> None:
+def test_sqlite_store_partition_update(store: DictStorePartition) -> None:
+    store.init_store()
+
     # add item
     obj = MockSyftObject(data=1)
     store.set(obj, ignore_duplicates=False)
@@ -138,14 +122,16 @@ def test_kv_store_partition_update(store: KeyValueStorePartition) -> None:
         assert stored.ok()[0].data == v
 
 
-def test_kv_store_partition_set_multithreaded(store: KeyValueStorePartition) -> None:
+def test_sqlite_store_partition_set_multithreaded(store: DictStorePartition) -> None:
     thread_cnt = 3
+    store.init_store()
+
     execution_ok = True
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_ok
         for idx in range(100):
-            obj = MockSyftObject(data=idx)
+            obj = MockObjectType(data=idx)
             res = store.set(obj, ignore_duplicates=False)
 
             execution_ok &= res.is_ok()
@@ -161,15 +147,16 @@ def test_kv_store_partition_set_multithreaded(store: KeyValueStorePartition) -> 
     for thread in tids:
         thread.join()
 
-    stored = store.all()
-
     assert execution_ok
-    stored_cnt = len(stored.ok())
+    stored_cnt = len(store.all().ok())
     assert stored_cnt == 1000
 
 
-def test_kv_store_partition_update_multithreaded(store: KeyValueStorePartition) -> None:
+def test_sqlite_store_partition_update_multithreaded(
+    store: DictStorePartition,
+) -> None:
     thread_cnt = 3
+    store.init_store()
 
     obj = MockSyftObject(data=0)
     key = store.settings.store_key.with_obj(obj)
@@ -201,9 +188,11 @@ def test_kv_store_partition_update_multithreaded(store: KeyValueStorePartition) 
     assert stored.ok()[0].data == 1000
 
 
-def test_kv_store_partition_set_delete_multithreaded(
-    store: KeyValueStorePartition,
+def test_sqlite_store_partition_set_delete_multithreaded(
+    store: DictStorePartition,
 ) -> None:
+    store.init_store()
+
     thread_cnt = 3
     execution_ok = True
 

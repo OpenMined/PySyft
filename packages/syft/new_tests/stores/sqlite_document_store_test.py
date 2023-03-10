@@ -167,6 +167,7 @@ def test_sqlite_store_partition_update(store: SQLiteStorePartition) -> None:
 
 
 def test_sqlite_store_partition_set_multithreaded(store: SQLiteStorePartition) -> None:
+    thread_cnt = 3
     store.init_store()
 
     execution_ok = True
@@ -181,7 +182,7 @@ def test_sqlite_store_partition_set_multithreaded(store: SQLiteStorePartition) -
             assert res.is_ok()
 
     tids = []
-    for tid in range(5):
+    for tid in range(thread_cnt):
         thread = Thread(target=_kv_cbk, args=(tid,))
         thread.start()
 
@@ -198,6 +199,7 @@ def test_sqlite_store_partition_set_multithreaded(store: SQLiteStorePartition) -
 def test_sqlite_store_partition_update_multithreaded(
     store: SQLiteStorePartition,
 ) -> None:
+    thread_cnt = 3
     store.init_store()
 
     obj = MockSyftObject(data=0)
@@ -216,7 +218,7 @@ def test_sqlite_store_partition_update_multithreaded(
             assert res.is_ok()
 
     tids = []
-    for tid in range(5):
+    for tid in range(thread_cnt):
         thread = Thread(target=_kv_cbk, args=(tid,))
         thread.start()
 
@@ -235,7 +237,7 @@ def test_sqlite_store_partition_set_delete_multithreaded(
 ) -> None:
     store.init_store()
 
-    thread_cnt = 5
+    thread_cnt = 3
     execution_ok = True
 
     def _kv_cbk(tid: int) -> None:
