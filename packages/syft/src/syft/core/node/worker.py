@@ -270,13 +270,14 @@ class Worker(NewNode):
             if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig()
                 action_store_config = SQLiteStoreConfig(client_config=client_config)
-                if (
-                    isinstance(action_store_config, SQLiteStoreConfig)
-                    and action_store_config.client_config.filename is None
-                ):
-                    action_store_config.client_config.filename = f"{self.id}.sqlite"
             else:
                 action_store_config = DictStoreConfig()
+
+        if (
+            isinstance(action_store_config, SQLiteStoreConfig)
+            and action_store_config.client_config.filename is None
+        ):
+            action_store_config.client_config.filename = f"{self.id}.sqlite"
 
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store = SQLiteActionStore(

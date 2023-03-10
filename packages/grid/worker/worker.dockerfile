@@ -17,16 +17,10 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # copy precompiled arm64 packages
 COPY grid/backend/wheels /wheels
-# apple m1 build PyNaCl for aarch64
+
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-    # precompiled jaxlib and dm-tree
     pip install --user /wheels/jaxlib-0.3.14-cp310-none-manylinux2014_aarch64.whl; \
-    tar -xvf /wheels/dm-tree-0.1.7.tar.gz; \
-    pip install --user pytest-xdist[psutil]; \
-    git clone https://github.com/pybind/pybind11 && cd pybind11 && git checkout v2.6.2; \
-    pip install --user dm-tree==0.1.7; \
-    # fixes apple silicon in dev mode due to dependency from safety
-    pip install --user ruamel.yaml==0.17.21; \
+    pip install --user /wheels/tensorstore-0.1.25-cp310-cp310-linux_aarch64.whl; \
     fi
 
 WORKDIR /app
@@ -60,7 +54,6 @@ COPY syft/pyproject.toml /app/syft/pyproject.toml
 COPY syft/MANIFEST.in /app/syft/MANIFEST.in
 COPY syft/src/syft/VERSION /app/syft/src/syft/VERSION
 COPY syft/src/syft/capnp /app/syft/src/syft/capnp
-COPY syft/src/syft/cache /app/syft/src/syft/cache
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \

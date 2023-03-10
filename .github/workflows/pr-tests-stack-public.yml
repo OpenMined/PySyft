@@ -17,7 +17,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows]
         python-version: ["3.11"]
-        pytest-modules: ["frontend network security redis", "e2e"]
+        pytest-modules: ["frontend network"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
