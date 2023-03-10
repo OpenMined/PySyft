@@ -30,12 +30,18 @@ def to_snake_case(name: str) -> str:
 
 
 class Orchestra:
-    def __init__(self, port: int):
+    def __init__(self, port: int, name: str):
         self.port = int(port)
+        self.name = name
 
     @staticmethod
-    def launch_worker(name: Optional[str] = None, dev_mode: bool = True) -> "Orchestra":
+    def launch_worker(
+        name: Optional[str] = None, dev_mode: bool = True, reset: bool = False
+    ) -> "Orchestra":
         # Currently by default we launch in dev mode
+
+        if reset:
+            Orchestra.reset(name)
 
         # Start a subprocess and capture its output
         commands = ["hagrid", "launch"]
@@ -92,10 +98,33 @@ class Orchestra:
                 f"Worker Container:{snake_name} not found"
                 + "Kindly ensure the docker container is running"
             )
-        return Orchestra(port=port)
+        return Orchestra(port=port, name=name)
+
+    def land(self) -> None:
+        Orchestra.reset(self.name)
+
+    @staticmethod
+    def reset(name: str) -> None:
+        snake_name = to_snake_case(name)
+
+        land_output = shell(f"hagrid land {snake_name} --force")
+        if "Removed" in land_output:
+            print(f" ✅ {snake_name} Container Removed")
+        else:
+            print(f"❌ Unable to remove container: {snake_name} :{land_output}")
+
+        volume_output = shell(
+            f"docker volume rm {snake_name}_credentials-data --force || true"
+        )
+
+        if "Error" not in volume_output:
+            print(f" ✅ {snake_name} Volume Removed")
+        else:
+            print(f"❌ Unable to remove container volume: {snake_name} :{volume_output}")
 
     def __repr__(self) -> str:
-        res = f"port: {self.port}"
+        res = f"name: {self.name}"
+        res += f"\nport: {self.port}"
         res += "\n\nKindly login using:"
         res += "\n\nimport syft as sy"
         res += "\nsy.login(port=..., email=..., password=...)"
