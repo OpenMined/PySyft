@@ -69,9 +69,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # there will be many threads handling incoming requests so we need to ensure
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
-        # print(f"Creating new {type(self)} connection on Thread: {thread_ident()}")
         self.file_path = self.store_config.client_config.file_path
-        self._db[thread_ident()] = sqlite3.connect(self.file_path)
+        self._db[thread_ident()] = sqlite3.connect(
+            self.file_path,
+            timeout=self.store_config.client_config.timeout,
+            check_same_thread=self.store_config.client_config.check_same_thread,
+        )
 
     def create_table(self):
         try:
@@ -236,8 +239,27 @@ class SQLiteDocumentStore(DocumentStore):
 
 @serializable(recursive_serde=True)
 class SQLiteStoreClientConfig(StoreClientConfig):
-    filename: Optional[str]
-    path: Optional[Union[str, Path]]
+    """
+    Parameters:
+        `filename` : str
+            Database name
+        `path` : Path or str
+            Database folder
+        `check_same_thread`: bool
+            If True (default), ProgrammingError will be raised if the database connection is used
+            by a thread other than the one that created it. If False, the connection may be accessed
+            in multiple threads; write operations may need to be serialized by the user to avoid
+            data corruption.
+        `timeout`: int
+            How many seconds the connection should wait before raising an exception, if the database
+            is locked by another connection. If another connection opens a transaction to modify the
+            database, it will be locked until that transaction is committed. Default five seconds.
+    """
+
+    filename: Optional[str] = "db.sqlite"
+    path: Optional[Union[str, Path]] = None
+    check_same_thread: bool = True
+    timeout: int = 5
 
     @property
     def temp_path(self) -> str:
