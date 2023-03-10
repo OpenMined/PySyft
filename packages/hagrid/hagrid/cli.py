@@ -2948,6 +2948,15 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 def create_land_docker_cmd(verb: GrammarVerb) -> str:
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
+    containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
+
+    # Check if the container name belongs to worker container
+    if "celeryworker" in containers:
+        path = GRID_SRC_PATH
+        env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
+    else:
+        path = GRID_SRC_PATH + "/worker"
+        env_var = ";export $(cat ../.env | sed 's/#.*//g' | xargs);"
 
     cmd = ""
     cmd += "docker compose"
@@ -2955,7 +2964,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     cmd += ' --project-name "' + snake_name + '"'
     cmd += " down"
 
-    cmd = "cd " + GRID_SRC_PATH + ";export $(cat .env | sed 's/#.*//g' | xargs);" + cmd
+    cmd = "cd " + path + env_var + cmd
     return cmd
 
 
