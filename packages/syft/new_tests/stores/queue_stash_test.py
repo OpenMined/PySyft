@@ -1,5 +1,7 @@
 # stdlib
 from pathlib import Path
+from threading import Lock
+from threading import Thread
 from typing import Any
 from typing import Generator
 
@@ -22,6 +24,7 @@ from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 
 # relative
 from .store_mocks import MockObjectType
+from .store_mocks import MockSyftObject
 
 mongo = create_mongo_fixture(scope="session")
 workspace = Path("workspace")
@@ -43,20 +46,22 @@ def prepare_workspace() -> Generator:
 
 
 @pytest.fixture
-def dict_store():
+def dict_queue():
     store_config = DictStoreConfig()
-    return DictDocumentStore(store_config=store_config)
+    store = DictDocumentStore(store_config=store_config)
+    return QueueStash(store=store)
 
 
 @pytest.fixture
-def sqlite_store():
+def sqlite_queue():
     sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
     store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    return SQLiteDocumentStore(store_config=store_config)
+    store = SQLiteDocumentStore(store_config=store_config)
+    return QueueStash(store=store)
 
 
 @pytest.fixture
-def mongo_store(mongo):
+def mongo_queue(mongo):
     mongo_client = MongoClient(**mongo.pmr_credentials.as_mongo_kwargs())
 
     mongo_config = MongoStoreClientConfig(client=mongo_client)
@@ -65,18 +70,217 @@ def mongo_store(mongo):
 
     mongo_client.drop_database(db_name)
 
-    return MongoDocumentStore(store_config=store_config)
+    store = MongoDocumentStore(store_config=store_config)
+    return QueueStash(store=store)
 
 
 @pytest.mark.parametrize(
-    "store",
+    "queue",
     [
-        pytest.lazy_fixture("dict_store"),
-        pytest.lazy_fixture("sqlite_store"),
-        pytest.lazy_fixture("mongo_store"),
+        pytest.lazy_fixture("dict_queue"),
+        pytest.lazy_fixture("sqlite_queue"),
+        pytest.lazy_fixture("mongo_queue"),
     ],
 )
-def test_queue_stash_sanity(store: Any) -> None:
-    queue = QueueStash(store=store)
+def test_queue_stash_sanity(queue: Any) -> None:
+    assert len(queue) == 0
+    assert hasattr(queue, "store")
+    assert hasattr(queue, "partition")
 
+
+@pytest.mark.parametrize(
+    "queue",
+    [
+        pytest.lazy_fixture("dict_queue"),
+        pytest.lazy_fixture("sqlite_queue"),
+        pytest.lazy_fixture("mongo_queue"),
+    ],
+)
+def test_queue_stash_set_get(queue: Any) -> None:
+    objs = []
+    for idx in range(100):
+        obj = MockSyftObject(data=idx)
+        objs.append(obj)
+
+        res = queue.set(obj, ignore_duplicates=False)
+        assert res.is_ok()
+        assert len(queue) == idx + 1
+
+        res = queue.set(obj, ignore_duplicates=False)
+        assert res.is_err()
+        assert len(queue) == idx + 1
+
+        assert len(queue.get_all().ok()) == idx + 1
+
+        item = queue.find_one(id=obj.id)
+        assert item.is_ok()
+        assert item.ok() == obj
+
+    cnt = len(objs)
+    for obj in objs:
+        res = queue.find_and_delete(id=obj.id)
+        assert res.is_ok()
+
+        cnt -= 1
+        assert len(queue) == cnt
+        item = queue.find_one(id=obj.id)
+        assert item.is_ok()
+        assert item.ok() is None
+
+
+@pytest.mark.parametrize(
+    "queue",
+    [
+        pytest.lazy_fixture("dict_queue"),
+        pytest.lazy_fixture("sqlite_queue"),
+        pytest.lazy_fixture("mongo_queue"),
+    ],
+)
+def test_queue_stash_update(queue: Any) -> None:
+    obj = MockSyftObject(data=0)
+    res = queue.set(obj, ignore_duplicates=False)
+    assert res.is_ok()
+
+    for idx in range(100):
+        obj.data = idx
+
+        res = queue.update(obj)
+        assert res.is_ok()
+        assert len(queue) == 1
+
+        item = queue.find_one(id=obj.id)
+        assert item.is_ok()
+        assert item.ok().data == idx
+
+    res = queue.find_and_delete(id=obj.id)
+    assert res.is_ok()
+    assert len(queue) == 0
+
+
+@pytest.mark.parametrize(
+    "queue",
+    [
+        pytest.lazy_fixture("dict_queue"),
+        pytest.lazy_fixture("sqlite_queue"),
+        pytest.lazy_fixture("mongo_queue"),
+    ],
+)
+def test_queue_set_multithreaded(queue: Any) -> None:
+    thread_cnt = 3
+    repeats = 100
+
+    execution_ok = True
+    lock = Lock()
+
+    def _kv_cbk(tid: int) -> None:
+        nonlocal execution_ok
+        for idx in range(repeats):
+            obj = MockSyftObject(data=idx)
+            res = queue.set(obj, ignore_duplicates=False)
+
+            with lock:
+                execution_ok &= res.is_ok()
+            assert res.is_ok()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_kv_cbk, args=(tid,))
+        thread.start()
+
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_ok
+    assert len(queue) == thread_cnt * repeats
+
+
+@pytest.mark.parametrize(
+    "queue",
+    [
+        pytest.lazy_fixture("dict_queue"),
+        pytest.lazy_fixture("sqlite_queue"),
+        pytest.lazy_fixture("mongo_queue"),
+    ],
+)
+def test_queue_update_multithreaded(queue: Any) -> None:
+    thread_cnt = 3
+    repeats = 100
+
+    obj = MockSyftObject(data=0)
+    queue.set(obj, ignore_duplicates=False)
+    execution_ok = True
+    lock = Lock()
+
+    def _kv_cbk(tid: int) -> None:
+        nonlocal execution_ok
+        for repeat in range(repeats):
+            with lock:
+                obj.data += 1
+            res = queue.update(obj)
+
+            with lock:
+                execution_ok &= res.is_ok()
+            assert res.is_ok()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_kv_cbk, args=(tid,))
+        thread.start()
+
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_ok
+    stored = queue.find_one(id=obj.id)
+    assert stored.ok().data == thread_cnt * repeats
+
+
+@pytest.mark.parametrize(
+    "queue",
+    [
+        pytest.lazy_fixture("dict_queue"),
+        pytest.lazy_fixture("sqlite_queue"),
+        pytest.lazy_fixture("mongo_queue"),
+    ],
+)
+def test_queue_set_delete_multithreaded(
+    queue: Any,
+) -> None:
+    thread_cnt = 3
+    repeats = 100
+
+    execution_ok = True
+    objs = []
+
+    for idx in range(repeats * thread_cnt):
+        obj = MockSyftObject(data=idx)
+        res = queue.set(obj, ignore_duplicates=False)
+        objs.append(obj)
+
+        assert res.is_ok()
+
+    def _kv_cbk(tid: int) -> None:
+        nonlocal execution_ok
+        for idx in range(repeats):
+            item_idx = tid * repeats + idx
+
+            res = queue.find_and_delete(id=objs[item_idx].id)
+            execution_ok &= res.is_ok()
+            assert res.is_ok()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_kv_cbk, args=(tid,))
+        thread.start()
+
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_ok
     assert len(queue) == 0
