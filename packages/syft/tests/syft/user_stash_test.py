@@ -2,8 +2,8 @@
 from result import Err
 
 # syft absolute
-from syft.core.common.uid import UID
 from syft.core.node.new.dict_document_store import DictDocumentStore
+from syft.core.node.new.uid import UID
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserUpdate

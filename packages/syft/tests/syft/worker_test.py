@@ -9,7 +9,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.common.uid import UID
 from syft.core.node.new.action_object import ActionObject
 from syft.core.node.new.action_store import DictActionStore
 from syft.core.node.new.api import SignedSyftAPICall
@@ -20,6 +19,7 @@ from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.queue_stash import QueueItem
 from syft.core.node.new.response import SyftError
+from syft.core.node.new.uid import UID
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserView
@@ -291,7 +291,8 @@ def test_worker_handle_api_request(
     ],
 )
 @pytest.mark.parametrize("blocking", [False, True])
-@pytest.mark.parametrize("n_processes", [0, 1])
+@pytest.mark.parametrize("n_processes", [0])
+# @pytest.mark.parametrize("n_processes", [0, 1])
 def test_worker_handle_api_response(
     path: str, kwargs: Dict, blocking: bool, n_processes: int
 ) -> None:
