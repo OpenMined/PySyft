@@ -382,14 +382,15 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
             (command, *_), *_ = docker_cmds.values()
 
             match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
+            node_name = verb.get_named_term_type(name="node_name").snake_input
             if match_port:
                 rich.get_console().print(
                     "\n[bold green]⠋[bold blue] Checking node API [/bold blue]\t"
                 )
                 port = match_port.group().replace("HTTP_PORT=", "")
-                check_status("localhost" + ":" + port)
 
-            node_name = verb.get_named_term_type(name="node_name").snake_input
+                check_status("localhost" + ":" + port, node_name=node_name)
+
             rich.get_console().print(
                 rich.panel.Panel.fit(
                     f"✨ To view container logs run [bold green]hagrid logs {node_name}[/bold green]\t"
@@ -2810,13 +2811,13 @@ def shell(command: str) -> str:
     return output.decode("utf-8")
 
 
-def get_host_name(container_name: str) -> str:
+def get_host_name(container_name: str, by_suffix: str) -> str:
     # Assumption we always get proxy containers first.
     # if users have old docker compose versios.
     # the container names are _ instead of -
     # canada_proxy_1 instead of canada-proxy-1
     try:
-        host_name = container_name[0 : container_name.find("proxy") - 1]  # noqa: E203
+        host_name = container_name[0 : container_name.find(by_suffix) - 1]  # noqa: E203
     except Exception:
         host_name = ""
     return host_name
@@ -2846,62 +2847,94 @@ def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
         raise e
 
 
-def get_docker_status(ip_address: str) -> Tuple[bool, Tuple[str, str]]:
-    proxy_containers = shell("docker ps --format '{{.Names}}' | grep 'proxy' ").split()
-    backend_containers = shell(
-        "docker ps --format '{{.Names}}' | grep 'backend' "
-    ).split()
-
-    # to prevent importing syft, have duplicated the from_url code from GridURL
+def get_docker_status(
+    ip_address: str, node_name: Optional[str]
+) -> Tuple[bool, Tuple[str, str]]:
     url = from_url(ip_address)
-    container_name = None
-    for container in proxy_containers:
-        ports = shell(f"docker port {container}")
-        if ports.count(str(url[2])):
-            container_name = container
-            break
+    port = url[2]
+    network_container = (
+        shell(
+            "docker ps --format '{{.Names}} {{.Ports}}' | " + f"grep '0.0.0.0:{port}'"
+        )
+        .strip()
+        .split(" ")[0]
+    )
 
-    if not container_name:
-        return False, ("", "")
-    host_name = get_host_name(container_name)
+    # Second conditional handle the case when internal port of worker container
+    # matches with host port of launched Domain/Network Container
+    if not network_container or (node_name and node_name not in network_container):
+        # check if it is a worker container and an internal port was passed
+        worker_containers_output: str = shell(
+            "docker ps --format '{{.Names}} {{.Ports}}' | " + f"grep '{port}/tcp'"
+        ).strip()
+        if not worker_containers_output or not node_name:
+            return False, ("", "")
 
-    _backend_exists = False
-    for container in backend_containers:
-        if host_name in container and "stream" not in container:
-            _backend_exists = True
-            break
-    if not _backend_exists:
-        return False, ("", "")
+        # If there are worker containers with an internal port
+        # fetch the worker container with the launched worker name
+        worker_containers = worker_containers_output.split("\n")
+        for idx, worker_container in enumerate(worker_containers):
+            container_name = worker_container.split(" ")[0]
+            if node_name in container_name:
+                network_container = container_name
+                break
 
-    # Identifying Type of Node.
-    headscale_containers = shell(
-        "docker ps --format '{{.Names}}' | grep 'headscale' "
+        # If the worker container is not created yet
+        if idx == len(worker_containers):
+            return False, ("", "")
+
+    if "proxy" in network_container:
+        host_name = get_host_name(network_container, by_suffix="proxy")
+
+        backend_containers = shell(
+            "docker ps --format '{{.Names}}' | grep 'backend' "
+        ).split()
+
+        _backend_exists = False
+        for container in backend_containers:
+            if host_name in container and "stream" not in container:
+                _backend_exists = True
+                break
+        if not _backend_exists:
+            return False, ("", "")
+
+        # Identifying Type of Node.
+        headscale_containers = shell(
+            "docker ps --format '{{.Names}}' | grep 'headscale' "
+        ).split()
+
+        node_type = "Domain"
+        for container in headscale_containers:
+            if host_name in container:
+                node_type = "Network"
+                break
+
+        return True, (host_name, node_type)
+    else:
+        # health check for enclave node type
+        host_name = get_host_name(network_container, by_suffix="worker")
+        return True, (host_name, "Worker")
+
+
+def get_syft_install_status(host_name: str, node_type: str) -> bool:
+    container_search = "backend" if node_type != "Worker" else "worker"
+    search_containers = shell(
+        "docker ps --format '{{.Names}}' | " + f"grep '{container_search}' "
     ).split()
 
-    node_type = "Domain"
-    for container in headscale_containers:
-        if host_name in container:
-            node_type = "Network"
-            break
-
-    return True, (host_name, node_type)
-
-
-def get_syft_install_status(host_name: str) -> bool:
-    backend_containers = shell(
-        "docker ps --format '{{.Names}}' | grep 'backend' "
-    ).split()
-    backend_container = None
-    for container in backend_containers:
+    context_container = None
+    for container in search_containers:
+        # stream keyword is for our old container stack
         if host_name in container and "stream" not in container:
-            backend_container = container
+            context_container = container
             break
-    if not backend_container:
-        print(f"❌ Backend Docker Stack for: {host_name} not found")
+
+    if not context_container:
+        print(f"❌ {container_search} Docker Stack for: {host_name} not found")
         exit(0)
     else:
-        backend_log = shell(f"docker logs {backend_container}")
-        if "Application startup complete" not in backend_log:
+        container_log = shell(f"docker logs {context_container}")
+        if "Application startup complete" not in container_log:
             return False
         return True
 
@@ -2931,13 +2964,14 @@ def _check_status(
     ip_addresses: Union[str, TypeList[str]],
     silent: bool = True,
     signal: Optional[Event] = None,
+    node_name: Optional[str] = None,
 ) -> None:
     OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
     # Check if ip_addresses is str, then convert to list
     if ip_addresses and isinstance(ip_addresses, str):
         ip_addresses = [ip_addresses]
     console = Console()
-
+    node_info = None
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
@@ -2959,22 +2993,28 @@ def _check_status(
                     console_status.update(
                         "[bold orange_red1]Waiting for Container Creation"
                     )
-                    docker_status, domain_info = get_docker_status(ip_address)
+                    docker_status, node_info = get_docker_status(ip_address, node_name)
                     while not docker_status:
-                        docker_status, domain_info = get_docker_status(ip_address)
+                        docker_status, node_info = get_docker_status(
+                            ip_address, node_name
+                        )
                         time.sleep(1)
                         if (
                             signal and signal.is_set()
                         ):  # Stop execution if timeout is triggered
                             return
                     console.print(
-                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Containers Created"
+                        f"{OK_EMOJI} {node_info[0]} {node_info[1]} Containers Created"
                     )
 
                     console_status.update("[bold orange_red1]Starting Backend")
-                    syft_install_status = get_syft_install_status(domain_info[0])
+                    syft_install_status = get_syft_install_status(
+                        node_info[0], node_info[1]
+                    )
                     while not syft_install_status:
-                        syft_install_status = get_syft_install_status(domain_info[0])
+                        syft_install_status = get_syft_install_status(
+                            node_info[0], node_info[1]
+                        )
                         time.sleep(1)
                         # Stop execution if timeout is triggered
                         if signal and signal.is_set():
@@ -3005,7 +3045,9 @@ def _check_status(
                             break
                         time.sleep(1)
 
-        console.print(table)
+        # TODO: Create new health checks table for Worker Container
+        if (node_info and node_info[1] != "Worker") or not node_info:
+            console.print(table)
     else:
         for ip_address in ip_addresses:
             _, table_contents = get_health_checks(ip_address)
@@ -3017,6 +3059,7 @@ def check_status(
     ip_addresses: Union[str, TypeList[str]],
     silent: bool = True,
     timeout: Union[int, str] = 300,
+    node_name: Optional[str] = None,
 ) -> None:
     timeout = int(timeout)
     # third party
@@ -3026,7 +3069,12 @@ def check_status(
 
     t = Thread(
         target=_check_status,
-        kwargs={"ip_addresses": ip_addresses, "silent": silent, "signal": signal},
+        kwargs={
+            "ip_addresses": ip_addresses,
+            "silent": silent,
+            "signal": signal,
+            "node_name": node_name,
+        },
     )
     t.start()
     t.join(timeout=timeout)
