@@ -1,4 +1,4 @@
-from .util import verify_git_installation  # noqa
+from .git_check import verify_git_installation  # noqa
 
 # stdlib
 import sys
