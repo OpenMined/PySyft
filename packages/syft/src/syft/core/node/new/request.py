@@ -39,6 +39,10 @@ from .transforms import generate_id
 from .transforms import transform
 from .user_code import UserCode
 from .user_code import UserCodeStatus
+from .policy import UserPolicy
+from .policy import get_policy_object
+from .policy import init_policy
+from .policy import update_policy_state
 
 
 @serializable(recursive_serde=True)
@@ -180,9 +184,44 @@ class Request(SyftObject):
             return result
 
         code = change.linked_obj.resolve
-        state = code.output_policy_state
         ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
-        state.update_state(outputs=action_object.id, context=ctx)
+        
+        from .policy_service import PolicyService
+
+        # policy_service = ctx.node.get_service(PolicyService)
+        # if isinstance(code.input_policy, UserPolicy):
+        #     # policy_service.add_user_policy(ctx, code.input_policy)
+        #     policy_object = init_policy(
+        #         code.input_policy, code.input_policy_init_args
+        #     )
+        #     code.input_policy_state = _serialize(
+        #         policy_object, to_bytes=True
+        #     )
+
+        if isinstance(code.output_policy, UserPolicy):
+            # policy_service.add_user_policy(ctx, code.output_policy)
+            policy_object = init_policy(
+                code.output_policy, code.output_policy_init_args
+            )
+            code.output_policy_state = _serialize(
+                policy_object, to_bytes=True
+            )
+                    
+        if isinstance(code.output_policy, UserPolicy):
+            policy_object = get_policy_object(
+                                    code.output_policy,
+                                    code.output_policy_state,
+                                )
+            action_object = ActionObject.from_obj(policy_object.apply_output(
+                action_object
+            ))
+            state = update_policy_state(
+                policy_object
+            )
+        else:
+            state = code.output_policy_state
+            state.update_state(outputs=action_object.id, context=ctx)
+            
         policy_state_mutation = ObjectMutation(
             linked_obj=change.linked_obj,
             attr_name="output_policy_state",

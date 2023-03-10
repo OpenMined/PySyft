@@ -244,6 +244,7 @@ class OutputHistory(SyftObject):
     executing_user_verify_key: SyftVerifyKey
 
 
+@serializable(recursive_serde=True)
 class OutputPolicyState(SyftObject):
     # version
     __canonical_name__ = "OutputPolicyState"
@@ -295,7 +296,10 @@ class OutputPolicyStateExecuteCount(OutputPolicyState):
             message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
         )
 
-    def update_state(self) -> None:
+    def update_state(self,
+        context: NodeServiceContext,
+        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]]
+    ) -> None:
         if self.count >= self.limit:
             raise Exception(
                 f"Update state being called with count: {self.count} "
@@ -434,10 +438,10 @@ class UserCode(SyftObject):
     id: UID
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy: Union[InputPolicy, UserPolicy, SubmitUserPolicy, UID]
-    input_policy_state: Union[OutputPolicyState, str]
-    output_policy: Union[OutputPolicy, UserPolicy, SubmitUserPolicy, UID]
-    output_policy_state: Union[OutputPolicyState, str]
+    input_policy: Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
+    input_policy_state: Union[str, OutputPolicyState]
+    output_policy: Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
+    output_policy_state: Union[str, OutputPolicyState]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -447,8 +451,8 @@ class UserCode(SyftObject):
     status: UserCodeStatusContext
     input_kwargs: List[str]
     outputs: List[str]
-    input_policy_init_args: Dict[str, Any]
-    output_policy_init_args: Dict[str, Any]
+    input_policy_init_args: Optional[Dict[str, Any]] = None
+    output_policy_init_args: Optional[Dict[str, Any]] = None
     enclave_metadata: Optional[EnclaveMetadata] = None
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
@@ -556,9 +560,9 @@ class SubmitUserCode(SyftObject):
     func_name: str
     signature: inspect.Signature
     input_policy: Union[SubmitUserPolicy, UID, InputPolicy]
-    input_policy_init_args: Dict[str, Any]
+    input_policy_init_args: Optional[Dict[str, Any]] = None
     output_policy: Union[SubmitUserPolicy, UID, OutputPolicy]
-    output_policy_init_args: Dict[str, Any]
+    output_policy_init_args: Optional[Dict[str, Any]] = None
     local_function: Optional[Callable]
     input_kwargs: List[str]
     outputs: List[str]
@@ -578,9 +582,9 @@ class SubmitUserCode(SyftObject):
         "enclave_metadata",
     ]
 
-    # @property
-    # def kwargs(self) -> List[str]:
-    #     return self.input_policy.inputs
+    @property
+    def kwargs(self) -> List[str]:
+        return self.input_policy.inputs
 
     # @property
     # def outputs(self) -> List[str]:
@@ -646,44 +650,47 @@ def get_code_from_class(policy):
 
 def syft_function(
     input_policy: Union[InputPolicy, UID, Any],
-    input_policy_init_args: Dict[str, Any],
     output_policy: Union[OutputPolicy, UID, Any],
-    output_policy_init_args: Dict[str, Any],
     outputs: List[str],
+    input_policy_init_args: Dict[str, Any] = None,
+    output_policy_init_args: Dict[str, Any] = None,
 ) -> SubmitUserCode:
     # TODO: fix this for jupyter
     # TODO: add import validator
 
-    if isinstance(input_policy, UID):
+    if isinstance(input_policy, UID) or isinstance(input_policy, InputPolicy):
         input_policy = input_policy
     elif issubclass(input_policy, InputPolicy):
         input_policy = input_policy(input_policy_init_args)
     else:
+        init_f_code = input_policy.__init__.__code__
+
         input_policy = SubmitUserPolicy(
             code="@serializable(recursive_serde=True)\n"
             + get_code_from_class(input_policy),
             class_name=input_policy.__name__,
-            input_kwargs=input_policy.__init__.__code__.co_varnames[1:],
+            input_kwargs=init_f_code.co_varnames[1:init_f_code.co_argcount],
         )
-
-    print("Output policy is")
-    if isinstance(output_policy, UID):
+        
+    if isinstance(output_policy, UID) or isinstance(output_policy, OutputPolicy):
         print("UserPolicy")
-        # output_policy.byte_code = None
+        output_policy = output_policy
     elif issubclass(output_policy, OutputPolicy):
         print("OutputPolicy")
         output_policy = output_policy(**output_policy_init_args)
     else:
         print("SubmitUserPolicy")
         # TODO: move serializable injection in the server side
+        init_f_code = output_policy.__init__.__code__
         output_policy = SubmitUserPolicy(
             code="@serializable(recursive_serde=True)\n"
             + get_code_from_class(output_policy),
             class_name=output_policy.__name__,
-            input_kwargs=output_policy.__init__.__code__.co_varnames[1:],
+            input_kwargs=init_f_code.co_varnames[1:init_f_code.co_argcount],
         )
 
     def decorator(f):
+        print(f.__code__.co_varnames)
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -691,7 +698,7 @@ def syft_function(
             input_policy=input_policy,
             output_policy=output_policy,
             local_function=f,
-            input_kwargs=f.__code__.co_varnames,
+            input_kwargs=f.__code__.co_varnames[:f.__code__.co_argcount],
             outputs=outputs,
             input_policy_init_args=input_policy_init_args,
             output_policy_init_args=output_policy_init_args,
@@ -715,7 +722,7 @@ def process_code(
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    input_kwargs: Dict[str, Any],
+    input_kwargs: List[str],# Dict[str, Any],
     outputs: List[str],
 ) -> str:
     tree = ast.parse(raw_code)
@@ -729,8 +736,8 @@ def process_code(
 
     keywords = [
         ast.keyword(arg=i, value=[ast.Name(id=i)])
-        for _, inputs in input_kwargs.items()
-        for i in inputs
+        # for _, inputs in input_kwargs.items()
+        for i in input_kwargs
     ]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
@@ -765,6 +772,7 @@ def process_code(
 
     new_body = tree.body + [call_stmt, return_stmt]
 
+
     wrapper_function = ast.FunctionDef(
         name=func_name,
         args=f.args,
@@ -773,7 +781,8 @@ def process_code(
         returns=None,
         lineno=0,
     )
-
+    import sys
+    print("code processing complete", file=sys.stderr)
     return ast.unparse(wrapper_function)
 
 

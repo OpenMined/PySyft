@@ -93,8 +93,41 @@ class UserCodeService(AbstractService):
         # relative
         from .request import SubmitRequest
         from .request_service import RequestService
+        from .policy_service import PolicyService
 
+        import sys
+        print("Noerr before code to usercode", file=sys.stderr)
+        print(code.input_kwargs, file=sys.stderr)
         user_code = code.to(UserCode, context=context)
+        
+        print("Noerr before policy transformations", file=sys.stderr)
+        policy_service = context.node.get_service(PolicyService)
+
+        if isinstance(code.input_policy, SubmitUserPolicy):
+            submit_input_policy = code.input_policy
+            user_code.input_policy = submit_input_policy.to(UserPolicy, context=context)
+        elif isinstance(code.input_policy, UID):
+            input_policy = policy_service.get_policy_by_uid(context, code.input_policy)
+            if input_policy.is_ok():
+                user_code.input_policy = input_policy.ok()
+            else:
+                return input_policy
+
+        if isinstance(code.output_policy, SubmitUserPolicy):
+            submit_output_policy = code.output_policy
+            user_code.output_policy = submit_output_policy.to(
+                UserPolicy, context=context
+            )
+        elif isinstance(code.output_policy, UID):
+            output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
+            if output_policy.is_ok():
+                user_code.output_policy = output_policy.ok()
+            else:
+                return output_policy
+        
+        import sys
+        print("Noerr", file=sys.stderr)
+        
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -202,73 +235,77 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         try:
+            print(kwargs)
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(uid=uid)
             if result.is_ok():
                 code_item = result.ok()
                 if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
-                    is_valid = code_item.output_policy_state.valid
-                    if not is_valid:
-                        if (
-                            len(
-                                code_item.output_policy_state.output_history,
-                            )
-                            > 0
-                        ):
-                            return get_outputs(
-                                context=context,
-                                output_history=code_item.output_policy_state.output_history[
-                                    -1
-                                ],
-                            )
-                        return is_valid
+                    if isinstance(code_item.output_policy, UserPolicy):
+                        is_valid = True
                     else:
-                        action_service = context.node.get_service("actionservice")
-                        if isinstance(code_item.input_policy, InputPolicy):
-                            # TODO: fix bug with dev InputPolicy
-                            # filtered_kwargs = code_item.input_policy.filter_kwargs(filtered_kwargs)
-                            filtered_kwargs = filtered_kwargs
+                        is_valid = code_item.output_policy_state.valid
+                        if not is_valid:
+                            if (
+                                len(
+                                    code_item.output_policy_state.output_history,
+                                )
+                                > 0
+                            ):
+                                return get_outputs(
+                                    context=context,
+                                    output_history=code_item.output_policy_state.output_history[
+                                        -1
+                                    ],
+                                )
+                            return is_valid
+                    
+                    action_service = context.node.get_service("actionservice")
+                    if isinstance(code_item.input_policy, InputPolicy):
+                        # TODO: fix bug with dev InputPolicy
+                        # filtered_kwargs = code_item.input_policy.filter_kwargs(filtered_kwargs)
+                        filtered_kwargs = filtered_kwargs
+                    else:
+                        policy_object = get_policy_object(
+                            code_item.input_policy, code_item.input_policy_state
+                        )
+                        filtered_kwargs = policy_object.filter_kwargs(
+                            filtered_kwargs
+                        )
+                        code_item.input_policy_state = update_policy_state(
+                            policy_object
+                        )
+
+                    result = action_service._user_code_execute(
+                        context, code_item, filtered_kwargs
+                    )
+                    if isinstance(result, str):
+                        return SyftError(message=result)
+                    if result.is_ok():
+                        final_results = result.ok()
+                        if isinstance(code_item.output_policy, OutputPolicy):
+                            code_item.output_policy_state.update_state()
                         else:
                             policy_object = get_policy_object(
-                                code_item.input_policy, code_item.input_policy_state
+                                code_item.output_policy,
+                                code_item.output_policy_state,
                             )
-                            filtered_kwargs = policy_object.filter_kwargs(
-                                filtered_kwargs
+
+                            final_results = policy_object.apply_output(
+                                final_results
                             )
-                            code_item.input_policy_state = update_policy_state(
+                            code_item.output_policy_state = update_policy_state(
                                 policy_object
                             )
 
-                        result = action_service._user_code_execute(
-                            context, code_item, filtered_kwargs
+                        state_result = self.update_code_state(
+                            context=context, code_item=code_item
                         )
-                        if isinstance(result, str):
-                            return SyftError(message=result)
-                        if result.is_ok():
-                            final_results = result.ok()
-                            if isinstance(code_item.output_policy, OutputPolicy):
-                                code_item.output_policy_state.update_state()
-                            else:
-                                policy_object = get_policy_object(
-                                    code_item.output_policy,
-                                    code_item.output_policy_state,
-                                )
 
-                                final_results = policy_object.apply_output(
-                                    final_results
-                                )
-                                code_item.output_policy_state = update_policy_state(
-                                    policy_object
-                                )
-
-                            state_result = self.update_code_state(
-                                context=context, code_item=code_item
-                            )
-
-                            if state_result:
-                                return final_results
-                            else:
-                                return state_result
+                        if state_result:
+                            return final_results
+                        else:
+                            return state_result
                 elif code_item.status.for_context(context) == UserCodeStatus.SUBMITTED:
                     return SyftNotReady(
                         message=f"{type(code_item)} Your code is waiting for approval: {code_item.status}"
