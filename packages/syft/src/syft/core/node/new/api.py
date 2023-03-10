@@ -24,25 +24,25 @@ from result import Result
 from typeguard import check_type
 
 # relative
-from ....core.common.serde.recursive import index_syft_by_module_name
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize
-from ...common.uid import UID
 from .connection import NodeConnection
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .deserialize import _deserialize
 from .node import NewNode
+from .recursive import index_syft_by_module_name
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
+from .serialize import _serialize
 from .service import ServiceConfigRegistry
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
+from .uid import UID
 
 
 class APIRegistry:

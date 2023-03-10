@@ -16,9 +16,9 @@ import pandas as pd
 import requests
 
 # relative
+from .core.node.new.grid_url import GridURL
 from .core.node.new.network_service import NodePeer
 from .core.node.new.node_metadata import NodeMetadataJSON
-from .grid import GridURL
 from .logger import error
 from .logger import warning
 

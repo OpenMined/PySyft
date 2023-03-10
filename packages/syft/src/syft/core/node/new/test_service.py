@@ -5,8 +5,8 @@ from result import Ok
 from result import Result
 
 # relative
-from ...common.serde.serializable import serializable
 from .context import AuthedServiceContext
+from .serializable import serializable
 from .service import AbstractService
 from .service import service_method
 

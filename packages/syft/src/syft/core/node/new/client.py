@@ -22,15 +22,9 @@ from typing_extensions import Self
 
 # relative
 from .... import __version__
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....grid import GridURL
 from ....logger import debug
 from ....telemetry import instrument
 from ....util import verify_tls
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize
-from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
 from ...node.new.user import UserCreate
@@ -44,9 +38,15 @@ from .connection import NodeConnection
 from .context import NodeServiceContext
 from .credentials import SyftSigningKey
 from .dataset import CreateDataset
+from .deserialize import _deserialize
+from .grid_url import GridURL
 from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
+from .serialize import _serialize
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .uid import UID
 from .user_service import UserService
 
 # use to enable mitm proxy

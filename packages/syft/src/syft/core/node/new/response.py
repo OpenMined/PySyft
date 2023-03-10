@@ -1,6 +1,6 @@
 # relative
-from ...common.serde.serializable import serializable
 from .base import SyftBaseModel
+from .serializable import serializable
 
 
 class SyftResponseMessage(SyftBaseModel):

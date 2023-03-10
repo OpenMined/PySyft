@@ -24,17 +24,17 @@ from pydantic import validator
 import requests
 
 # relative
-from ..core.common.serde.deserialize import _deserialize as deserialize
-from ..core.common.serde.serializable import serializable
-from ..core.common.uid import UID
-from ..core.node.common.exceptions import OblvEnclaveError
-from ..core.node.common.exceptions import OblvUnAuthorizedError
 from ..core.node.new.api import SyftAPI
 from ..core.node.new.client import HTTPConnection
 from ..core.node.new.client import Routes
 from ..core.node.new.client import SyftSigningKey
+from ..core.node.new.deserialize import _deserialize as deserialize
+from ..core.node.new.serializable import serializable
+from ..core.node.new.uid import UID
 from ..util import bcolors
 from .constants import LOCAL_MODE
+from .exceptions import OblvEnclaveError
+from .exceptions import OblvUnAuthorizedError
 from .oblv_proxy import check_oblv_proxy_installation_status
 
 if TYPE_CHECKING:
