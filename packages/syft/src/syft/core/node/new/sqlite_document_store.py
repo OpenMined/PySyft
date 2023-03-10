@@ -252,6 +252,6 @@ class SQLiteStoreClientConfig(StoreClientConfig):
 
 @serializable(recursive_serde=True)
 class SQLiteStoreConfig(StoreConfig):
-    client_config: StoreClientConfig
+    client_config: SQLiteStoreClientConfig
     store_type: Type[DocumentStore] = SQLiteDocumentStore
     backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore

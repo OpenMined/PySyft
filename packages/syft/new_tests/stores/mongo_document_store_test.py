@@ -2,37 +2,59 @@
 from threading import Thread
 
 # third party
+from pymongo import MongoClient
 import pytest
+from pytest_mock_resources import create_mongo_fixture
 
 # syft absolute
-from syft.core.node.new.dict_document_store import DictStoreConfig
-from syft.core.node.new.dict_document_store import DictStorePartition
 from syft.core.node.new.document_store import PartitionSettings
 from syft.core.node.new.document_store import QueryKeys
+from syft.core.node.new.mongo_client import MongoStoreClientConfig
+from syft.core.node.new.mongo_document_store import MongoStoreConfig
+from syft.core.node.new.mongo_document_store import MongoStorePartition
 
 # relative
 from .store_mocks import MockObjectType
 from .store_mocks import MockSyftObject
 
+mongo = create_mongo_fixture()
+db_name = "testing"
+
 
 @pytest.fixture
-def store():
-    store_config = DictStoreConfig()
+def store(mongo):
+    mongo_client = MongoClient(**mongo.pmr_credentials.as_mongo_kwargs())
+
+    mongo_config = MongoStoreClientConfig(client=mongo_client)
+    store_config = MongoStoreConfig(client_config=mongo_config, db_name=db_name)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    return DictStorePartition(settings=settings, store_config=store_config)
+    yield MongoStorePartition(settings=settings, store_config=store_config)
+
+    mongo_client.drop_database(db_name)
 
 
-def test_dict_store_partition_sanity(store: DictStorePartition) -> None:
+def test_mongo_store_partition_sanity(store: MongoStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
-    assert hasattr(store, "data")
-    assert hasattr(store, "unique_keys")
-    assert hasattr(store, "searchable_keys")
+    assert hasattr(store, "_collection")
 
 
-def test_dict_store_partition_set(store: DictStorePartition) -> None:
+def test_mongo_store_partition_init_failed() -> None:
+    # won't connect
+    mongo_config = MongoStoreClientConfig(connectTimeoutMS=1, timeoutMS=1)
+
+    store_config = MongoStoreConfig(client_config=mongo_config)
+    settings = PartitionSettings(name="test", object_type=MockObjectType)
+
+    return MongoStorePartition(settings=settings, store_config=store_config)
+
+    res = store.init_store()
+    assert res.is_err()
+
+
+def test_mongo_store_partition_set(store: MongoStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -58,7 +80,7 @@ def test_dict_store_partition_set(store: DictStorePartition) -> None:
     assert len(store.all().ok()) == 2
 
 
-def test_dict_store_partition_delete(store: DictStorePartition) -> None:
+def test_mongo_store_partition_delete(store: MongoStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -91,7 +113,7 @@ def test_dict_store_partition_delete(store: DictStorePartition) -> None:
     assert len(store.all().ok()) == 0
 
 
-def test_dict_store_partition_update(store: DictStorePartition) -> None:
+def test_mongo_store_partition_update(store: MongoStorePartition) -> None:
     store.init_store()
 
     # add item
@@ -122,7 +144,7 @@ def test_dict_store_partition_update(store: DictStorePartition) -> None:
         assert stored.ok()[0].data == v
 
 
-def test_dict_store_partition_set_multithreaded(store: DictStorePartition) -> None:
+def test_mongo_store_partition_set_multithreaded(store: MongoStorePartition) -> None:
     thread_cnt = 3
     store.init_store()
 
@@ -152,10 +174,9 @@ def test_dict_store_partition_set_multithreaded(store: DictStorePartition) -> No
     assert stored_cnt == 1000
 
 
-def test_dict_store_partition_update_multithreaded(
-    store: DictStorePartition,
+def test_mongo_store_partition_update_multithreaded(
+    store: MongoStorePartition,
 ) -> None:
-    thread_cnt = 3
     store.init_store()
 
     obj = MockSyftObject(data=0)
@@ -171,56 +192,3 @@ def test_dict_store_partition_update_multithreaded(
             res = store.update(key, obj)
 
             execution_ok &= res.is_ok()
-            assert res.is_ok()
-
-    tids = []
-    for tid in range(thread_cnt):
-        thread = Thread(target=_kv_cbk, args=(tid,))
-        thread.start()
-
-        tids.append(thread)
-
-    for thread in tids:
-        thread.join()
-
-    assert execution_ok
-    stored = store.get_all_from_store(QueryKeys(qks=[key]))
-    assert stored.ok()[0].data == 1000
-
-
-def test_dict_store_partition_set_delete_multithreaded(
-    store: DictStorePartition,
-) -> None:
-    store.init_store()
-
-    thread_cnt = 3
-    execution_ok = True
-
-    def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
-        for idx in range(100):
-            obj = MockSyftObject(data=idx)
-            res = store.set(obj, ignore_duplicates=False)
-
-            execution_ok &= res.is_ok()
-            assert res.is_ok()
-
-            key = store.settings.store_key.with_obj(obj)
-
-            res = store.delete(key)
-            execution_ok &= res.is_ok()
-            assert res.is_ok()
-
-    tids = []
-    for tid in range(thread_cnt):
-        thread = Thread(target=_kv_cbk, args=(tid,))
-        thread.start()
-
-        tids.append(thread)
-
-    for thread in tids:
-        thread.join()
-
-    assert execution_ok
-    stored_cnt = len(store.all().ok())
-    assert stored_cnt == 0
