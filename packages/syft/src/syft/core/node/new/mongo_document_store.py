@@ -232,6 +232,9 @@ class MongoStorePartition(StorePartition):
         qks = QueryKeys(qks=())
         return self.get_all_from_store(qks=qks)
 
+    def __len__(self):
+        return self._collection.count_documents(filter={})
+
 
 @serializable(recursive_serde=True)
 class MongoDocumentStore(DocumentStore):

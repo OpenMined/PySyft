@@ -9,7 +9,7 @@ from .syft_object import SyftObject
 @serializable(recursive_serde=True)
 class NoSQLTask(SyftObject):
     # version
-    __canonical_name__ = "Task"
+    __canonical_name__ = "OldTask"
     __version__ = 1
 
     # fields
