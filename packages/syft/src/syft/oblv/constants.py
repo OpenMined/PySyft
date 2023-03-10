@@ -1,8 +1,10 @@
-INFRA = "r5.xlarge"
+INFRA = "m5.4xlarge"
 REPO_OWNER = "OpenMined"
 REPO_NAME = "syft-enclave"
-REF = "dev"
-REGION = "us-east-1"
+REF = "manual_code"
+REGION = "us-west-2"
 VCS = "github"
 VISIBILITY = "private"
 LOCAL_MODE = True
+DOMAIN_CONNECTION_PORT = 3030
+WORKER_MODE = False  # Used for testing with the enclave being the in-memory worker

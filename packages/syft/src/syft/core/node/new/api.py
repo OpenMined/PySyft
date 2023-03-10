@@ -15,6 +15,7 @@ from typing import _GenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
+from pydantic import BaseModel
 from pydantic import EmailStr
 from result import Err
 from result import Ok
@@ -42,7 +43,6 @@ from .service import ServiceConfigRegistry
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
-from .user_code_service import UserCodeService
 
 
 class APIRegistry:
@@ -57,6 +57,10 @@ class APIRegistry:
     @classmethod
     def api_for(cls, node_uid: UID) -> SyftAPI:
         return cls.__api_registry__[node_uid]
+
+    @classmethod
+    def get_all_api(cls) -> List[SyftAPI]:
+        return list(cls.__api_registry__.values())
 
 
 @serializable(recursive_serde=True)
@@ -283,6 +287,7 @@ class SyftAPI(SyftObject):
     # fields
     connection: Optional[NodeConnection] = None
     node_uid: Optional[UID] = None
+    node_name: Optional[str] = None
     endpoints: Dict[str, APIEndpoint]
     api_module: Optional[APIModule] = None
     signing_key: Optional[SyftSigningKey] = None
@@ -297,6 +302,8 @@ class SyftAPI(SyftObject):
         # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
+        from .user_code_service import UserCodeService
+
         _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
         endpoints = {}
 
@@ -329,7 +336,7 @@ class SyftAPI(SyftObject):
             )
             endpoints[path] = endpoint
 
-        return SyftAPI(node_uid=node.id, endpoints=endpoints)
+        return SyftAPI(node_name=node.name, node_uid=node.id, endpoints=endpoints)
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
@@ -483,3 +490,29 @@ try:
 except Exception:
     print("Failed to monkeypatch IPython Signature Override")
     pass
+
+
+@serializable(recursive_serde=True)
+class NodeView(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    node_name: str
+    verify_key: SyftVerifyKey
+
+    @staticmethod
+    def from_api(api: SyftAPI):
+        # stores the name root verify key of the domain node
+        node_metadata = api.connection.get_node_metadata(api.signing_key)
+        return NodeView(
+            node_name=node_metadata.name,
+            verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, NodeView):
+            return False
+        return self.node_name == other.node_name and self.verify_key == other.verify_key
+
+    def __hash__(self) -> int:
+        return hash((self.node_name, self.verify_key))
