@@ -16,6 +16,8 @@ from .kv_document_store import KeyValueStorePartition
 
 @serializable(recursive_serde=True)
 class DictBackingStore(dict, KeyValueBackingStore):
+    """Dictionary-based Store core logic"""
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super(dict).__init__()
         self._ddtype = kwargs.get("ddtype", None)
@@ -32,12 +34,28 @@ class DictBackingStore(dict, KeyValueBackingStore):
 
 @serializable(recursive_serde=True)
 class DictStorePartition(KeyValueStorePartition):
+    """Dictionary-based StorePartition
+
+    Parameters:
+        `settings`: PartitionSettings
+            PySyft specific settings, used for indexing and partitioning
+        `store_config`: DictStoreConfig
+            DictStore specific configuration
+    """
+
     pass
 
 
 # the base document store is already a dict but we can change it later
 @serializable(recursive_serde=True)
 class DictDocumentStore(DocumentStore):
+    """Dictionary-based Document Store
+
+    Parameters:
+        `store_config`: DictStoreConfig
+            Dictionary Store specific configuration, containing the store type and the backing store type
+    """
+
     partition_type = DictStorePartition
 
     def __init__(self, store_config: Optional[DictStoreConfig] = None) -> None:
@@ -48,5 +66,15 @@ class DictDocumentStore(DocumentStore):
 
 @serializable(recursive_serde=True)
 class DictStoreConfig(StoreConfig):
+    """Dictionary-based configuration
+
+    Parameters:
+        `store_type`: Type[DocumentStore]
+            The Document type used. Default: DictDocumentStore
+        `backing_store`: Type[KeyValueBackingStore]
+            The backend type used. Default: DictBackingStore
+
+    """
+
     store_type: Type[DocumentStore] = DictDocumentStore
     backing_store: Type[KeyValueBackingStore] = DictBackingStore

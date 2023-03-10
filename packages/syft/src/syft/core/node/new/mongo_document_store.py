@@ -90,6 +90,15 @@ def from_mongo(
 
 @serializable(recursive_serde=True)
 class MongoStorePartition(StorePartition):
+    """Mongo StorePartition
+
+    Parameters:
+        `settings`: PartitionSettings
+            PySyft specific settings, used for partitioning and indexing.
+        `store_config`: MongoStoreConfig
+            Mongo specific configuration
+    """
+
     __attr_allowlist__ = [
         "storage_type",
         "settings",
@@ -265,11 +274,29 @@ class MongoStorePartition(StorePartition):
 
 @serializable(recursive_serde=True)
 class MongoDocumentStore(DocumentStore):
+    """Mongo Document Store
+
+    Parameters:
+        `store_config`: MongoStoreConfig
+            Mongo specific configuration, including connection configuration, database name, or client class type.
+    """
+
     partition_type = MongoStorePartition
 
 
 @serializable(recursive_serde=True)
 class MongoStoreConfig(StoreConfig):
+    """Mongo Store configuration
+
+    Parameters:
+        `client_config`: MongoStoreClientConfig
+            Mongo connection details: hostname, port, user, password etc.
+        `store_type`: Type[DocumentStore]
+            The type of the DocumentStore. Default: MongoDocumentStore
+        `db_name`: str
+            Database name
+    """
+
     client_config: MongoStoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"

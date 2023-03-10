@@ -83,6 +83,15 @@ class ActionStore:
 
 @serializable(recursive_serde=True)
 class KeyValueActionStore(ActionStore):
+    """Generic Key-Value Action store.
+
+    Parameters:
+        store_config: StoreConfig
+            Backend specific configuration, including connection configuration, database name, or client class type.
+        root_verify_key: Optional[SyftVerifyKey]
+            Signature verification key, used for checking access permissions.
+    """
+
     def __init__(
         self, store_config: StoreConfig, root_verify_key: Optional[SyftVerifyKey] = None
     ) -> None:
@@ -223,6 +232,15 @@ class KeyValueActionStore(ActionStore):
 
 @serializable(recursive_serde=True)
 class DictActionStore(KeyValueActionStore):
+    """Dictionary-Based Key-Value Action store.
+
+    Parameters:
+        store_config: StoreConfig
+            Backend specific configuration, including client class type.
+        root_verify_key: Optional[SyftVerifyKey]
+            Signature verification key, used for checking access permissions.
+    """
+
     def __init__(
         self,
         store_config: Optional[StoreConfig] = None,
@@ -234,4 +252,13 @@ class DictActionStore(KeyValueActionStore):
 
 @serializable(recursive_serde=True)
 class SQLiteActionStore(KeyValueActionStore):
+    """SQLite-Based Key-Value Action store.
+
+    Parameters:
+        store_config: StoreConfig
+            SQLite specific configuration, including connection settings or client class type.
+        root_verify_key: Optional[SyftVerifyKey]
+            Signature verification key, used for checking access permissions.
+    """
+
     pass

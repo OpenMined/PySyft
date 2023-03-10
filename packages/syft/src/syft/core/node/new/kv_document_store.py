@@ -33,6 +33,8 @@ class UniqueKeyCheck(Enum):
 
 
 class KeyValueBackingStore:
+    """Key-Value store core logic."""
+
     def __setitem__(self, key: Any, value: Any) -> None:
         raise NotImplementedError
 
@@ -77,6 +79,15 @@ class KeyValueBackingStore:
 
 
 class KeyValueStorePartition(StorePartition):
+    """Key-Value StorePartition
+
+    Parameters:
+        `settings`: PartitionSettings
+            PySyft specific settings
+        `store_config`: StoreConfig
+            Backend specific configuration
+    """
+
     def init_store(self) -> Result[Ok, Err]:
         store_status = super().init_store()
         if store_status.is_err():
@@ -240,6 +251,9 @@ class KeyValueStorePartition(StorePartition):
             return Ok(SyftSuccess(message="Deleted"))
         except Exception as e:
             return Err(f"Failed to delete with query key {qk} with error: {e}")
+
+    def __len__(self) -> int:
+        return len(self.data)
 
     def _delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _unique_ck in self.unique_cks:

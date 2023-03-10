@@ -42,6 +42,19 @@ def thread_ident() -> int:
 
 @serializable(recursive_serde=True)
 class SQLiteBackingStore(KeyValueBackingStore):
+    """Core Store logic for the SQLite stores.
+
+    Parameters:
+        `index_name`: str
+            Index name
+        `settings`: PartitionSettings
+            Syft specific settings
+        `store_config`: SQLiteStoreConfig
+            Connection Configuration
+        `ddtype`: Type
+            Class used as fallback on `get` errors
+    """
+
     __attr_state__ = ["index_name", "settings", "store_config"]
 
     def __init__(
@@ -169,7 +182,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _len(self) -> int:
         select_sql = f"select uid from {self.table_name}"  # nosec
-        return len(self._execute(select_sql))
+        return self._execute(select_sql).count()
 
     def __setitem__(self, key: Any, value: Any) -> None:
         self._set(key, value)
@@ -220,6 +233,15 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
 @serializable(recursive_serde=True)
 class SQLiteStorePartition(KeyValueStorePartition):
+    """SQLite StorePartition
+
+    Parameters:
+        `settings`: PartitionSettings
+            PySyft specific settings, used for indexing and partitioning
+        `store_config`: SQLiteStoreConfig
+            SQLite specific configuration
+    """
+
     def close(self) -> None:
         self.data._close()
         self.unique_keys._close()
@@ -234,12 +256,20 @@ class SQLiteStorePartition(KeyValueStorePartition):
 # the base document store is already a dict but we can change it later
 @serializable(recursive_serde=True)
 class SQLiteDocumentStore(DocumentStore):
+    """SQLite Document Store
+
+    Parameters:
+        `store_config`: StoreConfig
+            SQLite specific configuration, including connection details and client class type.
+    """
+
     partition_type = SQLiteStorePartition
 
 
 @serializable(recursive_serde=True)
 class SQLiteStoreClientConfig(StoreClientConfig):
-    """
+    """SQLite connection config
+
     Parameters:
         `filename` : str
             Database name
@@ -274,6 +304,17 @@ class SQLiteStoreClientConfig(StoreClientConfig):
 
 @serializable(recursive_serde=True)
 class SQLiteStoreConfig(StoreConfig):
+    """SQLite Store config, used by SQLiteStorePartition
+
+    Parameters:
+        `client_config`: SQLiteStoreClientConfig
+            SQLite connection configuration
+        `store_type`: DocumentStore
+            Class interacting with QueueStash. Default: SQLiteDocumentStore
+        `backing_store`: KeyValueBackingStore
+            The Store core logic. Default: SQLiteBackingStore
+    """
+
     client_config: SQLiteStoreClientConfig
     store_type: Type[DocumentStore] = SQLiteDocumentStore
     backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore

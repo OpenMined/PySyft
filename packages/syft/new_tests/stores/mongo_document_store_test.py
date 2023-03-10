@@ -17,7 +17,7 @@ from syft.core.node.new.mongo_document_store import MongoStorePartition
 from .store_mocks import MockObjectType
 from .store_mocks import MockSyftObject
 
-mongo = create_mongo_fixture()
+mongo = create_mongo_fixture(scope="session")
 db_name = "testing"
 
 
