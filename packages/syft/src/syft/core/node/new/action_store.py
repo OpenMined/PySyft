@@ -184,8 +184,10 @@ class KeyValueActionStore(ActionStore):
         # perhaps we should keep permissions but no data?
         owner_permission = ActionObjectOWNER(uid=uid, credentials=credentials)
         if self.has_permission(owner_permission):
-            del self.data[uid]
-            del self.permissions[uid]
+            if uid in self.data:
+                del self.data[uid]
+            if uid in self.permissions:
+                del self.permissions[uid]
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return Err(f"Permission: {owner_permission} denied")
 

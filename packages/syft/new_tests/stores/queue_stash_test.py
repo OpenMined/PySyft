@@ -24,8 +24,6 @@ from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 from .store_mocks import MockObjectType
 
 mongo = create_mongo_fixture(scope="session")
-db_name = "testing"
-
 workspace = Path("workspace")
 db_name = "testing"
 
