@@ -1,6 +1,9 @@
 # stdlib
 from threading import Thread
 
+# third party
+import pytest
+
 # syft absolute
 from syft.core.node.new.document_store import PartitionSettings
 from syft.core.node.new.document_store import QueryKeys
@@ -12,15 +15,19 @@ from .store_mocks import MockStoreConfig
 from .store_mocks import MockSyftObject
 
 
-def test_kv_store_partition_sanity() -> None:
+@pytest.fixture
+def store():
     store_config = MockStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
-
     store = KeyValueStorePartition(settings=settings, store_config=store_config)
 
     res = store.init_store()
     assert res.is_ok()
 
+    return store
+
+
+def test_kv_store_partition_sanity(store: KeyValueStorePartition) -> None:
     assert hasattr(store, "data")
     assert hasattr(store, "unique_keys")
     assert hasattr(store, "searchable_keys")
@@ -36,13 +43,7 @@ def test_kv_store_partition_init_failed() -> None:
     assert res.is_err()
 
 
-def test_kv_store_partition_set() -> None:
-    store_config = MockStoreConfig()
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
-    store.init_store()
-
+def test_kv_store_partition_set(store: KeyValueStorePartition) -> None:
     obj = MockSyftObject(data=1)
     res = store.set(obj, ignore_duplicates=False)
 
@@ -78,13 +79,7 @@ def test_kv_store_partition_set_backend_fail() -> None:
     assert res.is_err()
 
 
-def test_kv_store_partition_delete() -> None:
-    store_config = MockStoreConfig()
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
-    store.init_store()
-
+def test_kv_store_partition_delete(store: KeyValueStorePartition) -> None:
     objs = []
     for v in range(10):
         obj = MockSyftObject(data=v)
@@ -95,14 +90,14 @@ def test_kv_store_partition_delete() -> None:
 
     # random object
     obj = MockSyftObject(data="bogus")
-    key = settings.store_key.with_obj(obj)
+    key = store.settings.store_key.with_obj(obj)
     res = store.delete(key)
     assert res.is_err()
     assert len(store.all().ok()) == len(objs)
 
     # cleanup store
     for idx, v in enumerate(objs):
-        key = settings.store_key.with_obj(v)
+        key = store.settings.store_key.with_obj(v)
         res = store.delete(key)
         assert res.is_ok()
         assert len(store.all().ok()) == len(objs) - idx - 1
@@ -114,13 +109,7 @@ def test_kv_store_partition_delete() -> None:
     assert len(store.all().ok()) == 0
 
 
-def test_kv_store_partition_update() -> None:
-    store_config = MockStoreConfig()
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
-    store.init_store()
-
+def test_kv_store_partition_update(store: KeyValueStorePartition) -> None:
     # add item
     obj = MockSyftObject(data=1)
     store.set(obj, ignore_duplicates=False)
@@ -128,13 +117,13 @@ def test_kv_store_partition_update() -> None:
 
     # fail to update missing keys
     rand_obj = MockSyftObject(data="bogus")
-    key = settings.store_key.with_obj(rand_obj)
+    key = store.settings.store_key.with_obj(rand_obj)
     res = store.update(key, obj)
     assert res.is_err()
 
     # update the key multiple times
     for v in range(10):
-        key = settings.store_key.with_obj(obj)
+        key = store.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
         res = store.update(key, obj_new)
@@ -149,12 +138,7 @@ def test_kv_store_partition_update() -> None:
         assert stored.ok()[0].data == v
 
 
-def test_kv_store_partition_set_multithreaded() -> None:
-    store_config = MockStoreConfig()
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
-    store.init_store()
+def test_kv_store_partition_set_multithreaded(store: KeyValueStorePartition) -> None:
     execution_ok = True
 
     def _kv_cbk(tid: int) -> None:
@@ -179,18 +163,13 @@ def test_kv_store_partition_set_multithreaded() -> None:
     stored = store.all()
 
     assert execution_ok
-    assert len(stored.ok()) == 1000
+    stored_cnt = len(stored.ok())
+    assert stored_cnt == 1000
 
 
-def test_kv_store_partition_update_multithreaded() -> None:
-    store_config = MockStoreConfig()
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
-    store.init_store()
-
+def test_kv_store_partition_update_multithreaded(store: KeyValueStorePartition) -> None:
     obj = MockSyftObject(data=0)
-    key = settings.store_key.with_obj(obj)
+    key = store.settings.store_key.with_obj(obj)
     store.set(obj, ignore_duplicates=False)
     execution_ok = True
 
@@ -219,13 +198,9 @@ def test_kv_store_partition_update_multithreaded() -> None:
     assert stored.ok()[0].data == 1000
 
 
-def test_kv_store_partition_set_delete_multithreaded() -> None:
-    store_config = MockStoreConfig()
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = KeyValueStorePartition(settings=settings, store_config=store_config)
-    store.init_store()
-
+def test_kv_store_partition_set_delete_multithreaded(
+    store: KeyValueStorePartition,
+) -> None:
     thread_cnt = 10
     execution_ok = True
 
@@ -238,7 +213,7 @@ def test_kv_store_partition_set_delete_multithreaded() -> None:
             execution_ok &= res.is_ok()
             assert res.is_ok()
 
-            key = settings.store_key.with_obj(obj)
+            key = store.settings.store_key.with_obj(obj)
 
             res = store.delete(key)
             execution_ok &= res.is_ok()
@@ -255,5 +230,5 @@ def test_kv_store_partition_set_delete_multithreaded() -> None:
         thread.join()
 
     assert execution_ok
-    stored = store.all()
-    assert len(stored.ok()) == 0
+    stored_cnt = len(store.all().ok())
+    assert stored_cnt == 0

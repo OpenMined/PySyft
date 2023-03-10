@@ -36,13 +36,16 @@ def prepare_workspace() -> Generator:
         db_path.unlink()
 
 
-def test_sqlite_store_partition_sanity() -> None:
+@pytest.fixture
+def store():
     sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
     store_config = SQLiteStoreConfig(client_config=sqlite_config)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+    return SQLiteStorePartition(settings=settings, store_config=store_config)
 
+
+def test_sqlite_store_partition_sanity(store: SQLiteStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -51,14 +54,7 @@ def test_sqlite_store_partition_sanity() -> None:
     assert hasattr(store, "searchable_keys")
 
 
-def test_sqlite_store_partition_init_failed() -> None:
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
-
+def test_sqlite_store_partition_init_failed(store: SQLiteStorePartition) -> None:
     # delete the destination folder
     shutil.rmtree(workspace)
 
@@ -66,12 +62,7 @@ def test_sqlite_store_partition_init_failed() -> None:
     assert res.is_err()
 
 
-def test_sqlite_store_partition_set() -> None:
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+def test_sqlite_store_partition_set(store: SQLiteStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -97,12 +88,7 @@ def test_sqlite_store_partition_set() -> None:
     assert len(store.all().ok()) == 2
 
 
-def test_sqlite_store_partition_set_backend_fail() -> None:
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+def test_sqlite_store_partition_set_backend_fail(store: SQLiteStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -116,14 +102,7 @@ def test_sqlite_store_partition_set_backend_fail() -> None:
     assert res.is_err()
 
 
-def test_sqlite_store_partition_delete() -> None:
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+def test_sqlite_store_partition_delete(store: SQLiteStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -137,14 +116,14 @@ def test_sqlite_store_partition_delete() -> None:
 
     # random object
     obj = MockSyftObject(data="bogus")
-    key = settings.store_key.with_obj(obj)
+    key = store.settings.store_key.with_obj(obj)
     res = store.delete(key)
     assert res.is_err()
     assert len(store.all().ok()) == len(objs)
 
     # cleanup store
     for idx, v in enumerate(objs):
-        key = settings.store_key.with_obj(v)
+        key = store.settings.store_key.with_obj(v)
         res = store.delete(key)
         assert res.is_ok()
         assert len(store.all().ok()) == len(objs) - idx - 1
@@ -156,12 +135,7 @@ def test_sqlite_store_partition_delete() -> None:
     assert len(store.all().ok()) == 0
 
 
-def test_sqlite_store_partition_update() -> None:
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+def test_sqlite_store_partition_update(store: SQLiteStorePartition) -> None:
     store.init_store()
 
     # add item
@@ -171,13 +145,13 @@ def test_sqlite_store_partition_update() -> None:
 
     # fail to update missing keys
     rand_obj = MockSyftObject(data="bogus")
-    key = settings.store_key.with_obj(rand_obj)
+    key = store.settings.store_key.with_obj(rand_obj)
     res = store.update(key, obj)
     assert res.is_err()
 
     # update the key multiple times
     for v in range(10):
-        key = settings.store_key.with_obj(obj)
+        key = store.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
         res = store.update(key, obj_new)
@@ -192,12 +166,7 @@ def test_sqlite_store_partition_update() -> None:
         assert stored.ok()[0].data == v
 
 
-def test_sqlite_store_partition_set_multithreaded() -> None:
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+def test_sqlite_store_partition_set_multithreaded(store: SQLiteStorePartition) -> None:
     store.init_store()
 
     execution_ok = True
@@ -222,20 +191,17 @@ def test_sqlite_store_partition_set_multithreaded() -> None:
         thread.join()
 
     assert execution_ok
-    stored = store.all()
-    assert len(stored.ok()) == 1000
+    stored_cnt = len(store.all().ok())
+    assert stored_cnt == 1000
 
 
-def test_sqlite_store_partition_update_multithreaded() -> None:
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+def test_sqlite_store_partition_update_multithreaded(
+    store: SQLiteStorePartition,
+) -> None:
     store.init_store()
 
     obj = MockSyftObject(data=0)
-    key = settings.store_key.with_obj(obj)
+    key = store.settings.store_key.with_obj(obj)
     store.set(obj, ignore_duplicates=False)
     execution_ok = True
 
@@ -264,12 +230,9 @@ def test_sqlite_store_partition_update_multithreaded() -> None:
     assert stored.ok()[0].data == 1000
 
 
-def test_sqlite_store_partition_set_delete_multithreaded() -> None:
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+def test_sqlite_store_partition_set_delete_multithreaded(
+    store: SQLiteStorePartition,
+) -> None:
     store.init_store()
 
     thread_cnt = 5
@@ -284,7 +247,7 @@ def test_sqlite_store_partition_set_delete_multithreaded() -> None:
             execution_ok &= res.is_ok()
             assert res.is_ok()
 
-            key = settings.store_key.with_obj(obj)
+            key = store.settings.store_key.with_obj(obj)
 
             res = store.delete(key)
             execution_ok &= res.is_ok()
@@ -301,5 +264,5 @@ def test_sqlite_store_partition_set_delete_multithreaded() -> None:
         thread.join()
 
     assert execution_ok
-    stored = store.all()
-    assert len(stored.ok()) == 0
+    stored_cnt = len(store.all().ok())
+    assert stored_cnt == 0
