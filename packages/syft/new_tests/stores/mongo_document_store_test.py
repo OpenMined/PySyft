@@ -146,13 +146,14 @@ def test_mongo_store_partition_update(store: MongoStorePartition) -> None:
 
 def test_mongo_store_partition_set_multithreaded(store: MongoStorePartition) -> None:
     thread_cnt = 3
+    repeats = 100
     store.init_store()
 
     execution_ok = True
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_ok
-        for idx in range(100):
+        for idx in range(repeats):
             obj = MockObjectType(data=idx)
             res = store.set(obj, ignore_duplicates=False)
 
@@ -171,13 +172,12 @@ def test_mongo_store_partition_set_multithreaded(store: MongoStorePartition) -> 
 
     assert execution_ok
     stored_cnt = len(store.all().ok())
-    assert stored_cnt == 1000
+    assert stored_cnt == thread_cnt * repeats
 
 
-def test_mongo_store_partition_update_multithreaded(
-    store: MongoStorePartition,
-) -> None:
-    store.init_store()
+def test_mongo_partition_update_multithreaded(store: MongoStorePartition) -> None:
+    thread_cnt = 3
+    repeats = 100
 
     obj = MockSyftObject(data=0)
     key = store.settings.store_key.with_obj(obj)
@@ -186,9 +186,60 @@ def test_mongo_store_partition_update_multithreaded(
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_ok
-        for repeat in range(100):
+        for repeat in range(repeats):
             stored = store.get_all_from_store(QueryKeys(qks=[key]))
             obj = MockSyftObject(data=stored.ok()[0].data + 1)
             res = store.update(key, obj)
 
             execution_ok &= res.is_ok()
+            assert res.is_ok()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_kv_cbk, args=(tid,))
+        thread.start()
+
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_ok
+    stored = store.get_all_from_store(QueryKeys(qks=[key]))
+    assert stored.ok()[0].data == thread_cnt * repeats
+
+
+def test_mongo_partition_set_delete_multithreaded(
+    store: MongoStorePartition,
+) -> None:
+    thread_cnt = 3
+    execution_ok = True
+
+    def _kv_cbk(tid: int) -> None:
+        nonlocal execution_ok
+        for idx in range(100):
+            obj = MockSyftObject(data=idx)
+            res = store.set(obj, ignore_duplicates=False)
+
+            execution_ok &= res.is_ok()
+            assert res.is_ok()
+
+            key = store.settings.store_key.with_obj(obj)
+
+            res = store.delete(key)
+            execution_ok &= res.is_ok()
+            assert res.is_ok()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_kv_cbk, args=(tid,))
+        thread.start()
+
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_ok
+    stored_cnt = len(store.all().ok())
+    assert stored_cnt == 0
