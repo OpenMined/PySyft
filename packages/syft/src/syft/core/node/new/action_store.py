@@ -98,11 +98,15 @@ class KeyValueActionStore(ActionStore):
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
 
-    def get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
+    def get(
+        self, uid: UID, credentials: SyftVerifyKey, skip_permission: bool = False
+    ) -> Result[SyftObject, str]:
+        # TODO 🟣 Temporarily added skip permission argument for enclave
+        # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         # if True:
-        if self.has_permission(read_permission):
+        if skip_permission or self.has_permission(read_permission):
             syft_object = self.data[uid]
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")

@@ -1038,7 +1038,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [linux, windows]
+        os: [ubuntu-latest, windows]
         python-version: ["3.10"]
       fail-fast: false
 
