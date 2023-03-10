@@ -1901,7 +1901,7 @@ def create_launch_docker_cmd(
         "HTTP_PORT": int(host_term.free_port),
         "HTTPS_PORT": int(host_term.free_port_tls),
         "TRAEFIK_TAG": str(tag),
-        "DOMAIN_NAME": str(snake_name),
+        "NODE_NAME": str(snake_name),
         "NODE_TYPE": str(node_type.input),
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
@@ -3999,9 +3999,9 @@ long_string = (
     + "\n"
     + "               [bold white]----------------- How to view this. 🙂 ---------------[/bold white]\n"
     + "\n"
-    + """ℹ [bold green]To view this panel again, run the command [bold white]hagrid logs {{DOMAIN_NAME}}[/bold white] [/bold green]\n"""  # noqa: E501
+    + """ℹ [bold green]To view this panel again, run the command [bold white]hagrid logs {{NODE_NAME}}[/bold white] [/bold green]\n"""  # noqa: E501
     + "\n"
-    + """🚨 DOMAIN_NAME above is the name of your Hagrid deployment,without the curly braces. E.g hagrid logs canada [bold green]\n"""  # noqa: E501
+    + """🚨 NODE_NAME above is the name of your Hagrid deployment,without the curly braces. E.g hagrid logs canada [bold green]\n"""  # noqa: E501
     + "\n"
     + "               [bold green]HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠[/bold green]\n                      "
 )

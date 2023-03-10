@@ -8,7 +8,7 @@ services:
 
   proxy:
     restart: always
-    hostname: ${DOMAIN_NAME?Variable not set}
+    hostname: ${NODE_NAME?Variable not set}
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
@@ -19,7 +19,7 @@ services:
     environment:
       - SERVICE_NAME=proxy
       - RELEASE=${RELEASE:-production}
-      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - HOSTNAME=${NODE_NAME?Variable not set}
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
     ports:
@@ -34,7 +34,7 @@ services:
     environment:
       - SERVICE_NAME=tailscale
       - RELEASE=${RELEASE:-production}
-      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - HOSTNAME=${NODE_NAME?Variable not set}
       - STACK_API_KEY=$STACK_API_KEY
     volumes:
       - tailscale-data:/var/lib/tailscale
@@ -101,7 +101,7 @@ services:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
-      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - NODE_NAME=${NODE_NAME?Variable not set}
       - STACK_API_KEY=${STACK_API_KEY}
       - PORT=8001
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
@@ -134,7 +134,7 @@ services:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
-      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - NODE_NAME=${NODE_NAME?Variable not set}
       - STACK_API_KEY=${STACK_API_KEY}
       - PORT=8011
       - STREAM_QUEUE=1
@@ -168,7 +168,7 @@ services:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
-      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - NODE_NAME=${NODE_NAME?Variable not set}
       - C_FORCE_ROOT=1
       - STACK_API_KEY=${STACK_API_KEY}
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
