@@ -15,7 +15,6 @@ from jaxlib.xla_extension import DeviceArray
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import numpy as np
-from oblv.oblv_client import OblvClient
 from pandas import DataFrame
 from pandas import Series
 from pandas._libs.tslibs.timestamps import Timestamp
@@ -45,12 +44,6 @@ recursive_serde_register(
     deserialize=lambda x: VerifyKey(x),
 )
 
-# Oblivious Client serde
-recursive_serde_register(
-    OblvClient,
-    serialize=lambda x: serialize([x.token, x.oblivious_user_id], to_bytes=True),
-    deserialize=lambda x: OblvClient(*deserialize(x, from_bytes=True)),
-)
 
 # result Ok and Err
 recursive_serde_register(Ok, attr_allowlist=["_value"])

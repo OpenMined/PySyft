@@ -29,6 +29,7 @@ from ..core.node.new.client import HTTPConnection
 from ..core.node.new.client import Routes
 from ..core.node.new.client import SyftSigningKey
 from ..core.node.new.deserialize import _deserialize as deserialize
+from ..core.node.new.node_metadata import EnclaveMetadata
 from ..core.node.new.serializable import serializable
 from ..core.node.new.uid import UID
 from ..util import bcolors
@@ -40,12 +41,6 @@ from .oblv_proxy import check_oblv_proxy_installation_status
 if TYPE_CHECKING:
     # relative
     from ..core.node.new.user_code import SubmitUserCode
-
-
-class EnclaveMetadata:
-    """Contains metadata to connect to a specific Enclave"""
-
-    pass
 
 
 @serializable(recursive_serde=True)

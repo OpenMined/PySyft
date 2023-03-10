@@ -8,10 +8,9 @@ on:
       - dev
       - main
       - "0.8"
-      - "test"
 
 jobs:
-  cleanup-notebooks:
+  post-merge-cleanup-notebooks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

@@ -24,7 +24,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ....oblv.deployment_client import EnclaveMetadata
 from .api import NodeView
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
@@ -33,6 +32,7 @@ from .dataset import Asset
 from .datetime import DateTime
 from .document_store import PartitionKey
 from .node import NodeType
+from .node_metadata import EnclaveMetadata
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable

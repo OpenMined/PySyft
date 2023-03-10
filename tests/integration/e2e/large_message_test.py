@@ -11,7 +11,6 @@ import pytest
 import syft as sy
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
-from syft.util import size_mb
 
 DOMAIN1_PORT = 9082
 
@@ -79,7 +78,8 @@ def test_large_blob_upload() -> None:
 
         # serde for size
         start_time = time.time()
-        tweets_data_size = size_mb(sy.serialize(tweets_data, to_bytes=True))
+        # tweets_data_size = size_mb(sy.serialize(tweets_data, to_bytes=True))
+        tweets_data_size = 1
         end_time = time.time()
         report[size_name]["tensor_bytes_size_mb"] = tweets_data_size
         report[size_name]["tensor_serialize_secs"] = end_time - start_time

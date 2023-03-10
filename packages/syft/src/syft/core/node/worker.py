@@ -66,10 +66,6 @@ from .new.sqlite_document_store import SQLiteStoreConfig
 from .new.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from .new.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from .new.syft_object import SyftObject
-from .new.task.oblv_keys_stash import OblvKeys
-from .new.task.oblv_keys_stash import OblvKeysStash
-from .new.task.oblv_service import OblvService
-from .new.task.oblv_service import generate_oblv_key
 from .new.test_service import TestService
 from .new.uid import UID
 from .new.user import ServiceRole
@@ -79,6 +75,8 @@ from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
+
+OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
 
 
 def gipc_encoder(obj):
@@ -162,7 +160,6 @@ class Worker(NewNode):
                 MetadataService,
                 ActionService,
                 TestService,
-                OblvService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -175,6 +172,13 @@ class Worker(NewNode):
             if services is None
             else services
         )
+
+        if OBLV:
+            # relative
+            from .new.task.oblv_service import OblvService
+
+            services += [OblvService]
+
         self.services = services
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
@@ -190,7 +194,7 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
-        if os.getenv("INSTALL_OBLV_CLI") == "true":
+        if OBLV:
             create_oblv_key_pair(worker=self)
 
         self.client_cache = {}
@@ -294,19 +298,26 @@ class Worker(NewNode):
             kwargs = {}
             if service_klass == ActionService:
                 kwargs["store"] = self.action_store
-            if service_klass in [
+            store_services = [
                 UserService,
                 MetadataService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
-                OblvService,
                 DataSubjectService,
                 NetworkService,
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
-            ]:
+            ]
+
+            if OBLV:
+                # relative
+                from .new.task.oblv_service import OblvService
+
+                store_services += [OblvService]
+
+            if service_klass in store_services:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs
@@ -637,6 +648,11 @@ def create_oblv_key_pair(
     worker: Worker,
 ) -> Optional[str]:
     try:
+        # relative
+        from .new.task.oblv_keys_stash import OblvKeys
+        from .new.task.oblv_keys_stash import OblvKeysStash
+        from .new.task.oblv_service import generate_oblv_key
+
         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
         if not len(oblv_keys_stash):

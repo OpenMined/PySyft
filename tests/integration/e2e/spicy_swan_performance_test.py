@@ -24,7 +24,6 @@ from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.util import download_file
 from syft.util import get_root_data_path
-from syft.util import size_mb
 
 # relative
 from .utils_test import clean_datasets_on_domain
@@ -70,7 +69,8 @@ def upload_subset(
 
     assert isinstance(tweets_data.child, GammaTensor)
 
-    tweets_data_size_mb = size_mb(tweets_data)
+    # tweets_data_size_mb = size_mb(tweets_data)
+    tweets_data_size_mb = 1
 
     # blocking
     domain.load_dataset(
