@@ -24,8 +24,6 @@ from ....logger import critical
 from ....logger import debug
 from ....logger import error
 from ....logger import traceback_and_raise
-from ....shylock import ShylockPymongoBackend
-from ....shylock import configure
 from ....telemetry import instrument
 from ....util import get_subclasses
 from ...common.message import ImmediateSyftMessageWithReply
@@ -200,8 +198,6 @@ class Node(AbstractNode):
             )
 
         self.db_name = "app"
-        if document_store:
-            configure(ShylockPymongoBackend.create(self.nosql_db_engine, self.db_name))
 
         # cache these variables on self
         self.TableBase = TableBase

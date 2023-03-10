@@ -14,8 +14,6 @@ on:
   pull_request:
     branches:
       - dev
-    paths:
-      - "packages/syft/tests/trigger/version_tests"
   workflow_dispatch:
     inputs:
       none:
