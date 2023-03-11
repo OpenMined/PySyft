@@ -49,7 +49,7 @@
         </p>
       </div>
       <div class="inline-flex py-6">
-        <Button>Save Changes</Button>
+        <Button variant="secondary">Save Changes</Button>
         <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
       </div>
 
@@ -66,7 +66,7 @@
           <FormControl label="New Password" id="newPassword" type="password" required />
         </div>
         <div class="inline-flex py-6">
-          <Button>Change Password</Button>
+          <Button variant="secondary">Change Password</Button>
           <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
         </div>
       </div>
@@ -86,7 +86,9 @@
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
-          <Button onClick={() => (showDeleteAccountModal = true)}>Delete Account</Button>
+          <Button variant="secondary" onClick={() => (showDeleteAccountModal = true)}
+            >Delete Account</Button
+          >
         </div>
       </div>
     </form>

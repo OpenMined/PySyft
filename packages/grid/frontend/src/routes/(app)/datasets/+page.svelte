@@ -25,6 +25,7 @@
 
 <main>
   <!-- <LargeModal bind:open={modalFlag} placement="center" size="md" class="w-full"> -->
+  <!-- <Modal bind:open={modalFlag} placement="center" size="md" class="w-full"> -->
   <Modal bind:open={modalFlag} placement="center" size="md" class="w-full">
     <div class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min" slot="header">
       <!-- <span class="block text-center w-full">
@@ -98,7 +99,7 @@
     </h2>
     <!-- <br /><br /> -->
     <!-- <div style="display:flex; justify-content:right"><h1>Cancel</h1></div> -->
-    <Button on:click={closeModal()}>Cancel</Button>
+    <Button on:click={() => closeModal()} variant="secondary" slot="button-group">Cancel</Button>
     <!-- </div> -->
   </Modal>
   <div class="page-container">{path}</div>

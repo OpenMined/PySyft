@@ -19,6 +19,10 @@
 
 <style lang="postcss">
   .secondary {
-    @apply transition-all duration-500 bg-gradient-to-l from-primary-300 to-primary-300 hover:to-marigold-400;
+    @apply transition-all duration-500 bg-gradient-to-l from-primary-300 to-primary-300;
+  }
+
+  .secondary:hover {
+    @apply to-marigold-400;
   }
 </style>
