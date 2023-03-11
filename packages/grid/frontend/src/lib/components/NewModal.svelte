@@ -1,5 +1,5 @@
 <div
-  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg max-w-[681px] w-full h-fit shadow-modal-1"
+  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg max-w-[1200px] w-full h-fit shadow-modal-1"
 >
   <!-- header -->
   <div class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min">
