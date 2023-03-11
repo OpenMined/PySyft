@@ -25,7 +25,7 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div on:click={showDatasetDetail} class="dataListItem">
-  <ul>
+  <ul class="p-2">
     <li>{author}</li>
     <li>{name}</li>
     <li>{lastUpdated}</li>
@@ -38,6 +38,7 @@
     display: flex;
     box-shadow: -2px 4px 8px rgba(13, 12, 17, 0.25);
     border-radius: 15px;
+    padding: 1vh;
   }
 
   .dataListItem:hover {
