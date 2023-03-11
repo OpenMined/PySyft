@@ -9,6 +9,8 @@
   let showDeleteNodeModal = false;
   let showDeleteAccountModal = false;
   let showDeleteConfirmModal = false;
+
+  // let showModal = false;
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
@@ -86,7 +88,7 @@
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
-          <Button variant="delete" on:click={() => (showDeleteAccountModal = true)}
+          <Button variant="delete" action={() => (showDeleteAccountModal = true)}
             >Delete Account</Button
           >
         </div>
@@ -95,27 +97,20 @@
   </section>
 
   {#if showDeleteAccountModal}
-    <Modal on:close={() => (showDeleteAccountModal = false)}>
-      <div slot="icon" class="flex justify-center">
+    <Modal>
+      <div slot="header" class="flex justify-center">
         <YellowWarn />
+        <p class="text-center text-2xl font-bold">Are you sure you want to delete your account?</p>
       </div>
-      <p slot="header" class="text-center text-2xl font-bold">
-        Are you sure you want to delete your account?
-      </p>
-      <p slot="content" class="text-center">
+      <p class="text-center">
         If deleted all uploaded documents will be deleted and all open requests will be closed. Keep
         in mind any legal agreements pertaining to the use of your data requests will still apply
         according to the terms of the agreement signed. If you would like to proceed press “Delete
         Account” if not you can click “Cancel”.
       </p>
-      <div slot="actions" class="flex justify-center pt-6">
-        <Button
-          variant="delete"
-          option="margin-x-sm"
-          onClick={() => {
-            showDeleteAccountModal = false;
-            showDeleteConfirmModal = true;
-          }}>Delete Account</Button
+      <div class="flex justify-center pt-6">
+        <Button variant="delete" action={() => (showDeleteAccountModal = true)}
+          >Delete Account</Button
         >
         <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">Cancel</a
         >
@@ -123,6 +118,12 @@
     </Modal>
   {/if}
 
+  <!-- option="margin-x-sm" -->
+  <!-- onClick={() => {
+    showDeleteAccountModal = false;
+    showDeleteConfirmModal = true;
+  }} -->
+  <!-- 
   {#if showDeleteNodeModal}
     <Modal on:close={() => (showDeleteNodeModal = false)}>
       <div slot="icon" class="flex justify-center">
@@ -143,9 +144,9 @@
         >
       </div>
     </Modal>
-  {/if}
+  {/if} -->
 
-  {#if showDeleteConfirmModal}
+  <!-- {#if showDeleteConfirmModal}
     <Modal on:close={() => (showDeleteConfirmModal = false)}>
       <div slot="icon" class="flex justify-center">
         <GreenCheck />
@@ -181,5 +182,5 @@
         <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
       </div>
     </Modal>
-  {/if}
+  {/if} -->
 </main>

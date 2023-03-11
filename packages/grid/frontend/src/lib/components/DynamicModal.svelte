@@ -23,12 +23,12 @@
       // do nothing
     }}
   >
-    <Close onClick={() => close()} />
+    <!-- <Close onClick={() => close()} /> -->
     <div class="modal-content flex flex-col">
-      <slot name="top-actions" />
+      <!-- <slot name="top-actions" /> -->
       <slot name="header" />
-      <slot name="content" />
-      <slot name="bottom-actions" />
+      <slot name="body" />
+      <slot name="footer" />
     </div>
   </div>
 </div>
@@ -51,7 +51,7 @@
   .modal {
     position: relative;
     padding: 1em;
-    width: 50vw;
+    max-width: 75vw;
     height: 80vh;
     background: #ffffff;
     box-shadow: -2px 4px 8px rgba(13, 12, 17, 0.25);
@@ -63,7 +63,8 @@
   }
 
   .modal-content {
-    max-height: calc(100vh - 20px);
+    height: 76vh;
     overflow: auto;
+    justify-content: space-between;
   }
 </style>
