@@ -10,8 +10,7 @@
      */
     constructor() {
       return (async () => {
-        // const url = `${window.location.protocol}//${window.location.host}`;
-        const url = 'http://localhost:8082';
+        const url = `${window.location.protocol}//${window.location.host}`;
         try {
           // Fetch the SerDe from the server and create a new JSSerde instance.
           const response = await fetch(`${url}/api/v1/syft/serde`);

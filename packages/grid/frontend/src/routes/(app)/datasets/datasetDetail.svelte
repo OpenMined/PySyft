@@ -1,5 +1,4 @@
 <script>
-  // PLACEHOLDER FOR THIAGO'S DATASET DETAIL PAGE WORK
   import { createEventDispatcher, onMount } from 'svelte';
   import Button from '$lib/components/Button.svelte';
 
