@@ -1,39 +1,57 @@
 <script>
-  import { browser } from '$app/environment';
-  import { getPath } from '../../../lib/utils.js';
-
   import GetStartedModal from './getStartedModal.svelte';
-  import Datasets from './datasetList.svelte';
-  import DatasetItem from './datasetItem.svelte';
+  import DatasetListItem from './datasetListItem.svelte';
+  import DatasetDetail from './datasetDetail.svelte';
+  import { data } from './mockDatasetData.ts';
 
   let modalFlag = true;
+  let visible = true;
+  let openDatasetName = '';
+  let openDatasetAuthor = '';
+  let openDatasetLastUpdated = '';
+  let openDatasetFileSize = '';
 
-  let path = '';
-  if (browser) {
-    path = getPath();
+  function showOpenDataset(event) {
+    openDatasetName = event.detail.openName;
+    openDatasetAuthor = event.detail.openAuthor;
+    openDatasetLastUpdated = event.detail.openLastUpdated;
+    openDatasetFileSize = event.detail.openFileSize;
+    visible = false;
   }
 
-  const items = [{ value: 'I am red!', component: DatasetItem }];
+  function showHome() {
+    visible = true;
+  }
+
+  let dataShow;
+  let originalData = Object.values(data);
+
+  dataShow = originalData;
 </script>
 
-<main>
-  <div class="page-container">{path}</div>
-
+<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
   <GetStartedModal showModal={modalFlag} />
 
-  <h1>Datasets</h1>
-  <Datasets {items} />
+  {#if visible}
+    <h1>Datasets</h1>
+    <article>
+      {#each dataShow as d}
+        <DatasetListItem
+          on:hide={showOpenDataset}
+          name={d.name}
+          author={d.author}
+          lastUpdated={d.lastUpdated}
+          fileSize={d.fileSize}
+        />
+      {/each}
+    </article>
+  {:else}
+    <DatasetDetail
+      on:closeOpenCard={showHome}
+      name={openDatasetName}
+      author={openDatasetAuthor}
+      lastUpdated={openDatasetLastUpdated}
+      fileSize={openDatasetFileSize}
+    />
+  {/if}
 </main>
-
-<style>
-  .page-container {
-    width: 85%;
-    position: absolute;
-    height: 93%;
-    top: 7%;
-    left: 15%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-</style>
