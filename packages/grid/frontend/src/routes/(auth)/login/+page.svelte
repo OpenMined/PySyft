@@ -6,6 +6,8 @@
   import DomainOnlineIndicator from '$lib/components/DomainOnlineIndicator.svelte';
   import { getClient } from '$lib/store';
   import { goto } from '$app/navigation';
+  import type { DomainOnlineStatus } from '../../../types/domain/onlineIndicator';
+  let status: DomainOnlineStatus = 'online';
 
   async function login({ email, password }, client) {
     await client
@@ -34,7 +36,16 @@
             </span>
           </div>
           <div class="contents" slot="body">
-            <DomainOnlineIndicator />
+            <div class="flex justify-center items-center gap-2">
+              <DomainOnlineIndicator />
+              <p class="text-600">
+                {#if status === 'pending'}
+                  Checking connection
+                {:else}
+                  Domain {status}
+                {/if}
+              </p>
+            </div>
             <Input
               label="Email"
               type="email"
@@ -44,7 +55,10 @@
             />
             <Input label="Password" type="password" id="password" placeholder="******" required />
             <p class="text-center">
-              Don't have an account yet? Apply for an account <a href="/signup">here</a>.
+              Don't have an account yet? Apply for an account <a
+                href="/signup"
+                class="text-primary-600 underline hover:opacity-50">here</a
+              >.
             </p>
           </div>
           <Button variant="secondary" slot="button-group">Login</Button>
