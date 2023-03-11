@@ -18,6 +18,7 @@ from .cache import RENDERED_DIR
 from .lib import manifest_template_path
 from .lib import repo_src_path
 from .mode import EDITABLE_MODE
+from .util import DEFAULT_REQUEST_TIMEOUT
 
 HAGRID_TEMPLATE_PATH = str(manifest_template_path())
 
@@ -182,7 +183,7 @@ def download_file(link_to_file: str, local_destination: str) -> None:
 
     try:
         # download file
-        response = requests.get(link_to_file)
+        response = requests.get(link_to_file, timeout=DEFAULT_REQUEST_TIMEOUT)
         if response.status_code != 200:
             raise Exception(f"Failed to download: {link_to_file}")
 

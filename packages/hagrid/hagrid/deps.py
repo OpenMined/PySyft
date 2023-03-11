@@ -39,6 +39,7 @@ from .exceptions import MissingDependency
 from .lib import is_gitpod
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
+from .util import DEFAULT_REQUEST_TIMEOUT
 from .version import __version__
 
 LATEST_STABLE_SYFT = "0.7"
@@ -273,7 +274,7 @@ def new_pypi_version(
 def get_pypi_versions(package_name: str) -> Dict[str, Any]:
     try:
         pypi_url = f"https://pypi.org/pypi/{package_name}/json"
-        req = requests.get(pypi_url)
+        req = requests.get(pypi_url, timeout=DEFAULT_REQUEST_TIMEOUT)
         # TODO: Fix JSON parsing of version keys
         # this is broken on my machine for some reason, the version keys are wrong
         pypi_info = json.loads(req.text)
