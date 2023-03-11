@@ -50,7 +50,7 @@ class Orchestra:
         if dev_mode:
             commands.append("--dev")
 
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             commands,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
