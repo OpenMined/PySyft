@@ -75,7 +75,7 @@ class Orchestra:
         if not worker_containers:
             raise Exception(
                 f"Worker Container:{snake_name} not found"
-                + "Kindly ensure the docker container is running"
+                + "\nKindly ensure the docker container is running"
             )
 
         _exists = False
@@ -95,7 +95,7 @@ class Orchestra:
         if not _exists:
             raise Exception(
                 f"Worker Container:{snake_name} not found"
-                + "Kindly ensure the docker container is running"
+                + "\nKindly ensure the docker container is running"
             )
         return Orchestra(port=port, name=name)
 
