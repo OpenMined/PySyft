@@ -7,7 +7,7 @@
 
 <main>
   {#if showModal}
-    <Modal>
+    <Modal size="large">
       <div
         class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min"
         slot="header"
