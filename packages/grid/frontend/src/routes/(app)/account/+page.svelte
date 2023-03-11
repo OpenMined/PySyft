@@ -86,7 +86,7 @@
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
-          <Button variant="secondary" onClick={() => (showDeleteAccountModal = true)}
+          <Button variant="delete" on:click={() => (showDeleteAccountModal = true)}
             >Delete Account</Button
           >
         </div>

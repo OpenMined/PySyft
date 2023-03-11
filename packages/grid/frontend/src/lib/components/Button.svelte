@@ -3,10 +3,10 @@
 
   interface $$Props extends HTMLButtonAttributes {
     disabled?: boolean;
-    variant: 'secondary';
+    variant: 'secondary' | 'delete';
   }
 
-  export let variant: string;
+  export let variant = 'secondary';
   export let disabled = false;
 </script>
 
@@ -23,6 +23,14 @@
   }
 
   .secondary:hover {
+    @apply to-marigold-400;
+  }
+
+  .delete {
+    @apply transition-all duration-500 bg-gradient-to-l from-magenta-300 to-magenta-300;
+  }
+
+  .delete:hover {
     @apply to-marigold-400;
   }
 </style>
