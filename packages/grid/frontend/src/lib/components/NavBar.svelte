@@ -4,7 +4,7 @@
   export let user_info;
   export let client;
 
-  $: userModal = false;
+  let userModal = false;
 </script>
 
 <main>
