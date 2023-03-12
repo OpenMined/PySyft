@@ -99,12 +99,20 @@
       })();
     }
 
+    /**
+     * Returns a promise that resolves to an array of datasets
+     * @returns {Promise<Array<Object>>} A promise that resolves to an array of datasets
+     */
     get datasets() {
       return (async () => {
         return await this.send([], {}, 'dataset.get_all');
       })();
     }
 
+    /**
+     * Returns a promise that resolves to an specific Dataset Obj
+     * @returns {Promise<Array<Object>>} A promise that resolves to a dataset
+     */
     getDataset(datasetId) {
       return (async () => {
         return await this.send([], { uid: new UUID(datasetId) }, 'dataset.get_by_id');
