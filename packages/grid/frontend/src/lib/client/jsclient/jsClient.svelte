@@ -99,6 +99,18 @@
       })();
     }
 
+    get datasets() {
+      return (async () => {
+        return await this.send([], {}, 'dataset.get_all');
+      })();
+    }
+
+    getDataset(datasetId) {
+      return (async () => {
+        return await this.send([], { uid: new UUID(datasetId) }, 'dataset.get_by_id');
+      })();
+    }
+
     /** Updates the current metadata with new fields using an API call and returns a Promise that resolves to the result of the call.
      * @param {Object} updatedMetadata - An object of metadata fields to pass to the API call.
      * @returns {Promise<object>} A Promise that resolves to an object containing the new metadata information.
