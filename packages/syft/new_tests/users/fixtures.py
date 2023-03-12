@@ -7,6 +7,7 @@ from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user import UserSearch
+from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user import UserView
 
 
@@ -75,20 +76,8 @@ def admin_user_private_key(guest_user) -> UserPrivateKey:
 
 
 @pytest.fixture
-def search_admin(admin_user) -> UserSearch:
-    return UserSearch(
-        id=admin_user.id,
-        name=admin_user.name,
-        email=admin_user.email,
-        verify_key=admin_user.verify_key,
-    )
-
-
-@pytest.fixture
-def search_guest(guest_user) -> UserSearch:
-    return UserSearch(
-        id=guest_user.id,
-        name=guest_user.name,
-        email=guest_user.email,
-        verify_key=guest_user.verify_key,
+def update_user(faker) -> UserSearch:
+    return UserUpdate(
+        name=faker.name(),
+        email=faker.email(),
     )

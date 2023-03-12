@@ -1,6 +1,4 @@
 # stdlib
-from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
@@ -87,17 +85,9 @@ class UserService(AbstractService):
         result = self.stash.get_all()
         if result.is_ok():
             return result.ok()
-        return SyftError(message="No users exists")
 
-    @service_method(path="user.find_all", name="find_all")
-    def find_all(
-        self, context: AuthedServiceContext, **kwargs: Dict[str, Any]
-    ) -> Union[List[UserView], SyftError]:
-        result = self.stash.find_all(**kwargs)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        users = result.ok()
-        return [user.to(UserView) for user in users] if users is not None else []
+        # 🟡 TODO: No user exists will happen when result.ok() is empty list
+        return SyftError(message="No users exists")
 
     @service_method(path="user.search", name="search", autosplat=["user_search"])
     def search(
@@ -106,6 +96,12 @@ class UserService(AbstractService):
         user_search: UserSearch,
     ) -> Union[List[UserView], SyftError]:
         kwargs = user_search.to_dict(exclude_none=True)
+
+        if len(kwargs) == 0:
+            valid_search_params = list(UserSearch.__fields__.keys())
+            return SyftError(
+                message=f"Invalid Search parameters. Allowed params: {valid_search_params}"
+            )
         result = self.stash.find_all(**kwargs)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -139,7 +135,7 @@ class UserService(AbstractService):
     @service_method(path="user.delete", name="delete")
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
         result = self.stash.delete_by_uid(uid=uid)
-        if result.err():
+        if result.is_err():
             return SyftError(message=str(result.err()))
 
         return result.ok()
@@ -150,10 +146,6 @@ class UserService(AbstractService):
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
-        # for _, user in self.data.items():
-        # syft_object: User = SyftObject.from_mongo(user)
-        # 🟡 TOD2230Store real root user and fetch from collection
-
         result = self.stash.get_by_email(email=context.login_credentials.email)
         if result.is_ok():
             user = result.ok()
@@ -202,7 +194,7 @@ class UserService(AbstractService):
         result = self.stash.get_by_email(email=email)
         if result.is_ok():
             return result.ok().verify_key
-        return SyftError(f"No user with email: {email}")
+        return SyftError(message=f"No user with email: {email}")
 
 
 TYPE_TO_SERVICE[User] = UserService

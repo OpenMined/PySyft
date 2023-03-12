@@ -6,22 +6,22 @@ import pytest
 import syft as sy
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def faker():
     return Faker()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def worker(faker):
-    return sy.Worker.named(processes=1, name=faker.name())
+    return sy.Worker.named(name=faker.name())
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def document_store(worker):
     return worker.document_store
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def action_store(worker):
     return worker.action_store
 
