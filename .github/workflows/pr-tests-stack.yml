@@ -127,6 +127,12 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
+      - name: Docker Compose on MacOS
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          brew install docker-compose
+
       - name: Remove existing containers
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
