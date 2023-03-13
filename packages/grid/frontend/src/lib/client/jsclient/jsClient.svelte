@@ -3,6 +3,7 @@
   import { UUID } from '../objects/uid';
   import { APICall } from '../messages/syftMessage.ts';
   import sodium from 'libsodium-wrappers';
+
   export class JSClient {
     /**
      * Constructs a new instance of the class.
@@ -98,6 +99,26 @@
       })();
     }
 
+    /**
+     * Returns a promise that resolves to an array of datasets
+     * @returns {Promise<Array<Object>>} A promise that resolves to an array of datasets
+     */
+    get datasets() {
+      return (async () => {
+        return await this.send([], {}, 'dataset.get_all');
+      })();
+    }
+
+    /**
+     * Returns a promise that resolves to an specific Dataset Obj
+     * @returns {Promise<Array<Object>>} A promise that resolves to a dataset
+     */
+    getDataset(datasetId) {
+      return (async () => {
+        return await this.send([], { uid: new UUID(datasetId) }, 'dataset.get_by_id');
+      })();
+    }
+
     /** Updates the current metadata with new fields using an API call and returns a Promise that resolves to the result of the call.
      * @param {Object} updatedMetadata - An object of metadata fields to pass to the API call.
      * @returns {Promise<object>} A Promise that resolves to an object containing the new metadata information.
@@ -144,7 +165,9 @@
         }
 
         // Deserialize the response and check its type.
-        const responseMsg = await response.json();
+        const responseBuffer = await response.arrayBuffer();
+        const responseMsg = this.serde.deserialize(responseBuffer);
+
         if (Array.isArray(responseMsg)) {
           // If the response is an array, return it.
           return responseMsg;
@@ -216,15 +239,19 @@
         // Deserialize the response and check its signature.
         const responseBuffer = await response.arrayBuffer();
         const signedMsg = this.serde.deserialize(responseBuffer);
-        /**
-        if (!signedMsg.valid) {
+
+        const isValid = sodium.crypto_sign_verify_detached(
+          signedMsg.signature,
+          signedMsg.serialized_message,
+          signedMsg.credentials.verify_key
+        );
+
+        if (!isValid) {
           throw new Error("Message signature and public key don't match!");
         }
 
         // Return the message contained in the response.
-        return signedMsg.message(this.serde);
-        */
-        return signedMsg;
+        return this.serde.deserialize(signedMsg.serialized_message).data;
       } catch (error) {
         console.error('Error occurred in send()', error);
         throw error;

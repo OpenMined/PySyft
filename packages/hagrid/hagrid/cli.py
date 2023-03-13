@@ -3307,7 +3307,7 @@ def _check_status(
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
-        ip_res = requests.get("https://ifconfig.co", headers=headers)
+        ip_res = requests.get("https://ifconfig.co", headers=headers)  # nosec
         ip_address = ip_res.text.strip()
         ip_addresses = [ip_address]
 
