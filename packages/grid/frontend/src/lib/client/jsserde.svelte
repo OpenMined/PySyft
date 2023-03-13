@@ -125,7 +125,6 @@
           data.set(0, dataList);
           return message.toArrayBuffer();
         },
-        (buffer) => {},
         null,
         {}
       ];
@@ -434,9 +433,8 @@
 
       // Check if the object is not recursive
       if (objSerdeProps) {
-        
-        if (fqn === "syft.core.node.new.uid.UID"){
-          return objSerdeProps[1](obj)
+        if (fqn === 'syft.core.node.new.uid.UID') {
+          return objSerdeProps[1](obj);
         }
 
         // If the object is not recursive, serialize it non-recursively
@@ -513,7 +511,7 @@
       const size = fieldsName.getLength();
       const fqn = rs.getFullyQualifiedName();
       const objSerdeProps = this.type_bank[fqn];
-      
+
       if (size < 1) {
         // If the data is a blob, deserialize the blob and return it
         const blob = rs.getNonrecursiveBlob();
@@ -537,10 +535,10 @@
             const key = fieldsName.get(i); // Get the name of the current field
             const bytes = fieldsData.get(i); // Get the binary data buffer for the current field
             const obj = this.processObject(bytes); // Recursively deserialize the binary data buffer
-            if (fqn === "syft.core.node.new.uid.UID"){
+            if (fqn === 'syft.core.node.new.uid.UID') {
               const hexuid = uuidStringify(obj);
-              kvIterable[key] = hexuid; // Add the deserialized value to the key-value iterable              
-            } else{
+              kvIterable[key] = hexuid; // Add the deserialized value to the key-value iterable
+            } else {
               kvIterable[key] = obj; // Add the deserialized value to the key-value iterable
             }
           }
