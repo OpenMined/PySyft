@@ -8,8 +8,7 @@ import numpy as np
 import torch
 
 # relative
-from ..core.common.serde.serialize import _serialize as serialize
-from ..core.tensor import Tensor
+from ..core.node.new.serialize import _serialize as serialize
 from ..util import bcolors
 
 
@@ -43,9 +42,8 @@ class OblvEnclavePointer:
             arg = {"type": "int", "value": other}
         elif type_name == float:
             arg = {"type": "float", "value": other}
-        elif type_name == torch.Tensor or type_name == np.ndarray:
-            t = Tensor(other)
-            arg = {"type": "tensor", "value": serialize(t, to_bytes=True)}
+        elif type_name == np.ndarray:
+            arg = {"type": "tensor", "value": serialize(other, to_bytes=True)}
         elif type_name == OblvEnclavePointer:
             arg = {"type": "wrapper", "value": other.id}
         else:

@@ -7,8 +7,6 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
-from .user_code import ExactMatch
-from .user_code import SingleExecutionExactOutput
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
 from .response import SyftError
@@ -17,6 +15,8 @@ from .response import SyftSuccess
 # from .policy import Policy, CreatePolicy
 from .service import AbstractService
 from .service import service_method
+from .user_code import ExactMatch
+from .user_code import SingleExecutionExactOutput
 
 # from .policy_stash import PolicyStash
 from .user_policy_stash import UserPolicyStash

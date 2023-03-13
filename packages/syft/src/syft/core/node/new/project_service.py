@@ -8,7 +8,6 @@ from result import Ok
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
@@ -20,6 +19,7 @@ from .project import ProjectSubmit
 from .project_stash import ProjectStash
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE

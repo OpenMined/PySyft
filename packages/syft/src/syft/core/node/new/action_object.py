@@ -21,15 +21,15 @@ import pydantic
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .action_types import action_type_for_type
 from .action_types import action_types
 from .client import SyftClient
 from .response import SyftException
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
+from .uid import UID
 
 
 @serializable(recursive_serde=True)

@@ -15,25 +15,18 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 from typing import Type
-
+from typing import Union
 
 # third party
 from IPython.core.magics.code import extract_symbols
-
-# third party
+import astunparse  # ast.unparse for python 3.8
 from result import Err
 from result import Ok
 from result import Result
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
 from ....util import is_interpreter_jupyter
-from ....oblv.deployment_client import EnclaveMetadata
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .api import NodeView
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
@@ -41,18 +34,20 @@ from .credentials import SyftVerifyKey
 from .dataset import Asset
 from .datetime import DateTime
 from .document_store import PartitionKey
+from .node import NodeType
+from .node_metadata import EnclaveMetadata
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
-from .policy import init_policy, get_policy_object
-from .node import NodeType
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
+from .uid import UID
 from .user_code_parse import GlobalsVisitor
-from .response import SyftError
-from .response import SyftSuccess
 
 # from .policy_service import PolicyService
 
@@ -60,6 +55,7 @@ UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerify
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
 
 PyCodeObject = Any
+
 
 def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
@@ -81,6 +77,7 @@ def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
 
         uid_kwargs[k] = uid
     return uid_kwargs
+
 
 class InputPolicy(SyftObject):
     # version
@@ -275,6 +272,7 @@ class OutputPolicyState(SyftObject):
         self.output_history.append(history)
         self.count += 1
 
+
 @serializable(recursive_serde=True)
 class OutputPolicyStateExecuteCount(OutputPolicyState):
     # version
@@ -303,13 +301,15 @@ class OutputPolicyStateExecuteCount(OutputPolicyState):
             )
         self.count += 1
 
+
 @serializable(recursive_serde=True)
 class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
     __canonical_name__ = "OutputPolicyStateExecuteOnce"
     __version__ = SYFT_OBJECT_VERSION_1
 
     limit: int = 1
-    
+
+
 class OutputPolicy(SyftObject):
     # version
     __canonical_name__ = "OutputPolicy"
@@ -322,15 +322,6 @@ class OutputPolicy(SyftObject):
     def update() -> None:
         raise NotImplementedError
 
-    @classmethod
-    @property
-    def policy_code(cls) -> str:
-        return inspect.getsource(cls)
-
-
-    def update() -> None:
-        raise NotImplementedError
-
     @property
     def policy_code(self) -> str:
         cls = type(self)
@@ -339,6 +330,7 @@ class OutputPolicy(SyftObject):
             state_code = inspect.getsource(self.state_type)
             op_code += "\n" + state_code
         return op_code
+
 
 @serializable(recursive_serde=True)
 class SingleExecutionExactOutput(OutputPolicy):
@@ -465,7 +457,7 @@ class UserCode(SyftObject):
     #         return self.hidden_input_policy
     #     elif isinstance(self.hidden_input_policy, UserPolicy):
     #         if self.status != UserCodeStatus.EXECUTE:
-    #             return self.hidden_input_policy 
+    #             return self.hidden_input_policy
     #         return get_policy_object(self.hidden_input_policy, self.input_policy_state)
 
     # @property
@@ -489,7 +481,7 @@ class UserCode(SyftObject):
             inner_function = ast.parse(self.raw_code).body[0]
             inner_function.decorator_list = []
             # compile the function
-            raw_byte_code = compile_byte_code(ast.unparse(inner_function))
+            raw_byte_code = compile_byte_code(astunparse.unparse(inner_function))
             # load it
             exec(raw_byte_code)  # nosec
             # execute it
@@ -774,7 +766,7 @@ def process_code(
         lineno=0,
     )
 
-    return ast.unparse(wrapper_function)
+    return astunparse.unparse(wrapper_function)
 
 
 def new_check_code(context: TransformContext) -> TransformContext:
@@ -847,7 +839,6 @@ def modify_signature(context: TransformContext) -> TransformContext:
 
 def init_policy_state(context: TransformContext) -> TransformContext:
     # stdlib
-    import sys
 
     if isinstance(context.output["input_policy"], InputPolicy):
         # context.output["input_policy_state"] = context.output["input_policy"].state_type()
@@ -861,7 +852,7 @@ def init_policy_state(context: TransformContext) -> TransformContext:
         ].state_type()
     else:
         context.output["output_policy_state"] = ""
-        
+
     # context.output["hidden_input_policy"] = context.output["input_policy"]
     # context.output["hidden_output_policy"] = context.output["output_policy"]
     return context

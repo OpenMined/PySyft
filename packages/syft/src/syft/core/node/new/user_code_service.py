@@ -9,14 +9,9 @@ from result import OkErr
 
 # relative
 from ....telemetry import instrument
-from ...common.serde import _serialize
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
-from .user_code import InputPolicy
-from .user_code import OutputPolicy
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
 from .policy import get_policy_object
@@ -26,11 +21,16 @@ from .request import UserCodeStatusChange
 from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
+from .serializable import serializable
+from .serialize import _serialize
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .uid import UID
+from .user_code import InputPolicy
 from .user_code import OutputHistory
+from .user_code import OutputPolicy
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
@@ -79,7 +79,7 @@ class UserCodeService(AbstractService):
                 code_item.output_policy = output_policy.ok()
             else:
                 return output_policy
-        
+
         result = self.stash.set(code_item)
         if result.is_err():
             return SyftError(message=str(result.err()))
