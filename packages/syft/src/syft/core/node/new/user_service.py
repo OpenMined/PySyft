@@ -100,7 +100,8 @@ class UserService(AbstractService):
         if len(kwargs) == 0:
             valid_search_params = list(UserSearch.__fields__.keys())
             return SyftError(
-                message=f"Invalid Search parameters. Allowed params: {valid_search_params}"
+                message=f"Invalid Search parameters. \
+                Allowed params: {valid_search_params}"
             )
         result = self.stash.find_all(**kwargs)
         if result.is_err():
@@ -115,7 +116,16 @@ class UserService(AbstractService):
         # TODO: ADD Email Validation
 
         # Get user to be updated by its UID
-        user = self.stash.get_by_uid(uid=uid).ok()
+        result = self.stash.get_by_uid(uid=uid)
+
+        if result.is_err():
+            error_msg = (
+                f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
+            )
+            return SyftError(message=error_msg)
+
+        user = result.ok()
+
         if user is None:
             return SyftError(message=f"No user exists for given UID: {uid}")
 
@@ -129,7 +139,16 @@ class UserService(AbstractService):
             elif not name.startswith("__") and value is not None:
                 setattr(user, name, value)
 
-        user = self.stash.update(user=user).ok()
+        result = self.stash.update(user=user)
+
+        if result.is_err():
+            error_msg = (
+                f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
+            )
+            return SyftError(message=error_msg)
+
+        user = result.ok()
+
         return user.to(UserView)
 
     @service_method(path="user.delete", name="delete")

@@ -2,9 +2,9 @@
 import pytest
 
 # syft absolute
-from syft.core.common.uid import UID
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.response import SyftSuccess
+from syft.core.node.new.uid import UID
 from syft.core.node.new.user import ServiceRole
 from syft.core.node.new.user import User
 from syft.core.node.new.user_stash import UserStash

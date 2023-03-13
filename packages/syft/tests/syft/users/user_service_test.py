@@ -7,12 +7,12 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.core.common.uid import UID
 from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.context import UnauthedServiceContext
 from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.response import SyftError
 from syft.core.node.new.response import SyftSuccess
+from syft.core.node.new.uid import UID
 from syft.core.node.new.user import ServiceRole
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserView
@@ -220,18 +220,38 @@ def test_userservice_search_with_invalid_kwargs(user_service, authed_context):
     assert "Invalid Search parameters" in response.message
 
 
-def test_userservice_update_with_error(
+def test_userservice_update_get_by_uid_fails(
     monkeypatch, user_service, authed_context, update_user
 ):
     random_uid = UID()
-    expected_error_msg = f"No user for given uid: {random_uid}"
+    get_by_uid_err_msg = "Invalid UID"
+    expected_error_msg = (
+        f"Failed to find user with UID: {random_uid}. Error: {get_by_uid_err_msg}"
+    )
 
-    def mock_update(user):
-        return Err(expected_error_msg)
+    def mock_get_by_uid(uid):
+        return Err(get_by_uid_err_msg)
 
-    monkeypatch.setattr(user_service.stash, "update", mock_update)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
-    # Search with empty result
+    response = user_service.update(
+        authed_context, uid=random_uid, user_update=update_user
+    )
+    assert isinstance(response, SyftError)
+    assert response.message == expected_error_msg
+
+
+def test_userservice_update_no_user_exists(
+    monkeypatch, user_service, authed_context, update_user
+):
+    random_uid = UID()
+    expected_error_msg = f"No user exists for given UID: {random_uid}"
+
+    def mock_get_by_uid(uid):
+        return Ok(None)
+
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
+
     response = user_service.update(
         authed_context, uid=random_uid, user_update=update_user
     )
@@ -242,12 +262,16 @@ def test_userservice_update_with_error(
 def test_userservice_update_success(
     monkeypatch, user_service, authed_context, guest_user, update_user
 ):
+    def mock_get_by_uid(uid):
+        return Ok(guest_user)
+
     def mock_update(user):
         guest_user.name = update_user.name
         guest_user.email = update_user.email
         return Ok(guest_user)
 
     monkeypatch.setattr(user_service.stash, "update", mock_update)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
 
     resultant_user = user_service.update(
         authed_context, uid=guest_user.id, user_update=update_user
@@ -255,6 +279,30 @@ def test_userservice_update_success(
     assert isinstance(resultant_user, UserView)
     assert resultant_user.email == update_user.email
     assert resultant_user.name == update_user.name
+
+
+def test_userservice_update_fails(
+    monkeypatch, user_service, authed_context, guest_user, update_user
+):
+    update_error_msg = "Failed to reach server."
+    expected_error_msg = (
+        f"Failed to update user with UID: {guest_user.id}. Error: {update_error_msg}"
+    )
+
+    def mock_get_by_uid(uid):
+        return Ok(guest_user)
+
+    def mock_update(user):
+        return Err(update_error_msg)
+
+    monkeypatch.setattr(user_service.stash, "update", mock_update)
+    monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
+
+    response = user_service.update(
+        authed_context, uid=guest_user.id, user_update=update_user
+    )
+    assert isinstance(response, SyftError)
+    assert response.message == expected_error_msg
 
 
 def test_userservice_delete_failure(monkeypatch, user_service, authed_context):
