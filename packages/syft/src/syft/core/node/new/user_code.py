@@ -293,9 +293,10 @@ class OutputPolicyStateExecuteCount(OutputPolicyState):
             message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
         )
 
-    def update_state(self,
+    def update_state(
+        self,
         context: NodeServiceContext,
-        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]]
+        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
     ) -> None:
         if self.count >= self.limit:
             raise Exception(
@@ -645,7 +646,7 @@ def get_code_from_class(policy):
 def syft_function(
     input_policy: Union[InputPolicy, UID, Any],
     output_policy: Union[OutputPolicy, UID, Any],
-    outputs: List[str],
+    outputs: List[str] = None,
     input_policy_init_args: Dict[str, Any] = None,
     output_policy_init_args: Dict[str, Any] = None,
 ) -> SubmitUserCode:
@@ -663,9 +664,9 @@ def syft_function(
             code="@serializable(recursive_serde=True)\n"
             + get_code_from_class(input_policy),
             class_name=input_policy.__name__,
-            input_kwargs=init_f_code.co_varnames[1:init_f_code.co_argcount],
+            input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
-        
+
     if isinstance(output_policy, UID) or isinstance(output_policy, OutputPolicy):
         print("UserPolicy")
         output_policy = output_policy
@@ -680,7 +681,7 @@ def syft_function(
             code="@serializable(recursive_serde=True)\n"
             + get_code_from_class(output_policy),
             class_name=output_policy.__name__,
-            input_kwargs=init_f_code.co_varnames[1:init_f_code.co_argcount],
+            input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
 
     def decorator(f):
@@ -692,7 +693,7 @@ def syft_function(
             input_policy=input_policy,
             output_policy=output_policy,
             local_function=f,
-            input_kwargs=f.__code__.co_varnames[:f.__code__.co_argcount],
+            input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
             outputs=outputs,
             input_policy_init_args=input_policy_init_args,
             output_policy_init_args=output_policy_init_args,
@@ -716,7 +717,7 @@ def process_code(
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    input_kwargs: List[str],# Dict[str, Any],
+    input_kwargs: List[str],  # Dict[str, Any],
     outputs: List[str],
 ) -> str:
     tree = ast.parse(raw_code)
@@ -765,7 +766,6 @@ def process_code(
         # return_annotation = ast.parse("typing.Any", mode="eval").body
 
     new_body = tree.body + [call_stmt, return_stmt]
-
 
     wrapper_function = ast.FunctionDef(
         name=func_name,

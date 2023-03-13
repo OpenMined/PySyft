@@ -26,6 +26,10 @@ from .context import ChangeContext
 from .credentials import SyftVerifyKey
 from .datetime import DateTime
 from .linked_obj import LinkedObject
+from .policy import UserPolicy
+from .policy import get_policy_object
+from .policy import init_policy
+from .policy import update_policy_state
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
@@ -39,10 +43,6 @@ from .transforms import transform
 from .uid import UID
 from .user_code import UserCode
 from .user_code import UserCodeStatus
-from .policy import UserPolicy
-from .policy import get_policy_object
-from .policy import init_policy
-from .policy import update_policy_state
 
 OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
 
@@ -187,8 +187,8 @@ class Request(SyftObject):
 
         code = change.linked_obj.resolve
         ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
-        
-        from .policy_service import PolicyService
+
+        # relative
 
         # policy_service = ctx.node.get_service(PolicyService)
         # if isinstance(code.input_policy, UserPolicy):
@@ -205,25 +205,21 @@ class Request(SyftObject):
             policy_object = init_policy(
                 code.output_policy, code.output_policy_init_args
             )
-            code.output_policy_state = _serialize(
-                policy_object, to_bytes=True
-            )
-                    
+            code.output_policy_state = _serialize(policy_object, to_bytes=True)
+
         if isinstance(code.output_policy, UserPolicy):
             policy_object = get_policy_object(
-                                    code.output_policy,
-                                    code.output_policy_state,
-                                )
-            action_object = ActionObject.from_obj(policy_object.apply_output(
-                action_object
-            ))
-            state = update_policy_state(
-                policy_object
+                code.output_policy,
+                code.output_policy_state,
             )
+            action_object = ActionObject.from_obj(
+                policy_object.apply_output(action_object)
+            )
+            state = update_policy_state(policy_object)
         else:
             state = code.output_policy_state
             state.update_state(outputs=action_object.id, context=ctx)
-            
+
         policy_state_mutation = ObjectMutation(
             linked_obj=change.linked_obj,
             attr_name="output_policy_state",

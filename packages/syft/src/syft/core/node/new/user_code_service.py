@@ -90,16 +90,18 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
+        # stdlib
+        import sys
+
         # relative
+        from .policy_service import PolicyService
         from .request import SubmitRequest
         from .request_service import RequestService
-        from .policy_service import PolicyService
 
-        import sys
         print("Noerr before code to usercode", file=sys.stderr)
         print(code.input_kwargs, file=sys.stderr)
         user_code = code.to(UserCode, context=context)
-        
+
         print("Noerr before policy transformations", file=sys.stderr)
         policy_service = context.node.get_service(PolicyService)
 
@@ -124,10 +126,12 @@ class UserCodeService(AbstractService):
                 user_code.output_policy = output_policy.ok()
             else:
                 return output_policy
-        
+
+        # stdlib
         import sys
+
         print("Noerr", file=sys.stderr)
-        
+
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -259,7 +263,7 @@ class UserCodeService(AbstractService):
                                     ],
                                 )
                             return is_valid
-                    
+
                     action_service = context.node.get_service("actionservice")
                     if isinstance(code_item.input_policy, InputPolicy):
                         # TODO: fix bug with dev InputPolicy
@@ -269,9 +273,7 @@ class UserCodeService(AbstractService):
                         policy_object = get_policy_object(
                             code_item.input_policy, code_item.input_policy_state
                         )
-                        filtered_kwargs = policy_object.filter_kwargs(
-                            filtered_kwargs
-                        )
+                        filtered_kwargs = policy_object.filter_kwargs(filtered_kwargs)
                         code_item.input_policy_state = update_policy_state(
                             policy_object
                         )
@@ -291,9 +293,7 @@ class UserCodeService(AbstractService):
                                 code_item.output_policy_state,
                             )
 
-                            final_results = policy_object.apply_output(
-                                final_results
-                            )
+                            final_results = policy_object.apply_output(final_results)
                             code_item.output_policy_state = update_policy_state(
                                 policy_object
                             )
