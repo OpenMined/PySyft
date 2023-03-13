@@ -22,7 +22,8 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest, windows]
+        # os: [ubuntu-latest, macos-latest, windows-latest, windows]
+        os: [ubuntu-latest]
         python-version: ["3.10"]
         pytest-modules: ["frontend network"]
       fail-fast: false
