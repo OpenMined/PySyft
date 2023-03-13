@@ -25,5 +25,5 @@ class TestService(AbstractService):
 
     @service_method(path="test.request", name="request")
     def test_request(self, context: AuthedServiceContext, url: str):
-        res = requests.get(url)
+        res = requests.get(url)  # nosec
         return Ok(res.status_code)

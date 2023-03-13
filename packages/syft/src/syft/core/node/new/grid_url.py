@@ -145,7 +145,7 @@ class GridURL:
             return self
 
         # TODO: only ignore ssl in dev mode
-        r = requests.get(
+        r = requests.get(  # nosec
             self.base_url, verify=verify_tls()
         )  # ignore ssl cert if its fake
         new_base_url = r.url

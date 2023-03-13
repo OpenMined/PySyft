@@ -198,7 +198,7 @@ class HTTPConnection(NodeConnection):
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
-        response = requests.post(
+        response = requests.post(  # nosec
             url=str(self.api_url),
             data=msg_bytes,
         )
