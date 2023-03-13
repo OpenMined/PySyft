@@ -1,5 +1,3 @@
-# third party
-
 # syft absolute
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.response import SyftSuccess
@@ -146,3 +144,18 @@ def test_userstash_delete_by_uid(user_stash, guest_user):
     assert result.is_ok()
     searched_user = result.ok()
     assert searched_user is None
+
+
+def test_userstash_update(user_stash, guest_user, update_user):
+    # prepare: add mock data
+    user = add_mock_user(user_stash, guest_user)
+
+    update_kwargs = update_user.to_dict(exclude_none=True).items()
+    for field_name, value in update_kwargs:
+        setattr(user, field_name, value)
+
+    result = user_stash.update(user=user)
+    assert result.is_ok()
+    updated_user = result.ok()
+    assert isinstance(updated_user, User)
+    assert user == updated_user
