@@ -6,11 +6,11 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .action_object import ActionObject
 from .action_types import action_types
+from .serializable import serializable
+from .syft_object import SyftObject
+from .uid import UID
 
 
 def to_action_object(obj: Any) -> ActionObject:

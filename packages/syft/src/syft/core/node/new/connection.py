@@ -2,8 +2,8 @@
 from typing import Any
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 
 
 class NodeConnection(SyftObject):

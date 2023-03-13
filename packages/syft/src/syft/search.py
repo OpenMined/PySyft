@@ -4,11 +4,11 @@ from typing import Tuple
 from typing import Union
 
 # relative
-from .core.common.uid import UID
 from .core.node.new.client import SyftClient
 from .core.node.new.dataset import Dataset
 from .core.node.new.network_service import NodePeer
 from .core.node.new.node_metadata import NodeMetadataJSON
+from .core.node.new.uid import UID
 from .registry import DomainRegistry
 
 

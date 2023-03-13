@@ -6,7 +6,6 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
 from .credentials import SyftVerifyKey
 from .document_store import BaseUIDStoreStash
 from .document_store import PartitionKey
@@ -15,6 +14,7 @@ from .document_store import QueryKeys
 from .project import Project
 from .request import Request
 from .response import SyftError
+from .serializable import serializable
 
 ProjectUserVerifyKeyPartitionKey = PartitionKey(
     key="user_verify_key", type_=SyftVerifyKey

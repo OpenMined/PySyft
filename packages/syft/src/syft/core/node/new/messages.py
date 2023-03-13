@@ -3,18 +3,18 @@ from enum import Enum
 from typing import Optional
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftVerifyKey
 from .linked_obj import LinkedObject
 from .request import DateTime
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import add_credentials_for_key
 from .transforms import add_node_uid_for_key
 from .transforms import generate_id
 from .transforms import transform
+from .uid import UID
 
 
 @serializable(recursive_serde=True)

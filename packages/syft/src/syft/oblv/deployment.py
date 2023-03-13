@@ -7,7 +7,6 @@ from oblv.models import CreateDeploymentInput
 import yaml
 
 # relative
-from ..core.node.common.exceptions import OblvKeyNotFoundError
 from ..util import bcolors
 from .auth import login
 from .constants import INFRA
@@ -18,6 +17,7 @@ from .constants import REPO_OWNER
 from .constants import VCS
 from .constants import VISIBILITY
 from .deployment_client import DeploymentClient
+from .exceptions import OblvKeyNotFoundError
 from .oblv_proxy import create_oblv_key_pair
 from .oblv_proxy import get_oblv_public_key
 
