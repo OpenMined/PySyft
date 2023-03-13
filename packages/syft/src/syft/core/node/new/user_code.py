@@ -19,6 +19,7 @@ from typing import Type
 from typing import Union
 
 # third party
+import astunparse  # ast.unparse for python 3.8
 from result import Err
 from result import Ok
 from result import Result
@@ -422,7 +423,7 @@ class UserCode(SyftObject):
             inner_function = ast.parse(self.raw_code).body[0]
             inner_function.decorator_list = []
             # compile the function
-            raw_byte_code = compile_byte_code(ast.unparse(inner_function))
+            raw_byte_code = compile_byte_code(astunparse.unparse(inner_function))
             # load it
             exec(raw_byte_code)  # nosec
             # execute it
@@ -626,7 +627,7 @@ def process_code(
         lineno=0,
     )
 
-    return ast.unparse(wrapper_function)
+    return astunparse.unparse(wrapper_function)
 
 
 def new_check_code(context: TransformContext) -> TransformContext:
