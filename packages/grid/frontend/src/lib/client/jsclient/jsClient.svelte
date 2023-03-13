@@ -12,15 +12,7 @@
     constructor() {
       return (async () => {
         const url = `${window.location.protocol}//${window.location.host}`;
-        try {
-          // Fetch the SerDe from the server and create a new JSSerde instance.
-          const response = await fetch(`${url}/api/v1/syft/serde`);
-          const { bank } = await response.json();
-          this.serde = new JSSerde(bank);
-        } catch (error) {
-          console.error('Error fetching serde:', error);
-        }
-
+        this.serde = new JSSerde();
         // Set the URL and message URL properties.
         this.url = url;
         this.msg_url = `${url}/api/v1/new/api_call`;
