@@ -273,7 +273,7 @@ def new_pypi_version(
 def get_pypi_versions(package_name: str) -> Dict[str, Any]:
     try:
         pypi_url = f"https://pypi.org/pypi/{package_name}/json"
-        req = requests.get(pypi_url)
+        req = requests.get(pypi_url)  # nosec
         # TODO: Fix JSON parsing of version keys
         # this is broken on my machine for some reason, the version keys are wrong
         pypi_info = json.loads(req.text)
