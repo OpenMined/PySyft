@@ -27,5 +27,5 @@ def action_store(worker):
 
 
 pytest_plugins = [
-    "new_tests.users.fixtures",
+    "tests.syft.users.fixtures",
 ]
