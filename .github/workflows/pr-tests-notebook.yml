@@ -16,13 +16,15 @@ on:
         required: false
 
 jobs:
-  notebook-tests:
+  pr-tests-syft-notebook:
     strategy:
       max-parallel: 4
       matrix:
-        # os: [windows-latest, ubuntu-latest, macos-latest]
-        os: [ubuntu-latest, macos-latest] # issues with windows and pymongo_inmemory
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
+        include:
+          - python-version: "3.8"
+            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -65,16 +67,15 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install packaging wheel --default-timeout=60
+          pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install -U tox
           tox -e syft.test.notebook
 
-  stack-notebook-tests:
+  pr-tests-stack-notebook:
     strategy:
       max-parallel: 99
       matrix:
