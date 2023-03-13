@@ -7,8 +7,6 @@ from typing import Tuple
 from typing import Union
 from urllib.parse import urlparse
 
-DEFAULT_REQUEST_TIMEOUT = 20
-
 
 def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
     try:

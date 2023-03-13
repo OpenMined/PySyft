@@ -20,7 +20,6 @@ from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
 from .cache import arg_cache
 from .nb_output import NBOutput
-from .util import DEFAULT_REQUEST_TIMEOUT
 
 directory = os.path.expanduser("~/.hagrid/quickstart/")
 
@@ -55,7 +54,7 @@ def quickstart_download_notebook(
     downloaded = False
     if not file_exists or file_exists and reset:
         print(f"Downloading notebook: {file_name}")
-        r = requests.get(url, allow_redirects=True, timeout=DEFAULT_REQUEST_TIMEOUT)
+        r = requests.get(url, allow_redirects=True)
         with open(os.path.expanduser(file_path), "wb") as f:
             f.write(r.content)
         downloaded = True
@@ -287,7 +286,7 @@ def get_urls_from_dir(
     gh_api_call = (
         "https://api.github.com/repos/" + repo + "/git/trees/" + slug + "?recursive=1"
     )
-    r = requests.get(gh_api_call, timeout=DEFAULT_REQUEST_TIMEOUT)
+    r = requests.get(gh_api_call)
     if r.status_code != 200:
         print(
             f"Failed to fetch notebook from: {gh_api_call}.\n"

@@ -89,7 +89,6 @@ from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
-from .util import DEFAULT_REQUEST_TIMEOUT
 from .util import fix_windows_virtualenv_api
 from .util import from_url
 from .util import shell
@@ -3308,9 +3307,7 @@ def _check_status(
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
-        ip_res = requests.get(
-            "https://ifconfig.co", headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT
-        )
+        ip_res = requests.get("https://ifconfig.co", headers=headers)
         ip_address = ip_res.text.strip()
         ip_addresses = [ip_address]
 
