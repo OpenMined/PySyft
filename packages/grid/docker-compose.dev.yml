@@ -1,10 +1,10 @@
 version: "3.8"
 services:
-  tailscale:
-    profiles:
-      - vpn
-    volumes:
-      - ${RELATIVE_PATH}./vpn:/tailscale
+  # tailscale:
+  #   profiles:
+  #     - vpn
+  #   volumes:
+  #     - ${RELATIVE_PATH}./vpn:/tailscale
 
   proxy:
     ports:
@@ -21,15 +21,15 @@ services:
     environment:
       - FRONTEND_TARGET=grid-ui-development
 
-  redis:
-    ports:
-      - "6379"
+  # redis:
+  #   ports:
+  #     - "6379"
 
-  queue:
-    image: rabbitmq:3-management
-    ports:
-      - "15672" # admin web port
-      # - "5672" # AMQP port
+  # queue:
+  #   image: rabbitmq:3-management
+  #   ports:
+  #     - "15672" # admin web port
+  #     # - "5672" # AMQP port
 
   mongo:
     ports:
@@ -43,36 +43,36 @@ services:
     environment:
       - DEV_MODE=True
 
-  backend_stream:
-    volumes:
-      - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}../syft:/app/syft
-      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-    environment:
-      - DEV_MODE=True
+  # backend_stream:
+  #   volumes:
+  #     - ${RELATIVE_PATH}./backend/grid:/app/grid
+  #     - ${RELATIVE_PATH}../syft:/app/syft
+  #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
+  #   environment:
+  #     - DEV_MODE=True
 
-  celeryworker:
-    volumes:
-      - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}../syft/:/app/syft
-      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-    environment:
-      - DEV_MODE=True
+  # celeryworker:
+  #   volumes:
+  #     - ${RELATIVE_PATH}./backend/grid:/app/grid
+  #     - ${RELATIVE_PATH}../syft/:/app/syft
+  #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
+  #   environment:
+  #     - DEV_MODE=True
 
-  headscale:
-    profiles:
-      - network
-    volumes:
-      - ${RELATIVE_PATH}./vpn:/headscale
-    ports:
-      - "4000"
+  # headscale:
+  #   profiles:
+  #     - network
+  #   volumes:
+  #     - ${RELATIVE_PATH}./vpn:/headscale
+  #   ports:
+  #     - "4000"
 
-  seaweedfs:
-    profiles:
-      - blob-storage
-    # volumes:
-    #   - ./data/seaweedfs:/data
-    ports:
-      - "9333" # admin web port
-      - "8888" # filer web port
-      # - "8333" # S3 API port
+  # seaweedfs:
+  #   profiles:
+  #     - blob-storage
+  #   # volumes:
+  #   #   - ./data/seaweedfs:/data
+  #   ports:
+  #     - "9333" # admin web port
+  #     - "8888" # filer web port
+  #     # - "8333" # S3 API port

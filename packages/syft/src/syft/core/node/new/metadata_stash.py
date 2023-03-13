@@ -6,13 +6,13 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .document_store import BaseUIDStoreStash
 from .document_store import DocumentStore
 from .document_store import PartitionKey
 from .document_store import PartitionSettings
 from .node_metadata import NodeMetadata
+from .serializable import serializable
+from .uid import UID
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=List[UID])

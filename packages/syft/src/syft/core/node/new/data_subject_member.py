@@ -1,8 +1,8 @@
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
 from .document_store import PartitionKey
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 
 ParentPartitionKey = PartitionKey(key="parent", type_=str)
 ChildPartitionKey = PartitionKey(key="child", type_=str)

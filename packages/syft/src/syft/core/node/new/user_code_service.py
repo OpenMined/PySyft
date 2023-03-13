@@ -9,8 +9,6 @@ from result import OkErr
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
@@ -18,10 +16,12 @@ from .request import UserCodeStatusChange
 from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
+from .serializable import serializable
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .uid import UID
 from .user_code import OutputHistory
 from .user_code import SubmitUserCode
 from .user_code import UserCode

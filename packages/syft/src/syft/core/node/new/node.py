@@ -3,9 +3,9 @@ from enum import Enum
 from typing import Optional
 
 # relative
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftSigningKey
+from .serializable import serializable
+from .uid import UID
 
 
 @serializable(recursive_serde=True)

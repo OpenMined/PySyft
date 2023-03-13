@@ -8,8 +8,6 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftVerifyKey
 from .document_store import BaseUIDStoreStash
 from .document_store import PartitionKey
@@ -17,6 +15,8 @@ from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .messages import Message
 from .messages import MessageStatus
+from .serializable import serializable
+from .uid import UID
 
 FromUserVerifyKeyPartitionKey = PartitionKey(
     key="from_user_verify_key", type_=SyftVerifyKey
