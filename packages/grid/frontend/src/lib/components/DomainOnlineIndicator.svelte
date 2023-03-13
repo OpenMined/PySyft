@@ -1,5 +1,5 @@
 <script lang="ts">
-  type DomainOnlineStatus = 'online' | 'offline' | 'pending';
+  import type { DomainOnlineStatus } from '../../types/domain/onlineIndicator';
   let status: DomainOnlineStatus = 'online';
 </script>
 
@@ -10,11 +10,4 @@
     class:bg-red-500={status === 'offline'}
     class:bg-yellow-500={status === 'pending'}
   />
-  <p class="text-600">
-    {#if status === 'pending'}
-      Checking connection
-    {:else}
-      Domain {status}
-    {/if}
-  </p>
 </div>

@@ -5,13 +5,13 @@ from typing import Optional
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ..common.node_table.syft_object import Context
-from ..common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ..common.node_table.syft_object import SyftObject
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
 from .node import NewNode
+from .syft_object import Context
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
 
 
 class NodeServiceContext(Context, SyftObject):

@@ -1,7 +1,7 @@
 # relative
-from .....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from .....core.node.common.node_table.syft_object import SyftObject
-from ....common.serde.serializable import serializable
+from ..serializable import serializable
+from ..syft_object import SYFT_OBJECT_VERSION_1
+from ..syft_object import SyftObject
 
 
 @serializable(recursive_serde=True)

@@ -8,13 +8,13 @@ from result import Ok
 from result import Result
 
 # relative
-from ....common.serde.serializable import serializable
-from ....common.uid import UID
 from ..document_store import BaseStash
 from ..document_store import DocumentStore
 from ..document_store import PartitionSettings
 from ..document_store import QueryKeys
 from ..document_store import UIDPartitionKey
+from ..serializable import serializable
+from ..uid import UID
 from .oblv_keys import OblvKeys
 
 
