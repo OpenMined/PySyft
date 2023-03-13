@@ -18,18 +18,18 @@ from RestrictedPython import compile_restricted
 from result import Result
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde import _deserialize
-from ...common.serde import _serialize
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftVerifyKey
+from .deserialize import _deserialize
 from .document_store import PartitionKey
 from .policy_code_parse import GlobalsVisitor
+from .serializable import serializable
+from .serialize import _serialize
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
+from .uid import UID
 
 PolicyUserVerifyKeyPartitionKey = PartitionKey(
     key="user_verify_key", type_=SyftVerifyKey

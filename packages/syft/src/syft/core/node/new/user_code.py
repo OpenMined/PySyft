@@ -19,7 +19,6 @@ from typing import Type
 from typing import Union
 
 # third party
-from IPython.core.magics.code import extract_symbols
 import astunparse  # ast.unparse for python 3.8
 from result import Err
 from result import Ok
@@ -624,6 +623,9 @@ def new_getfile(object):
 
 
 def get_code_from_class(policy):
+    # third party
+    from IPython.core.magics.code import extract_symbols
+
     klasses = inspect.getmro(policy)[-2::-1]
     whole_str = ""
     for klass in klasses:
