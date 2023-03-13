@@ -19,17 +19,12 @@ from result import Ok
 from result import Result
 
 # relative
-from .....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from .....core.node.common.node_table.syft_object import SyftObject
 from .....oblv.constants import DOMAIN_CONNECTION_PORT
 from .....oblv.constants import LOCAL_MODE
 from .....oblv.constants import WORKER_MODE
 from .....oblv.deployment_client import OblvMetadata
-from ....common.serde.deserialize import _deserialize as deserialize
-from ....common.serde.serializable import serializable
-from ....common.uid import UID
-from ...common.exceptions import OblvEnclaveError
-from ...common.exceptions import OblvProxyConnectPCRError
+from .....oblv.exceptions import OblvEnclaveError
+from .....oblv.exceptions import OblvProxyConnectPCRError
 from ..api import NodeView
 from ..api import SyftAPI
 from ..client import HTTPConnection
@@ -37,9 +32,14 @@ from ..client import Routes
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..credentials import SyftSigningKey
+from ..deserialize import _deserialize as deserialize
 from ..document_store import DocumentStore
+from ..serializable import serializable
 from ..service import AbstractService
 from ..service import service_method
+from ..syft_object import SYFT_OBJECT_VERSION_1
+from ..syft_object import SyftObject
+from ..uid import UID
 from ..user_code import UserCode
 from ..user_code import UserCodeStatus
 from .oblv_keys import OblvKeys

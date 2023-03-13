@@ -14,10 +14,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...common.serde.serializable import serializable
-from ..common.node_table.syft_object import StorableObjectType
-from ..common.node_table.syft_object import SyftObject
-from ..common.node_table.syft_object import SyftObjectRegistry
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
@@ -26,6 +22,10 @@ from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
 from .response import SyftSuccess
+from .serializable import serializable
+from .syft_object import StorableObjectType
+from .syft_object import SyftObject
+from .syft_object import SyftObjectRegistry
 from .transforms import TransformContext
 from .transforms import transform
 from .transforms import transform_method

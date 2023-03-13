@@ -9,16 +9,16 @@ from typing import Tuple
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .document_store import PartitionKey
 from .response import SyftError
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import add_node_uid_for_key
 from .transforms import generate_id
 from .transforms import transform
+from .uid import UID
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 

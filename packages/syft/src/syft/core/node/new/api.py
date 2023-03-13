@@ -17,32 +17,30 @@ from typing import _GenericAlias
 from nacl.exceptions import BadSignatureError
 from pydantic import BaseModel
 from pydantic import EmailStr
-from result import Err
-from result import Ok
 from result import OkErr
 from result import Result
 from typeguard import check_type
 
 # relative
-from ....core.common.serde.recursive import index_syft_by_module_name
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize
-from ...common.uid import UID
 from .connection import NodeConnection
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .deserialize import _deserialize
 from .node import NewNode
+from .recursive import index_syft_by_module_name
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
+from .serialize import _serialize
 from .service import ServiceConfigRegistry
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
+from .uid import UID
 
 
 class APIRegistry:
@@ -99,15 +97,15 @@ class SignedSyftAPICall(SyftObject):
         return self.cached_deseralized_message
 
     @property
-    def is_valid(self) -> Result[SyftSuccess, Err]:
+    def is_valid(self) -> Result[SyftSuccess, SyftSuccess]:
         try:
             _ = self.credentials.verify_key.verify(
                 self.serialized_message, self.signature
             )
         except BadSignatureError:
-            return Err("BadSignatureError")
+            return SyftError(message="BadSignatureError")
 
-        return Ok(SyftSuccess(message="Credentials are valid"))
+        return SyftSuccess(message="Credentials are valid")
 
 
 @instrument
@@ -345,7 +343,7 @@ class SyftAPI(SyftObject):
         if not isinstance(signed_result, SignedSyftAPICall):
             return SyftError(message="The result is not signed")  # type: ignore
 
-        if not signed_result.is_valid.is_ok():
+        if not signed_result.is_valid:
             return SyftError(message="The result signature is invalid")  # type: ignore
 
         result = signed_result.message.data

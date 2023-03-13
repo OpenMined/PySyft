@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from ..new.credentials import SyftSigningKey
 from ..new.document_store import StoreConfig
 from ..new.node import NewNode
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
+from .uid import UID
 
 
 @serializable(recursive_serde=True)

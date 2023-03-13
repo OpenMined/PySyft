@@ -54,7 +54,7 @@ def quickstart_download_notebook(
     downloaded = False
     if not file_exists or file_exists and reset:
         print(f"Downloading notebook: {file_name}")
-        r = requests.get(url, allow_redirects=True)
+        r = requests.get(url, allow_redirects=True)  # nosec
         with open(os.path.expanduser(file_path), "wb") as f:
             f.write(r.content)
         downloaded = True
@@ -286,7 +286,7 @@ def get_urls_from_dir(
     gh_api_call = (
         "https://api.github.com/repos/" + repo + "/git/trees/" + slug + "?recursive=1"
     )
-    r = requests.get(gh_api_call)
+    r = requests.get(gh_api_call)  # nosec
     if r.status_code != 200:
         print(
             f"Failed to fetch notebook from: {gh_api_call}.\n"

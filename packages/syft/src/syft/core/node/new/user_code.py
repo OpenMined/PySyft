@@ -19,16 +19,12 @@ from typing import Type
 from typing import Union
 
 # third party
+import astunparse  # ast.unparse for python 3.8
 from result import Err
 from result import Ok
 from result import Result
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ....oblv.deployment_client import EnclaveMetadata
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .api import NodeView
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
@@ -37,11 +33,16 @@ from .dataset import Asset
 from .datetime import DateTime
 from .document_store import PartitionKey
 from .node import NodeType
+from .node_metadata import EnclaveMetadata
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
+from .uid import UID
 from .user_code_parse import GlobalsVisitor
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
@@ -422,7 +423,7 @@ class UserCode(SyftObject):
             inner_function = ast.parse(self.raw_code).body[0]
             inner_function.decorator_list = []
             # compile the function
-            raw_byte_code = compile_byte_code(ast.unparse(inner_function))
+            raw_byte_code = compile_byte_code(astunparse.unparse(inner_function))
             # load it
             exec(raw_byte_code)  # nosec
             # execute it
@@ -626,7 +627,7 @@ def process_code(
         lineno=0,
     )
 
-    return ast.unparse(wrapper_function)
+    return astunparse.unparse(wrapper_function)
 
 
 def new_check_code(context: TransformContext) -> TransformContext:

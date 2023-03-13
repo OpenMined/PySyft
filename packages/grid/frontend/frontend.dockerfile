@@ -15,12 +15,13 @@ CMD ["pnpm", "dev"]
 FROM grid-ui-development as build-stage
 RUN pnpm build
 
-FROM node:18-alpine as grid-ui-production
-ENV NODE_TYPE $NODE_TYPE
+# FROM node:18-alpine as grid-ui-production
+# ENV NODE_TYPE $NODE_TYPE
+# RUN npm i -g pnpm
 
-WORKDIR /app
-RUN rm -rf ./*
-COPY --from=build-stage /app/package.json .
-COPY --from=build-stage /app/build .
-RUN pnpm --prod
-CMD ["node", "index.js"]
+# WORKDIR /app
+# RUN rm -rf ./*
+# COPY --from=build-stage /app/package.json .
+# COPY --from=build-stage /app/build .
+# RUN pnpm build
+# CMD ["node", "index.js"]

@@ -12,11 +12,11 @@ from pymongo.mongo_client import MongoClient as PyMongoClient
 from typing_extensions import Self
 
 # relative
-from ...common.serde.serializable import serializable
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .mongo_codecs import SYFT_CODEC_OPTIONS
+from .serializable import serializable
 
 
 @serializable(recursive_serde=True)

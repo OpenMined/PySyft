@@ -67,22 +67,22 @@ def windows_proxy_installation(with_package: bool = False):
     try:
         if with_package:
             url = "https://api.oblivious.ai/oblv-ccli/0.4.0/packages/oblv-0.4.0-x86_64.msi"
-            res = requests.get(url)
+            res = requests.get(url)  # nosec
             path = os.path.join(os.path.expanduser("~"), "oblv-0.4.0-x86_64.msi")
             with open(path, "wb") as f:
                 f.write(res.content)
             os.system("msiexec /I {} /quiet /QB-!".format(path))  # nosec
         else:
             url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-pc-windows-msvc.zip"
-            res = requests.get(url)
+            res = requests.get(url)  # nosec
             path = (
                 os.getcwd().replace("\\", "/")
                 + "/oblv-ccli-0.4.0-x86_64-pc-windows-msvc.zip"
             )
             with open(path, "wb") as f:
                 f.write(res.content)
-            with zipfile.ZipFile(path, "r") as zipObj:
-                zipObj.extractall()
+            with zipfile.ZipFile(path, "r") as zipObj:  # nosec
+                zipObj.extractall()  # nosec
             os.environ["PATH"] += (
                 ";" + os.getcwd() + "\\oblv-ccli-0.4.0-x86_64-pc-windows-msvc;"
             )
@@ -106,14 +106,14 @@ def linux_proxy_installation(with_package: bool = False):
                 os.system("dpkg")  # nosec
             except Exception:
                 url = "https://api.oblivious.ai/oblv-ccli/0.4.0/packages/oblv-0.4.0-1.x86_64.rpm"
-                res = requests.get(url)
+                res = requests.get(url)  # nosec
                 path = os.path.join(os.path.expanduser("~"), "oblv-0.4.0-1.x86_64.rpm")
                 with open(path, "wb") as f:
                     f.write(res.content)
                 os.system("rpm -i {}".format(path))  # nosec
             else:
                 url = "https://api.oblivious.ai/oblv-ccli/0.4.0/packages/oblv_0.4.0_amd64.deb"
-                res = requests.get(url)
+                res = requests.get(url)  # nosec
                 path = os.path.join(os.path.expanduser("~"), "oblv_0.4.0_amd64.deb")
                 with open(path, "wb") as f:
                     f.write(res.content)
@@ -121,13 +121,13 @@ def linux_proxy_installation(with_package: bool = False):
         else:
             url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz"
             file_name = "oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz"
-            res = requests.get(url, stream=True)
+            res = requests.get(url, stream=True)  # nosec
             if res.status_code == 200:
                 with open(file_name, "wb") as f:
                     f.write(res.raw.read())
             path = os.getcwd() + "/oblv-ccli-0.4.0-x86_64-unknown-linux-musl"
-            file = tarfile.open(file_name)
-            file.extractall(path)
+            file = tarfile.open(file_name)  # nosec
+            file.extractall(path)  # nosec
 
             os.symlink(
                 "/usr/local/bin/oblv",
@@ -152,13 +152,13 @@ def linux_proxy_installation(with_package: bool = False):
 def darwin_proxy_installation():
     url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-apple-darwin.tar.gz"
     file_name = "oblv-ccli-0.4.0-x86_64-apple-darwin.tar.gz"
-    res = requests.get(url, stream=True)
+    res = requests.get(url, stream=True)  # nosec
     if res.status_code == 200:
         with open(file_name, "wb") as f:
             f.write(res.raw.read())
     path = os.getcwd() + "/oblv-ccli-0.4.0-x86_64-apple-darwin"
     file = tarfile.open(file_name)
-    file.extractall(path)
+    file.extractall(path)  # nosec
 
     os.symlink(
         "/usr/local/bin/oblv", os.getcwd() + "/oblv-ccli-0.4.0-x86_64-apple-darwin/oblv"

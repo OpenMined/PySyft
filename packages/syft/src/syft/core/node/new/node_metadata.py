@@ -11,16 +11,16 @@ from packaging import version
 from pydantic import BaseModel
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import StorableObjectType
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from ..new.credentials import SyftVerifyKey
 from ..new.transforms import convert_types
 from ..new.transforms import drop
 from ..new.transforms import rename
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import StorableObjectType
+from .syft_object import SyftObject
 from .transforms import transform
+from .uid import UID
 
 
 def check_version(
@@ -120,3 +120,9 @@ def json_to_metadata() -> List[Callable]:
         drop(["metadata_version"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),
     ]
+
+
+class EnclaveMetadata:
+    """Contains metadata to connect to a specific Enclave"""
+
+    pass

@@ -6,13 +6,13 @@ from result import Ok
 from result import Result
 
 # relative
-from ...common.serde.serializable import serializable
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .metadata_stash import MetadataStash
 from .node_metadata import NodeMetadata
 from .node_metadata import NodeMetadataUpdate
 from .response import SyftError
+from .serializable import serializable
 from .service import AbstractService
 from .service import service_method
 

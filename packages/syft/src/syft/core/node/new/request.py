@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 import hashlib
+import os
 from typing import Any
 from typing import Callable
 from typing import List
@@ -15,11 +16,6 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde import _serialize
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .action_object import ActionObject
 from .action_service import ActionService
 from .action_store import ActionObjectPermission
@@ -32,13 +28,19 @@ from .datetime import DateTime
 from .linked_obj import LinkedObject
 from .response import SyftError
 from .response import SyftSuccess
-from .task.oblv_service import check_enclave_transfer
+from .serializable import serializable
+from .serialize import _serialize
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import add_node_uid_for_key
 from .transforms import generate_id
 from .transforms import transform
+from .uid import UID
 from .user_code import UserCode
 from .user_code import UserCodeStatus
+
+OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
 
 
 @serializable(recursive_serde=True)
@@ -448,10 +450,15 @@ class UserCodeStatusChange(Change):
                 if res.is_err():
                     return res
                 res = res.ok()
+                if OBLV:
+                    # relative
+                    from .task.oblv_service import check_enclave_transfer
 
-                enclave_res = check_enclave_transfer(
-                    user_code=res, value=self.value, context=context
-                )
+                    enclave_res = check_enclave_transfer(
+                        user_code=res, value=self.value, context=context
+                    )
+                else:
+                    enclave_res = Ok()
 
                 if enclave_res.is_err():
                     return enclave_res
