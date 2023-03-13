@@ -1,4 +1,4 @@
-name: Linting
+name: PR Tests - Linting
 
 on:
   workflow_call:

@@ -1,4 +1,4 @@
-name: HAGrid PR Tests
+name: PR Tests - HAGrid
 
 on:
   workflow_call:

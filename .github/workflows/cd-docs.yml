@@ -1,4 +1,4 @@
-name: Deploy Syft Documentation
+name: CD - Docs
 on:
   workflow_dispatch:
     inputs:

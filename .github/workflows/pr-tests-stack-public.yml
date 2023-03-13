@@ -1,5 +1,4 @@
-# Stack Integration Tests
-name: Syft + Grid Stack Integration Tests (Public)
+name: PR Tests - Stack - Public
 
 on:
   workflow_call:

@@ -1,4 +1,4 @@
-name: Continuous Delivery
+name: CD - Syft
 
 on:
   schedule:

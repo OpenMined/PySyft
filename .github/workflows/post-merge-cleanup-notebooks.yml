@@ -1,4 +1,4 @@
-name: Cleanup Notebooks
+name: Post Merge - Cleanup Notebooks
 
 on:
   workflow_call:

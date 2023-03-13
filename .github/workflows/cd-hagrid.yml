@@ -1,4 +1,4 @@
-name: HAGrid Continuous Delivery
+name: CD - HAGrid
 
 on:
   schedule:

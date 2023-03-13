@@ -1,5 +1,4 @@
-# Stack Integration Tests
-name: Syft + Grid Stack Integration Tests arm64
+name: PR Tests - Stack - Arm64
 
 on:
   workflow_call:

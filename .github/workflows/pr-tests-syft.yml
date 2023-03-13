@@ -1,4 +1,4 @@
-name: Syft Notebook Tests
+name: PR Tests - Syft
 
 on:
   workflow_call:
