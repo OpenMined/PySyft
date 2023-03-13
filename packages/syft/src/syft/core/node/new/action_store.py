@@ -12,16 +12,16 @@ from result import Ok
 from result import Result
 
 # relative
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .dict_document_store import DictStoreConfig
 from .document_store import BasePartitionSettings
 from .document_store import StoreConfig
 from .response import SyftSuccess
+from .serializable import serializable
+from .syft_object import SyftObject
 from .twin_object import TwinObject
+from .uid import UID
 
 
 @serializable(recursive_serde=True)

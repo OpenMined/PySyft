@@ -16,13 +16,13 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
 from .document_store import BaseStash
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StorePartition
 from .response import SyftSuccess
+from .serializable import serializable
+from .syft_object import SyftObject
 
 
 @serializable(recursive_serde=True)

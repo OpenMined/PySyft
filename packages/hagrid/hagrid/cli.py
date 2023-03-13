@@ -1905,7 +1905,7 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": str(use_blob_storage),
-        "FRONTEND_TARGET": "grid-ui-production",
+        "FRONTEND_TARGET": "grid-ui-development",
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
@@ -3272,7 +3272,7 @@ def _check_status(
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
-        ip_res = requests.get("https://ifconfig.co", headers=headers)
+        ip_res = requests.get("https://ifconfig.co", headers=headers)  # nosec
         ip_address = ip_res.text.strip()
         ip_addresses = [ip_address]
 

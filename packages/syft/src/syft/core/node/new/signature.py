@@ -4,9 +4,9 @@ from inspect import Signature
 from inspect import _ParameterKind
 
 # relative
-from ...common.serde import recursive_serde_register
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serialize import _serialize
+from .deserialize import _deserialize
+from .recursive import recursive_serde_register
+from .serialize import _serialize
 
 recursive_serde_register(_ParameterKind)
 

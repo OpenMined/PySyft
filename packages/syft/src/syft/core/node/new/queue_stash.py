@@ -8,11 +8,7 @@ from result import Ok
 from result import Result
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .api import APIRegistry
 from .api import SyftAPICall
 from .document_store import BaseStash
@@ -22,6 +18,10 @@ from .document_store import QueryKeys
 from .document_store import UIDPartitionKey
 from .response import SyftNotReady
 from .response import SyftSuccess
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
+from .uid import UID
 
 
 @serializable(recursive_serde=True)

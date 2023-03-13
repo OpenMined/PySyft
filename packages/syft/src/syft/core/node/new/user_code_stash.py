@@ -7,12 +7,12 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
 from .credentials import SyftVerifyKey
 from .document_store import BaseUIDStoreStash
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
+from .serializable import serializable
 from .user_code import CodeHashPartitionKey
 from .user_code import UserCode
 from .user_code import UserVerifyKeyPartitionKey

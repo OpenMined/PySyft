@@ -7,8 +7,8 @@
   let client;
   let activeUrl = '/home';
 
-  $: metadata = '';
-  $: user_info = '';
+  let metadata = '';
+  let user_info = '';
 
   async function loadGlobalInfos() {
     // Get JSClient

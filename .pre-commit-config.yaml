@@ -16,7 +16,7 @@ repos:
         exclude: ^(packages/grid/frontend/)
       - id: check-added-large-files
         always_run: true
-        exclude: ^(packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan|notebooks/Experimental)
+        exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
       - id: check-yaml
         always_run: true
         exclude: ^(packages/grid/k8s/rendered/)
