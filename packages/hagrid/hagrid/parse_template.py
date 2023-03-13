@@ -182,7 +182,7 @@ def download_file(link_to_file: str, local_destination: str) -> None:
 
     try:
         # download file
-        response = requests.get(link_to_file)
+        response = requests.get(link_to_file)  # nosec
         if response.status_code != 200:
             raise Exception(f"Failed to download: {link_to_file}")
 

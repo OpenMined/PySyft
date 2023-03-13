@@ -35,7 +35,6 @@ from typing import Union
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from pympler.asizeof import asizeof
 import requests
 
 # relative
@@ -136,13 +135,6 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     if fully_qualified_name == "builtins.NoneType":
         fully_qualified_name = "syft.lib.python._SyNone"
     attr_list = fully_qualified_name.split(".")
-
-    # we deal with VerifyAll differently, because we don't it be imported and used by users
-    if attr_list[-1] == "VerifyAll":
-        # relative
-        from .core.common.group import VERIFYALL
-
-        return type(VERIFYALL)
 
     if attr_list[0] != "syft":
         raise ReferenceError(f"Reference don't match: {attr_list[0]}")
@@ -631,10 +623,6 @@ def concurrency_override(count: int = 1) -> Iterator:
         yield None
     finally:
         os.environ["FORCE_CONCURRENCY_COUNT"] = "0"
-
-
-def size_mb(obj: Any) -> int:
-    return asizeof(obj) / (1024 * 1024)  # MBs
 
 
 class bcolors:

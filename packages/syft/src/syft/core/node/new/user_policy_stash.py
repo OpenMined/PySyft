@@ -5,14 +5,14 @@ from typing import List
 from result import Result
 
 # relative
-from ...common.serde.serializable import serializable
 from .credentials import SyftVerifyKey
 from .document_store import BaseUIDStoreStash
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
-from .policy import UserPolicy
 from .policy import PolicyUserVerifyKeyPartitionKey
+from .policy import UserPolicy
+from .serializable import serializable
 
 
 @serializable(recursive_serde=True)

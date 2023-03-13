@@ -4,8 +4,6 @@ from typing import Union
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .context import AuthedServiceContext
 from .dataset import Asset
 from .dataset import CreateDataset
@@ -14,10 +12,12 @@ from .dataset_stash import DatasetStash
 from .document_store import DocumentStore
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .uid import UID
 
 
 @instrument

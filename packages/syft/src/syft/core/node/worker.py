@@ -24,15 +24,8 @@ from result import Result
 
 # relative
 from ... import __version__
-from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
-from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
-from ...core.node.common.node_table.syft_object import SyftObject
 from ...telemetry import instrument
 from ...util import random_name
-from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize
-from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.action_store import DictActionStore
 from .new.action_store import SQLiteActionStore
@@ -49,6 +42,7 @@ from .new.credentials import SyftVerifyKey
 from .new.data_subject_member_service import DataSubjectMemberService
 from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
+from .new.deserialize import _deserialize
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
 from .new.message_service import MessageService
@@ -64,15 +58,17 @@ from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
 from .new.request_service import RequestService
 from .new.response import SyftError
+from .new.serializable import serializable
+from .new.serialize import _serialize
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
-from .new.task.oblv_keys_stash import OblvKeys
-from .new.task.oblv_keys_stash import OblvKeysStash
-from .new.task.oblv_service import OblvService
-from .new.task.oblv_service import generate_oblv_key
+from .new.syft_object import HIGHEST_SYFT_OBJECT_VERSION
+from .new.syft_object import LOWEST_SYFT_OBJECT_VERSION
+from .new.syft_object import SyftObject
 from .new.test_service import TestService
+from .new.uid import UID
 from .new.user import ServiceRole
 from .new.user import User
 from .new.user import UserCreate
@@ -80,6 +76,8 @@ from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
+
+OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
 
 
 def gipc_encoder(obj):
@@ -163,7 +161,6 @@ class Worker(NewNode):
                 MetadataService,
                 ActionService,
                 TestService,
-                OblvService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -177,6 +174,13 @@ class Worker(NewNode):
             if services is None
             else services
         )
+
+        if OBLV:
+            # relative
+            from .new.task.oblv_service import OblvService
+
+            services += [OblvService]
+
         self.services = services
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
@@ -192,7 +196,7 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
-        if os.getenv("INSTALL_OBLV_CLI") == "true":
+        if OBLV:
             create_oblv_key_pair(worker=self)
 
         self.client_cache = {}
@@ -268,13 +272,14 @@ class Worker(NewNode):
             if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig()
                 action_store_config = SQLiteStoreConfig(client_config=client_config)
-                if (
-                    isinstance(action_store_config, SQLiteStoreConfig)
-                    and action_store_config.client_config.filename is None
-                ):
-                    action_store_config.client_config.filename = f"{self.id}.sqlite"
             else:
                 action_store_config = DictStoreConfig()
+
+        if (
+            isinstance(action_store_config, SQLiteStoreConfig)
+            and action_store_config.client_config.filename is None
+        ):
+            action_store_config.client_config.filename = f"{self.id}.sqlite"
 
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store = SQLiteActionStore(
@@ -296,20 +301,27 @@ class Worker(NewNode):
             kwargs = {}
             if service_klass == ActionService:
                 kwargs["store"] = self.action_store
-            if service_klass in [
+            store_services = [
                 UserService,
                 MetadataService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
-                OblvService,
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
-            ]:
+            ]
+
+            if OBLV:
+                # relative
+                from .new.task.oblv_service import OblvService
+
+                store_services += [OblvService]
+
+            if service_klass in store_services:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs
@@ -420,7 +432,7 @@ class Worker(NewNode):
                 message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
             )
         else:
-            if not api_call.is_valid.is_ok():
+            if not api_call.is_valid:
                 return SyftError(message="Your message signature is invalid")  # type: ignore
 
         if api_call.message.node_uid != self.id:
@@ -474,7 +486,7 @@ class Worker(NewNode):
                 gevent.joinall([thread])
                 signed_result = thread.value
 
-                if not signed_result.is_valid.is_ok():
+                if not signed_result.is_valid:
                     return SyftError(message="The result signature is invalid")  # type: ignore
 
                 result = signed_result.message.data
@@ -640,6 +652,11 @@ def create_oblv_key_pair(
     worker: Worker,
 ) -> Optional[str]:
     try:
+        # relative
+        from .new.task.oblv_keys_stash import OblvKeys
+        from .new.task.oblv_keys_stash import OblvKeysStash
+        from .new.task.oblv_service import generate_oblv_key
+
         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
         if not len(oblv_keys_stash):

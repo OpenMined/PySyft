@@ -5,40 +5,37 @@ import hashlib
 import inspect
 from inspect import Parameter
 from inspect import Signature
+from io import StringIO
+import sys
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Type
-from typing import Union
-import sys
-from io import StringIO
-
 
 # third party
 from RestrictedPython import compile_restricted
 from result import Result
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde import _deserialize
-from ...common.serde import _serialize
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftVerifyKey
-from .dataset import Asset
+from .deserialize import _deserialize
 from .document_store import PartitionKey
 from .policy_code_parse import GlobalsVisitor
-from .response import SyftError
-from .response import SyftSuccess
+from .serializable import serializable
+from .serialize import _serialize
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
+from .uid import UID
 
-PolicyUserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
+PolicyUserVerifyKeyPartitionKey = PartitionKey(
+    key="user_verify_key", type_=SyftVerifyKey
+)
 PyCodeObject = Any
+
 
 @serializable(recursive_serde=True)
 class UserPolicyStatus(Enum):
@@ -66,6 +63,7 @@ class UserPolicy(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
+
 
 @serializable(recursive_serde=True)
 class SubmitUserPolicy(SyftObject):
@@ -164,7 +162,8 @@ def submit_policy_code_to_user_code() -> List[Callable]:
         compile_code,
         add_credentials_for_key("user_verify_key"),
     ]
-    
+
+
 def execute_policy_code(user_policy: UserPolicy):
     stdout_ = sys.stdout
     stderr_ = sys.stderr
@@ -176,9 +175,9 @@ def execute_policy_code(user_policy: UserPolicy):
         sys.stdout = stdout
         sys.stderr = stderr
 
-        exec(user_policy.byte_code) # nosec
-        policy_class = eval(user_policy.class_name) # nosec
-        
+        exec(user_policy.byte_code)  # nosec
+        policy_class = eval(user_policy.class_name)  # nosec
+
         sys.stdout = stdout_
         sys.stderr = stderr_
 
@@ -189,7 +188,7 @@ def execute_policy_code(user_policy: UserPolicy):
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
-        
+
 
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
     policy_class = execute_policy_code(user_policy)

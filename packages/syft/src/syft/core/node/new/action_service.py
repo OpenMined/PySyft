@@ -12,8 +12,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -26,11 +24,13 @@ from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .twin_object import TwinObject
+from .uid import UID
 from .user_code import UserCode
 from .user_code import execute_byte_code
 
@@ -149,7 +149,7 @@ class ActionService(AbstractService):
     ) -> Result[ActionObjectPointer, Err]:
         # TODO Teo: fix this for UserPolicy
         filtered_kwargs = code_item.input_policy.filter_kwargs(
-            kwargs=kwargs, context=context, code_item_id=code_item.id
+            kwargs=filtered_kwargs, context=context, code_item_id=code_item.id
         )
         if filtered_kwargs.is_err():
             return filtered_kwargs

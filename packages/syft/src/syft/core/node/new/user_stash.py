@@ -7,8 +7,6 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .document_store import BaseStash
@@ -18,6 +16,8 @@ from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .document_store import UIDPartitionKey
 from .response import SyftSuccess
+from .serializable import serializable
+from .uid import UID
 from .user import ServiceRole
 from .user import User
 
