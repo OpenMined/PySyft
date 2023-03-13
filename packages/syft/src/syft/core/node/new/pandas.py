@@ -1,5 +1,7 @@
 # stdlib
 from typing import Any
+from typing import ClassVar
+from typing import Type
 
 # third party
 from pandas import DataFrame
@@ -17,7 +19,7 @@ class PandasDataFrameObject(ActionObject):
     __canonical_name__ = "PandasDataframeObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type = DataFrame
+    syft_internal_type: ClassVar[Type[Any]] = DataFrame
     syft_passthrough_attrs = []
     # syft_dont_wrap_attrs = ["shape"]
 

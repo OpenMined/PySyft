@@ -1,5 +1,7 @@
 # stdlib
 from typing import Any
+from typing import ClassVar
+from typing import Type
 
 # third party
 import numpy as np
@@ -48,7 +50,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type = np.ndarray
+    syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
     syft_passthrough_attrs = []
     syft_dont_wrap_attrs = ["dtype"]

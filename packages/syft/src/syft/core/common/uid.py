@@ -219,3 +219,33 @@ class UID:
             return ValueError(  # type: ignore
                 f"Incorrect value,type:{value,type(value)} for conversion to UID, expected Union[str,UID,UUID]"
             )
+
+
+@serializable(recursive_serde=True)
+class LineageID(UID):
+    syft_history_hash: int
+
+    def __init__(
+        self,
+        value: Optional[Union[uuid_type, str, bytes]] = None,
+        syft_history_hash: Optional[int] = None,
+    ):
+        if isinstance(value, LineageID):
+            syft_history_hash = value.syft_history_hash
+            value = value.value
+
+        if isinstance(value, UID):
+            self.value = value.value
+        else:
+            super().__init__(value)
+
+        if syft_history_hash is None:
+            syft_history_hash = hash(self.value)
+        self.syft_history_hash = syft_history_hash
+
+    @property
+    def id(self) -> UID:
+        return UID(self.value)
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}: {self.no_dash} - {self.syft_history_hash}>"
