@@ -15,34 +15,32 @@ from typing import _GenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
+from pydantic import BaseModel
 from pydantic import EmailStr
-from result import Err
-from result import Ok
 from result import OkErr
 from result import Result
 from typeguard import check_type
 
 # relative
-from ....core.common.serde.recursive import index_syft_by_module_name
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize
-from ...common.uid import UID
 from .connection import NodeConnection
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .deserialize import _deserialize
 from .node import NewNode
+from .recursive import index_syft_by_module_name
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
+from .serialize import _serialize
 from .service import ServiceConfigRegistry
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
-from .user_code_service import UserCodeService
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
+from .uid import UID
 
 
 class APIRegistry:
@@ -57,6 +55,10 @@ class APIRegistry:
     @classmethod
     def api_for(cls, node_uid: UID) -> SyftAPI:
         return cls.__api_registry__[node_uid]
+
+    @classmethod
+    def get_all_api(cls) -> List[SyftAPI]:
+        return list(cls.__api_registry__.values())
 
 
 @serializable(recursive_serde=True)
@@ -95,15 +97,15 @@ class SignedSyftAPICall(SyftObject):
         return self.cached_deseralized_message
 
     @property
-    def is_valid(self) -> Result[SyftSuccess, Err]:
+    def is_valid(self) -> Result[SyftSuccess, SyftSuccess]:
         try:
             _ = self.credentials.verify_key.verify(
                 self.serialized_message, self.signature
             )
         except BadSignatureError:
-            return Err("BadSignatureError")
+            return SyftError(message="BadSignatureError")
 
-        return Ok(SyftSuccess(message="Credentials are valid"))
+        return SyftSuccess(message="Credentials are valid")
 
 
 @instrument
@@ -119,6 +121,26 @@ class SyftAPICall(SyftObject):
     args: List
     kwargs: Dict[str, Any]
     blocking: bool = True
+
+    def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
+        signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
+
+        return SignedSyftAPICall(
+            credentials=credentials.verify_key,
+            serialized_message=signed_message.message,
+            signature=signed_message.signature,
+        )
+
+
+@instrument
+@serializable(recursive_serde=True)
+class SyftAPIData(SyftBaseObject):
+    # version
+    __canonical_name__ = "SyftAPIData"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    # fields
+    data: Any
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
         signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
@@ -263,6 +285,7 @@ class SyftAPI(SyftObject):
     # fields
     connection: Optional[NodeConnection] = None
     node_uid: Optional[UID] = None
+    node_name: Optional[str] = None
     endpoints: Dict[str, APIEndpoint]
     api_module: Optional[APIModule] = None
     signing_key: Optional[SyftSigningKey] = None
@@ -277,6 +300,8 @@ class SyftAPI(SyftObject):
         # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
+        from .user_code_service import UserCodeService
+
         _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
         endpoints = {}
 
@@ -309,11 +334,19 @@ class SyftAPI(SyftObject):
             )
             endpoints[path] = endpoint
 
-        return SyftAPI(node_uid=node.id, endpoints=endpoints)
+        return SyftAPI(node_name=node.name, node_uid=node.id, endpoints=endpoints)
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
-        result = self.connection.make_call(signed_call)
+        signed_result = self.connection.make_call(signed_call)
+
+        if not isinstance(signed_result, SignedSyftAPICall):
+            return SyftError(message="The result is not signed")  # type: ignore
+
+        if not signed_result.is_valid:
+            return SyftError(message="The result signature is invalid")  # type: ignore
+
+        result = signed_result.message.data
 
         if isinstance(result, OkErr):
             if result.is_ok():
@@ -455,3 +488,29 @@ try:
 except Exception:
     print("Failed to monkeypatch IPython Signature Override")
     pass
+
+
+@serializable(recursive_serde=True)
+class NodeView(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    node_name: str
+    verify_key: SyftVerifyKey
+
+    @staticmethod
+    def from_api(api: SyftAPI):
+        # stores the name root verify key of the domain node
+        node_metadata = api.connection.get_node_metadata(api.signing_key)
+        return NodeView(
+            node_name=node_metadata.name,
+            verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, NodeView):
+            return False
+        return self.node_name == other.node_name and self.verify_key == other.verify_key
+
+    def __hash__(self) -> int:
+        return hash((self.node_name, self.verify_key))

@@ -22,14 +22,14 @@ from result import Result
 from typeguard import check_type
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .base import SyftBaseModel
 from .response import SyftSuccess
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
+from .uid import UID
 
 
 @serializable(recursive_serde=True)
@@ -379,6 +379,9 @@ class BaseStash:
 
     def get_all(self) -> Result[List[BaseStash.object_type], str]:
         return self.partition.all()
+
+    def __len__(self) -> int:
+        return self.partition.__len__()
 
     def set(
         self,

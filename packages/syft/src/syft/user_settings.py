@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 # relative
-from .core.common.decorators import singleton
+from .core.node.new.decorators import singleton
 
 # TODO: Add this to a file in ~/.syft and add some ENV overrides
 tutorial_mode = bool(os.environ.get("SYFT_TUTORIAL_MODE", True))

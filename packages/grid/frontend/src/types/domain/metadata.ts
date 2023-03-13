@@ -1,5 +1,5 @@
 export type DomainMetadata = {
-  title: string;
+  name: string;
   description: string;
   organization: string;
   id: {

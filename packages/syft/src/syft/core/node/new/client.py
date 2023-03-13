@@ -22,15 +22,9 @@ from typing_extensions import Self
 
 # relative
 from .... import __version__
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....grid import GridURL
 from ....logger import debug
 from ....telemetry import instrument
 from ....util import verify_tls
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize
-from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
 from ...node.new.user import UserCreate
@@ -44,9 +38,15 @@ from .connection import NodeConnection
 from .context import NodeServiceContext
 from .credentials import SyftSigningKey
 from .dataset import CreateDataset
+from .deserialize import _deserialize
+from .grid_url import GridURL
 from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
+from .serialize import _serialize
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .uid import UID
 from .user_service import UserService
 
 # use to enable mitm proxy
@@ -198,7 +198,7 @@ class HTTPConnection(NodeConnection):
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
-        response = requests.post(
+        response = requests.post(  # nosec
             url=str(self.api_url),
             data=msg_bytes,
         )
@@ -216,6 +216,9 @@ class HTTPConnection(NodeConnection):
 
     def __str__(self) -> str:
         return f"{type(self).__name__}: {self.url}"
+
+    def __hash__(self) -> int:
+        return hash(self.proxy_target_uid) + hash(self.url)
 
 
 @serializable(recursive_serde=True)

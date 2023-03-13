@@ -8,10 +8,10 @@ from pandas import DataFrame
 from pandas import Series
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ...common.serde.serializable import serializable
 from .action_object import ActionObject
 from .action_types import action_types
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
 
 
 @serializable(recursive_serde=True)

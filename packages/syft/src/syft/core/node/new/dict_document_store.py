@@ -7,11 +7,11 @@ from typing import Optional
 from typing import Type
 
 # relative
-from ...common.serde.serializable import serializable
 from .document_store import DocumentStore
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
+from .serializable import serializable
 
 
 @serializable(recursive_serde=True)

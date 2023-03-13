@@ -13,16 +13,16 @@ from typing import Type
 from typing import Union
 
 # relative
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .context import AuthedServiceContext
 from .linked_obj import LinkedObject
 from .response import SyftError
+from .serializable import serializable
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
+from .uid import UID
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)

@@ -7,7 +7,6 @@ from oblv.models import CreateDeploymentInput
 import yaml
 
 # relative
-from ..core.node.common.exceptions import OblvKeyNotFoundError
 from ..util import bcolors
 from .auth import login
 from .constants import INFRA
@@ -18,12 +17,20 @@ from .constants import REPO_OWNER
 from .constants import VCS
 from .constants import VISIBILITY
 from .deployment_client import DeploymentClient
+from .exceptions import OblvKeyNotFoundError
 from .oblv_proxy import create_oblv_key_pair
 from .oblv_proxy import get_oblv_public_key
 
 SUPPORTED_REGION_LIST = ["us-east-1", "us-west-2", "eu-central-1", "eu-west-2"]
 
-SUPPORTED_INFRA = ["c5.xlarge", "m5.xlarge", "r5.xlarge", "c5.2xlarge", "m5.2xlarge"]
+SUPPORTED_INFRA = [
+    "c5.xlarge",
+    "m5.xlarge",
+    "r5.xlarge",
+    "c5.2xlarge",
+    "m5.2xlarge",
+    "m5.4xlarge",
+]
 
 
 def create_deployment(
@@ -95,7 +102,7 @@ def create_deployment(
             users.append(
                 {
                     "user_name": domain_client.name,
-                    "public key": domain_client.oblv.get_key(),
+                    "public key": domain_client.api.services.oblv.get_public_key(),
                 }
             )
         except OblvKeyNotFoundError:

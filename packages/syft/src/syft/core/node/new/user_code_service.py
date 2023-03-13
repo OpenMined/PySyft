@@ -9,18 +9,19 @@ from result import OkErr
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
+from .request import UserCodeStatusChange
 from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
+from .serializable import serializable
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .uid import UID
 from .user_code import OutputHistory
 from .user_code import SubmitUserCode
 from .user_code import UserCode
@@ -48,25 +49,24 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
 
-    @service_method(path="code.request_code_execution", name="request_code_execution")
-    def request_code_execution(
-        self, context: AuthedServiceContext, code: SubmitUserCode
-    ) -> Union[SyftSuccess, SyftError]:
-        """Request Code execution on user code"""
+    def _code_execution(
+        self,
+        context: AuthedServiceContext,
+        code: SubmitUserCode,
+    ):
         # relative
-        from .request import EnumMutation
         from .request import SubmitRequest
         from .request_service import RequestService
 
         user_code = code.to(UserCode, context=context)
-
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
-        CODE_EXECUTE = EnumMutation.from_obj(
-            linked_obj=linked_obj, attr_name="status", value=UserCodeStatus.EXECUTE
+
+        CODE_EXECUTE = UserCodeStatusChange(
+            value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
         )
         request = SubmitRequest(changes=[CODE_EXECUTE])
         method = context.node.get_service_method(RequestService.submit)
@@ -74,6 +74,13 @@ class UserCodeService(AbstractService):
 
         # The Request service already returns either a SyftSuccess or SyftError
         return result
+
+    @service_method(path="code.request_code_execution", name="request_code_execution")
+    def request_code_execution(
+        self, context: AuthedServiceContext, code: SubmitUserCode
+    ) -> Union[SyftSuccess, SyftError]:
+        """Request Code execution on user code"""
+        return self._code_execution(context=context, code=code)
 
     @service_method(path="code.get_all", name="get_all")
     def get_all(
@@ -119,12 +126,12 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
-        filtered_kwargs = filter_kwargs(kwargs)
         try:
+            filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(uid=uid)
             if result.is_ok():
                 code_item = result.ok()
-                if code_item.status == UserCodeStatus.EXECUTE:
+                if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
                     is_valid = code_item.output_policy_state.valid
                     if not is_valid:
                         if (
@@ -152,14 +159,16 @@ class UserCodeService(AbstractService):
                             code_item.output_policy_state.update_state(
                                 context=context, outputs=result.id
                             )
+
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item
                             )
+
                             if state_result:
                                 return result
                             else:
                                 return state_result
-                elif code_item.status == UserCodeStatus.SUBMITTED:
+                elif code_item.status.for_context(context) == UserCodeStatus.SUBMITTED:
                     return SyftNotReady(
                         message=f"{type(code_item)} Your code is waiting for approval: {code_item.status}"
                     )
@@ -210,6 +219,9 @@ def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
             value = v.id
         if isinstance(v, Asset):
             value = v.action_id
+
+        if not isinstance(value, UID):
+            raise Exception(f"Input {k} must have a UID not {type(v)}")
         filtered_kwargs[k] = value
     return filtered_kwargs
 

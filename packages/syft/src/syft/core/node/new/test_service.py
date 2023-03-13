@@ -1,11 +1,12 @@
 # third party
+import requests
 from result import Err
 from result import Ok
 from result import Result
 
 # relative
-from ...common.serde.serializable import serializable
 from .context import AuthedServiceContext
+from .serializable import serializable
 from .service import AbstractService
 from .service import service_method
 
@@ -21,3 +22,8 @@ class TestService(AbstractService):
 
         result = f"Hello {name}"
         return Ok(result)
+
+    @service_method(path="test.request", name="request")
+    def test_request(self, context: AuthedServiceContext, url: str):
+        res = requests.get(url)  # nosec
+        return Ok(res.status_code)

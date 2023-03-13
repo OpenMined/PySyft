@@ -11,15 +11,15 @@ from pydantic import EmailStr
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import Context
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ....core.node.common.node_table.syft_object import SyftObjectRegistry
-from ....grid.grid_url import GridURL
-from ...common.uid import UID
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
+from .grid_url import GridURL
 from .node import NewNode
+from .syft_object import Context
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObjectRegistry
+from .uid import UID
 
 
 class NotNone:

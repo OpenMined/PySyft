@@ -2,6 +2,9 @@
 import ast
 from typing import List
 
+# third party
+import astunparse  # ast.unparse for python 3.8
+
 
 class GlobalsVisitor(ast.NodeVisitor):
     def generic_visit(self, node):
@@ -65,4 +68,4 @@ def parse_and_wrap_code(
         body=ast_code.body,
     )
 
-    return ast.unparse(wrapper_function)
+    return astunparse.unparse(wrapper_function)
