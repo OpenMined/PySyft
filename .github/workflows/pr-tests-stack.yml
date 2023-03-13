@@ -22,7 +22,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, windows]
+        os: [ubuntu-latest, macos-latest, windows]
         python-version: ["3.10"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -122,6 +122,10 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.16.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
+
+      - name: Docker Setup Docker
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        uses: crazy-max/ghaction-setup-docker@v1.1.0
 
       - name: Remove existing containers
         if: steps.changes.outputs.stack == 'true'
