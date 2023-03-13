@@ -285,7 +285,7 @@ def hash_inputs(
 
 def fetch_all_inputs(
     name: str, self_history: int, args, kwargs
-) -> Tuple[Optional[List], Optional[List], Optional[List]]:
+) -> Tuple[Optional[List], Optional[List], Optional[List], Optional[Any]]:
     """
     Returns everything needed to create a History Hash for the resultant ActionObject:
     - a List of Parent history hashes
