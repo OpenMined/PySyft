@@ -10,9 +10,20 @@ from syft.core.node.new.user import User
 from syft.core.node.new.user_stash import UserStash
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def user_stash(document_store):
     return UserStash(store=document_store)
+
+
+def add_mock_user(user_stash, user):
+    # prepare: add mock data
+    result = user_stash.partition.set(user)
+    assert result.is_ok()
+
+    user = result.ok()
+    assert user is not None
+
+    return user
 
 
 def test_userstash_set(user_stash, guest_user):
@@ -22,24 +33,26 @@ def test_userstash_set(user_stash, guest_user):
     created_user = result.ok()
     assert isinstance(created_user, User)
     assert guest_user == created_user
+    assert guest_user.id in user_stash.partition.data
 
 
 def test_userstash_set_duplicate(user_stash, guest_user):
     result = user_stash.set(guest_user)
     assert result.is_ok()
 
+    original_count = len(user_stash.partition.data)
+
     result = user_stash.set(guest_user)
     assert result.is_err()
 
     assert "Duplication Key Error" in result.err()
 
+    assert len(user_stash.partition.data) == original_count
+
 
 def test_userstash_get_by_uid(user_stash, guest_user):
-    result = user_stash.set(guest_user)
-    assert result.is_ok()
-
-    user = result.ok()
-    assert user is not None
+    # prepare: add mock data
+    user = add_mock_user(user_stash, guest_user)
 
     result = user_stash.get_by_uid(uid=user.id)
     assert result.is_ok()
@@ -50,17 +63,15 @@ def test_userstash_get_by_uid(user_stash, guest_user):
 
     random_uid = UID()
     result = user_stash.get_by_uid(uid=random_uid)
+    assert result.is_ok()
 
     searched_user = result.ok()
-    assert result.is_ok()
     assert searched_user is None
 
 
 def test_userstash_get_by_email(faker, user_stash, guest_user):
-    result = user_stash.set(guest_user)
-    assert result.is_ok()
-    user = result.ok()
-    assert user is not None
+    # prepare: add mock data
+    user = add_mock_user(user_stash, guest_user)
 
     result = user_stash.get_by_email(email=user.email)
     assert result.is_ok()
@@ -75,10 +86,8 @@ def test_userstash_get_by_email(faker, user_stash, guest_user):
 
 
 def test_userstash_get_by_signing_key(user_stash, guest_user):
-    result = user_stash.set(guest_user)
-    assert result.is_ok()
-    user = result.ok()
-    assert user is not None
+    # prepare: add mock data
+    user = add_mock_user(user_stash, guest_user)
 
     result = user_stash.get_by_signing_key(signing_key=user.signing_key)
     assert result.is_ok()
@@ -99,10 +108,8 @@ def test_userstash_get_by_signing_key(user_stash, guest_user):
 
 
 def test_userstash_get_by_verify_key(user_stash, guest_user):
-    result = user_stash.set(guest_user)
-    assert result.is_ok()
-    user = result.ok()
-    assert user is not None
+    # prepare: add mock data
+    user = add_mock_user(user_stash, guest_user)
 
     result = user_stash.get_by_verify_key(verify_key=user.verify_key)
     assert result.is_ok()
@@ -123,10 +130,8 @@ def test_userstash_get_by_verify_key(user_stash, guest_user):
 
 
 def test_userstash_get_by_role(user_stash, guest_user):
-    result = user_stash.set(guest_user)
-    assert result.is_ok()
-    user = result.ok()
-    assert user is not None
+    # prepare: add mock data
+    user = add_mock_user(user_stash, guest_user)
 
     result = user_stash.get_by_role(role=ServiceRole.GUEST)
     assert result.is_ok()
@@ -135,10 +140,8 @@ def test_userstash_get_by_role(user_stash, guest_user):
 
 
 def test_userstash_delete_by_uid(user_stash, guest_user):
-    result = user_stash.set(guest_user)
-    assert result.is_ok()
-    user = result.ok()
-    assert user is not None
+    # prepare: add mock data
+    user = add_mock_user(user_stash, guest_user)
 
     result = user_stash.delete_by_uid(uid=user.id)
     assert result.is_ok()
