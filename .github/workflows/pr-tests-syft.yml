@@ -21,7 +21,7 @@ jobs:
       max-parallel: 4
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ["3.11"]
+        python-version: ["3.10"]
         include:
           - python-version: "3.8"
             os: "ubuntu-latest"
@@ -67,13 +67,12 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install packaging wheel --default-timeout=60
+          pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install -U tox
           tox -e syft.test.unit
 
   pr-tests-syft-notebook:
@@ -81,7 +80,7 @@ jobs:
       max-parallel: 4
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ["3.11"]
+        python-version: ["3.10"]
         include:
           - python-version: "3.8"
             os: "ubuntu-latest"
@@ -127,13 +126,12 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install packaging wheel --default-timeout=60
+          pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install -U tox
           tox -e syft.test.notebook
 
   pr-tests-syft-security:
@@ -141,7 +139,7 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -184,14 +182,12 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install packaging wheel --default-timeout=60
-          pip install -e .[dev]
+          pip install --upgrade tox packaging wheel --default-timeout=60
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'
         run: |
-          bandit -r src
-          safety check -i 51668 -i 51516 -i 51549 -i 52495
+          tox -e syft.test.security
 
       - name: Generate requirements.txt for snyk
         if: steps.changes.outputs.syft == 'true'
