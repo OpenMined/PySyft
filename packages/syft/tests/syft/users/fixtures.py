@@ -9,6 +9,8 @@ from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user import UserSearch
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user import UserView
+from syft.core.node.new.user_service import UserService
+from syft.core.node.new.user_stash import UserStash
 
 
 @pytest.fixture(autouse=True)
@@ -65,13 +67,11 @@ def guest_view_user(guest_user) -> UserView:
     return user_view
 
 
-@pytest.fixture(autouse=True)
-def guest_user_private_key(admin_user) -> UserPrivateKey:
+def admin_user_private_key(admin_user) -> UserPrivateKey:
     return UserPrivateKey(email=admin_user.email, signing_key=admin_user.signing_key)
 
 
-@pytest.fixture(autouse=True)
-def admin_user_private_key(guest_user) -> UserPrivateKey:
+def guest_user_private_key(guest_user) -> UserPrivateKey:
     return UserPrivateKey(email=guest_user.email, signing_key=guest_user.signing_key)
 
 
@@ -81,3 +81,20 @@ def update_user(faker) -> UserSearch:
         name=faker.name(),
         email=faker.email(),
     )
+
+
+@pytest.fixture(autouse=True)
+def guest_user_search(guest_user) -> UserSearch:
+    return UserSearch(
+        name=guest_user.name, email=guest_user.email, verify_key=guest_user.verify_key
+    )
+
+
+@pytest.fixture(autouse=True)
+def user_stash(document_store):
+    return UserStash(store=document_store)
+
+
+@pytest.fixture
+def user_service(document_store):
+    return UserService(store=document_store)

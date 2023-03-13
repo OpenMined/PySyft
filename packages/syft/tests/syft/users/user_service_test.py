@@ -16,7 +16,6 @@ from syft.core.node.new.uid import UID
 from syft.core.node.new.user import ServiceRole
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserView
-from syft.core.node.new.user_service import UserService
 
 
 @pytest.fixture
@@ -32,11 +31,6 @@ def unauthed_context(guest_create_user, worker):
     )
     context = UnauthedServiceContext(login_credentials=login_credentials, node=worker)
     return context
-
-
-@pytest.fixture
-def user_service(document_store):
-    return UserService(store=document_store)
 
 
 def test_userservice_create_when_user_exists(
