@@ -22,7 +22,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-latest, windows]
+        os: [ubuntu-latest, macos-latest, windows-latest, windows]
         python-version: ["3.10"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -124,7 +124,7 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Docker Setup Docker
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        if: steps.changes.outputs.stack == 'true' && (matrix.os == 'macos-latest' || matrix.os == 'windows-latest')
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
       - name: Docker Compose on MacOS
@@ -132,6 +132,16 @@ jobs:
         shell: bash
         run: |
           brew install docker-compose
+          mkdir -p ~/.docker/cli-plugins ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
+          docker compose version
+
+      - name: Docker Compose on Windows
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Start-BitsTransfer -Source "https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-Windows-x86_64.exe" -Destination $Env:ProgramFiles\Docker\docker-compose.exe
+          docker compose version
 
       - name: Remove existing containers
         if: steps.changes.outputs.stack == 'true'
