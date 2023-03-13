@@ -124,7 +124,7 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Docker Setup Docker
-        if: steps.changes.outputs.stack == 'true' && (matrix.os == 'macos-latest' || matrix.os == 'windows-latest')
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
       - name: Docker Compose on MacOS
@@ -135,6 +135,17 @@ jobs:
           mkdir -p ~/.docker/cli-plugins
           ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose || true
           docker compose version
+
+      - name: Docker Setup Docker - Windows
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Start-BitsTransfer -Source "https://download.docker.com/win/static/stable/x86_64/docker-23.0.1.zip"
+          Expand-Archive docker-23.0.1.zip -DestinationPath $Env:ProgramFiles
+          &$Env:ProgramFiles\Docker\dockerd --register-service
+          Start-Service docker
+          docker version
 
       - name: Docker Compose on Windows
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
