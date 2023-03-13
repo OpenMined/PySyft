@@ -132,7 +132,8 @@ jobs:
         shell: bash
         run: |
           brew install docker-compose
-          mkdir -p ~/.docker/cli-plugins ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
+          mkdir -p ~/.docker/cli-plugins
+          ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose || true
           docker compose version
 
       - name: Docker Compose on Windows
