@@ -183,9 +183,9 @@ def make_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
         context.action = action
     except Exception as e:
         print(
-            "Exception in make_action_side_effect", e
+            "Exception detected in make_action_side_effect", e
         )  # TODO: Put this Exception back
-        pass
+        # pass
     return context, args, kwargs
 
 
