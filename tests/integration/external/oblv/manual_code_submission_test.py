@@ -11,6 +11,7 @@ from syft.core.node.new.numpy import NumpyArrayObject
 from syft.core.node.new.user_code import SubmitUserCode
 
 LOCAL_ENCLAVE_PORT = os.environ.get("LOCAL_ENCLAVE_PORT", 8010)
+# TODO: Should move to Docker Container tests
 
 
 def load_dataset(domain_client) -> None:

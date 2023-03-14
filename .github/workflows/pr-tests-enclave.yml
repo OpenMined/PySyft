@@ -1,0 +1,76 @@
+name: PR Tests - Enclave
+
+on:
+  workflow_call:
+
+  pull_request:
+    branches:
+      - dev
+      - main
+      - "0.8"
+
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Tests Manually"
+        required: false
+
+jobs:
+  pr-tests-enclave-oblv:
+    strategy:
+      max-parallel: 4
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: ["3.10"]
+        include:
+          - python-version: "3.8"
+            os: "ubuntu-latest"
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          pip install --upgrade tox packaging wheel --default-timeout=60
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Run notebook tests
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          tox -e stack.test.integration.oblv
