@@ -452,7 +452,7 @@ class UserCodeStatusChange(Change):
                 res = res.ok()
                 if OBLV:
                     # relative
-                    from .task.oblv_service import check_enclave_transfer
+                    from ....external.oblv.oblv_service import check_enclave_transfer
 
                     enclave_res = check_enclave_transfer(
                         user_code=res, value=self.value, context=context

@@ -175,9 +175,10 @@ class Worker(NewNode):
 
         if OBLV:
             # relative
-            from .new.task.oblv_service import OblvService
+            from ...external.oblv.oblv_service import OblvService
 
             services += [OblvService]
+            create_oblv_key_pair(worker=self)
 
         self.services = services
 
@@ -194,8 +195,6 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
-        if OBLV:
-            create_oblv_key_pair(worker=self)
 
         self.client_cache = {}
         self.node_type = node_type
@@ -314,7 +313,7 @@ class Worker(NewNode):
 
             if OBLV:
                 # relative
-                from .new.task.oblv_service import OblvService
+                from ...external.oblv.oblv_service import OblvService
 
                 store_services += [OblvService]
 
