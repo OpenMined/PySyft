@@ -1,7 +1,5 @@
 # stdlib
-from pathlib import Path
 from typing import Any
-from typing import Generator
 
 # third party
 import pytest
@@ -11,19 +9,14 @@ from syft.core.node.new.action_store import ActionObjectEXECUTE
 from syft.core.node.new.action_store import ActionObjectOWNER
 from syft.core.node.new.action_store import ActionObjectREAD
 from syft.core.node.new.action_store import ActionObjectWRITE
-from syft.core.node.new.action_store import DictActionStore
-from syft.core.node.new.action_store import SQLiteActionStore
 from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.dict_document_store import DictStoreConfig
-from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
-from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 from syft.core.node.new.uid import UID
 
 # relative
+from .store_constants_test import test_verify_key_string_client
+from .store_constants_test import test_verify_key_string_hacker
+from .store_constants_test import test_verify_key_string_root
 from .store_mocks_test import MockSyftObject
-
-workspace = Path("workspace")
-db_name = "testing"
 
 permissions = [
     ActionObjectOWNER,
@@ -32,51 +25,12 @@ permissions = [
     ActionObjectEXECUTE,
 ]
 
-test_verify_key_string_root = (
-    "08e5bcddfd55cdff0f7f6a62d63a43585734c6e7a17b2ffb3f3efe322c3cecc5"
-)
-test_verify_key_string_client = (
-    "833035a1c408e7f2176a0b0cd4ba0bc74da466456ea84f7ba4e28236e7e303ab"
-)
-test_verify_key_string_hacker = (
-    "8f4412396d3418d17c08a8f46592621a5d57e0daf1c93e2134c30f50d666801d"
-)
-
-
-@pytest.fixture(autouse=True)
-def prepare_workspace() -> Generator:
-    workspace.mkdir(parents=True, exist_ok=True)
-    db_path = workspace / db_name
-
-    if db_path.exists():
-        db_path.unlink()
-
-    yield
-
-    if db_path.exists():
-        db_path.unlink()
-
-
-@pytest.fixture
-def dict_store():
-    store_config = DictStoreConfig()
-    ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    return DictActionStore(store_config=store_config, root_verify_key=ver_key)
-
-
-@pytest.fixture
-def sqlite_store():
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    return SQLiteActionStore(store_config=store_config, root_verify_key=ver_key)
-
 
 @pytest.mark.parametrize(
     "store",
     [
-        pytest.lazy_fixture("dict_store"),
-        pytest.lazy_fixture("sqlite_store"),
+        pytest.lazy_fixture("dict_action_store"),
+        pytest.lazy_fixture("sqlite_action_store"),
     ],
 )
 def test_action_store_sanity(store: Any):
@@ -91,8 +45,8 @@ def test_action_store_sanity(store: Any):
 @pytest.mark.parametrize(
     "store",
     [
-        pytest.lazy_fixture("dict_store"),
-        pytest.lazy_fixture("sqlite_store"),
+        pytest.lazy_fixture("dict_action_store"),
+        pytest.lazy_fixture("sqlite_action_store"),
     ],
 )
 @pytest.mark.parametrize("permission", permissions)
@@ -148,8 +102,8 @@ def test_action_store_test_permissions(store: Any, permission: Any):
 @pytest.mark.parametrize(
     "store",
     [
-        pytest.lazy_fixture("dict_store"),
-        pytest.lazy_fixture("sqlite_store"),
+        pytest.lazy_fixture("dict_action_store"),
+        pytest.lazy_fixture("sqlite_action_store"),
     ],
 )
 def test_action_store_test_data_set_get(store: Any):

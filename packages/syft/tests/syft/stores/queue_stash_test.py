@@ -1,85 +1,21 @@
 # stdlib
-from pathlib import Path
 from threading import Lock
 from threading import Thread
 from typing import Any
-from typing import Generator
 
 # third party
-from pymongo import MongoClient
 import pytest
-from pytest_mock_resources import create_mongo_fixture
-
-# syft absolute
-from syft.core.node.new.dict_document_store import DictDocumentStore
-from syft.core.node.new.dict_document_store import DictStoreConfig
-from syft.core.node.new.document_store import PartitionSettings
-from syft.core.node.new.mongo_client import MongoStoreClientConfig
-from syft.core.node.new.mongo_document_store import MongoDocumentStore
-from syft.core.node.new.mongo_document_store import MongoStoreConfig
-from syft.core.node.new.queue_stash import QueueStash
-from syft.core.node.new.sqlite_document_store import SQLiteDocumentStore
-from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
-from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 
 # relative
-from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
-
-mongo = create_mongo_fixture(scope="session")
-workspace = Path("workspace")
-db_name = "testing"
-
-
-@pytest.fixture(autouse=True)
-def prepare_workspace() -> Generator:
-    workspace.mkdir(parents=True, exist_ok=True)
-    db_path = workspace / db_name
-
-    if db_path.exists():
-        db_path.unlink()
-
-    yield
-
-    if db_path.exists():
-        db_path.unlink()
-
-
-@pytest.fixture
-def dict_queue():
-    store_config = DictStoreConfig()
-    store = DictDocumentStore(store_config=store_config)
-    return QueueStash(store=store)
-
-
-@pytest.fixture
-def sqlite_queue():
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    store = SQLiteDocumentStore(store_config=store_config)
-    return QueueStash(store=store)
-
-
-@pytest.fixture
-def mongo_queue(mongo):
-    mongo_client = MongoClient(**mongo.pmr_credentials.as_mongo_kwargs())
-
-    mongo_config = MongoStoreClientConfig(client=mongo_client)
-    store_config = MongoStoreConfig(client_config=mongo_config, db_name=db_name)
-    PartitionSettings(name="test", object_type=MockObjectType)
-
-    mongo_client.drop_database(db_name)
-
-    store = MongoDocumentStore(store_config=store_config)
-    return QueueStash(store=store)
 
 
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue"),
-        pytest.lazy_fixture("sqlite_queue"),
-        pytest.lazy_fixture("mongo_queue"),
+        pytest.lazy_fixture("dict_queue_stash"),
+        pytest.lazy_fixture("sqlite_queue_stash"),
+        pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
 def test_queue_stash_sanity(queue: Any) -> None:
@@ -91,9 +27,9 @@ def test_queue_stash_sanity(queue: Any) -> None:
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue"),
-        pytest.lazy_fixture("sqlite_queue"),
-        pytest.lazy_fixture("mongo_queue"),
+        pytest.lazy_fixture("dict_queue_stash"),
+        pytest.lazy_fixture("sqlite_queue_stash"),
+        pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
 def test_queue_stash_set_get(queue: Any) -> None:
@@ -131,9 +67,9 @@ def test_queue_stash_set_get(queue: Any) -> None:
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue"),
-        pytest.lazy_fixture("sqlite_queue"),
-        pytest.lazy_fixture("mongo_queue"),
+        pytest.lazy_fixture("dict_queue_stash"),
+        pytest.lazy_fixture("sqlite_queue_stash"),
+        pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
 def test_queue_stash_update(queue: Any) -> None:
@@ -160,9 +96,9 @@ def test_queue_stash_update(queue: Any) -> None:
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue"),
-        pytest.lazy_fixture("sqlite_queue"),
-        pytest.lazy_fixture("mongo_queue"),
+        pytest.lazy_fixture("dict_queue_stash"),
+        pytest.lazy_fixture("sqlite_queue_stash"),
+        pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
 def test_queue_set_multithreaded(queue: Any) -> None:
@@ -199,9 +135,9 @@ def test_queue_set_multithreaded(queue: Any) -> None:
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue"),
-        pytest.lazy_fixture("sqlite_queue"),
-        pytest.lazy_fixture("mongo_queue"),
+        pytest.lazy_fixture("dict_queue_stash"),
+        pytest.lazy_fixture("sqlite_queue_stash"),
+        pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
 def test_queue_update_multithreaded(queue: Any) -> None:
@@ -242,9 +178,9 @@ def test_queue_update_multithreaded(queue: Any) -> None:
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue"),
-        pytest.lazy_fixture("sqlite_queue"),
-        pytest.lazy_fixture("mongo_queue"),
+        pytest.lazy_fixture("dict_queue_stash"),
+        pytest.lazy_fixture("sqlite_queue_stash"),
+        pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
 def test_queue_set_delete_multithreaded(
