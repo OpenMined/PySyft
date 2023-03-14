@@ -29,6 +29,7 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 __version__ = "0.8.0-beta.0"
 
 # stdlib
+import os
 from pathlib import Path
 import sys
 from typing import Any
@@ -77,6 +78,11 @@ requires = make_requires(LATEST_STABLE_SYFT, __version__)
 sys.path.append(str(Path(__file__)))
 
 logger.start()
+
+# For server-side, to enable by environment variable
+OBLV = os.getenv("ENABLE_OBLV", "false") == "true"
+if OBLV:
+    enable_external_lib("oblv")
 
 
 def module_property(func: Any) -> None:

@@ -1871,7 +1871,7 @@ def create_launch_docker_cmd(
     if "platform" in kwargs and kwargs["platform"] is not None:
         docker_platform = kwargs["platform"]
 
-    install_oblv_cli = bool(kwargs["oblv"])
+    enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - RELEASE: " + kwargs["release"])
     print("  - ARCH: " + docker_platform)
@@ -1884,7 +1884,7 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
-    print("  - OBLV_CLI: ", install_oblv_cli)
+    print("  - OBLV: ", enable_oblv)
 
     print("\n")
 
@@ -1909,7 +1909,7 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
-        "INSTALL_OBLV_CLI": str(install_oblv_cli).lower(),
+        "ENABLE_OBLV": str(enable_oblv).lower(),
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:

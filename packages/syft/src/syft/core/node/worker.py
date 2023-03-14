@@ -76,7 +76,7 @@ from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
 
-OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
+OBLV = os.getenv("ENABLE_OBLV", "false") == "true"
 
 
 def gipc_encoder(obj):

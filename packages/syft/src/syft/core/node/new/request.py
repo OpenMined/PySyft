@@ -40,7 +40,7 @@ from .uid import UID
 from .user_code import UserCode
 from .user_code import UserCodeStatus
 
-OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
+OBLV = os.getenv("ENABLE_OBLV", "false") == "true"
 
 
 @serializable(recursive_serde=True)
