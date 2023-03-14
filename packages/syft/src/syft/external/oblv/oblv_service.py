@@ -39,7 +39,6 @@ from ...core.node.new.user_code import UserCodeStatus
 from ...core.node.new.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
-from .constants import WORKER_MODE
 from .deployment_client import OblvMetadata
 from .exceptions import OblvEnclaveError
 from .exceptions import OblvProxyConnectPCRError
@@ -329,7 +328,9 @@ class OblvService(AbstractService):
         else:
             port = os.getenv("DOMAIN_CONNECTION_PORT", DOMAIN_CONNECTION_PORT)
             connection_string = f"http://127.0.0.1:{port}"
-            if not WORKER_MODE:
+
+            # To identify if we are in docker container
+            if "CONTAINER_HOST" in os.environ:
                 connection_string = connection_string.replace(
                     "127.0.0.1", "host.docker.internal"
                 )
