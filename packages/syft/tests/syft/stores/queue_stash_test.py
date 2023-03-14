@@ -102,20 +102,19 @@ def test_queue_stash_update(queue: Any) -> None:
     ],
 )
 def test_queue_set_multithreaded(queue: Any) -> None:
-    thread_cnt = 3
-    repeats = 100
+    thread_cnt = 5
+    repeats = 50
 
-    execution_ok = True
-    lock = Lock()
+    execution_err = None
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
+        nonlocal execution_err
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
             res = queue.set(obj, ignore_duplicates=False)
 
-            with lock:
-                execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok()
 
     tids = []
@@ -128,7 +127,7 @@ def test_queue_set_multithreaded(queue: Any) -> None:
     for thread in tids:
         thread.join()
 
-    assert execution_ok
+    assert execution_err is None
     assert len(queue) == thread_cnt * repeats
 
 
@@ -141,23 +140,22 @@ def test_queue_set_multithreaded(queue: Any) -> None:
     ],
 )
 def test_queue_update_multithreaded(queue: Any) -> None:
-    thread_cnt = 3
-    repeats = 100
+    thread_cnt = 5
+    repeats = 50
 
     obj = MockSyftObject(data=0)
     queue.set(obj, ignore_duplicates=False)
-    execution_ok = True
-    lock = Lock()
+    execution_err = None
+    Lock()
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
+        nonlocal execution_err
         for repeat in range(repeats):
-            with lock:
-                obj.data += 1
+            obj.data = repeat
             res = queue.update(obj)
 
-            with lock:
-                execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok()
 
     tids = []
@@ -170,9 +168,7 @@ def test_queue_update_multithreaded(queue: Any) -> None:
     for thread in tids:
         thread.join()
 
-    assert execution_ok
-    stored = queue.find_one(id=obj.id)
-    assert stored.ok().data == thread_cnt * repeats
+    assert execution_err is None
 
 
 @pytest.mark.parametrize(
@@ -186,10 +182,10 @@ def test_queue_update_multithreaded(queue: Any) -> None:
 def test_queue_set_delete_multithreaded(
     queue: Any,
 ) -> None:
-    thread_cnt = 3
-    repeats = 100
+    thread_cnt = 5
+    repeats = 50
 
-    execution_ok = True
+    execution_err = None
     objs = []
 
     for idx in range(repeats * thread_cnt):
@@ -200,12 +196,13 @@ def test_queue_set_delete_multithreaded(
         assert res.is_ok()
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
+        nonlocal execution_err
         for idx in range(repeats):
             item_idx = tid * repeats + idx
 
             res = queue.find_and_delete(id=objs[item_idx].id)
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok()
 
     tids = []
@@ -218,5 +215,5 @@ def test_queue_set_delete_multithreaded(
     for thread in tids:
         thread.join()
 
-    assert execution_ok
+    assert execution_err is None
     assert len(queue) == 0

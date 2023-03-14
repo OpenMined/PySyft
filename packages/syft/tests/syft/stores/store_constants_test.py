@@ -1,7 +1,7 @@
 # stdlib
 from pathlib import Path
 
-workspace = Path("/tmp")
+workspace = Path("/tmp/sqlite/")
 sqlite_db_name = "testing.sqlite"
 mongo_db_name = "testing"
 

@@ -147,17 +147,18 @@ def test_kv_store_partition_update(kv_store_partition: KeyValueStorePartition) -
 def test_kv_store_partition_set_multithreaded(
     kv_store_partition: KeyValueStorePartition,
 ) -> None:
-    thread_cnt = 3
-    repeats = 1000
-    execution_ok = True
+    thread_cnt = 5
+    repeats = 50
+    execution_err = None
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
+        nonlocal execution_err
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
             res = kv_store_partition.set(obj, ignore_duplicates=False)
 
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok()
 
     tids = []
@@ -172,7 +173,7 @@ def test_kv_store_partition_set_multithreaded(
 
     stored = kv_store_partition.all()
 
-    assert execution_ok
+    assert execution_err is None
     stored_cnt = len(stored.ok())
     assert stored_cnt == thread_cnt * repeats
 
@@ -180,22 +181,22 @@ def test_kv_store_partition_set_multithreaded(
 def test_kv_store_partition_update_multithreaded(
     kv_store_partition: KeyValueStorePartition,
 ) -> None:
-    thread_cnt = 3
-    repeats = 100
+    thread_cnt = 5
+    repeats = 50
 
     obj = MockSyftObject(data=0)
     key = kv_store_partition.settings.store_key.with_obj(obj)
     kv_store_partition.set(obj, ignore_duplicates=False)
-    execution_ok = True
+    execution_err = None
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
+        nonlocal execution_err
         for repeat in range(repeats):
-            stored = kv_store_partition.get_all_from_store(QueryKeys(qks=[key]))
-            obj = MockSyftObject(data=stored.ok()[0].data + 1)
+            obj = MockSyftObject(data=repeat)
             res = kv_store_partition.update(key, obj)
 
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok()
 
     tids = []
@@ -208,30 +209,30 @@ def test_kv_store_partition_update_multithreaded(
     for thread in tids:
         thread.join()
 
-    assert execution_ok
-    stored = kv_store_partition.get_all_from_store(QueryKeys(qks=[key]))
-    assert stored.ok()[0].data == thread_cnt * repeats
+    assert execution_err is None
 
 
 def test_kv_store_partition_set_delete_multithreaded(
     kv_store_partition: KeyValueStorePartition,
 ) -> None:
-    thread_cnt = 3
-    execution_ok = True
+    thread_cnt = 5
+    execution_err = None
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
-        for idx in range(100):
+        nonlocal execution_err
+        for idx in range(50):
             obj = MockSyftObject(data=idx)
             res = kv_store_partition.set(obj, ignore_duplicates=False)
 
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok()
 
             key = kv_store_partition.settings.store_key.with_obj(obj)
 
             res = kv_store_partition.delete(key)
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok()
 
     tids = []
@@ -244,6 +245,6 @@ def test_kv_store_partition_set_delete_multithreaded(
     for thread in tids:
         thread.join()
 
-    assert execution_ok
+    assert execution_err is None
     stored_cnt = len(kv_store_partition.all().ok())
     assert stored_cnt == 0

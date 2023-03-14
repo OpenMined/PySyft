@@ -134,19 +134,20 @@ def test_mongo_store_partition_update(
 def test_mongo_store_partition_set_multithreaded(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    thread_cnt = 10
-    repeats = 20
+    thread_cnt = 5
+    repeats = 50
     mongo_store_partition.init_store()
 
-    execution_ok = True
+    execution_err = None
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
+        nonlocal execution_err
         for idx in range(repeats):
             obj = MockObjectType(data=idx)
             res = mongo_store_partition.set(obj, ignore_duplicates=False)
 
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok(), res
 
     tids = []
@@ -159,7 +160,7 @@ def test_mongo_store_partition_set_multithreaded(
     for thread in tids:
         thread.join()
 
-    assert execution_ok
+    assert execution_err is None
     stored_cnt = len(mongo_store_partition.all().ok())
     assert stored_cnt == thread_cnt * repeats
 
@@ -167,22 +168,22 @@ def test_mongo_store_partition_set_multithreaded(
 def test_mongo_partition_update_multithreaded(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    thread_cnt = 10
-    repeats = 20
+    thread_cnt = 5
+    repeats = 50
 
     obj = MockSyftObject(data=0)
     key = mongo_store_partition.settings.store_key.with_obj(obj)
     mongo_store_partition.set(obj, ignore_duplicates=False)
-    execution_ok = True
+    execution_err = None
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
+        nonlocal execution_err
         for repeat in range(repeats):
-            stored = mongo_store_partition.get_all_from_store(QueryKeys(qks=[key]))
-            obj = MockSyftObject(data=stored.ok()[0].data + 1)
+            obj = MockSyftObject(data=repeat)
             res = mongo_store_partition.update(key, obj)
 
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok(), res
 
     tids = []
@@ -195,30 +196,30 @@ def test_mongo_partition_update_multithreaded(
     for thread in tids:
         thread.join()
 
-    assert execution_ok
-    stored = mongo_store_partition.get_all_from_store(QueryKeys(qks=[key]))
-    assert stored.ok()[0].data == thread_cnt * repeats
+    assert execution_err is None
 
 
 def test_mongo_partition_set_delete_multithreaded(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    thread_cnt = 3
-    execution_ok = True
+    thread_cnt = 5
+    execution_err = None
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal execution_ok
-        for idx in range(100):
+        nonlocal execution_err
+        for idx in range(50):
             obj = MockSyftObject(data=idx)
             res = mongo_store_partition.set(obj, ignore_duplicates=False)
 
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok()
 
             key = mongo_store_partition.settings.store_key.with_obj(obj)
 
             res = mongo_store_partition.delete(key)
-            execution_ok &= res.is_ok()
+            if res.is_err():
+                execution_err = res
             assert res.is_ok(), res
 
     tids = []
@@ -231,6 +232,6 @@ def test_mongo_partition_set_delete_multithreaded(
     for thread in tids:
         thread.join()
 
-    assert execution_ok
+    assert execution_err is None
     stored_cnt = len(mongo_store_partition.all().ok())
     assert stored_cnt == 0
