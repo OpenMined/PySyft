@@ -1,12 +1,17 @@
+# third party
+from faker import Faker
+
 # syft absolute
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.response import SyftSuccess
 from syft.core.node.new.uid import UID
 from syft.core.node.new.user import ServiceRole
 from syft.core.node.new.user import User
+from syft.core.node.new.user import UserUpdate
+from syft.core.node.new.user_stash import UserStash
 
 
-def add_mock_user(user_stash, user):
+def add_mock_user(user_stash: UserStash, user: User) -> User:
     # prepare: add mock data
     result = user_stash.partition.set(user)
     assert result.is_ok()
@@ -17,7 +22,7 @@ def add_mock_user(user_stash, user):
     return user
 
 
-def test_userstash_set(user_stash, guest_user):
+def test_userstash_set(user_stash: UserStash, guest_user: User) -> None:
     result = user_stash.set(guest_user)
     assert result.is_ok()
 
@@ -27,7 +32,7 @@ def test_userstash_set(user_stash, guest_user):
     assert guest_user.id in user_stash.partition.data
 
 
-def test_userstash_set_duplicate(user_stash, guest_user):
+def test_userstash_set_duplicate(user_stash: UserStash, guest_user: User) -> None:
     result = user_stash.set(guest_user)
     assert result.is_ok()
 
@@ -41,7 +46,7 @@ def test_userstash_set_duplicate(user_stash, guest_user):
     assert len(user_stash.partition.data) == original_count
 
 
-def test_userstash_get_by_uid(user_stash, guest_user):
+def test_userstash_get_by_uid(user_stash: UserStash, guest_user: User) -> None:
     # prepare: add mock data
     user = add_mock_user(user_stash, guest_user)
 
@@ -60,7 +65,9 @@ def test_userstash_get_by_uid(user_stash, guest_user):
     assert searched_user is None
 
 
-def test_userstash_get_by_email(faker, user_stash, guest_user):
+def test_userstash_get_by_email(
+    faker: Faker, user_stash: UserStash, guest_user: User
+) -> None:
     # prepare: add mock data
     user = add_mock_user(user_stash, guest_user)
 
@@ -76,7 +83,7 @@ def test_userstash_get_by_email(faker, user_stash, guest_user):
     assert searched_user is None
 
 
-def test_userstash_get_by_signing_key(user_stash, guest_user):
+def test_userstash_get_by_signing_key(user_stash: UserStash, guest_user: User) -> None:
     # prepare: add mock data
     user = add_mock_user(user_stash, guest_user)
 
@@ -98,7 +105,7 @@ def test_userstash_get_by_signing_key(user_stash, guest_user):
     assert searched_user is None
 
 
-def test_userstash_get_by_verify_key(user_stash, guest_user):
+def test_userstash_get_by_verify_key(user_stash: UserStash, guest_user: User) -> None:
     # prepare: add mock data
     user = add_mock_user(user_stash, guest_user)
 
@@ -120,7 +127,7 @@ def test_userstash_get_by_verify_key(user_stash, guest_user):
     assert searched_user is None
 
 
-def test_userstash_get_by_role(user_stash, guest_user):
+def test_userstash_get_by_role(user_stash: UserStash, guest_user: User) -> None:
     # prepare: add mock data
     user = add_mock_user(user_stash, guest_user)
 
@@ -130,7 +137,7 @@ def test_userstash_get_by_role(user_stash, guest_user):
     assert user == searched_user
 
 
-def test_userstash_delete_by_uid(user_stash, guest_user):
+def test_userstash_delete_by_uid(user_stash: UserStash, guest_user: User) -> None:
     # prepare: add mock data
     user = add_mock_user(user_stash, guest_user)
 
@@ -146,7 +153,9 @@ def test_userstash_delete_by_uid(user_stash, guest_user):
     assert searched_user is None
 
 
-def test_userstash_update(user_stash, guest_user, update_user):
+def test_userstash_update(
+    user_stash: UserStash, guest_user: User, update_user: UserUpdate
+) -> None:
     # prepare: add mock data
     user = add_mock_user(user_stash, guest_user)
 

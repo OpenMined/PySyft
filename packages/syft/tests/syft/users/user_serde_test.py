@@ -1,3 +1,6 @@
+# stdlib
+from typing import Any
+
 # third party
 import pytest
 
@@ -18,7 +21,7 @@ import syft as sy
         "user_service",
     ],
 )
-def test_user_serde(obj):
+def test_user_serde(obj: Any) -> None:
     ser_data = sy.serialize(obj, to_bytes=True)
     assert isinstance(ser_data, bytes)
     deser_data = sy.deserialize(ser_data, from_bytes=True)
