@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Tuple
 
 # third party
 import pytest
@@ -8,19 +9,28 @@ from result import Ok
 
 # syft absolute
 from syft.core.node.new.context import AuthedServiceContext
+from syft.core.node.new.context import NodeServiceContext
 from syft.core.node.new.context import UnauthedServiceContext
+from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.response import SyftError
 from syft.core.node.new.response import SyftSuccess
 from syft.core.node.new.uid import UID
 from syft.core.node.new.user import ServiceRole
 from syft.core.node.new.user import User
+from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user import UserView
 
 
 @pytest.fixture
 def authed_context(admin_user, worker):
     context = AuthedServiceContext(credentials=admin_user.verify_key, node=worker)
+    return context
+
+
+@pytest.fixture
+def node_context(worker):
+    context = NodeServiceContext(node=worker)
     return context
 
 
@@ -327,7 +337,7 @@ def test_userservice_delete_success(monkeypatch, user_service, authed_context):
     assert response == expected_output
 
 
-def test_user_verify_key(monkeypatch, user_service, guest_user):
+def test_userservice_user_verify_key(monkeypatch, user_service, guest_user):
     def mock_get_by_email(email):
         return Ok(guest_user)
 
@@ -337,7 +347,7 @@ def test_user_verify_key(monkeypatch, user_service, guest_user):
     assert response == guest_user.verify_key
 
 
-def test_user_verify_key_invalid_email(monkeypatch, user_service, faker):
+def test_userservice_user_verify_key_invalid_email(monkeypatch, user_service, faker):
     email = faker.email()
     expected_output = SyftError(message=f"No user with email: {email}")
 
@@ -348,3 +358,147 @@ def test_user_verify_key_invalid_email(monkeypatch, user_service, faker):
 
     response = user_service.user_verify_key(email=email)
     assert response == expected_output
+
+
+def test_userservice_admin_verify_key_error(monkeypatch, user_service):
+    expected_output = "Invalid Role"
+
+    def mock_get_by_role(role):
+        return Err(expected_output)
+
+    monkeypatch.setattr(user_service.stash, "get_by_role", mock_get_by_role)
+
+    response = user_service.admin_verify_key()
+    assert isinstance(response, SyftError)
+    assert response.message == expected_output
+
+
+def test_userservice_admin_verify_key_success(monkeypatch, user_service, admin_user):
+    def mock_get_by_role(role):
+        return Ok(admin_user)
+
+    monkeypatch.setattr(user_service.stash, "get_by_role", mock_get_by_role)
+
+    response = user_service.admin_verify_key()
+    assert isinstance(response, SyftVerifyKey)
+    assert response == admin_user.verify_key
+
+
+def test_userservice_register_user_exists(
+    monkeypatch, user_service, node_context, guest_create_user
+):
+    def mock_get_by_email(email):
+        return Ok(guest_create_user)
+
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    expected_error_msg = f"User already exists with email: {guest_create_user.email}"
+
+    response = user_service.register(node_context, guest_create_user)
+    assert isinstance(response, SyftError)
+    assert response.message == expected_error_msg
+
+
+def test_userservice_register_error_on_get_email(
+    monkeypatch, user_service, node_context, guest_create_user
+):
+    expected_error_msg = "Failed to get email"
+
+    def mock_get_by_email(email):
+        return Err(expected_error_msg)
+
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+
+    response = user_service.register(node_context, guest_create_user)
+    assert isinstance(response, SyftError)
+    assert response.message == expected_error_msg
+
+
+def test_userservice_register_success(
+    monkeypatch, user_service, node_context, guest_create_user, guest_user
+):
+    def mock_get_by_email(email):
+        return Ok(None)
+
+    def mock_set(user):
+        return Ok(guest_user)
+
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    monkeypatch.setattr(user_service.stash, "set", mock_set)
+
+    expected_msg = f"{guest_create_user.email} User successfully registered !!!"
+    expected_private_key = guest_user.to(UserPrivateKey)
+
+    response = user_service.register(node_context, guest_create_user)
+    assert isinstance(response, Tuple)
+
+    syft_success_response, user_private_key = response
+    assert isinstance(syft_success_response, SyftSuccess)
+    assert syft_success_response.message == expected_msg
+
+    assert isinstance(user_private_key, UserPrivateKey)
+    assert user_private_key == expected_private_key
+
+
+def test_userservice_register_set_fail(
+    monkeypatch, user_service, node_context, guest_create_user
+):
+    def mock_get_by_email(email):
+        return Ok(None)
+
+    expected_error_msg = "Failed to connect to server."
+
+    def mock_set(user):
+        return Err(expected_error_msg)
+
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    monkeypatch.setattr(user_service.stash, "set", mock_set)
+
+    response = user_service.register(node_context, guest_create_user)
+    assert isinstance(response, SyftError)
+    assert response.message == expected_error_msg
+
+
+def test_userservice_exchange_credentials(
+    monkeypatch, user_service, unauthed_context, guest_user
+):
+    def mock_get_by_email(email):
+        return Ok(guest_user)
+
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    expected_user_private_key = guest_user.to(UserPrivateKey)
+
+    response = user_service.exchange_credentials(unauthed_context)
+    assert isinstance(response, UserPrivateKey)
+    assert response == expected_user_private_key
+
+
+def test_userservice_exchange_credentials_invalid_user(
+    monkeypatch, user_service, unauthed_context, guest_user
+):
+    def mock_get_by_email(email):
+        return Ok(None)
+
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    expected_error_msg = (
+        f"No user exists with {guest_user.email} and supplied password."
+    )
+
+    response = user_service.exchange_credentials(unauthed_context)
+    assert isinstance(response, SyftError)
+    assert response.message == expected_error_msg
+
+
+def test_userservice_exchange_credentials_get_email_fails(
+    monkeypatch, user_service, unauthed_context, guest_user
+):
+    get_by_email_error = "Failed to connect to server."
+
+    def mock_get_by_email(email):
+        return Err(get_by_email_error)
+
+    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    expected_error_msg = f"Failed to retrieve user with {guest_user.email} with error: {get_by_email_error}"
+
+    response = user_service.exchange_credentials(unauthed_context)
+    assert isinstance(response, SyftError)
+    assert response.message == expected_error_msg

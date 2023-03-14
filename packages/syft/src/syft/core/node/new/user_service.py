@@ -1,11 +1,8 @@
 # stdlib
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
-
-# third party
-from result import Err
-from result import Ok
 
 # relative
 from ....telemetry import instrument
@@ -172,14 +169,16 @@ class UserService(AbstractService):
                 context.login_credentials.password,
                 user.hashed_password,
             ):
-                return Ok(user.to(UserPrivateKey))
+                return user.to(UserPrivateKey)
 
-            return Err(
-                f"No user exists with {context.login_credentials.email} and supplied password."
+            return SyftError(
+                message="No user exists with "
+                f"{context.login_credentials.email} and supplied password."
             )
 
-        return Err(
-            f"Failed to retrieve user with {context.login_credentials.email} with error: {result.err()}"
+        return SyftError(
+            message="Failed to retrieve user with "
+            f"{context.login_credentials.email} with error: {result.err()}"
         )
 
     def admin_verify_key(self) -> Union[SyftVerifyKey, SyftError]:
@@ -190,7 +189,7 @@ class UserService(AbstractService):
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[Tuple[SyftSuccess, UserPrivateKey], SyftError]:
         """Register new user"""
 
         user = new_user.to(User)
