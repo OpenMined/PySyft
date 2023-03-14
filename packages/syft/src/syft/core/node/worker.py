@@ -649,9 +649,9 @@ def create_oblv_key_pair(
 ) -> Optional[str]:
     try:
         # relative
-        from .new.task.oblv_keys_stash import OblvKeys
-        from .new.task.oblv_keys_stash import OblvKeysStash
-        from .new.task.oblv_service import generate_oblv_key
+        from ...external.oblv.oblv_keys_stash import OblvKeys
+        from ...external.oblv.oblv_keys_stash import OblvKeysStash
+        from ...external.oblv.oblv_service import generate_oblv_key
 
         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
