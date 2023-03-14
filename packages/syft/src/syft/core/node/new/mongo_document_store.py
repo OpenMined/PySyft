@@ -212,6 +212,7 @@ class MongoStorePartition(StorePartition):
 
         storage_obj = obj.to(self.storage_type)
         try:
+            del storage_obj["_id"]
             result = collection.update_one(
                 filter=qk.as_dict_mongo, update={"$set": storage_obj}
             )

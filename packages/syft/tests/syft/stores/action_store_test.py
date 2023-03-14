@@ -7,7 +7,6 @@ from typing import Generator
 import pytest
 
 # syft absolute
-from syft.core.common.uid import UID
 from syft.core.node.new.action_store import ActionObjectEXECUTE
 from syft.core.node.new.action_store import ActionObjectOWNER
 from syft.core.node.new.action_store import ActionObjectREAD
@@ -18,9 +17,10 @@ from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.dict_document_store import DictStoreConfig
 from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
 from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
+from syft.core.node.new.uid import UID
 
 # relative
-from .store_mocks import MockSyftObject
+from .store_mocks_test import MockSyftObject
 
 workspace = Path("workspace")
 db_name = "testing"

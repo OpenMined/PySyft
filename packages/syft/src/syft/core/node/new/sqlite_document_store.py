@@ -18,16 +18,16 @@ from typing import Union
 from typing_extensions import Self
 
 # relative
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize
-from ...common.uid import UID
+from .deserialize import _deserialize
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
+from .serializable import serializable
+from .serialize import _serialize
+from .uid import UID
 
 
 def _repr_debug_(value: Any) -> str:

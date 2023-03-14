@@ -217,6 +217,9 @@ class KeyValueStorePartition(StorePartition):
 
             # update the object with new data
             for key, value in obj.to_dict().items():
+                if key == "id":
+                    # protected field
+                    continue
                 setattr(_original_obj, key, value)
 
             # update data and keys

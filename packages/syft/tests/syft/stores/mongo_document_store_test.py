@@ -14,8 +14,8 @@ from syft.core.node.new.mongo_document_store import MongoStoreConfig
 from syft.core.node.new.mongo_document_store import MongoStorePartition
 
 # relative
-from .store_mocks import MockObjectType
-from .store_mocks import MockSyftObject
+from .store_mocks_test import MockObjectType
+from .store_mocks_test import MockSyftObject
 
 mongo = create_mongo_fixture(scope="session")
 db_name = "testing"

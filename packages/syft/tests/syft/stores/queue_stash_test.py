@@ -23,8 +23,8 @@ from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
 from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 
 # relative
-from .store_mocks import MockObjectType
-from .store_mocks import MockSyftObject
+from .store_mocks_test import MockObjectType
+from .store_mocks_test import MockSyftObject
 
 mongo = create_mongo_fixture(scope="session")
 workspace = Path("workspace")

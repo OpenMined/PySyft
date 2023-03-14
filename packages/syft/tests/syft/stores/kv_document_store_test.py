@@ -1,4 +1,5 @@
 # stdlib
+from copy import copy
 from threading import Thread
 
 # third party
@@ -10,9 +11,9 @@ from syft.core.node.new.document_store import QueryKeys
 from syft.core.node.new.kv_document_store import KeyValueStorePartition
 
 # relative
-from .store_mocks import MockObjectType
-from .store_mocks import MockStoreConfig
-from .store_mocks import MockSyftObject
+from .store_mocks_test import MockObjectType
+from .store_mocks_test import MockStoreConfig
+from .store_mocks_test import MockSyftObject
 
 
 @pytest.fixture
@@ -126,12 +127,12 @@ def test_kv_store_partition_update(store: KeyValueStorePartition) -> None:
         key = store.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
-        res = store.update(key, obj_new)
+        res = store.update(key, copy(obj_new))
         assert res.is_ok()
 
         assert len(store.all().ok()) == 1
-        assert store.all().ok()[0].id != obj.id
-        assert store.all().ok()[0].id == obj_new.id
+        assert store.all().ok()[0].id == obj.id
+        assert store.all().ok()[0].id != obj_new.id
         assert store.all().ok()[0].data == v
 
         stored = store.get_all_from_store(QueryKeys(qks=[key]))

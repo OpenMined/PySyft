@@ -1,29 +1,51 @@
 # stdlib
+from pathlib import Path
+import shutil
 from threading import Thread
+from typing import Generator
 
 # third party
 import pytest
 
 # syft absolute
-from syft.core.node.new.dict_document_store import DictStoreConfig
-from syft.core.node.new.dict_document_store import DictStorePartition
 from syft.core.node.new.document_store import PartitionSettings
 from syft.core.node.new.document_store import QueryKeys
+from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
+from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
+from syft.core.node.new.sqlite_document_store import SQLiteStorePartition
 
 # relative
-from .store_mocks import MockObjectType
-from .store_mocks import MockSyftObject
+from .store_mocks_test import MockObjectType
+from .store_mocks_test import MockSyftObject
+
+workspace = Path("workspace")
+db_name = "testing.sqlite"
+
+
+@pytest.fixture(autouse=True)
+def prepare_workspace() -> Generator:
+    workspace.mkdir(parents=True, exist_ok=True)
+    db_path = workspace / db_name
+
+    if db_path.exists():
+        db_path.unlink()
+
+    yield
+
+    if db_path.exists():
+        db_path.unlink()
 
 
 @pytest.fixture
 def store():
-    store_config = DictStoreConfig()
+    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
+    store_config = SQLiteStoreConfig(client_config=sqlite_config)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    return DictStorePartition(settings=settings, store_config=store_config)
+    return SQLiteStorePartition(settings=settings, store_config=store_config)
 
 
-def test_dict_store_partition_sanity(store: DictStorePartition) -> None:
+def test_sqlite_store_partition_sanity(store: SQLiteStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -32,7 +54,15 @@ def test_dict_store_partition_sanity(store: DictStorePartition) -> None:
     assert hasattr(store, "searchable_keys")
 
 
-def test_dict_store_partition_set(store: DictStorePartition) -> None:
+def test_sqlite_store_partition_init_failed(store: SQLiteStorePartition) -> None:
+    # delete the destination folder
+    shutil.rmtree(workspace)
+
+    res = store.init_store()
+    assert res.is_err()
+
+
+def test_sqlite_store_partition_set(store: SQLiteStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -58,7 +88,21 @@ def test_dict_store_partition_set(store: DictStorePartition) -> None:
     assert len(store.all().ok()) == 2
 
 
-def test_dict_store_partition_delete(store: DictStorePartition) -> None:
+def test_sqlite_store_partition_set_backend_fail(store: SQLiteStorePartition) -> None:
+    res = store.init_store()
+    assert res.is_ok()
+
+    # delete the db
+    (workspace / db_name).unlink()
+
+    # this should fail
+    obj = MockSyftObject(data=1)
+
+    res = store.set(obj, ignore_duplicates=False)
+    assert res.is_err()
+
+
+def test_sqlite_store_partition_delete(store: SQLiteStorePartition) -> None:
     res = store.init_store()
     assert res.is_ok()
 
@@ -91,7 +135,7 @@ def test_dict_store_partition_delete(store: DictStorePartition) -> None:
     assert len(store.all().ok()) == 0
 
 
-def test_dict_store_partition_update(store: DictStorePartition) -> None:
+def test_sqlite_store_partition_update(store: SQLiteStorePartition) -> None:
     store.init_store()
 
     # add item
@@ -122,7 +166,7 @@ def test_dict_store_partition_update(store: DictStorePartition) -> None:
         assert stored.ok()[0].data == v
 
 
-def test_dict_store_partition_set_multithreaded(store: DictStorePartition) -> None:
+def test_sqlite_store_partition_set_multithreaded(store: SQLiteStorePartition) -> None:
     thread_cnt = 3
     repeats = 100
 
@@ -151,14 +195,15 @@ def test_dict_store_partition_set_multithreaded(store: DictStorePartition) -> No
 
     assert execution_ok
     stored_cnt = len(store.all().ok())
-    assert stored_cnt == repeats * thread_cnt
+    assert stored_cnt == thread_cnt * repeats
 
 
-def test_dict_store_partition_update_multithreaded(
-    store: DictStorePartition,
+def test_sqlite_store_partition_update_multithreaded(
+    store: SQLiteStorePartition,
 ) -> None:
     thread_cnt = 3
     repeats = 100
+
     store.init_store()
 
     obj = MockSyftObject(data=0)
@@ -188,22 +233,20 @@ def test_dict_store_partition_update_multithreaded(
 
     assert execution_ok
     stored = store.get_all_from_store(QueryKeys(qks=[key]))
-    assert stored.ok()[0].data == repeats * thread_cnt
+    assert stored.ok()[0].data == thread_cnt * repeats
 
 
-def test_dict_store_partition_set_delete_multithreaded(
-    store: DictStorePartition,
+def test_sqlite_store_partition_set_delete_multithreaded(
+    store: SQLiteStorePartition,
 ) -> None:
     store.init_store()
 
     thread_cnt = 3
-    repeats = 100
-
     execution_ok = True
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_ok
-        for idx in range(repeats):
+        for idx in range(100):
             obj = MockSyftObject(data=idx)
             res = store.set(obj, ignore_duplicates=False)
 
