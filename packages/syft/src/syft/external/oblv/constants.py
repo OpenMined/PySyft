@@ -1,7 +1,7 @@
 # relative
-from ..core.node.new.deserialize import _deserialize
-from ..core.node.new.recursive import recursive_serde_register
-from ..core.node.new.serialize import _serialize
+from ...core.node.new.deserialize import _deserialize
+from ...core.node.new.recursive import recursive_serde_register
+from ...core.node.new.serialize import _serialize
 
 INFRA = "m5.4xlarge"
 REPO_OWNER = "OpenMined"

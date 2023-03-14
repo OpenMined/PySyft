@@ -19,30 +19,30 @@ from result import Ok
 from result import Result
 
 # relative
-from .....oblv.constants import DOMAIN_CONNECTION_PORT
-from .....oblv.constants import LOCAL_MODE
-from .....oblv.constants import WORKER_MODE
-from .....oblv.deployment_client import OblvMetadata
-from .....oblv.exceptions import OblvEnclaveError
-from .....oblv.exceptions import OblvProxyConnectPCRError
-from ..api import NodeView
-from ..api import SyftAPI
-from ..client import HTTPConnection
-from ..client import Routes
-from ..context import AuthedServiceContext
-from ..context import ChangeContext
-from ..credentials import SyftSigningKey
-from ..deserialize import _deserialize as deserialize
-from ..document_store import DocumentStore
-from ..serializable import serializable
-from ..service import AbstractService
-from ..service import service_method
-from ..syft_object import SYFT_OBJECT_VERSION_1
-from ..syft_object import SyftObject
-from ..uid import UID
-from ..user_code import UserCode
-from ..user_code import UserCodeStatus
-from ..util import find_available_port
+from ...core.node.new.api import NodeView
+from ...core.node.new.api import SyftAPI
+from ...core.node.new.client import HTTPConnection
+from ...core.node.new.client import Routes
+from ...core.node.new.context import AuthedServiceContext
+from ...core.node.new.context import ChangeContext
+from ...core.node.new.credentials import SyftSigningKey
+from ...core.node.new.deserialize import _deserialize as deserialize
+from ...core.node.new.document_store import DocumentStore
+from ...core.node.new.serializable import serializable
+from ...core.node.new.service import AbstractService
+from ...core.node.new.service import service_method
+from ...core.node.new.syft_object import SYFT_OBJECT_VERSION_1
+from ...core.node.new.syft_object import SyftObject
+from ...core.node.new.uid import UID
+from ...core.node.new.user_code import UserCode
+from ...core.node.new.user_code import UserCodeStatus
+from ...core.node.new.util import find_available_port
+from .constants import DOMAIN_CONNECTION_PORT
+from .constants import LOCAL_MODE
+from .constants import WORKER_MODE
+from .deployment_client import OblvMetadata
+from .exceptions import OblvEnclaveError
+from .exceptions import OblvProxyConnectPCRError
 from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
 
