@@ -173,6 +173,13 @@ class Worker(NewNode):
             else services
         )
 
+        self.service_config = ServiceConfigRegistry.get_registered_configs()
+        self.local_db = local_db
+        self.init_stores(
+            action_store_config=action_store_config,
+            document_store_config=document_store_config,
+        )
+
         if OBLV:
             # relative
             from ...external.oblv.oblv_service import OblvService
@@ -181,14 +188,8 @@ class Worker(NewNode):
             create_oblv_key_pair(worker=self)
 
         self.services = services
-
-        self.service_config = ServiceConfigRegistry.get_registered_configs()
-        self.local_db = local_db
-        self.init_stores(
-            action_store_config=action_store_config,
-            document_store_config=document_store_config,
-        )
         self._construct_services()
+
         create_admin_new(  # nosec B106
             name="Jane Doe",
             email="info@openmined.org",
