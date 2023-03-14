@@ -1,5 +1,4 @@
 # stdlib
-from threading import Lock
 from threading import Thread
 from typing import Any
 
@@ -146,7 +145,6 @@ def test_queue_update_multithreaded(queue: Any) -> None:
     obj = MockSyftObject(data=0)
     queue.set(obj, ignore_duplicates=False)
     execution_err = None
-    Lock()
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err

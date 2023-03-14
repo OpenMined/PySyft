@@ -1,9 +1,10 @@
 # stdlib
+import datetime
 from pathlib import Path
+import random
+import string
 
 workspace = Path("/tmp/sqlite/")
-sqlite_db_name = "testing.sqlite"
-mongo_db_name = "testing"
 
 test_verify_key_string_root = (
     "08e5bcddfd55cdff0f7f6a62d63a43585734c6e7a17b2ffb3f3efe322c3cecc5"
@@ -14,3 +15,8 @@ test_verify_key_string_client = (
 test_verify_key_string_hacker = (
     "8f4412396d3418d17c08a8f46592621a5d57e0daf1c93e2134c30f50d666801d"
 )
+
+
+def generate_db_name(length: int = 10) -> str:
+    random.seed(datetime.datetime.now())
+    return "".join(random.choice(string.ascii_lowercase) for i in range(length))

@@ -29,8 +29,7 @@ from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 from syft.core.node.new.sqlite_document_store import SQLiteStorePartition
 
 # relative
-from .store_constants_test import mongo_db_name
-from .store_constants_test import sqlite_db_name
+from .store_constants_test import generate_db_name
 from .store_constants_test import test_verify_key_string_root
 from .store_constants_test import workspace
 from .store_mocks_test import MockObjectType
@@ -40,6 +39,8 @@ mongo_server_mock = create_mongo_fixture(scope="session")
 
 @pytest.fixture(scope="function")
 def sqlite_workspace() -> Generator:
+    sqlite_db_name = generate_db_name()
+
     workspace.mkdir(parents=True, exist_ok=True)
     db_path = workspace / sqlite_db_name
 
@@ -92,6 +93,7 @@ def sqlite_action_store(sqlite_workspace: Tuple[Path, str]):
 
 @pytest.fixture(scope="function")
 def mongo_store_partition(mongo_server_mock):
+    mongo_db_name = generate_db_name()
     mongo_client = MongoClient(**mongo_server_mock.pmr_credentials.as_mongo_kwargs())
 
     mongo_config = MongoStoreClientConfig(client=mongo_client)
@@ -105,6 +107,7 @@ def mongo_store_partition(mongo_server_mock):
 
 @pytest.fixture(scope="function")
 def mongo_document_store(mongo_server_mock):
+    mongo_db_name = generate_db_name()
     mongo_client = MongoClient(**mongo_server_mock.pmr_credentials.as_mongo_kwargs())
 
     mongo_config = MongoStoreClientConfig(client=mongo_client)
