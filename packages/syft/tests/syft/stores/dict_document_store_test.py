@@ -113,9 +113,10 @@ def test_dict_store_partition_update(store: DictStorePartition) -> None:
         res = store.update(key, obj_new)
         assert res.is_ok()
 
+        # The ID should stay the same on update, unly the values are updated.
         assert len(store.all().ok()) == 1
-        assert store.all().ok()[0].id != obj.id
-        assert store.all().ok()[0].id == obj_new.id
+        assert store.all().ok()[0].id == obj.id
+        assert store.all().ok()[0].id != obj_new.id
         assert store.all().ok()[0].data == v
 
         stored = store.get_all_from_store(QueryKeys(qks=[key]))
@@ -124,7 +125,7 @@ def test_dict_store_partition_update(store: DictStorePartition) -> None:
 
 def test_dict_store_partition_set_multithreaded(store: DictStorePartition) -> None:
     thread_cnt = 3
-    repeats = 100
+    repeats = 1000
 
     store.init_store()
 

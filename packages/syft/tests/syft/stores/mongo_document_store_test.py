@@ -48,7 +48,7 @@ def test_mongo_store_partition_init_failed() -> None:
     store_config = MongoStoreConfig(client_config=mongo_config)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    return MongoStorePartition(settings=settings, store_config=store_config)
+    store = MongoStorePartition(settings=settings, store_config=store_config)
 
     res = store.init_store()
     assert res.is_err()
@@ -59,6 +59,8 @@ def test_mongo_store_partition_set(store: MongoStorePartition) -> None:
     assert res.is_ok()
 
     obj = MockSyftObject(data=1)
+    obj.to_mongo()
+
     res = store.set(obj, ignore_duplicates=False)
 
     assert res.is_ok()
@@ -135,9 +137,10 @@ def test_mongo_store_partition_update(store: MongoStorePartition) -> None:
         res = store.update(key, obj_new)
         assert res.is_ok()
 
+        # The ID should stay the same on update, unly the values are updated.
         assert len(store.all().ok()) == 1
-        assert store.all().ok()[0].id != obj.id
-        assert store.all().ok()[0].id == obj_new.id
+        assert store.all().ok()[0].id == obj.id
+        assert store.all().ok()[0].id != obj_new.id
         assert store.all().ok()[0].data == v
 
         stored = store.get_all_from_store(QueryKeys(qks=[key]))
@@ -146,7 +149,7 @@ def test_mongo_store_partition_update(store: MongoStorePartition) -> None:
 
 def test_mongo_store_partition_set_multithreaded(store: MongoStorePartition) -> None:
     thread_cnt = 3
-    repeats = 100
+    repeats = 200
     store.init_store()
 
     execution_ok = True

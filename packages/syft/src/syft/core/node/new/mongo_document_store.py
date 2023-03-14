@@ -56,7 +56,8 @@ def to_mongo(context: TransformContext) -> TransformContext:
         else:
             output[k] = value
 
-    output["_id"] = context.output["id"]
+    if "id" in context.output:
+        output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
     output["__obj__"] = context.obj.to_dict()
@@ -143,7 +144,10 @@ class MongoStorePartition(StorePartition):
 
         new_index_keys = [(attr, ASCENDING) for attr in unique_attrs]
 
-        current_indexes = collection.index_information()
+        try:
+            current_indexes = collection.index_information()
+        except BaseException as e:
+            return Err(str(e))
         index_name = f"{object_name}_index_name"
 
         current_index_keys = current_indexes.get(index_name, None)
@@ -210,19 +214,34 @@ class MongoStorePartition(StorePartition):
             return collection_status
         collection = collection_status.ok()
 
+        # TODO: optimize the update. The ID should not be overwritten,
+        # but the qk doesn't necessarily have to include the `id` field either.
+
+        prev_obj_status = self.get_all_from_store(QueryKeys(qks=[qk]))
+        if prev_obj_status.is_err():
+            return Err(f"No object found with query key: {qk}")
+
+        prev_obj = prev_obj_status.ok()
+        if len(prev_obj) == 0:
+            return Err(f"Missing values for query key: {qk}")
+
+        # we don't want to overwrite Mongo's "id_" or Syft's "id" on update
+        obj_id = obj["id"]
+
+        # Set ID to the updated object value
+        setattr(obj, "id", prev_obj[0]["id"])
+
+        # Create the Mongo object
         storage_obj = obj.to(self.storage_type)
+
+        # revert the ID
+        setattr(obj, "id", obj_id)
+
         try:
-            del storage_obj["_id"]
-            result = collection.update_one(
-                filter=qk.as_dict_mongo, update={"$set": storage_obj}
-            )
+            collection.update_one(filter=qk.as_dict_mongo, update={"$set": storage_obj})
         except Exception as e:
             return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
 
-        if result.matched_count == 0:
-            return Err(f"No object found with query key: {qk}")
-        # elif result.modified_count == 0:
-        #     return Err(f"Failed to modify obj: {obj} with qk: {qk}")
         return Ok(obj)
 
     def find_index_or_search_keys(

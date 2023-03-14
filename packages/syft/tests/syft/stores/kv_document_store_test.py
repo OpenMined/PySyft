@@ -130,6 +130,7 @@ def test_kv_store_partition_update(store: KeyValueStorePartition) -> None:
         res = store.update(key, copy(obj_new))
         assert res.is_ok()
 
+        # The ID should stay the same on update, unly the values are updated.
         assert len(store.all().ok()) == 1
         assert store.all().ok()[0].id == obj.id
         assert store.all().ok()[0].id != obj_new.id
@@ -141,7 +142,7 @@ def test_kv_store_partition_update(store: KeyValueStorePartition) -> None:
 
 def test_kv_store_partition_set_multithreaded(store: KeyValueStorePartition) -> None:
     thread_cnt = 3
-    repeats = 100
+    repeats = 1000
     execution_ok = True
 
     def _kv_cbk(tid: int) -> None:
