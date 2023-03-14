@@ -42,9 +42,9 @@ from ..syft_object import SyftObject
 from ..uid import UID
 from ..user_code import UserCode
 from ..user_code import UserCodeStatus
+from ..util import find_available_port
 from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
-from .util import find_available_port
 
 # caches the connection to Enclave using the deployment ID
 OBLV_PROCESS_CACHE: Dict[str, List] = {}
