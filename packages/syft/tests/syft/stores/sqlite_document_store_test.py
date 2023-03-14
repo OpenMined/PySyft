@@ -67,6 +67,12 @@ def test_sqlite_store_partition_set(
     assert res.ok() == obj2
     assert len(sqlite_store_partition.all().ok()) == 2
 
+    for idx in range(100):
+        obj = MockSyftObject(data=idx)
+        res = sqlite_store_partition.set(obj, ignore_duplicates=False)
+        assert res.is_ok()
+        assert len(sqlite_store_partition.all().ok()) == 3 + idx
+
 
 def test_sqlite_store_partition_set_backend_fail(
     sqlite_store_partition: SQLiteStorePartition,
@@ -80,7 +86,7 @@ def test_sqlite_store_partition_set_backend_fail(
     res = store.init_store()
 
     # delete the db
-    (workspace / sqlite_db_name).unlink()
+    shutil.rmtree(workspace)
 
     # this should fail
     obj = MockSyftObject(data=1)
@@ -93,7 +99,7 @@ def test_sqlite_store_partition_delete(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
     objs = []
-    for v in range(10):
+    for v in range(100):
         obj = MockSyftObject(data=v)
         sqlite_store_partition.set(obj, ignore_duplicates=False)
         objs.append(obj)
@@ -136,7 +142,7 @@ def test_sqlite_store_partition_update(
     assert res.is_err()
 
     # update the key multiple times
-    for v in range(10):
+    for v in range(100):
         key = sqlite_store_partition.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 

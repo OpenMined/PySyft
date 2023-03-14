@@ -61,6 +61,12 @@ def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -
     assert res.ok() == obj2
     assert len(mongo_store_partition.all().ok()) == 2
 
+    for idx in range(100):
+        obj = MockSyftObject(data=idx)
+        res = mongo_store_partition.set(obj, ignore_duplicates=False)
+        assert res.is_ok()
+        assert len(mongo_store_partition.all().ok()) == 3 + idx
+
 
 def test_mongo_store_partition_delete(
     mongo_store_partition: MongoStorePartition,
@@ -69,7 +75,7 @@ def test_mongo_store_partition_delete(
     assert res.is_ok()
 
     objs = []
-    for v in range(10):
+    for v in range(100):
         obj = MockSyftObject(data=v)
         mongo_store_partition.set(obj, ignore_duplicates=False)
         objs.append(obj)

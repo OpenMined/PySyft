@@ -44,6 +44,12 @@ def test_dict_store_partition_set(dict_store_partition: DictStorePartition) -> N
     assert res.ok() == obj2
     assert len(dict_store_partition.all().ok()) == 2
 
+    for idx in range(100):
+        obj = MockSyftObject(data=idx)
+        res = dict_store_partition.set(obj, ignore_duplicates=False)
+        assert res.is_ok()
+        assert len(dict_store_partition.all().ok()) == 3 + idx
+
 
 def test_dict_store_partition_delete(dict_store_partition: DictStorePartition) -> None:
     res = dict_store_partition.init_store()
