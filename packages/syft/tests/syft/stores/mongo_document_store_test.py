@@ -40,7 +40,6 @@ def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -
     assert res.is_ok()
 
     obj = MockSyftObject(data=1)
-    obj.to_mongo()
 
     res = mongo_store_partition.set(obj, ignore_duplicates=False)
 
@@ -135,8 +134,8 @@ def test_mongo_store_partition_update(
 def test_mongo_store_partition_set_multithreaded(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    thread_cnt = 3
-    repeats = 200
+    thread_cnt = 10
+    repeats = 20
     mongo_store_partition.init_store()
 
     execution_ok = True
@@ -148,7 +147,7 @@ def test_mongo_store_partition_set_multithreaded(
             res = mongo_store_partition.set(obj, ignore_duplicates=False)
 
             execution_ok &= res.is_ok()
-            assert res.is_ok()
+            assert res.is_ok(), res
 
     tids = []
     for tid in range(thread_cnt):
@@ -168,8 +167,8 @@ def test_mongo_store_partition_set_multithreaded(
 def test_mongo_partition_update_multithreaded(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    thread_cnt = 3
-    repeats = 100
+    thread_cnt = 10
+    repeats = 20
 
     obj = MockSyftObject(data=0)
     key = mongo_store_partition.settings.store_key.with_obj(obj)
@@ -184,7 +183,7 @@ def test_mongo_partition_update_multithreaded(
             res = mongo_store_partition.update(key, obj)
 
             execution_ok &= res.is_ok()
-            assert res.is_ok()
+            assert res.is_ok(), res
 
     tids = []
     for tid in range(thread_cnt):
@@ -220,7 +219,7 @@ def test_mongo_partition_set_delete_multithreaded(
 
             res = mongo_store_partition.delete(key)
             execution_ok &= res.is_ok()
-            assert res.is_ok()
+            assert res.is_ok(), res
 
     tids = []
     for tid in range(thread_cnt):
