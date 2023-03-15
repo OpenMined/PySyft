@@ -141,6 +141,7 @@ passthrough_attrs = [
 ]
 dont_wrap_output_attrs = [
     "__repr__",
+    "__str__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
