@@ -70,8 +70,7 @@ def sqlite_store_partition(sqlite_workspace: Tuple[Path, str]):
     return sqlite_store_partition_fn(sqlite_workspace)
 
 
-@pytest.fixture(scope="function")
-def sqlite_document_store(sqlite_workspace: Tuple[Path, str]):
+def sqlite_document_store_fn(sqlite_workspace: Tuple[Path, str]):
     workspace, db_name = sqlite_workspace
     sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
     store_config = SQLiteStoreConfig(client_config=sqlite_config)
@@ -79,8 +78,18 @@ def sqlite_document_store(sqlite_workspace: Tuple[Path, str]):
 
 
 @pytest.fixture(scope="function")
-def sqlite_queue_stash(sqlite_document_store: SQLiteDocumentStore):
-    return QueueStash(store=sqlite_document_store)
+def sqlite_document_store(sqlite_workspace: Tuple[Path, str]):
+    return sqlite_document_store_fn(sqlite_workspace)
+
+
+def sqlite_queue_stash_fn(sqlite_workspace: Tuple[Path, str]):
+    store = sqlite_document_store_fn(sqlite_workspace)
+    return QueueStash(store=store)
+
+
+@pytest.fixture(scope="function")
+def sqlite_queue_stash(sqlite_workspace: Tuple[Path, str]):
+    return sqlite_queue_stash_fn(sqlite_workspace)
 
 
 @pytest.fixture(scope="function")
@@ -115,10 +124,8 @@ def mongo_store_partition(mongo_server_mock):
     mongo_client.drop_database(mongo_db_name)
 
 
-@pytest.fixture(scope="function")
-def mongo_document_store(mongo_server_mock):
-    mongo_db_name = generate_db_name()
-    mongo_client = MongoClient(**mongo_server_mock.pmr_credentials.as_mongo_kwargs())
+def mongo_document_store_fn(mongo_db_name: str = "mongo_db", **mongo_kwargs):
+    mongo_client = MongoClient(**mongo_kwargs)
 
     mongo_config = MongoStoreClientConfig(client=mongo_client)
     store_config = MongoStoreConfig(client_config=mongo_config, db_name=mongo_db_name)
@@ -129,16 +136,35 @@ def mongo_document_store(mongo_server_mock):
 
 
 @pytest.fixture(scope="function")
-def mongo_queue_stash(mongo_document_store):
+def mongo_document_store(mongo_server_mock):
+    mongo_db_name = generate_db_name()
+    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
+    return mongo_document_store_fn(mongo_db_name=mongo_db_name, **mongo_kwargs)
+
+
+def mongo_queue_stash_fn(mongo_document_store):
     return QueueStash(store=mongo_document_store)
 
 
 @pytest.fixture(scope="function")
-def dict_store_partition():
+def mongo_queue_stash(mongo_server_mock):
+    mongo_db_name = generate_db_name()
+    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
+
+    store = mongo_document_store_fn(mongo_db_name=mongo_db_name, **mongo_kwargs)
+    return mongo_queue_stash_fn(store)
+
+
+def dict_store_partition_fn():
     store_config = DictStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     return DictStorePartition(settings=settings, store_config=store_config)
+
+
+@pytest.fixture(scope="function")
+def dict_store_partition():
+    return dict_store_partition_fn()
 
 
 @pytest.fixture(scope="function")
@@ -148,12 +174,20 @@ def dict_action_store():
     return DictActionStore(store_config=store_config, root_verify_key=ver_key)
 
 
-@pytest.fixture(scope="function")
-def dict_document_store():
+def dict_document_store_fn():
     store_config = DictStoreConfig()
     return DictDocumentStore(store_config=store_config)
 
 
 @pytest.fixture(scope="function")
-def dict_queue_stash(dict_document_store):
+def dict_document_store():
+    return dict_document_store_fn()
+
+
+def dict_queue_stash_fn(dict_document_store):
     return QueueStash(store=dict_document_store)
+
+
+@pytest.fixture(scope="function")
+def dict_queue_stash(dict_document_store):
+    return dict_queue_stash_fn(dict_document_store)

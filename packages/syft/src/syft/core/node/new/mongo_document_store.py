@@ -288,7 +288,6 @@ class MongoStorePartition(StorePartition):
         if collection_status.is_err():
             return 0
         collection = collection_status.ok()
-
         return collection.count_documents(filter={})
 
 
