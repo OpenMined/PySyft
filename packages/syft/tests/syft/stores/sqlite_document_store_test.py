@@ -163,7 +163,7 @@ def test_sqlite_store_partition_set_multithreaded(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
     thread_cnt = 5
-    repeats = 50
+    repeats = 100
 
     execution_err = None
 
@@ -196,7 +196,7 @@ def test_sqlite_store_partition_update_multithreaded(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
     thread_cnt = 5
-    repeats = 50
+    repeats = 100
 
     obj = MockSyftObject(data=0)
     key = sqlite_store_partition.settings.store_key.with_obj(obj)
@@ -230,11 +230,12 @@ def test_sqlite_store_partition_set_delete_multithreaded(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
     thread_cnt = 5
+    repeats = 100
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        for idx in range(50):
+        for idx in range(repeats):
             obj = MockSyftObject(data=idx)
             res = sqlite_store_partition.set(obj, ignore_duplicates=False)
 

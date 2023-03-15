@@ -141,7 +141,7 @@ def test_mongo_store_partition_set_multithreaded(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
     thread_cnt = 5
-    repeats = 50
+    repeats = 100
     mongo_store_partition.init_store()
 
     execution_err = None
@@ -175,7 +175,7 @@ def test_mongo_partition_update_multithreaded(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
     thread_cnt = 5
-    repeats = 50
+    repeats = 100
 
     obj = MockSyftObject(data=0)
     key = mongo_store_partition.settings.store_key.with_obj(obj)
@@ -209,11 +209,12 @@ def test_mongo_partition_set_delete_multithreaded(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
     thread_cnt = 5
+    repeats = 100
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        for idx in range(50):
+        for idx in range(repeats):
             obj = MockSyftObject(data=idx)
             res = mongo_store_partition.set(obj, ignore_duplicates=False)
 

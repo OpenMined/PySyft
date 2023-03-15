@@ -120,7 +120,7 @@ def test_dict_store_partition_set_multithreaded(
     dict_store_partition: DictStorePartition,
 ) -> None:
     thread_cnt = 5
-    repeats = 50
+    repeats = 200
 
     dict_store_partition.init_store()
 
@@ -155,7 +155,7 @@ def test_dict_store_partition_update_multithreaded(
     dict_store_partition: DictStorePartition,
 ) -> None:
     thread_cnt = 5
-    repeats = 50
+    repeats = 200
     dict_store_partition.init_store()
 
     obj = MockSyftObject(data=0)
@@ -192,7 +192,7 @@ def test_dict_store_partition_set_delete_multithreaded(
     dict_store_partition.init_store()
 
     thread_cnt = 5
-    repeats = 50
+    repeats = 200
 
     execution_err = None
 
