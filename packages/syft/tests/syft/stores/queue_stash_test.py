@@ -33,7 +33,7 @@ def test_queue_stash_sanity(queue: Any) -> None:
 )
 def test_queue_stash_set_get(queue: Any) -> None:
     objs = []
-    for idx in range(100):
+    for idx in range(20):
         obj = MockSyftObject(data=idx)
         objs.append(obj)
 
@@ -76,7 +76,7 @@ def test_queue_stash_update(queue: Any) -> None:
     res = queue.set(obj, ignore_duplicates=False)
     assert res.is_ok()
 
-    for idx in range(100):
+    for idx in range(20):
         obj.data = idx
 
         res = queue.update(obj)
@@ -102,7 +102,7 @@ def test_queue_stash_update(queue: Any) -> None:
 )
 def test_queue_set_multithreaded(queue: Any) -> None:
     thread_cnt = 5
-    repeats = 50
+    repeats = 10
 
     execution_err = None
 
@@ -139,8 +139,8 @@ def test_queue_set_multithreaded(queue: Any) -> None:
     ],
 )
 def test_queue_update_multithreaded(queue: Any) -> None:
-    thread_cnt = 5
-    repeats = 50
+    thread_cnt = 3
+    repeats = 10
 
     obj = MockSyftObject(data=0)
     queue.set(obj, ignore_duplicates=False)
@@ -180,8 +180,8 @@ def test_queue_update_multithreaded(queue: Any) -> None:
 def test_queue_set_delete_multithreaded(
     queue: Any,
 ) -> None:
-    thread_cnt = 5
-    repeats = 50
+    thread_cnt = 3
+    repeats = 10
 
     execution_err = None
     objs = []

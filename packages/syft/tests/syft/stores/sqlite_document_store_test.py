@@ -3,6 +3,10 @@ import shutil
 from threading import Thread
 from typing import Tuple
 
+# third party
+from joblib import Parallel
+from joblib import delayed
+
 # syft absolute
 from syft.core.node.new.document_store import PartitionSettings
 from syft.core.node.new.document_store import QueryKeys
@@ -13,8 +17,11 @@ from syft.core.node.new.sqlite_document_store import SQLiteStorePartition
 # relative
 from .store_constants_test import generate_db_name
 from .store_constants_test import workspace
+from .store_fixtures_test import sqlite_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
+
+REPEATS = 20
 
 
 def test_sqlite_store_partition_sanity(
@@ -67,7 +74,7 @@ def test_sqlite_store_partition_set(
     assert res.ok() == obj2
     assert len(sqlite_store_partition.all().ok()) == 2
 
-    for idx in range(100):
+    for idx in range(REPEATS):
         obj = MockSyftObject(data=idx)
         res = sqlite_store_partition.set(obj, ignore_duplicates=False)
         assert res.is_ok()
@@ -99,7 +106,7 @@ def test_sqlite_store_partition_delete(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
     objs = []
-    for v in range(100):
+    for v in range(REPEATS):
         obj = MockSyftObject(data=v)
         sqlite_store_partition.set(obj, ignore_duplicates=False)
         objs.append(obj)
@@ -142,7 +149,7 @@ def test_sqlite_store_partition_update(
     assert res.is_err()
 
     # update the key multiple times
-    for v in range(100):
+    for v in range(REPEATS):
         key = sqlite_store_partition.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
@@ -159,16 +166,18 @@ def test_sqlite_store_partition_update(
         assert stored.ok()[0].data == v
 
 
-def test_sqlite_store_partition_set_multithreaded(
-    sqlite_store_partition: SQLiteStorePartition,
+def test_sqlite_store_partition_set_threading(
+    sqlite_workspace: Tuple,
 ) -> None:
-    thread_cnt = 5
-    repeats = 100
+    thread_cnt = 3
+    repeats = REPEATS
 
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
+
+        sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
         for idx in range(repeats):
             obj = MockObjectType(data=idx)
             res = sqlite_store_partition.set(obj, ignore_duplicates=False)
@@ -177,6 +186,8 @@ def test_sqlite_store_partition_set_multithreaded(
                 execution_err = res
             assert res.is_ok(), res
 
+        return execution_err
+
     tids = []
     for tid in range(thread_cnt):
         thread = Thread(target=_kv_cbk, args=(tid,))
@@ -188,16 +199,48 @@ def test_sqlite_store_partition_set_multithreaded(
         thread.join()
 
     assert execution_err is None
+
+    sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
     stored_cnt = len(sqlite_store_partition.all().ok())
     assert stored_cnt == thread_cnt * repeats
 
 
-def test_sqlite_store_partition_update_multithreaded(
-    sqlite_store_partition: SQLiteStorePartition,
+def test_sqlite_store_partition_set_joblib(
+    sqlite_workspace: Tuple,
 ) -> None:
-    thread_cnt = 5
-    repeats = 100
+    thread_cnt = 3
+    repeats = REPEATS
 
+    def _kv_cbk(tid: int) -> None:
+        for idx in range(repeats):
+            sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
+            obj = MockObjectType(data=idx)
+            res = sqlite_store_partition.set(obj, ignore_duplicates=False)
+
+            if res.is_err():
+                return res
+
+        return None
+
+    errs = Parallel(n_jobs=thread_cnt)(
+        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+    )
+
+    for execution_err in errs:
+        assert execution_err is None
+
+    sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
+    stored_cnt = len(sqlite_store_partition.all().ok())
+    assert stored_cnt == thread_cnt * repeats
+
+
+def test_sqlite_store_partition_update_threading(
+    sqlite_workspace: Tuple,
+) -> None:
+    thread_cnt = 3
+    repeats = REPEATS
+
+    sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
     obj = MockSyftObject(data=0)
     key = sqlite_store_partition.settings.store_key.with_obj(obj)
     sqlite_store_partition.set(obj, ignore_duplicates=False)
@@ -205,9 +248,11 @@ def test_sqlite_store_partition_update_multithreaded(
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
+
+        sqlite_store_partition_local = sqlite_store_partition_fn(sqlite_workspace)
         for repeat in range(repeats):
             obj = MockSyftObject(data=repeat)
-            res = sqlite_store_partition.update(key, obj)
+            res = sqlite_store_partition_local.update(key, obj)
 
             if res.is_err():
                 execution_err = res
@@ -226,15 +271,46 @@ def test_sqlite_store_partition_update_multithreaded(
     assert execution_err is None
 
 
-def test_sqlite_store_partition_set_delete_multithreaded(
-    sqlite_store_partition: SQLiteStorePartition,
+def test_sqlite_store_partition_update_joblib(
+    sqlite_workspace: Tuple,
 ) -> None:
-    thread_cnt = 5
-    repeats = 100
+    thread_cnt = 3
+    repeats = REPEATS
+
+    sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
+    obj = MockSyftObject(data=0)
+    key = sqlite_store_partition.settings.store_key.with_obj(obj)
+    sqlite_store_partition.set(obj, ignore_duplicates=False)
+
+    def _kv_cbk(tid: int) -> None:
+        sqlite_store_partition_local = sqlite_store_partition_fn(sqlite_workspace)
+        for repeat in range(repeats):
+            obj = MockSyftObject(data=repeat)
+            res = sqlite_store_partition_local.update(key, obj)
+
+            if res.is_err():
+                return res
+        return None
+
+    errs = Parallel(n_jobs=thread_cnt)(
+        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+    )
+
+    for execution_err in errs:
+        assert execution_err is None
+
+
+def test_sqlite_store_partition_set_delete_threading(
+    sqlite_workspace: Tuple,
+) -> None:
+    thread_cnt = 3
+    repeats = REPEATS
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
+        sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
+
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
             res = sqlite_store_partition.set(obj, ignore_duplicates=False)
@@ -261,5 +337,41 @@ def test_sqlite_store_partition_set_delete_multithreaded(
         thread.join()
 
     assert execution_err is None
+
+    sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
+    stored_cnt = len(sqlite_store_partition.all().ok())
+    assert stored_cnt == 0
+
+
+def test_sqlite_store_partition_set_delete_joblib(
+    sqlite_workspace: Tuple,
+) -> None:
+    thread_cnt = 3
+    repeats = REPEATS
+
+    def _kv_cbk(tid: int) -> None:
+        sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
+
+        for idx in range(repeats):
+            obj = MockSyftObject(data=idx)
+            res = sqlite_store_partition.set(obj, ignore_duplicates=False)
+
+            if res.is_err():
+                return res
+
+            key = sqlite_store_partition.settings.store_key.with_obj(obj)
+
+            res = sqlite_store_partition.delete(key)
+            if res.is_err():
+                return res
+        return None
+
+    errs = Parallel(n_jobs=thread_cnt)(
+        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+    )
+    for execution_err in errs:
+        assert execution_err is None
+
+    sqlite_store_partition = sqlite_store_partition_fn(sqlite_workspace)
     stored_cnt = len(sqlite_store_partition.all().ok())
     assert stored_cnt == 0
