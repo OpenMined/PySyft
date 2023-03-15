@@ -68,8 +68,6 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         return bool(self.all())
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        print("__array_ufunc__", ufunc, method, inputs, kwargs)
-
         inputs = tuple(
             np.array(x.syft_action_data, dtype=x.dtype)
             if isinstance(x, NumpyArrayObject)

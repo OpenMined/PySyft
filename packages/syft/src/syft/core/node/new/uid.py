@@ -70,6 +70,9 @@ class UID:
         if isinstance(value, bytes):
             value = uuid.UUID(bytes=value)
 
+        if isinstance(value, UID):
+            value = value.value
+
         self.value = uuid.uuid4() if value is None else value
 
     @staticmethod

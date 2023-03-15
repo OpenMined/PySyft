@@ -8,7 +8,6 @@ from typing import Any
 from typing import Callable
 from typing import ClassVar
 from typing import Dict
-from typing import Hashable
 from typing import KeysView
 from typing import List
 from typing import Optional
@@ -18,7 +17,6 @@ from typing import Type
 from typing import Union
 
 # third party
-import numpy as np
 import pydantic
 from typing_extensions import Self
 
@@ -162,6 +160,9 @@ dont_make_side_effects = [
     "__len__",
     "shape",
 ]
+action_data_empty_must_run = [
+    "__repr__",
+]
 show_print = False
 
 
@@ -246,68 +247,30 @@ def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
     return result
 
 
+def debox_args_and_kwargs(args: Any, kwargs: Any) -> Tuple[Any, Any]:
+    filtered_args = []
+    filtered_kwargs = {}
+    for a in args:
+        value = a
+        if hasattr(value, "syft_action_data"):
+            value = value.syft_action_data
+        filtered_args.append(value)
+
+    for k, a in kwargs.items():
+        value = a
+        if hasattr(value, "syft_action_data"):
+            value = value.syft_action_data
+        filtered_kwargs[k] = a
+
+    return tuple(filtered_args), filtered_kwargs
+
+
 class PreHookContext(SyftBaseObject):
     obj: Any
     op_name: str
     node_uid: Optional[UID]
     result_id: Optional[Union[UID, LineageID]]
     action: Optional[Action]
-
-
-def hash_inputs(
-    sequence: Union[Dict, List], name: str, hashes: List, other: List
-) -> Tuple[List, List, Any]:
-    """This method iterates through a function's args and kwargs and creates hashes used for a History Hash"""
-    if isinstance(sequence, Dict):
-        if not sequence:
-            return (
-                hashes,
-                other,
-                None,
-            )  # we were asked to hash kwargs but none were provided.
-        else:
-            sequence = [v for k, v in sequence.items()]
-
-    result_obj = None
-    for item in sequence:
-        if isinstance(item, ActionObject):
-            hashes.append(item.syft_history_hash)
-            if item.syft_result_obj is not None:
-                result_obj = item.syft_result_obj
-        elif isinstance(item, Hashable):
-            other.append(hash(item))
-        elif isinstance(item, np.ndarray):
-            other.append(hash(item.tobytes()))  # this could be slow for large np arrays
-        else:
-            raise NotImplementedError(
-                f"Unable to hash parent object: {type(item)} in method: {name}"
-            )
-    return hashes, other, result_obj
-
-
-def fetch_all_inputs(
-    name: str, self_history: int, args, kwargs
-) -> Tuple[Optional[List], Optional[List], Optional[List], Optional[Any]]:
-    """
-    Returns everything needed to create a History Hash for the resultant ActionObject:
-    - a List of Parent history hashes
-    - a List of input arguments
-    - a List of input kwargs
-    """
-    parent_hashes = [self_history]
-    parent_hashes, parent_args, result_obj_from_args = hash_inputs(
-        sequence=args, name=name, hashes=parent_hashes, other=[]
-    )
-    parent_hashes, parent_kwargs, result_obj_from_kwargs = hash_inputs(
-        sequence=kwargs, name=name, hashes=parent_hashes, other=[]
-    )
-    if result_obj_from_args is not None:
-        result_obj = result_obj_from_args
-    elif result_obj_from_kwargs is not None:
-        result_obj = result_obj_from_kwargs
-    else:
-        result_obj = None
-    return parent_hashes, parent_args, parent_kwargs, result_obj
 
 
 class ActionObject(SyftObject):
@@ -324,7 +287,6 @@ class ActionObject(SyftObject):
     syft_parent_args: Optional[Any]
     syft_parent_kwargs: Optional[Any]
     syft_history_hash: Optional[int]
-    syft_result_obj: Optional[Any]
     syft_internal_type: ClassVar[Type[Any]]
 
     @property
@@ -384,249 +346,6 @@ class ActionObject(SyftObject):
     class Config:
         arbitrary_types_allowed = True
 
-    # if we do not implement __add__ then x + y won't trigger __getattribute__
-    # no implementation necessary here as we will defer to __getattribute__
-    def __add__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__add__(other), op_name="add")
-
-    # def __add__(self, other: Any) -> Any:
-    #     if isinstance(other, ActionObject):
-    #         if self.syft_action_data is None or other.syft_action_data is None:
-    #             result2 = None
-    #             output = (
-    #                 self.syft_result_obj
-    #                 if self.syft_result_obj is not None
-    #                 else other.syft_result_obj
-    #             )
-    #             return self._syft_output_action_object(
-    #                 result=None,
-    #                 parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-    #                 result_obj=output,
-    #                 op_name="add",
-    #             )
-    #         result2 = self.syft_action_data + other.syft_action_data
-    #         return self._syft_output_action_object(
-    #             result2,
-    #             parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-    #             op_name="add",
-    #         )
-    #     result = self.__add__(other)
-    #     return self._syft_output_action_object(result, op_name="add")
-
-    def __radd__(self, other: Any) -> Any:
-        return self.__add__(other)
-
-    def __lt__(self, other: Any) -> Any:
-        if isinstance(other, ActionObject):
-            if self.syft_action_data is None or other.syft_action_data is None:
-                result2 = None
-                output = (
-                    self.syft_result_obj
-                    if self.syft_result_obj is not None
-                    else other.syft_result_obj
-                )
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                    result_obj=output,
-                    op_name="lt",
-                )
-            result2 = self.syft_action_data < other.syft_action_data
-            return self._syft_output_action_object(
-                result2,
-                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                op_name="lt",
-            )
-        result = self.__lt__(other)
-        return self._syft_output_action_object(result, op_name="lt")
-
-    def __gt__(self, other: Any) -> Any:
-        if isinstance(other, ActionObject):
-            if self.syft_action_data is None or other.syft_action_data is None:
-                result2 = None
-                output = (
-                    self.syft_result_obj
-                    if self.syft_result_obj is not None
-                    else other.syft_result_obj
-                )
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                    result_obj=output,
-                    op_name="gt",
-                )
-            result2 = self.syft_action_data > other.syft_action_data
-            return self._syft_output_action_object(
-                result2,
-                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                op_name="gt",
-            )
-        result = self.__gt__(other)
-        return self._syft_output_action_object(result, op_name="gt")
-
-    def __le__(self, other: Any) -> Any:
-        if isinstance(other, ActionObject):
-            if self.syft_action_data is None or other.syft_action_data is None:
-                result2 = None
-                output = (
-                    self.syft_result_obj
-                    if self.syft_result_obj is not None
-                    else other.syft_result_obj
-                )
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                    result_obj=output,
-                    op_name="le",
-                )
-            result2 = self.syft_action_data <= other.syft_action_data
-            return self._syft_output_action_object(
-                result2,
-                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                op_name="le",
-            )
-        result = self.__le__(other)
-        return self._syft_output_action_object(result, op_name="le")
-
-    def __ge__(self, other: Any) -> Any:
-        if isinstance(other, ActionObject):
-            if self.syft_action_data is None or other.syft_action_data is None:
-                result2 = None
-                output = (
-                    self.syft_result_obj
-                    if self.syft_result_obj is not None
-                    else other.syft_result_obj
-                )
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                    result_obj=output,
-                    op_name="ge",
-                )
-            result2 = self.syft_action_data >= other.syft_action_data
-            return self._syft_output_action_object(
-                result2,
-                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                op_name="ge",
-            )
-        result = self.__ge__(other)
-        return self._syft_output_action_object(result, op_name="ge")
-
-    def __sub__(self, other: Any) -> Any:
-        if isinstance(other, ActionObject):
-            if self.syft_action_data is None or other.syft_action_data is None:
-                result2 = None
-                output = (
-                    self.syft_result_obj
-                    if self.syft_result_obj is not None
-                    else other.syft_result_obj
-                )
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                    result_obj=output,
-                    op_name="sub",
-                )
-            result2 = self.syft_action_data - other.syft_action_data
-            return self._syft_output_action_object(
-                result2,
-                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                op_name="sub",
-            )
-        result = self.__sub__(other)
-        return self._syft_output_action_object(result, op_name="sub")
-
-    # def __rsub__(self, other: Any) -> Any:
-    # return self.__add__(other)
-
-    def __mul__(self, other: Any) -> Any:
-        if isinstance(other, ActionObject):
-            if self.syft_action_data is None or other.syft_action_data is None:
-                result2 = None
-                output = (
-                    self.syft_result_obj
-                    if self.syft_result_obj is not None
-                    else other.syft_result_obj
-                )
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                    result_obj=output,
-                    op_name="mul",
-                )
-
-            result2 = self.syft_action_data * other.syft_action_data
-            return self._syft_output_action_object(
-                result2,
-                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                op_name="mul",
-            )
-        result = self.__mul__(other)
-        return self._syft_output_action_object(result, op_name="mul")
-
-    def __matmul__(self, other: Any) -> Any:
-        if isinstance(other, ActionObject):
-            if self.syft_action_data is None or other.syft_action_data is None:
-                result2 = None
-                output = (
-                    self.syft_result_obj
-                    if self.syft_result_obj is not None
-                    else other.syft_result_obj
-                )
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                    result_obj=output,
-                    op_name="matmul",
-                )
-            result2 = self.syft_action_data @ other.syft_action_data
-            return self._syft_output_action_object(
-                result2,
-                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                op_name="matmul",
-            )
-        result = self.__matmul__(other)
-        print(type(result))
-        return self._syft_output_action_object(result, op_name="matmul")
-
-    def __rmatmul__(self, other: Any) -> Any:
-        print("We're inside rmatmul")
-        if isinstance(other, ActionObject):
-            if self.syft_action_data is None or other.syft_action_data is None:
-                result2 = None
-                output = (
-                    self.syft_result_obj
-                    if self.syft_result_obj is not None
-                    else other.syft_result_obj
-                )
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                    result_obj=output,
-                    op_name="matmul",
-                )
-            result2 = other.syft_action_data @ self.syft_action_data
-            return self._syft_output_action_object(
-                result2,
-                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
-                op_name="matmul",
-            )
-        else:
-            if self.syft_action_data is None:
-                other_id = hash(other.tobytes())
-                return self._syft_output_action_object(
-                    result=None,
-                    parent_hashes=[self.syft_history_hash, other_id],
-                    result_obj=self.syft_result_obj,
-                    op_name="matmul",
-                )
-            else:
-                result = other @ self.syft_action_data
-                self._syft_output_action_object(result, op_name="matmul")
-
-    def __repr__(self) -> str:
-        return f"History: {self.syft_history_hash}"
-
     def __post_init__(self) -> None:
         if HOOK_ALWAYS not in self._syft_pre_hooks__:
             self._syft_pre_hooks__[HOOK_ALWAYS] = set()
@@ -637,44 +356,10 @@ class ActionObject(SyftObject):
             self._syft_post_hooks__[HOOK_ALWAYS] = set()
         self._syft_post_hooks__[HOOK_ALWAYS].add(propagate_node_uid)
 
-        # TODO: Replace this with a Pydantic Validator- fails b/c ActionObject doesn't have syft_internal_types
-        while isinstance(self.syft_action_data, ActionObject):
-            # print("Action Data was ActionObject")
-            self.syft_action_data = self.syft_action_data.syft_action_data
+        if isinstance(self.syft_action_data, ActionObject):
+            raise Exception("Nested ActionObjects", self.syft_action_data)
 
-        # if self.syft_parent_hashes is not None:
-        #     if not isinstance(self.syft_parent_hashes, list):
-        #         raise NotImplementedError(
-        #             f"Parent ID type not recognized: {type(self.syft_parent_hashes)}"
-        #         )
-        #     else:
-        #         # This Action Object has 1+ parent so it'll need a history hash for verification later
-        #         history = ""
-        #         for parent in self.syft_parent_hashes:
-        #             history += str(parent)
-        #         if self.syft_parent_op is not None:
-        #             history += self.syft_parent_op
-        #         if self.syft_parent_args is not None:
-        #             if isinstance(self.syft_parent_args, list):
-        #                 for arg in self.syft_parent_args:
-        #                     history += str(arg)
-        #             else:
-        #                 history += str(self.syft_parent_args)
-        #         if self.syft_parent_kwargs is not None:
-        #             if isinstance(self.syft_parent_kwargs, list):
-        #                 for kwarg in self.syft_parent_kwargs:
-        #                     history += str(kwarg)
-        #             else:
-        #                 history += str(self.syft_parent_kwargs)
-        #         # else:
-        #         #     print("We have no Parent args!")
-        #         self.syft_history_hash = hash(history)
-        # else:
-        #     # This ActionObject was directly initialized and wasn't created from another.
         self.syft_history_hash = hash(self.id)
-
-    def __eq__(self, other: Any) -> bool:
-        return self._syft_output_action_object(self.__eq__(other))
 
     def _syft_run_pre_hooks__(
         self, context, name, args, kwargs
@@ -712,11 +397,6 @@ class ActionObject(SyftObject):
     def _syft_output_action_object(
         self,
         result,
-        parent_hashes: Optional[Union[int, List[int]]] = None,
-        op_name: Optional[str] = None,
-        parent_args: Optional[Union[str, List[str]]] = None,
-        parent_kwargs: Optional[Union[str, List[str]]] = None,
-        result_obj: Optional[Any] = None,
     ) -> Any:
         # can check types here
         if not issubclass(type(result), ActionObject):
@@ -726,56 +406,6 @@ class ActionObject(SyftObject):
             result = constructor(syft_action_data=result)
 
         return result
-
-    # def _syft_output_action_object(
-    #     self,
-    #     result,
-    #     parent_hashes: Optional[Union[int, List[int]]] = None,
-    #     op_name: Optional[str] = None,
-    #     parent_args: Optional[Union[str, List[str]]] = None,
-    #     parent_kwargs: Optional[Union[str, List[str]]] = None,
-    #     result_obj: Optional[Any] = None,
-    # ) -> Any:
-    #     """Given an input argument (result) this method ensures the output is an ActionObject as well."""
-    #     # can check types here
-    #     if not issubclass(type(result), ActionObject):
-    #         constructor = action_type_for_type(result)
-    #         if not constructor:
-    #             raise Exception(f"output: {type(result)} not in action_types")
-    #         result = constructor(syft_action_data=result)
-
-    #         if parent_hashes is None:
-    #             parent_hashes = [self.syft_history_hash]
-    #         elif isinstance(parent_hashes, list):
-    #             if self.syft_history_hash not in parent_hashes:
-    #                 parent_hashes.append(self.syft_history_hash)
-    #         elif isinstance(parent_hashes, int):
-    #             if parent_hashes != self.syft_history_hash:
-    #                 parent_hashes = [parent_hashes, self.syft_history_hash]
-    #         else:
-    #             raise NotImplementedError(
-    #                 "Not implemented for Parent_id type: ",
-    #                 type(parent_hashes),
-    #                 parent_hashes,
-    #             )
-
-    #         if result_obj is None:
-    #             if self.syft_result_obj is not None:
-    #                 result_obj = self.syft_result_obj
-    #             else:
-    #                 result_obj = None
-
-    #         result = ActionObject(
-    #             syft_action_data=result,
-    #             syft_parent_hashes=parent_hashes,
-    #             syft_parent_op=op_name,
-    #             syft_parent_args=parent_args,
-    #             syft_parent_kwargs=parent_kwargs,
-    #             syft_result_obj=result_obj,
-    #         )
-    #         print("does result have an id", result, getattr(result, "id"))
-
-    #     return result
 
     def _syft_passthrough_attrs(self) -> List[str]:
         return passthrough_attrs + getattr(self, "syft_passthrough_attrs", [])
@@ -797,11 +427,8 @@ class ActionObject(SyftObject):
         # use the custom definied version
         context_self = self
         if not defined_on_self:
-            if self.syft_action_data is not None:
-                context_self = self.syft_action_data
-            else:
-                context_self = self.syft_result_obj
-                # raise NotImplementedError(f"OP: {name}, id: {self.id}")
+            context_self = self.syft_action_data
+
         # TODO: weird edge cases here for things like tuples
         if name == "__bool__" and not hasattr(self.syft_action_data, "__bool__"):
             context = PreHookContext(obj=self, op_name=name)
@@ -821,7 +448,8 @@ class ActionObject(SyftObject):
             return __wrapper__bool__
 
         if self.syft_is_property(context_self, name):
-            print("Property detected: ", name)
+            if show_print:
+                print("Property detected: ", name)
             if self.syft_is_property(context_self, name):
                 context = PreHookContext(obj=self, op_name=name)
                 context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
@@ -836,46 +464,39 @@ class ActionObject(SyftObject):
                 return result
 
         # check for other types that aren't methods, functions etc
-        if not isinstance(self.syft_action_data, ActionDataEmpty):
-            original_func = getattr(self.syft_action_data, name)
-            skip_result = False
+        if (
+            isinstance(self.syft_action_data, ActionDataEmpty)
+            and name not in action_data_empty_must_run
+        ):
+
+            def fake_func(*args, **kwargs) -> Any:
+                return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
+            original_func = fake_func
         else:
-            original_func = getattr(self.syft_internal_type, name)
-            skip_result = True
+            original_func = getattr(self.syft_action_data, name)
 
         if show_print:
             debug_original_func(name, original_func)
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
-            print("Running method: ", name)
             if show_print:
-                print(">>", name, ", wrapper is method")
+                print("Running method: ", name)
 
             def wrapper(_self, *args, **kwargs):
                 context = PreHookContext(obj=self, op_name=name)
                 context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                     context, name, args, kwargs
                 )
-                if skip_result:
-                    result = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
-                else:
-                    result = original_func(*pre_hook_args, **pre_hook_kwargs)
+
+                original_args, original_kwargs = debox_args_and_kwargs(
+                    pre_hook_args, pre_hook_kwargs
+                )
+                result = original_func(*original_args, **original_kwargs)
 
                 post_result = self._syft_run_post_hooks__(context, name, result)
                 if name not in self._syft_dont_wrap_attrs():
-                    (
-                        parent_hashes,
-                        parent_args,
-                        parent_kwargs,
-                        result_obj,
-                    ) = fetch_all_inputs(name, self.syft_history_hash, args, kwargs)
-
                     post_result = self._syft_output_action_object(
                         post_result,
-                        # parent_hashes=parent_hashes,
-                        op_name=name,
-                        # parent_args=parent_args,
-                        # parent_kwargs=parent_kwargs,
-                        # result_obj=result_obj,
                     )
                     if context.action is not None:
                         post_result.syft_history_hash = context.action.syft_history_hash
@@ -886,37 +507,23 @@ class ActionObject(SyftObject):
 
             wrapper = types.MethodType(wrapper, type(self))
         else:
-            print("Running non-method: ", name)
             if show_print:
-                print(">>", name, ", wrapper is not method")
+                print("Running non-method: ", name)
 
             def wrapper(*args, **kwargs):
                 context = PreHookContext(obj=self, op_name=name)
                 context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                     context, name, args, kwargs
                 )
-                if skip_result:
-                    result = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
-                else:
-                    result = original_func(*pre_hook_args, **pre_hook_kwargs)
+
+                original_args, original_kwargs = debox_args_and_kwargs(
+                    pre_hook_args, pre_hook_kwargs
+                )
+                result = original_func(*original_args, **original_kwargs)
 
                 post_result = self._syft_run_post_hooks__(context, name, result)
                 if name not in self._syft_dont_wrap_attrs():
-                    (
-                        parent_hashes,
-                        parent_args,
-                        parent_kwargs,
-                        result_obj,
-                    ) = fetch_all_inputs(name, self.syft_history_hash, args, kwargs)
-
-                    post_result = self._syft_output_action_object(
-                        post_result,
-                        # parent_hashes=parent_hashes,
-                        op_name=name,
-                        # parent_args=parent_args,
-                        # parent_kwargs=parent_kwargs,
-                        # result_obj=result_obj,
-                    )
+                    post_result = self._syft_output_action_object(post_result)
                     if context.action is not None:
                         post_result.syft_history_hash = context.action.syft_history_hash
                     post_result.syft_node_uid = context.node_uid
@@ -1016,9 +623,20 @@ class ActionObject(SyftObject):
 
         return wrapper
 
-    # overwrite the SyftObject implementation
     def keys(self) -> KeysView[str]:
         return self.syft_action_data.keys()
+
+    ###### __DUNDER_MIFFLIN__
+
+    # if we do not implement these boiler plate __method__'s then special infix
+    # operations like x + y won't trigger __getattribute__
+    # unless there is a super special reason we should write no code in these functions
+
+    def __repr__(self) -> str:
+        return self.__repr__()
+
+    def __str__(self) -> str:
+        return self.__str__()
 
     def __len__(self) -> int:
         return self.__len__()
@@ -1026,11 +644,41 @@ class ActionObject(SyftObject):
     def __getitem__(self, key: Any) -> Any:
         return self._syft_output_action_object(self.__getitem__(key))
 
-    def __setitem__(self, key: Any, value: Any) -> Any:
+    def __setitem__(self, key: Any, value: Any) -> None:
         return self.__setitem__(key, value)
 
     def __contains__(self, key: Any) -> bool:
         return self.__contains__(key)
+
+    def __bool__(self) -> bool:
+        return self.__bool__()
+
+    def __add__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__add__(other))
+
+    def __sub__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__sub__(other))
+
+    def __mul__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__mul__(other))
+
+    def __matmul__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__matmul__(other))
+
+    def __eq__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__eq__(other))
+
+    def __lt__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__lt__(other))
+
+    def __gt__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__gt__(other))
+
+    def __le__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__le__(other))
+
+    def __ge__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__ge__(other))
 
     def __delattr__(self, key: Any) -> None:
         self.__delattr__(key)
@@ -1042,7 +690,7 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__invert__(other))
 
     def __divmod__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__add__(other))
+        return self._syft_output_action_object(self.__divmod__(other))
 
     def __floordiv__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__floordiv__(other))
@@ -1050,8 +698,16 @@ class ActionObject(SyftObject):
     def __mod__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__mod__(other))
 
-    def __bool__(self) -> bool:
-        return self.__bool__()
+    # r ops
+    # we want the underlying implementation so we should just call into __getattribute__
+    def __radd__(self, other: Any) -> Any:
+        return self.__radd__(other)
+
+    def __rsub__(self, other: Any) -> Any:
+        return self.__rsub__(other)
+
+    def __rmatmul__(self, other: Any) -> Any:
+        return self.__rmatmul__(other)
 
 
 @serializable(recursive_serde=True)
