@@ -248,6 +248,25 @@ def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
     return result
 
 
+def is_action_data_empty(obj: Any) -> bool:
+    if hasattr(obj, "syft_action_data"):
+        obj = obj.syft_action_data
+    if isinstance(obj, ActionDataEmpty):
+        return True
+    return False
+
+
+def has_action_data_empty(args: Any, kwargs: Any) -> bool:
+    for a in args:
+        if is_action_data_empty(a):
+            return True
+
+    for _, a in kwargs.items():
+        if is_action_data_empty(a):
+            return True
+    return False
+
+
 def debox_args_and_kwargs(args: Any, kwargs: Any) -> Tuple[Any, Any]:
     filtered_args = []
     filtered_kwargs = {}
@@ -330,11 +349,38 @@ class ActionObject(SyftObject):
         return domain_client.api.services.action.get(self.id).syft_action_data
 
     @staticmethod
-    def from_obj(syft_action_data: Any) -> ActionObject:
+    def from_obj(
+        syft_action_data: Any,
+        id: Optional[UID] = None,
+        syft_lineage_id: Optional[LineageID] = None,
+    ) -> ActionObject:
+        if id and syft_lineage_id and id != syft_lineage_id.id:
+            raise Exception("UID and LineageID should match")
         action_type = action_type_for_type(syft_action_data)
         if action_type is None:
             raise Exception(f"{type(syft_action_data)} not in action_types")
-        return action_type(syft_action_data=syft_action_data)
+        action_object = action_type(syft_action_data=syft_action_data)
+        if id:
+            action_object.id = id
+        if syft_lineage_id:
+            action_object.id = syft_lineage_id.id
+            action_object.syft_history_hash = syft_lineage_id.syft_history_hash
+        elif id:
+            action_object.syft_history_hash = hash(id)
+
+        return action_object
+
+    @staticmethod
+    def empty(
+        syft_internal_type: Optional[Any] = Any,
+        id: Optional[UID] = None,
+        syft_lineage_id: Optional[LineageID] = None,
+    ) -> ActionObject:
+        empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
+        action_object = ActionObject.from_obj(
+            syft_action_data=empty, id=id, syft_lineage_id=syft_lineage_id
+        )
+        return action_object
 
     syft_action_data: Union[Any, Tuple[Any, Any]]
     syft_node_uid: Optional[UID]
@@ -465,14 +511,13 @@ class ActionObject(SyftObject):
                 return result
 
         # check for other types that aren't methods, functions etc
+        def fake_func(*args, **kwargs) -> Any:
+            return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
         if (
             isinstance(self.syft_action_data, ActionDataEmpty)
             and name not in action_data_empty_must_run
         ):
-
-            def fake_func(*args, **kwargs) -> Any:
-                return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
-
             original_func = fake_func
         else:
             original_func = getattr(self.syft_action_data, name)
@@ -489,10 +534,14 @@ class ActionObject(SyftObject):
                     context, name, args, kwargs
                 )
 
-                original_args, original_kwargs = debox_args_and_kwargs(
-                    pre_hook_args, pre_hook_kwargs
-                )
-                result = original_func(*original_args, **original_kwargs)
+                if not has_action_data_empty(args=args, kwargs=kwargs):
+                    original_args, original_kwargs = debox_args_and_kwargs(
+                        pre_hook_args, pre_hook_kwargs
+                    )
+
+                    result = original_func(*original_args, **original_kwargs)
+                else:
+                    result = fake_func(*args, **kwargs)
 
                 post_result = self._syft_run_post_hooks__(context, name, result)
                 if name not in self._syft_dont_wrap_attrs():
@@ -517,10 +566,14 @@ class ActionObject(SyftObject):
                     context, name, args, kwargs
                 )
 
-                original_args, original_kwargs = debox_args_and_kwargs(
-                    pre_hook_args, pre_hook_kwargs
-                )
-                result = original_func(*original_args, **original_kwargs)
+                if not has_action_data_empty(args=args, kwargs=kwargs):
+                    original_args, original_kwargs = debox_args_and_kwargs(
+                        pre_hook_args, pre_hook_kwargs
+                    )
+
+                    result = original_func(*original_args, **original_kwargs)
+                else:
+                    result = fake_func(*args, **kwargs)
 
                 post_result = self._syft_run_post_hooks__(context, name, result)
                 if name not in self._syft_dont_wrap_attrs():
@@ -588,13 +641,14 @@ class ActionObject(SyftObject):
             else uid.syft_lineage_id
             for k, uid in kwargs.items()
         }
-        return Action(
+        action = Action(
             path=path,
             op=op,
             remote_self=LineageID(remote_self),
             args=arg_ids,
             kwargs=kwarg_ids,
         )
+        return action
 
     def syft_make_method_action(
         self,

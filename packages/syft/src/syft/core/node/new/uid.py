@@ -204,6 +204,8 @@ class UID:
 class LineageID(UID):
     syft_history_hash: int
 
+    __attr_allowlist__ = ["value", "syft_history_hash"]
+
     def __init__(
         self,
         value: Optional[Union[uuid_type, str, bytes]] = None,
@@ -225,6 +227,14 @@ class LineageID(UID):
     @property
     def id(self) -> UID:
         return UID(self.value)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, LineageID):
+            return (
+                self.id == other.id
+                and self.syft_history_hash == other.syft_history_hash
+            )
+        return self == other
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.no_dash} - {self.syft_history_hash}>"

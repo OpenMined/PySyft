@@ -23,7 +23,7 @@ def data2() -> ActionObject:
 @pytest.fixture
 def empty1(data1) -> ActionObject:
     """Returns an Empty Action Object corresponding to data1"""
-    return NumpyArrayObject(syft_action_data=ActionDataEmpty(), id=data1.id)
+    return ActionObject.empty(syft_internal_type=np.ndarray, id=data1.id)
 
 
 @pytest.fixture
@@ -116,10 +116,13 @@ def test_history_hash_reproducibility(data1: ActionObject) -> None:
     result2 = data1.mean().std()
     assert result1.syft_history_hash == result2.syft_history_hash
 
-    mask = data1 > 0
-    amount = data1 * 10
+    remote_0 = ActionObject.from_obj(0)
+    remote_10 = ActionObject.from_obj(10)
+
+    mask = data1 > remote_0
+    amount = data1 * remote_10
     result3 = mask * amount
-    result4 = (data1 > 0) * (data1 * 10)
+    result4 = (data1 > remote_0) * (data1 * remote_10)
     assert result3.syft_history_hash == result4.syft_history_hash
 
 
@@ -132,21 +135,3 @@ def test_empty_action_obj_hash_consistency(
     result2 = data1 + data1
 
     assert result1.syft_history_hash == result2.syft_history_hash
-
-
-# def test_args_kwargs_identical(data1: ActionObject) -> None:
-#     """Test that data.std(1) == data.std(axis=1) are the same"""
-#     result1 = data1.std(1)
-#     result2 = data1.std(axis=1)
-#     assert result1.syft_history_hash == result2.syft_history_hash
-
-# def test_rinfix_add_empty_obj(data1: ActionObject, empty1: ActionObject) -> None:
-#     """Test that r infix operations like radd work with Empty ActionObjects"""
-#     assert (5 + empty1).syft_history_hash == (empty1 + 5).syft_history_hash
-#     assert (5 + empty1).syft_history_hash is not None
-#     assert (empty1 + 5).syft_history_hash is not None
-#     assert (5 + empty1).syft_history_hash == (data1 + 5).syft_history_hash
-#     assert (empty1 + 5).syft_history_hash == (5 + data1).syft_history_hash
-#     assert (5 + data1).syft_history_hash is not None
-#     assert (data1 + 5).syft_history_hash is not None
-#     assert (5 + data1).syft_history_hash == (data1 + 5).syft_history_hash
