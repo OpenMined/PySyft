@@ -114,7 +114,7 @@ class UserService(AbstractService):
         users = result.ok()
         return [user.to(UserView) for user in users] if users is not None else []
 
-    @service_method(path="user.update", name="update")
+    @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:

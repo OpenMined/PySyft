@@ -59,33 +59,45 @@ class ServiceConfig(SyftBaseObject):
         return user_service_role in self.roles
 
 
+class UserServiceConfigRegistry:
+    def __init__(self, service_config_registry: Dict[str, ServiceConfig]):
+        self.__service_config_registry__: Dict[
+            str, ServiceConfig
+        ] = service_config_registry
+
+    @classmethod
+    def from_role(cls, user_service_role: ServiceRole):
+        return cls(
+            {
+                k: service_config
+                for k, service_config in ServiceConfigRegistry.get_registered_configs().items()
+                if service_config.has_permission(user_service_role)
+            }
+        )
+
+    def __contains__(self, path: str):
+        return path in self.__service_config_registry__
+
+    def private_path_for(self, public_path: str) -> str:
+        return self.__service_config_registry__[public_path].private_path
+
+    def get_registered_configs(self) -> Dict[str, ServiceConfig]:
+        return self.__service_config_registry__
+
+
 class ServiceConfigRegistry:
     __service_config_registry__: Dict[str, ServiceConfig] = {}
-    __public_to_private_path_map__: Dict[str, str] = {}
+    # __public_to_private_path_map__: Dict[str, str] = {}
 
     @classmethod
     def register(cls, config: ServiceConfig) -> None:
         if not cls.path_exists(config.public_path):
             cls.__service_config_registry__[config.public_path] = config
-            cls.__public_to_private_path_map__[config.public_path] = config.private_path
-
-    @classmethod
-    def private_path_for(cls, public_path: str) -> str:
-        return cls.__public_to_private_path_map__[public_path]
+            # cls.__public_to_private_path_map__[config.public_path] = config.private_path
 
     @classmethod
     def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
         return cls.__service_config_registry__
-
-    @classmethod
-    def get_user_configs(
-        cls, user_service_role: ServiceRole
-    ) -> Dict[str, ServiceConfig]:
-        return {
-            k: service_config
-            for k, service_config in cls.__service_config_registry__.items()
-            if service_config.has_permission(user_service_role)
-        }
 
     @classmethod
     def path_exists(cls, path: str):
