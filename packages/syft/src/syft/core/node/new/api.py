@@ -290,7 +290,7 @@ class SyftAPI(SyftObject):
     api_module: Optional[APIModule] = None
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
-    __attr_state__ = ["endpoints", "node_uid"]
+    __attr_state__ = ["endpoints", "node_uid", "node_name"]
 
     # def __post_init__(self) -> None:
     #     pass
