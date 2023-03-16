@@ -5,6 +5,7 @@ from typing import Tuple
 # third party
 from joblib import Parallel
 from joblib import delayed
+import pytest
 
 # syft absolute
 from syft.core.node.new.document_store import PartitionSettings
@@ -270,6 +271,7 @@ def test_mongo_store_partition_update_threading(
     assert execution_err is None
 
 
+@pytest.mark.xfail(reason="SyftObjectRegistry does only in-memory caching")
 def test_mongo_store_partition_update_joblib(
     mongo_server_mock: Tuple,
 ) -> None:

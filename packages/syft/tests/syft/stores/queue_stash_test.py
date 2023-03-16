@@ -8,6 +8,7 @@ from joblib import delayed
 import pytest
 
 # relative
+from .store_fixtures_test import mongo_queue_stash_fn
 from .store_fixtures_test import sqlite_queue_stash_fn
 from .store_mocks_test import MockSyftObject
 
@@ -292,16 +293,17 @@ def test_queue_set_sqlite(sqlite_workspace, backend):
     backend(create_queue_cbk)
 
 
-# MongoDocumentStore is not serializable, but the same instance is needed for the partitions
-#
-# @pytest.mark.parametrize(
-#    "backend", [helper_queue_set_threading, helper_queue_set_joblib]
-# )
-# def test_queue_set_threading_mongo(mongo_document_store, backend):
-#    def create_queue_cbk():
-#        return mongo_queue_stash_fn(mongo_document_store)
-#
-#    backend(create_queue_cbk)
+@pytest.mark.xfail(
+    reason="MongoDocumentStore is not serializable, but the same instance is needed for the partitions"
+)
+@pytest.mark.parametrize(
+    "backend", [helper_queue_set_threading, helper_queue_set_joblib]
+)
+def test_queue_set_threading_mongo(mongo_document_store, backend):
+    def create_queue_cbk():
+        return mongo_queue_stash_fn(mongo_document_store)
+
+    backend(create_queue_cbk)
 
 
 def helper_queue_update_threading(create_queue_cbk) -> None:
@@ -376,16 +378,17 @@ def test_queue_update_threading_sqlite(sqlite_workspace, backend):
     backend(create_queue_cbk)
 
 
-# MongoDocumentStore is not serializable, but the same instance is needed for the partitions
-#
-# @pytest.mark.parametrize(
-#    "backend", [helper_queue_update_threading, helper_queue_update_joblib]
-# )
-# def test_queue_update_threading_mongo(mongo_document_store, backend):
-#    def create_queue_cbk():
-#        return mongo_queue_stash_fn(mongo_document_store)
-#
-#    backend(create_queue_cbk)
+@pytest.mark.xfail(
+    reason="MongoDocumentStore is not serializable, but the same instance is needed for the partitions"
+)
+@pytest.mark.parametrize(
+    "backend", [helper_queue_update_threading, helper_queue_update_joblib]
+)
+def test_queue_update_threading_mongo(mongo_document_store, backend):
+    def create_queue_cbk():
+        return mongo_queue_stash_fn(mongo_document_store)
+
+    backend(create_queue_cbk)
 
 
 def helper_queue_set_delete_threading(
@@ -478,13 +481,14 @@ def test_queue_delete_threading_sqlite(sqlite_workspace, backend):
     backend(create_queue_cbk)
 
 
-# MongoDocumentStore is not serializable, but the same instance is needed for the partitions
-#
-# @pytest.mark.parametrize(
-#    "backend", [helper_queue_set_delete_threading, helper_queue_set_delete_joblib]
-# )
-# def test_queue_delete_threading_mongo(mongo_document_store, backend):
-#    def create_queue_cbk():
-#        return mongo_queue_stash_fn(mongo_document_store)
-#
-#    backend(create_queue_cbk)
+@pytest.mark.xfail(
+    reason="MongoDocumentStore is not serializable, but the same instance is needed for the partitions"
+)
+@pytest.mark.parametrize(
+    "backend", [helper_queue_set_delete_threading, helper_queue_set_delete_joblib]
+)
+def test_queue_delete_threading_mongo(mongo_document_store, backend):
+    def create_queue_cbk():
+        return mongo_queue_stash_fn(mongo_document_store)
+
+    backend(create_queue_cbk)
