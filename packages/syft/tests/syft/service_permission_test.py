@@ -35,7 +35,7 @@ def test_call_service_syftapi_no_permission(worker_domain_guest):
         guest_domain_client.api.services.user.get_all()
 
 
-def test_directly_call_with_permission(worker_domain_guest):
+def test_directly_call_service_with_permission(worker_domain_guest):
     worker, _, guest_domain_client = worker_domain_guest
     user_id = worker.document_store.partitions["User"].all().value[-1].id
     api_call = SyftAPICall(
