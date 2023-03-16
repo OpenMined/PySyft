@@ -16,7 +16,6 @@ from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from result import OkErr
 from tqdm import tqdm
 from typing_extensions import Self
 
@@ -270,8 +269,6 @@ class PythonConnection(NodeConnection):
             UserService.exchange_credentials, context
         )
         result = method()
-        if isinstance(result, OkErr):
-            return result.value
         return result
 
     def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
