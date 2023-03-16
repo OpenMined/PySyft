@@ -23,6 +23,8 @@ services:
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
     command: "/app/start.sh"
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:
       - credentials-data:/storage
 

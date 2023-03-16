@@ -243,6 +243,15 @@ class Worker(NewNode):
         connection = PythonConnection(node=self)
         return SyftClient(connection=connection, credentials=self.signing_key)
 
+    @property
+    def guest_client(self) -> Any:
+        # relative
+        from .new.client import PythonConnection
+        from .new.client import SyftClient
+
+        connection = PythonConnection(node=self)
+        return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
+
     def __repr__(self) -> str:
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
