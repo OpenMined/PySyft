@@ -47,11 +47,6 @@ class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store
 
-    @service_method(path="action.peek", name="peek")
-    def peek(self, context: AuthedServiceContext) -> Any:
-        print(self.store.permissions)
-        # return Ok(self.store.permissions)
-
     @service_method(path="action.np_array", name="np_array")
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
         if not isinstance(data, np.ndarray):
