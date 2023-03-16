@@ -10,7 +10,7 @@ from syft.core.node.new.user import UserUpdate
 
 @pytest.fixture
 def worker_domain_guest():
-    worker = sy.Worker.named("test-domain-1", processes=1, reset=True)
+    worker = sy.Worker.named("test-domain-service-permissions", processes=0, reset=True)
     domain_client = worker.root_client
     guest_domain_client = domain_client.guest()
     guest_domain_client.register(

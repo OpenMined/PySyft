@@ -258,6 +258,9 @@ def test_worker_handle_api_request(
     root_client = worker.root_client
     assert root_client.api is not None
 
+    guest_client = root_client.guest()
+    guest_client.register(name="Alice", email="alice@caltech.edu", password="abc123")
+
     api_call = SyftAPICall(
         node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
@@ -265,8 +268,8 @@ def test_worker_handle_api_request(
     result = worker.handle_api_call(api_call).message.data
     assert isinstance(result, SyftError)
 
-    test_signing_key_req = SyftSigningKey.from_string(test_signing_key_string_2)
-    signed_api_call = api_call.sign(test_signing_key_req)
+    SyftSigningKey.from_string(test_signing_key_string_2)
+    signed_api_call = api_call.sign(guest_client.api.signing_key)
 
     # should work on signed api calls
     result = worker.handle_api_call(signed_api_call).message.data
@@ -308,11 +311,14 @@ def test_worker_handle_api_response(
     root_client = worker.root_client
     assert root_client.api is not None
 
-    test_signing_key_req = SyftSigningKey.from_string(test_signing_key_string_2)
+    guest_client = root_client.guest()
+
+    guest_client.register(name="Alice", email="alice@caltech.edu", password="abc123")
+
     call = SyftAPICall(
         node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
-    signed_api_call = call.sign(test_signing_key_req)
+    signed_api_call = call.sign(guest_client.api.signing_key)
 
     # handle_api_call_with_unsigned_result should returned an unsigned result
     us_result = worker.handle_api_call_with_unsigned_result(signed_api_call)
@@ -328,7 +334,7 @@ def test_worker_handle_api_response(
     )
     # the validation should fail with the client key
     with pytest.raises(BadSignatureError):
-        test_signing_key_req.verify_key.verify_key.verify(
+        guest_client.api.signing_key.verify_key.verify_key.verify(
             signed_result.serialized_message, signed_result.signature
         )
 
