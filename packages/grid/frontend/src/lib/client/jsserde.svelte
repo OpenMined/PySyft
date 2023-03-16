@@ -9,8 +9,8 @@
   import { parse as uuidParse } from 'uuid';
 
   export class JSSerde {
-    constructor(type_bank) {
-      this.type_bank = type_bank;
+    constructor() {
+      this.type_bank = {};
       this.type_bank['builtins.int'] = [
         true,
         function (number) {
@@ -105,14 +105,14 @@
         null,
         {}
       ];
-      this.type_bank['syft.core.common.uid.UID'] = [
+      this.type_bank['syft.core.node.new.uid.UID'] = [
         false,
         (uuid) => {
           const message = new capnp.Message();
           const rs = message.initRoot(RecursiveSerde);
           const fields = rs.initFieldsName(1);
           const data = rs.initFieldsData(1);
-          rs.setFullyQualifiedName('syft.core.common.uid.UID');
+          rs.setFullyQualifiedName('syft.core.node.new.uid.UID');
 
           fields.set(0, 'value');
           let serializedObj = this.serialize(uuidParse(uuid.value));
@@ -124,22 +124,6 @@
           dataList.set(0, dataStruct);
           data.set(0, dataList);
           return message.toArrayBuffer();
-        },
-        (buffer) => {
-          let uuidMap = {};
-          const message = new capnp.Message(buffer, false);
-          const rs = message.getRoot(RecursiveSerde);
-          const fieldsName = rs.getFieldsName();
-          const fieldsData = rs.getFieldsData();
-
-          for (let index = 0; index < fieldsName.getLength(); index++) {
-            const key = fieldsName.get(index);
-            const bytes = fieldsData.get(index);
-            const objBlob = this.processObject(bytes);
-            const obj = uuidStringify(objBlob);
-            uuidMap[key] = obj;
-          }
-          return uuidMap;
         },
         null,
         {}
@@ -446,15 +430,15 @@
 
       // Get the serialization properties for the object
       const objSerdeProps = this.type_bank[fqn];
-      let notRecursive = objSerdeProps[0];
 
       // Check if the object is not recursive
-      if (notRecursive) {
+      if (objSerdeProps) {
+        if (fqn === 'syft.core.node.new.uid.UID') {
+          return objSerdeProps[1](obj);
+        }
+
         // If the object is not recursive, serialize it non-recursively
         this.serializeNonRecursive(obj, rs, objSerdeProps[1]);
-      } else if (objSerdeProps[1] !== null) {
-        // If the object has a custom serializer function, use it
-        return objSerdeProps[1](obj);
       } else {
         // Otherwise, serialize it recursively
         this.serializeRecursive(obj, rs);
@@ -537,9 +521,6 @@
           const totalChunk = this.processChunks(blob);
           return objSerdeProps[2](totalChunk.buffer);
         }
-      } else if (objSerdeProps[2] !== null) {
-        // If the data is a primitive type, deserialize it and return it
-        return objSerdeProps[2](buffer);
       } else {
         // If the data is a structured object, deserialize its fields into a map
         const fieldsData = rs.getFieldsData();
@@ -554,7 +535,12 @@
             const key = fieldsName.get(i); // Get the name of the current field
             const bytes = fieldsData.get(i); // Get the binary data buffer for the current field
             const obj = this.processObject(bytes); // Recursively deserialize the binary data buffer
-            kvIterable[key] = obj; // Add the deserialized value to the key-value iterable
+            if (fqn === 'syft.core.node.new.uid.UID') {
+              const hexuid = uuidStringify(obj);
+              kvIterable[key] = hexuid; // Add the deserialized value to the key-value iterable
+            } else {
+              kvIterable[key] = obj; // Add the deserialized value to the key-value iterable
+            }
           }
         }
 

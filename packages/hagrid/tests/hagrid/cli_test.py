@@ -29,7 +29,7 @@ def test_hagrid_launch() -> None:
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert "DOMAIN_NAME=" in cmd
+    assert "NODE_NAME=" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -68,7 +68,7 @@ def test_hagrid_launch_without_name_with_preposition() -> None:
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert "DOMAIN_NAME=" in cmd
+    assert "NODE_NAME=" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -108,7 +108,7 @@ def test_launch_with_multiword_domain_name() -> None:
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert "DOMAIN_NAME=united_nations" in cmd or "DOMAIN_NAME='united_nations'" in cmd
+    assert "NODE_NAME=united_nations" in cmd or "NODE_NAME='united_nations'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -135,8 +135,8 @@ def test_launch_with_longer_multiword_domain_name() -> None:
 
     # check that the node has a name
     assert (
-        "DOMAIN_NAME=united_states_of_america" in cmd
-        or "DOMAIN_NAME='united_states_of_america'" in cmd
+        "NODE_NAME=united_states_of_america" in cmd
+        or "NODE_NAME='united_states_of_america'" in cmd
     )
 
     # check that tail is on by default
@@ -163,7 +163,7 @@ def test_launch_with_longer_multiword_domain_name_with_preposition() -> None:
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert "DOMAIN_NAME=united_nations" in cmd or "DOMAIN_NAME='united_nations'" in cmd
+    assert "NODE_NAME=united_nations" in cmd or "NODE_NAME='united_nations'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd

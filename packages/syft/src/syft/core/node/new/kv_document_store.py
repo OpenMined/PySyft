@@ -253,7 +253,7 @@ class KeyValueStorePartition(StorePartition):
             )
 
             # update the object with new data
-            for key, value in obj.to_dict().items():
+            for key, value in obj.to_dict(exclude_none=True).items():
                 setattr(_original_obj, key, value)
 
             # update data and keys
