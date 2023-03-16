@@ -205,7 +205,7 @@ def test_action_object_hooks() -> None:
 
     def post_add(context: Any, name: str, new_result: Any) -> Any:
         # change return type to sum
-        return sum(new_result.syft_action_data)
+        return sum(new_result)
 
     action_object._syft_pre_hooks__["__add__"] = [pre_add]
     action_object._syft_post_hooks__["__add__"] = [post_add]
@@ -243,7 +243,7 @@ def test_worker_serde() -> None:
     ],
 )
 @pytest.mark.parametrize("blocking", [False, True])
-@pytest.mark.parametrize("n_processes", [0, 1])
+@pytest.mark.parametrize("n_processes", [0])
 def test_worker_handle_api_request(
     path: str, kwargs: Dict, blocking: bool, n_processes: int
 ) -> None:

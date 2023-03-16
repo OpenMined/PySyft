@@ -193,6 +193,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         except Exception:
             return str(type(self))
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     def _repr_debug_(self) -> str:
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"

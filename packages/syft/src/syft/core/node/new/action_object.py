@@ -21,6 +21,7 @@ import pydantic
 from typing_extensions import Self
 
 # relative
+from .action_data_empty import ActionDataEmpty
 from .action_types import action_type_for_type
 from .action_types import action_types
 from .client import SyftClient
@@ -29,6 +30,7 @@ from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
+from .uid import LineageID
 from .uid import UID
 
 
@@ -39,26 +41,41 @@ class Action(SyftObject):
 
     __attr_searchable__: List[str] = []
 
-    parent_id: Optional[UID]
-
     path: str
     op: str
-    remote_self: Optional[UID]
-    args: List[UID]
-    kwargs: Dict[str, UID]
-    result_id: Optional[UID]
+    remote_self: Optional[LineageID]
+    args: List[LineageID]
+    kwargs: Dict[str, LineageID]
+    result_id: Optional[LineageID]
 
     @pydantic.validator("id", pre=True, always=True)
     def make_id(cls, v: Optional[UID]) -> UID:
         return v if isinstance(v, UID) else UID()
 
     @pydantic.validator("result_id", pre=True, always=True)
-    def make_result_id(cls, v: Optional[UID]) -> UID:
-        return v if isinstance(v, UID) else UID()
+    def make_result_id(cls, v: Optional[Union[UID, LineageID]]) -> UID:
+        return v if isinstance(v, LineageID) else LineageID(v)
 
     @property
     def full_path(self) -> str:
         return f"{self.path}.{self.op}"
+
+    @property
+    def syft_history_hash(self) -> int:
+        hashes = 0
+        hashes += hash(self.remote_self.syft_history_hash)
+        # 🔵 TODO: resolve this
+        # if the object is ActionDataEmpty then the type might not be equal to the
+        # real thing. This is the same issue with determining the result type from
+        # a pointer operation in the past, so we should think about what we want here
+        # hashes += hash(self.path)
+        hashes += hash(self.op)
+        for arg in self.args:
+            hashes += hash(arg.syft_history_hash)
+        for k, arg in self.kwargs:
+            hashes += hash(k)
+            hashes += hash(arg.syft_history_hash)
+        return hashes
 
 
 def __make_infix_op__(op: str) -> Callable:
@@ -124,11 +141,13 @@ passthrough_attrs = [
 ]
 dont_wrap_output_attrs = [
     "__repr__",
+    "__str__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
     "__array_struct__",
     "__array_prepare__",
+    "__array_wrap__",
     "__bool__",
     "__len__",
 ]
@@ -141,6 +160,9 @@ dont_make_side_effects = [
     "__setitem__",
     "__len__",
     "shape",
+]
+action_data_empty_must_run = [
+    "__repr__",
 ]
 show_print = False
 
@@ -155,15 +177,32 @@ def debug_original_func(name, func):
     print("inspect.ismethoddescriptor", inspect.ismethoddescriptor(func))
 
 
+def make_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
+    try:
+        action = context.obj.syft_make_method_action(
+            op=context.op_name, args=args, kwargs=kwargs
+        )
+        context.action = action
+    except Exception as e:
+        print(
+            "Exception detected in make_action_side_effect", e
+        )  # TODO: Put this Exception back
+        # pass
+    return context, args, kwargs
+
+
 def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
     try:
         if context.op_name not in dont_make_side_effects and hasattr(
             context.obj, "syft_node_uid"
         ):
             if getattr(context.obj, "syft_node_uid", None):
-                action = context.obj.syft_make_method_action(
-                    op=context.op_name, args=args, kwargs=kwargs
-                )
+                if context.action is not None:
+                    action = context.obj.syft_make_method_action(
+                        op=context.op_name, args=args, kwargs=kwargs
+                    )
+                    context.action = action
+
                 action_result = context.obj.syft_execute_action(action, sync=True)
                 if not isinstance(action_result, ActionObject):
                     print("Got back unexpected response", action_result)
@@ -178,7 +217,10 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
                 #     "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
                 # )
     except Exception as e:
-        print("Exception in send_action_side_effect", e)
+        print(
+            "Exception in send_action_side_effect", e
+        )  # TODO: Put this Exception back
+        # pass
     return context, args, kwargs
 
 
@@ -190,7 +232,8 @@ def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
             syft_node_uid = getattr(context.obj, "syft_node_uid", None)
             if syft_node_uid:
                 if not hasattr(result, "syft_node_uid"):
-                    print("result doesnt have a syft_node_uid attr")
+                    # print("result doesnt have a syft_node_uid attr")
+                    pass
                 if op not in context.obj._syft_dont_wrap_attrs():
                     if hasattr(result, "syft_node_uid"):
                         setattr(result, "syft_node_uid", syft_node_uid)
@@ -205,11 +248,49 @@ def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
     return result
 
 
+def is_action_data_empty(obj: Any) -> bool:
+    if hasattr(obj, "syft_action_data"):
+        obj = obj.syft_action_data
+    if isinstance(obj, ActionDataEmpty):
+        return True
+    return False
+
+
+def has_action_data_empty(args: Any, kwargs: Any) -> bool:
+    for a in args:
+        if is_action_data_empty(a):
+            return True
+
+    for _, a in kwargs.items():
+        if is_action_data_empty(a):
+            return True
+    return False
+
+
+def debox_args_and_kwargs(args: Any, kwargs: Any) -> Tuple[Any, Any]:
+    filtered_args = []
+    filtered_kwargs = {}
+    for a in args:
+        value = a
+        if hasattr(value, "syft_action_data"):
+            value = value.syft_action_data
+        filtered_args.append(value)
+
+    for k, a in kwargs.items():
+        value = a
+        if hasattr(value, "syft_action_data"):
+            value = value.syft_action_data
+        filtered_kwargs[k] = a
+
+    return tuple(filtered_args), filtered_kwargs
+
+
 class PreHookContext(SyftBaseObject):
     obj: Any
     op_name: str
     node_uid: Optional[UID]
-    result_id: Optional[UID]
+    result_id: Optional[Union[UID, LineageID]]
+    action: Optional[Action]
 
 
 class ActionObject(SyftObject):
@@ -217,8 +298,20 @@ class ActionObject(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_parent_id: Optional[UID]
+    syft_action_data: Optional[Any] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
+
+    # Help with calculating history hash for code verification
+    syft_parent_hashes: Optional[Union[int, List[int]]]
+    syft_parent_op: Optional[str]
+    syft_parent_args: Optional[Any]
+    syft_parent_kwargs: Optional[Any]
+    syft_history_hash: Optional[int]
+    syft_internal_type: ClassVar[Type[Any]]
+
+    @property
+    def syft_lineage_id(self) -> LineageID:
+        return LineageID(self.id, self.syft_history_hash)
 
     @pydantic.validator("id", pre=True, always=True)
     def make_id(cls, v: Optional[UID]) -> UID:
@@ -228,7 +321,9 @@ class ActionObject(SyftObject):
     def check_action_data(
         cls, v: ActionObject.syft_pointer_type
     ) -> ActionObject.syft_pointer_type:
-        if cls == AnyActionObject or isinstance(v, cls.syft_internal_type):
+        if cls == AnyActionObject or isinstance(
+            v, (cls.syft_internal_type, ActionDataEmpty)
+        ):
             return v
         raise SyftException(
             f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
@@ -254,11 +349,38 @@ class ActionObject(SyftObject):
         return domain_client.api.services.action.get(self.id).syft_action_data
 
     @staticmethod
-    def from_obj(obj: Any) -> ActionObject:
-        action_type = action_type_for_type(obj)
+    def from_obj(
+        syft_action_data: Any,
+        id: Optional[UID] = None,
+        syft_lineage_id: Optional[LineageID] = None,
+    ) -> ActionObject:
+        if id and syft_lineage_id and id != syft_lineage_id.id:
+            raise Exception("UID and LineageID should match")
+        action_type = action_type_for_type(syft_action_data)
         if action_type is None:
-            raise Exception(f"{type(obj)} not in action_types")
-        return action_type(syft_action_data=obj)
+            raise Exception(f"{type(syft_action_data)} not in action_types")
+        action_object = action_type(syft_action_data=syft_action_data)
+        if id:
+            action_object.id = id
+        if syft_lineage_id:
+            action_object.id = syft_lineage_id.id
+            action_object.syft_history_hash = syft_lineage_id.syft_history_hash
+        elif id:
+            action_object.syft_history_hash = hash(id)
+
+        return action_object
+
+    @staticmethod
+    def empty(
+        syft_internal_type: Optional[Any] = Any,
+        id: Optional[UID] = None,
+        syft_lineage_id: Optional[LineageID] = None,
+    ) -> ActionObject:
+        empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
+        action_object = ActionObject.from_obj(
+            syft_action_data=empty, id=id, syft_lineage_id=syft_lineage_id
+        )
+        return action_object
 
     syft_action_data: Union[Any, Tuple[Any, Any]]
     syft_node_uid: Optional[UID]
@@ -274,11 +396,17 @@ class ActionObject(SyftObject):
     def __post_init__(self) -> None:
         if HOOK_ALWAYS not in self._syft_pre_hooks__:
             self._syft_pre_hooks__[HOOK_ALWAYS] = set()
+        self._syft_pre_hooks__[HOOK_ALWAYS].add(make_action_side_effect)
         self._syft_pre_hooks__[HOOK_ALWAYS].add(send_action_side_effect)
 
         if HOOK_ALWAYS not in self._syft_post_hooks__:
             self._syft_post_hooks__[HOOK_ALWAYS] = set()
         self._syft_post_hooks__[HOOK_ALWAYS].add(propagate_node_uid)
+
+        if isinstance(self.syft_action_data, ActionObject):
+            raise Exception("Nested ActionObjects", self.syft_action_data)
+
+        self.syft_history_hash = hash(self.id)
 
     def _syft_run_pre_hooks__(
         self, context, name, args, kwargs
@@ -313,13 +441,17 @@ class ActionObject(SyftObject):
                     new_result = hook(context, name, new_result)
         return new_result
 
-    def _syft_output_action_object(self, result) -> Any:
+    def _syft_output_action_object(
+        self,
+        result,
+    ) -> Any:
         # can check types here
         if not issubclass(type(result), ActionObject):
             constructor = action_type_for_type(result)
             if not constructor:
                 raise Exception(f"output: {type(result)} no in action_types")
             result = constructor(syft_action_data=result)
+
         return result
 
     def _syft_passthrough_attrs(self) -> List[str]:
@@ -328,7 +460,7 @@ class ActionObject(SyftObject):
     def _syft_dont_wrap_attrs(self) -> List[str]:
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattribute__(self, name):
         # bypass certain attrs to prevent recursion issues
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)
@@ -354,60 +486,103 @@ class ActionObject(SyftObject):
             )
             if name not in self._syft_dont_wrap_attrs():
                 result = self._syft_output_action_object(result)
+                if context.action is not None:
+                    result.syft_history_hash = context.action.syft_history_hash
 
             def __wrapper__bool__() -> bool:
                 return result
 
             return __wrapper__bool__
 
-        # check for other types that aren't methods, functions etc
         if self.syft_is_property(context_self, name):
-            context = PreHookContext(obj=self, op_name=name)
-            context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
-            # no input needs to propagate
-            result = self._syft_run_post_hooks__(
-                context, name, self.syft_get_property(context_self, name)
-            )
-            if name not in self._syft_dont_wrap_attrs():
-                result = self._syft_output_action_object(result)
-            return result
+            if show_print:
+                print("Property detected: ", name)
+            if self.syft_is_property(context_self, name):
+                context = PreHookContext(obj=self, op_name=name)
+                context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
+                # no input needs to propagate
+                result = self._syft_run_post_hooks__(
+                    context, name, self.syft_get_property(context_self, name)
+                )
+                if name not in self._syft_dont_wrap_attrs():
+                    result = self._syft_output_action_object(result)
+                    if context.action is not None:
+                        result.syft_history_hash = context.action.syft_history_hash
+                return result
 
-        original_func = getattr(self.syft_action_data, name)
+        # check for other types that aren't methods, functions etc
+        def fake_func(*args, **kwargs) -> Any:
+            return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
+        if (
+            isinstance(self.syft_action_data, ActionDataEmpty)
+            and name not in action_data_empty_must_run
+        ):
+            original_func = fake_func
+        else:
+            original_func = getattr(self.syft_action_data, name)
+
         if show_print:
             debug_original_func(name, original_func)
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
             if show_print:
-                print(">>", name, ", wrapper is method")
+                print("Running method: ", name)
 
             def wrapper(_self, *args, **kwargs):
                 context = PreHookContext(obj=self, op_name=name)
                 context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                     context, name, args, kwargs
                 )
-                result = original_func(*pre_hook_args, **pre_hook_kwargs)
+
+                if not has_action_data_empty(args=args, kwargs=kwargs):
+                    original_args, original_kwargs = debox_args_and_kwargs(
+                        pre_hook_args, pre_hook_kwargs
+                    )
+
+                    result = original_func(*original_args, **original_kwargs)
+                else:
+                    result = fake_func(*args, **kwargs)
+
                 post_result = self._syft_run_post_hooks__(context, name, result)
                 if name not in self._syft_dont_wrap_attrs():
-                    post_result = self._syft_output_action_object(post_result)
+                    post_result = self._syft_output_action_object(
+                        post_result,
+                    )
+                    if context.action is not None:
+                        post_result.syft_history_hash = context.action.syft_history_hash
                     post_result.syft_node_uid = context.node_uid
-                    post_result.id = context.result_id
+                    if context.result_id is not None:
+                        post_result.id = context.result_id
                 return post_result
 
             wrapper = types.MethodType(wrapper, type(self))
         else:
             if show_print:
-                print(">>", name, ", wrapper is not method")
+                print("Running non-method: ", name)
 
             def wrapper(*args, **kwargs):
                 context = PreHookContext(obj=self, op_name=name)
                 context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                     context, name, args, kwargs
                 )
-                result = original_func(*pre_hook_args, **pre_hook_kwargs)
+
+                if not has_action_data_empty(args=args, kwargs=kwargs):
+                    original_args, original_kwargs = debox_args_and_kwargs(
+                        pre_hook_args, pre_hook_kwargs
+                    )
+
+                    result = original_func(*original_args, **original_kwargs)
+                else:
+                    result = fake_func(*args, **kwargs)
+
                 post_result = self._syft_run_post_hooks__(context, name, result)
                 if name not in self._syft_dont_wrap_attrs():
                     post_result = self._syft_output_action_object(post_result)
+                    if context.action is not None:
+                        post_result.syft_history_hash = context.action.syft_history_hash
                     post_result.syft_node_uid = context.node_uid
-                    post_result.id = context.result_id
+                    if context.result_id is not None:
+                        post_result.id = context.result_id
                 return post_result
 
         try:
@@ -448,26 +623,32 @@ class ActionObject(SyftObject):
         self,
         path: str,
         op: str,
-        remote_self: Optional[UID] = None,
-        args: Optional[List[Union[UID, ActionObjectPointer]]] = None,
-        kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
+        remote_self: Optional[Union[UID, LineageID]] = None,
+        args: Optional[List[Union[UID, ActionObjectPointer, LineageID]]] = None,
+        kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer, LineageID]]] = None,
     ) -> Action:
         if args is None:
             args = []
         if kwargs is None:
             kwargs = {}
-        arg_ids = [uid if isinstance(uid, UID) else uid.id for uid in args]
+        arg_ids = [
+            LineageID(uid) if isinstance(uid, (UID, LineageID)) else uid.syft_lineage_id
+            for uid in args
+        ]
         kwarg_ids = {
-            k: uid if isinstance(uid, UID) else uid.id for k, uid in kwargs.items()
+            k: LineageID(uid)
+            if isinstance(uid, (LineageID, UID))
+            else uid.syft_lineage_id
+            for k, uid in kwargs.items()
         }
-        return Action(
-            parent_id=self.id,
+        action = Action(
             path=path,
             op=op,
-            remote_self=remote_self,
+            remote_self=LineageID(remote_self),
             args=arg_ids,
             kwargs=kwarg_ids,
         )
+        return action
 
     def syft_make_method_action(
         self,
@@ -477,10 +658,12 @@ class ActionObject(SyftObject):
     ) -> Action:
         path = self.syft_get_path()
         return self.syft_make_action(
-            path=path, op=op, remote_self=self.id, args=args, kwargs=kwargs
+            path=path, op=op, remote_self=self.syft_lineage_id, args=args, kwargs=kwargs
         )
 
     def syft_get_path(self) -> str:
+        if isinstance(self, AnyActionObject) and self.syft_internal_type:
+            return f"{self.syft_internal_type.__name__}"
         return f"{type(self).__name__}"
 
     def syft_remote_method(
@@ -495,16 +678,20 @@ class ActionObject(SyftObject):
 
         return wrapper
 
-    # overwrite the SyftObject implementation
     def keys(self) -> KeysView[str]:
         return self.syft_action_data.keys()
 
     ###### __DUNDER_MIFFLIN__
 
-    # if we do not implement __add__ then x + y won't trigger __getattribute__
-    # no implementation necessary here as we will defer to __getattribute__
+    # if we do not implement these boiler plate __method__'s then special infix
+    # operations like x + y won't trigger __getattribute__
+    # unless there is a super special reason we should write no code in these functions
+
     def __repr__(self) -> str:
         return self.__repr__()
+
+    def __str__(self) -> str:
+        return self.__str__()
 
     def __len__(self) -> int:
         return self.__len__()
@@ -512,14 +699,41 @@ class ActionObject(SyftObject):
     def __getitem__(self, key: Any) -> Any:
         return self._syft_output_action_object(self.__getitem__(key))
 
-    def __eq__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__eq__(other))
-
-    def __setitem__(self, key: Any, value: Any) -> Any:
+    def __setitem__(self, key: Any, value: Any) -> None:
         return self.__setitem__(key, value)
 
     def __contains__(self, key: Any) -> bool:
         return self.__contains__(key)
+
+    def __bool__(self) -> bool:
+        return self.__bool__()
+
+    def __add__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__add__(other))
+
+    def __sub__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__sub__(other))
+
+    def __mul__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__mul__(other))
+
+    def __matmul__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__matmul__(other))
+
+    def __eq__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__eq__(other))
+
+    def __lt__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__lt__(other))
+
+    def __gt__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__gt__(other))
+
+    def __le__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__le__(other))
+
+    def __ge__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__ge__(other))
 
     def __delattr__(self, key: Any) -> None:
         self.__delattr__(key)
@@ -531,7 +745,7 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__invert__(other))
 
     def __divmod__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__add__(other))
+        return self._syft_output_action_object(self.__divmod__(other))
 
     def __floordiv__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__floordiv__(other))
@@ -539,17 +753,16 @@ class ActionObject(SyftObject):
     def __mod__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__mod__(other))
 
-    def __bool__(self) -> bool:
-        return self.__bool__()
+    # r ops
+    # we want the underlying implementation so we should just call into __getattribute__
+    def __radd__(self, other: Any) -> Any:
+        return self.__radd__(other)
 
-    def __add__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__add__(other))
+    def __rsub__(self, other: Any) -> Any:
+        return self.__rsub__(other)
 
-    def __mul__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__mul__(other))
-
-    def __matmul__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__matmul__(other))
+    def __rmatmul__(self, other: Any) -> Any:
+        return self.__rmatmul__(other)
 
 
 @serializable(recursive_serde=True)
@@ -557,7 +770,7 @@ class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type: Any = Any
+    syft_internal_type: ClassVar[Type[Any]] = Any
     syft_passthrough_attrs = []
     syft_dont_wrap_attrs = []
 

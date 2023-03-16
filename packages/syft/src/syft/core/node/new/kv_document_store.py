@@ -216,7 +216,7 @@ class KeyValueStorePartition(StorePartition):
             )
 
             # update the object with new data
-            for key, value in obj.to_dict().items():
+            for key, value in obj.to_dict(exclude_none=True).items():
                 if key == "id":
                     # protected field
                     continue
