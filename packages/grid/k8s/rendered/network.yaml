@@ -2847,7 +2847,7 @@ spec:
             - "/start.sh"
           args:
           env:
-            - name: DOMAIN_NAME
+            - name: NODE_NAME
               value: node
             - name: POSTGRES_SERVER
               value: db
@@ -3021,7 +3021,7 @@ spec:
           command:
             - /start.sh
           env:
-            - name: DOMAIN_NAME
+            - name: NODE_NAME
               value: node
             - name: POSTGRES_SERVER
               value: db
@@ -3173,7 +3173,7 @@ spec:
           command:
             - /worker-start.sh
           env:
-            - name: DOMAIN_NAME
+            - name: NODE_NAME
               value: node
             - name: POSTGRES_SERVER
               value: db
