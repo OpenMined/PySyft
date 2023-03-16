@@ -32,7 +32,8 @@ class DictBackingStore(dict, KeyValueBackingStore):
 
 @serializable(recursive_serde=True)
 class DictStorePartition(KeyValueStorePartition):
-    pass
+    def prune(self):
+        self.init_store()
 
 
 # the base document store is already a dict but we can change it later
@@ -44,6 +45,10 @@ class DictDocumentStore(DocumentStore):
         if store_config is None:
             store_config = DictStoreConfig()
         super().__init__(store_config=store_config)
+
+    def reset(self):
+        for _, partition in self.partitions.items():
+            partition.prune()
 
 
 @serializable(recursive_serde=True)

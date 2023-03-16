@@ -62,6 +62,7 @@ from .core.node.new.user_code import UserCodeStatus  # noqa: F401
 from .core.node.new.user_code import syft_function  # noqa: F401
 from .core.node.new.user_service import UserService  # noqa: F401
 from .core.node.worker import Worker  # noqa: F401
+from .deploy import Orchestra  # noqa: F401
 from .external import enable_external_lib  # noqa: F401
 from .registry import DomainRegistry  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
@@ -118,6 +119,11 @@ def _domains() -> DomainRegistry:
 @module_property
 def _settings() -> UserSettings:
     return settings
+
+
+@module_property
+def _orchestra() -> Orchestra:
+    return Orchestra()
 
 
 def search(name: str) -> SearchResults:

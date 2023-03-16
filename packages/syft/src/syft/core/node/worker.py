@@ -128,6 +128,7 @@ class Worker(NewNode):
         is_subprocess: bool = False,
         node_type: NodeType = NodeType.DOMAIN,
         local_db: bool = False,
+        sqlite_path: Optional[str] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -175,6 +176,7 @@ class Worker(NewNode):
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self.local_db = local_db
+        self.sqlite_path = sqlite_path
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
@@ -204,7 +206,11 @@ class Worker(NewNode):
 
     @staticmethod
     def named(
-        name: str, processes: int = 0, reset: bool = False, local_db: bool = False
+        name: str,
+        processes: int = 0,
+        reset: bool = False,
+        local_db: bool = False,
+        sqlite_path: Optional[str] = None,
     ) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
@@ -215,8 +221,14 @@ class Worker(NewNode):
             with contextlib.suppress(FileNotFoundError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
+
         return Worker(
-            name=name, id=uid, signing_key=key, processes=processes, local_db=local_db
+            name=name,
+            id=uid,
+            signing_key=key,
+            processes=processes,
+            local_db=local_db,
+            sqlite_path=sqlite_path,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -230,6 +242,15 @@ class Worker(NewNode):
 
         connection = PythonConnection(node=self)
         return SyftClient(connection=connection, credentials=self.signing_key)
+
+    @property
+    def guest_client(self) -> Any:
+        # relative
+        from .new.client import PythonConnection
+        from .new.client import SyftClient
+
+        connection = PythonConnection(node=self)
+        return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
@@ -249,7 +270,7 @@ class Worker(NewNode):
     ):
         if document_store_config is None:
             if self.local_db or (self.processes > 0 and not self.is_subprocess):
-                client_config = SQLiteStoreClientConfig()
+                client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
                 document_store_config = SQLiteStoreConfig(client_config=client_config)
             else:
                 document_store_config = DictStoreConfig()
@@ -268,7 +289,7 @@ class Worker(NewNode):
         self.document_store = document_store(store_config=document_store_config)
         if action_store_config is None:
             if self.local_db or (self.processes > 0 and not self.is_subprocess):
-                client_config = SQLiteStoreClientConfig()
+                client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
                 action_store_config = SQLiteStoreConfig(client_config=client_config)
             else:
                 action_store_config = DictStoreConfig()
