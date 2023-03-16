@@ -24,7 +24,7 @@ def import_orchestra() -> Any:
 
         return Orchestra
 
-    except Exception:
+    except Exception:  # nosec
         pass
     return InstallOrchestra
 
