@@ -25,6 +25,8 @@ from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .uid import UID
+from .user import ADMIN_ROLE_LEVEL
+from .user import GUEST_ROLE_LEVEL
 from .user import ServiceRole
 from .user import User
 from .user import UserCreate
@@ -80,7 +82,7 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.get_all", name="get_all")
+    @service_method(path="user.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[Optional[UserView], SyftError]:
@@ -136,8 +138,9 @@ class UserService(AbstractService):
         user = self.stash.update(user=user).ok()
         return user.to(UserView)
 
-    @service_method(path="user.delete", name="delete")
+    @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
+        # third party
         result = self.stash.delete_by_uid(uid=uid)
         if result.err():
             return SyftError(message=str(result.err()))

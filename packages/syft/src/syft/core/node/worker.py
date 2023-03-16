@@ -19,6 +19,7 @@ import gevent
 import gipc
 from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 from result import Err
 from result import Result
 
@@ -491,8 +492,8 @@ class Worker(NewNode):
                 result = item
         return result
 
-    def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node=self)
+    def get_api(self, for_user: Optional[VerifyKey] = None) -> SyftAPI:
+        return SyftAPI.for_user(node=self, user_verify_key=for_user)
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext

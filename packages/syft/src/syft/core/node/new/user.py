@@ -43,8 +43,25 @@ class ServiceRoleCapability(Enum):
 
 @serializable(recursive_serde=True)
 class ServiceRole(Enum):
-    ADMIN = 0
-    GUEST = 1
+    GUEST = 0
+    DATA_SCIENTIST = 1
+    DATA_OWNER = 2
+    ADMIN = 3
+
+
+GUEST_ROLE_LEVEL = [
+    ServiceRole.GUEST,
+    ServiceRole.DATA_SCIENTIST,
+    ServiceRole.DATA_OWNER,
+    ServiceRole.ADMIN,
+]
+DATA_SCIENTIST_ROLE_LEVEL = [
+    ServiceRole.DATA_SCIENTIST,
+    ServiceRole.DATA_OWNER,
+    ServiceRole.ADMIN,
+]
+DATA_OWNER_ROLE_LEVEL = [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]
+ADMIN_ROLE_LEVEL = [ServiceRole.ADMIN]
 
 
 @serializable(recursive_serde=True)

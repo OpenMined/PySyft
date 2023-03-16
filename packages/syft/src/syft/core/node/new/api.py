@@ -15,6 +15,7 @@ from typing import _GenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
+from nacl.signing import VerifyKey
 from pydantic import BaseModel
 from pydantic import EmailStr
 from result import OkErr
@@ -24,6 +25,7 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .connection import NodeConnection
+from .context import AuthedServiceContext
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .deserialize import _deserialize
@@ -41,6 +43,7 @@ from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
+from .user import ServiceRole
 
 
 class APIRegistry:
@@ -263,6 +266,12 @@ class APIModule:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
+    def __getattr__(self, name: str) -> Any:
+        raise AttributeError(
+            f"'APIModule' object has no attribute '{name}',"
+            "you may not have permission to access the module you are trying to access"
+        )
+
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int) and hasattr(self, "get_all"):
             return self.get_all()[key]
@@ -296,16 +305,33 @@ class SyftAPI(SyftObject):
     #     pass
 
     @staticmethod
-    def for_user(node: NewNode) -> SyftAPI:
-        # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
+    def for_user(node: NewNode, user_verify_key: Optional[VerifyKey]) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
         from .user_code_service import UserCodeService
 
-        _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
+        # find user role by verify_key
+        if user_verify_key:
+            # this feels a bit hacky, is there a cleaner way to do this?
+            users = node.get_service("UserService").get_all(
+                AuthedServiceContext(node=node, credentials=node.signing_key.verify_key)
+            )
+            try:
+                user = [u for u in users if u.verify_key == user_verify_key][0]
+                user_service_role = user.role
+            except Exception:
+                return SyftError(
+                    message="You requested a SyftAPI for user that does not exist, missing verify_key"
+                )
+        else:
+            user_service_role = ServiceRole.ADMIN
+
+        _user_service_configs = ServiceConfigRegistry.get_user_configs(
+            user_service_role
+        )
         endpoints = {}
 
-        for path, service_config in _registered_service_configs.items():
+        for path, service_config in _user_service_configs.items():
             endpoint = APIEndpoint(
                 path=path,
                 name=service_config.public_name,

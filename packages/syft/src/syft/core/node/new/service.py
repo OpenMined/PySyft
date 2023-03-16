@@ -23,6 +23,8 @@ from .signature import signature_remove_self
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
+from .user import GUEST_ROLE_LEVEL
+from .user import ServiceRole
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)
@@ -51,6 +53,10 @@ class ServiceConfig(SyftBaseObject):
     doc_string: Optional[str]
     signature: Signature
     permissions: List
+    roles: List[ServiceRole]
+
+    def has_permission(self, user_service_role: ServiceRole):
+        return user_service_role in self.roles
 
 
 class ServiceConfigRegistry:
@@ -70,6 +76,16 @@ class ServiceConfigRegistry:
     @classmethod
     def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
         return cls.__service_config_registry__
+
+    @classmethod
+    def get_user_configs(
+        cls, user_service_role: ServiceRole
+    ) -> Dict[str, ServiceConfig]:
+        return {
+            k: service_config
+            for k, service_config in cls.__service_config_registry__.items()
+            if service_config.has_permission(user_service_role)
+        }
 
     @classmethod
     def path_exists(cls, path: str):
@@ -161,8 +177,13 @@ def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
 def service_method(
     name: Optional[str] = None,
     path: Optional[str] = None,
+    roles: Optional[List[ServiceRole]] = None,
     autosplat: Optional[List[str]] = None,
 ):
+    if roles is None:
+        # TODO: this is dangerous, we probably want to be more conservative
+        roles = GUEST_ROLE_LEVEL
+
     def wrapper(func):
         func_name = func.__name__
         class_name = func.__qualname__.split(".")[-2]
@@ -193,6 +214,7 @@ def service_method(
             method_name=func_name,
             doc_string=func.__doc__,
             signature=signature,
+            roles=roles,
             permissions=["Guest"],
         )
         ServiceConfigRegistry.register(config)

@@ -250,7 +250,8 @@ class PythonConnection(NodeConnection):
             return self.node.metadata.to(NodeMetadataJSON)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        obj = self.node.get_api()
+        # todo: its a bit odd to identify a user by its verify key maybe?
+        obj = self.node.get_api(for_user=credentials.verify_key)
         obj.connection = self
         obj.signing_key = credentials
         if self.proxy_target_uid:
