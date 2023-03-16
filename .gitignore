@@ -49,6 +49,7 @@ helm-charts/**/*.lock
 
 # docker cache
 .docker-cache/
+.docker
 
 # notebook data
 notebooks/medical-federated-learning-program/data-owners/MedNIST.pkl

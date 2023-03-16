@@ -31,7 +31,7 @@ repos:
         exclude: ^(packages/grid/ansible/)
       - id: name-tests-test
         always_run: true
-        exclude: ^(packages/grid/backend/grid/tests/utils/)
+        exclude: ^(packages/grid/backend/grid/tests/utils/)|^(.*fixtures.py)
       - id: requirements-txt-fixer
         always_run: true
       - id: mixed-line-ending

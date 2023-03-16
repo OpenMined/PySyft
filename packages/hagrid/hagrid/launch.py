@@ -5,6 +5,7 @@ from typing import Optional
 
 # relative
 from .cache import DEFAULT_BRANCH
+from .grammar import ALLOWED_NODE_TYPES
 from .grammar import GrammarTerm
 from .grammar import GrammarVerb
 from .grammar import HostGrammarTerm
@@ -16,7 +17,7 @@ def get_launch_verb() -> GrammarVerb:
     full_sentence = [
         {
             "name": "node_name",
-            "type": "adjective",
+            "type": "propernoun",
             "klass": GrammarTerm,
             "default": random_name,
             "example": "'my_domain'",
@@ -26,7 +27,7 @@ def get_launch_verb() -> GrammarVerb:
             "type": "object",
             "klass": GrammarTerm,
             "default": "domain",
-            "options": ["domain", "network"],
+            "options": ALLOWED_NODE_TYPES,
         },
         {
             "name": "preposition",
@@ -59,7 +60,7 @@ def get_launch_verb() -> GrammarVerb:
 
     abbreviations: TypeDict[int, TypeList[Optional[str]]] = {
         6: [
-            "adjective",  # name
+            "propernoun",  # name
             "object",  # node_type
             "preposition",  # to
             "propernoun",  # host
@@ -75,7 +76,7 @@ def get_launch_verb() -> GrammarVerb:
             "propernoun",  # source
         ],
         4: [
-            "adjective",  # name
+            "propernoun",  # name
             "object",  # node_type
             "preposition",  # to
             "propernoun",  # host
@@ -91,7 +92,7 @@ def get_launch_verb() -> GrammarVerb:
             None,  # ignore
         ],
         2: [
-            "adjective",  # name
+            "propernoun",  # name
             "object",  # node_type
             None,  # ignore
             None,  # ignore
