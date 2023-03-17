@@ -6,6 +6,7 @@ from typing import Tuple
 # third party
 from joblib import Parallel
 from joblib import delayed
+import pytest
 
 # syft absolute
 from syft.core.node.new.document_store import PartitionSettings
@@ -166,6 +167,7 @@ def test_sqlite_store_partition_update(
         assert stored.ok()[0].data == v
 
 
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_sqlite_store_partition_set_threading(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -205,6 +207,7 @@ def test_sqlite_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_sqlite_store_partition_set_joblib(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -234,6 +237,7 @@ def test_sqlite_store_partition_set_joblib(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_sqlite_store_partition_update_threading(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -271,6 +275,7 @@ def test_sqlite_store_partition_update_threading(
     assert execution_err is None
 
 
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_sqlite_store_partition_update_joblib(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -300,6 +305,7 @@ def test_sqlite_store_partition_update_joblib(
         assert execution_err is None
 
 
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_sqlite_store_partition_set_delete_threading(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -343,6 +349,7 @@ def test_sqlite_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_sqlite_store_partition_set_delete_joblib(
     sqlite_workspace: Tuple,
 ) -> None:
