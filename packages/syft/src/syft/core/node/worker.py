@@ -24,6 +24,7 @@ from result import Result
 
 # relative
 from ... import __version__
+from ...external import OBLV
 from ...telemetry import instrument
 from ...util import random_name
 from .new.action_service import ActionService
@@ -75,8 +76,6 @@ from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
-
-OBLV = os.getenv("ENABLE_OBLV", "false") == "true"
 
 
 def gipc_encoder(obj):

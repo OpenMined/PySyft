@@ -1886,7 +1886,8 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
-    print("  - OBLV: ", enable_oblv)
+    if enable_oblv:
+        print("  - OBLV: ", enable_oblv)
 
     print("\n")
 

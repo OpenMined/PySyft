@@ -3,15 +3,20 @@
 """
 # stdlib
 import importlib
+import os
+from typing import Union
 
 # relative
 from ..core.node.new.response import SyftError
 from ..core.node.new.response import SyftSuccess
+from ..util import str_to_bool
 
 # Contains all the external libraries that Syft supports.
 # Used to check if a library is supported
 # if the external library is not installed, we prompt the user
 # to install it with the pip package name.
+
+OBLV = str_to_bool(os.getenv("ENABLE_OBLV", "false"))
 
 EXTERNAL_LIBS = {
     "oblv": {
@@ -29,7 +34,7 @@ def package_exists(package_name: str) -> bool:
         return False
 
 
-def enable_external_lib(lib_name: str):
+def enable_external_lib(lib_name: str) -> Union[SyftSuccess, SyftError]:
     if lib_name in EXTERNAL_LIBS:
         syft_module_name = f"syft.external.{lib_name}"
         pip_package_name = EXTERNAL_LIBS[lib_name]["pip_package_name"]
