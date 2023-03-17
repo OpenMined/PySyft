@@ -1,5 +1,4 @@
 # stdlib
-import shutil
 from threading import Thread
 from typing import Tuple
 
@@ -44,10 +43,13 @@ def test_sqlite_store_partition_init_failed(
 
     store = SQLiteStorePartition(settings=settings, store_config=store_config)
 
-    # delete the destination folder
-    shutil.rmtree(workspace)
+    # alter the database
+    with open(workspace / db_name, "w") as f:
+        f.write("altered")
 
     res = store.init_store()
+    (workspace / db_name).unlink()
+
     assert res.is_err()
 
 
@@ -82,10 +84,10 @@ def test_sqlite_store_partition_set(
         assert len(sqlite_store_partition.all().ok()) == 3 + idx
 
 
-def test_sqlite_store_partition_set_backend_fail(
-    sqlite_store_partition: SQLiteStorePartition,
-) -> None:
+def test_sqlite_store_partition_set_backend_fail() -> None:
+    sqlite_workspace_folder.mkdir(parents=True, exist_ok=True)
     sqlite_db_name = generate_db_name()
+
     sqlite_config = SQLiteStoreClientConfig(
         filename=sqlite_db_name, path=sqlite_workspace_folder
     )
@@ -95,13 +97,17 @@ def test_sqlite_store_partition_set_backend_fail(
     store = SQLiteStorePartition(settings=settings, store_config=store_config)
     res = store.init_store()
 
-    # delete the db
-    shutil.rmtree(sqlite_workspace_folder)
+    # corrupt the db
+    with open(sqlite_workspace_folder / sqlite_db_name, "w") as f:
+        f.write("altered")
 
     # this should fail
     obj = MockSyftObject(data=1)
 
-    res = sqlite_store_partition.set(obj, ignore_duplicates=False)
+    res = store.set(obj, ignore_duplicates=False)
+
+    (sqlite_workspace_folder / sqlite_db_name).unlink()
+
     assert res.is_err()
 
 
