@@ -118,6 +118,10 @@ class KeyValueStorePartition(StorePartition):
             return UniqueKeyCheck.EMPTY
         elif len(matches) == len(qks):
             return UniqueKeyCheck.MATCHES
+        # if len(matches) == len(qks):
+        #     return UniqueKeyCheck.MATCHES
+        # elif len(matches) < len(qks):
+        #     return UniqueKeyCheck.EMPTY
 
         return UniqueKeyCheck.ERROR
 
