@@ -24,6 +24,7 @@ from result import Result
 
 # relative
 from ... import __version__
+from ...external import OBLV
 from ...telemetry import instrument
 from ...util import random_name
 from .new.action_service import ActionService
@@ -76,8 +77,6 @@ from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
-
-OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
 
 
 def gipc_encoder(obj):
@@ -176,14 +175,6 @@ class Worker(NewNode):
             else services
         )
 
-        if OBLV:
-            # relative
-            from .new.task.oblv_service import OblvService
-
-            services += [OblvService]
-
-        self.services = services
-
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self.local_db = local_db
         self.sqlite_path = sqlite_path
@@ -191,15 +182,23 @@ class Worker(NewNode):
             action_store_config=action_store_config,
             document_store_config=document_store_config,
         )
+
+        if OBLV:
+            # relative
+            from ...external.oblv.oblv_service import OblvService
+
+            services += [OblvService]
+            create_oblv_key_pair(worker=self)
+
+        self.services = services
         self._construct_services()
+
         create_admin_new(  # nosec B106
             name="Jane Doe",
             email="info@openmined.org",
             password="changethis",
             node=self,
         )
-        if OBLV:
-            create_oblv_key_pair(worker=self)
 
         self.client_cache = {}
         self.node_type = node_type
@@ -338,7 +337,7 @@ class Worker(NewNode):
 
             if OBLV:
                 # relative
-                from .new.task.oblv_service import OblvService
+                from ...external.oblv.oblv_service import OblvService
 
                 store_services += [OblvService]
 
@@ -674,9 +673,9 @@ def create_oblv_key_pair(
 ) -> Optional[str]:
     try:
         # relative
-        from .new.task.oblv_keys_stash import OblvKeys
-        from .new.task.oblv_keys_stash import OblvKeysStash
-        from .new.task.oblv_service import generate_oblv_key
+        from ...external.oblv.oblv_keys_stash import OblvKeys
+        from ...external.oblv.oblv_keys_stash import OblvKeysStash
+        from ...external.oblv.oblv_service import generate_oblv_key
 
         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 

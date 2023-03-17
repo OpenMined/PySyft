@@ -1,7 +1,6 @@
 # stdlib
 from enum import Enum
 import hashlib
-import os
 from typing import Any
 from typing import Callable
 from typing import List
@@ -16,6 +15,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ....external import OBLV
 from .action_object import ActionObject
 from .action_service import ActionService
 from .action_store import ActionObjectPermission
@@ -43,8 +43,6 @@ from .transforms import transform
 from .uid import UID
 from .user_code import UserCode
 from .user_code import UserCodeStatus
-
-OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
 
 
 @serializable(recursive_serde=True)
@@ -487,7 +485,7 @@ class UserCodeStatusChange(Change):
                 res = res.ok()
                 if OBLV:
                     # relative
-                    from .task.oblv_service import check_enclave_transfer
+                    from ....external.oblv.oblv_service import check_enclave_transfer
 
                     enclave_res = check_enclave_transfer(
                         user_code=res, value=self.value, context=context
