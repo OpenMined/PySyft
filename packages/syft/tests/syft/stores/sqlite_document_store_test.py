@@ -48,6 +48,8 @@ def test_sqlite_store_partition_init_failed(
         f.write("altered")
 
     res = store.init_store()
+
+    store.close()
     (workspace / db_name).unlink()
 
     assert res.is_err()
@@ -106,6 +108,7 @@ def test_sqlite_store_partition_set_backend_fail() -> None:
 
     res = store.set(obj, ignore_duplicates=False)
 
+    store.close()
     (sqlite_workspace_folder / sqlite_db_name).unlink()
 
     assert res.is_err()
