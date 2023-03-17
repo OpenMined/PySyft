@@ -5,5 +5,6 @@ REF = "dev"
 REGION = "us-west-2"
 VCS = "github"
 VISIBILITY = "private"
-LOCAL_MODE = True
+REF_TYPE = "branch"
+LOCAL_MODE = False
 DOMAIN_CONNECTION_PORT = 3030

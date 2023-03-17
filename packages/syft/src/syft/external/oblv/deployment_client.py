@@ -76,7 +76,7 @@ class OblvMetadata(EnclaveMetadata, BaseModel):
 
 class DeploymentClient:
     deployment_id: str
-    user_key_name: str
+    key_name: str
     domain_clients: List[Any] = []  # List of domain client objects
     oblv_client: OblvClient = None
     __conn_string: str
@@ -88,7 +88,7 @@ class DeploymentClient:
         domain_clients: List[Any],
         deployment_id: Optional[str] = None,
         oblv_client: Optional[OblvClient] = None,
-        user_key_name: Optional[str] = None,
+        key_name: Optional[str] = None,
         api: Optional[SyftAPI] = None,
     ):
         if not domain_clients:
@@ -96,7 +96,7 @@ class DeploymentClient:
                 "domain_clients should be populated with valid domain nodes"
             )
         self.deployment_id = deployment_id
-        self.user_key_name = user_key_name
+        self.key_name = key_name
         self.oblv_client = oblv_client
         self.domain_clients = domain_clients
         self.__conn_string = ""
@@ -144,14 +144,14 @@ class DeploymentClient:
         public_file_name = os.path.join(
             os.path.expanduser("~"),
             ".ssh",
-            self.user_key_name,
-            self.user_key_name + "_public.der",
+            self.key_name,
+            self.key_name + "_public.der",
         )
         private_file_name = os.path.join(
             os.path.expanduser("~"),
             ".ssh",
-            self.user_key_name,
-            self.user_key_name + "_private.der",
+            self.key_name,
+            self.key_name + "_private.der",
         )
         log_file_name = os.path.join(
             os.path.expanduser("~"),

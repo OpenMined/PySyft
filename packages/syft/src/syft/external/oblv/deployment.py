@@ -11,6 +11,7 @@ from ...util import bcolors
 from .auth import login
 from .constants import INFRA
 from .constants import REF
+from .constants import REF_TYPE
 from .constants import REGION
 from .constants import REPO_NAME
 from .constants import REPO_OWNER
@@ -110,22 +111,25 @@ def create_deployment(
                 f"Oblv Public Key not found for {domain_client.name}"
             )
 
-    build_args["runtime_args"] = yaml.dump({"outbound": runtime_args})
+    build_args["runtime_args"] = yaml.dump(
+        {"outbound": runtime_args, "ENABLE_OBLV": "true"}
+    )
     build_args["users"]["domain"] = users
     profile = oblv_client.user_profile()
     users = [{"user_name": profile.oblivious_login, "public key": user_public_key}]
     build_args["users"]["user"] = users
     depl_input = CreateDeploymentInput(
-        REPO_OWNER,
-        REPO_NAME,
-        VCS,
-        REF,
-        region,
-        deployment_name,
-        VISIBILITY,
-        True,
-        [],
-        build_args,
+        owner=REPO_OWNER,
+        repo=REPO_NAME,
+        account_type=VCS,
+        ref=REF,
+        ref_type=REF_TYPE,
+        region_name=region,
+        deployment_name=deployment_name,
+        visibility=VISIBILITY,
+        is_dev_env=True,
+        tags=[],
+        build_args=build_args,
     )
     # By default the deployment is in PROD mode
     res = oblv_client.create_deployment(depl_input)
