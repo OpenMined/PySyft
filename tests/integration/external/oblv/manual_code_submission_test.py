@@ -1,19 +1,17 @@
 # stdlib
+import os
 from textwrap import dedent
 
 # third party
 import numpy as np
-import pytest
 
 # syft absolute
 import syft as sy
 from syft.core.node.new.numpy import NumpyArrayObject
 from syft.core.node.new.user_code import SubmitUserCode
 
-PORT = 9082
-CANADA_DOMAIN_PORT = PORT
-ITALY_DOMAIN_PORT = PORT + 1
-LOCAL_ENCLAVE_PORT = 8010
+LOCAL_ENCLAVE_PORT = os.environ.get("LOCAL_ENCLAVE_PORT", 8010)
+# TODO: Should move to Docker Container tests
 
 
 def load_dataset(domain_client) -> None:
@@ -43,24 +41,24 @@ def load_dataset(domain_client) -> None:
     assert domain_dataset.assets[0].name == asset_name
 
 
-@pytest.mark.oblv
-def test_user_code_manual_code_submission_enclave() -> None:
+def test_manual_code_submission_enclave() -> None:
+    print("enable_oblv", os.environ.get("ENABLE_OBLV"))
+    print("local_enclave_port", os.environ.get("LOCAL_ENCLAVE_PORT"))
     # Step1: Login Phase
-    canada_root = sy.login(
-        email="info@openmined.org", password="changethis", port=CANADA_DOMAIN_PORT
-    )
-    italy_root = sy.login(
-        email="info@openmined.org", password="changethis", port=ITALY_DOMAIN_PORT
-    )
+    canada_root = sy.Worker.named(name="canada", local_db=True, reset=True).root_client
+
+    italy_root = sy.Worker.named(name="italy", local_db=True, reset=True).root_client
 
     # Step 2: Uploading to Domain Nodes
     load_dataset(canada_root)
     load_dataset(italy_root)
 
+    assert sy.enable_external_lib("oblv")
+
     # Step 3: Connection to Enclave
     # TODO 🟣 Modify to use Data scientist account credentials
     # after Permission are integrated
-    depl = sy.oblv.deployment_client.DeploymentClient(
+    depl = sy.external.oblv.deployment_client.DeploymentClient(
         deployment_id="d-2dfedbb1-7904-493b-8793-1a9554badae7",
         oblv_client=None,
         domain_clients=[canada_root, italy_root],
@@ -104,5 +102,5 @@ def test_user_code_manual_code_submission_enclave() -> None:
     res = depl.api.services.code.simple_function(
         canada_data=canada_data.assets[0], italy_data=italy_data.assets[0]
     )
-    print(res)
+    print(res, type(res))
     assert isinstance(res, NumpyArrayObject)
