@@ -36,6 +36,7 @@ from ...core.node.new.syft_object import SyftObject
 from ...core.node.new.uid import UID
 from ...core.node.new.user_code import UserCode
 from ...core.node.new.user_code import UserCodeStatus
+from ...core.node.new.user_roles import GUEST_ROLE_LEVEL
 from ...core.node.new.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
@@ -353,6 +354,7 @@ class OblvService(AbstractService):
     @service_method(
         path="oblv.send_user_code_inputs_to_enclave",
         name="send_user_code_inputs_to_enclave",
+        roles=GUEST_ROLE_LEVEL,
     )
     def send_user_code_inputs_to_enclave(
         self,

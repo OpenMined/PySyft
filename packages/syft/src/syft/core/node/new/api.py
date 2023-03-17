@@ -42,6 +42,7 @@ from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
+from .user_roles import ServiceRole
 
 
 class APIRegistry:
@@ -314,7 +315,11 @@ class SyftAPI(SyftObject):
         from .user_code_service import UserCodeService
 
         # find user role by verify_key
-        role = node.get_role_for_credentials(user_verify_key)
+        # TODO: we should probably not allow empty verify keys but instead make user always register
+        if user_verify_key is not None:
+            role = node.get_role_for_credentials(user_verify_key)
+        else:
+            role = ServiceRole.GUEST
         _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
         endpoints = {}
 

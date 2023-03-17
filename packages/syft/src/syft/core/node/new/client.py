@@ -120,9 +120,11 @@ class HTTPConnection(NodeConnection):
             self.session_cache = session
         return self.session_cache
 
-    def _make_get(self, path: str) -> bytes:
+    def _make_get(self, path: str, data: Optional[bytes] = None) -> bytes:
         url = self.url.with_path(path)
-        response = self.session.get(str(url), verify=verify_tls(), proxies={})
+        response = self.session.get(
+            str(url), verify=verify_tls(), proxies={}, data=data
+        )
         if response.status_code != 200:
             raise requests.ConnectionError(
                 f"Failed to fetch {url}. Response returned with code {response.status_code}"
@@ -173,7 +175,8 @@ class HTTPConnection(NodeConnection):
             return NodeMetadataJSON(**metadata_json)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        content = self._make_get(self.routes.ROUTE_API.value)
+        data: bytes = _serialize(obj=credentials, to_bytes=True)
+        content = self._make_get(self.routes.ROUTE_API.value, data=data)
         obj = _deserialize(content, from_bytes=True)
         obj.connection = self
         obj.signing_key = credentials
