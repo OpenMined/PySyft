@@ -17,7 +17,7 @@ from syft.core.node.new.sqlite_document_store import SQLiteStorePartition
 
 # relative
 from .store_constants_test import generate_db_name
-from .store_constants_test import workspace
+from .store_constants_test import sqlite_workspace_folder
 from .store_fixtures_test import sqlite_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
@@ -86,7 +86,9 @@ def test_sqlite_store_partition_set_backend_fail(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
     sqlite_db_name = generate_db_name()
-    sqlite_config = SQLiteStoreClientConfig(filename=sqlite_db_name, path=workspace)
+    sqlite_config = SQLiteStoreClientConfig(
+        filename=sqlite_db_name, path=sqlite_workspace_folder
+    )
     store_config = SQLiteStoreConfig(client_config=sqlite_config)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
@@ -94,7 +96,7 @@ def test_sqlite_store_partition_set_backend_fail(
     res = store.init_store()
 
     # delete the db
-    shutil.rmtree(workspace)
+    shutil.rmtree(sqlite_workspace_folder)
 
     # this should fail
     obj = MockSyftObject(data=1)

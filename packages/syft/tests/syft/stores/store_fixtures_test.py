@@ -28,8 +28,8 @@ from syft.core.node.new.sqlite_document_store import SQLiteStorePartition
 
 # relative
 from .store_constants_test import generate_db_name
+from .store_constants_test import sqlite_workspace_folder
 from .store_constants_test import test_verify_key_string_root
-from .store_constants_test import workspace
 from .store_mocks_test import MockObjectType
 
 mongo_server_mock = create_mongo_fixture(scope="session")
@@ -39,13 +39,13 @@ mongo_server_mock = create_mongo_fixture(scope="session")
 def sqlite_workspace() -> Generator:
     sqlite_db_name = generate_db_name()
 
-    workspace.mkdir(parents=True, exist_ok=True)
-    db_path = workspace / sqlite_db_name
+    sqlite_workspace_folder.mkdir(parents=True, exist_ok=True)
+    db_path = sqlite_workspace_folder / sqlite_db_name
 
     if db_path.exists():
         db_path.unlink()
 
-    yield workspace, sqlite_db_name
+    yield sqlite_workspace_folder, sqlite_db_name
 
     if db_path.exists():
         db_path.unlink()
