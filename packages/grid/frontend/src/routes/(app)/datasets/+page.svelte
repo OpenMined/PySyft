@@ -7,7 +7,7 @@
   import Search from 'svelte-search';
 
   let searchValue = '';
-  let showNewDatasetModal = false;
+  let showModal = false;
 
   let visible = true;
   let openDatasetName = '';
@@ -34,14 +34,14 @@
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
-  <NewDatasetModal showModal={showNewDatasetModal} />
+  <NewDatasetModal bind:showModal />
 
   <!-- Header -->
   <div class="flex justify-between">
     <h2 class="flex justify-left text-gray-800 font-rubik text-2xl leading-normal font-medium pb-4">
       Datasets
     </h2>
-    <Button variant="black" action={() => (showNewDatasetModal = true)}>+ New Dataset</Button>
+    <Button variant="black" action={() => (showModal = true)}>+ New Dataset</Button>
   </div>
 
   <!-- Body content -->
@@ -52,10 +52,7 @@
       debounce={800}
       autofocus
       hideLabel
-      on:submit={(e) => {
-        e.preventDefault();
-        console.log('submit', searchValue);
-      }}
+      on:submit={(e) => e.preventDefault()}
     />
   </section>
   <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">

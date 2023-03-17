@@ -7,45 +7,40 @@
 
 <main>
   {#if showModal}
-    <Modal size="large">
+    <Modal size="md">
       <div slot="header" class="flex justify-center">
-        <GreenCheck />
-        <p class="text-center text-2xl font-bold">Your account has been deleted</p>
+        <p class="text-center text-2xl font-bold pt-4">Upload A Dataset</p>
       </div>
       <div slot="body">
-        <p class="text-center">
-          To help us improve future experiences could you share with us any frustrations or
-          suggestions you have with or for the PyGridUI Platform?
+        <p class="text-center py-4">
+          Begin uploading data by following the steps below so that your team and outside
+          researchers can begin making impact.
         </p>
+        <ul>
+          <li class="h-10">Open a new Jupyter Notebook page</li>
+          <li class="h-10">Install HAGrid by running the code below in your Jupyter Notebook</li>
 
-        <form class="flex-shrink-0 pt-6">
-          <div class="flex flex-col gap-y-4 gap-x-6">
-            <FormControl
-              label="Frustrations"
-              id="frustrations"
-              type="textarea"
-              placeholder="What felt vague or cumbersome?"
-              optional
-            />
-            <FormControl
-              label="Suggestions"
-              id="suggestions"
-              type="textarea"
-              placeholder="Did you have moments of thinking “I wish I could...”"
-              optional
-            />
-          </div>
-        </form>
+          <code class="flex items-center px-4 h-10">pip install -U hagrid</code>
+          <li class="h-10">
+            Once HAGrid is installed open the "Upload Dataset" quickstart tutorial notebook by
+            running the code below in your Jupyter Notebook.
+          </li>
+          <code class="flex items-center px-4 h-10">hagrid quickstart dataset_upload</code>
+        </ul>
       </div>
-      <div slot="footer" class="flex justify-center pt-6">
-        <Button
-          variant="delete"
-          action={() => {
-            showDeleteConfirmModal = false;
-          }}>Submit Response</Button
-        >
-        <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
+      <div slot="footer" class="flex justify-center self-end pt-6">
+        <Button action={() => (showModal = false)} variant="black" position="right">Finish</Button>
       </div>
     </Modal>
   {/if}
 </main>
+
+<style lang="postcss">
+  ul {
+    @apply list-disc mx-7;
+  }
+
+  code {
+    background-color: #eee;
+  }
+</style>

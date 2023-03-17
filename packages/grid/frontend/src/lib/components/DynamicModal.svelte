@@ -2,10 +2,10 @@
   import { createEventDispatcher } from 'svelte';
 
   interface $$Props {
-    size?: 'small' | 'large';
+    size?: 'sm' | 'md' | 'lg';
   }
 
-  export let size = 'small';
+  export let size = 'sm';
 
   const dispatch = createEventDispatcher();
   const close = () => dispatch('close');
@@ -69,12 +69,17 @@
     justify-content: space-between;
   }
 
-  .small {
+  .sm {
     width: 60vw;
     height: 40vh;
   }
 
-  .large {
+  .md {
+    width: 60vw;
+    height: 60vh;
+  }
+
+  .lg {
     max-width: 75vw;
     height: 80vh;
   }
