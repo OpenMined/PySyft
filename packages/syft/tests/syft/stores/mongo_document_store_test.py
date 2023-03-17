@@ -235,6 +235,7 @@ def test_mongo_store_partition_set_joblib(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_update_threading(
     mongo_server_mock,
 ) -> None:

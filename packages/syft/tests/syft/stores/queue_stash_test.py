@@ -110,6 +110,7 @@ def test_queue_stash_update(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_set_existing_queue_threading(queue: Any) -> None:
     thread_cnt = 5
     repeats = REPEATS
