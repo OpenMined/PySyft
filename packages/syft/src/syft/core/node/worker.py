@@ -34,7 +34,6 @@ from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
 from .new.api import SyftAPIData
-from .new.api import user_role_from_verify_key
 from .new.context import AuthedServiceContext
 from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
@@ -71,10 +70,10 @@ from .new.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from .new.syft_object import SyftObject
 from .new.test_service import TestService
 from .new.uid import UID
-from .new.user import ServiceRole
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
+from .new.user_roles import ServiceRole
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
@@ -433,6 +432,12 @@ class Worker(NewNode):
 
         return SyftError(message=(f"Node has no route to {node_uid}"))
 
+    def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
+        role = self.get_service("userservice").get_role_for_credentials(
+            credentials=credentials
+        )
+        return role
+
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SignedSyftAPICall, Err]:
@@ -467,23 +472,18 @@ class Worker(NewNode):
         if self.is_subprocess or self.processes == 0:
             credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
-            context = AuthedServiceContext(node=self, credentials=credentials)
 
-            try:
-                user_service_role = user_role_from_verify_key(self, credentials)
-            except Exception:
-                return SyftError(
-                    message="You requested a SyftAPI for a user that does not exist"
-                )
-            user_config_registry = UserServiceConfigRegistry.from_role(
-                user_service_role
+            role = self.get_role_for_credentials(credentials=credentials)
+            context = AuthedServiceContext(
+                node=self, credentials=credentials, role=role
             )
 
-            # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
+            user_config_registry = UserServiceConfigRegistry.from_role(role)
+
             if api_call.path not in user_config_registry:
                 if ServiceConfigRegistry.path_exists(api_call.path):
                     return SyftError(
-                        message=f"As a `{user_service_role}`,"
+                        message=f"As a `{role}`,"
                         "you have has no access to: {api_call.path}"
                     )  # type: ignore
                 else:

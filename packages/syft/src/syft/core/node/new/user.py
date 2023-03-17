@@ -1,5 +1,4 @@
 # stdlib
-from enum import Enum
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -26,42 +25,7 @@ from .transforms import make_set_default
 from .transforms import transform
 from .transforms import validate_email
 from .uid import UID
-
-
-class ServiceRoleCapability(Enum):
-    CAN_MAKE_DATA_REQUESTS = 1
-    CAN_TRIAGE_DATA_REQUESTS = 2
-    CAN_MANAGE_PRIVACY_BUDGET = 4
-    CAN_CREATE_USERS = 8
-    CAN_MANAGE_USERS = 16
-    CAN_EDIT_ROLES = 32
-    CAN_MANAGE_INFRASTRUCTURE = 64
-    CAN_UPLOAD_DATA = 128
-    CAN_UPLOAD_LEGAL_DOCUMENT = 256
-    CAN_EDIT_DOMAIN_SETTINGS = 512
-
-
-@serializable(recursive_serde=True)
-class ServiceRole(Enum):
-    GUEST = 0
-    DATA_SCIENTIST = 1
-    DATA_OWNER = 2
-    ADMIN = 3
-
-
-GUEST_ROLE_LEVEL = [
-    ServiceRole.GUEST,
-    ServiceRole.DATA_SCIENTIST,
-    ServiceRole.DATA_OWNER,
-    ServiceRole.ADMIN,
-]
-DATA_SCIENTIST_ROLE_LEVEL = [
-    ServiceRole.DATA_SCIENTIST,
-    ServiceRole.DATA_OWNER,
-    ServiceRole.ADMIN,
-]
-DATA_OWNER_ROLE_LEVEL = [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]
-ADMIN_ROLE_LEVEL = [ServiceRole.ADMIN]
+from .user_roles import ServiceRole
 
 
 @serializable(recursive_serde=True)

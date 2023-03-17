@@ -20,9 +20,6 @@ from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .uid import UID
-from .user import ADMIN_ROLE_LEVEL
-from .user import GUEST_ROLE_LEVEL
-from .user import ServiceRole
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -31,6 +28,8 @@ from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
 from .user import salt_and_hash_password
+from .user_roles import GUEST_ROLE_LEVEL
+from .user_roles import ServiceRole
 from .user_stash import UserStash
 
 
@@ -77,7 +76,7 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
+    @service_method(path="user.get_all", name="get_all")
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[Optional[UserView], SyftError]:
@@ -87,6 +86,17 @@ class UserService(AbstractService):
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
         return SyftError(message="No users exists")
+
+    def get_role_for_credentials(
+        self, credentials: SyftVerifyKey
+    ) -> Union[Optional[ServiceRole], SyftError]:
+        result = self.stash.get_by_verify_key(verify_key=credentials)
+        if result.is_ok():
+            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+            if user:
+                return user.role
+        return ServiceRole.GUEST
 
     @service_method(path="user.search", name="search", autosplat=["user_search"])
     def search(

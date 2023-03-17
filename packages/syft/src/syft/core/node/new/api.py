@@ -24,13 +24,13 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .connection import NodeConnection
-from .context import AuthedServiceContext
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .deserialize import _deserialize
 from .node import NewNode
 from .recursive import index_syft_by_module_name
 from .response import SyftError
+from .response import SyftException
 from .response import SyftSuccess
 from .serializable import serializable
 from .serialize import _serialize
@@ -42,7 +42,11 @@ from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
-from .user import ServiceRole
+
+
+@serializable(recursive_serde=True)
+class SyftAttributeError(AttributeError, SyftException):
+    pass
 
 
 class APIRegistry:
@@ -265,11 +269,14 @@ class APIModule:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
-    def __getattr__(self, name: str) -> Any:
-        raise AttributeError(
-            f"'APIModule' object has no attribute '{name}',"
-            "you may not have permission to access the module you are trying to access"
-        )
+    def __getattribute__(self, name: str):
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            raise SyftAttributeError(
+                f"'APIModule' object has no attribute '{name}', "
+                "you may not have permission to access the module you are trying to access"
+            )
 
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int) and hasattr(self, "get_all"):
@@ -281,15 +288,6 @@ class APIModule:
             return NotImplementedError
         results = self.get_all()
         return results._repr_html_()
-
-
-def user_role_from_verify_key(node: NewNode, user_verify_key: SyftVerifyKey):
-    # this feels a bit hacky/out of place. Not sure how to improve yet?
-    users = node.get_service("UserService").get_all(
-        AuthedServiceContext(node=node, credentials=node.signing_key.verify_key)
-    )
-    user = [u for u in users if u.verify_key == user_verify_key][0]
-    return user.role
 
 
 @instrument
@@ -313,26 +311,16 @@ class SyftAPI(SyftObject):
     #     pass
 
     @staticmethod
-    def for_user(node: NewNode, user_verify_key: Optional[SyftVerifyKey]) -> SyftAPI:
+    def for_user(
+        node: NewNode, user_verify_key: Optional[SyftVerifyKey] = None
+    ) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
         from .user_code_service import UserCodeService
 
         # find user role by verify_key
-        if user_verify_key:
-            # this feels a bit hacky, is there a cleaner way to do this?
-            try:
-                user_service_role = user_role_from_verify_key(node, user_verify_key)
-            except Exception:
-                raise ValueError(
-                    message="You requested a SyftAPI for user that does not exist, missing verify_key"
-                )
-        else:
-            user_service_role = ServiceRole.ADMIN
-
-        _user_service_config_registry = UserServiceConfigRegistry.from_role(
-            user_service_role
-        )
+        role = node.get_role_for_credentials(user_verify_key)
+        _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
         endpoints = {}
 
         for (
@@ -519,7 +507,7 @@ try:
         Inspector._getdef_bak = Inspector._getdef
         Inspector._getdef = types.MethodType(monkey_patch_getdef, Inspector)
 except Exception:
-    print("Failed to monkeypatch IPython Signature Override")
+    # print("Failed to monkeypatch IPython Signature Override")
     pass
 
 

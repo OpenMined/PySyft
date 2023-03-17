@@ -23,8 +23,8 @@ from .signature import signature_remove_self
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
-from .user import GUEST_ROLE_LEVEL
-from .user import ServiceRole
+from .user_roles import DATA_OWNER_ROLE_LEVEL
+from .user_roles import ServiceRole
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)
@@ -192,9 +192,9 @@ def service_method(
     roles: Optional[List[ServiceRole]] = None,
     autosplat: Optional[List[str]] = None,
 ):
-    if roles is None:
+    if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
-        roles = GUEST_ROLE_LEVEL
+        roles = DATA_OWNER_ROLE_LEVEL
 
     def wrapper(func):
         func_name = func.__name__
