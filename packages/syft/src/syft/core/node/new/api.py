@@ -508,7 +508,7 @@ try:
         Inspector._getdef = types.MethodType(monkey_patch_getdef, Inspector)
 except Exception:
     # print("Failed to monkeypatch IPython Signature Override")
-    pass
+    pass  # nosec
 
 
 @serializable(recursive_serde=True)
