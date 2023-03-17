@@ -137,7 +137,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
-          target: grid-ui-production
+          target: grid-ui-development
 
       - name: Docker meta for Grid-Headscale
         id: meta_grid_headscale
