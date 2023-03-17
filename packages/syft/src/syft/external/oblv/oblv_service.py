@@ -29,6 +29,7 @@ from ...core.node.new.credentials import SyftSigningKey
 from ...core.node.new.deserialize import _deserialize as deserialize
 from ...core.node.new.document_store import DocumentStore
 from ...core.node.new.serializable import serializable
+from ...core.node.new.serialize import _serialize
 from ...core.node.new.service import AbstractService
 from ...core.node.new.service import service_method
 from ...core.node.new.syft_object import SYFT_OBJECT_VERSION_1
@@ -335,6 +336,7 @@ class OblvService(AbstractService):
                 connection_string = connection_string.replace(
                     "127.0.0.1", "host.docker.internal"
                 )
+        data: bytes = _serialize(obj=signing_key, to_bytes=True)
 
         req = make_request_to_enclave(
             connection_string=connection_string + Routes.ROUTE_API.value,
@@ -343,6 +345,7 @@ class OblvService(AbstractService):
             oblv_keys_stash=self.oblv_keys_stash,
             request_method=requests.get,
             connection_port=port,
+            data=data,
         )
 
         obj = deserialize(req.content, from_bytes=True)
