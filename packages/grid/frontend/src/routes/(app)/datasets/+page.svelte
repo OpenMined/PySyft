@@ -1,6 +1,6 @@
 <script>
   import Button from '$lib/components/Button.svelte';
-  import GetStartedModal from '../home/getStartedModal.svelte';
+  import NewDatasetModal from './newDatasetModal.svelte';
   import DatasetListItem from './datasetListItem.svelte';
   import DatasetDetail from './datasetDetail.svelte';
   import { data } from './mockDatasetData.ts';
@@ -34,6 +34,8 @@
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
+  <NewDatasetModal showModal={showNewDatasetModal} />
+
   <!-- Header -->
   <div class="flex justify-between">
     <h2 class="flex justify-left text-gray-800 font-rubik text-2xl leading-normal font-medium pb-4">
