@@ -1,10 +1,14 @@
 <script>
-  import GetStartedModal from './getStartedModal.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import GetStartedModal from '../home/getStartedModal.svelte';
   import DatasetListItem from './datasetListItem.svelte';
   import DatasetDetail from './datasetDetail.svelte';
   import { data } from './mockDatasetData.ts';
+  import Search from 'svelte-search';
 
-  let modalFlag = true;
+  let searchValue = '';
+  let showNewDatasetModal = false;
+
   let visible = true;
   let openDatasetName = '';
   let openDatasetAuthor = '';
@@ -30,12 +34,28 @@
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
-  <GetStartedModal showModal={modalFlag} />
-
   <!-- Header -->
-  <h1>Datasets</h1>
+  <div class="flex justify-between">
+    <h2 class="flex justify-left text-gray-800 font-rubik text-2xl leading-normal font-medium pb-4">
+      Datasets
+    </h2>
+    <Button variant="black" action={() => (showNewDatasetModal = true)}>+ New Dataset</Button>
+  </div>
 
   <!-- Body content -->
+  <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
+    <Search
+      bind:searchValue
+      placeholder="Search by name"
+      debounce={800}
+      autofocus
+      hideLabel
+      on:submit={(e) => {
+        e.preventDefault();
+        console.log('submit', searchValue);
+      }}
+    />
+  </section>
   <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
     {#if visible}
       <article class="w-full">
@@ -60,3 +80,13 @@
     {/if}
   </section>
 </main>
+
+<style lang="postcss">
+  :global([data-svelte-search]) {
+    @apply w-5/12;
+  }
+
+  :global([data-svelte-search] input) {
+    @apply w-full rounded-3xl;
+  }
+</style>

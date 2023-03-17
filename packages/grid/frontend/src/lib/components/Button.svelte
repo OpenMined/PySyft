@@ -3,7 +3,7 @@
 
   interface $$Props extends HTMLButtonAttributes {
     disabled?: boolean;
-    variant: 'secondary' | 'delete';
+    variant: 'secondary' | 'delete' | 'black';
     position?: 'left' | 'right' | 'none';
     action: Function;
   }
@@ -36,6 +36,14 @@
   }
 
   .delete:hover {
+    @apply to-marigold-400;
+  }
+
+  .black {
+    @apply transition-all duration-500 bg-gradient-to-l from-black-900 to-black-900 text-white-50 rounded-3xl h-8;
+  }
+
+  .black:hover {
     @apply to-marigold-400;
   }
 
