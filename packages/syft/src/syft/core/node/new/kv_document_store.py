@@ -145,6 +145,9 @@ class KeyValueStorePartition(StorePartition):
     def all(self) -> Result[List[BaseStash.object_type], str]:
         return Ok(list(self.data.values()))
 
+    def __len__(self) -> Result[List[BaseStash.object_type], str]:
+        return len(self.data)
+
     def find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
@@ -254,9 +257,6 @@ class KeyValueStorePartition(StorePartition):
             return Ok(SyftSuccess(message="Deleted"))
         except Exception as e:
             return Err(f"Failed to delete with query key {qk} with error: {e}")
-
-    def __len__(self) -> int:
-        return len(self.data)
 
     def _delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _unique_ck in self.unique_cks:
