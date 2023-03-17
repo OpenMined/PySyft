@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
-    DOMAIN_NAME: str = "default_node_name"
+    NODE_NAME: str = "default_node_name"
     STREAM_QUEUE: bool = False
     NODE_TYPE: str = "Domain"
 

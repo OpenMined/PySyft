@@ -26,10 +26,9 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.8.0-beta.0"
+__version__ = "0.8.0-beta.2"
 
 # stdlib
-import os
 from pathlib import Path
 import sys
 from typing import Any
@@ -62,6 +61,9 @@ from .core.node.new.user_code import UserCodeStatus  # noqa: F401
 from .core.node.new.user_code import syft_function  # noqa: F401
 from .core.node.new.user_service import UserService  # noqa: F401
 from .core.node.worker import Worker  # noqa: F401
+from .deploy import Orchestra  # noqa: F401
+from .external import OBLV  # noqa: F401
+from .external import enable_external_lib  # noqa: F401
 from .registry import DomainRegistry  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 from .search import Search  # noqa: F401
@@ -78,16 +80,9 @@ sys.path.append(str(Path(__file__)))
 
 logger.start()
 
-OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
+# For server-side, to enable by environment variable
 if OBLV:
-    # relative
-    from .oblv import OblvEnclavePointer  # noqa: F401
-    from .oblv import check_oblv_proxy_installation_status  # noqa: F401
-    from .oblv import create_deployment  # noqa: F401
-    from .oblv import create_oblv_key_pair  # noqa: F401
-    from .oblv import get_oblv_public_key  # noqa: F401
-    from .oblv import install_oblv_proxy  # noqa: F401
-    from .oblv import login as oblv_login  # noqa: F401
+    enable_external_lib("oblv")
 
 
 def module_property(func: Any) -> None:
@@ -123,6 +118,11 @@ def _domains() -> DomainRegistry:
 @module_property
 def _settings() -> UserSettings:
     return settings
+
+
+@module_property
+def _orchestra() -> Orchestra:
+    return Orchestra()
 
 
 def search(name: str) -> SearchResults:

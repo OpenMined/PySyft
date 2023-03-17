@@ -181,6 +181,9 @@ class KeyValueStorePartition(StorePartition):
     def all(self) -> Result[List[BaseStash.object_type], str]:
         return Ok(list(self.data.values()))
 
+    def __len__(self) -> Result[List[BaseStash.object_type], str]:
+        return len(self.data)
+
     def find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
@@ -249,7 +252,7 @@ class KeyValueStorePartition(StorePartition):
             )
 
             # update the object with new data
-            for key, value in obj.to_dict().items():
+            for key, value in obj.to_dict(exclude_none=True).items():
                 setattr(_original_obj, key, value)
 
             # update data and keys
