@@ -76,7 +76,7 @@
 
   .md {
     width: 60vw;
-    height: 60vh;
+    height: 70vh;
   }
 
   .lg {
