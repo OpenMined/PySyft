@@ -29,8 +29,8 @@ from .credentials import SyftVerifyKey
 from .deserialize import _deserialize
 from .node import NewNode
 from .recursive import index_syft_by_module_name
+from .response import SyftAttributeError
 from .response import SyftError
-from .response import SyftException
 from .response import SyftSuccess
 from .serializable import serializable
 from .serialize import _serialize
@@ -42,11 +42,6 @@ from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
-
-
-@serializable(recursive_serde=True)
-class SyftAttributeError(AttributeError, SyftException):
-    pass
 
 
 class APIRegistry:

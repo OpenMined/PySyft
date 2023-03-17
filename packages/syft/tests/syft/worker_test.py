@@ -300,13 +300,10 @@ def test_worker_handle_api_response(
     path: str, kwargs: Dict, blocking: bool, n_processes: int
 ) -> None:
     node_uid = UID()
-    test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-
     worker = Worker(
         name="test-domain-1",
         processes=n_processes,
         id=node_uid,
-        signing_key=test_signing_key,
     )
     root_client = worker.root_client
     assert root_client.api is not None
@@ -318,7 +315,7 @@ def test_worker_handle_api_response(
     call = SyftAPICall(
         node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
-    signed_api_call = call.sign(guest_client.api.signing_key)
+    signed_api_call = call.sign(worker.signing_key)
 
     # handle_api_call_with_unsigned_result should returned an unsigned result
     us_result = worker.handle_api_call_with_unsigned_result(signed_api_call)
@@ -329,7 +326,7 @@ def test_worker_handle_api_response(
     assert isinstance(signed_result, SignedSyftAPICall)
 
     # validation should work with the worker key
-    test_signing_key.verify_key.verify_key.verify(
+    worker.signing_key.verify_key.verify_key.verify(
         signed_result.serialized_message, signed_result.signature
     )
     # the validation should fail with the client key

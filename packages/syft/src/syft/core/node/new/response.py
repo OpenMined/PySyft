@@ -104,3 +104,8 @@ try:
     get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
 except Exception:
     pass
+
+
+@serializable(recursive_serde=True)
+class SyftAttributeError(AttributeError, SyftException):
+    pass
