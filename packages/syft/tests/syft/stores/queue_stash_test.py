@@ -1,4 +1,5 @@
 # stdlib
+import sys
 from threading import Thread
 from typing import Any
 
@@ -23,6 +24,7 @@ REPEATS = 20
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_stash_sanity(queue: Any) -> None:
     assert len(queue) == 0
     assert hasattr(queue, "store")
@@ -37,6 +39,7 @@ def test_queue_stash_sanity(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_stash_set_get(queue: Any) -> None:
     objs = []
     for idx in range(REPEATS):
@@ -77,6 +80,7 @@ def test_queue_stash_set_get(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_stash_update(queue: Any) -> None:
     obj = MockSyftObject(data=0)
     res = queue.set(obj, ignore_duplicates=False)
@@ -144,6 +148,7 @@ def test_queue_set_existing_queue_threading(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_update_existing_queue_threading(queue: Any) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -183,6 +188,7 @@ def test_queue_update_existing_queue_threading(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_set_delete_existing_queue_threading(
     queue: Any,
 ) -> None:
@@ -299,6 +305,7 @@ def test_queue_set_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_threading, helper_queue_set_joblib]
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_set_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -384,6 +391,7 @@ def test_queue_update_threading_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_update_threading, helper_queue_update_joblib]
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_update_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -487,6 +495,7 @@ def test_queue_delete_threading_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_delete_threading, helper_queue_set_delete_joblib]
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_delete_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
