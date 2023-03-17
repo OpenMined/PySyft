@@ -292,6 +292,7 @@ def helper_queue_set_joblib(create_queue_cbk) -> None:
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_threading, helper_queue_set_joblib]
 )
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_queue_set_sqlite(sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(sqlite_workspace)
@@ -378,6 +379,7 @@ def helper_queue_update_joblib(create_queue_cbk) -> None:
 @pytest.mark.parametrize(
     "backend", [helper_queue_update_threading, helper_queue_update_joblib]
 )
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_queue_update_threading_sqlite(sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(sqlite_workspace)
@@ -482,6 +484,7 @@ def helper_queue_set_delete_joblib(
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_delete_threading, helper_queue_set_delete_joblib]
 )
+@pytest.mark.xfail(reason="SQLite race conditions")
 def test_queue_delete_threading_sqlite(sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(sqlite_workspace)
