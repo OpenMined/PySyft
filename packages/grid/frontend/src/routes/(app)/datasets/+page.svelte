@@ -17,12 +17,16 @@
   let openDatasetName = '';
   let openDatasetAuthor = '';
   let openDatasetLastUpdated = '';
+  let openDatasetAssets = '';
+  let openDatasetRequests = '';
   let openDatasetFileSize = '';
 
   function showOpenDataset(event) {
     openDatasetName = event.detail.openName;
     openDatasetAuthor = event.detail.openAuthor;
     openDatasetLastUpdated = event.detail.openLastUpdated;
+    openDatasetAssets = event.detail.openAssets;
+    openDatasetRequests = event.detail.openRequests;
     openDatasetFileSize = event.detail.openFileSize;
     visible = false;
   }
@@ -97,6 +101,8 @@
             name={d.name}
             author={d.author}
             lastUpdated={d.lastUpdated}
+            assets={d.assets}
+            requests={d.requests}
             fileSize={d.fileSize}
           />
         {/each}
@@ -107,6 +113,8 @@
         name={openDatasetName}
         author={openDatasetAuthor}
         lastUpdated={openDatasetLastUpdated}
+        assets={openDatasetAssets}
+        requests={openDatasetRequests}
         fileSize={openDatasetFileSize}
       />
     {/if}
