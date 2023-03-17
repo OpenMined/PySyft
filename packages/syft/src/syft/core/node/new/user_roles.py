@@ -33,8 +33,9 @@ class ServiceRole(Enum):
     DATA_OWNER = 32
     ADMIN = 128
 
+    # Disabling it, as both property and classmethod only works for python >= 3.9
+    # @property
     @classmethod
-    @property
     def roles_descending(cls) -> List[Tuple[int, Self]]:
         tuples = []
         for x in cls:
@@ -47,7 +48,7 @@ class ServiceRole(Enum):
             level = level.value
         roles = []
         level_float = float(level)
-        service_roles = ServiceRole.roles_descending
+        service_roles = ServiceRole.roles_descending()
         for role in service_roles:
             role_num = role[0]
             if role_num == 0:
