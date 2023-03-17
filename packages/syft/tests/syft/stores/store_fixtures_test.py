@@ -120,8 +120,11 @@ def mongo_store_partition(mongo_server_mock):
     yield mongo_store_partition_fn(mongo_db_name=mongo_db_name, **mongo_kwargs)
 
     # cleanup db
-    mongo_client = MongoClient(**mongo_kwargs)
-    mongo_client.drop_database(mongo_db_name)
+    try:
+        mongo_client = MongoClient(**mongo_kwargs)
+        mongo_client.drop_database(mongo_db_name)
+    except BaseException as e:
+        print("failed to cleanup mongo fixture", e)
 
 
 def mongo_document_store_fn(mongo_db_name: str = "mongo_db", **mongo_kwargs):
