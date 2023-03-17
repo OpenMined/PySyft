@@ -56,7 +56,7 @@ class UserStash(BaseStash):
         return self.query_one(qks=qks)
 
     def get_by_signing_key(
-        self, signing_key: SigningKeyPartitionKey
+        self, signing_key: SyftSigningKey
     ) -> Result[Optional[User], str]:
         if isinstance(signing_key, str):
             signing_key = SyftSigningKey.from_string(signing_key)
@@ -64,7 +64,7 @@ class UserStash(BaseStash):
         return self.query_one(qks=qks)
 
     def get_by_verify_key(
-        self, verify_key: VerifyKeyPartitionKey
+        self, verify_key: SyftVerifyKey
     ) -> Result[Optional[User], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)

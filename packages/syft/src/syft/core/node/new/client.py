@@ -16,7 +16,6 @@ from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from result import OkErr
 from tqdm import tqdm
 from typing_extensions import Self
 
@@ -271,8 +270,6 @@ class PythonConnection(NodeConnection):
             UserService.exchange_credentials, context
         )
         result = method()
-        if isinstance(result, OkErr):
-            return result.value
         return result
 
     def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
@@ -553,9 +550,11 @@ def login(
     _client = connect(url=url, node=node, port=port)
     connection = _client.connection
 
-    login_credentials = UserLoginCredentials(email=email, password=password)
+    login_credentials = None
+    if email and password:
+        login_credentials = UserLoginCredentials(email=email, password=password)
 
-    if cache:
+    if cache and login_credentials:
         _client_cache = SyftClientSessionCache.get_client(
             login_credentials.email,
             login_credentials.password,
@@ -567,7 +566,7 @@ def login(
             )
             _client = _client_cache
 
-    if not _client.authed:
+    if not _client.authed and login_credentials:
         _client.login(
             email=login_credentials.email,
             password=login_credentials.password,

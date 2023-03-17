@@ -122,11 +122,11 @@ def make_routes(worker: Worker) -> APIRouter:
         context = UnauthedServiceContext(node=node, login_credentials=login_credentials)
         result = method(context=context)
 
-        if result.is_err():
-            logger.bind(payload={"email": email}).error(result.err())
-            response = {"Error": result.err()}
+        if isinstance(result, SyftError):
+            logger.bind(payload={"email": email}).error(result.message)
+            response = {"Error": result.message}
         else:
-            user_private_key = result.ok()
+            user_private_key = result
             if not isinstance(user_private_key, UserPrivateKey):
                 raise Exception(f"Incorrect return type: {type(user_private_key)}")
             response = user_private_key

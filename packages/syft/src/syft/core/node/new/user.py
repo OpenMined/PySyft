@@ -98,6 +98,8 @@ class User(SyftObject):
         "signing_key",
         "verify_key",
         "role",
+        "institution",
+        "website",
         "created_at",
     ]
     __attr_searchable__ = ["name", "email", "verify_key", "role"]

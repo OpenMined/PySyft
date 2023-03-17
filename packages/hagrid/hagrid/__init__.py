@@ -1,4 +1,4 @@
-from .util import verify_git_installation  # noqa
+from .git_check import verify_git_installation  # noqa
 
 # stdlib
 import sys
@@ -9,6 +9,8 @@ from .cli import check_status as check  # noqa: F401
 from .quickstart_ui import QuickstartUI
 from .version import __version__  # noqa: F401
 from .wizard_ui import WizardUI
+
+from .orchestra import Orchestra  # noqa
 
 
 def module_property(func: Any) -> None:
