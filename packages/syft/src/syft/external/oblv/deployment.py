@@ -137,6 +137,6 @@ def create_deployment(
         deployment_id=res.deployment_id,
         oblv_client=oblv_client,
         domain_clients=domain_clients,
-        user_key_name=key_name,
+        key_name=key_name,
     )
     return result

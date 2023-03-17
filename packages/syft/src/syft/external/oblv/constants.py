@@ -1,7 +1,7 @@
 INFRA = "m5.4xlarge"
 REPO_OWNER = "OpenMined"
 REPO_NAME = "syft-enclave"
-REF = "dev"
+REF = "verify-keys"
 REGION = "us-west-2"
 VCS = "github"
 VISIBILITY = "private"
