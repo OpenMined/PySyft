@@ -40,6 +40,6 @@
   }
 
   code {
-    background-color: #eee;
+    @apply bg-gray-50;
   }
 </style>

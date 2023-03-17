@@ -1,10 +1,14 @@
 <script>
+  import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import Link from '$lib/components/Link.svelte';
   import NewDatasetModal from './newDatasetModal.svelte';
   import DatasetListItem from './datasetListItem.svelte';
   import DatasetDetail from './datasetDetail.svelte';
-  import { data } from './mockDatasetData.ts';
   import Search from 'svelte-search';
+  import Fa from 'svelte-fa';
+  import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
+  import { data } from './mockDatasetData.ts';
 
   let searchValue = '';
   let showModal = false;
@@ -31,6 +35,19 @@
   let originalData = Object.values(data);
 
   dataShow = originalData;
+
+  let menuOpen = false;
+  let inputValue = '';
+  $: console.log(inputValue);
+
+  const menuItems = [
+    'Newest',
+    'Oldest',
+    'Most Activity',
+    'Least Activity',
+    'Largest File Size',
+    'Smallest File Size'
+  ];
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
@@ -45,7 +62,7 @@
   </div>
 
   <!-- Body content -->
-  <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
+  <section class="md:flex justify-between md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
     <Search
       bind:searchValue
       placeholder="Search by name"
@@ -54,6 +71,22 @@
       hideLabel
       on:submit={(e) => e.preventDefault()}
     />
+
+    <div class="mr-6">
+      <div class="dropdown pr-2">
+        <Button variant="white" action={() => (menuOpen = !menuOpen)}
+          >Sort By<Fa class="pl-2" icon={faChevronDown} size="xs" /></Button
+        >
+
+        <div id="myDropdown" class:show={menuOpen} class="dropdown-content">
+          {#each menuItems as item}
+            <Link link={item} />
+          {/each}
+        </div>
+      </div>
+
+      <Badge variant="gray">Total: {dataShow.length}</Badge>
+    </div>
   </section>
   <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
     {#if visible}
@@ -87,5 +120,17 @@
 
   :global([data-svelte-search] input) {
     @apply w-full rounded-3xl;
+  }
+
+  .dropdown {
+    @apply relative inline-block;
+  }
+
+  .dropdown-content {
+    @apply hidden absolute bg-white-50 rounded min-w-max;
+  }
+
+  .show {
+    @apply block;
   }
 </style>
