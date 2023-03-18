@@ -8,13 +8,13 @@ from result import Ok
 from result import Result
 
 # relative
-from ..document_store import BaseStash
-from ..document_store import DocumentStore
-from ..document_store import PartitionSettings
-from ..document_store import QueryKeys
-from ..document_store import UIDPartitionKey
-from ..serializable import serializable
-from ..uid import UID
+from ...core.node.new.document_store import BaseStash
+from ...core.node.new.document_store import DocumentStore
+from ...core.node.new.document_store import PartitionSettings
+from ...core.node.new.document_store import QueryKeys
+from ...core.node.new.document_store import UIDPartitionKey
+from ...core.node.new.serializable import serializable
+from ...core.node.new.uid import UID
 from .oblv_keys import OblvKeys
 
 
