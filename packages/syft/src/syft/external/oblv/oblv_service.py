@@ -29,7 +29,6 @@ from ...core.node.new.credentials import SyftSigningKey
 from ...core.node.new.deserialize import _deserialize as deserialize
 from ...core.node.new.document_store import DocumentStore
 from ...core.node.new.serializable import serializable
-from ...core.node.new.serialize import _serialize
 from ...core.node.new.service import AbstractService
 from ...core.node.new.service import service_method
 from ...core.node.new.syft_object import SYFT_OBJECT_VERSION_1
@@ -262,7 +261,7 @@ class OblvService(AbstractService):
         self.store = store
         self.oblv_keys_stash = OblvKeysStash(store=store)
 
-    @service_method(path="oblv.create_key", name="create_key")
+    @service_method(path="oblv.create_key", name="create_key", roles=GUEST_ROLE_LEVEL)
     def create_key(
         self,
         context: AuthedServiceContext,
@@ -284,7 +283,9 @@ class OblvService(AbstractService):
             )
         return res.err()
 
-    @service_method(path="oblv.get_public_key", name="get_public_key")
+    @service_method(
+        path="oblv.get_public_key", name="get_public_key", roles=GUEST_ROLE_LEVEL
+    )
     def get_public_key(
         self,
         context: AuthedServiceContext,
@@ -336,8 +337,8 @@ class OblvService(AbstractService):
                 connection_string = connection_string.replace(
                     "127.0.0.1", "host.docker.internal"
                 )
-        data: bytes = _serialize(obj=signing_key, to_bytes=True)
 
+        params = {"verify_key": str(signing_key.verify_key)}
         req = make_request_to_enclave(
             connection_string=connection_string + Routes.ROUTE_API.value,
             deployment_id=deployment_id,
@@ -345,7 +346,7 @@ class OblvService(AbstractService):
             oblv_keys_stash=self.oblv_keys_stash,
             request_method=requests.get,
             connection_port=port,
-            data=data,
+            params=params,
         )
 
         obj = deserialize(req.content, from_bytes=True)

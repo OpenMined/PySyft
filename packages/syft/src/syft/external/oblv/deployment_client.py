@@ -31,7 +31,6 @@ from ...core.node.new.client import SyftSigningKey
 from ...core.node.new.deserialize import _deserialize as deserialize
 from ...core.node.new.node_metadata import EnclaveMetadata
 from ...core.node.new.serializable import serializable
-from ...core.node.new.serialize import _serialize
 from ...core.node.new.uid import UID
 from ...util import bcolors
 from .constants import LOCAL_MODE
@@ -355,11 +354,12 @@ class DeploymentClient:
     def _get_api(self) -> SyftAPI:
         self.check_connection_string()
         signing_key = SyftSigningKey.generate()
-        data: bytes = _serialize(obj=signing_key, to_bytes=True)
+
+        params = {"verify_key": str(signing_key.verify_key)}
         req = self.make_request_to_enclave(
             requests.get,
             connection_string=self.__conn_string + Routes.ROUTE_API.value,
-            data=data,
+            params=params,
         )
         self.sanity_check_oblv_response(req)
         obj = deserialize(req.content, from_bytes=True)

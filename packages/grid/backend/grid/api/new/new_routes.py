@@ -79,8 +79,8 @@ def make_routes(worker: Worker) -> APIRouter:
 
     # get the SyftAPI object
     @router.get("/api")
-    def syft_new_api(request: Request, data: bytes) -> Response:
-        user_verify_key: SyftVerifyKey = deserialize(blob=data, from_bytes=True)
+    def syft_new_api(request: Request, verify_key: str) -> Response:
+        user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api.__module__).start_as_current_span(
                 syft_new_api.__qualname__,
