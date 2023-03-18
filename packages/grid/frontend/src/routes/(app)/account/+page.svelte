@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
-  import Modal from '$lib/components/Modal.svelte';
+  import Modal from '$lib/components/DynamicModal.svelte';
   import YellowWarn from '$lib/components/icons/YellowWarn.svelte';
   import GreenCheck from '$lib/components/icons/GreenCheck.svelte';
   import Info from '$lib/components/icons/Info.svelte';
@@ -9,6 +9,10 @@
   let showDeleteNodeModal = false;
   let showDeleteAccountModal = false;
   let showDeleteConfirmModal = false;
+
+  function placeholderAction() {
+    alert('TODO');
+  }
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
@@ -49,7 +53,7 @@
         </p>
       </div>
       <div class="inline-flex py-6">
-        <Button>Save Changes</Button>
+        <Button variant="secondary" action={placeholderAction}>Save Changes</Button>
         <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
       </div>
 
@@ -66,7 +70,7 @@
           <FormControl label="New Password" id="newPassword" type="password" required />
         </div>
         <div class="inline-flex py-6">
-          <Button>Change Password</Button>
+          <Button variant="secondary" action={placeholderAction}>Change Password</Button>
           <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
         </div>
       </div>
@@ -86,31 +90,30 @@
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
-          <Button onClick={() => (showDeleteAccountModal = true)}>Delete Account</Button>
+          <Button variant="delete" action={() => (showDeleteAccountModal = true)}
+            >Delete Account</Button
+          >
         </div>
       </div>
     </form>
   </section>
 
   {#if showDeleteAccountModal}
-    <Modal on:close={() => (showDeleteAccountModal = false)}>
-      <div slot="icon" class="flex justify-center">
+    <Modal>
+      <div slot="header" class="flex justify-center">
         <YellowWarn />
+        <p class="text-center text-2xl font-bold">Are you sure you want to delete your account?</p>
       </div>
-      <p slot="header" class="text-center text-2xl font-bold">
-        Are you sure you want to delete your account?
-      </p>
-      <p slot="content" class="text-center">
+      <p slot="body" class="text-center">
         If deleted all uploaded documents will be deleted and all open requests will be closed. Keep
         in mind any legal agreements pertaining to the use of your data requests will still apply
         according to the terms of the agreement signed. If you would like to proceed press “Delete
         Account” if not you can click “Cancel”.
       </p>
-      <div slot="actions" class="flex justify-center pt-6">
+      <div slot="footer" class="flex justify-center pt-6">
         <Button
           variant="delete"
-          option="margin-x-sm"
-          onClick={() => {
+          action={() => {
             showDeleteAccountModal = false;
             showDeleteConfirmModal = true;
           }}>Delete Account</Button
@@ -122,21 +125,25 @@
   {/if}
 
   {#if showDeleteNodeModal}
-    <Modal on:close={() => (showDeleteNodeModal = false)}>
-      <div slot="icon" class="flex justify-center">
+    <Modal>
+      <div slot="header" class="flex justify-center">
         <YellowWarn />
+        <p class="text-center text-2xl font-bold">Are you sure you want to delete your node?</p>
       </div>
-      <p slot="header" class="text-center text-2xl font-bold">
-        Are you sure you want to delete your node?
-      </p>
-      <p slot="content" class="text-center">
+      <p slot="body" class="text-center">
         Because you are the domain owner, the domain node along with all uploaded datasets, user
         accounts, and requests will be deleted. All network memberships will also be removed. If you
         would like to keep this domain node but no longer want to be an owner press “cancel” and
         follow the instructions here to transfer ownership of your domain node.
       </p>
-      <div slot="actions" class="flex justify-center pt-6">
-        <Button variant="delete" option="margin-x-sm">Delete Node</Button>
+      <div slot="footer" class="flex justify-center pt-6">
+        <Button
+          variant="delete"
+          action={() => {
+            showDeleteNodeModal = false;
+            showDeleteConfirmModal = true;
+          }}>Delete Node</Button
+        >
         <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">Cancel</a
         >
       </div>
@@ -144,12 +151,12 @@
   {/if}
 
   {#if showDeleteConfirmModal}
-    <Modal on:close={() => (showDeleteConfirmModal = false)}>
-      <div slot="icon" class="flex justify-center">
+    <Modal size="large">
+      <div slot="header" class="flex justify-center">
         <GreenCheck />
+        <p class="text-center text-2xl font-bold">Your account has been deleted</p>
       </div>
-      <p slot="header" class="text-center text-2xl font-bold">Your account has been deleted</p>
-      <div slot="content">
+      <div slot="body">
         <p class="text-center">
           To help us improve future experiences could you share with us any frustrations or
           suggestions you have with or for the PyGridUI Platform?
@@ -174,8 +181,13 @@
           </div>
         </form>
       </div>
-      <div slot="actions" class="flex justify-center pt-6">
-        <Button option="margin-x-sm">Submit Response</Button>
+      <div slot="footer" class="flex justify-center pt-6">
+        <Button
+          variant="delete"
+          action={() => {
+            showDeleteConfirmModal = false;
+          }}>Submit Response</Button
+        >
         <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
       </div>
     </Modal>
