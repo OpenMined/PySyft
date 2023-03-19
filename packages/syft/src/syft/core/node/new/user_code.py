@@ -335,6 +335,18 @@ class OutputPolicy(SyftObject):
             op_code += "\n" + state_code
         return op_code
 
+@serializable(recursive_serde=True)
+class CustomOutputPolicy(OutputPolicy):
+    # version
+    __canonical_name__ = "CustomOutputPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+    init_args: Dict[str, Any] = {}
+    kwargs: Dict[str, Any] = {}
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.init_args = args
+        self.kwargs = kwargs
 
 @serializable(recursive_serde=True)
 class SingleExecutionExactOutput(OutputPolicy):
@@ -631,7 +643,7 @@ def get_code_from_class(policy):
     # third party
     from IPython.core.magics.code import extract_symbols
 
-    klasses = inspect.getmro(policy)[-2::-1]
+    klasses = [inspect.getmro(policy)[0]] #
     whole_str = ""
     for klass in klasses:
         if is_interpreter_jupyter():
@@ -644,9 +656,9 @@ def get_code_from_class(policy):
 
 
 def syft_function(
-    input_policy: Union[InputPolicy, UID, Any],
-    output_policy: Union[OutputPolicy, UID, Any],
-    outputs: List[str] = None,
+    input_policy: Union[InputPolicy, UID],
+    output_policy: Union[CustomOutputPolicy, OutputPolicy, UID],
+    outputs: List[str] = [],
     input_policy_init_args: Dict[str, Any] = None,
     output_policy_init_args: Dict[str, Any] = None,
 ) -> SubmitUserCode:
@@ -667,22 +679,25 @@ def syft_function(
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
 
-    if isinstance(output_policy, UID) or isinstance(output_policy, OutputPolicy):
+    if isinstance(output_policy, CustomOutputPolicy):
+        print("SubmitUserPolicy")
+        # TODO: move serializable injection in the server side
+        user_class = output_policy.__class__
+        init_f_code = user_class.__init__.__code__
+        output_policy = SubmitUserPolicy(
+            code="from .user_code import CustomOutputPolicy\n@serializable(recursive_serde=True)\n"
+            + get_code_from_class(user_class),
+            class_name=user_class.__name__,
+            input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
+        )
+    
+    elif isinstance(output_policy, UID) or isinstance(output_policy, OutputPolicy):
         print("UserPolicy")
         output_policy = output_policy
     elif issubclass(output_policy, OutputPolicy):
         print("OutputPolicy")
         output_policy = output_policy(**output_policy_init_args)
-    else:
-        print("SubmitUserPolicy")
-        # TODO: move serializable injection in the server side
-        init_f_code = output_policy.__init__.__code__
-        output_policy = SubmitUserPolicy(
-            code="@serializable(recursive_serde=True)\n"
-            + get_code_from_class(output_policy),
-            class_name=output_policy.__name__,
-            input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
-        )
+        
 
     def decorator(f):
         print(f.__code__.co_varnames)
@@ -850,6 +865,7 @@ def modify_signature(context: TransformContext) -> TransformContext:
 def init_policy_state(context: TransformContext) -> TransformContext:
     # stdlib
 
+    print(context.output["output_policy"], file=sys.stderr)
     if isinstance(context.output["input_policy"], InputPolicy):
         # context.output["input_policy_state"] = context.output["input_policy"].state_type()
         context.output["input_policy_state"] = ""
@@ -876,10 +892,13 @@ def check_input_policy(context: TransformContext) -> TransformContext:
 
 
 def add_custom_status(context: TransformContext) -> TransformContext:
+    print(context.node.node_type, file=sys.stderr)
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
+        print(context.obj.input_policy.inputs.keys(), file=sys.stderr)
+        print(node_view, file=sys.stderr)
         if node_view in context.obj.input_policy.inputs.keys():
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
@@ -964,3 +983,6 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+ALLOWED_POLICIES = [ExactMatch, SingleExecutionExactOutput, ]
+

@@ -127,9 +127,6 @@ class UserCodeService(AbstractService):
             else:
                 return output_policy
 
-        # stdlib
-        import sys
-
         print("Noerr", file=sys.stderr)
 
         result = self.stash.set(user_code)

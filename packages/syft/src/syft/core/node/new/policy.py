@@ -165,6 +165,7 @@ def submit_policy_code_to_user_code() -> List[Callable]:
 
 
 def execute_policy_code(user_policy: UserPolicy):
+    # print(user_policy.raw_code, file=sys.stderr)
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
@@ -174,7 +175,6 @@ def execute_policy_code(user_policy: UserPolicy):
 
         sys.stdout = stdout
         sys.stderr = stderr
-
         exec(user_policy.byte_code)  # nosec
         policy_class = eval(user_policy.class_name)  # nosec
 

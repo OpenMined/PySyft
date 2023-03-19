@@ -43,6 +43,7 @@ from .transforms import transform
 from .uid import UID
 from .user_code import UserCode
 from .user_code import UserCodeStatus
+from .policy_service import PolicyService
 
 OBLV = os.getenv("INSTALL_OBLV_CLI", "false") == "true"
 
@@ -201,13 +202,14 @@ class Request(SyftObject):
         #     )
 
         if isinstance(code.output_policy, UserPolicy):
-            # policy_service.add_user_policy(ctx, code.output_policy)
+            res = api.services.policy.add(code.output_policy)
+            print(dir(api))
+            print(res)
+            # print(api.services.policy.get_all())
             policy_object = init_policy(
                 code.output_policy, code.output_policy_init_args
             )
             code.output_policy_state = _serialize(policy_object, to_bytes=True)
-
-        if isinstance(code.output_policy, UserPolicy):
             policy_object = get_policy_object(
                 code.output_policy,
                 code.output_policy_state,
