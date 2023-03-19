@@ -1,67 +1,16 @@
-<script>
-  import { createEventDispatcher } from 'svelte';
-  import Close from '$lib/components/icons/Close.svelte';
-
-  const dispatch = createEventDispatcher();
-  const close = () => dispatch('close');
-
-  const handle_keydown = (/** @type {{ key: string; }} */ e) => {
-    if (e.key === 'Escape') {
-      close();
-      return;
-    }
-  };
-</script>
-
-<svelte:window on:keydown={handle_keydown} />
-
-<div class="topModal visible" on:click={() => close()}>
-  <div
-    class="modal"
-    on:click|stopPropagation={() => {
-      // commenting here to bypass es6 lint
-    }}
-  >
-    <Close onClick={() => close()} />
-    <div class="modal-content flex flex-col space-y-3 mx-4">
-      <slot name="icon" />
-      <slot name="header" />
-      <slot name="content" />
-      <slot name="actions" />
-    </div>
+<div
+  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg max-w-[1200px] w-full h-fit shadow-modal-1"
+>
+  <!-- header -->
+  <div class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min">
+    <slot name="header" />
+  </div>
+  <!-- body -->
+  <div class="w-full flex flex-col gap-6 px-12 py-2">
+    <slot name="body" />
+  </div>
+  <!-- button group -->
+  <div class="w-full py-8 flex justify-center items-center">
+    <slot name="button-group" />
   </div>
 </div>
-
-<style lang="postcss">
-  .topModal {
-    visibility: hidden;
-    z-index: 9999;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #4448;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal {
-    position: relative;
-    border-radius: 2px;
-    background: white;
-    filter: drop-shadow(5px 5px 5px #555);
-    padding: 1em;
-    width: 30vw;
-  }
-
-  .visible {
-    visibility: visible !important;
-  }
-
-  .modal-content {
-    max-height: calc(100vh - 20px);
-    overflow: auto;
-  }
-</style>
