@@ -88,9 +88,12 @@ def combine_bytes(capnp_list: List[bytes]) -> bytes:
     return bytes_value
 
 
-def rs_object2proto(self: Any) -> _DynamicStructBuilder:
+def rs_object2proto(self: Any, class_type: Type = type(None)) -> _DynamicStructBuilder:
     msg = recursive_scheme.new_message()
-    fqn = get_fully_qualified_name(self)
+    fqn = get_fully_qualified_name(self) if class_type is type(None) else class_type
+    
+    import sys
+    print(TYPE_BANK.keys(), file=sys.stderr)
     if fqn not in TYPE_BANK:
         raise Exception(f"{fqn} not in TYPE_BANK")
 

@@ -207,7 +207,7 @@ class Request(SyftObject):
             policy_object = init_policy(
                 code.output_policy, code.output_policy_init_args
             )
-            code.output_policy_state = _serialize(policy_object, to_bytes=True)
+            code.output_policy_state = _serialize(policy_object, to_bytes=True, )
             policy_object = get_policy_object(
                 code.output_policy,
                 code.output_policy_state,

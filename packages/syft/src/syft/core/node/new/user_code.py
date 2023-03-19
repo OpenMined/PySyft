@@ -682,6 +682,9 @@ def syft_function(
     if isinstance(output_policy, CustomOutputPolicy):
         print("SubmitUserPolicy")
         # TODO: move serializable injection in the server side
+        output_policy_init_args = output_policy.kwargs
+        print(output_policy_init_args)
+    
         user_class = output_policy.__class__
         init_f_code = user_class.__init__.__code__
         output_policy = SubmitUserPolicy(
@@ -690,7 +693,6 @@ def syft_function(
             class_name=user_class.__name__,
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
-    
     elif isinstance(output_policy, UID) or isinstance(output_policy, OutputPolicy):
         print("UserPolicy")
         output_policy = output_policy
