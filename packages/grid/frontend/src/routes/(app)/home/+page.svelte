@@ -19,5 +19,5 @@
 
 <main class="h-full flex items-center justify-center">
   <span class="page-container">Welcome Home! Current Path: {path}</span>
-  <GetStartedModal showModal={modalFlag} />
+  <!--<GetStartedModal showModal={modalFlag} />-->
 </main>

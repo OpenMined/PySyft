@@ -43,7 +43,6 @@
             </span>
           </div>
           <div class="contents" slot="body">
-            <DomainOnlineIndicator />
             <div class="w-full gap-6 flex">
               <Input label="Full name" id="fullName" placeholder="Jane Doe" required />
               <Input
