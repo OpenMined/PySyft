@@ -151,7 +151,7 @@
   {/if}
 
   {#if showDeleteConfirmModal}
-    <Modal size="large">
+    <Modal size="lg">
       <div slot="header" class="flex justify-center">
         <GreenCheck />
         <p class="text-center text-2xl font-bold">Your account has been deleted</p>
