@@ -47,6 +47,7 @@ from .transforms import generate_id
 from .transforms import transform
 from .uid import UID
 from .user_code_parse import GlobalsVisitor
+from .policy import get_policy_object
 
 # from .policy_service import PolicyService
 
@@ -444,7 +445,7 @@ class UserCode(SyftObject):
     raw_code: str
     input_policy: Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
     input_policy_state: Union[str, OutputPolicyState]
-    output_policy: Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
+    hidden_output_policy: Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
     output_policy_state: Union[str, OutputPolicyState]
     parsed_code: str
     service_func_name: str
@@ -476,16 +477,16 @@ class UserCode(SyftObject):
     #             return self.hidden_input_policy
     #         return get_policy_object(self.hidden_input_policy, self.input_policy_state)
 
-    # @property
-    # def output_policy(self) -> Union[OutputPolicy, UserPolicy, SubmitUserPolicy, UID]:
-    #     import sys
-    #     print("No error", file=sys.stderr)
-    #     if isinstance(self.hidden_output_policy, OutputPolicy):
-    #         return self.hidden_output_policy
-    #     else:
-    #         if self.status != UserCodeStatus.EXECUTE:
-    #             return self.hidden_output_policy
-    #         return get_policy_object(self.hidden_output_policy, self.output_policy_state)
+    @property
+    def output_policy(self) -> OutputPolicy:
+        import sys
+        print("No error", file=sys.stderr)
+        if isinstance(self.hidden_output_policy, OutputPolicy):
+            if self.status != UserCodeStatus.EXECUTE:
+                return self.hidden_output_policy
+            return get_policy_object(self.hidden_output_policy, self.output_policy_state)
+        else :
+            return self.hidden_output_policy
 
     @property
     def unsafe_function(self) -> Optional[Callable]:
@@ -874,15 +875,15 @@ def init_policy_state(context: TransformContext) -> TransformContext:
     else:
         context.output["input_policy_state"] = ""
 
-    if isinstance(context.output["output_policy"], OutputPolicy):
+    if isinstance(context.output["output_policy"], SubmitUserPolicy):
+        context.output["output_policy_state"] = ""
+    else:
         context.output["output_policy_state"] = context.output[
             "output_policy"
         ].state_type()
-    else:
-        context.output["output_policy_state"] = ""
 
     # context.output["hidden_input_policy"] = context.output["input_policy"]
-    # context.output["hidden_output_policy"] = context.output["output_policy"]
+    context.output["hidden_output_policy"] = context.output["output_policy"]
     return context
 
 

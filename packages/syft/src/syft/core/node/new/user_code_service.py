@@ -70,15 +70,17 @@ class UserCodeService(AbstractService):
 
         if isinstance(code.output_policy, SubmitUserPolicy):
             submit_output_policy = code.output_policy
-            code_item.output_policy = submit_output_policy.to(
+            code_item.hidden_output_policy = submit_output_policy.to(
                 UserPolicy, context=context
             )
         elif isinstance(code.output_policy, UID):
             output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
             if output_policy.is_ok():
-                code_item.output_policy = output_policy.ok()
+                code_item.hidden_output_policy = output_policy.ok()
             else:
                 return output_policy
+        else:
+            code_item.hidden_output_policy = code.output_policy
 
         result = self.stash.set(code_item)
         if result.is_err():
@@ -117,13 +119,13 @@ class UserCodeService(AbstractService):
 
         if isinstance(code.output_policy, SubmitUserPolicy):
             submit_output_policy = code.output_policy
-            user_code.output_policy = submit_output_policy.to(
+            user_code.hidden_output_policy = submit_output_policy.to(
                 UserPolicy, context=context
             )
         elif isinstance(code.output_policy, UID):
             output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
             if output_policy.is_ok():
-                user_code.output_policy = output_policy.ok()
+                user_code.hidden_output_policy = output_policy.ok()
             else:
                 return output_policy
 
