@@ -113,6 +113,7 @@ class DeploymentClient:
         data: Optional[Dict] = None,
         json: Optional[Dict] = None,
     ):
+        print(data)
         header = {}
         if LOCAL_MODE:
             header["x-oblv-user-name"] = "enclave_test"
@@ -261,7 +262,7 @@ class DeploymentClient:
             return "Failed"
         elif req.status_code != 200:
             raise OblvEnclaveError(
-                f"Failed to perform the operation  with status {req.status_code}"
+                f"Failed to perform the operation  with status {req.status_code}, {req.content}"
             )
 
     def request_code_execution(self, code: SubmitUserCode):
@@ -352,14 +353,18 @@ class DeploymentClient:
 
     def _get_api(self) -> SyftAPI:
         self.check_connection_string()
+        signing_key = SyftSigningKey.generate()
+
+        params = {"verify_key": str(signing_key.verify_key)}
         req = self.make_request_to_enclave(
             requests.get,
             connection_string=self.__conn_string + Routes.ROUTE_API.value,
+            params=params,
         )
         self.sanity_check_oblv_response(req)
         obj = deserialize(req.content, from_bytes=True)
         # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
-        obj.signing_key = SyftSigningKey.generate()
+        obj.signing_key = signing_key
         obj.connection = HTTPConnection(self.__conn_string)
         return cast(SyftAPI, obj)
 

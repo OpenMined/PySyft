@@ -27,6 +27,7 @@ from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
 from .user_code_stash import UserCodeStash
+from .user_roles import GUEST_ROLE_LEVEL
 
 
 @instrument
@@ -75,14 +76,18 @@ class UserCodeService(AbstractService):
         # The Request service already returns either a SyftSuccess or SyftError
         return result
 
-    @service_method(path="code.request_code_execution", name="request_code_execution")
+    @service_method(
+        path="code.request_code_execution",
+        name="request_code_execution",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def request_code_execution(
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
         return self._code_execution(context=context, code=code)
 
-    @service_method(path="code.get_all", name="get_all")
+    @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[List[UserCode], SyftError]:
@@ -121,7 +126,7 @@ class UserCodeService(AbstractService):
             return SyftSuccess(message="Code State Updated")
         return SyftError(message="Unable to Update Code State")
 
-    @service_method(path="code.call", name="call")
+    @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
