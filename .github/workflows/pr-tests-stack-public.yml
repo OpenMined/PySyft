@@ -22,14 +22,6 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: "clean .git/config"
-        if: matrix.os == 'windows'
-        continue-on-error: true
-        shell: bash
-        run: |
-          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
-          rm ${GITHUB_WORKSPACE}/.git/config
-
       - uses: actions/checkout@v3
 
       - name: Check for file changes
@@ -70,36 +62,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install -U tox
-
-      - name: Show choco installed packages
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: list --localonly
-
-      - name: Install git
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
-
-      - name: Install cmake
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-      - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
-        run: |
-          cmake --version
-        shell: cmd
-
-      - name: Install visualcpp-build-tools
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install visualstudio2019-workload-vctools -y
 
       - name: Install jaxlib
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -155,63 +117,6 @@ jobs:
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
-          HAGRID_FLAGS: "--tag=latest --test"
+          HAGRID_FLAGS: "--tag=beta --test --build-src=dev"
         run: |
           tox -e stack.test.integration
-
-      #Run log collector python script
-      - name: Run log collector
-        timeout-minutes: 5
-        if: failure()
-        shell: bash
-        run: |
-          python ./scripts/container_log_collector.py
-
-      # Get Job name and url
-      - name: Get job name and url
-        id: job_name
-        if: failure()
-        run: |
-          echo "::set-output name=job_name::$(echo ${{ github.job }})"
-          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-
-      - name: Get current date
-        id: date
-        if: failure()
-        shell: bash
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-
-      - name: Upload logs to GitHub
-        uses: actions/upload-artifact@master
-        if: failure()
-        with:
-          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
-          path: ./logs/${{ steps.job_name.outputs.job_name}}/
-
-      - name: Mandatory Container cleanup
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          docker rm `docker ps -aq` --force || true
-          docker volume prune -f || true
-
-      # Get Job name and url
-      - name: Reboot node
-        if: matrix.os == 'windows' && failure()
-        run: |
-          shutdown /r /t 1
-
-      - name: Job Report Status
-        # cant access secrets on forks
-        if: github.repository == 'OpenMined/PySyft' && failure()
-        uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ job.status }}
-          notify_when: "failure"
-          notification_title: " {workflow} has {status_message}"
-          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
-          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
-          mention_users_when: "failure,warnings"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
