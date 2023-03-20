@@ -389,7 +389,8 @@ class SyftAPI(SyftObject):
         if isinstance(api_call_result, Request) and any(
             [isinstance(x, UserCodeStatusChange) for x in api_call_result.changes]
         ):
-            self.refresh_api_callback()
+            if self.refresh_api_callback is not None:
+                self.refresh_api_callback()
 
     @staticmethod
     def _add_route(
