@@ -45,5 +45,6 @@ module.exports = {
   ...buildColor('red', 350, 75, 50),
   ...buildColor('violet', 280, 64, 43),
   ...buildColor('green', 120, 54, 43),
-  ...buildColor('black', 251, 16, 43)
+  ...buildColor('black', 251, 16, 43),
+  ...buildColor('white', 0, 0, 50)
 };
