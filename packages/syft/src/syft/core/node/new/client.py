@@ -120,9 +120,11 @@ class HTTPConnection(NodeConnection):
             self.session_cache = session
         return self.session_cache
 
-    def _make_get(self, path: str) -> bytes:
+    def _make_get(self, path: str, params: Optional[Dict] = None) -> bytes:
         url = self.url.with_path(path)
-        response = self.session.get(str(url), verify=verify_tls(), proxies={})
+        response = self.session.get(
+            str(url), verify=verify_tls(), proxies={}, params=params
+        )
         if response.status_code != 200:
             raise requests.ConnectionError(
                 f"Failed to fetch {url}. Response returned with code {response.status_code}"
@@ -173,7 +175,8 @@ class HTTPConnection(NodeConnection):
             return NodeMetadataJSON(**metadata_json)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        content = self._make_get(self.routes.ROUTE_API.value)
+        params = {"verify_key": str(credentials.verify_key)}
+        content = self._make_get(self.routes.ROUTE_API.value, params=params)
         obj = _deserialize(content, from_bytes=True)
         obj.connection = self
         obj.signing_key = credentials
@@ -249,7 +252,8 @@ class PythonConnection(NodeConnection):
             return self.node.metadata.to(NodeMetadataJSON)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        obj = self.node.get_api()
+        # todo: its a bit odd to identify a user by its verify key maybe?
+        obj = self.node.get_api(for_user=credentials.verify_key)
         obj.connection = self
         obj.signing_key = credentials
         if self.proxy_target_uid:

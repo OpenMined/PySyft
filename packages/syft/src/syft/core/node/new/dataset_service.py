@@ -18,6 +18,7 @@ from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .uid import UID
+from .user_roles import GUEST_ROLE_LEVEL
 
 
 @instrument
@@ -40,7 +41,7 @@ class DatasetService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Dataset Added")
 
-    @service_method(path="dataset.get_all", name="get_all")
+    @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> Union[List[Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all()

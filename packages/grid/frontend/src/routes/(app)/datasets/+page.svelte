@@ -55,70 +55,74 @@
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
-  <NewDatasetModal bind:showModal />
+  <div class="page-container overflow-auto">
+    <NewDatasetModal bind:showModal />
 
-  <!-- Header -->
-  <div class="flex justify-between">
-    <h2 class="flex justify-left text-gray-800 font-rubik text-2xl leading-normal font-medium pb-4">
-      Datasets
-    </h2>
-    <Button variant="black" action={() => (showModal = true)}>+ New Dataset</Button>
-  </div>
-
-  <!-- Body content -->
-  <section class="md:flex justify-between md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
-    <Search
-      bind:searchValue
-      placeholder="Search by name"
-      debounce={800}
-      autofocus
-      hideLabel
-      on:submit={(e) => e.preventDefault()}
-    />
-
-    <div class="mr-6">
-      <div class="dropdown pr-2">
-        <Button variant="white" action={() => (menuOpen = !menuOpen)}
-          >Sort By<Fa class="pl-2" icon={faChevronDown} size="xs" /></Button
-        >
-
-        <div id="myDropdown" class:show={menuOpen} class="dropdown-content">
-          {#each menuItems as item}
-            <Link link={item} />
-          {/each}
-        </div>
-      </div>
-
-      <Badge variant="gray">Total: {dataShow.length}</Badge>
+    <!-- Header -->
+    <div class="flex justify-between">
+      <h2
+        class="flex justify-left text-gray-800 font-rubik text-2xl leading-normal font-medium pb-4"
+      >
+        Datasets
+      </h2>
+      <Button variant="black" action={() => (showModal = true)}>+ New Dataset</Button>
     </div>
-  </section>
-  <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
-    {#if visible}
-      <article class="w-full">
-        {#each dataShow as d}
-          <DatasetListItem
-            on:hide={showOpenDataset}
-            name={d.name}
-            author={d.author}
-            lastUpdated={d.lastUpdated}
-            assets={d.assets}
-            requests={d.requests}
-            fileSize={d.fileSize}
-          />
-        {/each}
-      </article>
-    {:else}
-      <DatasetDetail
-        on:closeOpenCard={showHome}
-        name={openDatasetName}
-        author={openDatasetAuthor}
-        lastUpdated={openDatasetLastUpdated}
-        assets={openDatasetAssets}
-        requests={openDatasetRequests}
-        fileSize={openDatasetFileSize}
+
+    <!-- Body content -->
+    <section class="md:flex justify-between md:gap-x-[62px] lg:gap-x-[124px] mt-14">
+      <Search
+        bind:searchValue
+        placeholder="Search by name"
+        debounce={800}
+        autofocus
+        hideLabel
+        on:submit={(e) => e.preventDefault()}
       />
-    {/if}
-  </section>
+
+      <div class="mr-6">
+        <div class="dropdown pr-2">
+          <Button variant="white" action={() => (menuOpen = !menuOpen)}
+            >Sort By<Fa class="pl-2" icon={faChevronDown} size="xs" /></Button
+          >
+
+          <div id="myDropdown" class:show={menuOpen} class="dropdown-content">
+            {#each menuItems as item}
+              <Link link={item} />
+            {/each}
+          </div>
+        </div>
+
+        <Badge variant="gray">Total: {dataShow.length}</Badge>
+      </div>
+    </section>
+    <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14">
+      {#if visible}
+        <article class="w-full">
+          {#each dataShow as d}
+            <DatasetListItem
+              on:hide={showOpenDataset}
+              name={d.name}
+              author={d.author}
+              lastUpdated={d.lastUpdated}
+              assets={d.assets}
+              requests={d.requests}
+              fileSize={d.fileSize}
+            />
+          {/each}
+        </article>
+      {:else}
+        <DatasetDetail
+          on:closeOpenCard={showHome}
+          name={openDatasetName}
+          author={openDatasetAuthor}
+          lastUpdated={openDatasetLastUpdated}
+          assets={openDatasetAssets}
+          requests={openDatasetRequests}
+          fileSize={openDatasetFileSize}
+        />
+      {/if}
+    </section>
+  </div>
 </main>
 
 <style lang="postcss">
@@ -140,5 +144,14 @@
 
   .show {
     @apply block;
+  }
+
+  .page-container {
+    width: 85%;
+    padding: 20px;
+    position: absolute;
+    height: 93%;
+    top: 7%;
+    left: 15%;
   }
 </style>

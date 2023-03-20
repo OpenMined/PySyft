@@ -1,3 +1,8 @@
+# stdlib
+import sys
+import traceback
+from typing import Any
+
 # relative
 from .base import SyftBaseModel
 from .serializable import serializable
@@ -54,6 +59,9 @@ class SyftNotReady(SyftResponseMessage):
 
 @serializable(recursive_serde=True)
 class SyftException(Exception):
+    traceback: bool = False
+    traceback_limit: int = 10
+
     @property
     def _repr_html_class_(self) -> str:
         return "alert-danger"
@@ -63,3 +71,41 @@ class SyftException(Exception):
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
             + f"<strong>{type(self).__name__}</strong>: {self.args}</div><br />"
         )
+
+    @staticmethod
+    def format_traceback(etype: Any, evalue: Any, tb: Any, tb_offset: Any) -> str:
+        line = "---------------------------------------------------------------------------\n"
+        template = ""
+        template += line
+        template += f"{type(evalue).__name__}\n"
+        template += line
+        template += f"Exception: {evalue}\n"
+
+        if evalue.traceback:
+            template += line
+            template += "Traceback:\n"
+            tb_lines = "".join(traceback.format_tb(tb, evalue.traceback_limit)) + "\n"
+            template += tb_lines
+            template += line
+
+        return template
+
+
+def syft_exception_handler(
+    shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
+) -> None:
+    template = evalue.format_traceback(
+        etype=etype, evalue=evalue, tb=tb, tb_offset=tb_offset
+    )
+    sys.stderr.write(template)
+
+
+try:
+    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+except Exception:
+    pass  # nosec
+
+
+@serializable(recursive_serde=True)
+class SyftAttributeError(AttributeError, SyftException):
+    pass

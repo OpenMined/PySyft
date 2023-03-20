@@ -12,6 +12,7 @@ from .syft_object import Context
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
+from .user_roles import ServiceRole
 
 
 class NodeServiceContext(Context, SyftObject):
@@ -25,6 +26,7 @@ class AuthedServiceContext(NodeServiceContext):
     __version__ = SYFT_OBJECT_VERSION_1
 
     credentials: SyftVerifyKey
+    role: ServiceRole = ServiceRole.NONE
 
 
 class UnauthedServiceContext(NodeServiceContext):
@@ -33,6 +35,7 @@ class UnauthedServiceContext(NodeServiceContext):
 
     login_credentials: UserLoginCredentials
     node: Optional[NewNode]
+    role: ServiceRole = ServiceRole.NONE
 
 
 class ChangeContext(SyftBaseObject):
