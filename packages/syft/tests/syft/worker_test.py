@@ -18,6 +18,7 @@ from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.queue_stash import QueueItem
+from syft.core.node.new.response import SyftAttributeError
 from syft.core.node.new.response import SyftError
 from syft.core.node.new.uid import UID
 from syft.core.node.new.user import User
@@ -258,6 +259,11 @@ def test_worker_handle_api_request(
     root_client = worker.root_client
     assert root_client.api is not None
 
+    root_client.guest()
+
+    # TODO: 🟡 Fix: root_client.guest is overriding root_client.
+    root_client = worker.root_client
+
     api_call = SyftAPICall(
         node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
@@ -265,12 +271,16 @@ def test_worker_handle_api_request(
     result = worker.handle_api_call(api_call).message.data
     assert isinstance(result, SyftError)
 
-    test_signing_key_req = SyftSigningKey.from_string(test_signing_key_string_2)
-    signed_api_call = api_call.sign(test_signing_key_req)
+    signed_api_call = api_call.sign(root_client.api.signing_key)
 
     # should work on signed api calls
     result = worker.handle_api_call(signed_api_call).message.data
     assert not isinstance(result, SyftError)
+
+    # Guest client should not have access to the APIs
+    guest_signed_api_call = api_call.sign(root_client.api.signing_key)
+    result = worker.handle_api_call(guest_signed_api_call).message
+    assert not isinstance(result, SyftAttributeError)
 
     # should fail on altered requests
     bogus_api_call = signed_api_call
@@ -296,9 +306,9 @@ def test_worker_handle_api_request(
 def test_worker_handle_api_response(
     path: str, kwargs: Dict, blocking: bool, n_processes: int
 ) -> None:
-    node_uid = UID()
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
 
+    node_uid = UID()
     worker = Worker(
         name="test-domain-1",
         processes=n_processes,
@@ -308,11 +318,17 @@ def test_worker_handle_api_response(
     root_client = worker.root_client
     assert root_client.api is not None
 
-    test_signing_key_req = SyftSigningKey.from_string(test_signing_key_string_2)
+    guest_client = root_client.guest()
+
+    guest_client.register(name="Alice", email="alice@caltech.edu", password="abc123")
+
+    # TODO: 🟡 Fix: root_client.guest is overriding root_client.
+    root_client = worker.root_client
+
     call = SyftAPICall(
         node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
-    signed_api_call = call.sign(test_signing_key_req)
+    signed_api_call = call.sign(root_client.credentials)
 
     # handle_api_call_with_unsigned_result should returned an unsigned result
     us_result = worker.handle_api_call_with_unsigned_result(signed_api_call)
@@ -323,12 +339,12 @@ def test_worker_handle_api_response(
     assert isinstance(signed_result, SignedSyftAPICall)
 
     # validation should work with the worker key
-    test_signing_key.verify_key.verify_key.verify(
+    root_client.credentials.verify_key.verify_key.verify(
         signed_result.serialized_message, signed_result.signature
     )
     # the validation should fail with the client key
     with pytest.raises(BadSignatureError):
-        test_signing_key_req.verify_key.verify_key.verify(
+        guest_client.credentials.verify_key.verify_key.verify(
             signed_result.serialized_message, signed_result.signature
         )
 

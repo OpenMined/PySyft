@@ -29,11 +29,12 @@ from .credentials import SyftVerifyKey
 from .deserialize import _deserialize
 from .node import NewNode
 from .recursive import index_syft_by_module_name
+from .response import SyftAttributeError
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
 from .serialize import _serialize
-from .service import ServiceConfigRegistry
+from .service import UserServiceConfigRegistry
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
@@ -263,6 +264,15 @@ class APIModule:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
+    def __getattribute__(self, name: str):
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            raise SyftAttributeError(
+                f"'APIModule' object has no attribute '{name}', "
+                "you may not have permission to access the module you are trying to access"
+            )
+
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int) and hasattr(self, "get_all"):
             return self.get_all()[key]
@@ -296,16 +306,23 @@ class SyftAPI(SyftObject):
     #     pass
 
     @staticmethod
-    def for_user(node: NewNode) -> SyftAPI:
-        # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
+    def for_user(
+        node: NewNode, user_verify_key: Optional[SyftVerifyKey] = None
+    ) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
         from .user_code_service import UserCodeService
 
-        _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
+        # find user role by verify_key
+        # TODO: we should probably not allow empty verify keys but instead make user always register
+        role = node.get_role_for_credentials(user_verify_key)
+        _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
         endpoints = {}
 
-        for path, service_config in _registered_service_configs.items():
+        for (
+            path,
+            service_config,
+        ) in _user_service_config_registry.get_registered_configs().items():
             endpoint = APIEndpoint(
                 path=path,
                 name=service_config.public_name,
@@ -486,8 +503,8 @@ try:
         Inspector._getdef_bak = Inspector._getdef
         Inspector._getdef = types.MethodType(monkey_patch_getdef, Inspector)
 except Exception:
-    print("Failed to monkeypatch IPython Signature Override")
-    pass
+    # print("Failed to monkeypatch IPython Signature Override")
+    pass  # nosec
 
 
 @serializable(recursive_serde=True)

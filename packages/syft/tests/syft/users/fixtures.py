@@ -2,13 +2,13 @@
 import pytest
 
 # syft absolute
-from syft.core.node.new.user import ServiceRole
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user import UserSearch
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user import UserView
+from syft.core.node.new.user_roles import ServiceRole
 from syft.core.node.new.user_service import UserService
 from syft.core.node.new.user_stash import UserStash
 
