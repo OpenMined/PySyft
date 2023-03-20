@@ -1,6 +1,11 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import Close from '$lib/components/icons/Close.svelte';
+
+  interface $$Props {
+    size?: 'sm' | 'md' | 'lg';
+  }
+
+  export let size = 'sm';
 
   const dispatch = createEventDispatcher();
   const close = () => dispatch('close');
@@ -18,17 +23,15 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="topModal visible" on:click={() => close()}>
   <div
-    class="modal"
+    class={`modal ${size}`}
     on:click|stopPropagation={() => {
       // do nothing
     }}
   >
-    <Close onClick={() => close()} />
     <div class="modal-content flex flex-col">
-      <slot name="top-actions" />
       <slot name="header" />
-      <slot name="content" />
-      <slot name="bottom-actions" />
+      <slot name="body" />
+      <slot name="footer" />
     </div>
   </div>
 </div>
@@ -51,8 +54,6 @@
   .modal {
     position: relative;
     padding: 1em;
-    width: 50vw;
-    height: 80vh;
     background: #ffffff;
     box-shadow: -2px 4px 8px rgba(13, 12, 17, 0.25);
     border-radius: 15px;
@@ -63,7 +64,23 @@
   }
 
   .modal-content {
-    max-height: calc(100vh - 20px);
+    height: -webkit-fill-available;
     overflow: auto;
+    justify-content: space-between;
+  }
+
+  .sm {
+    width: 60vw;
+    height: 40vh;
+  }
+
+  .md {
+    width: 60vw;
+    height: 70vh;
+  }
+
+  .lg {
+    max-width: 75vw;
+    height: 80vh;
   }
 </style>

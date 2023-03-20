@@ -177,7 +177,13 @@
         </div>
       </div>
 
-      <Modal bind:open={modalActiveList[0]} placement="center" size="xs" class="w-full">
+      <Modal
+        bind:open={modalActiveList[0]}
+        placement="center"
+        size="xs"
+        class="w-full"
+        style="background-color: white"
+      >
         <FormControl placeholder="USA Domain" label="Domain Name" id="domain_name" required />
         <div class="space-x-3" style="display:flex;justify-content:right">
           <button
@@ -187,12 +193,21 @@
           >
             Cancel
           </button>
-          <Button pill={true} on:click={() => submitDomainChanges(client)} color="dark"
-            >Confirm</Button
+          <Button
+            pill={true}
+            on:click={() => submitDomainChanges(client)}
+            color="dark"
+            style="color: white">Confirm</Button
           >
         </div>
       </Modal>
-      <Modal bind:open={modalActiveList[1]} placement="center" size="xs" class="w-full">
+      <Modal
+        bind:open={modalActiveList[1]}
+        placement="center"
+        size="xs"
+        class="w-full"
+        style="background-color: white"
+      >
         <FormControl
           placeholder="UCSF University"
           label="Organization"
@@ -207,12 +222,21 @@
           >
             Cancel
           </button>
-          <Button pill={true} on:click={() => submitDomainChanges(client)} color="dark"
-            >Confirm</Button
+          <Button
+            pill={true}
+            on:click={() => submitDomainChanges(client)}
+            color="dark"
+            style="color: white">Confirm</Button
           >
         </div>
       </Modal>
-      <Modal bind:open={modalActiveList[2]} placement="center" size="xs" class="w-full">
+      <Modal
+        bind:open={modalActiveList[2]}
+        placement="center"
+        size="xs"
+        class="w-full"
+        style="background-color: white"
+      >
         <FormControl
           placeholder="This domain was created for research purposes"
           label="Description"
@@ -228,8 +252,11 @@
           >
             Cancel
           </button>
-          <Button pill={true} on:click={() => submitDomainChanges(client)} color="dark"
-            >Confirm</Button
+          <Button
+            pill={true}
+            on:click={() => submitDomainChanges(client)}
+            color="dark"
+            style="color: white">Confirm</Button
           >
         </div>
       </Modal>
