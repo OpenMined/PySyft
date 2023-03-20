@@ -24,6 +24,7 @@ from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .user_roles import GUEST_ROLE_LEVEL
 from .user_service import UserService
 
 
@@ -37,7 +38,7 @@ class ProjectService(AbstractService):
         self.store = store
         self.stash = ProjectStash(store=store)
 
-    @service_method(path="project.submit", name="submit")
+    @service_method(path="project.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
         self, context: AuthedServiceContext, project: ProjectSubmit
     ) -> Union[SyftSuccess, SyftError]:

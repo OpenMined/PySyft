@@ -17,6 +17,7 @@ from syft import deserialize
 from syft import serialize  # type: ignore
 from syft.core.node.new.context import NodeServiceContext
 from syft.core.node.new.context import UnauthedServiceContext
+from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.metadata_service import MetadataService
 from syft.core.node.new.node import NewNode
@@ -70,24 +71,25 @@ def make_routes(worker: Worker) -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    def handle_syft_new_api() -> Response:
+    def handle_syft_new_api(user_verify_key: SyftVerifyKey) -> Response:
         return Response(
-            serialize(worker.get_api(), to_bytes=True),
+            serialize(worker.get_api(user_verify_key), to_bytes=True),
             media_type="application/octet-stream",
         )
 
     # get the SyftAPI object
     @router.get("/api")
-    def syft_new_api(request: Request) -> Response:
+    def syft_new_api(request: Request, verify_key: str) -> Response:
+        user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api.__module__).start_as_current_span(
                 syft_new_api.__qualname__,
                 context=extract(request.headers),
                 kind=trace.SpanKind.SERVER,
             ):
-                return handle_syft_new_api()
+                return handle_syft_new_api(user_verify_key)
         else:
-            return handle_syft_new_api()
+            return handle_syft_new_api(user_verify_key)
 
     def handle_new_api_call(data: bytes) -> Response:
         obj_msg = deserialize(blob=data, from_bytes=True)
