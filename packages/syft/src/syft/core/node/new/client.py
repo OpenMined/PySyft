@@ -519,7 +519,12 @@ class SyftClient:
             self.metadata = metadata
 
     def _fetch_api(self, credentials: SyftSigningKey):
-        _api = self.connection.get_api(credentials=credentials)
+        _api: SyftAPI = self.connection.get_api(credentials=credentials)
+
+        def refresh_callback():
+            return self._fetch_api(self.credentials)
+
+        _api.refresh_api_callback = refresh_callback
         APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
 
