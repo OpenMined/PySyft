@@ -47,7 +47,7 @@ from .transforms import generate_id
 from .transforms import transform
 from .uid import UID
 from .user_code_parse import GlobalsVisitor
-from .policy import get_policy_object
+from .policy import get_policy_object, update_policy_state
 
 # from .policy_service import PolicyService
 
@@ -444,9 +444,9 @@ class UserCode(SyftObject):
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy: Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
-    input_policy_state: Union[str, OutputPolicyState]
-    hidden_output_policy: Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
-    output_policy_state: Union[str, OutputPolicyState]
+    input_policy_state: Union[bytes, OutputPolicyState]
+    output_policy: Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
+    output_policy_state: Union[bytes, OutputPolicyState]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -467,27 +467,7 @@ class UserCode(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
-
-    # @property
-    # def input_policy(self):
-    #     if isinstance(self.hidden_input_policy, InputPolicy):
-    #         return self.hidden_input_policy
-    #     elif isinstance(self.hidden_input_policy, UserPolicy):
-    #         if self.status != UserCodeStatus.EXECUTE:
-    #             return self.hidden_input_policy
-    #         return get_policy_object(self.hidden_input_policy, self.input_policy_state)
-
-    @property
-    def output_policy(self) -> OutputPolicy:
-        import sys
-        print("No error", file=sys.stderr)
-        if isinstance(self.hidden_output_policy, OutputPolicy):
-            if self.status != UserCodeStatus.EXECUTE:
-                return self.hidden_output_policy
-            return get_policy_object(self.hidden_output_policy, self.output_policy_state)
-        else :
-            return self.hidden_output_policy
-
+    
     @property
     def unsafe_function(self) -> Optional[Callable]:
         print("WARNING: This code was submitted by a User and could be UNSAFE.")
@@ -882,8 +862,6 @@ def init_policy_state(context: TransformContext) -> TransformContext:
             "output_policy"
         ].state_type()
 
-    # context.output["hidden_input_policy"] = context.output["input_policy"]
-    context.output["hidden_output_policy"] = context.output["output_policy"]
     return context
 
 
@@ -966,7 +944,6 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
 
         exec(code_item.byte_code)  # nosec
 
-        print(kwargs, file=stderr_)
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         result = eval(evil_string, None, locals())  # nosec
 

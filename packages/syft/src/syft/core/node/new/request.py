@@ -203,19 +203,19 @@ class Request(SyftObject):
             res = api.services.policy.add(code.output_policy)
             print(dir(api))
             print(res)
-            # print(api.services.policy.get_all())
             policy_object = init_policy(
                 code.output_policy, code.output_policy_init_args
             )
-            code.output_policy_state = _serialize(policy_object, to_bytes=True, )
-            policy_object = get_policy_object(
-                code.output_policy,
-                code.output_policy_state,
-            )
+            # code.output_policy_state = _serialize(policy_object, to_bytes=True, )
+            # policy_object = get_policy_object(
+            #     code.output_policy,
+            #     code.output_policy_state,
+            # )
             action_object = ActionObject.from_obj(
                 policy_object.apply_output(action_object)
             )
             state = update_policy_state(policy_object)
+            code.output_policy_state = _serialize(policy_object, to_bytes=True, )
         else:
             state = code.output_policy_state
             state.update_state(outputs=action_object.id, context=ctx)

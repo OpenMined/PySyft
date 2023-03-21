@@ -70,17 +70,17 @@ class UserCodeService(AbstractService):
 
         if isinstance(code.output_policy, SubmitUserPolicy):
             submit_output_policy = code.output_policy
-            code_item.hidden_output_policy = submit_output_policy.to(
+            code_item.output_policy = submit_output_policy.to(
                 UserPolicy, context=context
             )
         elif isinstance(code.output_policy, UID):
             output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
             if output_policy.is_ok():
-                code_item.hidden_output_policy = output_policy.ok()
+                code_item.output_policy = output_policy.ok()
             else:
                 return output_policy
         else:
-            code_item.hidden_output_policy = code.output_policy
+            code_item.output_policy = code.output_policy
 
         result = self.stash.set(code_item)
         if result.is_err():
@@ -119,13 +119,13 @@ class UserCodeService(AbstractService):
 
         if isinstance(code.output_policy, SubmitUserPolicy):
             submit_output_policy = code.output_policy
-            user_code.hidden_output_policy = submit_output_policy.to(
+            user_code.output_policy = submit_output_policy.to(
                 UserPolicy, context=context
             )
         elif isinstance(code.output_policy, UID):
             output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
             if output_policy.is_ok():
-                user_code.hidden_output_policy = output_policy.ok()
+                user_code.output_policy = output_policy.ok()
             else:
                 return output_policy
 
@@ -238,7 +238,8 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         try:
-            print(kwargs)
+            import sys
+            print(kwargs, file=sys.stderr)
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(uid=uid)
             if result.is_ok():
@@ -264,22 +265,10 @@ class UserCodeService(AbstractService):
                             return is_valid
 
                     action_service = context.node.get_service("actionservice")
-                    if isinstance(code_item.input_policy, InputPolicy):
-                        # TODO: fix bug with dev InputPolicy
-                        # filtered_kwargs = code_item.input_policy.filter_kwargs(filtered_kwargs)
-                        filtered_kwargs = filtered_kwargs
-                    else:
-                        policy_object = get_policy_object(
-                            code_item.input_policy, code_item.input_policy_state
-                        )
-                        filtered_kwargs = policy_object.filter_kwargs(filtered_kwargs)
-                        code_item.input_policy_state = update_policy_state(
-                            policy_object
-                        )
-
                     result = action_service._user_code_execute(
                         context, code_item, filtered_kwargs
                     )
+                    print("Result is", result, file=sys.stderr)
                     if isinstance(result, str):
                         return SyftError(message=result)
                     if result.is_ok():
@@ -288,15 +277,17 @@ class UserCodeService(AbstractService):
                             code_item.output_policy_state.update_state()
                         else:
                             policy_object = get_policy_object(
-                                code_item.output_policy,
-                                code_item.output_policy_state,
+                                code_item.output_policy, code_item.output_policy_state
                             )
-
+                            print("Policy Object", policy_object, file=sys.stderr)
+                            print("Final Result before policy is", final_results, file=sys.stderr)
                             final_results = policy_object.apply_output(final_results)
                             code_item.output_policy_state = update_policy_state(
                                 policy_object
                             )
+                            # print(code_item.output_policy_state, )
 
+                        print("Final Result after policy is", final_results, file=sys.stderr)
                         state_result = self.update_code_state(
                             context=context, code_item=code_item
                         )
