@@ -855,12 +855,13 @@ def init_policy_state(context: TransformContext) -> TransformContext:
     else:
         context.output["input_policy_state"] = ""
 
-    if isinstance(context.output["output_policy"], SubmitUserPolicy):
-        context.output["output_policy_state"] = ""
-    else:
+    if isinstance(context.output["output_policy"], OutputPolicy):
         context.output["output_policy_state"] = context.output[
             "output_policy"
         ].state_type()
+    else:
+        context.output["output_policy_state"] = ""
+
 
     return context
 
