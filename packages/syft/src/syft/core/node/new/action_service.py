@@ -33,6 +33,7 @@ from .twin_object import TwinObject
 from .uid import UID
 from .user_code import UserCode
 from .user_code import execute_byte_code
+from .user_roles import GUEST_ROLE_LEVEL
 
 
 @serializable(recursive_serde=True)
@@ -57,7 +58,7 @@ class ActionService(AbstractService):
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
-    @service_method(path="action.set", name="set")
+    @service_method(path="action.set", name="set", roles=GUEST_ROLE_LEVEL)
     def set(
         self,
         context: AuthedServiceContext,
@@ -94,7 +95,7 @@ class ActionService(AbstractService):
             return Ok(SyftSuccess(message=f"{type(action_object)} saved"))
         return result.err()
 
-    @service_method(path="action.get", name="get")
+    @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
     def get(
         self,
         context: AuthedServiceContext,
@@ -123,7 +124,9 @@ class ActionService(AbstractService):
             return Ok(obj)
         return Err(result.err())
 
-    @service_method(path="action.get_pointer", name="get_pointer")
+    @service_method(
+        path="action.get_pointer", name="get_pointer", roles=GUEST_ROLE_LEVEL
+    )
     def get_pointer(
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[ActionObjectPointer, str]:
@@ -203,7 +206,7 @@ class ActionService(AbstractService):
 
         return Ok(result_action_object)
 
-    @service_method(path="action.execute", name="execute")
+    @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
@@ -261,7 +264,7 @@ class ActionService(AbstractService):
 
         return Ok(result_action_object)
 
-    @service_method(path="action.exists", name="exists")
+    @service_method(path="action.exists", name="exists", roles=GUEST_ROLE_LEVEL)
     def exists(
         self, context: AuthedServiceContext, obj_id: UID
     ) -> Result[SyftSuccess, SyftError]:

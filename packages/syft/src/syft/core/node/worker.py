@@ -63,6 +63,7 @@ from .new.serializable import serializable
 from .new.serialize import _serialize
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.service import UserServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
 from .new.syft_object import HIGHEST_SYFT_OBJECT_VERSION
@@ -70,10 +71,10 @@ from .new.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from .new.syft_object import SyftObject
 from .new.test_service import TestService
 from .new.uid import UID
-from .new.user import ServiceRole
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
+from .new.user_roles import ServiceRole
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
@@ -434,6 +435,12 @@ class Worker(NewNode):
 
         return SyftError(message=(f"Node has no route to {node_uid}"))
 
+    def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
+        role = self.get_service("userservice").get_role_for_credentials(
+            credentials=credentials
+        )
+        return role
+
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SignedSyftAPICall, Err]:
@@ -466,16 +473,26 @@ class Worker(NewNode):
 
         result = None
         if self.is_subprocess or self.processes == 0:
-            credentials = api_call.credentials
+            credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
-            context = AuthedServiceContext(node=self, credentials=credentials)
+            role = self.get_role_for_credentials(credentials=credentials)
+            context = AuthedServiceContext(
+                node=self, credentials=credentials, role=role
+            )
 
-            # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
-            if api_call.path not in self.service_config:
-                return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+            user_config_registry = UserServiceConfigRegistry.from_role(role)
 
-            _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
+            if api_call.path not in user_config_registry:
+                if ServiceConfigRegistry.path_exists(api_call.path):
+                    return SyftError(
+                        message=f"As a `{role}`,"
+                        "you have has no access to: {api_call.path}"
+                    )  # type: ignore
+                else:
+                    return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+
+            _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
             try:
                 result = method(context, *api_call.args, **api_call.kwargs)
@@ -514,8 +531,8 @@ class Worker(NewNode):
                 result = item
         return result
 
-    def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node=self)
+    def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
+        return SyftAPI.for_user(node=self, user_verify_key=for_user)
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext
