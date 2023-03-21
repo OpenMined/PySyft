@@ -256,11 +256,15 @@ def generate_remote_function(
 @serializable(recursive_serde=True)
 class APIModule:
     _modules: List[APIModule]
+    path: str
 
-    def __init__(self) -> None:
+    def __init__(self, path: str) -> None:
         self._modules = []
+        self.path = path
 
-    def _add_submodule(self, attr_name, module_or_func):
+    def _add_submodule(
+        self, attr_name: str, module_or_func: Union[Callable, APIModule]
+    ):
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
@@ -269,7 +273,7 @@ class APIModule:
             return object.__getattribute__(self, name)
         except AttributeError:
             raise SyftAttributeError(
-                f"'APIModule' object has no attribute '{name}', "
+                f"'APIModule' api{self.path} object has no submodule or method '{name}', "
                 "you may not have permission to access the module you are trying to access"
             )
 
@@ -301,6 +305,7 @@ class SyftAPI(SyftObject):
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     __attr_state__ = ["endpoints", "node_uid", "node_name"]
+    refresh_api_callback: Optional[Callable] = None
 
     # def __post_init__(self) -> None:
     #     pass
@@ -367,10 +372,25 @@ class SyftAPI(SyftObject):
 
         if isinstance(result, OkErr):
             if result.is_ok():
-                return result.ok()
+                res = result.ok()
+                # we update the api when we create objects that change it
+                self.update_api(res)
+                return res
             else:
                 return result.err()
         return result
+
+    def update_api(self, api_call_result):
+        # TODO: hacky stuff with typing and imports to prevent circular imports
+        # relative
+        from .request import Request
+        from .request import UserCodeStatusChange
+
+        if isinstance(api_call_result, Request) and any(
+            [isinstance(x, UserCodeStatusChange) for x in api_call_result.changes]
+        ):
+            if self.refresh_api_callback is not None:
+                self.refresh_api_callback()
 
     @staticmethod
     def _add_route(
@@ -385,12 +405,13 @@ class SyftAPI(SyftObject):
         while _modules:
             module = _modules.pop(0)
             if not hasattr(_self, module):
-                _self._add_submodule(module, APIModule())
+                submodule_path = f"{_self.path}.{module}"
+                _self._add_submodule(module, APIModule(path=submodule_path))
             _self = getattr(_self, module)
         _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
-        api_module = APIModule()
+        api_module = APIModule(path="")
         for k, v in self.endpoints.items():
             signature = v.signature
             if not v.has_self:
