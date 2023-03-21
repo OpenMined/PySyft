@@ -3,6 +3,7 @@ import datetime
 from pathlib import Path
 import random
 import string
+import sys
 import tempfile
 from threading import Thread
 import time
@@ -62,6 +63,7 @@ def locks_redis_config(redis_server_mock):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_sanity(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -74,6 +76,7 @@ def test_sanity(config: LockingConfig):
         pytest.lazy_fixture("locks_nop_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_nop(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -96,6 +99,7 @@ def test_acquire_nop(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -122,6 +126,7 @@ def test_acquire_release(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_release_with(config: LockingConfig):
     was_locked = True
     with SyftLock(config) as lock:
@@ -137,6 +142,7 @@ def test_acquire_release_with(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_expire(config: LockingConfig):
     config.expire = 1  # second
     lock = SyftLock(config)
@@ -164,6 +170,7 @@ def test_acquire_expire(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     config.timeout = 1
     config.expire = 5
@@ -186,6 +193,7 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -210,6 +218,7 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -234,6 +243,7 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -259,6 +269,7 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_double_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -275,6 +286,7 @@ def test_acquire_double_release(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_same_name_diff_namespace(config: LockingConfig):
     config.namespace = "ns1"
     lock1 = SyftLock(config)
@@ -295,6 +307,7 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_parallel_multithreading(config: LockingConfig) -> None:
     thread_cnt = 3
     repeats = 100
@@ -339,6 +352,7 @@ def test_parallel_multithreading(config: LockingConfig) -> None:
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_parallel_joblib(
     config: LockingConfig,
 ) -> None:
