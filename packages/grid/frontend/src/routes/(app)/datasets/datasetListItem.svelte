@@ -2,9 +2,11 @@
   import Fa from 'svelte-fa';
   import { createEventDispatcher } from 'svelte';
   import { faCircle, faTableList, faWaveSquare } from '@fortawesome/free-solid-svg-icons';
+  import { DescriptionList } from 'flowbite-svelte';
 
   export let name;
   export let author;
+  export let description;
   export let lastUpdated;
   export let assets;
   export let requests;
@@ -17,6 +19,7 @@
     dispatch('hide', {
       openName: name,
       openAuthor: author,
+      openDescription: description,
       openLastUpdated: lastUpdated,
       openAssets: assets,
       openRequests: requests,

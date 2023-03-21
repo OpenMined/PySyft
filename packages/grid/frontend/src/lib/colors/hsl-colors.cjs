@@ -5,14 +5,14 @@
  * @param {number} baseLightness
  */
 function buildColor(colorName, hue, saturation, baseLightness) {
-  const MIN_L = 3;
-  const MAX_L = 95;
+  const MIN_L = 0;
+  const MAX_L = 100;
 
   const baseColorLightness = baseLightness || 50;
 
-  if (baseLightness > 50 || baseLightness < 40) {
-    throw new Error(`baseLightness must be between 40 and 50`);
-  }
+  // if (baseLightness > 50 || baseLightness < 40) {
+  //   throw new Error(`baseLightness must be between 40 and 50`);
+  // }
 
   const maxColorLightness = Math.max(baseColorLightness - 40, MIN_L);
   const minColorLightness = Math.min(baseColorLightness + 50, MAX_L);
@@ -46,5 +46,5 @@ module.exports = {
   ...buildColor('violet', 280, 64, 43),
   ...buildColor('green', 120, 54, 43),
   ...buildColor('black', 251, 16, 43),
-  ...buildColor('white', 0, 0, 50)
+  ...buildColor('white', 0, 0, 0)
 };
