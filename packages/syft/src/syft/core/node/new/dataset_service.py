@@ -54,7 +54,7 @@ class DatasetService(AbstractService):
             return results
         return SyftError(message=result.err())
 
-    @service_method(path="dataset.search", name="search")
+    @service_method(path="dataset.search", name="search", roles=GUEST_ROLE_LEVEL)
     def search(
         self, context: AuthedServiceContext, name: str
     ) -> Union[List[Dataset], SyftError]:

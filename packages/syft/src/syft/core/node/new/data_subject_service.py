@@ -24,6 +24,7 @@ from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .user_roles import GUEST_ROLE_LEVEL
 
 
 @instrument
@@ -82,7 +83,7 @@ class DataSubjectService(AbstractService):
             message=f"{len(member_relationships)+1} Data Subjects Registered"
         )
 
-    @service_method(path="data_subject.get_all", name="get_all")
+    @service_method(path="data_subject.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[List[DataSubject], SyftError]:
@@ -115,7 +116,9 @@ class DataSubjectService(AbstractService):
 
         return members
 
-    @service_method(path="data_subject.get_by_name", name="get_by_name")
+    @service_method(
+        path="data_subject.get_by_name", name="get_by_name", roles=GUEST_ROLE_LEVEL
+    )
     def get_by_name(
         self, context: AuthedServiceContext, name: str
     ) -> Union[SyftSuccess, SyftError]:
