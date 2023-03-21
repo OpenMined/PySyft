@@ -48,7 +48,10 @@ def sqlite_workspace() -> Generator:
     yield sqlite_workspace_folder, sqlite_db_name
 
     if db_path.exists():
-        db_path.unlink()
+        try:
+            db_path.unlink()
+        except BaseException as e:
+            print("failed to cleanup sqlite db", e)
 
 
 def sqlite_store_partition_fn(sqlite_workspace: Tuple[Path, str]):
