@@ -70,4 +70,5 @@ __all__ = [
 
 pytest_plugins = [
     "tests.syft.users.fixtures",
+    "tests.syft.metadata.fixtures",
 ]
