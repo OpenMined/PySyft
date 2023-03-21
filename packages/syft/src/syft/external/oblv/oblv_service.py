@@ -9,6 +9,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 from typing import cast
 
 # third party
@@ -75,7 +76,7 @@ def connect_to_enclave(
     oblv_client: OblvClient,
     deployment_id: str,
     connection_port: int,
-) -> subprocess.Popen:
+) -> Optional[subprocess.Popen]:
     global OBLV_PROCESS_CACHE
     if deployment_id in OBLV_PROCESS_CACHE:
         process = OBLV_PROCESS_CACHE[deployment_id][0]
@@ -158,6 +159,7 @@ def connect_to_enclave(
             break
 
     OBLV_PROCESS_CACHE[deployment_id] = [process, connection_port]
+    return None
 
 
 def make_request_to_enclave(
@@ -171,7 +173,7 @@ def make_request_to_enclave(
     files: Optional[Dict] = None,
     data: Optional[Dict] = None,
     json: Optional[Dict] = None,
-):
+) -> Any:
     if not LOCAL_MODE:
         _ = connect_to_enclave(
             oblv_keys_stash=oblv_keys_stash,
@@ -201,7 +203,7 @@ def make_request_to_enclave(
         )
 
 
-def create_keys_from_db(oblv_keys_stash: OblvKeysStash):
+def create_keys_from_db(oblv_keys_stash: OblvKeysStash) -> None:
     file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
     # Temporary new key name for the new service
     file_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
@@ -220,7 +222,7 @@ def create_keys_from_db(oblv_keys_stash: OblvKeysStash):
     f_public.close()
 
 
-def generate_oblv_key() -> Tuple[bytes]:
+def generate_oblv_key() -> Tuple[bytes, bytes]:
     file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
     # Temporary new key name for the new service
     file_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
@@ -312,7 +314,7 @@ class OblvService(AbstractService):
         self,
         enclave_metadata: OblvMetadata,
         signing_key: SyftSigningKey,
-    ):
+    ) -> SyftAPI:
         deployment_id = enclave_metadata.deployment_id
         oblv_client = enclave_metadata.oblv_client
         if not LOCAL_MODE:
@@ -367,6 +369,10 @@ class OblvService(AbstractService):
         inputs: Dict,
         node_name: str,
     ) -> Result[Ok, Err]:
+        if not context.node or not context.node.signing_key:
+            return Err(f"{type(context)} has no node")
+        signing_key = context.node.signing_key
+
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
         user_code = user_code_service.get_by_uid(context, uid=user_code_id)
@@ -386,20 +392,20 @@ class OblvService(AbstractService):
             dict_object.base_dict[str(context.credentials)] = inputs
             action_service.store.set(
                 uid=user_code_id,
-                credentials=context.node.signing_key.verify_key,
+                credentials=signing_key.verify_key,
                 syft_object=dict_object,
             )
 
         else:
             res = action_service.store.get(
-                uid=user_code_id, credentials=context.node.signing_key.verify_key
+                uid=user_code_id, credentials=signing_key.verify_key
             )
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object.base_dict[str(context.credentials)] = inputs
                 action_service.store.set(
                     uid=user_code_id,
-                    credentials=context.node.signing_key.verify_key,
+                    credentials=signing_key.verify_key,
                     syft_object=dict_object,
                 )
             else:
@@ -411,7 +417,10 @@ class OblvService(AbstractService):
 # Checks if the given user code would  propogate value to enclave on acceptance
 def check_enclave_transfer(
     user_code: UserCode, value: UserCodeStatus, context: ChangeContext
-):
+) -> Union[Any, Ok]:
+    if not context.node or not context.node.signing_key:
+        return Err(f"{type(context)} has no node")
+    signing_key = context.node.signing_key
     if (
         isinstance(user_code.enclave_metadata, OblvMetadata)
         and value == UserCodeStatus.EXECUTE
@@ -420,17 +429,17 @@ def check_enclave_transfer(
 
         api = method(
             user_code.enclave_metadata,
-            context.node.signing_key,
+            signing_key,
         )
         # send data of the current node to enclave
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name, verify_key=signing_key.verify_key
         )
         inputs = user_code.input_policy.inputs[node_view]
         action_service = context.node.get_service("actionservice")
         for var_name, uid in inputs.items():
             action_object = action_service.store.get(
-                uid=uid, credentials=context.node.signing_key.verify_key
+                uid=uid, credentials=signing_key.verify_key
             )
             if action_object.is_err():
                 return action_object
