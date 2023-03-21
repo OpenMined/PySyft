@@ -49,7 +49,7 @@ class NoLockingConfig(LockingConfig):
 class FileLockingConfig(LockingConfig):
     """File locking policy"""
 
-    client_path: Path = Path("/tmp/syft")
+    client_path: Optional[Path] = None
 
 
 class RedisClientConfig(BaseModel):
