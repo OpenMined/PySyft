@@ -29,11 +29,12 @@ from .credentials import SyftVerifyKey
 from .deserialize import _deserialize
 from .node import NewNode
 from .recursive import index_syft_by_module_name
+from .response import SyftAttributeError
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
 from .serialize import _serialize
-from .service import ServiceConfigRegistry
+from .service import UserServiceConfigRegistry
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
@@ -255,13 +256,26 @@ def generate_remote_function(
 @serializable(recursive_serde=True)
 class APIModule:
     _modules: List[APIModule]
+    path: str
 
-    def __init__(self) -> None:
+    def __init__(self, path: str) -> None:
         self._modules = []
+        self.path = path
 
-    def _add_submodule(self, attr_name, module_or_func):
+    def _add_submodule(
+        self, attr_name: str, module_or_func: Union[Callable, APIModule]
+    ):
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
+
+    def __getattribute__(self, name: str):
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            raise SyftAttributeError(
+                f"'APIModule' api{self.path} object has no submodule or method '{name}', "
+                "you may not have permission to access the module you are trying to access"
+            )
 
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int) and hasattr(self, "get_all"):
@@ -291,21 +305,29 @@ class SyftAPI(SyftObject):
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     __attr_state__ = ["endpoints", "node_uid", "node_name"]
+    refresh_api_callback: Optional[Callable] = None
 
     # def __post_init__(self) -> None:
     #     pass
 
     @staticmethod
-    def for_user(node: NewNode) -> SyftAPI:
-        # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
+    def for_user(
+        node: NewNode, user_verify_key: Optional[SyftVerifyKey] = None
+    ) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
         from .user_code_service import UserCodeService
 
-        _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
+        # find user role by verify_key
+        # TODO: we should probably not allow empty verify keys but instead make user always register
+        role = node.get_role_for_credentials(user_verify_key)
+        _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
         endpoints = {}
 
-        for path, service_config in _registered_service_configs.items():
+        for (
+            path,
+            service_config,
+        ) in _user_service_config_registry.get_registered_configs().items():
             endpoint = APIEndpoint(
                 path=path,
                 name=service_config.public_name,
@@ -350,10 +372,25 @@ class SyftAPI(SyftObject):
 
         if isinstance(result, OkErr):
             if result.is_ok():
-                return result.ok()
+                res = result.ok()
+                # we update the api when we create objects that change it
+                self.update_api(res)
+                return res
             else:
                 return result.err()
         return result
+
+    def update_api(self, api_call_result):
+        # TODO: hacky stuff with typing and imports to prevent circular imports
+        # relative
+        from .request import Request
+        from .request import UserCodeStatusChange
+
+        if isinstance(api_call_result, Request) and any(
+            [isinstance(x, UserCodeStatusChange) for x in api_call_result.changes]
+        ):
+            if self.refresh_api_callback is not None:
+                self.refresh_api_callback()
 
     @staticmethod
     def _add_route(
@@ -368,12 +405,13 @@ class SyftAPI(SyftObject):
         while _modules:
             module = _modules.pop(0)
             if not hasattr(_self, module):
-                _self._add_submodule(module, APIModule())
+                submodule_path = f"{_self.path}.{module}"
+                _self._add_submodule(module, APIModule(path=submodule_path))
             _self = getattr(_self, module)
         _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
-        api_module = APIModule()
+        api_module = APIModule(path="")
         for k, v in self.endpoints.items():
             signature = v.signature
             if not v.has_self:
@@ -486,8 +524,8 @@ try:
         Inspector._getdef_bak = Inspector._getdef
         Inspector._getdef = types.MethodType(monkey_patch_getdef, Inspector)
 except Exception:
-    print("Failed to monkeypatch IPython Signature Override")
-    pass
+    # print("Failed to monkeypatch IPython Signature Override")
+    pass  # nosec
 
 
 @serializable(recursive_serde=True)

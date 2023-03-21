@@ -5,7 +5,6 @@ from typing import Union
 
 # third party
 from faker import Faker
-import pytest
 from pytest import MonkeyPatch
 from result import Err
 from result import Ok
@@ -15,38 +14,16 @@ from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.context import NodeServiceContext
 from syft.core.node.new.context import UnauthedServiceContext
 from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.response import SyftError
 from syft.core.node.new.response import SyftSuccess
 from syft.core.node.new.uid import UID
-from syft.core.node.new.user import ServiceRole
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user import UserView
+from syft.core.node.new.user_roles import ServiceRole
 from syft.core.node.new.user_service import UserService
-from syft.core.node.worker import Worker
-
-
-@pytest.fixture
-def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
-    return AuthedServiceContext(credentials=admin_user.verify_key, node=worker)
-
-
-@pytest.fixture
-def node_context(worker: Worker) -> NodeServiceContext:
-    return NodeServiceContext(node=worker)
-
-
-@pytest.fixture
-def unauthed_context(
-    guest_create_user: UserCreate, worker: Worker
-) -> UnauthedServiceContext:
-    login_credentials = UserLoginCredentials(
-        email=guest_create_user.email, password=guest_create_user.password
-    )
-    return UnauthedServiceContext(login_credentials=login_credentials, node=worker)
 
 
 def test_userservice_create_when_user_exists(

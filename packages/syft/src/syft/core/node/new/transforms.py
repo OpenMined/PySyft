@@ -47,7 +47,7 @@ class TransformContext(Context):
         if self.credentials:
             return AuthedServiceContext(node=self.node, credentials=self.credentials)
         if self.node:
-            return NodeServiceContext(self.node)
+            return NodeServiceContext(node=self.node)
         return Context()
 
 
@@ -94,7 +94,7 @@ def keep(list_keys: List[str]) -> Callable:
     def drop_keys(context: TransformContext) -> TransformContext:
         for key in list_keys:
             if key not in context.output:
-                context.output[key] = getattr(context.obj, key)
+                context.output[key] = getattr(context.obj, key, None)
 
         keys = list(context.output.keys())
 

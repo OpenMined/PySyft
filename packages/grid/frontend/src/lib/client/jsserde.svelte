@@ -94,6 +94,28 @@
         null,
         {}
       ];
+      this.type_bank['builtins.type'] = [
+        true,
+        function (text) {
+          return new TextEncoder().encode(text);
+        },
+        function (buffer) {
+          return new TextDecoder().decode(buffer);
+        },
+        null,
+        {}
+      ];
+      this.type_bank['typing._SpecialForm'] = [
+        true,
+        function (text) {
+          return new TextEncoder().encode(text);
+        },
+        function (buffer) {
+          return new TextDecoder().decode(buffer);
+        },
+        null,
+        {}
+      ];
       this.type_bank['builtins.bytes'] = [
         true,
         function (bytes) {
@@ -213,6 +235,17 @@
         null,
         {}
       ];
+      this.type_bank['pydantic.main.ModelMetaclass'] = [
+        true,
+        function (text) {
+          return new TextEncoder().encode(text);
+        },
+        function (buffer) {
+          return new TextDecoder().decode(buffer);
+        },
+        null,
+        {}
+      ];
       this.type_bank['builtins.dict'] = [
         true,
         (dict) => {
@@ -261,14 +294,55 @@
 
             // Deserialize the key using the deserialize method and convert it to an ArrayBuffer.
             const deserializedKey = this.deserialize(key.toArrayBuffer());
-
+            let keyObj = '';
+            if (Object.prototype.toString.call(deserializedKey) === '[object Object]') {
+              keyObj = JSON.stringify(deserializedKey);
+            } else {
+              keyObj = deserializedKey;
+            }
             // Store the processed object as a value corresponding to the deserialized key in the kv_iter object.
-            kv_iter[deserializedKey] = obj;
+            kv_iter[keyObj] = obj;
           }
           return kv_iter;
         },
         null,
         {}
+      ];
+      this.type_bank['inspect.Signature'] = [
+        true,
+        this.type_bank['builtins.dict'][1],
+        (buffer) => {
+          const message = new capnp.Message(buffer, false);
+          const rs = message.getRoot(RecursiveSerde);
+
+          // If the data is a blob, deserialize the blob and return it
+          const blob = rs.getNonrecursiveBlob();
+          if (blob.getLength() === 1) {
+            return this.type_bank['builtins.dict'][2](blob.get(0).toArrayBuffer());
+          } else {
+            const totalChunk = this.processChunks(blob);
+            return this.type_bank['builtins.dict'][2](totalChunk.buffer);
+          }
+        },
+        null,
+        {}
+      ];
+      this.type_bank['typing._GenericAlias'] = [
+        true,
+        this.type_bank['builtins.dict'][1],
+        (buffer) => {
+          const message = new capnp.Message(buffer, false);
+          const rs = message.getRoot(RecursiveSerde);
+
+          // If the data is a blob, deserialize the blob and return it
+          const blob = rs.getNonrecursiveBlob();
+          if (blob.getLength() === 1) {
+            return this.type_bank['builtins.dict'][2](blob.get(0).toArrayBuffer());
+          } else {
+            const totalChunk = this.processChunks(blob);
+            return this.type_bank['builtins.dict'][2](totalChunk.buffer);
+          }
+        }
       ];
     }
 
@@ -511,7 +585,6 @@
       const size = fieldsName.getLength();
       const fqn = rs.getFullyQualifiedName();
       const objSerdeProps = this.type_bank[fqn];
-
       if (size < 1) {
         // If the data is a blob, deserialize the blob and return it
         const blob = rs.getNonrecursiveBlob();

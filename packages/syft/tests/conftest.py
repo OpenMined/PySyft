@@ -17,6 +17,16 @@ def worker(faker):
 
 
 @pytest.fixture(autouse=True)
+def root_domain_client(worker):
+    return worker.root_client
+
+
+@pytest.fixture(autouse=True)
+def guest_domain_client(root_domain_client):
+    return root_domain_client.guest()
+
+
+@pytest.fixture(autouse=True)
 def document_store(worker):
     yield worker.document_store
     worker.document_store.reset()

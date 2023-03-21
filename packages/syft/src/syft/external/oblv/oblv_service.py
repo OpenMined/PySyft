@@ -36,6 +36,7 @@ from ...core.node.new.syft_object import SyftObject
 from ...core.node.new.uid import UID
 from ...core.node.new.user_code import UserCode
 from ...core.node.new.user_code import UserCodeStatus
+from ...core.node.new.user_roles import GUEST_ROLE_LEVEL
 from ...core.node.new.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
@@ -260,7 +261,7 @@ class OblvService(AbstractService):
         self.store = store
         self.oblv_keys_stash = OblvKeysStash(store=store)
 
-    @service_method(path="oblv.create_key", name="create_key")
+    @service_method(path="oblv.create_key", name="create_key", roles=GUEST_ROLE_LEVEL)
     def create_key(
         self,
         context: AuthedServiceContext,
@@ -282,7 +283,9 @@ class OblvService(AbstractService):
             )
         return res.err()
 
-    @service_method(path="oblv.get_public_key", name="get_public_key")
+    @service_method(
+        path="oblv.get_public_key", name="get_public_key", roles=GUEST_ROLE_LEVEL
+    )
     def get_public_key(
         self,
         context: AuthedServiceContext,
@@ -335,6 +338,7 @@ class OblvService(AbstractService):
                     "127.0.0.1", "host.docker.internal"
                 )
 
+        params = {"verify_key": str(signing_key.verify_key)}
         req = make_request_to_enclave(
             connection_string=connection_string + Routes.ROUTE_API.value,
             deployment_id=deployment_id,
@@ -342,6 +346,7 @@ class OblvService(AbstractService):
             oblv_keys_stash=self.oblv_keys_stash,
             request_method=requests.get,
             connection_port=port,
+            params=params,
         )
 
         obj = deserialize(req.content, from_bytes=True)
@@ -353,6 +358,7 @@ class OblvService(AbstractService):
     @service_method(
         path="oblv.send_user_code_inputs_to_enclave",
         name="send_user_code_inputs_to_enclave",
+        roles=GUEST_ROLE_LEVEL,
     )
     def send_user_code_inputs_to_enclave(
         self,
