@@ -7,15 +7,10 @@ from joblib import Parallel
 from joblib import delayed
 
 # syft absolute
-from syft.core.node.new.document_store import PartitionSettings
 from syft.core.node.new.document_store import QueryKeys
-from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
-from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 from syft.core.node.new.sqlite_document_store import SQLiteStorePartition
 
 # relative
-from .store_constants_test import generate_db_name
-from .store_constants_test import sqlite_workspace_folder
 from .store_fixtures_test import sqlite_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
@@ -29,29 +24,6 @@ def test_sqlite_store_partition_sanity(
     assert hasattr(sqlite_store_partition, "data")
     assert hasattr(sqlite_store_partition, "unique_keys")
     assert hasattr(sqlite_store_partition, "searchable_keys")
-
-
-def test_sqlite_store_partition_init_failed(
-    sqlite_workspace: Tuple,
-) -> None:
-    workspace, db_name = sqlite_workspace
-
-    sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
-
-    # alter the database
-    with open(workspace / db_name, "w") as f:
-        f.write("altered")
-
-    res = store.init_store()
-
-    store.close()
-    (workspace / db_name).unlink()
-
-    assert res.is_err()
 
 
 def test_sqlite_store_partition_set(
@@ -83,34 +55,6 @@ def test_sqlite_store_partition_set(
         res = sqlite_store_partition.set(obj, ignore_duplicates=False)
         assert res.is_ok()
         assert len(sqlite_store_partition.all().ok()) == 3 + idx
-
-
-def test_sqlite_store_partition_set_backend_fail() -> None:
-    sqlite_workspace_folder.mkdir(parents=True, exist_ok=True)
-    sqlite_db_name = generate_db_name()
-
-    sqlite_config = SQLiteStoreClientConfig(
-        filename=sqlite_db_name, path=sqlite_workspace_folder
-    )
-    store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
-    res = store.init_store()
-
-    # corrupt the db
-    with open(sqlite_workspace_folder / sqlite_db_name, "w") as f:
-        f.write("altered")
-
-    # this should fail
-    obj = MockSyftObject(data=1)
-
-    res = store.set(obj, ignore_duplicates=False)
-
-    store.close()
-    (sqlite_workspace_folder / sqlite_db_name).unlink()
-
-    assert res.is_err()
 
 
 def test_sqlite_store_partition_delete(

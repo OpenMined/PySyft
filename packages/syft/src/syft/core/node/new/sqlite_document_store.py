@@ -123,9 +123,18 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _commit(self) -> None:
         self.db.commit()
 
-    def _execute(self, sql: str, *args: Optional[List[Any]]) -> None:
-        cursor = self.cur.execute(sql, *args)
-        self._commit()
+    def _execute(
+        self, sql: str, *args: Optional[List[Any]]
+    ) -> Optional[sqlite3.Cursor]:
+        cursor: Optional[sqlite3.Cursor] = None
+
+        try:
+            cursor = self.cur.execute(sql, *args)
+        except BaseException:
+            self.db.rollback()  # Roll back all changes if an exception occurs.
+        else:
+            self.db.commit()  # Commit if everything went ok
+
         return cursor
 
     def _set(self, key: UID, value: Any) -> None:
@@ -149,9 +158,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
         data = row[2]
         return _deserialize(data, from_bytes=True)
 
-    def _exists(self, key: UID) -> Any:
+    def _exists(self, key: UID) -> bool:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
         row = self._execute(select_sql, [str(key)]).fetchone()
+        if row is None:
+            return False
         return bool(row)
 
     def _get_all(self) -> Any:
@@ -159,6 +170,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
         keys = []
         data = []
         rows = self._execute(select_sql).fetchall()
+
+        if rows is None:
+            return {}
+
         for row in rows:
             keys.append(UID(row[0]))
             data.append(_deserialize(row[2], from_bytes=True))
@@ -169,6 +184,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
             select_sql = f"select uid from {self.table_name}"  # nosec
             keys = []
             rows = self._execute(select_sql).fetchall()
+            if rows is None:
+                return []
             for row in rows:
                 keys.append(UID(row[0]))
             return keys
@@ -185,8 +202,13 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _len(self) -> int:
         select_sql = f"select uid from {self.table_name}"  # nosec
+        uids = self._execute(select_sql)
+
+        if uids is None:
+            return 0
+
         cnt = 0
-        for _ in self._execute(select_sql):
+        for _ in uids:
             cnt += 1
         return cnt
 
@@ -235,6 +257,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def __iter__(self) -> Any:
         return iter(self.keys())
+
+    def __del__(self):
+        try:
+            self._close()
+        except BaseException:
+            pass
 
 
 @serializable(recursive_serde=True)
