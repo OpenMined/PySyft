@@ -9,7 +9,6 @@
   import Fa from 'svelte-fa';
   import { getClient } from '$lib/store';
   import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
-  import { data } from './mockDatasetData.ts';
   import { onMount } from 'svelte';
 
   let datasets = [];
@@ -107,35 +106,61 @@
           </div>
         </div>
 
-        <Badge variant="gray">Total: {dataShow.length}</Badge>
-      </div>
-    </section>
-    <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14">
-      {#if visible}
-        <article class="w-full">
-          {#each dataShow as d}
-            <DatasetListItem
-              on:hide={showOpenDataset}
-              name={d.name}
-              author={d.author}
-              lastUpdated={d.lastUpdated}
-              assets={d.assets}
-              requests={d.requests}
-              fileSize={d.fileSize}
+        <!-- Body content -->
+        <section class="md:flex justify-between md:gap-x-[62px] lg:gap-x-[124px] mt-14">
+          <Search
+            bind:searchValue
+            placeholder="Search by name"
+            debounce={800}
+            autofocus
+            hideLabel
+            on:submit={(e) => e.preventDefault()}
+          />
+
+          <div class="mr-6">
+            <div class="dropdown pr-2">
+              <Button variant="white" action={() => (sortMenuOpen = !sortMenuOpen)}
+                >Sort By<Fa class="pl-2" icon={faChevronDown} size="xs" /></Button
+              >
+
+              <div id="myDropdown" class:show={sortMenuOpen} class="dropdown-content">
+                {#each menuItems as item}
+                  <Link link={item} />
+                {/each}
+              </div>
+            </div>
+
+            <Badge variant="gray">Total: {datasets.length}</Badge>
+          </div>
+        </section>
+        <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14">
+          {#if visible}
+            <article class="w-full">
+              {#each datasets as d}
+                <DatasetListItem
+                  on:hide={showOpenDataset}
+                  name={d.name}
+                  author={d.author}
+                  lastUpdated={d.updated_at}
+                  assets={d.asset_list.length}
+                  requests={d.requests}
+                  fileSize={d.fileSize}
+                />
+              {/each}
+            </article>
+          {:else}
+            <DatasetDetail
+              on:closeOpenCard={showHome}
+              name={openDatasetName}
+              author={openDatasetAuthor}
+              lastUpdated={openDatasetLastUpdated}
+              assets={openDatasetAssets}
+              requests={openDatasetRequests}
+              fileSize={openDatasetFileSize}
             />
-          {/each}
-        </article>
-      {:else}
-        <DatasetDetail
-          on:closeOpenCard={showHome}
-          name={openDatasetName}
-          author={openDatasetAuthor}
-          lastUpdated={openDatasetLastUpdated}
-          assets={openDatasetAssets}
-          requests={openDatasetRequests}
-          fileSize={openDatasetFileSize}
-        />
-      {/if}
+          {/if}
+        </section>
+      </div>
     </section>
   </div>
 </main>
