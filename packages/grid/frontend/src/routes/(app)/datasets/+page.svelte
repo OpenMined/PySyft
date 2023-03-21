@@ -147,6 +147,7 @@
 
   .page-container {
     width: 85%;
+    padding-top: 30px;
     padding-left: 100px;
     padding-right: 100px;
     position: absolute;
