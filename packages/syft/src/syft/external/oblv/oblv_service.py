@@ -99,7 +99,7 @@ def connect_to_enclave(
     if depl.is_dev_env:
         process = subprocess.Popen(  # nosec
             [
-                "/usr/local/bin/oblv",
+                "oblv",
                 "connect",
                 "--private-key",
                 private_file_name,
@@ -125,7 +125,7 @@ def connect_to_enclave(
     else:
         process = subprocess.Popen(  # nosec
             [
-                "/usr/local/bin/oblv",
+                "oblv",
                 "connect",
                 "--private-key",
                 private_file_name,
@@ -204,10 +204,15 @@ def make_request_to_enclave(
 
 def create_keys_from_db(oblv_keys_stash: OblvKeysStash, oblv_key_name: str):
     oblv_key_path = os.path.expanduser(os.getenv("OBLV_KEY_PATH", "~/.oblv"))
+
     os.makedirs(oblv_key_path, exist_ok=True)
     # Temporary new key name for the new service
 
-    keys = oblv_keys_stash.get_all()[0]
+    keys = oblv_keys_stash.get_all()
+    if keys.is_ok():
+        keys = keys.ok()[0]
+    else:
+        return keys.err()
 
     f_private = open(oblv_key_path + "/" + oblv_key_name + "_private.der", "w+b")
     f_private.write(keys.private_key)
