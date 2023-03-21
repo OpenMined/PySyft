@@ -211,8 +211,8 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     ],
 )
 def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
-    config.timeout = 3
-    config.expire = 2
+    config.timeout = 2
+    config.expire = 1
     lock = SyftLock(config)
 
     lock.locked()
@@ -221,6 +221,31 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     assert acq_ok
 
     not_acq = lock.acquire(blocking=False)
+
+    lock.release()
+
+    assert not not_acq
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        pytest.lazy_fixture("locks_file_config"),
+        pytest.lazy_fixture("locks_redis_config"),
+    ],
+)
+def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
+    config.timeout = 2
+    config.expire = 1
+    config.retry_interval = 3
+    lock = SyftLock(config)
+
+    lock.locked()
+
+    acq_ok = lock.acquire(blocking=True)
+    assert acq_ok
+
+    not_acq = lock.acquire(blocking=True)
 
     lock.release()
 
@@ -250,16 +275,46 @@ def test_acquire_double_release(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+def test_acquire_same_name_diff_namespace(config: LockingConfig):
+    config.namespace = "ns1"
+    lock1 = SyftLock(config)
+    assert lock1.acquire(blocking=True)
+
+    config.namespace = "ns2"
+    lock2 = SyftLock(config)
+    assert lock2.acquire(blocking=True)
+
+    lock2.release()
+    lock1.release()
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        pytest.lazy_fixture("locks_file_config"),
+        pytest.lazy_fixture("locks_redis_config"),
+    ],
+)
 def test_parallel_multithreading(config: LockingConfig) -> None:
     thread_cnt = 3
     repeats = 100
-    cnt = 0
+
+    temp_dir = Path(tempfile.TemporaryDirectory().name)
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    temp_file = temp_dir / "dbg.txt"
+    if temp_file.exists():
+        temp_file.unlink()
+
+    with open(temp_file, "w") as f:
+        f.write("0")
 
     def _kv_cbk(tid: int) -> None:
-        nonlocal cnt
         for idx in range(repeats):
             with SyftLock(config):
-                cnt += 1
+                with open(temp_file, "r") as f:
+                    prev = int(f.read())
+                with open(temp_file, "w") as f:
+                    f.write(str(prev + 1))
 
     tids = []
     for tid in range(thread_cnt):
@@ -271,7 +326,10 @@ def test_parallel_multithreading(config: LockingConfig) -> None:
     for thread in tids:
         thread.join()
 
-    assert cnt == thread_cnt * repeats
+    with open(temp_file) as f:
+        stored = int(f.read())
+
+    assert stored == thread_cnt * repeats
 
 
 @pytest.mark.parametrize(

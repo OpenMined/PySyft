@@ -10,6 +10,9 @@ from sherlock.lock import BaseLock
 from sherlock.lock import FileLock
 from sherlock.lock import RedisLock
 
+# relative
+from ....logger import debug
+
 
 class LockingConfig(BaseModel):
     """
@@ -129,19 +132,18 @@ class SyftLock(BaseLock):
         """
 
         if not blocking:
-            print("eval nonblocking")
             return self._acquire()
 
         timeout = self.timeout
         start_time = time.time()
         elapsed = 0
         while timeout >= elapsed:
-            elapsed = time.time() - start_time
             if not self._acquire():
                 time.sleep(self.retry_interval)
+                elapsed = time.time() - start_time
             else:
                 return True
-        print(
+        debug(
             "Timeout elapsed after %s seconds "
             "while trying to acquiring "
             "lock." % self.timeout
