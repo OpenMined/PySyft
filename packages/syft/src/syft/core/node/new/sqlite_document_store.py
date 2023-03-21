@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
 import sqlite3
@@ -39,21 +38,6 @@ def _repr_debug_(value: Any) -> str:
 
 def thread_ident() -> int:
     return threading.current_thread().ident
-
-
-@contextmanager
-def transaction(conn):
-    # We must issue a "BEGIN" explicitly when running in auto-commit mode.
-    conn.execute("BEGIN")
-    raise
-    try:
-        # Yield control back to the caller.
-        yield
-    except:
-        conn.rollback()  # Roll back all changes if an exception occurs.
-        raise
-    else:
-        conn.commit()
 
 
 @serializable(recursive_serde=True)
