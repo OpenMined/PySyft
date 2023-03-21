@@ -1,6 +1,6 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
-  import Modal from '$lib/components/Modal.svelte';
+  import Modal from '$lib/components/NewModal.svelte';
   import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
   import Input from '$lib/components/Input.svelte';
   import DomainOnlineIndicator from '$lib/components/DomainOnlineIndicator.svelte';
@@ -26,7 +26,7 @@
     {#await client.metadata then metadata}
       <DomainMetadataPanel {metadata} />
       <form class="contents" on:submit|preventDefault={(e) => login(e.target, client)}>
-        <Modal maxWidth="max-w-[681px]">
+        <Modal>
           <div
             class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min"
             slot="header"

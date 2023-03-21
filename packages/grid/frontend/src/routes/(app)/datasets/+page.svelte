@@ -7,8 +7,24 @@
   import DatasetDetail from './datasetDetail.svelte';
   import Search from 'svelte-search';
   import Fa from 'svelte-fa';
+  import { getClient } from '$lib/store';
   import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
   import { data } from './mockDatasetData.ts';
+  import { onMount } from 'svelte';
+
+  let datasets = [];
+
+  onMount(async () => {
+    await getClient()
+      .then((client) => {
+        datasets = client.datasets();
+
+        console.log(`datasets: ${JSON.stringify(datasets, null, 1)}`);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  });
 
   let searchValue = '';
   let showModal = false;
@@ -40,9 +56,8 @@
 
   dataShow = originalData;
 
-  let menuOpen = false;
+  let sortMenuOpen = false;
   let inputValue = '';
-  $: console.log(inputValue);
 
   const menuItems = [
     'Newest',
@@ -55,7 +70,7 @@
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
-  <div class="page-container overflow-auto">
+  <div>
     <NewDatasetModal bind:showModal />
 
     <!-- Header -->
@@ -81,11 +96,11 @@
 
       <div class="mr-6">
         <div class="dropdown pr-2">
-          <Button variant="white" action={() => (menuOpen = !menuOpen)}
+          <Button variant="white" action={() => (sortMenuOpen = !sortMenuOpen)}
             >Sort By<Fa class="pl-2" icon={faChevronDown} size="xs" /></Button
           >
 
-          <div id="myDropdown" class:show={menuOpen} class="dropdown-content">
+          <div class:show={sortMenuOpen} class="dropdown-content">
             {#each menuItems as item}
               <Link link={item} />
             {/each}
@@ -144,14 +159,5 @@
 
   .show {
     @apply block;
-  }
-
-  .page-container {
-    width: 85%;
-    padding: 20px;
-    position: absolute;
-    height: 93%;
-    top: 7%;
-    left: 15%;
   }
 </style>

@@ -12,7 +12,8 @@
      */
     constructor() {
       return (async () => {
-        const url = `${window.location.protocol}//${window.location.host}`;
+        // const url = `${window.location.protocol}//${window.location.host}`;
+        const url = 'http://localhost:8082';
 
         this.serde = new JSSerde();
         // Set the URL and message URL properties.
@@ -97,7 +98,7 @@
      * Returns a promise that resolves to an array of datasets
      * @returns {Promise<Array<Object>>} A promise that resolves to an array of datasets
      */
-    get datasets() {
+    datasets() {
       return (async () => {
         return await this.send([], {}, 'dataset.get_all');
       })();
