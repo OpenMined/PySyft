@@ -16,13 +16,13 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
 from .document_store import BaseStash
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StorePartition
 from .response import SyftSuccess
+from .serializable import serializable
+from .syft_object import SyftObject
 
 
 @serializable(recursive_serde=True)
@@ -111,7 +111,7 @@ class KeyValueStorePartition(StorePartition):
                     f"pk_key: {pk_key} not in unique_keys: {self.unique_keys.keys()}"
                 )
             ck_col = self.unique_keys[pk_key]
-            if pk_value in ck_col and ck_col[pk_value] == store_query_key.value:
+            if pk_value in ck_col or ck_col.get(pk_value) == store_query_key.value:
                 matches.append(pk_key)
 
         if len(matches) == 0:
@@ -162,7 +162,6 @@ class KeyValueStorePartition(StorePartition):
             exists = store_query_key.value in self.data
             unique_query_keys = self.settings.unique_keys.with_obj(obj)
             searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
-
             ck_check = self.validate_partition_keys(
                 store_query_key=store_query_key, unique_query_keys=unique_query_keys
             )
@@ -181,6 +180,9 @@ class KeyValueStorePartition(StorePartition):
 
     def all(self) -> Result[List[BaseStash.object_type], str]:
         return Ok(list(self.data.values()))
+
+    def __len__(self) -> Result[List[BaseStash.object_type], str]:
+        return len(self.data)
 
     def find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
@@ -250,7 +252,7 @@ class KeyValueStorePartition(StorePartition):
             )
 
             # update the object with new data
-            for key, value in obj.to_dict().items():
+            for key, value in obj.to_dict(exclude_none=True).items():
                 setattr(_original_obj, key, value)
 
             # update data and keys

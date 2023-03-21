@@ -7,11 +7,11 @@ from typing import Optional
 from typing import Type
 
 # relative
-from ...common.serde.serializable import serializable
 from .document_store import DocumentStore
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
+from .serializable import serializable
 
 
 @serializable(recursive_serde=True)
@@ -32,7 +32,8 @@ class DictBackingStore(dict, KeyValueBackingStore):
 
 @serializable(recursive_serde=True)
 class DictStorePartition(KeyValueStorePartition):
-    pass
+    def prune(self):
+        self.init_store()
 
 
 # the base document store is already a dict but we can change it later
@@ -44,6 +45,10 @@ class DictDocumentStore(DocumentStore):
         if store_config is None:
             store_config = DictStoreConfig()
         super().__init__(store_config=store_config)
+
+    def reset(self):
+        for _, partition in self.partitions.items():
+            partition.prune()
 
 
 @serializable(recursive_serde=True)

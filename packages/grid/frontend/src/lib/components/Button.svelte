@@ -1,74 +1,71 @@
 <script lang="ts">
-  export let variant:
-    | 'solid-primary'
-    | 'solid-gray'
-    | 'outlined'
-    | 'outlined-primary'
-    | 'ghost'
-    | 'link'
-    | 'delete' = 'solid-primary';
-  export let size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
+  import type { HTMLButtonAttributes } from 'svelte/elements';
+
+  interface $$Props extends HTMLButtonAttributes {
+    disabled?: boolean;
+    variant: 'secondary' | 'delete' | 'black' | 'white';
+    position?: 'left' | 'right' | 'none';
+    action: Function;
+    icon: any;
+  }
+
+  export let variant = 'secondary';
   export let disabled = false;
-  export let option: 'right' | 'left' | 'margin-x-sm' | 'none' = 'none';
-  export let onClick: () => void = () => {
-    // commenting this to bypass es lint errors
-  };
+  export let position = 'none';
+  export let action: Function;
+  export let icon: any;
 </script>
 
 <button
-  class="{variant} {size} {option}"
-  on:click={(e) => {
-    e.preventDefault();
-    onClick();
-  }}
+  class="capitalize font-roboto flex flex-no-wrap justify-center items-center px-4 py-3 rounded-[20px] text-sm font-regular disabled:opacity-50 {variant} {position}"
   aria-disabled={disabled}
->
+  on:click={action()}
+  ><i class="fa fa-home" />
   <slot />
 </button>
 
 <style lang="postcss">
-  button {
-    @apply font-roboto flex gap-x-2 rounded justify-center items-center capitalize mx-auto;
+  .secondary {
+    @apply transition-all duration-500 bg-gradient-to-l from-primary-300 to-primary-300;
   }
 
-  [aria-disabled='true'] {
-    @apply opacity-40;
+  .secondary:hover {
+    @apply to-marigold-400;
   }
 
-  .solid-primary {
-    @apply bg-primary-500 text-white;
-  }
-
-  .solid-primary:hover {
-    @apply bg-gradient-to-r from-white/50 to-white/0;
-  }
-
-  .outlined-primary {
-    @apply text-primary-500 border-solid border-2 border-primary-500 rounded;
-  }
   .delete {
-    @apply bg-magenta-500 text-white;
+    @apply transition-all duration-500 bg-gradient-to-l from-magenta-300 to-magenta-300;
   }
 
   .delete:hover {
-    @apply bg-gradient-to-r from-white/50 to-white/0;
+    @apply to-marigold-400;
   }
 
-  .md {
-    @apply font-bold leading-normal px-3 py-2;
+  .black {
+    @apply transition-all duration-500 bg-gradient-to-l from-black-900 to-black-900 text-white-50 rounded-3xl h-8;
   }
 
-  .margin-x-sm {
-    @apply mx-1;
+  .black:hover {
+    @apply to-marigold-400;
+  }
+
+  .white {
+    @apply transition-all duration-500 bg-gradient-to-l from-white-50 to-white-50;
+  }
+
+  .white:hover {
+    @apply to-marigold-400;
   }
 
   .left {
-    @apply ml-0;
+    @apply float-left;
   }
 
   .right {
-    @apply mr-0;
+    @apply float-right;
   }
+
   .none {
+    @apply float-none;
   }
 </style>

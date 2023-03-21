@@ -15,28 +15,28 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftBaseObject
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde import _serialize
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
+from ....external import OBLV
 from .action_object import ActionObject
 from .action_service import ActionService
 from .action_store import ActionObjectPermission
 from .action_store import ActionPermission
 from .api import APIRegistry
 from .context import AuthedServiceContext
+from .context import ChangeContext
 from .credentials import SyftVerifyKey
 from .datetime import DateTime
 from .linked_obj import LinkedObject
-from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
+from .serialize import _serialize
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import add_node_uid_for_key
 from .transforms import generate_id
 from .transforms import transform
+from .uid import UID
 from .user_code import UserCode
 from .user_code import UserCodeStatus
 
@@ -46,18 +46,6 @@ class RequestStatus(Enum):
     PENDING = 0
     REJECTED = 1
     APPROVED = 2
-
-
-class ChangeContext(SyftBaseObject):
-    node: Optional[NewNode] = None
-    approving_user_credentials: Optional[SyftVerifyKey]
-    requesting_user_credentials: Optional[SyftVerifyKey]
-
-    @staticmethod
-    def from_service(context: AuthedServiceContext) -> Self:
-        return ChangeContext(
-            node=context.node, approving_user_credentials=context.credentials
-        )
 
 
 @serializable(recursive_serde=True)
@@ -176,10 +164,10 @@ class Request(SyftObject):
                 f"accept_by_depositing_result can only be run on {UserCode} not "
                 f"{change.linked_obj.object_type}"
             )
-        if not change.enum_type == UserCodeStatus:
+        if not type(change) == UserCodeStatusChange:
             raise Exception(
-                f"accept_by_depositing_result can only be run on {UserCodeStatus} not "
-                f"{change.enum_type}"
+                f"accept_by_depositing_result can only be run on {UserCodeStatusChange} not "
+                f"{type(change)}"
             )
 
         api = APIRegistry.api_for(self.node_uid)
@@ -395,6 +383,84 @@ class EnumMutation(ObjectMutation):
             if apply:
                 obj = self.mutate(obj)
                 self.linked_obj.update_with_context(context, obj)
+            else:
+                raise NotImplementedError
+            return Ok(SyftSuccess(message=f"{type(self)} Success"))
+        except Exception as e:
+            print(f"failed to apply {type(self)}. {e}")
+            return Err(SyftError(message=e))
+
+    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=True)
+
+    def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=False)
+
+    @property
+    def link(self) -> Optional[SyftObject]:
+        if self.linked_obj:
+            return self.linked_obj.resolve
+        return None
+
+
+@serializable(recursive_serde=True)
+class UserCodeStatusChange(Change):
+    __canonical_name__ = "UserCodeStatusChange"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    value: UserCodeStatus
+    linked_obj: LinkedObject
+    match_type: bool = True
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        if self.match_type and not isinstance(self.value, UserCodeStatus):
+            return SyftError(
+                message=f"{type(self.value)} must be of type: {UserCodeStatus}"
+            )
+        return SyftSuccess(message=f"{type(self)} valid")
+
+    def mutate(self, obj: UserCode, context: ChangeContext) -> Any:
+        res = obj.status.mutate(
+            value=self.value,
+            node_name=context.node.name,
+            verify_key=context.node.signing_key.verify_key,
+        )
+        if res.is_ok():
+            obj.status = res.ok()
+            return Ok(obj)
+        return res
+
+    def _run(
+        self, context: ChangeContext, apply: bool
+    ) -> Result[SyftSuccess, SyftError]:
+        try:
+            valid = self.valid
+            if not valid:
+                return Err(valid)
+            obj = self.linked_obj.resolve_with_context(context)
+            if obj.is_err():
+                return SyftError(message=obj.err())
+            obj = obj.ok()
+            if apply:
+                res = self.mutate(obj, context)
+
+                if res.is_err():
+                    return res
+                res = res.ok()
+                if OBLV:
+                    # relative
+                    from ....external.oblv.oblv_service import check_enclave_transfer
+
+                    enclave_res = check_enclave_transfer(
+                        user_code=res, value=self.value, context=context
+                    )
+                else:
+                    enclave_res = Ok()
+
+                if enclave_res.is_err():
+                    return enclave_res
+                self.linked_obj.update_with_context(context, res)
             else:
                 raise NotImplementedError
             return Ok(SyftSuccess(message=f"{type(self)} Success"))

@@ -6,8 +6,8 @@ from bson.codec_options import TypeDecoder
 from bson.codec_options import TypeRegistry
 
 # relative
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serialize import _serialize
+from .deserialize import _deserialize
+from .serialize import _serialize
 
 
 def fallback_syft_encoder(value):

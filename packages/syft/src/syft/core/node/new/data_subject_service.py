@@ -8,17 +8,18 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
 from .context import AuthedServiceContext
 from .data_subject import DataSubject
 from .data_subject import DataSubjectCreate
 from .data_subject import NamePartitionKey
+from .data_subject_member_service import DataSubjectMemberService
 from .document_store import BaseUIDStoreStash
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
@@ -54,36 +55,31 @@ class DataSubjectService(AbstractService):
         self.store = store
         self.stash = DataSubjectStash(store=store)
 
-    def as_flatten_dict(self, data_subject, flattened_dict):
-        members = data_subject.members
-        for member in members.values():
-            self.as_flatten_dict(member, flattened_dict)
-
-        if data_subject.name not in flattened_dict:
-            flattened_dict[data_subject.name] = data_subject
-
     @service_method(path="data_subject.add", name="add_data_subject")
     def add(
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate
     ) -> Union[SyftSuccess, SyftError]:
         """Register a data subject."""
-        flattened_ds_dict = {}
-        self.as_flatten_dict(data_subject, flattened_ds_dict)
-        registered_count = 0
-        for name, data_subject in flattened_ds_dict.items():
-            result = self.stash.get_by_name(name=name)
-            if result.is_err():
-                return SyftError(message=str(result.err()))
-            ds_exists = result.ok()
 
-            if ds_exists is None:
-                ds = data_subject.to(DataSubject, context=context)
-                result = self.stash.set(ds)
+        member_relationship_add = context.node.get_service_method(
+            DataSubjectMemberService.add
+        )
+
+        member_relationships = data_subject.member_relationships
+        for member_relationship in member_relationships:
+            parent_ds, child_ds = member_relationship
+            for ds in [parent_ds, child_ds]:
+                result = self.stash.set(
+                    ds.to(DataSubject, context=context), ignore_duplicates=True
+                )
                 if result.is_err():
                     return SyftError(message=str(result.err()))
-                registered_count += 1
+            result = member_relationship_add(context, parent_ds.name, child_ds.name)
+            if isinstance(result, SyftError):
+                return result
+
         return SyftSuccess(
-            message=f"Data Subjects: New Registered: {registered_count}, Existing: {len(flattened_ds_dict)}"
+            message=f"{len(member_relationships)+1} Data Subjects Registered"
         )
 
     @service_method(path="data_subject.get_all", name="get_all")
@@ -96,6 +92,28 @@ class DataSubjectService(AbstractService):
             data_subjects = result.ok()
             return data_subjects
         return SyftError(message=result.err())
+
+    @service_method(path="data_subject.get_members", name="members_for")
+    def get_members(
+        self, context: AuthedServiceContext, data_subject_name: str
+    ) -> Union[List[DataSubject], SyftError]:
+        get_relatives = context.node.get_service_method(
+            DataSubjectMemberService.get_relatives
+        )
+
+        relatives = get_relatives(context, data_subject_name)
+
+        if isinstance(relatives, SyftError):
+            return relatives
+
+        members = []
+        for relative in relatives:
+            result = self.get_by_name(context=context, name=relative.child)
+            if isinstance(result, SyftError):
+                return result
+            members.append(result)
+
+        return members
 
     @service_method(path="data_subject.get_by_name", name="get_by_name")
     def get_by_name(

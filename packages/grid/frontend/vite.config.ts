@@ -1,7 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 import path from 'path';
 
+/// <reference types="vitest" />
 export default defineConfig({
   plugins: [sveltekit()],
   test: {
@@ -14,6 +15,7 @@ export default defineConfig({
   },
   server: {
     fs: {
+      // Allow serving files from one level up to the project root
       allow: ['..']
     }
   }

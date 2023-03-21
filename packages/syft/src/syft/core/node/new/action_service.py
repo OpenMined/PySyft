@@ -12,8 +12,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -24,14 +22,18 @@ from .context import AuthedServiceContext
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
+from .response import SyftError
 from .response import SyftSuccess
+from .serializable import serializable
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .twin_object import TwinObject
+from .uid import UID
 from .user_code import UserCode
 from .user_code import execute_byte_code
+from .user_roles import GUEST_ROLE_LEVEL
 
 
 @serializable(recursive_serde=True)
@@ -46,11 +48,6 @@ class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store
 
-    @service_method(path="action.peek", name="peek")
-    def peek(self, context: AuthedServiceContext) -> Any:
-        print(self.store.permissions)
-        # return Ok(self.store.permissions)
-
     @service_method(path="action.np_array", name="np_array")
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
         if not isinstance(data, np.ndarray):
@@ -61,7 +58,7 @@ class ActionService(AbstractService):
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
-    @service_method(path="action.set", name="set")
+    @service_method(path="action.set", name="set", roles=GUEST_ROLE_LEVEL)
     def set(
         self,
         context: AuthedServiceContext,
@@ -98,15 +95,20 @@ class ActionService(AbstractService):
             return Ok(SyftSuccess(message=f"{type(action_object)} saved"))
         return result.err()
 
-    @service_method(path="action.get", name="get")
+    @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
     def get(
         self,
         context: AuthedServiceContext,
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
+        skip_permission: bool = False,
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
-        result = self.store.get(uid=uid, credentials=context.credentials)
+        # TODO 🟣 Temporarily added skip permission arguments for enclave
+        # until permissions are fully integrated
+        result = self.store.get(
+            uid=uid, credentials=context.credentials, skip_permission=skip_permission
+        )
         if result.is_ok():
             obj = result.ok()
             if isinstance(obj, TwinObject):
@@ -122,7 +124,9 @@ class ActionService(AbstractService):
             return Ok(obj)
         return Err(result.err())
 
-    @service_method(path="action.get_pointer", name="get_pointer")
+    @service_method(
+        path="action.get_pointer", name="get_pointer", roles=GUEST_ROLE_LEVEL
+    )
     def get_pointer(
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[ActionObjectPointer, str]:
@@ -138,16 +142,18 @@ class ActionService(AbstractService):
     def _user_code_execute(
         self, context: AuthedServiceContext, code_item: UserCode, kwargs: Dict[str, Any]
     ) -> Result[ActionObjectPointer, Err]:
-        filtered_kwargs = code_item.input_policy.filter_kwargs(kwargs)
+        filtered_kwargs = code_item.input_policy.filter_kwargs(
+            kwargs=kwargs, context=context, code_item_id=code_item.id
+        )
+        if filtered_kwargs.is_err():
+            return filtered_kwargs
+        filtered_kwargs = filtered_kwargs.ok()
         has_twin_inputs = False
         kwargs = {}
-        for key, arg_id in filtered_kwargs.items():
-            kwarg_value = self.get(context=context, uid=arg_id, twin_mode=TwinMode.NONE)
-            if kwarg_value.is_err():
-                return kwarg_value.err()
-            if isinstance(kwarg_value.ok(), TwinObject):
+        for key, kwarg_value in filtered_kwargs.items():
+            if isinstance(kwarg_value, TwinObject):
                 has_twin_inputs = True
-            kwargs[key] = kwarg_value.ok()
+            kwargs[key] = kwarg_value
 
         result_id = UID()
 
@@ -196,7 +202,7 @@ class ActionService(AbstractService):
 
         return Ok(result_action_object)
 
-    @service_method(path="action.execute", name="execute")
+    @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
@@ -253,6 +259,16 @@ class ActionService(AbstractService):
         result_action_object.syft_point_to(context.node.id)
 
         return Ok(result_action_object)
+
+    @service_method(path="action.exists", name="exists", roles=GUEST_ROLE_LEVEL)
+    def exists(
+        self, context: AuthedServiceContext, obj_id: UID
+    ) -> Result[SyftSuccess, SyftError]:
+        """Checks if the given object id exists in the Action Store"""
+        if self.store.exists(obj_id):
+            return SyftSuccess(message=f"Object: {obj_id} exists")
+        else:
+            return SyftError(message=f"Object: {obj_id} does not exist")
 
 
 def execute_object(

@@ -7,8 +7,6 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .document_store import BaseStash
@@ -18,8 +16,10 @@ from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .document_store import UIDPartitionKey
 from .response import SyftSuccess
-from .user import ServiceRole
+from .serializable import serializable
+from .uid import UID
 from .user import User
+from .user_roles import ServiceRole
 
 # 🟡 TODO 27: it would be nice if these could be defined closer to the User
 EmailPartitionKey = PartitionKey(key="email", type_=str)
@@ -56,7 +56,7 @@ class UserStash(BaseStash):
         return self.query_one(qks=qks)
 
     def get_by_signing_key(
-        self, signing_key: SigningKeyPartitionKey
+        self, signing_key: SyftSigningKey
     ) -> Result[Optional[User], str]:
         if isinstance(signing_key, str):
             signing_key = SyftSigningKey.from_string(signing_key)
@@ -64,7 +64,7 @@ class UserStash(BaseStash):
         return self.query_one(qks=qks)
 
     def get_by_verify_key(
-        self, verify_key: VerifyKeyPartitionKey
+        self, verify_key: SyftVerifyKey
     ) -> Result[Optional[User], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)

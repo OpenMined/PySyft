@@ -81,7 +81,7 @@ vars:
     value: "1024"
   - name: USE_BLOB_STORAGE
     value: "True"
-  - name: DOMAIN_NAME
+  - name: NODE_NAME
     value: node
   - name: TRAEFIK_CONFIG_FILE
     value: traefik-domain.yaml
@@ -109,7 +109,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.0"
+      - "0.8.0-beta.3"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -121,7 +121,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.0"
+      - "0.8.0-beta.3"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -137,7 +137,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.0"
+      - "0.8.0-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -149,7 +149,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.0"
+      - "0.8.0-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -161,7 +161,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.0"
+      - "0.8.0-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -217,7 +217,7 @@ deployments:
               privileged: true
             env:
               - name: HOSTNAME
-                value: ${DOMAIN_NAME}
+                value: ${NODE_NAME}
               - name: STACK_API_KEY
                 value: ${STACK_API_KEY}
             volumeMounts:
@@ -373,7 +373,7 @@ deployments:
             command:
               - /app/grid/start.sh
             volumeMounts:
-              - containerPath: /credentials
+              - containerPath: /storage
                 volume:
                   name: credentials-data
                   readOnly: true
@@ -398,8 +398,8 @@ deployments:
               successThreshold: 1
               failureThreshold: 3
             env:
-              - name: DOMAIN_NAME
-                value: ${DOMAIN_NAME}
+              - name: NODE_NAME
+                value: ${NODE_NAME}
               - name: VERSION
                 value: ${VERSION}
               - name: VERSION_HASH
@@ -474,7 +474,7 @@ deployments:
             command:
               - /app/grid/start.sh
             volumeMounts:
-              - containerPath: /credentials
+              - containerPath: /storage
                 volume:
                   name: credentials-data
                   readOnly: true
@@ -499,8 +499,8 @@ deployments:
               successThreshold: 1
               failureThreshold: 3
             env:
-              - name: DOMAIN_NAME
-                value: ${DOMAIN_NAME}
+              - name: NODE_NAME
+                value: ${NODE_NAME}
               - name: SERVICE_NAME
                 value: ${SERVICE_NAME_BACKEND_STREAM}
               - name: VERSION
@@ -575,7 +575,7 @@ deployments:
             command:
               - /app/grid/worker-start.sh
             volumeMounts:
-              - containerPath: /credentials
+              - containerPath: /storage
                 volume:
                   name: credentials-data
                   readOnly: true
@@ -584,8 +584,8 @@ deployments:
                 add: ["NET_ADMIN"]
               privileged: true
             env:
-              - name: DOMAIN_NAME
-                value: ${DOMAIN_NAME}
+              - name: NODE_NAME
+                value: ${NODE_NAME}
               - name: VERSION
                 value: ${VERSION}
               - name: VERSION_HASH

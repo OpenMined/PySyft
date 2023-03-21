@@ -1,5 +1,4 @@
 # stdlib
-from enum import Enum
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -13,12 +12,11 @@ import pydantic
 from pydantic.networks import EmailStr
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftObject
-from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import drop
 from .transforms import generate_id
@@ -26,25 +24,8 @@ from .transforms import keep
 from .transforms import make_set_default
 from .transforms import transform
 from .transforms import validate_email
-
-
-class ServiceRoleCapability(Enum):
-    CAN_MAKE_DATA_REQUESTS = 1
-    CAN_TRIAGE_DATA_REQUESTS = 2
-    CAN_MANAGE_PRIVACY_BUDGET = 4
-    CAN_CREATE_USERS = 8
-    CAN_MANAGE_USERS = 16
-    CAN_EDIT_ROLES = 32
-    CAN_MANAGE_INFRASTRUCTURE = 64
-    CAN_UPLOAD_DATA = 128
-    CAN_UPLOAD_LEGAL_DOCUMENT = 256
-    CAN_EDIT_DOMAIN_SETTINGS = 512
-
-
-@serializable(recursive_serde=True)
-class ServiceRole(Enum):
-    ADMIN = 0
-    GUEST = 1
+from .uid import UID
+from .user_roles import ServiceRole
 
 
 @serializable(recursive_serde=True)
@@ -81,6 +62,8 @@ class User(SyftObject):
         "signing_key",
         "verify_key",
         "role",
+        "institution",
+        "website",
         "created_at",
     ]
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
@@ -96,7 +79,7 @@ def hash_password(context: TransformContext) -> TransformContext:
     if context.output["password"] is not None and (
         context.output["password"] == context.output["password_verify"]
     ):
-        salt, hashed = __salt_and_hash_password(context.output["password"], 12)
+        salt, hashed = salt_and_hash_password(context.output["password"], 12)
         context.output["hashed_password"] = hashed
         context.output["salt"] = salt
     return context
@@ -109,7 +92,7 @@ def generate_key(context: TransformContext) -> TransformContext:
     return context
 
 
-def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
+def salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
     bytes_pass = password.encode("UTF-8")
     salt = gensalt(rounds=rounds)
     hashed = hashpw(bytes_pass, salt)

@@ -3,6 +3,8 @@
   import { UUID } from '../objects/uid';
   import { APICall } from '../messages/syftMessage.ts';
   import sodium from 'libsodium-wrappers';
+  import { UserCode } from '../objects/userCode';
+
   export class JSClient {
     /**
      * Constructs a new instance of the class.
@@ -11,15 +13,8 @@
     constructor() {
       return (async () => {
         const url = `${window.location.protocol}//${window.location.host}`;
-        try {
-          // Fetch the SerDe from the server and create a new JSSerde instance.
-          const response = await fetch(`${url}/api/v1/syft/serde`);
-          const { bank } = await response.json();
-          this.serde = new JSSerde(bank);
-        } catch (error) {
-          console.error('Error fetching serde:', error);
-        }
 
+        this.serde = new JSSerde();
         // Set the URL and message URL properties.
         this.url = url;
         this.msg_url = `${url}/api/v1/new/api_call`;
@@ -99,6 +94,125 @@
     }
 
     /**
+     * Returns a promise that resolves to an array of datasets
+     * @returns {Promise<Array<Object>>} A promise that resolves to an array of datasets
+     */
+    get datasets() {
+      return (async () => {
+        return await this.send([], {}, 'dataset.get_all');
+      })();
+    }
+
+    /**
+     * Returns a promise that resolves to an specific Dataset Obj
+     * @returns {Promise<Array<Object>>} A promise that resolves to a dataset
+     */
+    getDataset(datasetId) {
+      return (async () => {
+        return await this.send([], { uid: new UUID(datasetId) }, 'dataset.get_by_id');
+      })();
+    }
+
+    /**
+     * Returns a Promise that resolves to an array of all code requests.
+     * @returns {Promise} A Promise that resolves to the result of calling the `send()` method with the parameters `[]`, `{ }`, and `'code.get_all'`.
+     */
+    getCodeRequests() {
+      return (async () => {
+        return await this.send([], {}, 'code.get_all');
+      })();
+    }
+
+    /**
+     * Returns a Promise that resolves to a `UserCode` object for the code request with the given `codeId`.
+     * @param {string} codeId The unique identifier for the code request.
+     * @returns {Promise} A Promise that resolves to a `UserCode` object constructed from the result of calling the `send()` method with the parameters `[]`, `{ uid: new UUID(codeId) }`, and `'code.get_by_id'`.
+     */
+    getCodeRequest(codeId) {
+      return (async () => {
+        return new UserCode(await this.send([], { uid: new UUID(codeId) }, 'code.get_by_id'));
+      })();
+    }
+
+    /** Updates the current metadata with new fields using an API call and returns a Promise that resolves to the result of the call.
+     * @param {Object} updatedMetadata - An object of metadata fields to pass to the API call.
+     * @returns {Promise<object>} A Promise that resolves to an object containing the new metadata information.
+     * */
+    updateMetadata(newMetadata) {
+      // Create a new object called 'newMetadata' with updated fields and a new property called 'fqn' with a value.
+      const updateMetadata = {
+        ...newMetadata,
+        fqn: 'syft.core.node.new.node_metadata.NodeMetadataUpdate'
+      };
+
+      // Create a new object called 'reqFields' with one property: 'metadata',  which is set to 'updateMetadata'.
+      const reqFields = { metadata: updateMetadata };
+
+      // Return a new Promise that calls the 'send' method on 'this' with arguments to update metadata and resolves to the result of the call.
+      return new Promise((resolve, reject) => {
+        this.send([], reqFields, 'metadata.update')
+          .then((result) => resolve(result))
+          .catch((error) => reject(error));
+      });
+    }
+
+    /**
+     * Registers a new user with the server.
+     * @param {Object} newUser - An object representing the new user to be registered.
+     * @returns {Promise} A Promise that resolves to the result of the registration call.
+     * @throws {Error} If the registration fails for any reason.
+     */
+    register(newUser) {
+      return (async () => {
+        // Create a register payload object by copying the newUser object and adding a fully-qualified name (fqn) property.
+        const registerPayload = { ...newUser, fqn: 'syft.core.node.new.user.UserCreate' };
+
+        // Make a POST request to the server with the register payload.
+        const response = await fetch(`${this.url}/api/v1/new/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: this.serde.serialize(registerPayload)
+        });
+
+        // If the response is not OK, throw an error with the HTTP status.
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+
+        // Deserialize the response and check its type.
+        const responseBuffer = await response.arrayBuffer();
+        const responseMsg = this.serde.deserialize(responseBuffer);
+
+        if (Array.isArray(responseMsg)) {
+          // If the response is an array, return it.
+          return responseMsg;
+        } else {
+          // If the response is not an array, throw an error with the message.
+          throw new Error(responseMsg.message);
+        }
+      })();
+    }
+
+    /** Updates the current user with new fields using an API call and returns a Promise that resolves to the result of the call.
+     * @param {Object} updatedFields - An object of user fields to pass to the API call.
+     * @returns {Promise<object>} A Promise that resolves to an object containing the new user information.
+     * */
+    updateCurrentUser(updatedFields) {
+      // Create a new object called 'userUpdate' with updated fields and a new property called 'fqn' with a value.
+      const userUpdate = { ...updatedFields, fqn: 'syft.core.node.new.user.UserUpdate' };
+
+      // Create a new object called 'reqFields' with two properties: 'uid', which is set to the value of 'userId', and 'user_update', which is set to 'userUpdate'.
+      const reqFields = { uid: this.userId, user_update: userUpdate };
+
+      // Return a new Promise that calls the 'send' method on 'this' with arguments to update user and resolves to the result of the call.
+      return new Promise((resolve, reject) => {
+        this.send([], reqFields, 'user.update')
+          .then((result) => resolve(result))
+          .catch((error) => reject(error));
+      });
+    }
+
+    /**
      * Returns metadata from the server.
      *
      * @returns {Promise<object>} A Promise that resolves to an object containing metadata information.
@@ -141,15 +255,18 @@
         const responseBuffer = await response.arrayBuffer();
         const signedMsg = this.serde.deserialize(responseBuffer);
 
-        /**
-        if (!signedMsg.valid) {
+        const isValid = sodium.crypto_sign_verify_detached(
+          signedMsg.signature,
+          signedMsg.serialized_message,
+          signedMsg.credentials.verify_key
+        );
+
+        if (!isValid) {
           throw new Error("Message signature and public key don't match!");
         }
 
         // Return the message contained in the response.
-        return signedMsg.message(this.serde);
-        */
-        return signedMsg;
+        return this.serde.deserialize(signedMsg.serialized_message).data;
       } catch (error) {
         console.error('Error occurred in send()', error);
         throw error;

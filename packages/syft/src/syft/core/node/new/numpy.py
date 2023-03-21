@@ -1,14 +1,16 @@
 # stdlib
 from typing import Any
+from typing import ClassVar
+from typing import Type
 
 # third party
 import numpy as np
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ...common.serde.serializable import serializable
 from .action_object import ActionObject
 from .action_types import action_types
+from .serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
 
 # @serializable(recursive_serde=True)
 # class NumpyArrayObjectPointer(ActionObjectPointer):
@@ -48,7 +50,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type = np.ndarray
+    syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
     syft_passthrough_attrs = []
     syft_dont_wrap_attrs = ["dtype"]
@@ -66,8 +68,6 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         return bool(self.all())
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        print("__array_ufunc__", ufunc, method, inputs, kwargs)
-
         inputs = tuple(
             np.array(x.syft_action_data, dtype=x.dtype)
             if isinstance(x, NumpyArrayObject)

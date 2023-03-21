@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import contextlib
+from datetime import datetime
 from functools import partial
 import hashlib
 import os
@@ -23,49 +24,56 @@ from result import Result
 
 # relative
 from ... import __version__
-from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
-from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
-from ...core.node.common.node_table.syft_object import SyftObject
+from ...external import OBLV
 from ...telemetry import instrument
 from ...util import random_name
-from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize
-from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.action_store import DictActionStore
 from .new.action_store import SQLiteActionStore
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
+from .new.api import SyftAPIData
 from .new.context import AuthedServiceContext
 from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
 from .new.credentials import SyftVerifyKey
+from .new.data_subject_member_service import DataSubjectMemberService
 from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
+from .new.deserialize import _deserialize
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
 from .new.message_service import MessageService
+from .new.metadata_service import MetadataService
+from .new.metadata_stash import MetadataStash
 from .new.network_service import NetworkService
 from .new.node import NewNode
+from .new.node import NodeType
 from .new.node_metadata import NodeMetadata
 from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
 from .new.request_service import RequestService
 from .new.response import SyftError
+from .new.serializable import serializable
+from .new.serialize import _serialize
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.service import UserServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
+from .new.syft_object import HIGHEST_SYFT_OBJECT_VERSION
+from .new.syft_object import LOWEST_SYFT_OBJECT_VERSION
+from .new.syft_object import SyftObject
 from .new.test_service import TestService
-from .new.user import ServiceRole
+from .new.uid import UID
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
+from .new.user_roles import ServiceRole
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
@@ -118,6 +126,9 @@ class Worker(NewNode):
         root_password: str = "changethis",
         processes: int = 0,
         is_subprocess: bool = False,
+        node_type: NodeType = NodeType.DOMAIN,
+        local_db: bool = False,
+        sqlite_path: Optional[str] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -147,6 +158,7 @@ class Worker(NewNode):
         services = (
             [
                 UserService,
+                MetadataService,
                 ActionService,
                 TestService,
                 DatasetService,
@@ -156,29 +168,50 @@ class Worker(NewNode):
                 NetworkService,
                 MessageService,
                 ProjectService,
+                DataSubjectMemberService,
             ]
             if services is None
             else services
         )
-        self.services = services
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        self.local_db = local_db
+        self.sqlite_path = sqlite_path
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
         )
+
+        if OBLV:
+            # relative
+            from ...external.oblv.oblv_service import OblvService
+
+            services += [OblvService]
+            create_oblv_key_pair(worker=self)
+
+        self.services = services
         self._construct_services()
+
         create_admin_new(  # nosec B106
             name="Jane Doe",
             email="info@openmined.org",
             password="changethis",
             node=self,
         )
+
         self.client_cache = {}
+        self.node_type = node_type
+
         self.post_init()
 
     @staticmethod
-    def named(name: str, processes: int = 0, reset: bool = False) -> Worker:
+    def named(
+        name: str,
+        processes: int = 0,
+        reset: bool = False,
+        local_db: bool = False,
+        sqlite_path: Optional[str] = None,
+    ) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
@@ -188,7 +221,15 @@ class Worker(NewNode):
             with contextlib.suppress(FileNotFoundError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
-        return Worker(name=name, id=uid, signing_key=key, processes=processes)
+
+        return Worker(
+            name=name,
+            id=uid,
+            signing_key=key,
+            processes=processes,
+            local_db=local_db,
+            sqlite_path=sqlite_path,
+        )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
         return credentials == self.signing_key.verify_key
@@ -202,8 +243,17 @@ class Worker(NewNode):
         connection = PythonConnection(node=self)
         return SyftClient(connection=connection, credentials=self.signing_key)
 
+    @property
+    def guest_client(self) -> Any:
+        # relative
+        from .new.client import PythonConnection
+        from .new.client import SyftClient
+
+        connection = PythonConnection(node=self)
+        return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
+
     def __repr__(self) -> str:
-        return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
+        return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
         if self.is_subprocess:
@@ -219,8 +269,8 @@ class Worker(NewNode):
         action_store_config: Optional[StoreConfig] = None,
     ):
         if document_store_config is None:
-            if self.processes > 0 and not self.is_subprocess:
-                client_config = SQLiteStoreClientConfig()
+            if self.local_db or (self.processes > 0 and not self.is_subprocess):
+                client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
                 document_store_config = SQLiteStoreConfig(client_config=client_config)
             else:
                 document_store_config = DictStoreConfig()
@@ -238,16 +288,17 @@ class Worker(NewNode):
 
         self.document_store = document_store(store_config=document_store_config)
         if action_store_config is None:
-            if self.processes > 0 and not self.is_subprocess:
-                client_config = SQLiteStoreClientConfig()
+            if self.local_db or (self.processes > 0 and not self.is_subprocess):
+                client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
                 action_store_config = SQLiteStoreConfig(client_config=client_config)
-                if (
-                    isinstance(action_store_config, SQLiteStoreConfig)
-                    and action_store_config.client_config.filename is None
-                ):
-                    action_store_config.client_config.filename = f"{self.id}.sqlite"
             else:
                 action_store_config = DictStoreConfig()
+
+        if (
+            isinstance(action_store_config, SQLiteStoreConfig)
+            and action_store_config.client_config.filename is None
+        ):
+            action_store_config.client_config.filename = f"{self.id}.sqlite"
 
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store = SQLiteActionStore(
@@ -264,12 +315,14 @@ class Worker(NewNode):
 
     def _construct_services(self):
         self.service_path_map = {}
+
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
                 kwargs["store"] = self.action_store
-            if service_klass in [
+            store_services = [
                 UserService,
+                MetadataService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -277,7 +330,16 @@ class Worker(NewNode):
                 NetworkService,
                 MessageService,
                 ProjectService,
-            ]:
+                DataSubjectMemberService,
+            ]
+
+            if OBLV:
+                # relative
+                from ...external.oblv.oblv_service import OblvService
+
+                store_services += [OblvService]
+
+            if service_klass in store_services:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs
@@ -370,7 +432,23 @@ class Worker(NewNode):
 
         return SyftError(message=(f"Node has no route to {node_uid}"))
 
+    def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
+        role = self.get_service("userservice").get_role_for_credentials(
+            credentials=credentials
+        )
+        return role
+
     def handle_api_call(
+        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+    ) -> Result[SignedSyftAPICall, Err]:
+        # Get the result
+        result = self.handle_api_call_with_unsigned_result(api_call)
+        # Sign the result
+        signed_result = SyftAPIData(data=result).sign(self.signing_key)
+
+        return signed_result
+
+    def handle_api_call_with_unsigned_result(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
@@ -392,16 +470,26 @@ class Worker(NewNode):
 
         result = None
         if self.is_subprocess or self.processes == 0:
-            credentials = api_call.credentials
+            credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
-            context = AuthedServiceContext(node=self, credentials=credentials)
+            role = self.get_role_for_credentials(credentials=credentials)
+            context = AuthedServiceContext(
+                node=self, credentials=credentials, role=role
+            )
 
-            # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
-            if api_call.path not in self.service_config:
-                return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+            user_config_registry = UserServiceConfigRegistry.from_role(role)
 
-            _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
+            if api_call.path not in user_config_registry:
+                if ServiceConfigRegistry.path_exists(api_call.path):
+                    return SyftError(
+                        message=f"As a `{role}`,"
+                        "you have has no access to: {api_call.path}"
+                    )  # type: ignore
+                else:
+                    return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+
+            _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
             try:
                 result = method(context, *api_call.args, **api_call.kwargs)
@@ -430,13 +518,18 @@ class Worker(NewNode):
             )
             if api_call.message.blocking:
                 gevent.joinall([thread])
-                result = thread.value
+                signed_result = thread.value
+
+                if not signed_result.is_valid:
+                    return SyftError(message="The result signature is invalid")  # type: ignore
+
+                result = signed_result.message.data
             else:
                 result = item
         return result
 
-    def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node=self)
+    def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
+        return SyftAPI.for_user(node=self, user_verify_key=for_user)
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext
@@ -489,6 +582,7 @@ def task_runner(
     try:
         with pipe:
             api_call = pipe.get()
+
             result = worker.handle_api_call(api_call)
             if blocking:
                 pipe.put(result)
@@ -530,6 +624,32 @@ def queue_task(
     return None
 
 
+def create_worker_metadata(
+    worker: NewNode,
+) -> Optional[NodeMetadata]:
+    try:
+        metadata_stash = MetadataStash(store=worker.document_store)
+        metadata_exists = metadata_stash.get_all().ok()
+        if metadata_exists:
+            return None
+        else:
+            new_metadata = NodeMetadata(
+                name=worker.name,
+                id=worker.id,
+                verify_key=worker.signing_key.verify_key,
+                highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
+                lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
+                syft_version=__version__,
+                deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+            )
+            result = metadata_stash.set(metadata=new_metadata)
+            if result.is_ok():
+                return result.ok()
+            return None
+    except Exception as e:
+        print("create_worker_metadata failed", e)
+
+
 def create_admin_new(
     name: str,
     email: str,
@@ -559,4 +679,28 @@ def create_admin_new(
                 return result.ok()
             return None
     except Exception as e:
-        print("create_admin failed", e)
+        print("Unable to create new admin", e)
+
+
+def create_oblv_key_pair(
+    worker: Worker,
+) -> Optional[str]:
+    try:
+        # relative
+        from ...external.oblv.oblv_keys_stash import OblvKeys
+        from ...external.oblv.oblv_keys_stash import OblvKeysStash
+        from ...external.oblv.oblv_service import generate_oblv_key
+
+        oblv_keys_stash = OblvKeysStash(store=worker.document_store)
+
+        if not len(oblv_keys_stash):
+            public_key, private_key = generate_oblv_key()
+            oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
+            res = oblv_keys_stash.set(oblv_keys)
+            if res.is_ok():
+                print("Successfully generated Oblv Key pair at startup")
+            return res.err()
+        else:
+            print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
+    except Exception as e:
+        print("Unable to create Oblv Keys.", e)

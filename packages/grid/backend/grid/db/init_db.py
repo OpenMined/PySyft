@@ -18,7 +18,7 @@ def init_db() -> None:
         first_superuser_email=settings.FIRST_SUPERUSER,
         first_superuser_password=settings.FIRST_SUPERUSER_PASSWORD,
         first_superuser_budget=5.55,
-        domain_name=settings.DOMAIN_NAME,
+        domain_name=settings.NODE_NAME,
     )
 
 

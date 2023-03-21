@@ -1,18 +1,25 @@
 # stdlib
 from typing import Optional
 
+# third party
+from typing_extensions import Self
+
 # relative
-from ..common.node_table.syft_object import Context
-from ..common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ..common.node_table.syft_object import SyftObject
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
 from .node import NewNode
+from .syft_object import Context
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
+from .uid import UID
+from .user_roles import ServiceRole
 
 
 class NodeServiceContext(Context, SyftObject):
     __canonical_name__ = "NodeServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
+    id: Optional[UID]
     node: Optional[NewNode]
 
 
@@ -21,6 +28,7 @@ class AuthedServiceContext(NodeServiceContext):
     __version__ = SYFT_OBJECT_VERSION_1
 
     credentials: SyftVerifyKey
+    role: ServiceRole = ServiceRole.NONE
 
 
 class UnauthedServiceContext(NodeServiceContext):
@@ -29,3 +37,16 @@ class UnauthedServiceContext(NodeServiceContext):
 
     login_credentials: UserLoginCredentials
     node: Optional[NewNode]
+    role: ServiceRole = ServiceRole.NONE
+
+
+class ChangeContext(SyftBaseObject):
+    node: Optional[NewNode] = None
+    approving_user_credentials: Optional[SyftVerifyKey]
+    requesting_user_credentials: Optional[SyftVerifyKey]
+
+    @staticmethod
+    def from_service(context: AuthedServiceContext) -> Self:
+        return ChangeContext(
+            node=context.node, approving_user_credentials=context.credentials
+        )

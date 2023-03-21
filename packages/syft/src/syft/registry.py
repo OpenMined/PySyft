@@ -16,9 +16,9 @@ import pandas as pd
 import requests
 
 # relative
+from .core.node.new.grid_url import GridURL
 from .core.node.new.network_service import NodePeer
 from .core.node.new.node_metadata import NodeMetadataJSON
-from .grid import GridURL
 from .logger import error
 from .logger import warning
 
@@ -36,7 +36,7 @@ class NetworkRegistry:
     def __init__(self) -> None:
         self.all_networks: List[Dict] = []
         try:
-            response = requests.get(NETWORK_REGISTRY_URL)
+            response = requests.get(NETWORK_REGISTRY_URL)  # nosec
             network_json = response.json()
             self.all_networks = network_json["2.0.0"]["gateways"]
         except Exception as e:
@@ -51,7 +51,7 @@ class NetworkRegistry:
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)
+                res = requests.get(url, timeout=0.5)  # nosec
                 online = "This is a PyGrid Network node." in res.text
             except Exception:
                 online = False
@@ -60,7 +60,7 @@ class NetworkRegistry:
             if not online:
                 try:
                     ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=0.5)
+                    res = requests.get(ping_url, timeout=0.5)  # nosec
                     online = res.status_code == 200
                 except Exception:
                     online = False
@@ -73,7 +73,7 @@ class NetworkRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v1/new/metadata"
-                        res = requests.get(version_url, timeout=0.5)
+                        res = requests.get(version_url, timeout=0.5)  # nosec
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
                         else:
@@ -140,7 +140,7 @@ class DomainRegistry:
         self.all_networks: List[Dict] = []
         self.all_domains: List = []
         try:
-            response = requests.get(NETWORK_REGISTRY_URL)
+            response = requests.get(NETWORK_REGISTRY_URL)  # nosec
             network_json = response.json()
             self.all_networks = network_json["2.0.0"]["gateways"]
         except Exception as e:

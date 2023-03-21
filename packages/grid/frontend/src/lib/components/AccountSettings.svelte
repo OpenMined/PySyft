@@ -16,7 +16,9 @@
     !modalActiveList[4] &&
     !modalActiveList[5]
   );
-  $: unfocusModal = !changeModal ? 'filter: brightness(100%)' : 'filter: brightness(60%)';
+  $: unfocusModal = !changeModal
+    ? 'background-color: white; filter: brightness(100%)'
+    : 'background-color: white; filter: brightness(60%)';
 
   async function submitUserChanges() {
     let email = document.getElementById('email') ? document.getElementById('email').value : null;
@@ -32,7 +34,6 @@
       : null;
 
     let userInfo = {
-      user_id: user_info.id,
       email: email,
       password: password,
       name: name,
@@ -42,10 +43,9 @@
 
     // Filter attributes that doesn't exist
     Object.keys(userInfo).forEach((k) => userInfo[k] == null && delete userInfo[k]);
-    await client.updateUser(userInfo);
 
     // Update user info
-    user_info = await client.user;
+    user_info = await client.updateCurrentUser(userInfo);
 
     // Cleaning Element Values
     const elementsList = [
@@ -152,7 +152,13 @@
     </div>
   </Modal>
 
-  <Modal bind:open={modalActiveList[0]} placement="center" size="xs" class="w-full">
+  <Modal
+    bind:open={modalActiveList[0]}
+    placement="center"
+    size="xs"
+    class="w-full"
+    style="background-color: white"
+  >
     <FormControl placeholder="Jana Doe" label="Full name" id="name" required />
     <div class="space-x-3" style="display:flex;justify-content:right">
       <button
@@ -162,11 +168,19 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark">Confirm</Button>
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
+        >Confirm</Button
+      >
     </div>
   </Modal>
 
-  <Modal bind:open={modalActiveList[3]} placement="center" size="xs" class="w-full">
+  <Modal
+    bind:open={modalActiveList[3]}
+    placement="center"
+    size="xs"
+    class="w-full"
+    style="background-color: white"
+  >
     <FormControl placeholder="info@openmined.org" label="Email" id="email" required />
     <div class="space-x-3" style="display:flex;justify-content:right">
       <button
@@ -176,11 +190,19 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark">Confirm</Button>
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
+        >Confirm</Button
+      >
     </div>
   </Modal>
 
-  <Modal bind:open={modalActiveList[2]} placement="center" size="xs" class="w-full">
+  <Modal
+    bind:open={modalActiveList[2]}
+    placement="center"
+    size="xs"
+    class="w-full"
+    style="background-color: white"
+  >
     <FormControl placeholder="www.openmined.org" label="Website" id="website" required />
     <div class="space-x-3" style="display:flex;justify-content:right">
       <button
@@ -190,11 +212,19 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark">Confirm</Button>
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
+        >Confirm</Button
+      >
     </div>
   </Modal>
 
-  <Modal bind:open={modalActiveList[1]} placement="center" size="xs" class="w-full">
+  <Modal
+    bind:open={modalActiveList[1]}
+    placement="center"
+    size="xs"
+    class="w-full"
+    style="background-color: white"
+  >
     <FormControl placeholder="OpenMined Team" label="Team" id="team" required />
     <div class="space-x-3" style="display:flex;justify-content:right">
       <button
@@ -204,10 +234,18 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark">Confirm</Button>
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
+        >Confirm</Button
+      >
     </div>
   </Modal>
-  <Modal bind:open={modalActiveList[4]} placement="center" size="xs" class="w-full">
+  <Modal
+    bind:open={modalActiveList[4]}
+    placement="center"
+    size="xs"
+    class="w-full"
+    style="background-color: white"
+  >
     <FormControl placeholder="********" label="Password" id="password" type="password" required />
     <FormControl
       placeholder="********"
@@ -225,11 +263,19 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark">Confirm</Button>
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
+        >Confirm</Button
+      >
     </div>
   </Modal>
 
-  <Modal bind:open={modalActiveList[5]} placement="center" size="xs" class="w-full">
+  <Modal
+    bind:open={modalActiveList[5]}
+    placement="center"
+    size="xs"
+    class="w-full"
+    style="background-color: white"
+  >
     <div style="display:flex; justify-content:center">
       <div
         style="background-color: black; border-radius: 50%; width: 30px;height:30px;align-items:center;justify-content:center;display:flex"

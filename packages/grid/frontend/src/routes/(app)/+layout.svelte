@@ -1,5 +1,4 @@
 <script>
-  import '../../app.css';
   import OnBoardModal from '$lib/components/onBoardModal.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import Navbar from '$lib/components/NavBar.svelte';
@@ -8,8 +7,8 @@
   let client;
   let activeUrl = '/home';
 
-  $: metadata = '';
-  $: user_info = '';
+  let metadata = '';
+  let user_info = '';
 
   async function loadGlobalInfos() {
     // Get JSClient
