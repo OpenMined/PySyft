@@ -308,7 +308,7 @@ class SQLiteStoreClientConfig(StoreClientConfig):
             database, it will be locked until that transaction is committed. Default five seconds.
     """
 
-    filename: Optional[str] = "db.sqlite"
+    filename: Optional[str]
     path: Optional[Union[str, Path]] = None
     check_same_thread: bool = True
     timeout: int = 5
