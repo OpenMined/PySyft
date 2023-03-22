@@ -10,16 +10,15 @@
   import { getClient } from '$lib/store';
   import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
   import { onMount } from 'svelte';
-  import { data } from './mockDatasetData';
 
-  let originalData = Object.values(data);
   let datasets = [];
 
   onMount(async () => {
     await getClient()
       .then((client) => {
-        // TODO: Replace with call to /datasets api
-        datasets = originalData;
+        client.datasets.then((response) => {
+          datasets = response;
+        });
       })
       .catch((error) => {
         console.log(error);
@@ -37,9 +36,11 @@
   let openDatasetAssets = '';
   let openDatasetRequests = '';
   let openDatasetFileSize = '';
+  let openDatasetId = '';
 
   function showOpenDataset(event) {
     openDatasetName = event.detail.openName;
+    openDatasetId = event.detail.openDatasetId;
     openDatasetAuthor = event.detail.openAuthor;
     openDatasetDescription = event.detail.openDescription;
     openDatasetLastUpdated = event.detail.openLastUpdated;
@@ -67,7 +68,7 @@
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
-  <div class="ml-60 mt-12">
+  <div class="page-container overflow-auto">
     {#if visible}
       <NewDatasetModal bind:showModal />
 
@@ -119,6 +120,7 @@
               on:hide={showOpenDataset}
               name={d.name}
               author={d.author}
+              datasetId={d.id.value}
               description={d.description}
               lastUpdated={d.updated_at}
               assets={d.asset_list.length}
@@ -136,6 +138,7 @@
             name={openDatasetName}
             author={openDatasetAuthor}
             description={openDatasetDescription}
+            datasetId={openDatasetId}
             lastUpdated={openDatasetLastUpdated}
             assets={openDatasetAssets}
             requests={openDatasetRequests}
@@ -148,6 +151,17 @@
 </main>
 
 <style lang="postcss">
+  .page-container {
+    width: 85%;
+    padding-top: 12px;
+    padding-left: 100px;
+    padding-right: 100px;
+    position: absolute;
+    height: 93%;
+    top: 7%;
+    left: 15%;
+  }
+
   :global([data-svelte-search]) {
     @apply w-5/12;
   }
