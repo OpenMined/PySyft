@@ -4,10 +4,12 @@
     faCircle,
     faTableList,
     faWaveSquare,
-    faChevronLeft
+    faChevronLeft,
+    faTrash
   } from '@fortawesome/free-solid-svg-icons';
   import Button from '$lib/components/Button.svelte';
   import Fa from 'svelte-fa';
+  import DeleteDatasetModal from './deleteDatasetModal.svelte';
 
   export let name;
   export let author;
@@ -17,26 +19,37 @@
   export let lastUpdated;
   export let fileSize;
 
+  export let activeTabValue = 'overview';
+
   let tabItems = [
     { label: 'Overview', value: 'overview' },
     { label: 'Assets', value: 'assets' }
   ];
-  export let activeTabValue = 'overview';
 
   const handleTabClick = (tabValue) => () => (activeTabValue = tabValue);
-
   const dispatch = createEventDispatcher();
 
-  // onMount(() => {
-  //   window.scrollTo(0, 0);
-  // });
+  let showModal = false;
+
+  onMount(() => {
+    window.scrollTo(0, 0);
+  });
 </script>
 
 <div>
+  <DeleteDatasetModal bind:showModal />
+
   <!-- Header -->
-  <Button variant="blue-back" action={() => dispatch('closeOpenCard')}
-    ><Fa class="pr-2" icon={faChevronLeft} size="xs" />Back</Button
-  >
+  <div class="flex justify-between">
+    <Button variant="blue-back" action={() => dispatch('closeOpenCard')}
+      ><Fa class="pr-2" icon={faChevronLeft} size="xs" />Back</Button
+    >
+
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <div class="cursor-pointer" on:click={() => (showModal = true)}>
+      <Fa class="px-2" icon={faTrash} size="xs" />
+    </div>
+  </div>
 
   <div class="detailHeader">
     <ul class="p-2 w-full">

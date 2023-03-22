@@ -19,10 +19,10 @@
     await getClient()
       .then((client) => {
         datasets = client.datasets();
+        // console.log(`datasets: ${JSON.stringify(datasets, null, 1)}`);
 
         // PLACEHOLDER
         datasets = originalData;
-        console.log(`datasets: ${JSON.stringify(datasets, null, 1)}`);
       })
       .catch((error) => {
         console.log(error);
