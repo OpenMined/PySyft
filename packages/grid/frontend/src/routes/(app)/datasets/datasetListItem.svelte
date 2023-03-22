@@ -6,6 +6,7 @@
 
   export let name;
   export let author;
+  export let datasetId;
   export let description;
   export let lastUpdated;
   export let assets;
@@ -18,6 +19,7 @@
     e.preventDefault();
     dispatch('hide', {
       openName: name,
+      openDatasetId: datasetId,
       openAuthor: author,
       openDescription: description,
       openLastUpdated: lastUpdated,
