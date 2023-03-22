@@ -8,6 +8,7 @@ from typing import Type
 # third party
 from pymongo import ASCENDING
 from pymongo import WriteConcern
+from pymongo.collection import Collection as MongoCollection
 from pymongo.errors import DuplicateKeyError
 from result import Err
 from result import Ok
@@ -17,10 +18,10 @@ from result import Result
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
-from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
+from .mongo_client import MongoStoreClientConfig
 from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import StorableObjectType
@@ -55,7 +56,8 @@ def to_mongo(context: TransformContext) -> TransformContext:
         else:
             output[k] = value
 
-    output["_id"] = context.output["id"]
+    if "id" in context.output:
+        output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
     output["__obj__"] = context.obj.to_dict()
@@ -89,6 +91,15 @@ def from_mongo(
 
 @serializable(recursive_serde=True)
 class MongoStorePartition(StorePartition):
+    """Mongo StorePartition
+
+    Parameters:
+        `settings`: PartitionSettings
+            PySyft specific settings, used for partitioning and indexing.
+        `store_config`: MongoStoreConfig
+            Mongo specific configuration
+    """
+
     __attr_allowlist__ = [
         "storage_type",
         "settings",
@@ -98,26 +109,28 @@ class MongoStorePartition(StorePartition):
     ]
     storage_type: StorableObjectType = MongoBsonObject
 
-    def init_store(self):
-        super().init_store()
-        self._init_collection()
+    def init_store(self) -> Result[Ok, Err]:
+        store_status = super().init_store()
+        if store_status.is_err():
+            return store_status
 
-    def _init_collection(self):
-        client = MongoClient.from_config(config=self.store_config.client_config)
-        self._collection = client.with_collection(
+        client = MongoClient(config=self.store_config.client_config)
+        collection_status = client.with_collection(
             collection_settings=self.settings, store_config=self.store_config
         )
-        self._create_update_index()
+        if collection_status.is_err():
+            return collection_status
 
-    @property
-    def collection(self):
-        if not hasattr(self, "_collection"):
-            self.init_store()
+        self._collection = collection_status.ok()
 
-        return self._collection
+        return self._create_update_index()
 
-    def _create_update_index(self):
+    def _create_update_index(self) -> Result[Ok, Err]:
         """Create or update mongo database indexes"""
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection = collection_status.ok()
 
         def check_index_keys(current_keys, new_index_keys):
             current_keys.sort()
@@ -131,7 +144,10 @@ class MongoStorePartition(StorePartition):
 
         new_index_keys = [(attr, ASCENDING) for attr in unique_attrs]
 
-        current_indexes = self.collection.index_information()
+        try:
+            current_indexes = collection.index_information()
+        except BaseException as e:
+            return Err(str(e))
         index_name = f"{object_name}_index_name"
 
         current_index_keys = current_indexes.get(index_name, None)
@@ -139,29 +155,37 @@ class MongoStorePartition(StorePartition):
         if current_index_keys is not None:
             keys_same = check_index_keys(current_index_keys["key"], new_index_keys)
             if keys_same:
-                return
+                return Ok()
 
             # Drop current index, since incompatible with current object
             try:
-                self.collection.drop_index(index_or_name=index_name)
-            except Exception as e:
-                print(
+                collection.drop_index(index_or_name=index_name)
+            except Exception:
+                return Err(
                     f"Failed to drop index for object: {object_name} with index keys: {current_index_keys}"
                 )
-                raise e
 
         # If no new indexes, then skip index creation
         if len(new_index_keys) == 0:
-            return
+            return Ok()
 
         try:
-            self.collection.create_index(new_index_keys, unique=True, name=index_name)
-            print(f"Index Created for {object_name} with indexes: {new_index_keys}")
-        except Exception as e:
-            print(
+            collection.create_index(new_index_keys, unique=True, name=index_name)
+        except Exception:
+            return Err(
                 f"Failed to create index for {object_name} with index keys: {new_index_keys}"
             )
-            raise e
+
+        return Ok()
+
+    @property
+    def collection(self) -> Result[MongoCollection, Err]:
+        if not hasattr(self, "_collection"):
+            res = self.init_store()
+            if res.is_err():
+                return res
+
+        return Ok(self._collection)
 
     def set(
         self,
@@ -170,7 +194,10 @@ class MongoStorePartition(StorePartition):
     ) -> Result[SyftObject, str]:
         storage_obj = obj.to(self.storage_type)
 
-        collection = self.collection
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection = collection_status.ok()
 
         if ignore_duplicates:
             collection = collection.with_options(write_concern=WriteConcern(w=0))
@@ -182,18 +209,39 @@ class MongoStorePartition(StorePartition):
         return Ok(obj)
 
     def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection = collection_status.ok()
+
+        # TODO: optimize the update. The ID should not be overwritten,
+        # but the qk doesn't necessarily have to include the `id` field either.
+
+        prev_obj_status = self.get_all_from_store(QueryKeys(qks=[qk]))
+        if prev_obj_status.is_err():
+            return Err(f"No object found with query key: {qk}")
+
+        prev_obj = prev_obj_status.ok()
+        if len(prev_obj) == 0:
+            return Err(f"Missing values for query key: {qk}")
+
+        # we don't want to overwrite Mongo's "id_" or Syft's "id" on update
+        obj_id = obj["id"]
+
+        # Set ID to the updated object value
+        setattr(obj, "id", prev_obj[0]["id"])
+
+        # Create the Mongo object
         storage_obj = obj.to(self.storage_type)
+
+        # revert the ID
+        setattr(obj, "id", obj_id)
+
         try:
-            result = self.collection.update_one(
-                filter=qk.as_dict_mongo, update={"$set": storage_obj}
-            )
+            collection.update_one(filter=qk.as_dict_mongo, update={"$set": storage_obj})
         except Exception as e:
             return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
 
-        if result.matched_count == 0:
-            return Err(f"No object found with query key: {qk}")
-        # elif result.modified_count == 0:
-        #     return Err(f"Failed to modify obj: {obj} with qk: {qk}")
         return Ok(obj)
 
     def find_index_or_search_keys(
@@ -204,7 +252,12 @@ class MongoStorePartition(StorePartition):
         return self.get_all_from_store(qks=qks)
 
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
-        storage_objs = self.collection.find(filter=qks.as_dict_mongo)
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection = collection_status.ok()
+
+        storage_objs = collection.find(filter=qks.as_dict_mongo)
         syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
@@ -213,8 +266,13 @@ class MongoStorePartition(StorePartition):
         return Ok(syft_objs)
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection = collection_status.ok()
+
         qks = QueryKeys(qks=qk)
-        result = self.collection.delete_one(filter=qks.as_dict_mongo)
+        result = collection.delete_one(filter=qks.as_dict_mongo)
 
         if result.deleted_count == 1:
             return Ok(SyftSuccess(message="Deleted"))
@@ -226,16 +284,38 @@ class MongoStorePartition(StorePartition):
         return self.get_all_from_store(qks=qks)
 
     def __len__(self):
-        return self._collection.count_documents(filter={})
+        collection_status = self.collection
+        if collection_status.is_err():
+            return 0
+        collection = collection_status.ok()
+        return collection.count_documents(filter={})
 
 
 @serializable(recursive_serde=True)
 class MongoDocumentStore(DocumentStore):
+    """Mongo Document Store
+
+    Parameters:
+        `store_config`: MongoStoreConfig
+            Mongo specific configuration, including connection configuration, database name, or client class type.
+    """
+
     partition_type = MongoStorePartition
 
 
 @serializable(recursive_serde=True)
 class MongoStoreConfig(StoreConfig):
-    client_config: StoreClientConfig
+    """Mongo Store configuration
+
+    Parameters:
+        `client_config`: MongoStoreClientConfig
+            Mongo connection details: hostname, port, user, password etc.
+        `store_type`: Type[DocumentStore]
+            The type of the DocumentStore. Default: MongoDocumentStore
+        `db_name`: str
+            Database name
+    """
+
+    client_config: MongoStoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"

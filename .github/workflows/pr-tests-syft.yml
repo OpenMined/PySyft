@@ -227,7 +227,7 @@ jobs:
           docker version
           docker compose version
 
-      - name: Run notebook tests
+      - name: Run unit tests
         if: steps.changes.outputs.stack == 'true'
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
