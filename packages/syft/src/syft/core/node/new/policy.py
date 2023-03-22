@@ -505,10 +505,16 @@ def generate_signature(context: TransformContext) -> TransformContext:
     return context
 
 
+def serialization_addon(context: TransformContext) -> TransformContext:
+    policy_code = context.output['code']
+    context.output['code']= '@serializable(recursive_serde=True)\n' + policy_code 
+    return context
+
 @transform(SubmitUserPolicy, UserPolicy)
 def submit_policy_code_to_user_code() -> List[Callable]:
     return [
         generate_id,
+        serialization_addon,
         hash_code,
         generate_unique_class_name,
         generate_signature,

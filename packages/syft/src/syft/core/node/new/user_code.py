@@ -589,21 +589,12 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         raise NotImplementedError
     return context
 
-def serialization_addon(context: TransformContext) -> TransformContext:
-    if isinstance(context.output['input_policy'], SubmitUserPolicy):
-        policy_code = context.output['input_policy'].code
-        context.output['input_policy'].code = '@serializable(recursive_serde=True)\n' + policy_code
-    if isinstance(context.output['output_policy'], SubmitUserPolicy):
-        policy_code = context.output['output_policy'].code
-        context.output['output_policy'].code = '@serializable(recursive_serde=True)\n' + policy_code
-    return context
 
 
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
         generate_id,
-        serialization_addon,
         hash_code,
         generate_unique_func_name,
         modify_signature,
