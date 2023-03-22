@@ -164,6 +164,11 @@ def rs_proto2object(proto: _DynamicStructBuilder, class_type: Type = type(None))
                 try:
                     class_type = getattr(sys.modules[".".join(module_parts)], klass)
                 except Exception:
+                    # failed the first two checks
+                    print(
+                        "failed to get proto.fullyQualifiedName",
+                        proto.fullyQualifiedName,
+                    )
                     class_type = locals()[klass]
 
     if proto.fullyQualifiedName not in TYPE_BANK:

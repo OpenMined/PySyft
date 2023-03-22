@@ -15,7 +15,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Type
 from typing import Union
 
 # third party
@@ -28,17 +27,20 @@ from result import Result
 from ....util import is_interpreter_jupyter
 from .api import NodeView
 from .context import AuthedServiceContext
-from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
-from .datetime import DateTime
 from .document_store import PartitionKey
 from .node import NodeType
 from .node_metadata import EnclaveMetadata
+from .policy import CustomOutputPolicy
+from .policy import InputPolicy
+from .policy import InputPolicyState
+from .policy import OutputPolicy
+from .policy import OutputPolicyState
+from .policy import Policy
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
-from .response import SyftError
-from .response import SyftSuccess
+from .policy_service import PolicyService
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
@@ -47,9 +49,6 @@ from .transforms import generate_id
 from .transforms import transform
 from .uid import UID
 from .user_code_parse import GlobalsVisitor
-from .policy import get_policy_object, update_policy_state
-
-# from .policy_service import PolicyService
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
@@ -77,285 +76,6 @@ def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
 
         uid_kwargs[k] = uid
     return uid_kwargs
-
-
-class InputPolicy(SyftObject):
-    # version
-    __canonical_name__ = "InputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    # relative
-    from .api import NodeView
-
-    id: UID
-    inputs: Dict[NodeView, Any]
-    node_uid: Optional[UID]
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # TODO: This method initialization would conflict if one of the input variables
-        # to the code submission function happens to be id or inputs
-        uid = UID()
-        node_uid = None
-        if "id" in kwargs:
-            uid = kwargs["id"]
-        if "node_uid" in kwargs:
-            node_uid = kwargs["node_uid"]
-
-        # finally get inputs
-        if "inputs" in kwargs:
-            kwargs = kwargs["inputs"]
-        else:
-            kwargs = partition_by_node(kwargs)
-        super().__init__(id=uid, inputs=kwargs, node_uid=node_uid)
-
-    def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        raise NotImplementedError
-
-    # def __getitem__(self, key: Union[int, str]) -> Optional[SyftObject]:
-    #     if isinstance(key, int):
-    #         key = list(self.inputs.keys())[key]
-    #     uid = self.inputs[key]
-    #     # TODO Add NODE UID or LINK so we can resolve this object
-    #     return uid
-
-    @property
-    def assets(self) -> List[Asset]:
-        # relative
-        from .api import APIRegistry
-
-        api = APIRegistry.api_for(self.node_uid)
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
-
-        node_view = NodeView(
-            node_name=api.node_name, verify_key=api.signing_key.verify_key
-        )
-        inputs = self.inputs[node_view]
-        all_assets = []
-        for k, uid in inputs.items():
-            if isinstance(uid, UID):
-                assets = api.services.dataset.get_assets_by_action_id(uid)
-                if not isinstance(assets, list):
-                    return assets
-
-                all_assets += assets
-        return all_assets
-
-
-def retrieve_from_db(
-    code_item_id: UID, allowed_inputs: Dict[str, UID], context: AuthedServiceContext
-) -> Dict:
-    # relative
-    from .action_service import TwinMode
-
-    action_service = context.node.get_service("actionservice")
-    code_inputs = {}
-
-    if context.node.node_type == NodeType.DOMAIN:
-        for var_name, arg_id in allowed_inputs.items():
-            kwarg_value = action_service.get(
-                context=context, uid=arg_id, twin_mode=TwinMode.NONE
-            )
-            if kwarg_value.is_err():
-                return kwarg_value
-            code_inputs[var_name] = kwarg_value.ok()
-
-    elif context.node.node_type == NodeType.ENCLAVE:
-        # TODO 🟣 Temporarily added skip permission arguments for enclave
-        # until permissions are fully integrated
-        dict_object = action_service.get(
-            context=context, uid=code_item_id, skip_permission=True
-        )
-        if dict_object.is_err():
-            return dict_object
-        for value in dict_object.ok().base_dict.values():
-            code_inputs.update(value)
-
-    else:
-        raise Exception(
-            f"Invalid Node Type for Code Submission:{context.node.node_type}"
-        )
-    return Ok(code_inputs)
-
-
-def allowed_ids_only(
-    allowed_inputs: Dict[str, UID],
-    kwargs: Dict[str, Any],
-    context: AuthedServiceContext,
-) -> Dict[str, UID]:
-    if context.node.node_type == NodeType.DOMAIN:
-        node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-        )
-        allowed_inputs = allowed_inputs[node_view]
-    elif context.node.node_type == NodeType.ENCLAVE:
-        base_dict = {}
-        for key in allowed_inputs.values():
-            base_dict.update(key)
-        allowed_inputs = base_dict
-    else:
-        raise Exception(
-            f"Invalid Node Type for Code Submission:{context.node.node_type}"
-        )
-    filtered_kwargs = {}
-    for key in allowed_inputs.keys():
-        if key in kwargs:
-            value = kwargs[key]
-            uid = value
-            if not isinstance(uid, UID):
-                uid = getattr(value, "id", None)
-
-            if uid != allowed_inputs[key]:
-                raise Exception(
-                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
-                )
-            filtered_kwargs[key] = value
-    return filtered_kwargs
-
-
-@serializable(recursive_serde=True)
-class ExactMatch(InputPolicy):
-    # version
-    __canonical_name__ = "ExactMatch"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    def filter_kwargs(
-        self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
-    ) -> Dict[str, Any]:
-        allowed_inputs = allowed_ids_only(
-            allowed_inputs=self.inputs, kwargs=kwargs, context=context
-        )
-        return retrieve_from_db(
-            code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
-        )
-
-
-@serializable(recursive_serde=True)
-class OutputHistory(SyftObject):
-    # version
-    __canonical_name__ = "OutputHistory"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    output_time: DateTime
-    outputs: Optional[Union[List[UID], Dict[str, UID]]]
-    executing_user_verify_key: SyftVerifyKey
-
-
-@serializable(recursive_serde=True)
-class OutputPolicyState(SyftObject):
-    # version
-    __canonical_name__ = "OutputPolicyState"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    output_history: List[OutputHistory] = []
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        raise NotImplementedError
-
-    def update_state(
-        self,
-        context: NodeServiceContext,
-        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
-    ) -> None:
-        if self.count >= self.limit:
-            raise Exception(
-                f"Update state being called with count: {self.count} "
-                f"beyond execution limit: {self.limit}"
-            )
-        if isinstance(outputs, UID):
-            outputs = [outputs]
-        history = OutputHistory(
-            output_time=DateTime.now(),
-            outputs=outputs,
-            executing_user_verify_key=context.credentials,
-        )
-        self.output_history.append(history)
-        self.count += 1
-
-
-@serializable(recursive_serde=True)
-class OutputPolicyStateExecuteCount(OutputPolicyState):
-    # version
-    __canonical_name__ = "OutputPolicyStateExecuteCount"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    count: int = 0
-    limit: int
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        is_valid = self.count < self.limit
-        if is_valid:
-            return SyftSuccess(
-                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
-            )
-        return SyftError(
-            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
-        )
-
-    def update_state(
-        self,
-        context: NodeServiceContext,
-        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
-    ) -> None:
-        if self.count >= self.limit:
-            raise Exception(
-                f"Update state being called with count: {self.count} "
-                f"beyond execution limit: {self.limit}"
-            )
-        self.count += 1
-
-
-@serializable(recursive_serde=True)
-class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
-    __canonical_name__ = "OutputPolicyStateExecuteOnce"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    limit: int = 1
-
-
-class OutputPolicy(SyftObject):
-    # version
-    __canonical_name__ = "OutputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    outputs: List[str] = []
-    state_type: Optional[Type[OutputPolicyState]]
-
-    def update() -> None:
-        raise NotImplementedError
-
-    @property
-    def policy_code(self) -> str:
-        cls = type(self)
-        op_code = inspect.getsource(cls)
-        if self.state_type:
-            state_code = inspect.getsource(self.state_type)
-            op_code += "\n" + state_code
-        return op_code
-
-@serializable(recursive_serde=True)
-class CustomOutputPolicy(OutputPolicy):
-    # version
-    __canonical_name__ = "CustomOutputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
-    init_args: Dict[str, Any] = {}
-    kwargs: Dict[str, Any] = {}
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.init_args = args
-        self.kwargs = kwargs
-
-@serializable(recursive_serde=True)
-class SingleExecutionExactOutput(OutputPolicy):
-    # version
-    __canonical_name__ = "SingleExecutionExactOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
 
 
 @serializable(recursive_serde=True)
@@ -444,9 +164,9 @@ class UserCode(SyftObject):
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy: Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
-    input_policy_state: Union[bytes, OutputPolicyState]
+    input_policy_state: Optional[Union[bytes, InputPolicyState]]
     output_policy: Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
-    output_policy_state: Union[bytes, OutputPolicyState]
+    output_policy_state: Optional[Union[bytes, OutputPolicyState]]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -467,7 +187,7 @@ class UserCode(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
-    
+
     @property
     def unsafe_function(self) -> Optional[Callable]:
         print("WARNING: This code was submitted by a User and could be UNSAFE.")
@@ -492,46 +212,6 @@ class UserCode(SyftObject):
     @property
     def code(self) -> str:
         return self.raw_code
-
-
-def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
-    # relative
-    from .action_object import ActionObject
-    from .api import APIRegistry
-    from .api import NodeView
-    from .twin_object import TwinObject
-
-    # fetches the all the current api's connected
-    api_list = APIRegistry.get_all_api()
-    output_kwargs = {}
-    for k, v in kwargs.items():
-        uid = v
-        if isinstance(v, ActionObject):
-            uid = v.id
-        if isinstance(v, TwinObject):
-            uid = v.id
-        if isinstance(v, Asset):
-            uid = v.action_id
-
-        if not isinstance(uid, UID):
-            raise Exception(f"Input {k} must have a UID not {type(v)}")
-
-        _obj_exists = False
-        for api in api_list:
-            if api.services.action.exists(uid):
-                node_view = NodeView.from_api(api)
-                if node_view not in output_kwargs:
-                    output_kwargs[node_view] = {k: uid}
-                else:
-                    output_kwargs[node_view].update({k: uid})
-
-                _obj_exists = True
-                break
-
-        if not _obj_exists:
-            raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
-
-    return output_kwargs
 
 
 @serializable(recursive_serde=True)
@@ -624,7 +304,7 @@ def get_code_from_class(policy):
     # third party
     from IPython.core.magics.code import extract_symbols
 
-    klasses = [inspect.getmro(policy)[0]] #
+    klasses = [inspect.getmro(policy)[0]]  #
     whole_str = ""
     for klass in klasses:
         if is_interpreter_jupyter():
@@ -665,7 +345,7 @@ def syft_function(
         # TODO: move serializable injection in the server side
         output_policy_init_args = output_policy.kwargs
         print(output_policy_init_args)
-    
+
         user_class = output_policy.__class__
         init_f_code = user_class.__init__.__code__
         output_policy = SubmitUserPolicy(
@@ -680,7 +360,6 @@ def syft_function(
     elif issubclass(output_policy, OutputPolicy):
         print("OutputPolicy")
         output_policy = output_policy(**output_policy_init_args)
-        
 
     def decorator(f):
         print(f.__code__.co_varnames)
@@ -845,42 +524,57 @@ def modify_signature(context: TransformContext) -> TransformContext:
     return context
 
 
-def init_policy_state(context: TransformContext) -> TransformContext:
-    # stdlib
-
-    print(context.output["output_policy"], file=sys.stderr)
-    if isinstance(context.output["input_policy"], InputPolicy):
-        # context.output["input_policy_state"] = context.output["input_policy"].state_type()
-        context.output["input_policy_state"] = ""
-    else:
-        context.output["input_policy_state"] = ""
-
-    if isinstance(context.output["output_policy"], OutputPolicy):
-        context.output["output_policy_state"] = context.output[
-            "output_policy"
-        ].state_type()
-    else:
-        context.output["output_policy_state"] = ""
-
-
+def init_input_policy_state(context: TransformContext) -> TransformContext:
+    ip = context.output["input_policy"]
+    if ip.state_type:
+        context.output["input_policy_state"] = ip.state_type()
     return context
+
+
+def init_output_policy_state(context: TransformContext) -> TransformContext:
+    print(
+        "what kind of output_policy",
+        context.output["output_policy"],
+        type(context.output["output_policy"]),
+    )
+    op = context.output["output_policy"]
+    if op.state_type:
+        context.output["output_policy_state"] = op.state_type()
+    return context
+
+
+def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
+    policy_service = context.node.get_service(PolicyService)
+    if isinstance(policy, SubmitUserPolicy):
+        policy = policy.to(UserPolicy, context=context)
+    elif isinstance(policy, UID):
+        policy = policy_service.get_policy_by_uid(context, policy)
+        if policy.is_ok():
+            policy = policy.ok()
+
+    policy.node_uid = context.node.id
+    return policy
 
 
 def check_input_policy(context: TransformContext) -> TransformContext:
     ip = context.output["input_policy"]
-    ip.node_uid = context.node.id
+    ip = check_policy(policy=ip, context=context)
     context.output["input_policy"] = ip
     return context
 
 
+def check_output_policy(context: TransformContext) -> TransformContext:
+    op = context.output["output_policy"]
+    op = check_policy(policy=op, context=context)
+    context.output["output_policy"] = op
+    return context
+
+
 def add_custom_status(context: TransformContext) -> TransformContext:
-    print(context.node.node_type, file=sys.stderr)
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        print(context.obj.input_policy.inputs.keys(), file=sys.stderr)
-        print(node_view, file=sys.stderr)
         if node_view in context.obj.input_policy.inputs.keys():
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
@@ -908,10 +602,12 @@ def submit_user_code_to_user_code() -> List[Callable]:
         generate_unique_func_name,
         modify_signature,
         new_check_code,
-        compile_code,
+        # compile_code, # don't compile code till its approved
         add_credentials_for_key("user_verify_key"),
         check_input_policy,
-        init_policy_state,
+        check_output_policy,
+        init_input_policy_state,
+        init_output_policy_state,
         add_custom_status,
     ]
 
@@ -964,6 +660,3 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
-
-ALLOWED_POLICIES = [ExactMatch, SingleExecutionExactOutput, ]
-

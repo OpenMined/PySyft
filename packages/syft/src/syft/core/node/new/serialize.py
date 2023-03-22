@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Type
 
 
 def _serialize(

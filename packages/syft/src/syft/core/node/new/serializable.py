@@ -11,7 +11,7 @@ module_type = type(syft)
 
 
 def serializable(
-    recursive_serde: bool = False,
+    recursive_serde: bool = True,
 ) -> Any:
     def rs_decorator(cls: Any) -> Any:
         recursive_serde_register(cls)

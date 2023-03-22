@@ -27,7 +27,6 @@ from .credentials import SyftVerifyKey
 from .datetime import DateTime
 from .linked_obj import LinkedObject
 from .policy import UserPolicy
-from .policy import get_policy_object
 from .policy import init_policy
 from .policy import update_policy_state
 from .response import SyftError
@@ -43,7 +42,6 @@ from .transforms import transform
 from .uid import UID
 from .user_code import UserCode
 from .user_code import UserCodeStatus
-from .policy_service import PolicyService
 
 
 @serializable(recursive_serde=True)
@@ -201,7 +199,6 @@ class Request(SyftObject):
 
         if isinstance(code.output_policy, UserPolicy):
             res = api.services.policy.add(code.output_policy)
-            print(dir(api))
             print(res)
             policy_object = init_policy(
                 code.output_policy, code.output_policy_init_args
@@ -215,7 +212,10 @@ class Request(SyftObject):
                 policy_object.apply_output(action_object)
             )
             state = update_policy_state(policy_object)
-            code.output_policy_state = _serialize(policy_object, to_bytes=True, )
+            code.output_policy_state = _serialize(
+                policy_object,
+                to_bytes=True,
+            )
         else:
             state = code.output_policy_state
             state.update_state(outputs=action_object.id, context=ctx)
