@@ -109,10 +109,8 @@ def test_user_transform() -> None:
     assert new_user.name == "Alice"
     assert new_user.password == "letmein"
     assert new_user.password_verify == "letmein"
-    print("new user", new_user)
 
     user = new_user.to(User)
-    print("got a user", user)
     # assert user.id is not None # need to insert / update first
     assert user.email == "alice@bob.com"
     assert user.name == "Alice"
@@ -232,6 +230,9 @@ def test_worker_serde() -> None:
     assert de.id == worker.id
 
 
+# stdlib
+
+
 @pytest.mark.parametrize(
     "path, kwargs",
     [
@@ -301,8 +302,7 @@ def test_worker_handle_api_request(
     ],
 )
 @pytest.mark.parametrize("blocking", [False, True])
-@pytest.mark.parametrize("n_processes", [0])
-# @pytest.mark.parametrize("n_processes", [0, 1])
+@pytest.mark.parametrize("n_processes", [0, 1])
 def test_worker_handle_api_response(
     path: str, kwargs: Dict, blocking: bool, n_processes: int
 ) -> None:
