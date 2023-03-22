@@ -26,7 +26,7 @@
     {#await client.metadata then metadata}
       <DomainMetadataPanel {metadata} />
       <form class="contents" on:submit|preventDefault={(e) => login(e.target, client)}>
-        <Modal>
+        <Modal maxWidth="max-w-[681px]">
           <div
             class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min"
             slot="header"
