@@ -1,12 +1,6 @@
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
-  import {
-    faCircle,
-    faTableList,
-    faWaveSquare,
-    faChevronLeft,
-    faTrash
-  } from '@fortawesome/free-solid-svg-icons';
+  import { faCircle, faTableList, faChevronLeft, faTrash } from '@fortawesome/free-solid-svg-icons';
   import Button from '$lib/components/Button.svelte';
   import Fa from 'svelte-fa';
   import DeleteDatasetModal from './deleteDatasetModal.svelte';
