@@ -20,7 +20,7 @@
   let isEditingDescription = false;
 
   function handleEditDescriptionClick() {
-    isEditingDescription = true;
+    isEditingDescription = false;
   }
 
   let tabItems = [
@@ -68,7 +68,7 @@
         <li class="text-gray-600 font-small">{`Updated ${dataset.lastUpdated}`}</li>
       </div>
       <div>
-        <li>UID: {dataset.datasetId}</li>
+        <li class="text-gray-600 font-small">UID: {dataset.datasetId}</li>
       </div>
       <div class="flex items-center py-8">
         <Fa class="px-2" icon={faTableList} size="sm" />
