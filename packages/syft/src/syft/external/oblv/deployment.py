@@ -1,4 +1,7 @@
 # stdlib
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
@@ -40,7 +43,7 @@ def create_deployment(
     oblv_client: Optional[OblvClient] = None,
     infra: str = INFRA,
     region: str = REGION,
-) -> str:
+) -> DeploymentClient:
     """Creates a new deployment with predefined codebase
     Args:
         client : Oblivious Client.
@@ -88,7 +91,7 @@ def create_deployment(
         )
     except Exception as e:
         raise Exception(e)
-    build_args = {
+    build_args: Dict[str, Any] = {
         "auth": {},
         "users": {"domain": [], "user": []},
         "additional_args": {},
@@ -96,7 +99,7 @@ def create_deployment(
         "runtime_args": "",
     }
     users = []
-    runtime_args = []
+    runtime_args: List[str] = []
     for domain_client in domain_clients:
         try:
             users.append(
