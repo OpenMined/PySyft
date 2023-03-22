@@ -34,6 +34,13 @@ from .uid import UID
 
 @serializable(recursive_serde=True)
 class BasePartitionSettings(SyftBaseModel):
+    """Basic Partition Settings
+
+    Parameters:
+        name: str
+            Identifier to be used as prefix by stores and for partitioning
+    """
+
     name: str
 
 
@@ -44,6 +51,8 @@ def first_or_none(result: Any) -> Optional[Any]:
 
 
 class StoreClientConfig(BaseModel):
+    """Base Client specific configuration"""
+
     pass
 
 
@@ -285,6 +294,15 @@ class PartitionSettings(BasePartitionSettings):
 @instrument
 @serializable(recursive_serde=True)
 class StorePartition:
+    """Base StorePartition
+
+    Parameters:
+        settings: PartitionSettings
+            PySyft specific settings
+        store_config: StoreConfig
+            Backend specific configuration
+    """
+
     def __init__(
         self,
         settings: PartitionSettings,
@@ -294,9 +312,14 @@ class StorePartition:
         self.store_config = store_config
         self.init_store()
 
-    def init_store(self) -> None:
-        self.unique_cks = self.settings.unique_keys.all
-        self.searchable_cks = self.settings.searchable_keys.all
+    def init_store(self) -> Result[Ok, Err]:
+        try:
+            self.unique_cks = self.settings.unique_keys.all
+            self.searchable_cks = self.settings.searchable_keys.all
+        except BaseException as e:
+            return Err(str(e))
+
+        return Ok()
 
     def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
         if partition_key in self.unique_cks:
@@ -343,6 +366,13 @@ class StorePartition:
 @instrument
 @serializable(recursive_serde=True)
 class DocumentStore:
+    """Base Document Store
+
+    Parameters:
+        store_config: StoreConfig
+            Store specific configuration.
+    """
+
     partitions: Dict[str, StorePartition]
     partition_type: Type[StorePartition]
 
@@ -381,7 +411,7 @@ class BaseStash:
         return self.partition.all()
 
     def __len__(self) -> int:
-        return self.partition.__len__()
+        return len(self.partition)
 
     def set(
         self,
@@ -491,6 +521,15 @@ class BaseUIDStoreStash(BaseStash):
 
 @serializable(recursive_serde=True)
 class StoreConfig(SyftBaseObject):
+    """Base Store configuration
+
+    Parameters:
+        store_type: Type
+            Document Store type
+        client_config: Optional[StoreClientConfig]
+            Backend-specific config
+    """
+
     __canonical_name__ = "StoreConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
