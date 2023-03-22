@@ -201,74 +201,76 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         try:
-            # stdlib
-            import sys
-
-            print(kwargs, file=sys.stderr)
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(uid=uid)
             if result.is_ok():
                 code_item = result.ok()
                 if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
-                    if isinstance(code_item.output_policy, UserPolicy):
-                        is_valid = True
-                    else:
-                        is_valid = code_item.output_policy_state.valid
-                        if not is_valid:
-                            if (
-                                len(
-                                    code_item.output_policy_state.output_history,
-                                )
-                                > 0
-                            ):
-                                return get_outputs(
-                                    context=context,
-                                    output_history=code_item.output_policy_state.output_history[
-                                        -1
-                                    ],
-                                )
-                            return is_valid
-
-                    action_service = context.node.get_service("actionservice")
-                    result = action_service._user_code_execute(
-                        context, code_item, filtered_kwargs
-                    )
-                    print("Result is", result, file=sys.stderr)
-                    if isinstance(result, str):
-                        return SyftError(message=result)
-                    if result.is_ok():
-                        final_results = result.ok()
-                        if isinstance(code_item.output_policy, OutputPolicy):
-                            code_item.output_policy_state.update_state()
-                        else:
-                            policy_object = get_policy_object(
-                                code_item.output_policy, code_item.output_policy_state
+                    is_valid = code_item.output_policy_state.valid
+                    if not is_valid:
+                        if (
+                            len(
+                                code_item.output_policy_state.output_history,
                             )
-                            print("Policy Object", policy_object, file=sys.stderr)
+                            > 0
+                        ):
+                            return get_outputs(
+                                context=context,
+                                output_history=code_item.output_policy_state.output_history[
+                                    -1
+                                ],
+                            )
+                        return is_valid
+                    else:
+                        print("valid policy lets run it")
+                        # stdlib
+                        import sys
+
+                        action_service = context.node.get_service("actionservice")
+                        result = action_service._user_code_execute(
+                            context, code_item, filtered_kwargs
+                        )
+                        print("Result is", result, file=sys.stderr)
+                        if isinstance(result, str):
+                            return SyftError(message=result)
+                        if result.is_ok():
+                            final_results = result.ok()
+                            if isinstance(code_item.output_policy, OutputPolicy):
+                                code_item.output_policy_state.update_state(
+                                    context=context, outputs=final_results.id
+                                )
+                            else:
+                                policy_object = get_policy_object(
+                                    code_item.output_policy,
+                                    code_item.output_policy_state,
+                                )
+                                print("Policy Object", policy_object, file=sys.stderr)
+                                print(
+                                    "Final Result before policy is",
+                                    final_results,
+                                    file=sys.stderr,
+                                )
+                                final_results = policy_object.apply_output(
+                                    final_results
+                                )
+                                code_item.output_policy_state = update_policy_state(
+                                    policy_object
+                                )
+                                # print(code_item.output_policy_state, )
+
                             print(
-                                "Final Result before policy is",
+                                "Final Result after policy is",
                                 final_results,
                                 file=sys.stderr,
                             )
-                            final_results = policy_object.apply_output(final_results)
-                            code_item.output_policy_state = update_policy_state(
-                                policy_object
+                            state_result = self.update_code_state(
+                                context=context, code_item=code_item
                             )
-                            # print(code_item.output_policy_state, )
 
-                        print(
-                            "Final Result after policy is",
-                            final_results,
-                            file=sys.stderr,
-                        )
-                        state_result = self.update_code_state(
-                            context=context, code_item=code_item
-                        )
-
-                        if state_result:
-                            return final_results
-                        else:
-                            return state_result
+                            if state_result:
+                                return final_results
+                            else:
+                                return state_result
                 elif code_item.status.for_context(context) == UserCodeStatus.SUBMITTED:
                     return SyftNotReady(
                         message=f"{type(code_item)} Your code is waiting for approval: {code_item.status}"

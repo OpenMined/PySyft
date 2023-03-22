@@ -257,11 +257,6 @@ class OutputPolicyState(SyftObject):
         context: NodeServiceContext,
         outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
     ) -> None:
-        if self.count >= self.limit:
-            raise Exception(
-                f"Update state being called with count: {self.count} "
-                f"beyond execution limit: {self.limit}"
-            )
         if isinstance(outputs, UID):
             outputs = [outputs]
         history = OutputHistory(
@@ -270,7 +265,6 @@ class OutputPolicyState(SyftObject):
             executing_user_verify_key=context.credentials,
         )
         self.output_history.append(history)
-        self.count += 1
 
 
 @serializable(recursive_serde=True)
@@ -303,6 +297,7 @@ class OutputPolicyStateExecuteCount(OutputPolicyState):
                 f"Update state being called with count: {self.count} "
                 f"beyond execution limit: {self.limit}"
             )
+        super().update_state(context=context, outputs=outputs)
         self.count += 1
 
 

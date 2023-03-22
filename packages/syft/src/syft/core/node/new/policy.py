@@ -12,6 +12,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from RestrictedPython import compile_restricted
@@ -22,6 +23,8 @@ from .credentials import SyftVerifyKey
 from .deserialize import _deserialize
 from .document_store import PartitionKey
 from .policy_code_parse import GlobalsVisitor
+from .response import SyftError
+from .response import SyftSuccess
 from .serializable import serializable
 from .serialize import _serialize
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -63,6 +66,10 @@ class UserPolicy(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        return SyftSuccess(message="Policy is valid.")
 
 
 @serializable(recursive_serde=True)
