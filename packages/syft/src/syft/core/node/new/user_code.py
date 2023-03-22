@@ -742,7 +742,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         generate_unique_func_name,
         modify_signature,
         new_check_code,
-        compile_code,
+        # compile_code, # don't compile code till its approved
         add_credentials_for_key("user_verify_key"),
         check_input_policy,
         init_output_policy_state,
