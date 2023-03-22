@@ -12,6 +12,7 @@
   export let assets;
   export let lastUpdated;
   export let fileSize;
+  export let datasetId;
 
   export let activeTabValue = 'overview';
 
@@ -60,7 +61,7 @@
         <li class="text-gray-600 font-small">{`Updated ${lastUpdated}`}</li>
       </div>
       <div>
-        <li>UID: 449f4f997a96467f90f7af8b396928f1</li>
+        <li>UID: {datasetId}</li>
       </div>
       <div class="flex items-center py-8">
         <Fa class="px-2" icon={faTableList} size="sm" />
