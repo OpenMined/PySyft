@@ -32,12 +32,9 @@ from .dataset import Asset
 from .document_store import PartitionKey
 from .node import NodeType
 from .node_metadata import EnclaveMetadata
-from .policy import CustomOutputPolicy
-from .policy import InputPolicy
+from .policy import CustomOutputPolicy, InputPolicy, OutputPolicy, Policy
 from .policy import InputPolicyState
-from .policy import OutputPolicy
 from .policy import OutputPolicyState
-from .policy import Policy
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
 from .policy_service import PolicyService
@@ -163,9 +160,9 @@ class UserCode(SyftObject):
     id: UID
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy: Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
+    input_policy: Policy#Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
     input_policy_state: Optional[Union[bytes, InputPolicyState]]
-    output_policy: Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
+    output_policy: Policy #Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
     output_policy_state: Optional[Union[bytes, OutputPolicyState]]
     parsed_code: str
     service_func_name: str
@@ -334,8 +331,7 @@ def syft_function(
         init_f_code = input_policy.__init__.__code__
 
         input_policy = SubmitUserPolicy(
-            code="@serializable(recursive_serde=True)\n"
-            + get_code_from_class(input_policy),
+            code=get_code_from_class(input_policy),
             class_name=input_policy.__name__,
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
@@ -593,11 +589,21 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         raise NotImplementedError
     return context
 
+def serialization_addon(context: TransformContext) -> TransformContext:
+    if isinstance(context.output['input_policy'], SubmitUserPolicy):
+        policy_code = context.output['input_policy'].code
+        context.output['input_policy'].code = '@serializable(recursive_serde=True)\n' + policy_code
+    if isinstance(context.output['output_policy'], SubmitUserPolicy):
+        policy_code = context.output['output_policy'].code
+        context.output['output_policy'].code = '@serializable(recursive_serde=True)\n' + policy_code
+    return context
+
 
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
         generate_id,
+        serialization_addon,
         hash_code,
         generate_unique_func_name,
         modify_signature,
