@@ -867,13 +867,10 @@ def check_input_policy(context: TransformContext) -> TransformContext:
 
 
 def add_custom_status(context: TransformContext) -> TransformContext:
-    print(context.node.node_type, file=sys.stderr)
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        print(context.obj.input_policy.inputs.keys(), file=sys.stderr)
-        print(node_view, file=sys.stderr)
         if node_view in context.obj.input_policy.inputs.keys():
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
