@@ -193,8 +193,13 @@ def execute_policy_code(user_policy: UserPolicy):
             sys.stderr = stderr
             # exec(user_policy.byte_code)  # nosec
             # policy_class = eval(user_policy.class_name)  # nosec
-            print(user_policy.__object_version_registry__['RepeatedCallPolicy_1'], file=stderr_)
-            policy_class = user_policy.__object_version_registry__['RepeatedCallPolicy_1']
+            print(
+                user_policy.__object_version_registry__["RepeatedCallPolicy_1"],
+                file=stderr_,
+            )
+            policy_class = user_policy.__object_version_registry__[
+                "RepeatedCallPolicy_1"
+            ]
 
             sys.stdout = stdout_
             sys.stderr = stderr_
@@ -202,7 +207,6 @@ def execute_policy_code(user_policy: UserPolicy):
             return policy_class
         except Exception as e:
             print("execute_byte_code failed", e, file=stderr_)
-
 
     finally:
         sys.stdout = stdout_

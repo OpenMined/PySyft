@@ -15,20 +15,17 @@ from .linked_obj import LinkedObject
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
 from .policy import get_policy_object
-from .policy import init_policy
 from .policy import update_policy_state
 from .request import UserCodeStatusChange
 from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
 from .serializable import serializable
-from .serialize import _serialize
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .uid import UID
-from .user_code import InputPolicy
 from .user_code import OutputHistory
 from .user_code import OutputPolicy
 from .user_code import SubmitUserCode
@@ -204,7 +201,9 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         try:
+            # stdlib
             import sys
+
             print(kwargs, file=sys.stderr)
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(uid=uid)
@@ -246,14 +245,22 @@ class UserCodeService(AbstractService):
                                 code_item.output_policy, code_item.output_policy_state
                             )
                             print("Policy Object", policy_object, file=sys.stderr)
-                            print("Final Result before policy is", final_results, file=sys.stderr)
+                            print(
+                                "Final Result before policy is",
+                                final_results,
+                                file=sys.stderr,
+                            )
                             final_results = policy_object.apply_output(final_results)
                             code_item.output_policy_state = update_policy_state(
                                 policy_object
                             )
                             # print(code_item.output_policy_state, )
 
-                        print("Final Result after policy is", final_results, file=sys.stderr)
+                        print(
+                            "Final Result after policy is",
+                            final_results,
+                            file=sys.stderr,
+                        )
                         state_result = self.update_code_state(
                             context=context, code_item=code_item
                         )

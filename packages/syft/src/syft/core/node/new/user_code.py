@@ -47,7 +47,6 @@ from .transforms import generate_id
 from .transforms import transform
 from .uid import UID
 from .user_code_parse import GlobalsVisitor
-from .policy import get_policy_object, update_policy_state
 
 # from .policy_service import PolicyService
 
@@ -336,6 +335,7 @@ class OutputPolicy(SyftObject):
             op_code += "\n" + state_code
         return op_code
 
+
 @serializable(recursive_serde=True)
 class CustomOutputPolicy(OutputPolicy):
     # version
@@ -348,6 +348,7 @@ class CustomOutputPolicy(OutputPolicy):
         super().__init__(**kwargs)
         self.init_args = args
         self.kwargs = kwargs
+
 
 @serializable(recursive_serde=True)
 class SingleExecutionExactOutput(OutputPolicy):
@@ -467,7 +468,7 @@ class UserCode(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
-    
+
     @property
     def unsafe_function(self) -> Optional[Callable]:
         print("WARNING: This code was submitted by a User and could be UNSAFE.")
@@ -624,7 +625,7 @@ def get_code_from_class(policy):
     # third party
     from IPython.core.magics.code import extract_symbols
 
-    klasses = [inspect.getmro(policy)[0]] #
+    klasses = [inspect.getmro(policy)[0]]  #
     whole_str = ""
     for klass in klasses:
         if is_interpreter_jupyter():
@@ -665,7 +666,7 @@ def syft_function(
         # TODO: move serializable injection in the server side
         output_policy_init_args = output_policy.kwargs
         print(output_policy_init_args)
-    
+
         user_class = output_policy.__class__
         init_f_code = user_class.__init__.__code__
         output_policy = SubmitUserPolicy(
@@ -680,7 +681,6 @@ def syft_function(
     elif issubclass(output_policy, OutputPolicy):
         print("OutputPolicy")
         output_policy = output_policy(**output_policy_init_args)
-        
 
     def decorator(f):
         print(f.__code__.co_varnames)
@@ -907,7 +907,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         generate_unique_func_name,
         modify_signature,
         new_check_code,
-        compile_code,
+        # compile_code, # don't compile code till its approved
         add_credentials_for_key("user_verify_key"),
         check_input_policy,
         init_policy_state,
@@ -964,5 +964,8 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         sys.stdout = stdout_
         sys.stderr = stderr_
 
-ALLOWED_POLICIES = [ExactMatch, SingleExecutionExactOutput, ]
 
+ALLOWED_POLICIES = [
+    ExactMatch,
+    SingleExecutionExactOutput,
+]
