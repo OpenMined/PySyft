@@ -90,7 +90,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         )
 
         # Set journal mode to WAL.
-        self._db[thread_ident()].execute("pragma journal_mode=wal")
+        # self._db[thread_ident()].execute("pragma journal_mode=wal")
 
     def create_table(self):
         try:
