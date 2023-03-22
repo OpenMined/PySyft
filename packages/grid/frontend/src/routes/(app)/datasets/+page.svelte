@@ -18,9 +18,7 @@
   onMount(async () => {
     await getClient()
       .then((client) => {
-        datasets = client.datasets();
-
-        // PLACEHOLDER
+        // TODO: Replace with call to /datasets api
         datasets = originalData;
       })
       .catch((error) => {
@@ -69,7 +67,7 @@
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
-  <div>
+  <div class="ml-60 mt-12">
     {#if visible}
       <NewDatasetModal bind:showModal />
 
