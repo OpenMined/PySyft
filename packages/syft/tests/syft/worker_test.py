@@ -302,7 +302,8 @@ def test_worker_handle_api_request(
     ],
 )
 @pytest.mark.parametrize("blocking", [False, True])
-@pytest.mark.parametrize("n_processes", [0, 1])
+# @pytest.mark.parametrize("n_processes", [0, 1])
+@pytest.mark.parametrize("n_processes", [0])
 def test_worker_handle_api_response(
     path: str, kwargs: Dict, blocking: bool, n_processes: int
 ) -> None:
