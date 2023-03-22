@@ -32,7 +32,7 @@
 </script>
 
 <div>
-  <DeleteDatasetModal bind:showModal />
+  <DeleteDatasetModal bind:showModal {datasetId} />
 
   <!-- Header -->
   <div class="flex justify-between">
