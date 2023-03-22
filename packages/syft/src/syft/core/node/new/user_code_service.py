@@ -12,6 +12,8 @@ from ....telemetry import instrument
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
+from .policy import OutputHistory
+from .policy import OutputPolicy
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
 from .policy import get_policy_object
@@ -26,8 +28,6 @@ from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .uid import UID
-from .user_code import OutputHistory
-from .user_code import OutputPolicy
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
@@ -91,36 +91,10 @@ class UserCodeService(AbstractService):
         code: SubmitUserCode,
     ):
         # relative
-        from .policy_service import PolicyService
         from .request import SubmitRequest
         from .request_service import RequestService
 
         user_code = code.to(UserCode, context=context)
-
-        policy_service = context.node.get_service(PolicyService)
-
-        if isinstance(code.input_policy, SubmitUserPolicy):
-            submit_input_policy = code.input_policy
-            user_code.input_policy = submit_input_policy.to(UserPolicy, context=context)
-        elif isinstance(code.input_policy, UID):
-            input_policy = policy_service.get_policy_by_uid(context, code.input_policy)
-            if input_policy.is_ok():
-                user_code.input_policy = input_policy.ok()
-            else:
-                return input_policy
-
-        if isinstance(code.output_policy, SubmitUserPolicy):
-            submit_output_policy = code.output_policy
-            user_code.output_policy = submit_output_policy.to(
-                UserPolicy, context=context
-            )
-        elif isinstance(code.output_policy, UID):
-            output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
-            if output_policy.is_ok():
-                user_code.output_policy = output_policy.ok()
-            else:
-                return output_policy
-
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))

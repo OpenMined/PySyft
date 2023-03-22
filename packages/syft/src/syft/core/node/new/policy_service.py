@@ -15,8 +15,6 @@ from .serializable import serializable
 from .service import AbstractService
 from .service import service_method
 from .uid import UID
-from .user_code import ExactMatch
-from .user_code import SingleExecutionExactOutput
 
 # from .policy_stash import PolicyStash
 from .user_policy_stash import UserPolicyStash
@@ -64,7 +62,3 @@ class PolicyService(AbstractService):
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
-
-
-# move them in the database
-ALLOWED_POLICIES = [ExactMatch, SingleExecutionExactOutput]
