@@ -3,7 +3,7 @@
 
   interface $$Props extends HTMLButtonAttributes {
     disabled?: boolean;
-    variant: 'secondary' | 'delete' | 'black' | 'white';
+    variant: 'secondary' | 'delete' | 'black' | 'white' | 'blue-back';
     position?: 'left' | 'right' | 'none';
     action: Function;
     icon: any;
@@ -50,10 +50,18 @@
   }
 
   .white {
-    @apply transition-all duration-500 bg-gradient-to-l from-white-50 to-white-50;
+    @apply transition-all duration-500 bg-gradient-to-l from-white-50 to-white-50 shadow h-8;
   }
 
   .white:hover {
+    @apply to-marigold-400;
+  }
+
+  .blue-back {
+    @apply transition-all duration-500 bg-gradient-to-l from-white-50 to-white-50 h-8 text-primary-500;
+  }
+
+  .blue-back:hover {
     @apply to-marigold-400;
   }
 
