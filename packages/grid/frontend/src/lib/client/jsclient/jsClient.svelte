@@ -12,8 +12,7 @@
      */
     constructor() {
       return (async () => {
-        // const url = `${window.location.protocol}//${window.location.host}`;
-        const url = 'http://localhost:8081';
+        const url = `${window.location.protocol}//${window.location.host}`;
 
         this.serde = new JSSerde();
         // Set the URL and message URL properties.
