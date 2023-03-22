@@ -199,7 +199,6 @@ class Request(SyftObject):
 
         if isinstance(code.output_policy, UserPolicy):
             res = api.services.policy.add(code.output_policy)
-            print(dir(api))
             print(res)
             policy_object = init_policy(
                 code.output_policy, code.output_policy_init_args

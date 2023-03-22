@@ -331,7 +331,6 @@ class OutputPolicy(SyftObject):
         return op_code
 
 
-@serializable(recursive_serde=True)
 class CustomOutputPolicy(OutputPolicy):
     # version
     __canonical_name__ = "CustomOutputPolicy"

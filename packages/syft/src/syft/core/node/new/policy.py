@@ -222,8 +222,6 @@ def execute_policy_code(user_policy: UserPolicy):
 
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
     policy_class = execute_policy_code(user_policy)
-    print(policy_class, file=sys.stderr)
-    print(init_args, file=sys.stderr)
     policy_object = policy_class(**init_args)
     return policy_object
 

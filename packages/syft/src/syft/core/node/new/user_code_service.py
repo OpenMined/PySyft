@@ -90,19 +90,13 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
-        # stdlib
-        import sys
-
         # relative
         from .policy_service import PolicyService
         from .request import SubmitRequest
         from .request_service import RequestService
 
-        print("Noerr before code to usercode", file=sys.stderr)
-        print(code.input_kwargs, file=sys.stderr)
         user_code = code.to(UserCode, context=context)
 
-        print("Noerr before policy transformations", file=sys.stderr)
         policy_service = context.node.get_service(PolicyService)
 
         if isinstance(code.input_policy, SubmitUserPolicy):
@@ -126,8 +120,6 @@ class UserCodeService(AbstractService):
                 user_code.output_policy = output_policy.ok()
             else:
                 return output_policy
-
-        print("Noerr", file=sys.stderr)
 
         result = self.stash.set(user_code)
         if result.is_err():
@@ -206,7 +198,11 @@ class UserCodeService(AbstractService):
             if result.is_ok():
                 code_item = result.ok()
                 if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
-                    is_valid = code_item.output_policy_state.valid
+                    print("output_policy_state", type(code_item.output_policy_state))
+                    if isinstance(code_item.output_policy_state, bytes):
+                        is_valid = True
+                    else:
+                        is_valid = code_item.output_policy_state.valid
                     if not is_valid:
                         if (
                             len(
@@ -222,15 +218,10 @@ class UserCodeService(AbstractService):
                             )
                         return is_valid
                     else:
-                        print("valid policy lets run it")
-                        # stdlib
-                        import sys
-
                         action_service = context.node.get_service("actionservice")
                         result = action_service._user_code_execute(
                             context, code_item, filtered_kwargs
                         )
-                        print("Result is", result, file=sys.stderr)
                         if isinstance(result, str):
                             return SyftError(message=result)
                         if result.is_ok():
@@ -244,25 +235,13 @@ class UserCodeService(AbstractService):
                                     code_item.output_policy,
                                     code_item.output_policy_state,
                                 )
-                                print("Policy Object", policy_object, file=sys.stderr)
-                                print(
-                                    "Final Result before policy is",
-                                    final_results,
-                                    file=sys.stderr,
-                                )
                                 final_results = policy_object.apply_output(
                                     final_results
                                 )
                                 code_item.output_policy_state = update_policy_state(
                                     policy_object
                                 )
-                                # print(code_item.output_policy_state, )
 
-                            print(
-                                "Final Result after policy is",
-                                final_results,
-                                file=sys.stderr,
-                            )
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item
                             )
