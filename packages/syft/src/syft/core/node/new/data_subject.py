@@ -23,7 +23,7 @@ from .uid import UID
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DataSubject(SyftObject):
     # version
     __canonical_name__ = "DataSubject"
@@ -65,7 +65,7 @@ class DataSubject(SyftObject):
         return "```python\n" + _repr_str + "\n```"
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DataSubjectCreate(SyftObject):
     # version
     __canonical_name__ = "DataSubjectCreate"

@@ -31,7 +31,7 @@ from .user_roles import GUEST_ROLE_LEVEL
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class UserCodeService(AbstractService):
     store: DocumentStore
     stash: UserCodeStash

@@ -30,33 +30,40 @@ def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
     deserialize: Optional[Callable] = None,
-    attr_allowlist: Optional[List] = None,
+    state_attrs: Optional[List] = None,
+    inherit_attrs: Optional[bool] = False,
 ) -> None:
     if not isinstance(cls, type):
         cls = type(cls)
 
-    if serialize is not None and deserialize is not None:
-        nonrecursive = True
-    else:
-        nonrecursive = False
-
+    attribute_list = set()
+    nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
     _deserialize = deserialize if nonrecursive else rs_proto2object
 
-    if attr_allowlist is not None:
-        attribute_list = attr_allowlist
-    else:
-        attribute_list = getattr(cls, "__attr_allowlist__", None)
-        if attribute_list is None:
-            attribute_list = getattr(cls, "__attr_state__", None)
+    if inherit_attrs:
+        # update the inherited set
+        base_attrs = getattr(cls, "__syft_state__", [])
+        attribute_list.update(base_attrs)
+
+    # If state_attrs is provided, append it to our attr list
+    if state_attrs:
+        attribute_list.update(state_attrs)
+
+    if attribute_list:
+        # Set __syft_state for making attributes inheritable
+        # TODO: Discuss if this needs to be enabled by default
+        setattr(cls, '__syft_state__', attribute_list)
+
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     if issubclass(cls, Enum):
-        if attribute_list is None:
-            attribute_list = []
-        attribute_list += ["value"]
+        attribute_list.update(["value"])
+
     # without fqn duplicate class names overwrite
     fqn = f"{cls.__module__}.{cls.__name__}"
+    attribute_list = list(attribute_list) if attribute_list else None
+
     TYPE_BANK[fqn] = (
         nonrecursive,
         _serialize,

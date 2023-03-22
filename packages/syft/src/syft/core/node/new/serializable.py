@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Sequence
 
 # syft absolute
 import syft
@@ -11,11 +12,18 @@ module_type = type(syft)
 
 
 def serializable(
-    recursive_serde: bool = False,
+    recursive_serde: bool = True,
+    attrs: Sequence[str] = [],
+    inherit_attrs: bool = True,
+    **kwargs,
 ) -> Any:
+    """ """
+
     def rs_decorator(cls: Any) -> Any:
-        recursive_serde_register(cls)
+        if recursive_serde:
+            recursive_serde_register(
+                cls, state_attrs=attrs, inherit_attrs=inherit_attrs
+            )
         return cls
 
-    if recursive_serde:
-        return rs_decorator
+    return rs_decorator

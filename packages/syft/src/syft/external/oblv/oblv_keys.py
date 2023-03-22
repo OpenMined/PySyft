@@ -4,7 +4,7 @@ from ...core.node.new.syft_object import SYFT_OBJECT_VERSION_1
 from ...core.node.new.syft_object import SyftObject
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["private_key", "public_key"])
 class OblvKeys(SyftObject):
     # version
     __canonical_name__ = "OblvKeys"
@@ -15,6 +15,5 @@ class OblvKeys(SyftObject):
     private_key: bytes
 
     # serde / storage rules
-    __attr_state__ = ["private_key", "public_key"]
     __attr_searchable__ = ["private_key", "public_key"]
     __attr_unique__ = ["private_key", "public_key"]

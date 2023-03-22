@@ -22,13 +22,12 @@ def to_action_object(obj: Any) -> ActionObject:
     raise Exception(f"{type(obj)} not in action_types")
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["id", "private_obj", "private_obj_id", "mock_obj", "mock_obj_id"], has_explicit_id=True)
 class TwinObject(SyftObject):
     __canonical_name__ = "TwinObject"
     __version__ = 1
 
     __attr_searchable__ = []
-    __attr_state__ = ["id", "private_obj", "private_obj_id", "mock_obj", "mock_obj_id"]
 
     private_obj: ActionObject
     private_obj_id: UID

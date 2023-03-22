@@ -89,7 +89,13 @@ def from_mongo(
     return constructor(**output)
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=[
+    "storage_type",
+    "settings",
+    "store_config",
+    "unique_cks",
+    "searchable_cks",
+], has_inherited_attrs=True,)
 class MongoStorePartition(StorePartition):
     """Mongo StorePartition
 
@@ -100,13 +106,6 @@ class MongoStorePartition(StorePartition):
             Mongo specific configuration
     """
 
-    __attr_allowlist__ = [
-        "storage_type",
-        "settings",
-        "store_config",
-        "unique_cks",
-        "searchable_cks",
-    ]
     storage_type: StorableObjectType = MongoBsonObject
 
     def init_store(self) -> Result[Ok, Err]:
@@ -291,7 +290,7 @@ class MongoStorePartition(StorePartition):
         return collection.count_documents(filter={})
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MongoDocumentStore(DocumentStore):
     """Mongo Document Store
 
@@ -303,7 +302,7 @@ class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MongoStoreConfig(StoreConfig):
     """Mongo Store configuration
 

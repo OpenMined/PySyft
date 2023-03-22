@@ -34,7 +34,7 @@ class SyftResponseMessage(SyftBaseModel):
         )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SyftError(SyftResponseMessage):
     _bool: bool = False
 
@@ -43,21 +43,21 @@ class SyftError(SyftResponseMessage):
         return "alert-danger"
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SyftSuccess(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-success"
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SyftNotReady(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-info"
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SyftException(Exception):
     traceback: bool = False
     traceback_limit: int = 10
