@@ -147,21 +147,21 @@ class UserService(AbstractService):
         if user is None:
             return SyftError(message=f"No user exists for given UID: {uid}")
 
-        if context.role == ServiceRole.ADMIN:
-            # do anything
-            pass
-        elif (
-            updates_role
-            and context.role == ServiceRole.DATA_OWNER
-            and context.role > user.role
-            and context.role > user_update.role
-        ):
-            # as a data owner, only update lower roles to < data owner
-            pass
-        else:
-            return SyftError(
-                message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}"
-            )
+        if updates_role:
+            if context.role == ServiceRole.ADMIN:
+                # do anything
+                pass
+            elif (
+                context.role == ServiceRole.DATA_OWNER
+                and context.role > user.role
+                and context.role > user_update.role
+            ):
+                # as a data owner, only update lower roles to < data owner
+                pass
+            else:
+                return SyftError(
+                    message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}"
+                )
 
         edits_non_role_attrs = any(
             [
@@ -173,6 +173,7 @@ class UserService(AbstractService):
 
         if (
             edits_non_role_attrs
+            and user.verify_key != context.credentials
             and ServiceRoleCapability.CAN_MANAGE_USERS not in context.capabilities()
         ):
             return SyftError(
@@ -205,11 +206,11 @@ class UserService(AbstractService):
         user_result = self.stash.get_by_uid(uid=uid)
         if user_result.is_err():
             return SyftError(message=str(user_result.err()))
-        users = user_result.ok()
-        if len(users) == 0:
-            return SyftError(message="user does not exist")
+        user = user_result.ok()
+        if user is None:
+            return SyftError(message=f"No user exists for given id: {uid}")
         else:
-            return users[0]
+            return user
 
     @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:

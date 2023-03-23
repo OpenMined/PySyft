@@ -225,3 +225,8 @@ def test_user_update(root_domain_client):
                 assert executing_client.api.services.user.update(
                     target_client.user_id, UserUpdate(name="abc")
                 )
+
+        # you can update yourself
+        assert executing_client.api.services.user.update(
+            executing_client.user_id, UserUpdate(name=Faker().name())
+        )
