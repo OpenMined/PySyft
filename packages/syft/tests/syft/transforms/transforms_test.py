@@ -1,6 +1,8 @@
 # stdlib
+import inspect
 from typing import Callable
 from typing import List
+from typing import Optional
 
 # third party
 import pytest
@@ -9,6 +11,7 @@ import pytest
 from syft.core.node.new import transforms
 from syft.core.node.new.syft_object import SyftBaseObject
 from syft.core.node.new.syft_object import SyftObjectRegistry
+from syft.core.node.new.transforms import TransformContext
 from syft.core.node.new.transforms import validate_klass_and_version
 
 
@@ -16,10 +19,14 @@ class MockObjectFromSyftBaseObj(SyftBaseObject):
     __canonical_name__ = "MockObjectFromSyftBaseObj"
     __version__ = 1
 
+    value: Optional[int] = None
+
 
 class MockObjectToSyftBaseObj(SyftBaseObject):
     __canonical_name__ = "MockObjectToSyftBaseObj"
     __version__ = 1
+
+    value: Optional[int] = None
 
 
 @pytest.mark.parametrize(
@@ -29,15 +36,25 @@ class MockObjectToSyftBaseObj(SyftBaseObject):
         (MockObjectFromSyftBaseObj.__canonical_name__, MockObjectToSyftBaseObj),
         (MockObjectFromSyftBaseObj, MockObjectToSyftBaseObj.__canonical_name__),
         (MockObjectFromSyftBaseObj, 2),
-        (1, "MockObjectToSyftBaseObj"),
+        (1, MockObjectToSyftBaseObj.__canonical_name__),
     ],
 )
 @pytest.mark.parametrize("version_from", [None, 1])
 @pytest.mark.parametrize("version_to", [None, 1])
-def test_validate_klass_and_version(klass_from, klass_to, version_from, version_to):
+def test_validate_klass_and_version(
+    klass_from,
+    klass_to,
+    version_from,
+    version_to,
+):
     if klass_from == 1 or klass_to == 2:
         with pytest.raises(NotImplementedError):
-            validate_klass_and_version(klass_from, klass_to, version_from, version_to)
+            validate_klass_and_version(
+                klass_from,
+                klass_to,
+                version_from,
+                version_to,
+            )
     else:
         expected_result = (
             MockObjectFromSyftBaseObj.__canonical_name__,
@@ -54,6 +71,32 @@ def test_validate_klass_and_version(klass_from, klass_to, version_from, version_
         )
 
         assert result == expected_result
+
+
+def test_generate_transform_wrapper(faker, monkeypatch, node_context):
+    mock_value = faker.random_int()
+
+    def mock_transform_method(context: TransformContext) -> TransformContext:
+        context.output["value"] = mock_value
+        return context
+
+    resultant_wrapper = transforms.generate_transform_wrapper(
+        klass_from=MockObjectFromSyftBaseObj,
+        klass_to=MockObjectToSyftBaseObj,
+        transforms=[mock_transform_method],
+    )
+
+    assert resultant_wrapper.__name__ == "wrapper"
+    signature = inspect.signature(resultant_wrapper)
+    assert signature.parameters["self"].annotation == MockObjectFromSyftBaseObj
+    assert signature.return_annotation == MockObjectToSyftBaseObj
+
+    output = resultant_wrapper(
+        MockObjectFromSyftBaseObj(),
+        node_context,
+    )
+    assert isinstance(output, MockObjectToSyftBaseObj)
+    assert output.value == mock_value
 
 
 def test_transform_method(monkeypatch):
