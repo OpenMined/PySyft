@@ -112,6 +112,14 @@ class DatasetService(AbstractService):
             return datasets
         return []
 
+    @service_method(path="dataset.delete_by_id", name="dataset_delete_by_id")
+    def delete_dataset(self, context: AuthedServiceContext, uid: UID):
+        result = self.stash.delete_by_uid(uid)
+        if result.is_ok():
+            return result.ok()
+        else:
+            return SyftError(message=result.err())
+
 
 TYPE_TO_SERVICE[Dataset] = DatasetService
 SERVICE_TO_TYPES[DatasetService].update({Dataset})
