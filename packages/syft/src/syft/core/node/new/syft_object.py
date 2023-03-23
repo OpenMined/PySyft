@@ -12,6 +12,7 @@ from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Type
+import warnings
 
 # third party
 import pydantic
@@ -144,6 +145,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     __attr_repr_cols__: List[str] = []  # show these in html repr collections
 
     def to_mongo(self) -> Dict[str, Any]:
+        warnings.warn(
+            "`SyftObject.to_mongo` is deprecated and will be removed in a future version",
+            PendingDeprecationWarning,
+        )
+
         d = {}
         for k in self.__attr_searchable__:
             # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
@@ -227,6 +233,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
+        warnings.warn(
+            "`SyftObject.from_mongo` is deprecated and will be removed in a future version",
+            PendingDeprecationWarning,
+        )
+
         constructor = SyftObjectRegistry.versioned_class(
             name=bson["__canonical_name__"], version=bson["__version__"]
         )
@@ -268,6 +279,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return transform(self, context)
 
     def to_dict(self, exclude_none: bool = False) -> Dict[str, Any]:
+        warnings.warn(
+            "`SyftObject.to_dict` is deprecated and will be removed in a future version",
+            PendingDeprecationWarning,
+        )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none:
             return dict(self)

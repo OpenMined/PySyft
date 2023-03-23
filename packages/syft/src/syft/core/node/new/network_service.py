@@ -307,6 +307,8 @@ class NetworkService(AbstractService):
             return SyftError("exchange_credentials_with requires peer or client")
 
         # tell the remote peer our details
+        if not context.node:
+            return SyftError(f"{type(context)} has no node")
         self_metadata = context.node.metadata
         self_node_peer = self_metadata.to(NodePeer)
 
