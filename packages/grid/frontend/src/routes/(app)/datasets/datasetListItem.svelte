@@ -2,7 +2,6 @@
   import Fa from 'svelte-fa';
   import { createEventDispatcher } from 'svelte';
   import { faCircle, faTableList, faWaveSquare } from '@fortawesome/free-solid-svg-icons';
-  import { DescriptionList } from 'flowbite-svelte';
 
   export let name;
   export let author;
