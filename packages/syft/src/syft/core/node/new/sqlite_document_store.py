@@ -202,7 +202,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _len(self) -> int:
         select_sql = f"select count(uid) from {self.table_name}"  # nosec
-        cnt = self._execute(select_sql)
+        cursor = self._execute(select_sql)
+        cnt = cursor.fetchone()[0]
         return cnt
 
     def __setitem__(self, key: Any, value: Any) -> None:
