@@ -109,7 +109,7 @@ class SignedSyftAPICall(SyftObject):
 
 
 @instrument
-@serializable(attrs=["path", "args", "kwargs"])
+@serializable(attrs=["path", "args", "kwargs", "node_uid"])
 class SyftAPICall(SyftObject):
     # version
     __canonical_name__ = "SyftAPICall"
