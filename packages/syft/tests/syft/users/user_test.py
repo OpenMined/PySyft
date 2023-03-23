@@ -79,7 +79,6 @@ def root_domain_client(worker):
 
 def test_read_user(worker, root_domain_client, do_client, ds_client, guest_client):
     for client in [ds_client, guest_client]:
-        print(client)
         assert not manually_call_service(worker, client, "user.get_all")
 
     for client in [do_client, root_domain_client]:
@@ -123,11 +122,12 @@ def test_user_delete(do_client, guest_client, ds_client, worker, root_domain_cli
     for c in clients:
         assert worker.root_client.api.services.user.delete(c.user_id)
 
-    # admins cannot delet other admins
-    assert not root_domain_client.api.services.user.delete(
+    # admins can delete other admins
+    assert worker.root_client.api.services.user.delete(
         get_mock_client(root_domain_client, ServiceRole.ADMIN).user_id
     )
     admin_client3 = get_mock_client(root_domain_client, ServiceRole.ADMIN)
+
     # admins can delete themselves
     assert admin_client3.api.services.user.delete(admin_client3.user_id)
 

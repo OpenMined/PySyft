@@ -147,27 +147,26 @@ class UserService(AbstractService):
         if user is None:
             return SyftError(message=f"No user exists for given UID: {uid}")
 
-        if (
+        if context.role == ServiceRole.ADMIN:
+            # do anything
+            pass
+        elif (
             updates_role
             and context.role == ServiceRole.DATA_OWNER
-            and user.role >= context.role
+            and context.role > user.role
+            and context.role > user_update.role
         ):
+            # as a data owner, only update lower roles to < data owner
+            pass
+        else:
             return SyftError(
-                message=f"As a {context.role}, you are not allowed to edit {user.role}"
-            )
-        if (
-            updates_role
-            and context.role == ServiceRole.DATA_OWNER
-            and user_update.role >= context.role
-        ):
-            return SyftError(
-                message=f"As a {context.role}, you are not allowed to upgrade role to {user_update.role}"
+                message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}"
             )
 
         edits_non_role_attrs = any(
             [
                 getattr(user_update, attr) is not None
-                for attr in UserUpdate().__fields__.keys()
+                for attr in user_update.to_dict(exclude_none=True)
                 if attr != "role"
             ]
         )
@@ -203,7 +202,7 @@ class UserService(AbstractService):
         return user.to(UserView)
 
     def get_target_object(self, uid: UID):
-        user_result = self.stash.find_all(id=uid)
+        user_result = self.stash.get_by_uid(uid=uid)
         if user_result.is_err():
             return SyftError(message=str(user_result.err()))
         users = user_result.ok()
@@ -224,15 +223,13 @@ class UserService(AbstractService):
                 f"As a {context.role} you have no permission to delete user with {user.role} permission"
             )
         )
-        if context.role == ServiceRole.DATA_OWNER:
-            if user.role not in [ServiceRole.GUEST, ServiceRole.DATA_SCIENTIST]:
-                return permission_error
+        if context.role == ServiceRole.DATA_OWNER and user.role in [
+            ServiceRole.GUEST,
+            ServiceRole.DATA_SCIENTIST,
+        ]:
+            pass
         elif context.role == ServiceRole.ADMIN:
-            if (
-                user.role == ServiceRole.ADMIN
-                and user.verify_key != context.credentials
-            ):
-                return permission_error
+            pass
         else:
             return permission_error
 
