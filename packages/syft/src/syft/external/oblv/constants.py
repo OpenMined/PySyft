@@ -1,10 +1,10 @@
 INFRA = "m5.4xlarge"
 REPO_OWNER = "OpenMined"
 REPO_NAME = "syft-enclave"
-REF = "verify-keys"
+REF = "dev"
 REGION = "us-west-2"
 VCS = "github"
 VISIBILITY = "private"
 REF_TYPE = "branch"
-LOCAL_MODE = False
+LOCAL_MODE = True
 DOMAIN_CONNECTION_PORT = 3030
