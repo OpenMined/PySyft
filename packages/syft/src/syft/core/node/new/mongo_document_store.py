@@ -89,13 +89,16 @@ def from_mongo(
     return constructor(**output)
 
 
-@serializable(attrs=[
-    "storage_type",
-    "settings",
-    "store_config",
-    "unique_cks",
-    "searchable_cks",
-], has_inherited_attrs=True,)
+@serializable(
+    attrs=[
+        "storage_type",
+        "settings",
+        "store_config",
+        "unique_cks",
+        "searchable_cks",
+    ],
+    has_inherited_attrs=True,
+)
 class MongoStorePartition(StorePartition):
     """Mongo StorePartition
 

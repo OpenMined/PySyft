@@ -53,7 +53,7 @@ def recursive_serde_register(
     if attribute_list:
         # Set __syft_state for making attributes inheritable
         # TODO: Discuss if this needs to be enabled by default
-        setattr(cls, '__syft_state__', attribute_list)
+        setattr(cls, "__syft_state__", attribute_list)
 
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 

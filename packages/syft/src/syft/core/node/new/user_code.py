@@ -323,7 +323,6 @@ class UserCodeStatus(Enum):
 # as status is in attr_searchable
 @serializable(attrs=["base_dict"])
 class UserCodeStatusContext:
-
     base_dict: Dict = {}
 
     def __init__(self, base_dict: Dict):
@@ -476,15 +475,18 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     return output_kwargs
 
 
-@serializable(attrs=[
-    "id",
-    "code",
-    "func_name",
-    "signature",
-    "input_policy",
-    "output_policy",
-    "enclave_metadata",
-], has_explicit_id=True)
+@serializable(
+    attrs=[
+        "id",
+        "code",
+        "func_name",
+        "signature",
+        "input_policy",
+        "output_policy",
+        "enclave_metadata",
+    ],
+    has_explicit_id=True,
+)
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
