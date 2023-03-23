@@ -62,7 +62,7 @@ class SyftObjectRegistry:
             if mapping_string in cls.__object_version_registry__:
                 print(cls.__object_version_registry__)
                 # TODO: Re-enable
-                # raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
+                raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
             cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod

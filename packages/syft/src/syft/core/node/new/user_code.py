@@ -32,11 +32,11 @@ from .dataset import Asset
 from .document_store import PartitionKey
 from .node import NodeType
 from .node_metadata import EnclaveMetadata
-from .policy import CustomOutputPolicy, InputPolicy, OutputPolicy, Policy
+from .new_policy import CustomOutputPolicy, InputPolicy, OutputPolicy, Policy
 from .policy import InputPolicyState
 from .policy import OutputPolicyState
-from .policy import SubmitUserPolicy
-from .policy import UserPolicy
+from .new_policy import SubmitUserPolicy
+from .new_policy import UserPolicy
 from .policy_service import PolicyService
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -339,7 +339,7 @@ def syft_function(
     if isinstance(output_policy, CustomOutputPolicy):
         print("SubmitUserPolicy")
         # TODO: move serializable injection in the server side
-        output_policy_init_args = output_policy.kwargs
+        output_policy_init_args = output_policy.init_kwargs
         print(output_policy_init_args)
 
         user_class = output_policy.__class__
@@ -540,15 +540,21 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
 
 
 def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
+    import sys
+    
     policy_service = context.node.get_service(PolicyService)
     if isinstance(policy, SubmitUserPolicy):
+        print("Before policy transform", file=sys.stderr)
         policy = policy.to(UserPolicy, context=context)
+        print("After policy transform", file=sys.stderr)
     elif isinstance(policy, UID):
         policy = policy_service.get_policy_by_uid(context, policy)
         if policy.is_ok():
             policy = policy.ok()
 
-    policy.node_uid = context.node.id
+    # TODO: Why do we need that? If we want to fetch a policy from outside the Domain
+    # then that should probably be a UserPolicy, not a dev one, right?
+    # policy.node_uid = context.node.id
     return policy
 
 

@@ -458,7 +458,11 @@ def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
     return None
 
 
-def process_class_code(raw_code: str, class_name: str) -> str:
+def process_class_code(
+    raw_code: str, 
+    class_name: str,
+    input_kwargs: List[str]
+) -> str:
     tree = ast.parse(raw_code)
 
     v = GlobalsVisitor()
@@ -474,8 +478,16 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # check for Policy template -> __init__, apply_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
-    parsed_code = context.output["raw_code"]
-    context.output["parsed_code"] = parsed_code
+    try:
+        processed_code = process_class_code(
+            raw_code=context.output['code'],
+            class_name=context.output['unique_name'],
+            input_kwargs=context.output["input_kwargs"],
+        )
+        context.output["parsed_code"] = processed_code
+    
+    except Exception as e:
+        raise e
     return context
 
 
@@ -590,9 +602,3 @@ def get_policy_object(user_policy: UserPolicy, state: str) -> Result[Any, str]:
 
 def update_policy_state(policy_object):
     return _serialize(policy_object, to_bytes=True)
-
-
-ALLOWED_POLICIES = [
-    ExactMatch,
-    SingleExecutionExactOutput,
-]

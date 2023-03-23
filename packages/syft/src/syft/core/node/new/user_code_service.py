@@ -94,7 +94,10 @@ class UserCodeService(AbstractService):
         from .request import SubmitRequest
         from .request_service import RequestService
 
+        import sys
+        print("Before code transform", file=sys.stderr)
         user_code = code.to(UserCode, context=context)
+        print("After code transform", file=sys.stderr)
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
