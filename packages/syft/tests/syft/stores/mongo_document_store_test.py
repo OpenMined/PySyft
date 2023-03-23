@@ -1,5 +1,4 @@
 # stdlib
-import sys
 from threading import Thread
 from typing import Tuple
 
@@ -24,7 +23,6 @@ from .store_mocks_test import MockSyftObject
 REPEATS = 20
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_sanity(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -34,7 +32,6 @@ def test_mongo_store_partition_sanity(
     assert hasattr(mongo_store_partition, "_collection")
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_init_failed() -> None:
     # won't connect
     mongo_config = MongoStoreClientConfig(connectTimeoutMS=1, timeoutMS=1)
@@ -48,7 +45,6 @@ def test_mongo_store_partition_init_failed() -> None:
     assert res.is_err()
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -> None:
     res = mongo_store_partition.init_store()
     assert res.is_ok()
@@ -82,7 +78,6 @@ def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -
         assert len(mongo_store_partition.all().ok()) == 3 + idx
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_delete(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -118,7 +113,6 @@ def test_mongo_store_partition_delete(
     assert len(mongo_store_partition.all().ok()) == 0
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_update(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -153,7 +147,6 @@ def test_mongo_store_partition_update(
         assert stored.ok()[0].data == v
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_set_threading(
     mongo_server_mock: Tuple,
 ) -> None:
@@ -199,7 +192,6 @@ def test_mongo_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_set_joblib(
     mongo_server_mock,
 ) -> None:
@@ -235,7 +227,6 @@ def test_mongo_store_partition_set_joblib(
     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_update_threading(
     mongo_server_mock,
 ) -> None:
@@ -280,7 +271,6 @@ def test_mongo_store_partition_update_threading(
     assert execution_err is None
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 @pytest.mark.xfail(reason="SyftObjectRegistry does only in-memory caching")
 def test_mongo_store_partition_update_joblib(
     mongo_server_mock: Tuple,
@@ -318,7 +308,6 @@ def test_mongo_store_partition_update_joblib(
         assert execution_err is None
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_set_delete_threading(
     mongo_server_mock,
 ) -> None:
@@ -368,7 +357,6 @@ def test_mongo_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_set_delete_joblib(
     mongo_server_mock,
 ) -> None:
