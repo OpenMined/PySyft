@@ -9,6 +9,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 from typing import cast
 
 # third party
@@ -36,6 +37,7 @@ from ...core.node.new.syft_object import SyftObject
 from ...core.node.new.uid import UID
 from ...core.node.new.user_code import UserCode
 from ...core.node.new.user_code import UserCodeStatus
+from ...core.node.new.user_roles import GUEST_ROLE_LEVEL
 from ...core.node.new.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
@@ -75,7 +77,7 @@ def connect_to_enclave(
     deployment_id: str,
     connection_port: int,
     oblv_key_name: str,
-) -> subprocess.Popen:
+) -> Optional[subprocess.Popen]:
     global OBLV_PROCESS_CACHE
     if deployment_id in OBLV_PROCESS_CACHE:
         process = OBLV_PROCESS_CACHE[deployment_id][0]
@@ -157,6 +159,7 @@ def connect_to_enclave(
             break
 
     OBLV_PROCESS_CACHE[deployment_id] = [process, connection_port]
+    return None
 
 
 def make_request_to_enclave(
@@ -171,7 +174,7 @@ def make_request_to_enclave(
     files: Optional[Dict] = None,
     data: Optional[Dict] = None,
     json: Optional[Dict] = None,
-):
+) -> Any:
     if not LOCAL_MODE:
         _ = connect_to_enclave(
             oblv_keys_stash=oblv_keys_stash,
@@ -263,7 +266,7 @@ class OblvService(AbstractService):
         self.store = store
         self.oblv_keys_stash = OblvKeysStash(store=store)
 
-    @service_method(path="oblv.create_key", name="create_key")
+    @service_method(path="oblv.create_key", name="create_key", roles=GUEST_ROLE_LEVEL)
     def create_key(
         self,
         context: AuthedServiceContext,
@@ -285,7 +288,9 @@ class OblvService(AbstractService):
             )
         return res.err()
 
-    @service_method(path="oblv.get_public_key", name="get_public_key")
+    @service_method(
+        path="oblv.get_public_key", name="get_public_key", roles=GUEST_ROLE_LEVEL
+    )
     def get_public_key(
         self,
         context: AuthedServiceContext,
@@ -313,7 +318,7 @@ class OblvService(AbstractService):
         enclave_metadata: OblvMetadata,
         signing_key: SyftSigningKey,
         worker_name: str,
-    ):
+    ) -> SyftAPI:
         deployment_id = enclave_metadata.deployment_id
         oblv_client = enclave_metadata.oblv_client
         if not LOCAL_MODE:
@@ -339,6 +344,7 @@ class OblvService(AbstractService):
                     "127.0.0.1", "host.docker.internal"
                 )
 
+        params = {"verify_key": str(signing_key.verify_key)}
         req = make_request_to_enclave(
             connection_string=connection_string + Routes.ROUTE_API.value,
             deployment_id=deployment_id,
@@ -347,6 +353,7 @@ class OblvService(AbstractService):
             request_method=requests.get,
             connection_port=port,
             oblv_key_name=worker_name,
+            params=params,
         )
 
         obj = deserialize(req.content, from_bytes=True)
@@ -358,6 +365,7 @@ class OblvService(AbstractService):
     @service_method(
         path="oblv.send_user_code_inputs_to_enclave",
         name="send_user_code_inputs_to_enclave",
+        roles=GUEST_ROLE_LEVEL,
     )
     def send_user_code_inputs_to_enclave(
         self,
@@ -366,6 +374,10 @@ class OblvService(AbstractService):
         inputs: Dict,
         node_name: str,
     ) -> Result[Ok, Err]:
+        if not context.node or not context.node.signing_key:
+            return Err(f"{type(context)} has no node")
+        signing_key = context.node.signing_key
+
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
         user_code = user_code_service.get_by_uid(context, uid=user_code_id)
@@ -385,20 +397,20 @@ class OblvService(AbstractService):
             dict_object.base_dict[str(context.credentials)] = inputs
             action_service.store.set(
                 uid=user_code_id,
-                credentials=context.node.signing_key.verify_key,
+                credentials=signing_key.verify_key,
                 syft_object=dict_object,
             )
 
         else:
             res = action_service.store.get(
-                uid=user_code_id, credentials=context.node.signing_key.verify_key
+                uid=user_code_id, credentials=signing_key.verify_key
             )
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object.base_dict[str(context.credentials)] = inputs
                 action_service.store.set(
                     uid=user_code_id,
-                    credentials=context.node.signing_key.verify_key,
+                    credentials=signing_key.verify_key,
                     syft_object=dict_object,
                 )
             else:
@@ -410,7 +422,10 @@ class OblvService(AbstractService):
 # Checks if the given user code would  propogate value to enclave on acceptance
 def check_enclave_transfer(
     user_code: UserCode, value: UserCodeStatus, context: ChangeContext
-):
+) -> Union[Any, Ok]:
+    if not context.node or not context.node.signing_key:
+        return Err(f"{type(context)} has no node")
+    signing_key = context.node.signing_key
     if (
         isinstance(user_code.enclave_metadata, OblvMetadata)
         and value == UserCodeStatus.EXECUTE
@@ -424,13 +439,13 @@ def check_enclave_transfer(
         )
         # send data of the current node to enclave
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name, verify_key=signing_key.verify_key
         )
         inputs = user_code.input_policy.inputs[node_view]
         action_service = context.node.get_service("actionservice")
         for var_name, uid in inputs.items():
             action_object = action_service.store.get(
-                uid=uid, credentials=context.node.signing_key.verify_key
+                uid=uid, credentials=signing_key.verify_key
             )
             if action_object.is_err():
                 return action_object

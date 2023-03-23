@@ -2,7 +2,7 @@
   import Button from '$lib/components/Button.svelte';
   import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
   import DomainOnlineIndicator from '$lib/components/DomainOnlineIndicator.svelte';
-  import Modal from '$lib/components/NewModal.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import Input from '$lib/components/Input.svelte';
   import { getClient } from '$lib/store';
 
@@ -43,7 +43,6 @@
             </span>
           </div>
           <div class="contents" slot="body">
-            <DomainOnlineIndicator />
             <div class="w-full gap-6 flex">
               <Input label="Full name" id="fullName" placeholder="Jane Doe" required />
               <Input

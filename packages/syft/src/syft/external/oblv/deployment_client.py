@@ -54,7 +54,7 @@ class OblvMetadata(EnclaveMetadata, BaseModel):
     oblv_client: Optional[OblvClient]
 
     @validator("deployment_id")
-    def check_valid_deployment_id(cls, deployment_id):
+    def check_valid_deployment_id(cls, deployment_id: str) -> str:
         if not deployment_id and not LOCAL_MODE:
             raise ValueError(
                 f"Deployment ID should be a valid string: {deployment_id}"
@@ -64,7 +64,7 @@ class OblvMetadata(EnclaveMetadata, BaseModel):
         return deployment_id
 
     @validator("oblv_client")
-    def check_valid_oblv_client(cls, oblv_client):
+    def check_valid_oblv_client(cls, oblv_client: OblvClient) -> OblvClient:
         if not oblv_client and not LOCAL_MODE:
             raise ValueError(
                 f"Oblivious Client should be a valid client: {oblv_client}"
@@ -86,7 +86,7 @@ class DeploymentClient:
     def __init__(
         self,
         domain_clients: List[Any],
-        deployment_id: Optional[str] = None,
+        deployment_id: str,
         oblv_client: Optional[OblvClient] = None,
         key_name: Optional[str] = None,
         api: Optional[SyftAPI] = None,
@@ -112,7 +112,7 @@ class DeploymentClient:
         files: Optional[Dict] = None,
         data: Optional[Dict] = None,
         json: Optional[Dict] = None,
-    ):
+    ) -> Any:
         header = {}
         if LOCAL_MODE:
             header["x-oblv-user-name"] = "enclave_test"
@@ -132,10 +132,10 @@ class DeploymentClient:
             json=json,
         )
 
-    def set_conn_string(self, url: str):
+    def set_conn_string(self, url: str) -> None:
         self.__conn_string = url
 
-    def initiate_connection(self, connection_port: int = 3030):
+    def initiate_connection(self, connection_port: int = 3030) -> None:
         if LOCAL_MODE:
             self.__conn_string = f"http://127.0.0.1:{connection_port}"
             return
@@ -250,7 +250,7 @@ class DeploymentClient:
                 + " Run the method initiate_connection to initiate the proxy connection"
             )
 
-    def sanity_check_oblv_response(self, req: requests.Response):
+    def sanity_check_oblv_response(self, req: requests.Response) -> str:
         if req.status_code == 401:
             raise OblvUnAuthorizedError()
         elif req.status_code == 400:
@@ -258,13 +258,13 @@ class DeploymentClient:
         elif req.status_code == 422:
             print(req.text)
             # ToDo - Update here
-            return "Failed"
         elif req.status_code != 200:
             raise OblvEnclaveError(
-                f"Failed to perform the operation  with status {req.status_code}"
+                f"Failed to perform the operation  with status {req.status_code}, {req.content!r}"
             )
+        return "Failed"
 
-    def request_code_execution(self, code: SubmitUserCode):
+    def request_code_execution(self, code: SubmitUserCode) -> Any:
         # relative
         from ...core.node.new.user_code import SubmitUserCode
 
@@ -297,7 +297,9 @@ class DeploymentClient:
         self.sanity_check_oblv_response(req)
         return req.json()  # This is the publish_request_id
 
-    def publish_action(self, action: str, arguments, *args, **kwargs):
+    def publish_action(
+        self, action: str, arguments: List, *args: Any, **kwargs: Any
+    ) -> Dict[str, Any]:
         self.check_connection_string()
         file = None
         if len(arguments) == 2 and arguments[1]["type"] == "tensor":
@@ -325,7 +327,7 @@ class DeploymentClient:
             raise OblvEnclaveError(data["detail"])
         return data
 
-    def request_publish(self, dataset_id, sigma=0.5):
+    def request_publish(self, dataset_id: UID, sigma: float = 0.5) -> Dict[str, Any]:
         self.check_connection_string()
 
         req = self.make_request_to_enclave(
@@ -352,20 +354,24 @@ class DeploymentClient:
 
     def _get_api(self) -> SyftAPI:
         self.check_connection_string()
+        signing_key = SyftSigningKey.generate()
+
+        params = {"verify_key": str(signing_key.verify_key)}
         req = self.make_request_to_enclave(
             requests.get,
             connection_string=self.__conn_string + Routes.ROUTE_API.value,
+            params=params,
         )
         self.sanity_check_oblv_response(req)
         obj = deserialize(req.content, from_bytes=True)
         # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
-        obj.signing_key = SyftSigningKey.generate()
+        obj.signing_key = signing_key
         obj.connection = HTTPConnection(self.__conn_string)
         return cast(SyftAPI, obj)
 
     # public attributes
 
-    def _set_api(self):
+    def _set_api(self) -> None:
         _api = self._get_api()
         # APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
@@ -375,19 +381,19 @@ class DeploymentClient:
         if self._api is None:
             self._set_api()
 
-        return self._api
+        return cast(SyftAPI, self._api)
 
     def refresh(self) -> None:
         self._set_api()
 
-    def check_publish_request_status(self, publish_request_id):
+    def check_publish_request_status(self, publish_request_id: UID) -> None:
         self.check_connection_string()
 
         req = self.make_request_to_enclave(
             requests.get,
             connection_string=self.__conn_string
             + "/tensor/publish/result_ready?publish_request_id="
-            + publish_request_id,
+            + str(publish_request_id),
         )
 
         self.sanity_check_oblv_response(req)
@@ -409,25 +415,26 @@ class DeploymentClient:
             if result.get("detail") is not None:
                 raise OblvEnclaveError(result["detail"])
 
-    def fetch_result(self, publish_request_id):
+    def fetch_result(self, publish_request_id: UID) -> Dict[str, Any]:
         self.check_connection_string()
 
         req = self.make_request_to_enclave(
             requests.get,
             connection_string=self.__conn_string
             + "/tensor/publish/result?request_id="
-            + publish_request_id,
+            + str(publish_request_id),
         )
         self.sanity_check_oblv_response(req)
         return req.json()
 
-    def close_connection(self):
+    def close_connection(self) -> Optional[str]:
         if self.check_proxy_running():
             os.kill(self.__process.pid, SIGTERM)
+            return None
         else:
             return "No Proxy Connection Running"
 
-    def check_proxy_running(self):
+    def check_proxy_running(self) -> bool:
         if self.__process is not None:
             if self.__process.poll() is not None:
                 return False
@@ -435,7 +442,9 @@ class DeploymentClient:
                 return True
         return False
 
-    def fetch_current_proxy_logs(self, follow=False, tail=False):
+    def fetch_current_proxy_logs(
+        self, follow: bool = False, tail: bool = False
+    ) -> None:
         """Returns the logs of the running enclave instance
 
         Args:

@@ -1,103 +1,184 @@
 <script>
-  import { Modal } from 'flowbite-svelte';
-  import { browser } from '$app/environment';
-  import { getPath } from '../../../lib/utils.js';
-  let modalFlag = true;
+  import Badge from '$lib/components/Badge.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import Link from '$lib/components/Link.svelte';
+  import NewDatasetModal from './newDatasetModal.svelte';
+  import DatasetListItem from './datasetListItem.svelte';
+  import DatasetDetail from './datasetDetail.svelte';
+  import Search from 'svelte-search';
+  import Fa from 'svelte-fa';
+  import { getClient } from '$lib/store';
+  import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
+  import { onMount } from 'svelte';
 
-  let path = '';
-  if (browser) {
-    path = getPath();
+  let datasets = [];
+
+  onMount(async () => {
+    await getClient()
+      .then((client) => {
+        client.datasets.then((response) => {
+          datasets = response;
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  });
+
+  let searchValue = '';
+  let showModal = false;
+
+  let visible = true;
+  let openDatasetName = '';
+  let openDatasetAuthor = '';
+  let openDatasetDescription = '';
+  let openDatasetLastUpdated = '';
+  let openDatasetAssets = '';
+  let openDatasetRequests = '';
+  let openDatasetFileSize = '';
+  let openDatasetId = '';
+
+  function showOpenDataset(event) {
+    openDatasetName = event.detail.openName;
+    openDatasetId = event.detail.openDatasetId;
+    openDatasetAuthor = event.detail.openAuthor;
+    openDatasetDescription = event.detail.openDescription;
+    openDatasetLastUpdated = event.detail.openLastUpdated;
+    openDatasetAssets = event.detail.openAssets;
+    openDatasetRequests = event.detail.openRequests;
+    openDatasetFileSize = event.detail.openFileSize;
+    visible = false;
   }
+
+  function showHome() {
+    visible = true;
+  }
+
+  const menuItems = [
+    'Newest',
+    'Oldest',
+    'Most Activity',
+    'Least Activity',
+    'Largest File Size',
+    'Smallest File Size'
+  ];
+
+  let sortMenuOpen = false;
+  let inputValue = '';
 </script>
 
-<main>
-  <Modal bind:open={modalFlag} placement="center" size="md" class="w-full">
-    <div class="space-y-4">
-      <h1 style="font-size: 28px; font-weight: bold; color:black;">Get Started!</h1>
-      <h2 style="font-size: 15px;">
-        Begin using your domain node with one of the key actions below.
-      </h2>
-      <div style="display:grid; grid-auto-rows: 40vh; grid-auto-columns: 25vh;">
-        <div
-          style="cursor: pointer;grid-column: span 1; grid-row: 1 / span 1;margin-right: 3vh; border-width: 1px; border-color: #DDDDD1;	box-shadow: 2px 2px 9px #888888;"
+<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
+  <div class="page-container overflow-auto">
+    {#if visible}
+      <NewDatasetModal bind:showModal />
+
+      <!-- Header -->
+      <div class="flex justify-between">
+        <h2
+          class="flex justify-left text-gray-800 font-rubik text-2xl leading-normal font-medium pb-4"
         >
-          <img
-            style="height: 20vh; width: 26vh;"
-            alt="upload-dataset.jpg"
-            src="../../public/assets/card_image.jpg"
-          />
-          <h1
-            style="margin-left: 7px;margin-top: 7px;color: black; font-size: 10; font-weight: bold"
-          >
-            Upload a Dataset
-          </h1>
-          <h2
-            style="font-size: 15px;margin-left: 7px;margin-right: 7px;margin-top: 3px;margin-bottom: 5px;"
-          >
-            Create a catalogue and begin uploading data so that your team and outside researchers
-            can begin making impact.
-          </h2>
-        </div>
-        <div
-          style="cursor: pointer;grid-column: 2 / span 1; grid-row: 1 / span 1;margin-right: 3vh;border-width: 1px; border-color: #DDDDDD;box-shadow: 2px 2px 9px #888888;"
-        >
-          <img
-            style="height: 20vh; width: 26vh;"
-            alt="create-team-member.jpg"
-            src="../../public/assets/card_image.jpg"
-          />
-          <h1
-            style="margin-left: 7px;margin-top: 7px;color: black; font-size: 10; font-weight: bold"
-          >
-            Create Team Member
-          </h1>
-          <h2
-            style="font-size: 15px;margin-left: 7px;margin-right: 7px;margin-top: 3px;margin-bottom: 5px;"
-          >
-            Create accounts for team members so that they can help research, maintain, and
-            contribute to your domain node.
-          </h2>
-        </div>
-        <div
-          style="cursor: pointer;grid-column: 3 / span 1; grid-row: 1 / span 1;margin-right: 3vh;border-width: 1px; border-color: #DDDDDD; box-shadow: 2px 2px 9px #888888;"
-        >
-          <img
-            style="height: 20vh; width: 26vh;"
-            alt="create-user.jpg"
-            src="../../public/assets/card_image.jpg"
-          />
-          <h1
-            style="margin-left: 7px;margin-top: 7px;color: black; font-size: 10; font-weight: bold"
-          >
-            Create General User
-          </h1>
-          <h2
-            style="font-size: 15px;margin-left: 7px;margin-right: 7px;margin-top: 3px;margin-bottom: 5px;"
-          >
-            Create accounts for outside researchers to safely study from your data without needing a
-            copy or direct access.
-          </h2>
-        </div>
+          Datasets
+        </h2>
+        <Button variant="black" action={() => (showModal = true)}>+ New Dataset</Button>
       </div>
-      <h2 style="font-size: 15px;">
-        Learn more about how to use your domain node by reading our "Data Owner" handbook.
-      </h2>
-      <br /><br />
-      <div style="display:flex; justify-content:right"><h1>Cancel</h1></div>
-    </div>
-  </Modal>
-  <div class="page-container">{path}</div>
+
+      <!-- Body content -->
+      <section class="md:flex justify-between md:gap-x-[62px] lg:gap-x-[124px] mt-14">
+        <Search
+          bind:searchValue
+          placeholder="Search by name"
+          debounce={800}
+          autofocus
+          hideLabel
+          on:submit={(e) => e.preventDefault()}
+        />
+
+        <div class="mr-6">
+          <div class="flex items-center">
+            <div class="dropdown pr-2">
+              <Button variant="white" action={() => (sortMenuOpen = !sortMenuOpen)}
+                >Sort By<Fa class="pl-2" icon={faChevronDown} size="xs" /></Button
+              >
+
+              <div class:show={sortMenuOpen} class="dropdown-content">
+                {#each menuItems as item}
+                  <Link link={item} />
+                {/each}
+              </div>
+            </div>
+
+            <div class="pl-2">
+              <Badge variant="gray">Total: {datasets.length}</Badge>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14">
+        <article class="w-full">
+          {#each datasets as d}
+            <DatasetListItem
+              on:hide={showOpenDataset}
+              name={d.name}
+              author={d.author}
+              datasetId={d.id.value}
+              description={d.description}
+              lastUpdated={d.updated_at}
+              assets={d.asset_list.length}
+              requests={d.requests}
+              fileSize={d.fileSize}
+            />
+          {/each}
+        </article>
+      </section>
+    {:else}
+      <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14">
+        <article class="w-full">
+          <DatasetDetail
+            on:closeOpenCard={showHome}
+            name={openDatasetName}
+            author={openDatasetAuthor}
+            description={openDatasetDescription}
+            datasetId={openDatasetId}
+            lastUpdated={openDatasetLastUpdated}
+            assets={openDatasetAssets}
+            requests={openDatasetRequests}
+            fileSize={openDatasetFileSize}
+          />
+        </article>
+      </section>
+    {/if}
+  </div>
 </main>
 
-<style>
+<style lang="postcss">
   .page-container {
     width: 85%;
+    padding-top: 12px;
+    padding-left: 100px;
+    padding-right: 100px;
     position: absolute;
     height: 93%;
     top: 7%;
     left: 15%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  }
+
+  :global([data-svelte-search]) {
+    @apply w-5/12;
+  }
+
+  :global([data-svelte-search] input) {
+    @apply w-full rounded-3xl;
+  }
+
+  .dropdown {
+    @apply relative inline-block;
+  }
+
+  .dropdown-content {
+    @apply hidden absolute bg-white-50 rounded min-w-max border;
+  }
+
+  .show {
+    @apply block;
   }
 </style>

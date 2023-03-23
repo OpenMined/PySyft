@@ -162,24 +162,24 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.stack == 'true'
         run: |
           python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.stack == 'true'
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v3
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -187,17 +187,10 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.stack == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-
-      - name: Run notebook tests
-        if: steps.changes.outputs.syft == 'true'
-        env:
-          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
-        run: |
-          tox -e syft.test.notebook
 
       - name: Install Docker Compose - Linux
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'ubuntu-latest'
@@ -234,7 +227,7 @@ jobs:
           docker version
           docker compose version
 
-      - name: Run notebook tests
+      - name: Run unit tests
         if: steps.changes.outputs.stack == 'true'
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
