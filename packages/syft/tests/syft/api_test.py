@@ -78,6 +78,4 @@ def test_api_cache_invalidation_login(worker):
 
     guest_client.login(email="a@b.org", password="aaa")
 
-    guest_client._fetch_api(guest_client.credentials)
-
     assert guest_client.upload_dataset(dataset)
