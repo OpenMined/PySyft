@@ -17,11 +17,9 @@ def guest_mock_user(user_stash, guest_user):
     return user
 
 
-def test_call_service_syftapi_with_permission(
-    guest_domain_client, guest_mock_user, update_user
-):
+def test_call_service_syftapi_with_permission(worker, guest_mock_user, update_user):
     user_id = guest_mock_user.id
-    res = guest_domain_client.api.services.user.update(user_id, update_user)
+    res = worker.root_client.api.services.user.update(user_id, update_user)
     assert res
 
 
@@ -31,18 +29,17 @@ def test_call_service_syftapi_no_permission(guest_domain_client):
         guest_domain_client.api.services.user.get_all()
 
 
-def test_directly_call_service_with_permission(
-    guest_domain_client, guest_mock_user, update_user
-):
+def test_directly_call_service_with_permission(worker, guest_mock_user, update_user):
+    root_domain_client = worker.root_client
     user_id = guest_mock_user.id
     api_call = SyftAPICall(
-        node_uid=guest_domain_client.id,
+        node_uid=root_domain_client.id,
         path="user.update",
         args=[user_id, update_user],
         kwargs={},
     )
-    signed_call = api_call.sign(guest_domain_client.api.signing_key)
-    signed_result = guest_domain_client.api.connection.make_call(signed_call)
+    signed_call = api_call.sign(root_domain_client.api.signing_key)
+    signed_result = root_domain_client.api.connection.make_call(signed_call)
     result = signed_result.message.data
     assert result
 
