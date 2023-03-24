@@ -71,7 +71,7 @@ jobs:
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
       - name: Install MacOS dependencies
         run: |
-          brew install docker colima
+          brew install docker
           colima start
           docker image ls
         if: ${{ matrix.os == 'macos-latest' }}
