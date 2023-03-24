@@ -113,7 +113,7 @@ def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
 
 @pytest.fixture
 def node_context(worker: Worker) -> NodeServiceContext:
-    return NodeServiceContext(node=worker)
+    return NodeServiceContext(id=worker.id, node=worker)
 
 
 @pytest.fixture
