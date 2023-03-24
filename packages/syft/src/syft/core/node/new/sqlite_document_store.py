@@ -201,11 +201,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self._execute(select_sql)
 
     def _len(self) -> int:
-        select_sql = f"select * from {self.table_name}"  # nosec
+        select_sql = f"select uid from {self.table_name}"  # nosec
+        uids = self._execute(select_sql)
 
-        result = self._execute(select_sql).fetchall()
+        if uids is None:
+            return 0
 
-        return len(result)
+        cnt = 0
+        for _ in uids:
+            cnt += 1
+        return cnt
 
     def __setitem__(self, key: Any, value: Any) -> None:
         self._set(key, value)
