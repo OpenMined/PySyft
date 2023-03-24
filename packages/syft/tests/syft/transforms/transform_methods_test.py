@@ -5,6 +5,8 @@ from typing import Callable
 from typing import Optional
 
 # third party
+from pydantic import EmailError
+from pydantic import EmailStr
 import pytest
 
 # syft absolute
@@ -18,6 +20,8 @@ from syft.core.node.new.transforms import geteitherattr
 from syft.core.node.new.transforms import keep
 from syft.core.node.new.transforms import make_set_default
 from syft.core.node.new.transforms import rename
+from syft.core.node.new.transforms import validate_email
+from syft.core.node.new.transforms import validate_url
 from syft.core.node.new.uid import UID
 
 
@@ -361,3 +365,69 @@ def test_add_node_uid_for_key(faker, node_context):
     assert isinstance(result, TransformContext)
     assert key in result.output
     assert result.output[key] == node_context.node.id
+
+
+def test_validate_url(faker, node_context):
+    @dataclass
+    class MockObject:
+        url: Optional[str]
+
+        def __iter__(self):
+            yield from self.__dict__.items()
+
+    mock_obj = MockObject(url=None)
+
+    transform_context = TransformContext.from_context(
+        obj=mock_obj, context=node_context
+    )
+
+    # no change in context if url is None
+    result = validate_url(transform_context)
+    assert isinstance(result, TransformContext)
+    assert result == transform_context
+
+    url = faker.url()[:-1]
+    url_with_port = f"{url}:{faker.port_number()}"
+    mock_obj = MockObject(url=url_with_port)
+
+    transform_context = TransformContext.from_context(
+        obj=mock_obj, context=node_context
+    )
+
+    result = validate_url(transform_context)
+    assert isinstance(result, TransformContext)
+    assert result.output["url"] == url
+
+
+def test_validate_email(faker, node_context):
+    @dataclass
+    class MockObject:
+        email: str
+
+        def __iter__(self):
+            yield from self.__dict__.items()
+
+    mock_obj = MockObject(email=None)
+    transform_context = TransformContext.from_context(
+        obj=mock_obj, context=node_context
+    )
+    result = validate_email(transform_context)
+    assert isinstance(result, TransformContext)
+    assert result == transform_context
+
+    mock_obj = MockObject(email=faker.email())
+    transform_context = TransformContext.from_context(
+        obj=mock_obj, context=node_context
+    )
+    result = validate_email(transform_context)
+    assert isinstance(result, TransformContext)
+    assert isinstance(result.output["email"], EmailStr)
+    assert result.output["email"] == mock_obj.email
+
+    mock_obj = MockObject(email=faker.name())
+    transform_context = TransformContext.from_context(
+        obj=mock_obj, context=node_context
+    )
+
+    with pytest.raises(EmailError):
+        validate_email(transform_context)
