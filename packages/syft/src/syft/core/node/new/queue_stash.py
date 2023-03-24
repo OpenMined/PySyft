@@ -76,13 +76,13 @@ class QueueStash(BaseStash):
             return self.check_type(item, self.object_type).and_then(super().set)
         return None
 
-    # def set_placeholder(self, item: QueueItem) -> Result[QueueItem, str]:
-    #     # 🟡 TODO 36: Needs distributed lock
-    #     if not item.resolved:
-    #         exists = self.get_by_uid(item.id)
-    #         if exists.is_ok() and exists.ok() is None:
-    #             return self.check_type(item, self.object_type).and_then(super().set)
-    #     return item
+    def set_placeholder(self, item: QueueItem) -> Result[QueueItem, str]:
+        # 🟡 TODO 36: Needs distributed lock
+        if not item.resolved:
+            exists = self.get_by_uid(item.id)
+            if exists.is_ok() and exists.ok() is None:
+                return self.check_type(item, self.object_type).and_then(super().set)
+        return item
 
     def get_by_uid(self, uid: UID) -> Result[Optional[QueueItem], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])

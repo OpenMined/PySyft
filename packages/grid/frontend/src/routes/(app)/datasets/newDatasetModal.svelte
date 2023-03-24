@@ -40,6 +40,6 @@
   }
 
   code {
-    @apply bg-gray-50;
+    @apply bg-gray-100;
   }
 </style>
