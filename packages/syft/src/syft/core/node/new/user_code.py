@@ -345,8 +345,7 @@ def syft_function(
         user_class = output_policy.__class__
         init_f_code = user_class.__init__.__code__
         output_policy = SubmitUserPolicy(
-            code="from .user_code import CustomOutputPolicy\n@serializable(recursive_serde=True)\n"
-            + get_code_from_class(user_class),
+            code=get_code_from_class(user_class),
             class_name=user_class.__name__,
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )

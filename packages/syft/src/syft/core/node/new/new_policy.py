@@ -233,8 +233,34 @@ def process_class_code(
     v = GlobalsVisitor()
     v.visit(tree)
 
-    f = tree.body[0]
-    f.decorator_list = []
+    print(ast.dump(ast.parse(raw_code), indent=4), file=sys.stderr)
+    # print(tree, file=sys.stderr)
+    # print(tree.body[0], file=sys.stderr)
+    # print(tree.body[0].module, file=sys.stderr)
+    # print(tree.body[0].names[0].asname, file=sys.stderr)
+    # print(tree.body[0].level, file=sys.stderr)
+    # print(tree.body[1], file=sys.stderr)
+    # print(tree.body[1].name.id, tree.body[1].name.ctx, file=sys.stderr)
+    print(tree.body[1].bases, file=sys.stderr)
+    # print(tree.body[1].keywords, file=sys.stderr)
+    # print(tree.body[1].body, file=sys.stderr)
+    # print(tree.body[1].decorator_list[0], file=sys.stderr)
+    serializable_name = ast.Name(id='serializable', ctx=ast.Load())
+    serializable_decorator = ast.Call(
+                                func=serializable_name, 
+                                args=[], 
+                                keywords=[ast.keyword(
+                                    arg='recursive_serde',
+                                    value=ast.Constant(value=True)    
+                                )]
+                            )
+    print(ast.dump(serializable_decorator, indent=4), file=sys.stderr)
+    # print(serializable_decorator == tree.body[1].decorator_list[0], file=sys.__stderr__)
+
+    f = tree.body[1]
+    f.decorator_list = [serializable_decorator]
+    print(ast.unparse(f), file=sys.stderr)
+    print(raw_code, file=sys.stderr)
     return raw_code
 
 
