@@ -30,13 +30,17 @@ from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
 from .document_store import PartitionKey
-from .node import NodeType
-from .node_metadata import EnclaveMetadata
-from .new_policy import CustomInputPolicy,CustomOutputPolicy, InputPolicy, OutputPolicy, Policy
-from .policy import InputPolicyState
-from .policy import OutputPolicyState
+from .new_policy import CustomInputPolicy
+from .new_policy import CustomOutputPolicy
+from .new_policy import InputPolicy
+from .new_policy import OutputPolicy
+from .new_policy import Policy
 from .new_policy import SubmitUserPolicy
 from .new_policy import UserPolicy
+from .node import NodeType
+from .node_metadata import EnclaveMetadata
+from .policy import InputPolicyState
+from .policy import OutputPolicyState
 from .policy_service import PolicyService
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -160,9 +164,9 @@ class UserCode(SyftObject):
     id: UID
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy: Policy#Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
+    input_policy: Policy  # Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
     input_policy_state: Optional[Union[bytes, InputPolicyState]]
-    output_policy: Policy #Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
+    output_policy: Policy  # Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
     output_policy_state: Optional[Union[bytes, OutputPolicyState]]
     parsed_code: str
     service_func_name: str
@@ -526,7 +530,7 @@ def modify_signature(context: TransformContext) -> TransformContext:
 
 
 def init_input_policy_state(context: TransformContext) -> TransformContext:
-    ip = context.output["input_policy"]
+    context.output["input_policy"]
     # if ip.state_type:
     #     context.output["input_policy_state"] = ip.state_type()
     context.output["input_policy_state"] = ""
@@ -539,7 +543,7 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
         context.output["output_policy"],
         type(context.output["output_policy"]),
     )
-    op = context.output["output_policy"]
+    context.output["output_policy"]
     # if op.state_type:
     #     context.output["output_policy_state"] = op.state_type()
     context.output["output_policy_state"] = ""
@@ -547,8 +551,9 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
 
 
 def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
+    # stdlib
     import sys
-    
+
     policy_service = context.node.get_service(PolicyService)
     if isinstance(policy, SubmitUserPolicy):
         print("Before policy transform", file=sys.stderr)
@@ -601,7 +606,6 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         # Consult with Madhava, on propogating errors from transforms
         raise NotImplementedError
     return context
-
 
 
 @transform(SubmitUserCode, UserCode)

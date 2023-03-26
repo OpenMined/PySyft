@@ -90,11 +90,13 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
+        # stdlib
+        import sys
+
         # relative
         from .request import SubmitRequest
         from .request_service import RequestService
 
-        import sys
         print("Before code transform", file=sys.stderr)
         user_code = code.to(UserCode, context=context)
         print("After code transform", file=sys.stderr)
@@ -209,7 +211,9 @@ class UserCodeService(AbstractService):
                                     context=context, outputs=final_results.id
                                 )
                             else:
-                                print("fetch user output policy", code_item.output_policy)
+                                print(
+                                    "fetch user output policy", code_item.output_policy
+                                )
                                 policy_object = get_policy_object(
                                     code_item.output_policy,
                                     code_item.output_policy_state,

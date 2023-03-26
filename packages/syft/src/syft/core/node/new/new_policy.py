@@ -1,45 +1,49 @@
-from typing import Dict
-from typing import Any
-from typing import Optional
+# stdlib
+import ast
 from enum import Enum
-from typing import Union
-from typing import Type
-from RestrictedPython import compile_restricted
-from result import Ok
-from result import Result
-from typing import List
-import sys
+import hashlib
+import inspect
 from inspect import Parameter
 from inspect import Signature
-import hashlib
-from typing import Callable
-import ast
 from io import StringIO
 import sys
-import astunparse  # ast.unparse for python 3.8
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Type
+from typing import Union
 
+# third party
+from RestrictedPython import compile_restricted
+import astunparse  # ast.unparse for python 3.8
+from result import Result
+
+# relative
+from .api import NodeView
+from .context import AuthedServiceContext
+from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
-from .syft_object import SYFT_OBJECT_VERSION_1
-from .syft_object import SyftObject
-import inspect
-from .serializable import serializable
-from .transforms import generate_id
-from .transforms import transform
-from .uid import UID
+from .dataset import Asset
+from .datetime import DateTime
+from .deserialize import _deserialize
+from .policy import allowed_ids_only
+from .policy import retrieve_from_db
 from .policy_code_parse import GlobalsVisitor
 from .response import SyftError
 from .response import SyftSuccess
-from .datetime import DateTime
-from .dataset import Asset
-from .context import NodeServiceContext
-from .context import AuthedServiceContext
-from .policy import allowed_ids_only, retrieve_from_db
-from .api import NodeView
-from .transforms import TransformContext
-from .deserialize import _deserialize
+from .serializable import serializable
 from .serialize import _serialize
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
+from .transforms import TransformContext
+from .transforms import generate_id
+from .transforms import transform
+from .uid import UID
 
 PyCodeObject = Any
+
 
 @serializable(recursive_serde=True)
 class OutputHistory(SyftObject):
@@ -51,11 +55,13 @@ class OutputHistory(SyftObject):
     outputs: Optional[Union[List[UID], Dict[str, UID]]]
     executing_user_verify_key: SyftVerifyKey
 
+
 @serializable(recursive_serde=True)
 class UserPolicyStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
     APPROVED = "approved"
+
 
 class Policy(SyftObject):
     # version
@@ -63,14 +69,16 @@ class Policy(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
+
     @property
     def policy_code(self) -> str:
         cls = type(self)
         op_code = inspect.getsource(cls)
         return op_code
-    
+
     def public_state() -> None:
         raise NotImplementedError
+
 
 def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
@@ -111,6 +119,7 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
 
     return output_kwargs
 
+
 class InputPolicy(Policy):
     # version
     __canonical_name__ = "InputPolicy_2"
@@ -135,14 +144,15 @@ class InputPolicy(Policy):
             kwargs = kwargs["inputs"]
         else:
             kwargs = partition_by_node(kwargs)
-        super().__init__(
-            id=uid, inputs=kwargs, node_uid=node_uid
-        )
-    
+        super().__init__(id=uid, inputs=kwargs, node_uid=node_uid)
+
     def filter_kwargs() -> None:
         raise NotImplementedError
 
-import pydantic
+
+# third party
+
+
 @serializable(recursive_serde=True)
 class ExactMatch(InputPolicy):
     # version
@@ -159,18 +169,18 @@ class ExactMatch(InputPolicy):
             code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
         )
 
+
 class OutputPolicy(Policy):
     # version
     __canonical_name__ = "OutputPolicy_2"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    
     output_history: List[OutputHistory] = []
     outputs: List[str] = []
     node_uid: Optional[UID]
 
     def apply_output(
-        self, 
+        self,
         context: NodeServiceContext,
         outputs: Union[UID, List[UID], Dict[str, UID]],
     ) -> None:
@@ -183,6 +193,7 @@ class OutputPolicy(Policy):
         )
         self.output_history.append(history)
 
+
 @serializable(recursive_serde=True)
 class OutputPolicyExecuteCount(OutputPolicy):
     __canonical_name__ = "OutputPolicyExecuteCount_2"
@@ -190,24 +201,25 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     count: int = 0
     limit: int
-    
+
     def apply_output(
-        self, 
-        context: NodeServiceContext, 
-        outputs: Union[UID, List[UID], Dict[str, UID]]
+        self,
+        context: NodeServiceContext,
+        outputs: Union[UID, List[UID], Dict[str, UID]],
     ) -> Union[UID, List[UID], Dict[str, UID]]:
         if self.count < self.limit:
             super().apply_output(context, outputs)
-            self.count +=1
+            self.count += 1
             return SyftSuccess()
         else:
-            return  SyftError(
+            return SyftError(
                 message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
             )
-            
+
     def public_state(self) -> None:
         return {"limit": self.limit, "count": self.count}
-            
+
+
 @serializable(recursive_serde=True)
 class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
     __canonical_name__ = "OutputPolicyExecuteOnce_2"
@@ -228,19 +240,19 @@ class CustomPolicy(Policy):
         self.init_args = args
         self.init_kwargs = kwargs
 
-    
+
 class CustomInputPolicy(CustomPolicy, InputPolicy):
     # version
     __canonical_name__ = "CustomInputPolicy_2"
     __version__ = SYFT_OBJECT_VERSION_1
-    
+
+
 class CustomOutputPolicy(CustomPolicy, OutputPolicy):
     # version
     __canonical_name__ = "CustomOutputPolicy_2"
     __version__ = SYFT_OBJECT_VERSION_1
 
 
- 
 @serializable(recursive_serde=True)
 class UserPolicy(Policy):
     __canonical_name__ = "UserPolicy_2"
@@ -266,10 +278,11 @@ class UserPolicy(Policy):
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
         return SyftSuccess(message="Policy is valid.")
-    
+
     @property
     def policy_code(self) -> str:
         return self.raw_code
+
 
 def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
     try:
@@ -277,6 +290,7 @@ def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
     except Exception as e:
         print("WARNING: to compile byte code", e)
     return None
+
 
 def hash_code(context: TransformContext) -> TransformContext:
     code = context.output["code"]
@@ -296,19 +310,7 @@ def generate_unique_class_name(context: TransformContext) -> TransformContext:
     return context
 
 
-def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
-    try:
-        return compile(parsed_code, "<string>", "exec")
-    except Exception as e:
-        print("WARNING: to compile byte code", e)
-    return None
-
-
-def process_class_code(
-    raw_code: str, 
-    class_name: str,
-    input_kwargs: List[str]
-) -> str:
+def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) -> str:
     print("process_class_code", file=sys.stderr)
     tree = ast.parse(raw_code)
 
@@ -317,23 +319,27 @@ def process_class_code(
 
     print(tree.body[0], file=sys.stderr)
     if len(tree.body) != 1 or not isinstance(tree.body[0], ast.ClassDef):
-        raise Exception("Class code should only contain the Class Definition for your policy.")
-    
+        raise Exception(
+            "Class code should only contain the Class Definition for your policy."
+        )
+
     old_class = tree.body[0]
-    if len(old_class.bases) != 1 or not (old_class.bases[0].id in ["CustomInputPolicy", "CustomOutputPolicy"]):
-        raise Exception("Class code should either implement CustomInputPolicy or CustomOutputPolicy")
+    if len(old_class.bases) != 1 or old_class.bases[0].id not in [
+        "CustomInputPolicy",
+        "CustomOutputPolicy",
+    ]:
+        raise Exception(
+            "Class code should either implement CustomInputPolicy or CustomOutputPolicy"
+        )
 
     # TODO: changes the bases
 
-    serializable_name = ast.Name(id='serializable', ctx=ast.Load())
+    serializable_name = ast.Name(id="serializable", ctx=ast.Load())
     serializable_decorator = ast.Call(
-                                func=serializable_name, 
-                                args=[], 
-                                keywords=[ast.keyword(
-                                    arg='recursive_serde',
-                                    value=ast.Constant(value=True)    
-                                )]
-                            )
+        func=serializable_name,
+        args=[],
+        keywords=[ast.keyword(arg="recursive_serde", value=ast.Constant(value=True))],
+    )
     print(ast.dump(serializable_decorator, indent=4), file=sys.stderr)
     # print(serializable_decorator == tree.body[1].decorator_list[0], file=sys.__stderr__)
 
@@ -343,6 +349,7 @@ def process_class_code(
     print(astunparse.unparse(new_class), file=sys.stderr)
     return astunparse.unparse(new_class)
 
+
 def check_class_code(context: TransformContext) -> TransformContext:
     # TODO: define the proper checking for this case based on the ideas from UserCode
     # check for no globals
@@ -350,22 +357,22 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
     try:
-        print("check_class_code", file=sys.stderr) 
+        print("check_class_code", file=sys.stderr)
         # print(context.output, file=sys.stderr)
         processed_code = process_class_code(
-            raw_code=context.output['raw_code'],
-            class_name=context.output['unique_name'],
+            raw_code=context.output["raw_code"],
+            class_name=context.output["unique_name"],
             input_kwargs=context.output["input_kwargs"],
         )
         context.output["parsed_code"] = processed_code
-    
+
     except Exception as e:
         raise e
     return context
 
 
 def compile_code(context: TransformContext) -> TransformContext:
-    print("compile_code", file=sys.stderr) 
+    print("compile_code", file=sys.stderr)
     byte_code = compile_byte_code(context.output["parsed_code"])
     if byte_code is None:
         raise Exception(
@@ -376,8 +383,8 @@ def compile_code(context: TransformContext) -> TransformContext:
 
 
 def add_credentials_for_key(key: str) -> Callable:
-    
-    print("add_credentials_for_key", file=sys.stderr) 
+    print("add_credentials_for_key", file=sys.stderr)
+
     def add_credentials(context: TransformContext) -> TransformContext:
         context.output[key] = context.credentials
         return context
@@ -394,6 +401,7 @@ def generate_signature(context: TransformContext) -> TransformContext:
     context.output["signature"] = sig
     return context
 
+
 @serializable(recursive_serde=True)
 class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy_2"
@@ -406,6 +414,7 @@ class SubmitUserPolicy(Policy):
 
     def compile(self) -> PyCodeObject:
         return compile_restricted(self.code, "<string>", "exec")
+
 
 @transform(SubmitUserPolicy, UserPolicy)
 def submit_policy_code_to_user_code() -> List[Callable]:
@@ -457,9 +466,7 @@ def execute_policy_code(user_policy: UserPolicy):
                 user_policy.__object_version_registry__[class_name],
                 file=stderr_,
             )
-            policy_class = user_policy.__object_version_registry__[
-                class_name
-            ]
+            policy_class = user_policy.__object_version_registry__[class_name]
 
             sys.stdout = stdout_
             sys.stderr = stderr_
@@ -487,4 +494,3 @@ def get_policy_object(user_policy: UserPolicy, state: str) -> Result[Any, str]:
 
 def update_policy_state(policy_object):
     return _serialize(policy_object, to_bytes=True)
-

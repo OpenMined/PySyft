@@ -458,11 +458,7 @@ def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
     return None
 
 
-def process_class_code(
-    raw_code: str, 
-    class_name: str,
-    input_kwargs: List[str]
-) -> str:
+def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) -> str:
     tree = ast.parse(raw_code)
 
     v = GlobalsVisitor()
@@ -480,12 +476,12 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # check dangerous libraries, maybe compile_restricted already does that
     try:
         processed_code = process_class_code(
-            raw_code=context.output['code'],
-            class_name=context.output['unique_name'],
+            raw_code=context.output["code"],
+            class_name=context.output["unique_name"],
             input_kwargs=context.output["input_kwargs"],
         )
         context.output["parsed_code"] = processed_code
-    
+
     except Exception as e:
         raise e
     return context
@@ -520,9 +516,10 @@ def generate_signature(context: TransformContext) -> TransformContext:
 
 
 def serialization_addon(context: TransformContext) -> TransformContext:
-    policy_code = context.output['code']
-    context.output['code']= '@serializable(recursive_serde=True)\n' + policy_code 
+    policy_code = context.output["code"]
+    context.output["code"] = "@serializable(recursive_serde=True)\n" + policy_code
     return context
+
 
 @transform(SubmitUserPolicy, UserPolicy)
 def submit_policy_code_to_user_code() -> List[Callable]:

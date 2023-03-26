@@ -183,7 +183,7 @@ class Request(SyftObject):
             return result
 
         code = change.linked_obj.resolve
-        ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
+        AuthedServiceContext(credentials=api.signing_key.verify_key)
 
         # relative
 
@@ -211,7 +211,7 @@ class Request(SyftObject):
             action_object = ActionObject.from_obj(
                 policy_object.apply_output(action_object)
             )
-            state = update_policy_state(policy_object)
+            update_policy_state(policy_object)
             code.output_policy_state = _serialize(
                 policy_object,
                 to_bytes=True,
@@ -236,7 +236,7 @@ class Request(SyftObject):
         )
 
         submit_request = SubmitRequest(
-            changes=[permission_change],#[policy_state_mutation, permission_change],
+            changes=[permission_change],  # [policy_state_mutation, permission_change],
             requesting_user_verify_key=self.requesting_user_verify_key,
         )
 
