@@ -162,10 +162,11 @@ def test_userservice_get_all_success(
     guest_user: User,
     admin_user: User,
 ) -> None:
-    expected_output = [guest_user, admin_user]
+    mock_get_all_output = [guest_user, admin_user]
+    expected_output = [x.to(UserView) for x in mock_get_all_output]
 
     def mock_get_all() -> Ok:
-        return Ok(expected_output)
+        return Ok(mock_get_all_output)
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
     response = user_service.get_all(authed_context)
@@ -308,6 +309,7 @@ def test_userservice_update_success(
 
     monkeypatch.setattr(user_service.stash, "update", mock_update)
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
+    authed_context.role = ServiceRole.ADMIN
 
     resultant_user = user_service.update(
         authed_context, uid=guest_user.id, user_update=update_user
@@ -334,6 +336,8 @@ def test_userservice_update_fails(
 
     def mock_update(user) -> Err:
         return Err(update_error_msg)
+
+    authed_context.role = ServiceRole.ADMIN
 
     monkeypatch.setattr(user_service.stash, "update", mock_update)
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
@@ -374,7 +378,12 @@ def test_userservice_delete_success(
     def mock_delete_by_uid(uid: UID) -> Ok:
         return Ok(expected_output)
 
+    def mock_get_target_object(uid):
+        return User(email=Faker().email())
+
     monkeypatch.setattr(user_service.stash, "delete_by_uid", mock_delete_by_uid)
+    monkeypatch.setattr(user_service, "get_target_object", mock_get_target_object)
+    authed_context.role = ServiceRole.ADMIN
 
     response = user_service.delete(context=authed_context, uid=id_to_delete)
     assert isinstance(response, SyftSuccess)

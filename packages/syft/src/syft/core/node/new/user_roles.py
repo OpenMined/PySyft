@@ -59,6 +59,9 @@ class ServiceRole(Enum):
                 level_float = level_float % role_num
         return roles
 
+    def capabilities(self):
+        return ROLE_TO_CAPABILITIES[self]
+
     def __add__(self, other: Any) -> int:
         if isinstance(other, ServiceRole):
             return self.value + other.value
@@ -66,6 +69,18 @@ class ServiceRole(Enum):
 
     def __radd__(self, other: Any) -> int:
         return self.__add__(other)
+
+    def __ge__(self, other: Self) -> bool:
+        return self.value >= other.value
+
+    def __le__(self, other: Self) -> bool:
+        return self.value <= other.value
+
+    def __gt__(self, other: Self) -> bool:
+        return self.value > other.value
+
+    def __lt__(self, other: Self) -> bool:
+        return self.value < other.value
 
 
 GUEST_ROLE_LEVEL = ServiceRole.roles_for_level(
@@ -84,3 +99,22 @@ DATA_OWNER_ROLE_LEVEL = ServiceRole.roles_for_level(
 )
 
 ADMIN_ROLE_LEVEL = ServiceRole.roles_for_level(ServiceRole.ADMIN)
+
+ROLE_TO_CAPABILITIES = {
+    ServiceRole.NONE: [],
+    ServiceRole.GUEST: [
+        ServiceRoleCapability.CAN_MAKE_DATA_REQUESTS,
+    ],
+    ServiceRole.DATA_SCIENTIST: [
+        ServiceRoleCapability.CAN_MAKE_DATA_REQUESTS,
+    ],
+    ServiceRole.DATA_OWNER: [
+        ServiceRoleCapability.CAN_MAKE_DATA_REQUESTS,
+        ServiceRoleCapability.CAN_TRIAGE_DATA_REQUESTS,
+        ServiceRoleCapability.CAN_MANAGE_PRIVACY_BUDGET,
+        ServiceRoleCapability.CAN_CREATE_USERS,
+        ServiceRoleCapability.CAN_EDIT_ROLES,
+        ServiceRoleCapability.CAN_UPLOAD_DATA,
+    ],
+    ServiceRole.ADMIN: list(ServiceRoleCapability),
+}
