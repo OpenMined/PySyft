@@ -216,16 +216,16 @@ class Request(SyftObject):
                 policy_object,
                 to_bytes=True,
             )
-        else:
-            state = code.output_policy_state
-            state.update_state(outputs=action_object.id, context=ctx)
+        # else:
+        #     state = code.output_policy_state
+        #     state.update_state(outputs=action_object.id, context=ctx)
 
-        policy_state_mutation = ObjectMutation(
-            linked_obj=change.linked_obj,
-            attr_name="output_policy_state",
-            match_type=True,
-            value=state,
-        )
+        # policy_state_mutation = ObjectMutation(
+        #     linked_obj=change.linked_obj,
+        #     attr_name="output_policy_state",
+        #     match_type=True,
+        #     value=state,
+        # )
 
         action_object_link = LinkedObject.from_obj(
             action_object, node_uid=self.node_uid
@@ -236,7 +236,7 @@ class Request(SyftObject):
         )
 
         submit_request = SubmitRequest(
-            changes=[policy_state_mutation, permission_change],
+            changes=[permission_change],#[policy_state_mutation, permission_change],
             requesting_user_verify_key=self.requesting_user_verify_key,
         )
 

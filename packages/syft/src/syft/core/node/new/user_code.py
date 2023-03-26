@@ -32,7 +32,7 @@ from .dataset import Asset
 from .document_store import PartitionKey
 from .node import NodeType
 from .node_metadata import EnclaveMetadata
-from .new_policy import CustomOutputPolicy, InputPolicy, OutputPolicy, Policy
+from .new_policy import CustomInputPolicy,CustomOutputPolicy, InputPolicy, OutputPolicy, Policy
 from .policy import InputPolicyState
 from .policy import OutputPolicyState
 from .new_policy import SubmitUserPolicy
@@ -314,7 +314,7 @@ def get_code_from_class(policy):
 
 
 def syft_function(
-    input_policy: Union[InputPolicy, UID],
+    input_policy: Union[CustomInputPolicy, InputPolicy, UID],
     output_policy: Union[CustomOutputPolicy, OutputPolicy, UID],
     outputs: List[str] = [],
     input_policy_init_args: Dict[str, Any] = None,
@@ -323,22 +323,28 @@ def syft_function(
     # TODO: fix this for jupyter
     # TODO: add import validator
 
-    if isinstance(input_policy, UID) or isinstance(input_policy, InputPolicy):
-        input_policy = input_policy
-    elif issubclass(input_policy, InputPolicy):
-        input_policy = input_policy(input_policy_init_args)
-    else:
-        init_f_code = input_policy.__init__.__code__
+    print(input_policy)
+    if isinstance(input_policy, CustomInputPolicy):
+        print("SubmitUserPolicy")
+        input_policy_init_args = input_policy.init_kwargs
+        print(input_policy_init_args)
 
+        user_class = input_policy.__class__
+        init_f_code = user_class.__init__.__code__
         input_policy = SubmitUserPolicy(
-            code=get_code_from_class(input_policy),
-            class_name=input_policy.__name__,
+            code=get_code_from_class(user_class),
+            class_name=user_class.__name__,
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
+    elif isinstance(input_policy, UID) or isinstance(input_policy, InputPolicy):
+        print("UserPolicy")
+        input_policy = input_policy
+    elif issubclass(input_policy, InputPolicy):
+        print("InputPolicy")
+        input_policy = input_policy(**input_policy_init_args)
 
     if isinstance(output_policy, CustomOutputPolicy):
         print("SubmitUserPolicy")
-        # TODO: move serializable injection in the server side
         output_policy_init_args = output_policy.init_kwargs
         print(output_policy_init_args)
 
@@ -521,8 +527,9 @@ def modify_signature(context: TransformContext) -> TransformContext:
 
 def init_input_policy_state(context: TransformContext) -> TransformContext:
     ip = context.output["input_policy"]
-    if ip.state_type:
-        context.output["input_policy_state"] = ip.state_type()
+    # if ip.state_type:
+    #     context.output["input_policy_state"] = ip.state_type()
+    context.output["input_policy_state"] = ""
     return context
 
 
@@ -533,8 +540,9 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
         type(context.output["output_policy"]),
     )
     op = context.output["output_policy"]
-    if op.state_type:
-        context.output["output_policy_state"] = op.state_type()
+    # if op.state_type:
+    #     context.output["output_policy_state"] = op.state_type()
+    context.output["output_policy_state"] = ""
     return context
 
 

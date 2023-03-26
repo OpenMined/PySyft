@@ -199,6 +199,7 @@ class UserCodeService(AbstractService):
                         result = action_service._user_code_execute(
                             context, code_item, filtered_kwargs
                         )
+                        print("tmp result", result)
                         if isinstance(result, str):
                             return SyftError(message=result)
                         if result.is_ok():
@@ -208,6 +209,7 @@ class UserCodeService(AbstractService):
                                     context=context, outputs=final_results.id
                                 )
                             else:
+                                print("fetch user output policy", code_item.output_policy)
                                 policy_object = get_policy_object(
                                     code_item.output_policy,
                                     code_item.output_policy_state,

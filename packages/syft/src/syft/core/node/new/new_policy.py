@@ -16,6 +16,7 @@ from typing import Callable
 import ast
 from io import StringIO
 import sys
+import astunparse  # ast.unparse for python 3.8
 
 from .credentials import SyftVerifyKey
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -29,6 +30,7 @@ from .policy_code_parse import GlobalsVisitor
 from .response import SyftError
 from .response import SyftSuccess
 from .datetime import DateTime
+from .dataset import Asset
 from .context import NodeServiceContext
 from .context import AuthedServiceContext
 from .policy import allowed_ids_only, retrieve_from_db
@@ -55,7 +57,11 @@ class UserPolicyStatus(Enum):
     DENIED = "denied"
     APPROVED = "approved"
 
-class Policy:
+class Policy(SyftObject):
+    # version
+    __canonical_name__ = "Policy_2"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     id: UID
     @property
     def policy_code(self) -> str:
@@ -65,17 +71,80 @@ class Policy:
     
     def public_state() -> None:
         raise NotImplementedError
-    
+
+def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
+    # relative
+    from .action_object import ActionObject
+    from .api import APIRegistry
+    from .api import NodeView
+    from .twin_object import TwinObject
+
+    # fetches the all the current api's connected
+    api_list = APIRegistry.get_all_api()
+    output_kwargs = {}
+    for k, v in kwargs.items():
+        uid = v
+        if isinstance(v, ActionObject):
+            uid = v.id
+        if isinstance(v, TwinObject):
+            uid = v.id
+        if isinstance(v, Asset):
+            uid = v.action_id
+
+        if not isinstance(uid, UID):
+            raise Exception(f"Input {k} must have a UID not {type(v)}")
+
+        _obj_exists = False
+        for api in api_list:
+            if api.services.action.exists(uid):
+                node_view = NodeView.from_api(api)
+                if node_view not in output_kwargs:
+                    output_kwargs[node_view] = {k: uid}
+                else:
+                    output_kwargs[node_view].update({k: uid})
+
+                _obj_exists = True
+                break
+
+        if not _obj_exists:
+            raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
+
+    return output_kwargs
+
 class InputPolicy(Policy):
+    # version
+    __canonical_name__ = "InputPolicy_2"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
     inputs: Dict[NodeView, Any]
-    # node_uid: Optional[UID]
+    node_uid: Optional[UID]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # TODO: This method initialization would conflict if one of the input variables
+        # to the code submission function happens to be id or inputs
+        uid = UID()
+        node_uid = None
+        if "id" in kwargs:
+            uid = kwargs["id"]
+        if "node_uid" in kwargs:
+            node_uid = kwargs["node_uid"]
+
+        # finally get inputs
+        if "inputs" in kwargs:
+            kwargs = kwargs["inputs"]
+        else:
+            kwargs = partition_by_node(kwargs)
+        super().__init__(
+            id=uid, inputs=kwargs, node_uid=node_uid
+        )
     
     def filter_kwargs() -> None:
         raise NotImplementedError
 
-
+import pydantic
 @serializable(recursive_serde=True)
-class ExactMatch(InputPolicy, SyftObject):
+class ExactMatch(InputPolicy):
     # version
     __canonical_name__ = "ExactMatch_2"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -91,6 +160,10 @@ class ExactMatch(InputPolicy, SyftObject):
         )
 
 class OutputPolicy(Policy):
+    # version
+    __canonical_name__ = "OutputPolicy_2"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     
     output_history: List[OutputHistory] = []
     outputs: List[str] = []
@@ -111,7 +184,7 @@ class OutputPolicy(Policy):
         self.output_history.append(history)
 
 @serializable(recursive_serde=True)
-class OutputPolicyExecuteCount(OutputPolicy, SyftObject):
+class OutputPolicyExecuteCount(OutputPolicy):
     __canonical_name__ = "OutputPolicyExecuteCount_2"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -144,24 +217,32 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
 
 
 class CustomPolicy(Policy):
+    # version
+    __canonical_name__ = "CustomPolicy_2"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     init_args: Dict[str, Any] = {}
     init_kwargs: Dict[str, Any] = {}
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __psot_init__(self, *args, **kwargs) -> None:
         self.init_args = args
         self.init_kwargs = kwargs
 
     
 class CustomInputPolicy(CustomPolicy, InputPolicy):
-    pass
+    # version
+    __canonical_name__ = "CustomInputPolicy_2"
+    __version__ = SYFT_OBJECT_VERSION_1
     
 class CustomOutputPolicy(CustomPolicy, OutputPolicy):
-    pass
+    # version
+    __canonical_name__ = "CustomOutputPolicy_2"
+    __version__ = SYFT_OBJECT_VERSION_1
 
 
  
 @serializable(recursive_serde=True)
-class UserPolicy(SyftObject, Policy):
+class UserPolicy(Policy):
     __canonical_name__ = "UserPolicy_2"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -207,9 +288,10 @@ def hash_code(context: TransformContext) -> TransformContext:
 
 
 def generate_unique_class_name(context: TransformContext) -> TransformContext:
+    # TODO: Do we need to check if the initial name contains underscores?
     code_hash = context.output["code_hash"]
     service_class_name = context.output["class_name"]
-    unique_name = f"user_func_{service_class_name}_{context.credentials}_{code_hash}"
+    unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
     context.output["unique_name"] = unique_name
     return context
 
@@ -233,18 +315,16 @@ def process_class_code(
     v = GlobalsVisitor()
     v.visit(tree)
 
-    print(ast.dump(ast.parse(raw_code), indent=4), file=sys.stderr)
-    # print(tree, file=sys.stderr)
-    # print(tree.body[0], file=sys.stderr)
-    # print(tree.body[0].module, file=sys.stderr)
-    # print(tree.body[0].names[0].asname, file=sys.stderr)
-    # print(tree.body[0].level, file=sys.stderr)
-    # print(tree.body[1], file=sys.stderr)
-    # print(tree.body[1].name.id, tree.body[1].name.ctx, file=sys.stderr)
-    print(tree.body[1].bases, file=sys.stderr)
-    # print(tree.body[1].keywords, file=sys.stderr)
-    # print(tree.body[1].body, file=sys.stderr)
-    # print(tree.body[1].decorator_list[0], file=sys.stderr)
+    print(tree.body[0], file=sys.stderr)
+    if len(tree.body) != 1 or not isinstance(tree.body[0], ast.ClassDef):
+        raise Exception("Class code should only contain the Class Definition for your policy.")
+    
+    old_class = tree.body[0]
+    if len(old_class.bases) != 1 or not (old_class.bases[0].id in ["CustomInputPolicy", "CustomOutputPolicy"]):
+        raise Exception("Class code should either implement CustomInputPolicy or CustomOutputPolicy")
+
+    # TODO: changes the bases
+
     serializable_name = ast.Name(id='serializable', ctx=ast.Load())
     serializable_decorator = ast.Call(
                                 func=serializable_name, 
@@ -257,12 +337,11 @@ def process_class_code(
     print(ast.dump(serializable_decorator, indent=4), file=sys.stderr)
     # print(serializable_decorator == tree.body[1].decorator_list[0], file=sys.__stderr__)
 
-    f = tree.body[1]
-    f.decorator_list = [serializable_decorator]
-    print(ast.unparse(f), file=sys.stderr)
-    print(raw_code, file=sys.stderr)
-    return raw_code
-
+    new_class = tree.body[0]
+    new_class.name = class_name
+    new_class.decorator_list = [serializable_decorator]
+    print(astunparse.unparse(new_class), file=sys.stderr)
+    return astunparse.unparse(new_class)
 
 def check_class_code(context: TransformContext) -> TransformContext:
     # TODO: define the proper checking for this case based on the ideas from UserCode
@@ -307,22 +386,16 @@ def add_credentials_for_key(key: str) -> Callable:
 
 
 def generate_signature(context: TransformContext) -> TransformContext:
-    for k in context.output["input_kwargs"]:
-        param = Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
-    sig = Signature(parameters=[param])
+    params = [
+        Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
+        for k in context.output["input_kwargs"]
+    ]
+    sig = Signature(parameters=params)
     context.output["signature"] = sig
     return context
 
-
-def serialization_addon(context: TransformContext) -> TransformContext:
-    print(context.output['code'], file=sys.stderr)
-
-    policy_code = context.output['code']
-    context.output['code']= '@serializable(recursive_serde=True)\n' + policy_code 
-    return context
-
 @serializable(recursive_serde=True)
-class SubmitUserPolicy(SyftObject, Policy):
+class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy_2"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -338,7 +411,6 @@ class SubmitUserPolicy(SyftObject, Policy):
 def submit_policy_code_to_user_code() -> List[Callable]:
     return [
         generate_id,
-        # serialization_addon,
         hash_code,
         generate_unique_class_name,
         generate_signature,
@@ -363,7 +435,7 @@ def execute_policy_code(user_policy: UserPolicy):
         import syft as sy  # noqa: F401 # provide sy.Things to user code
 
         exec(user_policy.byte_code)  # nosec
-        policy_class = eval(user_policy.class_name)  # nosec
+        policy_class = eval(user_policy.unique_name)  # nosec
 
         sys.stdout = stdout_
         sys.stderr = stderr_
@@ -380,12 +452,13 @@ def execute_policy_code(user_policy: UserPolicy):
             sys.stderr = stderr
             # exec(user_policy.byte_code)  # nosec
             # policy_class = eval(user_policy.class_name)  # nosec
+            class_name = f"{user_policy.unique_name}_1"
             print(
-                user_policy.__object_version_registry__["RepeatedCallPolicy_1"],
+                user_policy.__object_version_registry__[class_name],
                 file=stderr_,
             )
             policy_class = user_policy.__object_version_registry__[
-                "RepeatedCallPolicy_1"
+                class_name
             ]
 
             sys.stdout = stdout_
