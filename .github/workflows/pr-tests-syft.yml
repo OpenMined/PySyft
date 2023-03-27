@@ -75,6 +75,9 @@ jobs:
           colima start
           docker image ls
         if: ${{ matrix.os == 'macos-latest' }}
+      - name: Configure Docker for Windows
+        env:
+          DOCKER_HOST: "tcp://127.0.0.1:2375"
       - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
         run: |
