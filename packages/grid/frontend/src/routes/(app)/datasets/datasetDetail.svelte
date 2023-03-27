@@ -5,16 +5,23 @@
   import Fa from 'svelte-fa';
   import DeleteDatasetModal from './deleteDatasetModal.svelte';
 
-  export let name;
-  export let author;
-  export let description;
-  export let requests;
-  export let assets;
-  export let lastUpdated;
-  export let fileSize;
-  export let datasetId;
-
+  export let dataset = {
+    name: '',
+    author: '',
+    requests: '',
+    description: '',
+    assets: '',
+    lastUpdated: '',
+    fileSize: '',
+    datasetId: ''
+  };
   export let activeTabValue = 'overview';
+
+  let isEditingDescription = false;
+
+  function handleEditDescriptionClick() {
+    isEditingDescription = false;
+  }
 
   let tabItems = [
     { label: 'Overview', value: 'overview' },
@@ -32,7 +39,7 @@
 </script>
 
 <div>
-  <DeleteDatasetModal bind:showModal />
+  <DeleteDatasetModal bind:showModal datasetId={dataset.datasetId} />
 
   <!-- Header -->
   <div class="flex justify-between">
@@ -52,22 +59,22 @@
         <li
           class="flex justify-left text-gray-800 font-rubik text-xl leading-normal font-medium pb-2"
         >
-          {name}
+          {dataset.name}
         </li>
       </div>
       <div class="flex items-center pb-2">
         <li class="text-gray-600 font-small">Jana Doe</li>
         <Fa class="px-2" icon={faCircle} size="0.3x" />
-        <li class="text-gray-600 font-small">{`Updated ${lastUpdated}`}</li>
+        <li class="text-gray-600 font-small">{`Updated ${dataset.lastUpdated}`}</li>
       </div>
       <div>
-        <li>UID: {datasetId}</li>
+        <li class="text-gray-600 font-small">UID: {dataset.datasetId}</li>
       </div>
       <div class="flex items-center py-8">
         <Fa class="px-2" icon={faTableList} size="sm" />
-        <li class="text-gray-600 font-small">{assets}</li>
+        <li class="text-gray-600 font-small">{dataset.assets}</li>
         <Fa class="px-2" icon={faCircle} size="0.3x" />
-        <li class="text-gray-600 font-small">{`File Size: (${fileSize / 1000}kB)`}</li>
+        <li class="text-gray-600 font-small">{`File Size: (${dataset.fileSize / 1000}kB)`}</li>
       </div>
     </ul>
   </div>
@@ -91,7 +98,20 @@
         >
           Description
         </h2>
-        <p>{description}</p>
+
+        {#if !isEditingDescription}
+          <p>{dataset.description}</p>
+          <button style="text-align: left" on:click={handleEditDescriptionClick}
+            ><p class="font-roboto small change-link-text">Edit</p></button
+          >
+        {:else}
+          <textarea
+            placeholder={dataset.description}
+            rows="4"
+            class="w-full border border-gray-500"
+            on:blur={console.log('Update dataset description')}
+          />
+        {/if}
       </div>
     {:else}
       <div class="p-2">Assets (Work in progress...)</div>
@@ -102,6 +122,11 @@
 <style lang="postcss">
   .detailHeader {
     @apply flex p-1 h-fit;
+  }
+
+  .change-link-text {
+    color: rgb(25, 179, 230);
+    cursor: pointer;
   }
 
   .tab-list {

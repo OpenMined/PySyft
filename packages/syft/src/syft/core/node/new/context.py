@@ -1,4 +1,5 @@
 # stdlib
+from typing import List
 from typing import Optional
 
 # third party
@@ -13,7 +14,9 @@ from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
+from .user_roles import ROLE_TO_CAPABILITIES
 from .user_roles import ServiceRole
+from .user_roles import ServiceRoleCapability
 
 
 class NodeServiceContext(Context, SyftObject):
@@ -29,6 +32,9 @@ class AuthedServiceContext(NodeServiceContext):
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
+
+    def capabilities(self) -> List[ServiceRoleCapability]:
+        return ROLE_TO_CAPABILITIES.get(self.role, [])
 
 
 class UnauthedServiceContext(NodeServiceContext):

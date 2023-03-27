@@ -12,8 +12,8 @@
   export let label: string;
   export let id: string;
   export let required = false;
-  export let error = '';
-  export let warning = '';
+  export const error = '';
+  export const warning = '';
 </script>
 
 <div class="flex flex-col gap-4 w-full">
