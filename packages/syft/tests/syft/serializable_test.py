@@ -1,5 +1,6 @@
 # stdlib
 from time import time
+from typing import Callable
 from typing import Optional
 
 # third party
@@ -208,7 +209,7 @@ class PydDerivedWithoutAttrs(PydBase):
     config: Optional[dict] = None
 
 
-@serializable(attrs=["source_path", "target"])
+@serializable(attrs=["source", "target"])
 class PydDerivedOnly(PydBase):
     """
     Serialize: source, target
@@ -216,9 +217,7 @@ class PydDerivedOnly(PydBase):
 
     source: str
     target: str
-
-    def callback(x):
-        return x + 1
+    callback: Optional[Callable] = lambda: None  # noqa: E731
 
 
 def test_pydantic():
