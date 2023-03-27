@@ -26,12 +26,13 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.8.0-beta.3"
+__version__ = "0.8.0-beta.4"
 
 # stdlib
 from pathlib import Path
 import sys
 from typing import Any
+from typing import Callable
 
 # relative
 from . import filterwarnings  # noqa: F401
@@ -85,7 +86,7 @@ if OBLV:
     enable_external_lib("oblv")
 
 
-def module_property(func: Any) -> None:
+def module_property(func: Any) -> Callable:
     """Decorator to turn module functions into properties.
     Function names must be prefixed with an underscore."""
     module = sys.modules[func.__module__]

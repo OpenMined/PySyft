@@ -18,6 +18,7 @@ from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .uid import UID
+from .user_roles import DATA_OWNER_ROLE_LEVEL
 from .user_roles import GUEST_ROLE_LEVEL
 
 
@@ -31,7 +32,7 @@ class DatasetService(AbstractService):
         self.store = store
         self.stash = DatasetStash(store=store)
 
-    @service_method(path="dataset.add", name="add")
+    @service_method(path="dataset.add", name="add", roles=DATA_OWNER_ROLE_LEVEL)
     def add(
         self, context: AuthedServiceContext, dataset: CreateDataset
     ) -> Union[SyftSuccess, SyftError]:
@@ -110,6 +111,14 @@ class DatasetService(AbstractService):
         elif isinstance(datasets, SyftError):
             return datasets
         return []
+
+    @service_method(path="dataset.delete_by_id", name="dataset_delete_by_id")
+    def delete_dataset(self, context: AuthedServiceContext, uid: UID):
+        result = self.stash.delete_by_uid(uid)
+        if result.is_ok():
+            return result.ok()
+        else:
+            return SyftError(message=result.err())
 
 
 TYPE_TO_SERVICE[Dataset] = DatasetService

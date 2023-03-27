@@ -3,6 +3,7 @@
   import { UUID } from '../objects/uid';
   import { APICall } from '../messages/syftMessage.ts';
   import sodium from 'libsodium-wrappers';
+  import { UserCode } from '../objects/userCode';
 
   export class JSClient {
     /**
@@ -109,6 +110,37 @@
     getDataset(datasetId) {
       return (async () => {
         return await this.send([], { uid: new UUID(datasetId) }, 'dataset.get_by_id');
+      })();
+    }
+
+    /**
+     * Returns a promise that resolves to an specific Dataset Obj
+     * @returns {Promise<Array<Object>>} A promise that resolves to a dataset
+     */
+    deleteDataset(datasetId) {
+      return (async () => {
+        return await this.send([], { uid: new UUID(datasetId) }, 'dataset.delete_by_id');
+      })();
+    }
+
+    /**
+     * Returns a Promise that resolves to an array of all code requests.
+     * @returns {Promise} A Promise that resolves to the result of calling the `send()` method with the parameters `[]`, `{ }`, and `'code.get_all'`.
+     */
+    getCodeRequests() {
+      return (async () => {
+        return await this.send([], {}, 'code.get_all');
+      })();
+    }
+
+    /**
+     * Returns a Promise that resolves to a `UserCode` object for the code request with the given `codeId`.
+     * @param {string} codeId The unique identifier for the code request.
+     * @returns {Promise} A Promise that resolves to a `UserCode` object constructed from the result of calling the `send()` method with the parameters `[]`, `{ uid: new UUID(codeId) }`, and `'code.get_by_id'`.
+     */
+    getCodeRequest(codeId) {
+      return (async () => {
+        return new UserCode(await this.send([], { uid: new UUID(codeId) }, 'code.get_by_id'));
       })();
     }
 
