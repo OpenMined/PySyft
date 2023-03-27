@@ -1,6 +1,6 @@
 <script>
   import UserListItem from './userListItem.svelte';
-  import UserDetail from "./userDetail.svelte";
+  import UserDetail from './userDetail.svelte';
   import { getClient } from '$lib/store';
   import { onMount } from 'svelte';
 
@@ -18,7 +18,7 @@
 
   let pages = {
     isList: true,
-    isDetail: false,
+    isDetail: false
   };
 
   const setPage = async (current) => {
@@ -28,17 +28,24 @@
         pages[page] = page === current ? true : false;
       }
     }
-  }
-
+  };
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
   <div class="page-container">
     {#if pages.isList}
-      <UserListItem on:setPage={event => { setPage(event.detail) }} />
+      <UserListItem
+        on:setPage={(event) => {
+          setPage(event.detail);
+        }}
+      />
     {/if}
     {#if pages.isDetail}
-      <UserDetail on:setPage={event => { setPage(event.detail) }} />
+      <UserDetail
+        on:setPage={(event) => {
+          setPage(event.detail);
+        }}
+      />
     {/if}
   </div>
 </main>

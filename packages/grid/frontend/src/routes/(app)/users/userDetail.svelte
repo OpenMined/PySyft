@@ -3,7 +3,7 @@
   import { createEventDispatcher } from 'svelte';
 
   const dispatch = createEventDispatcher();
-  
+
   import { getClient } from '$lib/store';
   import { onMount } from 'svelte';
 
@@ -20,13 +20,13 @@
       });
   });
 
-  const setPage = async() => {
-		dispatch('setPage', 'isList');
-	}
+  const setPage = async () => {
+    dispatch('setPage', 'isList');
+  };
 
   let sections = {
     isActivity: true,
-    isMessage: false,
+    isMessage: false
   };
 
   const setSection = async (current) => {
@@ -36,34 +36,33 @@
         sections[section] = section === current ? true : false;
       }
     }
-  }
-
-  const filters = ['Recent Activity', 'Most dataflows']
-
-  const user =  {
-    name: 'Dr. Javier Alegre-Abarrategui',
-    avatar: '', 
-    organisation: 'Institute of Neurology, London', 
-    roles: ['Member', 'Data Scientist'], 
-    avatar: '',
-    dataflow: 1, 
-    filter: 'Most dataflows'
   };
 
+  const filters = ['Recent Activity', 'Most dataflows'];
+
+  const user = {
+    name: 'Dr. Javier Alegre-Abarrategui',
+    avatar: '',
+    organisation: 'Institute of Neurology, London',
+    roles: ['Member', 'Data Scientist'],
+    avatar: '',
+    dataflow: 1,
+    filter: 'Most dataflows'
+  };
 </script>
 
 <div class="user-container">
   <div class="user-control">
-    <button 
-      type="button" 
-      class="contol-button"
-      on:click={setPage}
-    >&#10094; Back</button>
+    <button type="button" class="contol-button" on:click={setPage}>&#10094; Back</button>
   </div>
   <!-- <div class="user-header"> -->
   <div class="user-profile">
     <div class="user-avatar">
-      <img src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg" alt="JD" class="user-image">
+      <img
+        src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg"
+        alt="JD"
+        class="user-image"
+      />
     </div>
     <div class="user-name">{user.name}</div>
     <div class="user-organisation">{user.organisation}</div>
@@ -85,35 +84,37 @@
       <h3 style="font-weight: 700;">PRIVACY LIMIT</h3>
       <div style="display: flex; gap: 10px;">0&#603; <Info /></div>
     </div>
-    <div class="property-divider"></div>
+    <div class="property-divider" />
     <div class="user-contact">
       <h3 style="font-weight: 700;">CONTACT</h3>
       <div>
         <a href="mailto:abarrategui@oxford.edu">abarrategui@oxford.edu</a>
       </div>
       <div>
-        <a href="http://www.google.scholar.com/995749874597-abarrategui">www.google.scholar.com/995749874597-abarrategui</a>
+        <a href="http://www.google.scholar.com/995749874597-abarrategui"
+          >www.google.scholar.com/995749874597-abarrategui</a
+        >
       </div>
     </div>
   </div>
   <hr style="width: 100%; margin-bottom: 24px;" />
   <div class="user-buttons">
-    <button 
-      type="button" 
+    <button
+      type="button"
       class="user-button"
       class:active={sections.isActivity}
       on:click={() => {
-        setSection('isActivity')
-      }}
-    >Activity</button>
-    <button 
-      type="button" 
+        setSection('isActivity');
+      }}>Activity</button
+    >
+    <button
+      type="button"
       class="user-button"
       class:active={sections.isMessage}
       on:click={() => {
-        setSection('isMessage')
-      }}
-    >Messages</button>
+        setSection('isMessage');
+      }}>Messages</button
+    >
   </div>
 
   <!-- </div> -->
@@ -136,16 +137,20 @@
       <div class="user-activities">
         <div class="user-activity">
           <div class="activity-check flex justify-center">
-            <div class="flex items-center justify-center w-[60px] h-[60px] mb-12 rounded-full bg-gray-200">
+            <div
+              class="flex items-center justify-center w-[60px] h-[60px] mb-12 rounded-full bg-gray-200"
+            >
               <label for="toggleB" class="flex items-center cursor-pointer">
                 <!-- toggle -->
                 <div class="relative">
                   <!-- input -->
-                  <input type="checkbox" id="toggleB" class="sr-only">
+                  <input type="checkbox" id="toggleB" class="sr-only" />
                   <!-- line -->
-                  <div class="block bg-black-900 w-12 h-6 rounded-full"></div>
+                  <div class="block bg-black-900 w-12 h-6 rounded-full" />
                   <!-- dot -->
-                  <div class="dot absolute left-1 top-1 bg-gray-200 w-4 h-4 rounded-full transition"></div>
+                  <div
+                    class="dot absolute left-1 top-1 bg-gray-200 w-4 h-4 rounded-full transition"
+                  />
                 </div>
                 <!-- label -->
                 <!-- <div class="ml-3 text-gray-700 font-medium">
@@ -156,29 +161,37 @@
           </div>
           <div class="activity-detail">
             <div class="activity-date">Feb 14, 2023</div>
-            <div class="activity-request">would like permission to view asset "Media Sources Daily Audience".</div>
+            <div class="activity-request">
+              would like permission to view asset "Media Sources Daily Audience".
+            </div>
             <div class="activity-response">
               <div class="response-details">
                 <div class="response-status">Denied</div>
                 <div class="response-separator">&bull;</div>
                 <div class="response-user">Jane Doe</div>
               </div>
-              <div class="response-text">Would be a breach of privacy to give Dr. Javier view access</div>
+              <div class="response-text">
+                Would be a breach of privacy to give Dr. Javier view access
+              </div>
             </div>
           </div>
         </div>
         <div class="user-activity">
           <div class="activity-check flex justify-center">
-            <div class="flex items-center justify-center w-[60px] h-[60px] mb-12 rounded-full bg-gray-200">
+            <div
+              class="flex items-center justify-center w-[60px] h-[60px] mb-12 rounded-full bg-gray-200"
+            >
               <label for="toggleB" class="flex items-center cursor-pointer">
                 <!-- toggle -->
                 <div class="relative">
                   <!-- input -->
-                  <input type="checkbox" id="toggleB" class="sr-only">
+                  <input type="checkbox" id="toggleB" class="sr-only" />
                   <!-- line -->
-                  <div class="block bg-black-900 w-12 h-6 rounded-full"></div>
+                  <div class="block bg-black-900 w-12 h-6 rounded-full" />
                   <!-- dot -->
-                  <div class="dot absolute left-1 top-1 bg-gray-200 w-4 h-4 rounded-full transition"></div>
+                  <div
+                    class="dot absolute left-1 top-1 bg-gray-200 w-4 h-4 rounded-full transition"
+                  />
                 </div>
                 <!-- label -->
                 <!-- <div class="ml-3 text-gray-700 font-medium">
@@ -189,14 +202,18 @@
           </div>
           <div class="activity-detail">
             <div class="activity-date">Feb 11, 2023</div>
-            <div class="activity-request">would like permission to view asset "Media Sources Daily Audience".</div>
+            <div class="activity-request">
+              would like permission to view asset "Media Sources Daily Audience".
+            </div>
             <div class="activity-response">
               <div class="response-details">
                 <div class="response-status">Denied</div>
                 <div class="response-separator">&bull;</div>
                 <div class="response-user">Jane Doe</div>
               </div>
-              <div class="response-text">Would be a breach of privacy to give Dr. Javier view access</div>
+              <div class="response-text">
+                Would be a breach of privacy to give Dr. Javier view access
+              </div>
             </div>
           </div>
         </div>
@@ -207,20 +224,36 @@
         <div class="user-message">
           <div class="message-properties">
             <div class="message-avatar">
-              <img src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg" alt="JD" class="message-profile">
+              <img
+                src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg"
+                alt="JD"
+                class="message-profile"
+              />
             </div>
             <div class="message-author">Jane Doe</div>
             <div class="message-separator">&bull;</div>
             <div class="message-date">Yesterday</div>
           </div>
-          <div class="message-text">Dr. Alegre-Abarrategui, unfortunately I cannot give you view access to this dataset as that would be a breach of privacy for our users. However, we would be open to reviewing your project via a code or project submission. This would allow you to do some computations on the data without needing view access and would allow us to protect the privacy of our users.</div>
+          <div class="message-text">
+            Dr. Alegre-Abarrategui, unfortunately I cannot give you view access to this dataset as
+            that would be a breach of privacy for our users. However, we would be open to reviewing
+            your project via a code or project submission. This would allow you to do some
+            computations on the data without needing view access and would allow us to protect the
+            privacy of our users.
+          </div>
           <div class="message-request">98798798797897978787...</div>
         </div>
         <div class="message-box">
           <form class="message-form" action="">
             <div class="form-item">
               <label for="message">
-                <input type="text" style="width: 100%; border-radius: 5px; background-color: #f1f0f4;" name="message" id="message" placeholder="Write message...">
+                <input
+                  type="text"
+                  style="width: 100%; border-radius: 5px; background-color: #f1f0f4;"
+                  name="message"
+                  id="message"
+                  placeholder="Write message..."
+                />
               </label>
             </div>
             <div class="form-item" style="align-self: flex-end;">
@@ -246,7 +279,7 @@
     margin-bottom: 16px;
   }
   .contol-button {
-    color: rgb(25, 179, 230);;
+    color: rgb(25, 179, 230);
   }
   /* .user-header {
     display: flex;
@@ -372,7 +405,7 @@
     background-color: #fff;
     color: rgb(25, 179, 230);
     /* opacity: 1; */
-    box-shadow: 0px 2px 6px rgba(0,0,0,0.1), 0px 4px 16px rgba(0,0,0,0.1);
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1), 0px 4px 16px rgba(0, 0, 0, 0.1);
   }
   .user-content {
     margin-top: 32px;
@@ -473,10 +506,9 @@
     margin-bottom: 32px;
     box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.15);
   }
-  .message-form {    
+  .message-form {
     display: flex;
     flex-direction: column;
     gap: 20px;
   }
-
 </style>

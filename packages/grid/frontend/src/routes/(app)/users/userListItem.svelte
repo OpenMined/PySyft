@@ -2,7 +2,7 @@
   import { createEventDispatcher } from 'svelte';
 
   const dispatch = createEventDispatcher();
-  
+
   import { getClient } from '$lib/store';
   import { onMount } from 'svelte';
 
@@ -18,13 +18,13 @@
       });
   });
 
-  const setPage = async() => {
-		dispatch('setPage', 'isDetail');
-	}
+  const setPage = async () => {
+    dispatch('setPage', 'isDetail');
+  };
 
   let sections = {
     isMember: true,
-    isUser: false,
+    isUser: false
   };
 
   const setSection = async (current) => {
@@ -34,85 +34,92 @@
         sections[section] = section === current ? true : false;
       }
     }
-  }
+  };
 
-  const filters = ['Recent Activity', 'Most dataflows']
+  const filters = ['Recent Activity', 'Most dataflows'];
 
   const members = [
     {
-      name: 'Tamara Jones', 
-      email: 'tamarajones@openmined.org', 
-      role: 'Data Owner', 
+      name: 'Tamara Jones',
+      email: 'tamarajones@openmined.org',
+      role: 'Data Owner',
       avatar: '',
-      active: 'Feb 14, 2023', 
+      active: 'Feb 14, 2023',
       filter: 'Recent Activity'
     },
     {
-      name: 'John Doe', 
-      email: 'johndoe@openmined.org', 
-      role: 'Data Scientist', 
+      name: 'John Doe',
+      email: 'johndoe@openmined.org',
+      role: 'Data Scientist',
       avatar: '',
-      active: 'Feb 13, 2023', 
+      active: 'Feb 13, 2023',
       filter: 'Recent Activity'
     },
     {
-      name: 'Tamara Jones', 
-      email: 'tamarajones@openmined.org', 
-      role: 'Admin', 
+      name: 'Tamara Jones',
+      email: 'tamarajones@openmined.org',
+      role: 'Admin',
       avatar: '',
-      active: 'Feb 10, 2023', 
+      active: 'Feb 10, 2023',
       filter: 'Recent Activity'
     },
     {
-      name: 'Jane Doe', 
-      email: 'janedoe@openmined.org', 
-      role: 'Data Scientist', 
+      name: 'Jane Doe',
+      email: 'janedoe@openmined.org',
+      role: 'Data Scientist',
       avatar: '',
-      active: 'Jan 10, 2023', 
+      active: 'Jan 10, 2023',
       filter: 'Recent Activity'
-    },
+    }
   ];
 
   const users = [
     {
-      name: 'Dr. Javier Alegre-Abarrategui', 
-      organisation: 'Institute of Neurology, London', 
-      role: 'Data Scientist', 
+      name: 'Dr. Javier Alegre-Abarrategui',
+      organisation: 'Institute of Neurology, London',
+      role: 'Data Scientist',
       avatar: '',
-      dataflow: 1, 
+      dataflow: 1,
       filter: 'Most dataflows'
-    },
+    }
   ];
-
 </script>
 
 <div class="user-container w-full">
-  <div class="user-header flex flex-col justify-start content-center items-center flex-nowrap gap-4 overflow-visible relative p-0 rounded-none">
-    <div class="user-illustration block shrink-0 w-[438px] h-[263px]"></div>
+  <div
+    class="user-header flex flex-col justify-start content-center items-center flex-nowrap gap-4 overflow-visible relative p-0 rounded-none"
+  >
+    <div class="user-illustration block shrink-0 w-[438px] h-[263px]" />
     <div class="user-buttons">
-      <button 
-        type="button" 
+      <button
+        type="button"
         class="user-button"
         class:active={sections.isMember}
         on:click={() => {
-          setSection('isMember')
-        }}
-      >Team Members</button>
-      <button 
-        type="button" 
+          setSection('isMember');
+        }}>Team Members</button
+      >
+      <button
+        type="button"
         class="user-button"
         class:active={sections.isUser}
         on:click={() => {
-          setSection('isUser')
-        }}
-      >Users</button>
+          setSection('isUser');
+        }}>Users</button
+      >
     </div>
   </div>
   <div class="user-content">
     <div class="user-options">
       <div class="user-search">
         <label for="search" class="search-label">
-          <input type="search" class="search-input" name="search" id="search" placeholder="Search by name">
+          <input
+            type="search"
+            class="search-input"
+            name="search"
+            id="search"
+            placeholder="Search by name"
+          />
           <span class="search-icon">&#9906;</span>
         </label>
       </div>
@@ -120,49 +127,57 @@
         <div class="user-activity">
           <button type="button">Recent Activity <span class="activity-arrow">&#9660;</span></button>
         </div>
-        <div class="user-count">Total: {sections.isMember ? members.length: users.length}</div>
+        <div class="user-count">Total: {sections.isMember ? members.length : users.length}</div>
       </div>
     </div>
     {#if sections.isMember}
       <div class="user-list">
         {#each members as member}
-        <div class="hover:bg-gray-100 user-card">
-          <div class="user-avatar">
-            <img src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg" alt="JD" class="user-profile">
-          </div>
-          <div class="user-details">
-            <div class="user-identity">
-              <div class="user-name">{member.name}</div>
-              <div class="user-role">{member.role}</div>
+          <div class="hover:bg-gray-100 user-card">
+            <div class="user-avatar">
+              <img
+                src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg"
+                alt="JD"
+                class="user-profile"
+              />
             </div>
-            <div class="user-email">{member.email}</div>
+            <div class="user-details">
+              <div class="user-identity">
+                <div class="user-name">{member.name}</div>
+                <div class="user-role">{member.role}</div>
+              </div>
+              <div class="user-email">{member.email}</div>
+            </div>
+            <div class="user-timestamp">Active: {member.active}</div>
           </div>
-          <div class="user-timestamp">Active: {member.active}</div>
-        </div>
         {/each}
       </div>
     {/if}
     {#if sections.isUser}
       <div class="user-list">
         {#each users as user}
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <div class="hover:bg-gray-100 cursor-pointer user-card" on:click={setPage}>
-          <div class="user-avatar">
-            <img src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg" alt="JD" class="user-profile">
-          </div>
-          <div class="user-details">
-            <div class="user-identity">
-              <div class="user-name">{user.name}</div>
-              <div class="user-role">{user.role}</div>
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <div class="hover:bg-gray-100 cursor-pointer user-card" on:click={setPage}>
+            <div class="user-avatar">
+              <img
+                src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg"
+                alt="JD"
+                class="user-profile"
+              />
             </div>
-            <div class="user-organisation">{user.organisation}</div>
+            <div class="user-details">
+              <div class="user-identity">
+                <div class="user-name">{user.name}</div>
+                <div class="user-role">{user.role}</div>
+              </div>
+              <div class="user-organisation">{user.organisation}</div>
+            </div>
+            <div class="user-dataflows">
+              <div class="user-dataflow">&rarrc; {user.dataflow}</div>
+              <div class="dataflow-divider" />
+              <div class="user-epsilon">0&#603;</div>
+            </div>
           </div>
-          <div class="user-dataflows">
-            <div class="user-dataflow">&rarrc; {user.dataflow}</div>
-            <div class="dataflow-divider"></div>
-            <div class="user-epsilon">0&#603;</div>
-          </div>
-        </div>
         {/each}
       </div>
     {/if}
@@ -219,10 +234,10 @@
   }
   .user-button.active {
     color: rgb(25, 179, 230);
-    box-shadow: 0px 2px 6px rgba(0,0,0,0.1), 0px 4px 16px rgba(0,0,0,0.1);
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1), 0px 4px 16px rgba(0, 0, 0, 0.1);
     background-color: #fff;
   }
-  .user-content {    
+  .user-content {
     margin-top: 32px;
     margin-bottom: 32px;
   }
@@ -264,21 +279,21 @@
   .user-activity {
     padding: 10px;
     border-radius: 5px;
-    transition: all .5s linear;
-    box-shadow: 0px 2px 6px rgba(0,0,0,0.1), 0px 4px 16px rgba(0,0,0,0.1);
+    transition: all 0.5s linear;
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1), 0px 4px 16px rgba(0, 0, 0, 0.1);
   }
   .user-activity:hover {
     background-color: #f1f0f4;
-    -webkit-transition: all .5s linear;
-    transition: all .5s linear;
+    -webkit-transition: all 0.5s linear;
+    transition: all 0.5s linear;
   }
   .user-activity:hover .activity-arrow {
     color: #aba6be;
-    transition: all .5s linear;
+    transition: all 0.5s linear;
   }
   .activity-arrow {
     color: #e3e1e9;
-    transition: all .5s linear;
+    transition: all 0.5s linear;
   }
   .user-count {
     background-color: #e3e1e9;
