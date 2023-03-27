@@ -236,9 +236,10 @@ class CustomPolicy(Policy):
     init_args: Dict[str, Any] = {}
     init_kwargs: Dict[str, Any] = {}
 
-    def __psot_init__(self, *args, **kwargs) -> None:
-        self.init_args = args
-        self.init_kwargs = kwargs
+    def __init__(self, *args, **kwargs) -> None:
+        # self.init_args = args
+        # self.init_kwargs = kwargs
+        super().__init__(init_args=args, init_kwargs=kwargs, *args, **kwargs)
 
 
 class CustomInputPolicy(CustomPolicy, InputPolicy):
@@ -443,6 +444,7 @@ def execute_policy_code(user_policy: UserPolicy):
         # syft absolute
         import syft as sy  # noqa: F401 # provide sy.Things to user code
 
+        # print()
         exec(user_policy.byte_code)  # nosec
         policy_class = eval(user_policy.unique_name)  # nosec
 
@@ -482,6 +484,7 @@ def execute_policy_code(user_policy: UserPolicy):
 
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
     policy_class = execute_policy_code(user_policy)
+    print(init_args, file=sys.stderr)
     policy_object = policy_class(**init_args)
     return policy_object
 

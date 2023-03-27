@@ -26,9 +26,8 @@ from .context import ChangeContext
 from .credentials import SyftVerifyKey
 from .datetime import DateTime
 from .linked_obj import LinkedObject
-from .policy import UserPolicy
-from .policy import init_policy
-from .policy import update_policy_state
+from .new_policy import UserPolicy
+from .new_policy import init_policy, update_policy_state, get_policy_object
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
@@ -199,15 +198,15 @@ class Request(SyftObject):
 
         if isinstance(code.output_policy, UserPolicy):
             res = api.services.policy.add(code.output_policy)
-            print(res)
-            policy_object = init_policy(
-                code.output_policy, code.output_policy_init_args
-            )
-            # code.output_policy_state = _serialize(policy_object, to_bytes=True, )
-            # policy_object = get_policy_object(
-            #     code.output_policy,
-            #     code.output_policy_state,
-            # )
+            if len(code.output_policy_state) == 0: 
+                policy_object = init_policy(
+                    code.output_policy, code.output_policy_init_args
+                )
+            else:
+                policy_object = get_policy_object(
+                    code.output_policy,
+                    code.output_policy_state,
+                )
             action_object = ActionObject.from_obj(
                 policy_object.apply_output(action_object)
             )
@@ -220,12 +219,12 @@ class Request(SyftObject):
         #     state = code.output_policy_state
         #     state.update_state(outputs=action_object.id, context=ctx)
 
-        # policy_state_mutation = ObjectMutation(
-        #     linked_obj=change.linked_obj,
-        #     attr_name="output_policy_state",
-        #     match_type=True,
-        #     value=state,
-        # )
+        policy_state_mutation = ObjectMutation(
+            linked_obj=change.linked_obj,
+            attr_name="output_policy_state",
+            match_type=True,
+            value=code.output_policy_state,
+        )
 
         action_object_link = LinkedObject.from_obj(
             action_object, node_uid=self.node_uid
@@ -236,7 +235,7 @@ class Request(SyftObject):
         )
 
         submit_request = SubmitRequest(
-            changes=[permission_change],  # [policy_state_mutation, permission_change],
+            changes=[policy_state_mutation, permission_change],
             requesting_user_verify_key=self.requesting_user_verify_key,
         )
 
