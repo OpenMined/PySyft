@@ -17,7 +17,6 @@ def serializable(
     without: Sequence[str] = [],
     inherit: Optional[bool] = True,
     inheritable: Optional[bool] = True,
-    pydantic: Optional[bool] = False,
     **kwargs,
 ) -> Any:
     """
@@ -25,7 +24,7 @@ def serializable(
 
     Args:
         `attrs`       : List of attributes to serialize
-        `without`     : List of attributes to exlucde from serialization
+        `without`     : List of attributes to exclude from serialization
         `inherit`     : Whether to inherit serializable attribute list from base class
         `inheritable` : Whether the serializable attribute list can be inherited by derived class
 

@@ -28,21 +28,7 @@ from .uid import UID
 from .user_roles import ServiceRole
 
 
-@serializable(
-    attrs=[
-        "id",
-        "email",
-        "name",
-        "hashed_password",
-        "salt",
-        "signing_key",
-        "verify_key",
-        "role",
-        "institution",
-        "website",
-        "created_at",
-    ]
-)
+@serializable()
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
