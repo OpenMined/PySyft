@@ -4,7 +4,7 @@ from ...core.node.new.syft_object import SYFT_OBJECT_VERSION_1
 from ...core.node.new.syft_object import SyftObject
 
 
-@serializable(attrs=["private_key", "public_key"])
+@serializable()
 class OblvKeys(SyftObject):
     # version
     __canonical_name__ = "OblvKeys"

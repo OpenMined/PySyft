@@ -199,7 +199,7 @@ class UID:
             )
 
 
-@serializable(attrs=["value", "syft_history_hash"])
+@serializable(attrs=["syft_history_hash"])
 class LineageID(UID):
     syft_history_hash: int
 

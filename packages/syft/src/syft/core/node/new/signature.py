@@ -12,7 +12,7 @@ recursive_serde_register(_ParameterKind)
 
 
 recursive_serde_register(
-    Parameter, state_attrs=["_annotation", "_name", "_kind", "_default"]
+    Parameter, serialize_attrs=["_annotation", "_name", "_kind", "_default"]
 )
 
 

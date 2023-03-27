@@ -53,7 +53,7 @@ OBLV_PROCESS_CACHE: Dict[str, List] = {}
 
 # TODO: 🟡 Duplication of PyPrimitive Dict
 # This is emulated since the action store curently accepts  only SyftObject types
-@serializable(attrs=["id", "base_dict"], has_explicit_id=True)
+@serializable()
 class DictObject(SyftObject):
     # version
     __canonical_name__ = "Dict"

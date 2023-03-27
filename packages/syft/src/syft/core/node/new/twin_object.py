@@ -22,10 +22,7 @@ def to_action_object(obj: Any) -> ActionObject:
     raise Exception(f"{type(obj)} not in action_types")
 
 
-@serializable(
-    attrs=["id", "private_obj", "private_obj_id", "mock_obj", "mock_obj_id"],
-    has_explicit_id=True,
-)
+@serializable()
 class TwinObject(SyftObject):
     __canonical_name__ = "TwinObject"
     __version__ = 1

@@ -25,7 +25,7 @@ class ServiceRoleCapability(Enum):
     CAN_EDIT_DOMAIN_SETTINGS = 512
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ServiceRole(Enum):
     NONE = 0
     GUEST = 1

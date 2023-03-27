@@ -30,40 +30,57 @@ def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
     deserialize: Optional[Callable] = None,
-    state_attrs: Optional[List] = None,
-    inherit_attrs: Optional[bool] = False,
+    serialize_attrs: Optional[List] = None,
+    exclude_attrs: Optional[List] = None,
+    inherit_attrs: Optional[bool] = True,
+    inheritable_attrs: Optional[bool] = True,
 ) -> None:
-    if not isinstance(cls, type):
-        cls = type(cls)
-
+    pydantic_fields = None
+    base_attrs = None
     attribute_list = set()
+
+    cls = type(cls) if not isinstance(cls, type) else cls
+    fqn = f"{cls.__module__}.{cls.__name__}"
+
     nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
     _deserialize = deserialize if nonrecursive else rs_proto2object
+    is_pydantic = issubclass(cls, BaseModel)
 
-    if inherit_attrs:
-        # update the inherited set
-        base_attrs = getattr(cls, "__syft_state__", [])
+    if inherit_attrs and not is_pydantic:
+        # get attrs from base class
+        base_attrs = getattr(cls, "__syft_serializable__", [])
         attribute_list.update(base_attrs)
 
-    # If state_attrs is provided, append it to our attr list
-    if state_attrs:
-        attribute_list.update(state_attrs)
+    if is_pydantic and not serialize_attrs:
+        # if pydantic object and attrs are provided, the get attrs from __fields__
+        # cls.__fields__ auto inherits attrs
+        pydantic_fields = [
+            f.name
+            for f in cls.__fields__.values()
+            if f.outer_type_ not in (Callable, types.FunctionType, types.LambdaType)
+        ]
+        attribute_list.update(pydantic_fields)
 
-    if attribute_list:
-        # Set __syft_state for making attributes inheritable
-        # TODO: Discuss if this needs to be enabled by default
-        setattr(cls, "__syft_state__", attribute_list)
+    if serialize_attrs:
+        # If serialize_attrs is provided, append it to our attr list
+        attribute_list.update(serialize_attrs)
 
-    serde_overrides = getattr(cls, "__serde_overrides__", {})
+    if exclude_attrs:
+        attribute_list = attribute_list - set(exclude_attrs)
 
     if issubclass(cls, Enum):
         attribute_list.update(["value"])
 
-    # without fqn duplicate class names overwrite
-    fqn = f"{cls.__module__}.{cls.__name__}"
-    attribute_list = list(attribute_list) if attribute_list else None
+    if inheritable_attrs and attribute_list and not is_pydantic:
+        # only set __syft_serializable__ for non-pydantic classes because
+        # pydantic objects inherit by default
+        setattr(cls, "__syft_serializable__", attribute_list)
 
+    attribute_list = list(attribute_list) if attribute_list else None
+    serde_overrides = getattr(cls, "__serde_overrides__", {})
+
+    # without fqn duplicate class names overwrite
     TYPE_BANK[fqn] = (
         nonrecursive,
         _serialize,

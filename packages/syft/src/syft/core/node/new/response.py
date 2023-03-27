@@ -106,6 +106,6 @@ except Exception:
     pass  # nosec
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SyftAttributeError(AttributeError, SyftException):
     pass

@@ -24,12 +24,12 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
-@serializable(attrs=["id", "node_uid", "result", "resolved"], has_explicit_id=True)
+@serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    # id: UID
+    id: UID
     node_uid: UID
     result: Optional[Any]
     resolved: bool = False

@@ -77,7 +77,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
         return self == other
 
 
-@serializable(attrs=["worker_settings"], needs_debug=True)
+@serializable()
 class PythonNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "PythonNodeRoute"
     __version__ = SYFT_OBJECT_VERSION_1
