@@ -29,24 +29,18 @@
   let showModal = false;
 
   let visible = true;
-  let openDatasetName = '';
-  let openDatasetAuthor = '';
-  let openDatasetDescription = '';
-  let openDatasetLastUpdated = '';
-  let openDatasetAssets = '';
-  let openDatasetRequests = '';
-  let openDatasetFileSize = '';
-  let openDatasetId = '';
-
+  let openDataset = {};
   function showOpenDataset(event) {
-    openDatasetName = event.detail.openName;
-    openDatasetId = event.detail.openDatasetId;
-    openDatasetAuthor = event.detail.openAuthor;
-    openDatasetDescription = event.detail.openDescription;
-    openDatasetLastUpdated = event.detail.openLastUpdated;
-    openDatasetAssets = event.detail.openAssets;
-    openDatasetRequests = event.detail.openRequests;
-    openDatasetFileSize = event.detail.openFileSize;
+    openDataset = {
+      name: event.detail.openName,
+      datasetId: event.detail.openDatasetId,
+      author: event.detail.openAuthor,
+      assets: event.detail.openAssets,
+      description: event.detail.openDescription,
+      lastUpdated: event.detail.openLastUpdated,
+      requests: event.detail.openRequests,
+      fileSize: event.detail.openFileSize
+    };
     visible = false;
   }
 
@@ -64,7 +58,6 @@
   ];
 
   let sortMenuOpen = false;
-  let inputValue = '';
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
@@ -133,17 +126,7 @@
     {:else}
       <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14">
         <article class="w-full">
-          <DatasetDetail
-            on:closeOpenCard={showHome}
-            name={openDatasetName}
-            author={openDatasetAuthor}
-            description={openDatasetDescription}
-            datasetId={openDatasetId}
-            lastUpdated={openDatasetLastUpdated}
-            assets={openDatasetAssets}
-            requests={openDatasetRequests}
-            fileSize={openDatasetFileSize}
-          />
+          <DatasetDetail on:closeOpenCard={showHome} dataset={openDataset} />
         </article>
       </section>
     {/if}

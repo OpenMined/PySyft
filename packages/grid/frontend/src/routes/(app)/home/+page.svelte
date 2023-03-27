@@ -1,5 +1,5 @@
 <script>
-  import GetStartedModal from '../home/getStartedModal.svelte';
+  //import GetStartedModal from '../home/getStartedModal.svelte';
 
   import { browser } from '$app/environment';
   import { getPath } from '../../../lib/utils.js';
@@ -7,7 +7,7 @@
   import { url } from '$lib/stores/nav';
   import { parseActiveRoute } from '$lib/helpers';
 
-  let modalFlag = true;
+  //let modalFlag = true;
   let path = '';
 
   if (browser) {
