@@ -78,6 +78,7 @@ jobs:
       - name: Configure Docker for Windows
         run: |
           echo "DOCKER_HOST='tcp://127.0.0.1:2375'" >> $GITHUB_ENV
+          docker image ls
         if: ${{ matrix.os == 'windows-latest' }}
       - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
