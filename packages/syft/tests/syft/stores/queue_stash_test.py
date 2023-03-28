@@ -1,4 +1,5 @@
 # stdlib
+import sys
 from threading import Thread
 from typing import Any
 
@@ -23,6 +24,9 @@ REPEATS = 20
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_queue_stash_sanity(queue: Any) -> None:
     assert len(queue) == 0
     assert hasattr(queue, "store")
@@ -36,6 +40,9 @@ def test_queue_stash_sanity(queue: Any) -> None:
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
+)
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_stash_set_get(queue: Any) -> None:
     objs = []
@@ -77,6 +84,9 @@ def test_queue_stash_set_get(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_queue_stash_update(queue: Any) -> None:
     obj = MockSyftObject(data=0)
     res = queue.set(obj, ignore_duplicates=False)
@@ -105,6 +115,9 @@ def test_queue_stash_update(queue: Any) -> None:
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
+)
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_set_existing_queue_threading(queue: Any) -> None:
     thread_cnt = 5
@@ -144,6 +157,9 @@ def test_queue_set_existing_queue_threading(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_queue_update_existing_queue_threading(queue: Any) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -182,6 +198,9 @@ def test_queue_update_existing_queue_threading(queue: Any) -> None:
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
+)
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_set_delete_existing_queue_threading(
     queue: Any,

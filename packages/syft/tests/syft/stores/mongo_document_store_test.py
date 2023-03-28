@@ -1,4 +1,5 @@
 # stdlib
+import sys
 from threading import Thread
 from typing import Tuple
 
@@ -45,6 +46,9 @@ def test_mongo_store_partition_init_failed() -> None:
     assert res.is_err()
 
 
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -> None:
     res = mongo_store_partition.init_store()
     assert res.is_ok()
@@ -78,6 +82,9 @@ def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -
         assert len(mongo_store_partition.all().ok()) == 3 + idx
 
 
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_delete(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -147,6 +154,9 @@ def test_mongo_store_partition_update(
         assert stored.ok()[0].data == v
 
 
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_set_threading(
     mongo_server_mock: Tuple,
 ) -> None:
@@ -192,6 +202,9 @@ def test_mongo_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_set_joblib(
     mongo_server_mock,
 ) -> None:
@@ -227,6 +240,9 @@ def test_mongo_store_partition_set_joblib(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_update_threading(
     mongo_server_mock,
 ) -> None:
@@ -308,6 +324,9 @@ def test_mongo_store_partition_update_joblib(
         assert execution_err is None
 
 
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_set_delete_threading(
     mongo_server_mock,
 ) -> None:
@@ -357,6 +376,9 @@ def test_mongo_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
+@pytest.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_set_delete_joblib(
     mongo_server_mock,
 ) -> None:
