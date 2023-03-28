@@ -46,6 +46,9 @@ class UserStash(BaseStash):
             partial(super().set, credentials=credentials)
         )
 
+    def admin_verify_key(self):
+        return Ok(self.partition.root_verify_key)
+
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Optional[User], str]:

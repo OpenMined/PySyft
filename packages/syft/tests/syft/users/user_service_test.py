@@ -56,7 +56,7 @@ def test_userservice_create_error_on_get_by_email(
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     response = user_service.create(authed_context, guest_create_user)
     assert isinstance(response, SyftError)
-    expected_error_message = mock_get_by_email(guest_create_user.email).err()
+    expected_error_message = mock_get_by_email(None, guest_create_user.email).err()
     assert response.message == expected_error_message
 
 
@@ -299,7 +299,7 @@ def test_userservice_update_success(
     guest_user: User,
     update_user: UserUpdate,
 ) -> None:
-    def mock_get_by_uid(uid: UID) -> Ok:
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
         return Ok(guest_user)
 
     def mock_update(credentials: SyftVerifyKey, user: User) -> Ok:
@@ -420,12 +420,12 @@ def test_userservice_user_verify_key_invalid_email(
 def test_userservice_admin_verify_key_error(
     monkeypatch: MonkeyPatch, user_service: UserService
 ) -> None:
-    expected_output = "Invalid Role"
+    expected_output = "failed to get admin verify_key"
 
-    def mock_get_by_role(credentials: SyftVerifyKey, role: ServiceRole) -> Err:
+    def mock_admin_verify_key() -> Err:
         return Err(expected_output)
 
-    monkeypatch.setattr(user_service.stash, "get_by_role", mock_get_by_role)
+    monkeypatch.setattr(user_service.stash, "admin_verify_key", mock_admin_verify_key)
 
     response = user_service.admin_verify_key()
     assert isinstance(response, SyftError)
@@ -433,16 +433,11 @@ def test_userservice_admin_verify_key_error(
 
 
 def test_userservice_admin_verify_key_success(
-    monkeypatch: MonkeyPatch, user_service: UserService, admin_user: User
+    monkeypatch: MonkeyPatch, user_service: UserService, worker
 ) -> None:
-    def mock_get_by_role(credentials: SyftVerifyKey, role: ServiceRole) -> Ok:
-        return Ok(admin_user)
-
-    monkeypatch.setattr(user_service.stash, "get_by_role", mock_get_by_role)
-
     response = user_service.admin_verify_key()
     assert isinstance(response, SyftVerifyKey)
-    assert response == admin_user.verify_key
+    assert response == worker.root_client.credentials.verify_key
 
 
 def test_userservice_register_user_exists(

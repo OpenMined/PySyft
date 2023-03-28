@@ -252,7 +252,7 @@ class UserService(AbstractService):
         TODO: We might want to use a SyftObject instead
         """
         result = self.stash.get_by_email(
-            credentials=context.credentials, email=context.login_credentials.email
+            credentials=self.admin_verify_key(), email=context.login_credentials.email
         )
         if result.is_ok():
             user = result.ok()
@@ -274,12 +274,12 @@ class UserService(AbstractService):
 
     def admin_verify_key(self) -> Union[SyftVerifyKey, SyftError]:
         try:
-            # hacky, change
-            return [
-                x.verify_key
-                for x in self.stash.partition.data.values()
-                if x.email == "info@openmined.org"
-            ][0]
+            result = self.stash.admin_verify_key()
+            if result.is_ok():
+                return result.ok()
+            else:
+                return SyftError(message="failed to get admin verify_key")
+
         except Exception as e:
             return SyftError(message=str(e))
 
