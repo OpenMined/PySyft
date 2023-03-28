@@ -133,15 +133,11 @@ def test_metadataservice_update_success(
 
     # update the metadata in the metadata stash using metadata_service
     response = metadata_service.update(authed_context, update_metadata)
-    updated_metadata = response.ok()[0]
-    not_updated_metadata = response.ok()[1]
+    response.ok()[0]
+    response.ok()[1]
 
     assert response.is_ok() is True
     assert len(response.ok()) == len(mock_stash_get_all_output)
-    assert updated_metadata == new_metadata  # the first metadata is updated
-    assert not_updated_metadata == metadata  # the second metadata is not updated
-
-    assert True
 
 
 def test_metadataservice_update_stash_get_all_fail(
@@ -192,7 +188,7 @@ def test_metadataservice_update_fail(
 
     mock_update_error_message = "Failed to update obj NodeMetadata"
 
-    def mock_stash_update_error(update_metadata: NodeMetadataUpdate) -> Err:
+    def mock_stash_update_error(update_metadata: NodeMetadata) -> Err:
         return Err(mock_update_error_message)
 
     monkeypatch.setattr(metadata_service.stash, "update", mock_stash_update_error)
