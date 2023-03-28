@@ -17,7 +17,7 @@ from .service import AbstractService
 from .service import service_method
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MetadataService(AbstractService):
     store: DocumentStore
     stash: MetadataStash
