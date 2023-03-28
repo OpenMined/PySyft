@@ -53,7 +53,7 @@ class NodeRoute:
         return SyftClient(connection=connection, credentials=context.node.signing_key)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class HTTPNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "HTTPNodeRoute"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -77,13 +77,12 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
         return self == other
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PythonNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "PythonNodeRoute"
     __version__ = SYFT_OBJECT_VERSION_1
 
     worker_settings: WorkerSettings
-    __attr_state__ = ["id", "worker_settings"]
 
     @property
     def node(self) -> Optional[NewNode]:
@@ -134,7 +133,7 @@ def connection_to_route(connection: NodeConnection) -> NodeRoute:
         return connection.to(PythonNodeRoute)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class NodePeer(SyftObject):
     # version
     __canonical_name__ = "NodePeer"
@@ -240,7 +239,7 @@ def metadata_to_peer() -> List[Callable]:
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class NetworkStash(BaseUIDStoreStash):
     object_type = NodePeer
     settings: PartitionSettings = PartitionSettings(
@@ -279,7 +278,7 @@ class NetworkStash(BaseUIDStoreStash):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class NetworkService(AbstractService):
     store: DocumentStore
     stash: NetworkStash

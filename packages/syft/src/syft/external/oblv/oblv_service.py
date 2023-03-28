@@ -53,7 +53,7 @@ OBLV_PROCESS_CACHE: Dict[str, List] = {}
 
 # TODO: 🟡 Duplication of PyPrimitive Dict
 # This is emulated since the action store curently accepts  only SyftObject types
-@serializable(recursive_serde=True)
+@serializable()
 class DictObject(SyftObject):
     # version
     __canonical_name__ = "Dict"
@@ -62,8 +62,6 @@ class DictObject(SyftObject):
     base_dict: Dict[Any, Any] = {}
 
     # serde / storage rules
-    __attr_state__ = ["id", "base_dict"]
-
     __attr_searchable__ = []
     __attr_unique__ = ["id"]
 
@@ -257,7 +255,7 @@ def generate_oblv_key(oblv_key_name: str) -> Tuple[bytes]:
     return (public_key, private_key)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OblvService(AbstractService):
     store: DocumentStore
     oblv_keys_stash: OblvKeysStash

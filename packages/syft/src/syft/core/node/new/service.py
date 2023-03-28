@@ -44,7 +44,7 @@ class AbstractService:
         return self.stash.get_by_uid(uid=linked_obj.object_uid)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ServiceConfig(SyftBaseObject):
     public_path: str
     private_path: str

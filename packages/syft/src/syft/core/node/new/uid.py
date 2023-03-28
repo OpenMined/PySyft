@@ -14,7 +14,7 @@ from ....logger import traceback_and_raise
 from .serializable import serializable
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["value"])
 class UID:
     """A unique ID for every Syft object.
 
@@ -32,7 +32,6 @@ class UID:
 
     """
 
-    __attr_allowlist__ = ["value"]
     __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x)))
     }
@@ -200,11 +199,9 @@ class UID:
             )
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["syft_history_hash"])
 class LineageID(UID):
     syft_history_hash: int
-
-    __attr_allowlist__ = ["value", "syft_history_hash"]
 
     def __init__(
         self,

@@ -22,7 +22,7 @@ from .uid import UID
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class MessageService(AbstractService):
     store: DocumentStore
     stash: MessageStash

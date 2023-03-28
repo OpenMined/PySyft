@@ -6,7 +6,6 @@ import copy
 import os
 import re
 from typing import Optional
-from typing import Sequence
 from typing import Union
 from urllib.parse import urlparse
 
@@ -18,16 +17,8 @@ from .serializable import serializable
 from .util import verify_tls
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["protocol", "host_or_ip", "port", "path", "query"])
 class GridURL:
-    __attr_allowlist__: Sequence[str] = [
-        "protocol",
-        "host_or_ip",
-        "port",
-        "path",
-        "query",
-    ]
-
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> GridURL:
         if isinstance(url, GridURL):

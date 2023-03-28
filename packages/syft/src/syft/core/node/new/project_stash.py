@@ -22,7 +22,7 @@ ProjectUserVerifyKeyPartitionKey = PartitionKey(
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class ProjectStash(BaseUIDStoreStash):
     object_type = Project
     settings: PartitionSettings = PartitionSettings(

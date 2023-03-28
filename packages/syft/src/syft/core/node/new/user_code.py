@@ -185,7 +185,7 @@ def allowed_ids_only(
     return filtered_kwargs
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ExactMatch(InputPolicy):
     # version
     __canonical_name__ = "ExactMatch"
@@ -202,7 +202,7 @@ class ExactMatch(InputPolicy):
         )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputHistory(SyftObject):
     # version
     __canonical_name__ = "OutputHistory"
@@ -228,7 +228,7 @@ class OutputPolicyState(SyftObject):
         raise NotImplementedError
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputPolicyStateExecuteCount(OutputPolicyState):
     # version
     __canonical_name__ = "OutputPolicyStateExecuteCount"
@@ -269,7 +269,7 @@ class OutputPolicyStateExecuteCount(OutputPolicyState):
         self.count += 1
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
     __canonical_name__ = "OutputPolicyStateExecuteOnce"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -299,7 +299,7 @@ class OutputPolicy(SyftObject):
         return op_code
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SingleExecutionExactOutput(OutputPolicy):
     # version
     __canonical_name__ = "SingleExecutionExactOutput"
@@ -308,7 +308,7 @@ class SingleExecutionExactOutput(OutputPolicy):
     state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCodeStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
@@ -321,12 +321,8 @@ class UserCodeStatus(Enum):
 # User Code status context for multiple approvals
 # To make nested dicts hashable for mongodb
 # as status is in attr_searchable
-@serializable(recursive_serde=True)
+@serializable(attrs=["base_dict"])
 class UserCodeStatusContext:
-    __attr_allowlist__ = [
-        "base_dict",
-    ]
-
     base_dict: Dict = {}
 
     def __init__(self, base_dict: Dict):
@@ -384,7 +380,7 @@ class UserCodeStatusContext:
             )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCode(SyftObject):
     # version
     __canonical_name__ = "UserCode"
@@ -479,7 +475,7 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     return output_kwargs
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
@@ -493,16 +489,6 @@ class SubmitUserCode(SyftObject):
     output_policy: OutputPolicy
     local_function: Optional[Callable]
     enclave_metadata: Optional[EnclaveMetadata] = None
-
-    __attr_state__ = [
-        "id",
-        "code",
-        "func_name",
-        "signature",
-        "input_policy",
-        "output_policy",
-        "enclave_metadata",
-    ]
 
     @property
     def kwargs(self) -> List[str]:
@@ -750,7 +736,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
     ]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCodeExecutionResult(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionResult"

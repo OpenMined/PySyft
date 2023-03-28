@@ -24,7 +24,7 @@ from .twin_object import TwinObject
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionPermission(Enum):
     OWNER = 1
     READ = 2
@@ -32,7 +32,7 @@ class ActionPermission(Enum):
     EXECUTE = 8
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionObjectPermission:
     def __init__(
         self, uid: UID, credentials: SyftVerifyKey, permission: ActionPermission
@@ -81,7 +81,7 @@ class ActionStore:
     pass
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class KeyValueActionStore(ActionStore):
     """Generic Key-Value Action store.
 
@@ -232,7 +232,7 @@ class KeyValueActionStore(ActionStore):
             results.append(self.add_permission(permission))
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DictActionStore(KeyValueActionStore):
     """Dictionary-Based Key-Value Action store.
 
@@ -252,7 +252,7 @@ class DictActionStore(KeyValueActionStore):
         super().__init__(store_config=store_config, root_verify_key=root_verify_key)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteActionStore(KeyValueActionStore):
     """SQLite-Based Key-Value Action store.
 
