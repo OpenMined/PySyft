@@ -78,7 +78,7 @@ jobs:
       - name: Configure MongoDB for Windows
         uses: supercharge/mongodb-github-action@1.8.0
         with:
-          mongodb-version:'6.0'
+          mongodb-version: "6.0"
         if: ${{ matrix.os == 'windows-latest' }}
       - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
