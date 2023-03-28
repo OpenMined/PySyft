@@ -24,7 +24,7 @@ REPEATS = 20
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_stash_sanity(queue: Any) -> None:
@@ -41,7 +41,7 @@ def test_queue_stash_sanity(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_stash_set_get(queue: Any) -> None:
@@ -84,7 +84,7 @@ def test_queue_stash_set_get(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_stash_update(queue: Any) -> None:
@@ -116,7 +116,7 @@ def test_queue_stash_update(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_set_existing_queue_threading(queue: Any) -> None:
@@ -157,7 +157,7 @@ def test_queue_set_existing_queue_threading(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_update_existing_queue_threading(queue: Any) -> None:
@@ -199,7 +199,7 @@ def test_queue_update_existing_queue_threading(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_queue_set_delete_existing_queue_threading(

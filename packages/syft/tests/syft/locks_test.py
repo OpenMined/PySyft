@@ -97,7 +97,7 @@ def test_acquire_nop(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_release(config: LockingConfig):
@@ -126,7 +126,7 @@ def test_acquire_release(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_release_with(config: LockingConfig):
@@ -144,7 +144,7 @@ def test_acquire_release_with(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_expire(config: LockingConfig):
@@ -174,7 +174,7 @@ def test_acquire_expire(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
@@ -199,7 +199,7 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
@@ -226,7 +226,7 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
@@ -253,7 +253,7 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
@@ -281,7 +281,7 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_double_release(config: LockingConfig):
@@ -300,7 +300,7 @@ def test_acquire_double_release(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_same_name_diff_namespace(config: LockingConfig):
@@ -323,7 +323,7 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_parallel_multithreading(config: LockingConfig) -> None:
@@ -370,7 +370,7 @@ def test_parallel_multithreading(config: LockingConfig) -> None:
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_parallel_joblib(

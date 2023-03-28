@@ -46,7 +46,7 @@ def test_mongo_store_partition_init_failed() -> None:
     assert res.is_err()
 
 
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -> None:
@@ -82,7 +82,7 @@ def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -
         assert len(mongo_store_partition.all().ok()) == 3 + idx
 
 
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_delete(
@@ -154,7 +154,7 @@ def test_mongo_store_partition_update(
         assert stored.ok()[0].data == v
 
 
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_set_threading(
@@ -202,7 +202,7 @@ def test_mongo_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_set_joblib(
@@ -240,7 +240,7 @@ def test_mongo_store_partition_set_joblib(
     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_update_threading(
@@ -324,7 +324,7 @@ def test_mongo_store_partition_update_joblib(
         assert execution_err is None
 
 
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_set_delete_threading(
@@ -376,7 +376,7 @@ def test_mongo_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
-@pytest.skipif(
+@pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_set_delete_joblib(
