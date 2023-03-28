@@ -80,12 +80,10 @@ DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["proxy_target_uid", "url"])
 class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    __attr_state__ = ["proxy_target_uid", "url"]
 
     proxy_target_uid: Optional[UID]
     url: GridURL
@@ -223,7 +221,7 @@ class HTTPConnection(NodeConnection):
         return hash(self.proxy_target_uid) + hash(self.url)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PythonConnection(NodeConnection):
     __canonical_name__ = "PythonConnection"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -298,7 +296,7 @@ class PythonConnection(NodeConnection):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class SyftClient:
     connection: NodeConnection
     metadata: Optional[NodeMetadataJSON]

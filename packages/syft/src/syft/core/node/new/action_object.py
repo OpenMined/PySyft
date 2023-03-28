@@ -34,7 +34,7 @@ from .uid import LineageID
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Action(SyftObject):
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -732,7 +732,7 @@ class ActionObject(SyftObject):
         return self.__rmatmul__(other)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1

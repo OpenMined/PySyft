@@ -108,7 +108,7 @@ node_uid_env = get_node_uid_env()
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class Worker(NewNode):
     signing_key: Optional[SyftSigningKey]
     required_signed_calls: bool = True

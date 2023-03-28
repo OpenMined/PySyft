@@ -10,7 +10,7 @@ from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DateTime(SyftObject):
     __canonical_name__ = "DateTime"
     __version__ = SYFT_OBJECT_VERSION_1

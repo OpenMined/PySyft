@@ -29,7 +29,7 @@ from .user_service import UserService
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class ProjectService(AbstractService):
     store: DocumentStore
     stash: ProjectStash
