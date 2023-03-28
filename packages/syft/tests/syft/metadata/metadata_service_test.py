@@ -133,11 +133,13 @@ def test_metadataservice_update_success(
 
     # update the metadata in the metadata stash using metadata_service
     response = metadata_service.update(authed_context, update_metadata)
-    response.ok()[0]
-    response.ok()[1]
+    updated_metadata = response.ok()[0]
+    not_updated_metadata = response.ok()[1]
 
     assert response.is_ok() is True
     assert len(response.ok()) == len(mock_stash_get_all_output)
+    assert updated_metadata == new_metadata  # the first metadata is updated
+    assert not_updated_metadata == metadata  # the second metadata is not updated
 
 
 def test_metadataservice_update_stash_get_all_fail(
