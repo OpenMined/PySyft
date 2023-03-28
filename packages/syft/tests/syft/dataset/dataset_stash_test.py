@@ -42,7 +42,7 @@ def test_dataset_update(mock_dataset_stash, mock_dataset, mock_dataset_update):
     result = mock_dataset_stash.update(dataset_update=mock_dataset_update)
     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
     assert isinstance(result.ok(), Dataset)
-    # assert mock_dataset.id == result.ok().id
+    # assert mock_dataset.id == result.ok().idgit 
 
     other_obj = object() 
     result = mock_dataset_stash.update(dataset_update=other_obj)
