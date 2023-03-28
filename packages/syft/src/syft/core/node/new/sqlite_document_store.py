@@ -40,7 +40,7 @@ def thread_ident() -> int:
     return threading.current_thread().ident
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["index_name", "settings", "store_config"])
 class SQLiteBackingStore(KeyValueBackingStore):
     """Core Store logic for the SQLite stores.
 
@@ -54,8 +54,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
         `ddtype`: Type
             Class used as fallback on `get` errors
     """
-
-    __attr_state__ = ["index_name", "settings", "store_config"]
 
     def __init__(
         self,
@@ -265,7 +263,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             pass
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteStorePartition(KeyValueStorePartition):
     """SQLite StorePartition
 
@@ -288,7 +286,7 @@ class SQLiteStorePartition(KeyValueStorePartition):
 
 
 # the base document store is already a dict but we can change it later
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteDocumentStore(DocumentStore):
     """SQLite Document Store
 
@@ -300,7 +298,7 @@ class SQLiteDocumentStore(DocumentStore):
     partition_type = SQLiteStorePartition
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteStoreClientConfig(StoreClientConfig):
     """SQLite connection config
 
@@ -336,7 +334,7 @@ class SQLiteStoreClientConfig(StoreClientConfig):
         return path / self.filename
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteStoreConfig(StoreConfig):
     """SQLite Store config, used by SQLiteStorePartition
 

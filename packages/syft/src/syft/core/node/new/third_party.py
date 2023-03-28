@@ -46,11 +46,11 @@ recursive_serde_register(
 
 
 # result Ok and Err
-recursive_serde_register(Ok, attr_allowlist=["_value"])
-recursive_serde_register(Err, attr_allowlist=["_value"])
+recursive_serde_register(Ok, serialize_attrs=["_value"])
+recursive_serde_register(Err, serialize_attrs=["_value"])
 
 recursive_serde_register_type(pydantic.main.ModelMetaclass)
-recursive_serde_register_type(Result, attr_allowlist=["_value"])
+recursive_serde_register_type(Result, serialize_attrs=["_value"])
 
 # exceptions
 recursive_serde_register(cls=TypeError)

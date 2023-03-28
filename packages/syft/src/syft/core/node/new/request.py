@@ -45,14 +45,14 @@ from .user_code import UserCode
 from .user_code import UserCodeStatus
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class RequestStatus(Enum):
     PENDING = 0
     REJECTED = 1
     APPROVED = 2
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Change(SyftObject):
     __canonical_name__ = "Change"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -63,7 +63,7 @@ class Change(SyftObject):
         return self.linked_obj and type_ == self.linked_obj.object_type
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -112,7 +112,7 @@ class ActionStoreChange(Change):
         return self._run(context=context, apply=False)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Request(SyftObject):
     __canonical_name__ = "Request"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -251,7 +251,7 @@ class Request(SyftObject):
         return result
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SubmitRequest(SyftObject):
     __canonical_name__ = "SubmitRequest"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -304,7 +304,7 @@ def submit_request_to_request() -> List[Callable]:
     ]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -354,7 +354,7 @@ def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
     return field_type
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class EnumMutation(ObjectMutation):
     __canonical_name__ = "EnumMutation"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -441,7 +441,7 @@ class EnumMutation(ObjectMutation):
         return None
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCodeStatusChange(Change):
     __canonical_name__ = "UserCodeStatusChange"
     __version__ = SYFT_OBJECT_VERSION_1

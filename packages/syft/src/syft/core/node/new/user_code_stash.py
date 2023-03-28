@@ -19,7 +19,7 @@ from .user_code import UserVerifyKeyPartitionKey
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class UserCodeStash(BaseUIDStoreStash):
     object_type = UserCode
     settings: PartitionSettings = PartitionSettings(

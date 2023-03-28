@@ -41,7 +41,7 @@ def check_version(
     return True
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class NodeMetadataUpdate(SyftObject):
     __canonical_name__ = "NodeMetadataUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -57,7 +57,7 @@ class NodeMetadataUpdate(SyftObject):
     syft_version: Optional[str]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class NodeMetadata(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -82,7 +82,7 @@ class NodeMetadata(SyftObject):
         )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class NodeMetadataJSON(BaseModel, StorableObjectType):
     metadata_version: int
     name: str

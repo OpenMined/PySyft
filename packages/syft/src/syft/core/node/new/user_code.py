@@ -79,7 +79,7 @@ def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     return uid_kwargs
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCodeStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
@@ -92,12 +92,8 @@ class UserCodeStatus(Enum):
 # User Code status context for multiple approvals
 # To make nested dicts hashable for mongodb
 # as status is in attr_searchable
-@serializable(recursive_serde=True)
+@serializable(attrs=["base_dict"])
 class UserCodeStatusContext:
-    __attr_allowlist__ = [
-        "base_dict",
-    ]
-
     base_dict: Dict = {}
 
     def __init__(self, base_dict: Dict):
@@ -155,7 +151,7 @@ class UserCodeStatusContext:
             )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCode(SyftObject):
     # version
     __canonical_name__ = "UserCode"
@@ -215,7 +211,7 @@ class UserCode(SyftObject):
         return self.raw_code
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
@@ -626,7 +622,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
     ]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCodeExecutionResult(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionResult"

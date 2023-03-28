@@ -25,7 +25,7 @@ from .serializable import serializable
 from .syft_object import SyftObject
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UniqueKeyCheck(Enum):
     EMPTY = 0
     MATCHES = 1

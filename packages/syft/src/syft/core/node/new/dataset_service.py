@@ -23,7 +23,7 @@ from .user_roles import GUEST_ROLE_LEVEL
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DatasetService(AbstractService):
     store: DocumentStore
     stash: DatasetStash
@@ -111,6 +111,14 @@ class DatasetService(AbstractService):
         elif isinstance(datasets, SyftError):
             return datasets
         return []
+
+    @service_method(path="dataset.delete_by_id", name="dataset_delete_by_id")
+    def delete_dataset(self, context: AuthedServiceContext, uid: UID):
+        result = self.stash.delete_by_uid(uid)
+        if result.is_ok():
+            return result.ok()
+        else:
+            return SyftError(message=result.err())
 
 
 TYPE_TO_SERVICE[Dataset] = DatasetService

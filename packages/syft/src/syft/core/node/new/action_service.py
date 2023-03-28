@@ -36,14 +36,14 @@ from .user_code import execute_byte_code
 from .user_roles import GUEST_ROLE_LEVEL
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class TwinMode(Enum):
     NONE = 0
     PRIVATE = 1
     MOCK = 2
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store

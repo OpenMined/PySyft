@@ -34,7 +34,7 @@ from .transforms import validate_url
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class TupleDict(OrderedDict):
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int):
@@ -45,7 +45,7 @@ class TupleDict(OrderedDict):
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Contributor(SyftObject):
     __canonical_name__ = "Contributor"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -59,7 +59,7 @@ class Contributor(SyftObject):
     __attr_repr_cols__ = ["name", "role", "email"]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
@@ -108,7 +108,7 @@ class Asset(SyftObject):
         return api.services.action.get(self.action_id)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class CreateAsset(SyftObject):
     # version
     __canonical_name__ = "CreateAsset"
@@ -186,7 +186,7 @@ def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
     return None
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Dataset(SyftObject):
     # version
     __canonical_name__ = "Dataset"
@@ -248,7 +248,7 @@ class Dataset(SyftObject):
         return client
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class CreateDataset(Dataset):
     # version
     __canonical_name__ = "CreateDataset"
