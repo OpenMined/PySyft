@@ -323,9 +323,7 @@ def syft_function(
     # TODO: fix this for jupyter
     # TODO: add import validator
 
-    print(input_policy)
     if isinstance(input_policy, CustomInputPolicy):
-        print("SubmitUserPolicy")
         input_policy_init_args = input_policy.init_kwargs
         print(input_policy_init_args)
 
@@ -337,14 +335,11 @@ def syft_function(
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
     elif isinstance(input_policy, UID) or isinstance(input_policy, InputPolicy):
-        print("UserPolicy")
         input_policy = input_policy
     elif type(input_policy) == type and issubclass(input_policy, InputPolicy):
-        print("InputPolicy")
         input_policy = input_policy(**input_policy_init_args)
 
     if isinstance(output_policy, CustomOutputPolicy):
-        print("SubmitUserPolicy")
         output_policy_init_args = output_policy.init_kwargs
         print(output_policy_init_args)
 
@@ -356,10 +351,8 @@ def syft_function(
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
     elif isinstance(output_policy, UID) or isinstance(output_policy, OutputPolicy):
-        print("UserPolicy")
         output_policy = output_policy
     elif type(output_policy) == type and issubclass(output_policy, OutputPolicy):
-        print("OutputPolicy")
         output_policy = output_policy(**output_policy_init_args)
 
     def decorator(f):
@@ -569,6 +562,7 @@ def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
 def check_input_policy(context: TransformContext) -> TransformContext:
     ip = context.output["input_policy"]
     ip = check_policy(policy=ip, context=context)
+    ip.node_uid = context.node.id
     context.output["input_policy"] = ip
     return context
 
@@ -576,6 +570,7 @@ def check_input_policy(context: TransformContext) -> TransformContext:
 def check_output_policy(context: TransformContext) -> TransformContext:
     op = context.output["output_policy"]
     op = check_policy(policy=op, context=context)
+    op.node_uid = context.node.id
     context.output["output_policy"] = op
     return context
 

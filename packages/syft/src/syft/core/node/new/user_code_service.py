@@ -28,6 +28,7 @@ from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .twin_object import TwinObject
 from .uid import UID
 from .user_code import SubmitUserCode
 from .user_code import UserCode
@@ -179,20 +180,23 @@ class UserCodeService(AbstractService):
                 code_item = result.ok()
                 if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
                     print("output_policy_state", type(code_item.output_policy_state))
-                    if isinstance(code_item.output_policy_state, bytes):
+                    if (
+                        isinstance(code_item.output_policy_state, bytes)
+                        and len(code_item.output_policy_state) > 0
+                    ):
                         is_valid = True
                     else:
-                        is_valid = code_item.output_policy_state.valid
+                        is_valid = code_item.output_policy.valid
                     if not is_valid:
                         if (
                             len(
-                                code_item.output_policy_state.output_history,
+                                code_item.output_policy.output_history,
                             )
                             > 0
                         ):
                             return get_outputs(
                                 context=context,
-                                output_history=code_item.output_policy_state.output_history[
+                                output_history=code_item.output_policy.output_history[
                                     -1
                                 ],
                             )
@@ -202,44 +206,46 @@ class UserCodeService(AbstractService):
                         result = action_service._user_code_execute(
                             context, code_item, filtered_kwargs
                         )
-                        print("tmp result", result)
                         if isinstance(result, str):
                             return SyftError(message=result)
                         if result.is_ok():
                             final_results = result.ok()
-                            if isinstance(code_item.output_policy, OutputPolicy):
-                                code_item.output_policy_state.update_state(
-                                    context=context, outputs=final_results.id
+                            if isinstance(
+                                code_item.output_policy, OutputPolicy
+                            ) and not isinstance(code_item.output_policy_state, bytes):
+                                code_item.output_policy_state.apply_output(
+                                    context=context, outputs=final_results
                                 )
                             else:
-                                print(
-                                    "fetch user output policy", code_item.output_policy
-                                )
-                                if len(code_item.output_policy_state) == 0:
-                                    policy_object = init_policy(
-                                        code_item.output_policy,
-                                        code_item.output_policy_init_args,
-                                    )
+                                if hasattr(code_item.output_policy, "byte_code"):
+                                    if len(code_item.output_policy_state) == 0:
+                                        policy_object = init_policy(
+                                            code_item.output_policy,
+                                            code_item.output_policy_init_args,
+                                        )
+                                    else:
+                                        policy_object = get_policy_object(
+                                            code_item.output_policy,
+                                            code_item.output_policy_state,
+                                        )
                                 else:
-                                    policy_object = get_policy_object(
-                                        code_item.output_policy,
-                                        code_item.output_policy_state,
+                                    policy_object = code_item.output_policy
+
+                                policy_object.apply_output(context, final_results)
+                                if hasattr(code_item.output_policy, "byte_code"):
+                                    code_item.output_policy_state = update_policy_state(
+                                        policy_object
                                     )
-                                print("fetch user output policy complete")
-                                final_results = policy_object.apply_output(
-                                    final_results
-                                )
-                                print("policy state update starting")
-                                code_item.output_policy_state = update_policy_state(
-                                    policy_object
-                                )
-                                print("policy state update complete")
 
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item
                             )
 
                             if state_result:
+                                # TODO: there are probably circumstances where we
+                                # can return the mock if the policy is invalid?
+                                if isinstance(final_results, TwinObject):
+                                    return final_results.private
                                 return final_results
                             else:
                                 return state_result

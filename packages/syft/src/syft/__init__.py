@@ -48,9 +48,9 @@ from .core.node.new.data_subject import DataSubjectCreate as DataSubject  # noqa
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
 from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
 from .core.node.new.deserialize import _deserialize as deserialize  # noqa: F401
-from .core.node.new.policy import CustomOutputPolicy  # noqa: F401
-from .core.node.new.policy import ExactMatch  # noqa: F401
-from .core.node.new.policy import SingleExecutionExactOutput  # noqa: F401
+from .core.node.new.new_policy import CustomOutputPolicy  # noqa: F401
+from .core.node.new.new_policy import ExactMatch  # noqa: F401
+from .core.node.new.new_policy import SingleExecutionExactOutput  # noqa: F401
 from .core.node.new.project import ProjectSubmit as Project  # noqa: F401
 from .core.node.new.request import SubmitRequest as Request  # noqa: F401
 from .core.node.new.response import SyftError  # noqa: F401

@@ -384,15 +384,6 @@ class CustomOutputPolicy(OutputPolicy):
 
 
 @serializable()
-class SingleExecutionExactOutput(OutputPolicy):
-    # version
-    __canonical_name__ = "SingleExecutionExactOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
-
-
-@serializable()
 class UserPolicy(Policy):
     __canonical_name__ = "UserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1

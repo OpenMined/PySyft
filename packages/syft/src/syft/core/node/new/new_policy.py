@@ -21,6 +21,7 @@ import astunparse  # ast.unparse for python 3.8
 from result import Result
 
 # relative
+from .action_object import ActionObject
 from .api import NodeView
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
@@ -40,6 +41,7 @@ from .syft_object import SyftObject
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
+from .twin_object import TwinObject
 from .uid import UID
 
 PyCodeObject = Any
@@ -63,6 +65,35 @@ class UserPolicyStatus(Enum):
     APPROVED = "approved"
 
 
+def extract_uid(v: Any) -> UID:
+    value = v
+    if isinstance(v, ActionObject):
+        value = v.id
+    if isinstance(v, TwinObject):
+        value = v.id
+
+    if not isinstance(value, UID):
+        raise Exception(f"Input {v} must have a UID not {type(v)}")
+    return value
+
+
+def filter_only_uids(results: Any) -> Dict[str, Any]:
+    if not hasattr(results, "__len__"):
+        results = [results]
+
+    if isinstance(results, list):
+        output_list = []
+        for v in results:
+            output_list.append(extract_uid(v))
+        return output_list
+    elif isinstance(results, dict):
+        output_dict = {}
+        for k, v in results.items():
+            output_dict[k] = extract_uid(v)
+        return output_dict
+    return extract_uid(results)
+
+
 class Policy(SyftObject):
     # version
     __canonical_name__ = "Policy_2"
@@ -78,6 +109,10 @@ class Policy(SyftObject):
 
     def public_state() -> None:
         raise NotImplementedError
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        return SyftSuccess(message="Policy is valid.")
 
 
 def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
@@ -120,7 +155,6 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     return output_kwargs
 
 
-@serializable()
 class InputPolicy(Policy):
     # version
     __canonical_name__ = "InputPolicy_2"
@@ -147,8 +181,33 @@ class InputPolicy(Policy):
             kwargs = partition_by_node(kwargs)
         super().__init__(id=uid, inputs=kwargs, node_uid=node_uid)
 
-    def filter_kwargs() -> None:
+    def filter_kwargs(
+        self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
+    ) -> Dict[str, Any]:
         raise NotImplementedError
+
+    @property
+    def assets(self) -> List[Asset]:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(self.node_uid)
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+
+        node_view = NodeView(
+            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        )
+        inputs = self.inputs[node_view]
+        all_assets = []
+        for k, uid in inputs.items():
+            if isinstance(uid, UID):
+                assets = api.services.dataset.get_assets_by_action_id(uid)
+                if not isinstance(assets, list):
+                    return assets
+
+                all_assets += assets
+        return all_assets
 
 
 # third party
@@ -166,12 +225,12 @@ class ExactMatch(InputPolicy):
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         )
-        return retrieve_from_db(
+        results = retrieve_from_db(
             code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
         )
+        return results
 
 
-@serializable()
 class OutputPolicy(Policy):
     # version
     __canonical_name__ = "OutputPolicy_2"
@@ -184,16 +243,18 @@ class OutputPolicy(Policy):
     def apply_output(
         self,
         context: NodeServiceContext,
-        outputs: Union[UID, List[UID], Dict[str, UID]],
-    ) -> None:
-        if isinstance(outputs, UID):
-            outputs = [outputs]
+        outputs: Any,
+    ) -> Any:
+        output_uids = filter_only_uids(outputs)
+        if isinstance(output_uids, UID):
+            output_uids = [output_uids]
         history = OutputHistory(
             output_time=DateTime.now(),
-            outputs=outputs,
+            outputs=output_uids,
             executing_user_verify_key=context.credentials,
         )
         self.output_history.append(history)
+        return outputs
 
 
 @serializable()
@@ -207,16 +268,24 @@ class OutputPolicyExecuteCount(OutputPolicy):
     def apply_output(
         self,
         context: NodeServiceContext,
-        outputs: Union[UID, List[UID], Dict[str, UID]],
-    ) -> Union[UID, List[UID], Dict[str, UID]]:
+        outputs: Any,
+    ) -> Optional[Any]:
         if self.count < self.limit:
             super().apply_output(context, outputs)
             self.count += 1
-            return SyftSuccess()
-        else:
-            return SyftError(
-                message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
+            return outputs
+        return None
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        is_valid = self.count < self.limit
+        if is_valid:
+            return SyftSuccess(
+                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
             )
+        return SyftError(
+            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
+        )
 
     def public_state(self) -> None:
         return {"limit": self.limit, "count": self.count}
@@ -225,6 +294,15 @@ class OutputPolicyExecuteCount(OutputPolicy):
 @serializable()
 class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
     __canonical_name__ = "OutputPolicyExecuteOnce_2"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    limit: int = 1
+
+
+@serializable()
+class SingleExecutionExactOutput(OutputPolicyExecuteCount):
+    # version
+    __canonical_name__ = "SingleExecutionExactOutput"
     __version__ = SYFT_OBJECT_VERSION_1
 
     limit: int = 1
@@ -255,6 +333,13 @@ class CustomOutputPolicy(CustomPolicy, OutputPolicy):
     __canonical_name__ = "CustomOutputPolicy_2"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    def apply_output(
+        self,
+        context: NodeServiceContext,
+        outputs: Any,
+    ) -> Optional[Any]:
+        return outputs
+
 
 @serializable()
 class UserPolicy(Policy):
@@ -279,12 +364,15 @@ class UserPolicy(Policy):
         return compile_byte_code(self.parsed_code)
 
     @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        return SyftSuccess(message="Policy is valid.")
-
-    @property
     def policy_code(self) -> str:
         return self.raw_code
+
+    def apply_output(
+        self,
+        context: NodeServiceContext,
+        outputs: Any,
+    ) -> Optional[Any]:
+        return outputs
 
 
 def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
@@ -386,8 +474,6 @@ def compile_code(context: TransformContext) -> TransformContext:
 
 
 def add_credentials_for_key(key: str) -> Callable:
-    print("add_credentials_for_key", file=sys.stderr)
-
     def add_credentials(context: TransformContext) -> TransformContext:
         context.output[key] = context.credentials
         return context
