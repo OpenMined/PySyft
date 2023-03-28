@@ -17,8 +17,8 @@ from .new_policy import OutputPolicy
 from .new_policy import SubmitUserPolicy
 from .new_policy import UserPolicy
 from .new_policy import get_policy_object
-from .new_policy import update_policy_state
 from .new_policy import init_policy
+from .new_policy import update_policy_state
 from .request import UserCodeStatusChange
 from .response import SyftError
 from .response import SyftNotReady
@@ -215,15 +215,16 @@ class UserCodeService(AbstractService):
                                 print(
                                     "fetch user output policy", code_item.output_policy
                                 )
-                                if len(code_item.output_policy_state) == 0: 
+                                if len(code_item.output_policy_state) == 0:
                                     policy_object = init_policy(
-                                        code_item.output_policy, code_item.output_policy_init_args
+                                        code_item.output_policy,
+                                        code_item.output_policy_init_args,
                                     )
                                 else:
                                     policy_object = get_policy_object(
                                         code_item.output_policy,
                                         code_item.output_policy_state,
-                )
+                                    )
                                 print("fetch user output policy complete")
                                 final_results = policy_object.apply_output(
                                     final_results

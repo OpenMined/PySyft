@@ -27,7 +27,9 @@ from .credentials import SyftVerifyKey
 from .datetime import DateTime
 from .linked_obj import LinkedObject
 from .new_policy import UserPolicy
-from .new_policy import init_policy, update_policy_state, get_policy_object
+from .new_policy import get_policy_object
+from .new_policy import init_policy
+from .new_policy import update_policy_state
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
@@ -197,8 +199,8 @@ class Request(SyftObject):
         #     )
 
         if isinstance(code.output_policy, UserPolicy):
-            res = api.services.policy.add(code.output_policy)
-            if len(code.output_policy_state) == 0: 
+            api.services.policy.add(code.output_policy)
+            if len(code.output_policy_state) == 0:
                 policy_object = init_policy(
                     code.output_policy, code.output_policy_init_args
                 )
