@@ -254,16 +254,8 @@ def test_messagestash_update_message_status(document_store) -> None:
     assert result.status == messeage_status_delivered
 
 
-# NOTE: Last test (test_messagestash_delete_all_for_verify_key) only works when
-# MessageStash class method: delete_all_for_verify_key,
-# line 92 in message_stash.py is changed to:
-# messages = self.get_all_inbox_for_verify_key(verify_key=verify_key).value
-
-
 # TODO: Peter: don't know how to create test for delete_by_uid returns err
 # lines 95-95 in message_stash.py
-
-
 def test_messagestash_delete_all_for_verify_key(document_store) -> None:
     random_verify_key = SyftSigningKey.generate().verify_key
     test_stash = MessageStash(store=document_store)
