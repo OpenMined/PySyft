@@ -130,7 +130,7 @@ def test_messagestash_get_all_inbox_for_verify_key(document_store) -> None:
     result = response.ok()
     assert len(result) == 0
 
-    add_mock_message(test_stash, test_verify_key, random_verify_key)
+    mock_message = add_mock_message(test_stash, test_verify_key, random_verify_key)
 
     response2 = test_stash.get_all_inbox_for_verify_key(random_verify_key)
 
@@ -138,6 +138,8 @@ def test_messagestash_get_all_inbox_for_verify_key(document_store) -> None:
 
     result = response2.ok()
     assert len(response2.value) == 1
+
+    assert result[0] == mock_message
 
 
 def test_messagestash_get_all_sent_for_verify_key(document_store) -> None:
@@ -151,7 +153,7 @@ def test_messagestash_get_all_sent_for_verify_key(document_store) -> None:
     result = response.ok()
     assert len(result) == 0
 
-    add_mock_message(test_stash, test_verify_key, random_verify_key)
+    mock_message = add_mock_message(test_stash, test_verify_key, random_verify_key)
 
     response2 = test_stash.get_all_sent_for_verify_key(test_verify_key)
 
@@ -159,6 +161,8 @@ def test_messagestash_get_all_sent_for_verify_key(document_store) -> None:
 
     result = response2.ok()
     assert len(response2.value) == 1
+
+    assert result[0] == mock_message
 
 
 # TODO: Create QueryKey/s that includes more than just one kind of PartitionKey like
@@ -250,13 +254,16 @@ def test_messagestash_update_message_status(document_store) -> None:
     assert result.status == messeage_status_delivered
 
 
-# NOTE: Only works when MessageStash class method: delete_all_for_verify_key,
+# NOTE: Last test (test_messagestash_delete_all_for_verify_key) only works when
+# MessageStash class method: delete_all_for_verify_key,
 # line 92 in message_stash.py is changed to:
 # messages = self.get_all_inbox_for_verify_key(verify_key=verify_key).value
 
 
 # TODO: Peter: don't know how to create test for delete_by_uid returns err
 # lines 95-95 in message_stash.py
+
+
 def test_messagestash_delete_all_for_verify_key(document_store) -> None:
     random_verify_key = SyftSigningKey.generate().verify_key
     test_stash = MessageStash(store=document_store)
