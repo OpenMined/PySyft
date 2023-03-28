@@ -17,7 +17,7 @@ from .transforms import transform
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MessageStatus(Enum):
     UNDELIVERED = 0
     DELIVERED = 1
@@ -28,7 +28,7 @@ class MessageExpiryStatus(Enum):
     NEVER = 1
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Message(SyftObject):
     __canonical_name__ = "Message"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -55,7 +55,7 @@ class Message(SyftObject):
         return None
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class CreateMessage(Message):
     __canonical_name__ = "CreateMessage"
     __version__ = SYFT_OBJECT_VERSION_1

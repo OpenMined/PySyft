@@ -8,7 +8,7 @@ ParentPartitionKey = PartitionKey(key="parent", type_=str)
 ChildPartitionKey = PartitionKey(key="child", type_=str)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DataSubjectMemberRelationship(SyftObject):
     __canonical_name__ = "DataSubjectMemberRelationship"
     __version__ = SYFT_OBJECT_VERSION_1

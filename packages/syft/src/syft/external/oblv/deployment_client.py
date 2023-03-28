@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from ...core.node.new.user_code import SubmitUserCode
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OblvMetadata(EnclaveMetadata, BaseModel):
     """Contains Metadata to connect to Oblivious Enclave"""
 

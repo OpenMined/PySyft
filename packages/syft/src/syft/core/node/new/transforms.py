@@ -4,6 +4,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
@@ -172,33 +173,60 @@ def generate_transform_wrapper(
     return wrapper
 
 
-def transform_method(
-    klass_from: Union[type, str],
-    klass_to: Union[type, str],
+def validate_klass_and_version(
+    klass_from: Union[Type, str],
+    klass_to: Union[Type, str],
     version_from: Optional[int] = None,
     version_to: Optional[int] = None,
-) -> Callable:
+):
+    if not isinstance(klass_from, (type, str)):
+        raise NotImplementedError(
+            "Arguments to `klass_from` should be either of `Type` or `str` type."
+        )
+
     if isinstance(klass_from, str):
         klass_from_str = klass_from
-
-    if issubclass(klass_from, SyftBaseObject):
+    elif issubclass(klass_from, SyftBaseObject):
         klass_from_str = klass_from.__canonical_name__
         version_from = klass_from.__version__
-
-    if not issubclass(klass_from, SyftBaseObject):
+    else:
         klass_from_str = klass_from.__name__
         version_from = None
 
+    if not isinstance(klass_to, (type, str)):
+        raise NotImplementedError(
+            "Arguments to `klass_to` should be either of `Type` or `str` type."
+        )
+
     if isinstance(klass_to, str):
         klass_to_str = klass_to
-
-    if issubclass(klass_to, SyftBaseObject):
+    elif issubclass(klass_to, SyftBaseObject):
         klass_to_str = klass_to.__canonical_name__
         version_to = klass_to.__version__
-
-    if not issubclass(klass_to, SyftBaseObject):
+    else:
         klass_to_str = klass_to.__name__
         version_to = None
+
+    return klass_from_str, version_from, klass_to_str, version_to
+
+
+def transform_method(
+    klass_from: Union[Type, str],
+    klass_to: Union[Type, str],
+    version_from: Optional[int] = None,
+    version_to: Optional[int] = None,
+) -> Callable:
+    (
+        klass_from_str,
+        version_from,
+        klass_to_str,
+        version_to,
+    ) = validate_klass_and_version(
+        klass_from=klass_from,
+        version_from=version_from,
+        klass_to=klass_to,
+        version_to=version_to,
+    )
 
     def decorator(function: Callable):
         SyftObjectRegistry.add_transform(
@@ -220,27 +248,17 @@ def transform(
     version_from: Optional[int] = None,
     version_to: Optional[int] = None,
 ) -> Callable:
-    if isinstance(klass_from, str):
-        klass_from_str = klass_from
-
-    if issubclass(klass_from, SyftBaseObject):
-        klass_from_str = klass_from.__canonical_name__
-        version_from = klass_from.__version__
-
-    if not issubclass(klass_from, SyftBaseObject):
-        klass_from_str = klass_from.__name__
-        version_from = None
-
-    if isinstance(klass_to, str):
-        klass_to_str = klass_to
-
-    if issubclass(klass_to, SyftBaseObject):
-        klass_to_str = klass_to.__canonical_name__
-        version_to = klass_to.__version__
-
-    if not issubclass(klass_to, SyftBaseObject):
-        klass_to_str = klass_to.__name__
-        version_to = None
+    (
+        klass_from_str,
+        version_from,
+        klass_to_str,
+        version_to,
+    ) = validate_klass_and_version(
+        klass_from=klass_from,
+        version_from=version_from,
+        klass_to=klass_to,
+        version_to=version_to,
+    )
 
     def decorator(function: Callable):
         transforms = function()

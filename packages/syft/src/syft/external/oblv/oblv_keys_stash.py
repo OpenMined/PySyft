@@ -18,7 +18,7 @@ from ...core.node.new.uid import UID
 from .oblv_keys import OblvKeys
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OblvKeysStash(BaseStash):
     object_type = OblvKeys
     settings: PartitionSettings = PartitionSettings(
