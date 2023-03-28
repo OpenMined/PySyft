@@ -168,7 +168,9 @@ def convert_to_pointers(client, args: List, kwargs: Dict) -> Tuple[List, Dict]:
     for arg in args:
         if not isinstance(arg, ActionObject):
             action_obj = ActionObject.from_obj(arg)
-            arg = action_obj.send(client)  # make sure this doesn't break things later on in send_method_action
+            arg = action_obj.send(
+                client
+            )  # make sure this doesn't break things later on in send_method_action
         arg_list.append(arg)
 
     for k, arg in kwargs.items():
@@ -364,8 +366,10 @@ class ActionObject(SyftObject):
         elif id:
             action_object.syft_history_hash = hash(id)
 
-        if isinstance(action_object, AnyActionObject) and syft_action_data is not None:
-            action_object.syft_internal_type = type(syft_action_data).__name__
+        # if isinstance(action_object, AnyActionObject) and syft_action_data is not None:
+        #     print(type(action_object))
+        #     print(hasattr(action_object, "syft_internal_type"))
+        #     action_object.syft_internal_type = type(syft_action_data).__name__
 
         return action_object
 
@@ -653,8 +657,8 @@ class ActionObject(SyftObject):
 
     def syft_get_path(self) -> str:
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
-            return f"{self.syft_internal_type.__name__}"
-            # return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
+            # return f"{self.syft_internal_type.__name__}"
+            return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
 
     def syft_remote_method(
