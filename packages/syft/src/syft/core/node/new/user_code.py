@@ -339,7 +339,7 @@ def syft_function(
     elif isinstance(input_policy, UID) or isinstance(input_policy, InputPolicy):
         print("UserPolicy")
         input_policy = input_policy
-    elif issubclass(input_policy, InputPolicy):
+    elif type(input_policy) == type and issubclass(input_policy, InputPolicy):
         print("InputPolicy")
         input_policy = input_policy(**input_policy_init_args)
 
@@ -358,7 +358,7 @@ def syft_function(
     elif isinstance(output_policy, UID) or isinstance(output_policy, OutputPolicy):
         print("UserPolicy")
         output_policy = output_policy
-    elif issubclass(output_policy, OutputPolicy):
+    elif type(output_policy) == type and issubclass(output_policy, OutputPolicy):
         print("OutputPolicy")
         output_policy = output_policy(**output_policy_init_args)
 

@@ -56,7 +56,7 @@ class Policy(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserPolicyStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
@@ -103,7 +103,7 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     return output_kwargs
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class InputPolicyState(SyftObject):
     # version
     __canonical_name__ = "InputPolicyState"
@@ -250,7 +250,7 @@ def allowed_ids_only(
     return filtered_kwargs
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ExactMatch(InputPolicy):
     # version
     __canonical_name__ = "ExactMatch"
@@ -267,7 +267,7 @@ class ExactMatch(InputPolicy):
         )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputHistory(SyftObject):
     # version
     __canonical_name__ = "OutputHistory"
@@ -278,7 +278,7 @@ class OutputHistory(SyftObject):
     executing_user_verify_key: SyftVerifyKey
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputPolicyState(SyftObject):
     # version
     __canonical_name__ = "OutputPolicyState"
@@ -305,7 +305,7 @@ class OutputPolicyState(SyftObject):
         self.output_history.append(history)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputPolicyStateExecuteCount(OutputPolicyState):
     # version
     __canonical_name__ = "OutputPolicyStateExecuteCount"
@@ -339,7 +339,7 @@ class OutputPolicyStateExecuteCount(OutputPolicyState):
         self.count += 1
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
     __canonical_name__ = "OutputPolicyStateExecuteOnce"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -383,7 +383,7 @@ class CustomOutputPolicy(OutputPolicy):
         self.kwargs = kwargs
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SingleExecutionExactOutput(OutputPolicy):
     # version
     __canonical_name__ = "SingleExecutionExactOutput"
@@ -392,7 +392,7 @@ class SingleExecutionExactOutput(OutputPolicy):
     state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserPolicy(Policy):
     __canonical_name__ = "UserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -419,7 +419,7 @@ class UserPolicy(Policy):
         return SyftSuccess(message="Policy is valid.")
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -517,7 +517,7 @@ def generate_signature(context: TransformContext) -> TransformContext:
 
 def serialization_addon(context: TransformContext) -> TransformContext:
     policy_code = context.output["code"]
-    context.output["code"] = "@serializable(recursive_serde=True)\n" + policy_code
+    context.output["code"] = "@serializable()\n" + policy_code
     return context
 
 

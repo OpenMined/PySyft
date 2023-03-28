@@ -21,7 +21,7 @@ from .user_policy_stash import UserPolicyStash
 
 
 # TODO: replace policy_code with user_policy
-@serializable(recursive_serde=True)
+@serializable()
 class PolicyService(AbstractService):
     store: DocumentStore
     # policy_code_stash: PolicyStash

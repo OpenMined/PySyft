@@ -45,7 +45,7 @@ from .uid import UID
 PyCodeObject = Any
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputHistory(SyftObject):
     # version
     __canonical_name__ = "OutputHistory_2"
@@ -56,7 +56,7 @@ class OutputHistory(SyftObject):
     executing_user_verify_key: SyftVerifyKey
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserPolicyStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
@@ -120,6 +120,7 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     return output_kwargs
 
 
+@serializable()
 class InputPolicy(Policy):
     # version
     __canonical_name__ = "InputPolicy_2"
@@ -153,7 +154,7 @@ class InputPolicy(Policy):
 # third party
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ExactMatch(InputPolicy):
     # version
     __canonical_name__ = "ExactMatch_2"
@@ -170,6 +171,7 @@ class ExactMatch(InputPolicy):
         )
 
 
+@serializable()
 class OutputPolicy(Policy):
     # version
     __canonical_name__ = "OutputPolicy_2"
@@ -194,7 +196,7 @@ class OutputPolicy(Policy):
         self.output_history.append(history)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputPolicyExecuteCount(OutputPolicy):
     __canonical_name__ = "OutputPolicyExecuteCount_2"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -220,7 +222,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
         return {"limit": self.limit, "count": self.count}
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
     __canonical_name__ = "OutputPolicyExecuteOnce_2"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -254,7 +256,7 @@ class CustomOutputPolicy(CustomPolicy, OutputPolicy):
     __version__ = SYFT_OBJECT_VERSION_1
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserPolicy(Policy):
     __canonical_name__ = "UserPolicy_2"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -403,7 +405,7 @@ def generate_signature(context: TransformContext) -> TransformContext:
     return context
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy_2"
     __version__ = SYFT_OBJECT_VERSION_1

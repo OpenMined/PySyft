@@ -15,7 +15,7 @@ from .policy import PolicyUserVerifyKeyPartitionKey
 from .serializable import serializable
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserPolicyStash(BaseUIDStoreStash):
     object_type = UserPolicy
     settings: PartitionSettings = PartitionSettings(
