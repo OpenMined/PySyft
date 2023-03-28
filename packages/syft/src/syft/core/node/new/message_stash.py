@@ -28,7 +28,7 @@ StatusPartitionKey = PartitionKey(key="status", type_=MessageStatus)
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class MessageStash(BaseUIDStoreStash):
     object_type = Message
     settings: PartitionSettings = PartitionSettings(
