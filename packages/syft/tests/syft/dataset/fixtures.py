@@ -19,6 +19,7 @@ def mock_dataset(mock_dataset_stash):
     result = mock_dataset_stash.partition.set(mock_dataset)
     return result.ok()
 
+
 @pytest.fixture
 def mock_dataset_update(mock_dataset):
     return DatasetUpdate()
