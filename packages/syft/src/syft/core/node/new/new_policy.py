@@ -358,6 +358,7 @@ class UserPolicy(Policy):
     byte_code: PyCodeObject
     status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
     state_type: Optional[Type] = None
+    policy_version: int
 
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
@@ -431,9 +432,17 @@ def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) 
     )
 
     new_class = tree.body[0]
+    version = None
+    for stmt in new_class.body:
+        if isinstance(stmt, ast.Assign):
+            if stmt.targets[0].id == "__version__":
+                version = stmt.value.value
+                break
+    if version == None:
+        raise Exception("Version cannot be found. Please specify it in your custom policy")
     new_class.name = class_name
     new_class.decorator_list = [serializable_decorator]
-    return astunparse.unparse(new_class)
+    return astunparse.unparse(new_class), version
 
 
 def check_class_code(context: TransformContext) -> TransformContext:
@@ -443,13 +452,13 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
     try:
-        processed_code = process_class_code(
+        processed_code, policy_version = process_class_code(
             raw_code=context.output["raw_code"],
             class_name=context.output["unique_name"],
             input_kwargs=context.output["input_kwargs"],
         )
         context.output["parsed_code"] = processed_code
-
+        context.output["policy_version"] = policy_version
     except Exception as e:
         raise e
     return context
@@ -522,9 +531,15 @@ def execute_policy_code(user_policy: UserPolicy):
         sys.stderr = stderr
         # syft absolute
         import syft as sy  # noqa: F401 # provide sy.Things to user code
-
-        exec(user_policy.byte_code)  # nosec
-        policy_class = eval(user_policy.unique_name)  # nosec
+        class_name = f"{user_policy.unique_name}_{user_policy.policy_version}"
+        print("Exec context", file=stderr_)
+        if class_name in user_policy.__object_version_registry__.keys():
+            policy_class = user_policy.__object_version_registry__[class_name]
+            print("Yey it worked", file=stderr_)
+        else:
+            exec(user_policy.byte_code)  # nosec
+            policy_class = eval(user_policy.unique_name)  # nosec
+            print("Nope it didnt work", file=stderr_)
 
         sys.stdout = stdout_
         sys.stderr = stderr_
@@ -533,27 +548,6 @@ def execute_policy_code(user_policy: UserPolicy):
 
     except Exception as e:
         print("execute_byte_code failed", e, file=stderr_)
-        try:
-            stdout = StringIO()
-            stderr = StringIO()
-
-            sys.stdout = stdout
-            sys.stderr = stderr
-            # exec(user_policy.byte_code)  # nosec
-            # policy_class = eval(user_policy.class_name)  # nosec
-            class_name = f"{user_policy.unique_name}_1"
-            print(
-                user_policy.__object_version_registry__[class_name],
-                file=stderr_,
-            )
-            policy_class = user_policy.__object_version_registry__[class_name]
-
-            sys.stdout = stdout_
-            sys.stderr = stderr_
-
-            return policy_class
-        except Exception as e:
-            print("execute_byte_code failed", e, file=stderr_)
 
     finally:
         sys.stdout = stdout_
