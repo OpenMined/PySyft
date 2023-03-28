@@ -162,6 +162,24 @@ def make_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
     return context, args, kwargs
 
 
+def convert_to_pointers(client, args: List, kwargs: Dict) -> Tuple[List, Dict]:
+    arg_list = []
+    kwarg_list = {}
+    for arg in args:
+        if not isinstance(arg, ActionObject):
+            action_obj = ActionObject.from_obj(arg)
+            arg = action_obj.send(client)  # make sure this doesn't break things later on in send_method_action
+        arg_list.append(arg)
+
+    for k, arg in kwargs.items():
+        if not isinstance(arg, ActionObject):
+            action_obj = ActionObject.from_obj(arg)
+            arg = action_obj.send(client)
+        kwarg_list[k] = arg
+
+    return arg_list, kwarg_list
+
+
 def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
     try:
         if context.op_name not in dont_make_side_effects and hasattr(
@@ -169,6 +187,8 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
         ):
             if getattr(context.obj, "syft_node_uid", None):
                 if context.action is not None:
+                    args, kwargs = convert_to_pointers(client, args, kwargs)
+
                     action = context.obj.syft_make_method_action(
                         op=context.op_name, args=args, kwargs=kwargs
                     )
@@ -343,6 +363,9 @@ class ActionObject(SyftObject):
             action_object.syft_history_hash = syft_lineage_id.syft_history_hash
         elif id:
             action_object.syft_history_hash = hash(id)
+
+        if isinstance(action_object, AnyActionObject) and syft_action_data is not None:
+            action_object.syft_internal_type = type(syft_action_data).__name__
 
         return action_object
 
@@ -631,6 +654,7 @@ class ActionObject(SyftObject):
     def syft_get_path(self) -> str:
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
             return f"{self.syft_internal_type.__name__}"
+            # return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
 
     def syft_remote_method(
