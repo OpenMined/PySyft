@@ -402,13 +402,11 @@ def generate_unique_class_name(context: TransformContext) -> TransformContext:
 
 
 def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) -> str:
-    print("process_class_code", file=sys.stderr)
     tree = ast.parse(raw_code)
 
     v = GlobalsVisitor()
     v.visit(tree)
 
-    print(tree.body[0], file=sys.stderr)
     if len(tree.body) != 1 or not isinstance(tree.body[0], ast.ClassDef):
         raise Exception(
             "Class code should only contain the Class Definition for your policy."
@@ -431,13 +429,10 @@ def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) 
         args=[],
         keywords=[ast.keyword(arg="recursive_serde", value=ast.Constant(value=True))],
     )
-    print(ast.dump(serializable_decorator, indent=4), file=sys.stderr)
-    # print(serializable_decorator == tree.body[1].decorator_list[0], file=sys.__stderr__)
 
     new_class = tree.body[0]
     new_class.name = class_name
     new_class.decorator_list = [serializable_decorator]
-    print(astunparse.unparse(new_class), file=sys.stderr)
     return astunparse.unparse(new_class)
 
 
@@ -448,8 +443,6 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
     try:
-        print("check_class_code", file=sys.stderr)
-        # print(context.output, file=sys.stderr)
         processed_code = process_class_code(
             raw_code=context.output["raw_code"],
             class_name=context.output["unique_name"],
@@ -463,7 +456,6 @@ def check_class_code(context: TransformContext) -> TransformContext:
 
 
 def compile_code(context: TransformContext) -> TransformContext:
-    print("compile_code", file=sys.stderr)
     byte_code = compile_byte_code(context.output["parsed_code"])
     if byte_code is None:
         raise Exception(
@@ -519,7 +511,6 @@ def submit_policy_code_to_user_code() -> List[Callable]:
 
 
 def execute_policy_code(user_policy: UserPolicy):
-    # print(user_policy.raw_code, file=sys.stderr)
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
@@ -532,7 +523,6 @@ def execute_policy_code(user_policy: UserPolicy):
         # syft absolute
         import syft as sy  # noqa: F401 # provide sy.Things to user code
 
-        # print()
         exec(user_policy.byte_code)  # nosec
         policy_class = eval(user_policy.unique_name)  # nosec
 
@@ -572,7 +562,6 @@ def execute_policy_code(user_policy: UserPolicy):
 
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
     policy_class = execute_policy_code(user_policy)
-    print(init_args, file=sys.stderr)
     policy_object = policy_class(**init_args)
     return policy_object
 

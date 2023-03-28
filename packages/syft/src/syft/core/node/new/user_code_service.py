@@ -35,6 +35,8 @@ from .user_code import UserCode
 from .user_code import UserCodeStatus
 from .user_code_stash import UserCodeStash
 from .user_roles import GUEST_ROLE_LEVEL
+from .request import EnumMutation
+from .new_policy import UserPolicyStatus
 
 
 @instrument
@@ -98,20 +100,52 @@ class UserCodeService(AbstractService):
         # relative
         from .request import SubmitRequest
         from .request_service import RequestService
+        from .policy_service import PolicyService
 
-        print("Before code transform", file=sys.stderr)
         user_code = code.to(UserCode, context=context)
-        print("After code transform", file=sys.stderr)
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
+        policy_service = context.node.get_service(PolicyService)
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
         CODE_EXECUTE = UserCodeStatusChange(
             value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
         )
-        request = SubmitRequest(changes=[CODE_EXECUTE])
+        changes=[CODE_EXECUTE]
+        
+        if isinstance(user_code.input_policy, UserPolicy):
+            policy_service.add_user_policy(context, user_code.input_policy)
+            input_policy_linked_obj = LinkedObject.from_obj(
+                                        user_code.input_policy, 
+                                        node_uid=context.node.id,
+                                        service_type=PolicyService
+                                    )
+            INPUT_POLICY_APPROVE = EnumMutation(
+                                    linked_obj=input_policy_linked_obj,
+                                    attr_name="status",
+                                    enum_type=UserPolicyStatus,
+                                    value=UserPolicyStatus.APPROVED
+                                )
+            changes.append(INPUT_POLICY_APPROVE)
+        
+        if isinstance(user_code.output_policy, UserPolicy):
+            policy_service.add_user_policy(context, user_code.output_policy)
+            output_policy_linked_obj = LinkedObject.from_obj(
+                                        user_code.output_policy, 
+                                        node_uid=context.node.id,
+                                        service_type=PolicyService
+                                    )
+            OUTPUT_POLICY_APPROVE = EnumMutation(
+                                    linked_obj=output_policy_linked_obj,
+                                    attr_name="status",
+                                    enum_type=UserPolicyStatus,
+                                    value=UserPolicyStatus.APPROVED
+                                )
+            changes.append(OUTPUT_POLICY_APPROVE)
+        
+        request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request)
 

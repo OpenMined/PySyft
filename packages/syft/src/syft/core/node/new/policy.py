@@ -527,7 +527,6 @@ def submit_policy_code_to_user_code() -> List[Callable]:
 
 
 def execute_policy_code(user_policy: UserPolicy):
-    # print(user_policy.raw_code, file=sys.stderr)
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 

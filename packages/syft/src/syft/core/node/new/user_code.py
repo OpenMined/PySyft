@@ -356,7 +356,6 @@ def syft_function(
         output_policy = output_policy(**output_policy_init_args)
 
     def decorator(f):
-        print(f.__code__.co_varnames)
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -545,9 +544,7 @@ def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
 
     policy_service = context.node.get_service(PolicyService)
     if isinstance(policy, SubmitUserPolicy):
-        print("Before policy transform", file=sys.stderr)
         policy = policy.to(UserPolicy, context=context)
-        print("After policy transform", file=sys.stderr)
     elif isinstance(policy, UID):
         policy = policy_service.get_policy_by_uid(context, policy)
         if policy.is_ok():

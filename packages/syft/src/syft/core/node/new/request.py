@@ -247,10 +247,12 @@ class Request(SyftObject):
     #     return result
 
     def accept_by_depositing_result(self, result: Any):
-        if len(self.changes) != 1:
-            raise Exception(
-                f"accept_by_depositing_result can only be run on {UserCode} Requests"
-            )
+        # TODO: what is the purpose of this check? 
+        # It might be breaking with the new UserPolicyStatusChanges
+        # if len(self.changes) != 1:
+        #     raise Exception(
+        #         f"accept_by_depositing_result can only be run on {UserCode} Requests"
+        #     )
 
         change = self.changes[0]
         if not change.is_type(UserCode):
@@ -476,6 +478,7 @@ class EnumMutation(ObjectMutation):
             obj = obj.ok()
             if apply:
                 obj = self.mutate(obj)
+
                 self.linked_obj.update_with_context(context, obj)
             else:
                 raise NotImplementedError

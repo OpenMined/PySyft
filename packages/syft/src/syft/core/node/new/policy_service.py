@@ -14,6 +14,7 @@ from .serializable import serializable
 # from .policy import Policy, CreatePolicy
 from .service import AbstractService
 from .service import service_method
+from .service import TYPE_TO_SERVICE
 from .uid import UID
 
 # from .policy_stash import PolicyStash
@@ -24,19 +25,17 @@ from .user_policy_stash import UserPolicyStash
 @serializable()
 class PolicyService(AbstractService):
     store: DocumentStore
-    # policy_code_stash: PolicyStash
-    policy_stash: UserPolicyStash
+    stash: UserPolicyStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        # self.policy_stash = PolicyStash(store=store)
-        self.policy_stash = UserPolicyStash(store=store)
+        self.stash = UserPolicyStash(store=store)
 
     @service_method(path="policy.get_all", name="get_all")
     def get_all_user_policy(
         self, context: AuthedServiceContext
     ) -> Union[List[UserPolicy], SyftError]:
-        result = self.policy_stash.get_all()
+        result = self.stash.get_all()
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
@@ -49,7 +48,7 @@ class PolicyService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         if isinstance(policy_code, SubmitUserPolicy):
             policy_code = policy_code.to(UserPolicy, context=context)
-        result = self.policy_stash.set(policy_code)
+        result = self.stash.set(policy_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Policy Code Submitted")
@@ -58,7 +57,10 @@ class PolicyService(AbstractService):
     def get_policy_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.policy_stash.get_by_uid(uid=uid)
+        result = self.stash.get_by_uid(uid=uid)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[UserPolicy] = UserPolicy
