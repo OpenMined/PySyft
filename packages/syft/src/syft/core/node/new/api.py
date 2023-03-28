@@ -24,6 +24,7 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .connection import NodeConnection
+from .context import AuthedServiceContext
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .deserialize import _deserialize
@@ -339,7 +340,7 @@ class SyftAPI(SyftObject):
             endpoints[path] = endpoint
 
         # 🟡 TODO 35: fix root context
-        context = None
+        context = AuthedServiceContext(credentials=user_verify_key)
         method = node.get_method_with_context(UserCodeService.get_all_for_user, context)
         code_items = method()
 

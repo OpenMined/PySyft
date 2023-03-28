@@ -7,6 +7,7 @@ from typing import Optional
 from typing import Type
 
 # relative
+from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
@@ -59,10 +60,14 @@ class DictDocumentStore(DocumentStore):
 
     partition_type = DictStorePartition
 
-    def __init__(self, store_config: Optional[DictStoreConfig] = None) -> None:
+    def __init__(
+        self,
+        root_verify_key: Optional[SyftVerifyKey],
+        store_config: Optional[DictStoreConfig] = None,
+    ) -> None:
         if store_config is None:
             store_config = DictStoreConfig()
-        super().__init__(store_config=store_config)
+        super().__init__(root_verify_key=root_verify_key, store_config=store_config)
 
     def reset(self):
         for _, partition in self.partitions.items():

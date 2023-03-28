@@ -286,7 +286,10 @@ class Worker(NewNode):
         document_store = document_store_config.store_type
         self.document_store_config = document_store_config
 
-        self.document_store = document_store(store_config=document_store_config)
+        self.document_store = document_store(
+            root_verify_key=self.signing_key.verify_key,
+            store_config=document_store_config,
+        )
         if action_store_config is None:
             if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
@@ -484,7 +487,7 @@ class Worker(NewNode):
                 if ServiceConfigRegistry.path_exists(api_call.path):
                     return SyftError(
                         message=f"As a `{role}`,"
-                        "you have has no access to: {api_call.path}"
+                        f"you have has no access to: {api_call.path}"
                     )  # type: ignore
                 else:
                     return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
@@ -658,7 +661,9 @@ def create_admin_new(
 ) -> Optional[User]:
     try:
         user_stash = UserStash(store=node.document_store)
-        row_exists = user_stash.get_by_email(email=email).ok()
+        row_exists = user_stash.get_by_email(
+            credentials=node.signing_key.verify_key, email=email
+        ).ok()
         if row_exists:
             return None
         else:
@@ -674,10 +679,11 @@ def create_admin_new(
             user = create_user.to(User)
             user.signing_key = node.signing_key
             user.verify_key = user.signing_key.verify_key
-            result = user_stash.set(user=user)
+            result = user_stash.set(credentials=node.signing_key.verify_key, user=user)
             if result.is_ok():
                 return result.ok()
-            return None
+            else:
+                raise Exception(f"Could not create user: {result}")
     except Exception as e:
         print("Unable to create new admin", e)
 

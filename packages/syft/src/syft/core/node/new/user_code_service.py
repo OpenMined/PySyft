@@ -113,7 +113,7 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Get All User Code Items for User's VerifyKey"""
         # TODO: replace with incoming user context and key
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())

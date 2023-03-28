@@ -24,6 +24,7 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .base import SyftBaseModel
+from .credentials import SyftVerifyKey
 from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -376,16 +377,21 @@ class DocumentStore:
     partitions: Dict[str, StorePartition]
     partition_type: Type[StorePartition]
 
-    def __init__(self, store_config: StoreConfig) -> None:
+    def __init__(
+        self, root_verify_key: Optional[SyftVerifyKey], store_config: StoreConfig
+    ) -> None:
         if store_config is None:
             raise Exception("must have store config")
         self.partitions = {}
         self.store_config = store_config
+        self.root_verify_key = root_verify_key
 
     def partition(self, settings: PartitionSettings) -> StorePartition:
         if settings.name not in self.partitions:
             self.partitions[settings.name] = self.partition_type(
-                settings=settings, store_config=self.store_config
+                root_verify_key=self.root_verify_key,
+                settings=settings,
+                store_config=self.store_config,
             )
         return self.partitions[settings.name]
 
@@ -407,8 +413,10 @@ class BaseStash:
             else Err(f"{type(obj)} does not match required type: {type_}")
         )
 
-    def get_all(self) -> Result[List[BaseStash.object_type], str]:
-        return self.partition.all()
+    def get_all(
+        self, credentials: SyftVerifyKey
+    ) -> Result[List[BaseStash.object_type], str]:
+        return self.partition.all(credentials)
 
     def __len__(self) -> int:
         return len(self.partition)
@@ -416,12 +424,15 @@ class BaseStash:
     def set(
         self,
         obj: BaseStash.object_type,
+        credentials: SyftVerifyKey,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
-        return self.partition.set(obj=obj, ignore_duplicates=ignore_duplicates)
+        return self.partition.set(
+            obj=obj, credentials=credentials, ignore_duplicates=ignore_duplicates
+        )
 
     def query_all(
-        self, qks: Union[QueryKey, QueryKeys]
+        self, credentials: SyftVerifyKey, qks: Union[QueryKey, QueryKeys]
     ) -> Result[List[BaseStash.object_type], str]:
         if isinstance(qks, QueryKey):
             qks = QueryKeys(qks=qks)
@@ -443,38 +454,41 @@ class BaseStash:
         index_qks = QueryKeys(qks=unique_keys)
         search_qks = QueryKeys(qks=searchable_keys)
         return self.partition.find_index_or_search_keys(
-            index_qks=index_qks, search_qks=search_qks
+            credentials, index_qks=index_qks, search_qks=search_qks
         )
 
     def query_all_kwargs(
-        self, **kwargs: Dict[str, Any]
+        self, credentials: SyftVerifyKey, **kwargs: Dict[str, Any]
     ) -> Result[List[BaseStash.object_type], str]:
         qks = QueryKeys.from_dict(kwargs)
-        return self.query_all(qks=qks)
+        return self.query_all(credentials=credentials, qks=qks)
 
     def query_one(
-        self, qks: Union[QueryKey, QueryKeys]
+        self, credentials: SyftVerifyKey, qks: Union[QueryKey, QueryKeys]
     ) -> Result[Optional[BaseStash.object_type], str]:
-        return self.query_all(qks=qks).and_then(first_or_none)
+        return self.query_all(credentials=credentials, qks=qks).and_then(first_or_none)
 
     def query_one_kwargs(
         self,
+        credentials: SyftVerifyKey,
         **kwargs: Dict[str, Any],
     ) -> Result[Optional[BaseStash.object_type], str]:
-        return self.query_all_kwargs(**kwargs).and_then(first_or_none)
+        return self.query_all_kwargs(credentials, **kwargs).and_then(first_or_none)
 
     def find_all(
-        self, **kwargs: Dict[str, Any]
+        self, credentials: SyftVerifyKey, **kwargs: Dict[str, Any]
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.query_all_kwargs(**kwargs)
+        return self.query_all_kwargs(credentials=credentials, **kwargs)
 
     def find_one(
-        self, **kwargs: Dict[str, Any]
+        self, credentials: SyftVerifyKey, **kwargs: Dict[str, Any]
     ) -> Result[Optional[BaseStash.object_type], str]:
-        return self.query_one_kwargs(**kwargs)
+        return self.query_one_kwargs(credentials=credentials, **kwargs)
 
-    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[SyftSuccess, Err]:
-        obj = self.query_one_kwargs(**kwargs)
+    def find_and_delete(
+        self, credentials: SyftVerifyKey, **kwargs: Dict[str, Any]
+    ) -> Result[SyftSuccess, Err]:
+        obj = self.query_one_kwargs(credentials=credentials, **kwargs)
         if obj.is_err():
             return obj.err()
         else:
@@ -483,16 +497,18 @@ class BaseStash:
         if not obj:
             return Err(f"Object does not exists with kwargs: {kwargs}")
         qk = self.partition.store_query_key(obj)
-        return self.delete(qk=qk)
+        return self.delete(credentials=credentials, qk=qk)
 
-    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
-        return self.partition.delete(qk=qk)
+    def delete(
+        self, credentials: SyftVerifyKey, qk: QueryKey
+    ) -> Result[SyftSuccess, Err]:
+        return self.partition.delete(credentials=credentials, qk=qk)
 
     def update(
-        self, obj: BaseStash.object_type
+        self, obj: BaseStash.object_type, credentials: SyftVerifyKey
     ) -> Optional[Result[BaseStash.object_type, str]]:
         qk = self.partition.store_query_key(obj)
-        return self.partition.update(qk=qk, obj=obj)
+        return self.partition.update(credentials=credentials, qk=qk, obj=obj)
 
 
 @instrument
