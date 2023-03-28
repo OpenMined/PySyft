@@ -36,7 +36,7 @@ from .user_stash import UserStash
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash

@@ -12,7 +12,7 @@ from .service import service_method
 from .user_roles import GUEST_ROLE_LEVEL
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class TestService(AbstractService):
     def __init__(self) -> None:
         pass
