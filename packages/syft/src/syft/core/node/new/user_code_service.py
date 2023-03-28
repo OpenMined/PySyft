@@ -210,88 +210,77 @@ class UserCodeService(AbstractService):
         try:
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(uid=uid)
-            if result.is_ok():
-                code_item = result.ok()
-                if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
-                    print("output_policy_state", type(code_item.output_policy_state))
-                    if (
-                        isinstance(code_item.output_policy_state, bytes)
-                        and len(code_item.output_policy_state) > 0
-                    ):
-                        is_valid = True
-                    else:
-                        is_valid = code_item.output_policy.valid
-                    if not is_valid:
-                        if (
-                            len(
-                                code_item.output_policy.output_history,
-                            )
-                            > 0
-                        ):
-                            return get_outputs(
-                                context=context,
-                                output_history=code_item.output_policy.output_history[
-                                    -1
-                                ],
-                            )
-                        return is_valid
-                    else:
-                        action_service = context.node.get_service("actionservice")
-                        result = action_service._user_code_execute(
-                            context, code_item, filtered_kwargs
-                        )
-                        if isinstance(result, str):
-                            return SyftError(message=result)
-                        if result.is_ok():
-                            final_results = result.ok()
-                            if isinstance(
-                                code_item.output_policy, OutputPolicy
-                            ) and not isinstance(code_item.output_policy_state, bytes):
-                                code_item.output_policy_state.apply_output(
-                                    context=context, outputs=final_results
-                                )
-                            else:
-                                if hasattr(code_item.output_policy, "byte_code"):
-                                    if len(code_item.output_policy_state) == 0:
-                                        policy_object = init_policy(
-                                            code_item.output_policy,
-                                            code_item.output_policy_init_args,
-                                        )
-                                    else:
-                                        policy_object = get_policy_object(
-                                            code_item.output_policy,
-                                            code_item.output_policy_state,
-                                        )
-                                else:
-                                    policy_object = code_item.output_policy
+            if not result.is_ok():
+                return SyftError(message=result.err())
 
-                                policy_object.apply_output(context, final_results)
-                                if hasattr(code_item.output_policy, "byte_code"):
-                                    code_item.output_policy_state = update_policy_state(
-                                        policy_object
-                                    )
+            # Unroll variables  
+            code_item = result.ok()
+            output_policy = code_item.output_policy
+            op_state = code_item.output_policy_state
+            op_init_args = code_item.output_policy_init_args
+            status = code_item.status
 
-                            state_result = self.update_code_state(
-                                context=context, code_item=code_item
-                            )
-
-                            if state_result:
-                                # TODO: there are probably circumstances where we
-                                # can return the mock if the policy is invalid?
-                                if isinstance(final_results, TwinObject):
-                                    return final_results.private
-                                return final_results
-                            else:
-                                return state_result
-                elif code_item.status.for_context(context) == UserCodeStatus.SUBMITTED:
+            # Check if we are allowed to execute the code
+            if status.for_context(context) != UserCodeStatus.EXECUTE:
+                if status.for_context(context) == UserCodeStatus.SUBMITTED:
                     return SyftNotReady(
-                        message=f"{type(code_item)} Your code is waiting for approval: {code_item.status}"
+                        message=f"{type(code_item)} Your code is waiting for approval: {status}"
                     )
+                return SyftError(
+                    message=f"{type(code_item)} Your code cannot be run: {status}"
+                )
+            
+            # Check if the OutputPolicy is valid
+            if isinstance(op_state, bytes) and len(op_state) > 0:
+                is_valid = True
+            else:
+                is_valid = output_policy.valid
+
+            if not is_valid:
+                if len(output_policy.output_history) > 0:
+                    return get_outputs(
+                        context=context,
+                        output_history=output_policy.output_history[-1],
+                    )
+                return is_valid
+            
+            # Execute the code item
+            action_service = context.node.get_service("actionservice")
+            result = action_service._user_code_execute(
+                context, code_item, filtered_kwargs
+            )
+            if isinstance(result, str):
+                return SyftError(message=result)
+            
+            # Apply Output Policy to the results and update the OutputPolicyState
+            final_results = result.ok()
+            if isinstance(output_policy, OutputPolicy) and not isinstance(op_state, bytes):
+                op_state.apply_output(context=context, outputs=final_results)
+            else:
+                # For User Policies we need to get the object from the byte_code
+                if hasattr(output_policy, "byte_code"):
+                    if len(op_state) == 0:
+                        policy_object = init_policy(output_policy, op_init_args)
+                    else:
+                        policy_object = get_policy_object(output_policy, op_state)
                 else:
-                    return SyftError(
-                        message=f"{type(code_item)} Your code cannot be run: {code_item.status}"
-                    )
-            return SyftError(message=result.err())
+                    policy_object = code_item.output_policy
+
+                policy_object.apply_output(context, final_results)
+                if hasattr(code_item.output_policy, "byte_code"):
+                    code_item.output_policy_state = update_policy_state(policy_object)
+
+            state_result = self.update_code_state(context=context, code_item=code_item)
+            if state_result:
+                # TODO: there are probably circumstances where we
+                # can return the mock if the policy is invalid?
+                #
+                # Answer: I think it would be cleaner if we would return an error
+                # or both even
+                if isinstance(final_results, TwinObject):
+                    return final_results.private
+                return final_results
+            return state_result
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
 

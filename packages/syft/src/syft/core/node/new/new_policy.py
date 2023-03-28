@@ -535,11 +535,9 @@ def execute_policy_code(user_policy: UserPolicy):
         print("Exec context", file=stderr_)
         if class_name in user_policy.__object_version_registry__.keys():
             policy_class = user_policy.__object_version_registry__[class_name]
-            print("Yey it worked", file=stderr_)
         else:
             exec(user_policy.byte_code)  # nosec
             policy_class = eval(user_policy.unique_name)  # nosec
-            print("Nope it didnt work", file=stderr_)
 
         sys.stdout = stdout_
         sys.stderr = stderr_
