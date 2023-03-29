@@ -3,6 +3,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from datetime import datetime
 
 # relative
 from ....telemetry import instrument
@@ -252,7 +253,13 @@ class UserService(AbstractService):
             if user is not None and check_pwd(
                 context.login_credentials.password,
                 user.hashed_password,
-            ):
+            ):  
+                # Update last login
+                current_date = datetime.now()
+                formatted_date = current_date.strftime("%b %d, %Y")
+                user.last_login = formatted_date
+                self.stash.update(user)
+                
                 return user.to(UserPrivateKey)
 
             return SyftError(

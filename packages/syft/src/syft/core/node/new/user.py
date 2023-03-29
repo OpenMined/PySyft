@@ -51,6 +51,7 @@ class User(SyftObject):
     institution: Optional[str]
     website: Optional[str] = None
     created_at: Optional[str]
+    last_login: Optional[str] = None
 
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
@@ -114,7 +115,7 @@ class UserUpdate(SyftObject):
     verify_key: Optional[SyftVerifyKey] = None
     institution: Optional[str] = None
     website: Optional[str] = None
-
+    last_login: Optional[str] = None
 
 @serializable()
 class UserCreate(UserUpdate):
@@ -160,7 +161,6 @@ def user_update_to_user() -> List[Callable]:
         drop(["password", "password_verify"]),
     ]
 
-
 @transform(UserCreate, User)
 def user_create_to_user() -> List[Callable]:
     return [
@@ -175,7 +175,7 @@ def user_create_to_user() -> List[Callable]:
 
 @transform(User, UserView)
 def user_to_view_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role", "institution", "website"])]
+    return [keep(["id", "email", "name", "role", "institution", "website", "last_login"])]
 
 
 @serializable()
