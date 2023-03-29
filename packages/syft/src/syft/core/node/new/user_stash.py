@@ -1,5 +1,4 @@
 # stdlib
-from functools import partial
 from typing import Optional
 
 # third party
@@ -95,6 +94,8 @@ class UserStash(BaseStash):
         return result
 
     def update(self, credentials: SyftVerifyKey, user: User) -> Result[User, str]:
-        return self.check_type(user, self.object_type).and_then(
-            partial(super().update, credentials=credentials)
-        )
+        res = self.check_type(user, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        return super().update(credentials=credentials, obj=res.ok())

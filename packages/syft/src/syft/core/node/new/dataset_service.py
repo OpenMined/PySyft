@@ -37,7 +37,9 @@ class DatasetService(AbstractService):
         self, context: AuthedServiceContext, dataset: CreateDataset
     ) -> Union[SyftSuccess, SyftError]:
         """Add a Dataset"""
-        result = self.stash.set(dataset.to(Dataset, context=context))
+        result = self.stash.set(
+            context.credentials, dataset.to(Dataset, context=context)
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Dataset Added")
@@ -45,7 +47,7 @@ class DatasetService(AbstractService):
     @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> Union[List[Dataset], SyftError]:
         """Get a Dataset"""
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             datasets = result.ok()
             results = []
@@ -73,7 +75,7 @@ class DatasetService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         """Get a Dataset"""
-        result = self.stash.get_by_uid(uid=uid)
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             dataset = result.ok()
             dataset.node_uid = context.node.id
@@ -85,7 +87,7 @@ class DatasetService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[List[Dataset], SyftError]:
         """Get Datasets by an Action ID"""
-        result = self.stash.search_action_ids(uid=uid)
+        result = self.stash.search_action_ids(context.credentials, uid=uid)
         if result.is_ok():
             datasets = result.ok()
             for dataset in datasets:
@@ -114,7 +116,7 @@ class DatasetService(AbstractService):
 
     @service_method(path="dataset.delete_by_id", name="dataset_delete_by_id")
     def delete_dataset(self, context: AuthedServiceContext, uid: UID):
-        result = self.stash.delete_by_uid(uid)
+        result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
             return result.ok()
         else:
