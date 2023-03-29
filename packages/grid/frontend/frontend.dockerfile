@@ -8,7 +8,8 @@ COPY .npmrc package.json pnpm-lock.yaml ./
 # https://github.com/docker/buildx/issues/549
 # RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn install --frozen-lockfile
 RUN npm i -g pnpm
-RUN pnpm install --frozen-lockfile
+# RUN pnpm install --frozen-lockfile
+RUN pnpm install
 COPY . .
 CMD ["pnpm", "dev"]
 
