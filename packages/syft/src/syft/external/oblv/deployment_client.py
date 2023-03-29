@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from datetime import datetime
-import json
 import os
 from signal import SIGTERM
 import subprocess  # nosec
@@ -288,70 +287,6 @@ class DeploymentClient:
 
         return res
 
-    def get_uploaded_datasets(self) -> Dict:
-        self.check_connection_string()
-
-        req = self.make_request_to_enclave(
-            requests.get, connection_string=self.__conn_string + "/tensor/dataset/list"
-        )
-        self.sanity_check_oblv_response(req)
-        return req.json()  # This is the publish_request_id
-
-    def publish_action(
-        self, action: str, arguments: List, *args: Any, **kwargs: Any
-    ) -> Dict[str, Any]:
-        self.check_connection_string()
-        file = None
-        if len(arguments) == 2 and arguments[1]["type"] == "tensor":
-            file = arguments[1]["value"]
-            arguments[1]["value"] = "file"
-        body = {
-            "inputs": json.dumps(arguments),
-            "args": json.dumps(args),
-            "kwargs": json.dumps(kwargs),
-        }
-
-        req = self.make_request_to_enclave(
-            requests.post,
-            connection_string=self.__conn_string + f"/tensor/action?op={action}",
-            data=body,
-            files={"file": file},
-        )
-
-        self.sanity_check_oblv_response(req)
-
-        # Status code 200
-        # TODO - Remove this after oblv proxy is resolved
-        data = req.json()
-        if isinstance(data, dict) and data.get("detail") is not None:
-            raise OblvEnclaveError(data["detail"])
-        return data
-
-    def request_publish(self, dataset_id: UID, sigma: float = 0.5) -> Dict[str, Any]:
-        self.check_connection_string()
-
-        req = self.make_request_to_enclave(
-            requests.post,
-            connection_string=self.__conn_string + "/tensor/publish/request",
-            json={"dataset_id": dataset_id, "sigma": sigma},
-        )
-        self.sanity_check_oblv_response(req)
-
-        # Status code 200
-        # TODO - Remove this after oblv proxy is resolved
-
-        data = req.json()
-        if type(data) == dict and data.get("detail") is not None:
-            raise OblvEnclaveError(data["detail"])
-        # Here data is publish_request_id
-        for domain_client in self.domain_clients:
-            domain_client.oblv.publish_budget(
-                deployment_id=self.deployment_id,
-                publish_request_id=data,
-                client=self.oblv_client,
-            )
-        return data
-
     def _get_api(self) -> SyftAPI:
         self.check_connection_string()
         signing_key = SyftSigningKey.generate()
@@ -385,47 +320,6 @@ class DeploymentClient:
 
     def refresh(self) -> None:
         self._set_api()
-
-    def check_publish_request_status(self, publish_request_id: UID) -> None:
-        self.check_connection_string()
-
-        req = self.make_request_to_enclave(
-            requests.get,
-            connection_string=self.__conn_string
-            + "/tensor/publish/result_ready?publish_request_id="
-            + str(publish_request_id),
-        )
-
-        self.sanity_check_oblv_response(req)
-
-        result = req.json()
-        if isinstance(result, str):
-            print("Not yet Ready")
-        elif not isinstance(result, dict):
-            for domain_client in self.domain_clients:
-                domain_client.oblv.publish_request_budget_deduction(
-                    deployment_id=self.deployment_id,
-                    publish_request_id=publish_request_id,
-                    client=self.oblv_client,
-                    budget_to_deduct=result,
-                )
-            print("Result is ready")  # This is the publish_request_id
-        else:
-            # TODO - Remove this after oblv proxy is resolved
-            if result.get("detail") is not None:
-                raise OblvEnclaveError(result["detail"])
-
-    def fetch_result(self, publish_request_id: UID) -> Dict[str, Any]:
-        self.check_connection_string()
-
-        req = self.make_request_to_enclave(
-            requests.get,
-            connection_string=self.__conn_string
-            + "/tensor/publish/result?request_id="
-            + str(publish_request_id),
-        )
-        self.sanity_check_oblv_response(req)
-        return req.json()
 
     def close_connection(self) -> Optional[str]:
         if self.check_proxy_running():

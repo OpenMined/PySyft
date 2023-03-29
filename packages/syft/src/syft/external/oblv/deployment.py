@@ -114,9 +114,7 @@ def create_deployment(
                 f"Oblv Public Key not found for {domain_client.name}"
             )
 
-    build_args["runtime_args"] = yaml.dump(
-        {"outbound": runtime_args, "ENABLE_OBLV": "true"}
-    )
+    build_args["runtime_args"] = yaml.dump({"outbound": runtime_args})
     build_args["users"]["domain"] = users
     profile = oblv_client.user_profile()
     users = [{"user_name": profile.oblivious_login, "public key": user_public_key}]
