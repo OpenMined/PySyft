@@ -25,6 +25,7 @@ from result import Result
 # relative
 from ....util import is_interpreter_jupyter
 from .api import NodeView
+from .code_parse import GlobalsVisitor
 from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
@@ -49,7 +50,6 @@ from .transforms import generate_id
 from .transforms import transform
 from .uid import UID
 from .unparse import unparse
-from .user_code_parse import GlobalsVisitor
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)

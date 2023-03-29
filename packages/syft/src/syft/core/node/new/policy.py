@@ -26,6 +26,7 @@ from result import Result
 # relative
 from .action_object import ActionObject
 from .api import NodeView
+from .code_parse import GlobalsVisitor
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
@@ -34,7 +35,6 @@ from .datetime import DateTime
 from .deserialize import _deserialize
 from .document_store import PartitionKey
 from .node import NodeType
-from .policy_code_parse import GlobalsVisitor
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
