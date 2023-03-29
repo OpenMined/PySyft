@@ -28,7 +28,7 @@ from .uid import UID
 from .user_code import UserCode
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Project(SyftObject):
     __canonical_name__ = "Project"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -47,7 +47,7 @@ class Project(SyftObject):
     __attr_repr_cols__ = ["requests"]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ObjectPermissionChange(SyftObject):
     __canonical_name__ = "PermissionChange"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -57,7 +57,7 @@ class ObjectPermissionChange(SyftObject):
     object_type: Type[SyftObject]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1

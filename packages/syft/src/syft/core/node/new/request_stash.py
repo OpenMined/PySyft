@@ -23,7 +23,7 @@ StatusPartitionKey = PartitionKey(key="status", type_=RequestStatus)
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class RequestStash(BaseUIDStoreStash):
     object_type = Request
     settings: PartitionSettings = PartitionSettings(

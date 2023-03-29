@@ -17,7 +17,7 @@ from .serializable import serializable
 SIGNING_KEY_FOR = "SigningKey for"
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SyftVerifyKey(SyftBaseModel):
     verify_key: VerifyKey
 
@@ -49,7 +49,7 @@ class SyftVerifyKey(SyftBaseModel):
         return self.verify_key.__hash__()
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SyftSigningKey(SyftBaseModel):
     signing_key: SigningKey
 
@@ -92,7 +92,7 @@ class SyftSigningKey(SyftBaseModel):
 SyftCredentials = Union[SyftVerifyKey, SyftSigningKey]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserLoginCredentials(SyftBaseModel):
     email: str
     password: str
