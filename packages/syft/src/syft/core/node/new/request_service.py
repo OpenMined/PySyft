@@ -48,7 +48,9 @@ class RequestService(AbstractService):
     ) -> Union[Request, SyftError]:
         """Submit a Request"""
         try:
-            result = self.stash.set(request.to(Request, context=context))
+            result = self.stash.set(
+                context.credentials, request.to(Request, context=context)
+            )
             if result.is_ok():
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)

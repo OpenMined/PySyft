@@ -45,7 +45,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
-        result = self.stash.set(code.to(UserCode, context=context))
+        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
@@ -60,7 +60,7 @@ class UserCodeService(AbstractService):
         from .request_service import RequestService
 
         user_code = code.to(UserCode, context=context)
-        result = self.stash.set(user_code)
+        result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -92,7 +92,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[UserCode], SyftError]:
         """Get a Dataset"""
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
@@ -102,7 +102,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         """Get a User Code Item"""
-        result = self.stash.get_by_uid(uid=uid)
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
@@ -121,7 +121,7 @@ class UserCodeService(AbstractService):
     def update_code_state(
         self, context: AuthedServiceContext, code_item: UserCode
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.stash.update(code_item)
+        result = self.stash.update(context.credentials, code_item)
         if result.is_ok():
             return SyftSuccess(message="Code State Updated")
         return SyftError(message="Unable to Update Code State")
@@ -133,7 +133,7 @@ class UserCodeService(AbstractService):
         """Call a User Code Function"""
         try:
             filtered_kwargs = filter_kwargs(kwargs)
-            result = self.stash.get_by_uid(uid=uid)
+            result = self.stash.get_by_uid(context.credentials, uid=uid)
             if result.is_ok():
                 code_item = result.ok()
                 if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
