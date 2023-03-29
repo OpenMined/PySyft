@@ -87,9 +87,30 @@
       this.userId = new UUID(sessionObj.id);
     }
 
+    /***
+     *  Get current user info
+     */
     get user() {
       return (async () => {
         return await this.send([], { uid: this.userId }, 'user.view');
+      })();
+    }
+
+    /***
+     *  Get all users
+     */
+    get users() {
+      return (async () => {
+        return await this.send([], {}, 'user.get_all');
+      })();
+    }
+
+    /***
+     *  Get an specific user
+     */
+    getUser(userId) {
+      return (async () => {
+        return await this.send([], { uid: userId }, 'user.view');
       })();
     }
 
