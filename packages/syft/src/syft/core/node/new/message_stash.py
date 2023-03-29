@@ -68,7 +68,6 @@ class MessageStash(BaseUIDStoreStash):
     ) -> Result[List[Message], str]:
         qks = QueryKeys(
             qks=[
-                FromUserVerifyKeyPartitionKey.with_obj(verify_key),
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
                 StatusPartitionKey.with_obj(status),
             ]
