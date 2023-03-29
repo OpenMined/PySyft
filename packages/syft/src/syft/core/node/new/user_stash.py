@@ -42,9 +42,11 @@ class UserStash(BaseStash):
         super().__init__(store=store)
 
     def set(self, credentials: SyftVerifyKey, user: User) -> Result[User, str]:
-        return self.check_type(user, self.object_type).and_then(
-            partial(super().set, credentials=credentials)
-        )
+        res = self.check_type(user, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        return super().set(credentials=credentials, obj=res.ok())
 
     def admin_verify_key(self):
         return Ok(self.partition.root_verify_key)

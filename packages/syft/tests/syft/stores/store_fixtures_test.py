@@ -54,13 +54,15 @@ def sqlite_workspace() -> Generator:
             print("failed to cleanup sqlite db", e)
 
 
-def sqlite_store_partition_fn(sqlite_workspace: Tuple[Path, str]):
+def sqlite_store_partition_fn(root_verify_key, sqlite_workspace: Tuple[Path, str]):
     workspace, db_name = sqlite_workspace
     sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
     store_config = SQLiteStoreConfig(client_config=sqlite_config)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+    store = SQLiteStorePartition(
+        root_verify_key, settings=settings, store_config=store_config
+    )
 
     res = store.init_store()
     assert res.is_ok()
@@ -69,30 +71,30 @@ def sqlite_store_partition_fn(sqlite_workspace: Tuple[Path, str]):
 
 
 @pytest.fixture(scope="function")
-def sqlite_store_partition(sqlite_workspace: Tuple[Path, str]):
-    return sqlite_store_partition_fn(sqlite_workspace)
+def sqlite_store_partition(root_verify_key, sqlite_workspace: Tuple[Path, str]):
+    return sqlite_store_partition_fn(root_verify_key, sqlite_workspace)
 
 
-def sqlite_document_store_fn(sqlite_workspace: Tuple[Path, str]):
+def sqlite_document_store_fn(root_verify_key, sqlite_workspace: Tuple[Path, str]):
     workspace, db_name = sqlite_workspace
     sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
     store_config = SQLiteStoreConfig(client_config=sqlite_config)
-    return SQLiteDocumentStore(store_config=store_config)
+    return SQLiteDocumentStore(root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function")
-def sqlite_document_store(sqlite_workspace: Tuple[Path, str]):
-    return sqlite_document_store_fn(sqlite_workspace)
+def sqlite_document_store(root_verify_key, sqlite_workspace: Tuple[Path, str]):
+    return sqlite_document_store_fn(root_verify_key, sqlite_workspace)
 
 
-def sqlite_queue_stash_fn(sqlite_workspace: Tuple[Path, str]):
-    store = sqlite_document_store_fn(sqlite_workspace)
+def sqlite_queue_stash_fn(root_verify_key, sqlite_workspace: Tuple[Path, str]):
+    store = sqlite_document_store_fn(root_verify_key, sqlite_workspace)
     return QueueStash(store=store)
 
 
 @pytest.fixture(scope="function")
-def sqlite_queue_stash(sqlite_workspace: Tuple[Path, str]):
-    return sqlite_queue_stash_fn(sqlite_workspace)
+def sqlite_queue_stash(root_verify_key, sqlite_workspace: Tuple[Path, str]):
+    return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
 
 
 @pytest.fixture(scope="function")

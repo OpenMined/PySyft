@@ -423,8 +423,8 @@ class BaseStash:
 
     def set(
         self,
-        obj: BaseStash.object_type,
         credentials: SyftVerifyKey,
+        obj: BaseStash.object_type,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
         return self.partition.set(
@@ -505,7 +505,7 @@ class BaseStash:
         return self.partition.delete(credentials=credentials, qk=qk)
 
     def update(
-        self, obj: BaseStash.object_type, credentials: SyftVerifyKey
+        self, credentials: SyftVerifyKey, obj: BaseStash.object_type
     ) -> Optional[Result[BaseStash.object_type, str]]:
         qk = self.partition.store_query_key(obj)
         return self.partition.update(credentials=credentials, qk=qk, obj=obj)
