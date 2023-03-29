@@ -63,6 +63,9 @@ def locks_redis_config(redis_server_mock):
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_sanity(config: LockingConfig):
     lock = SyftLock(config)
 

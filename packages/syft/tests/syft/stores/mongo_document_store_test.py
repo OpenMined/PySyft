@@ -123,6 +123,9 @@ def test_mongo_store_partition_delete(
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_update(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -294,6 +297,9 @@ def test_mongo_store_partition_update_threading(
 
 
 @pytest.mark.xfail(reason="SyftObjectRegistry does only in-memory caching")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_mongo_store_partition_update_joblib(
     mongo_server_mock: Tuple,
