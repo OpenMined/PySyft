@@ -110,7 +110,7 @@
      */
     getUser(userId) {
       return (async () => {
-        return await this.send([], { uid: userId }, 'user.view');
+        return await this.send([], { uid: new UUID(userId) }, 'user.view');
       })();
     }
 
