@@ -32,6 +32,9 @@ class MetadataService(AbstractService):
         result = self.stash.get_all()
         if result.is_ok():
             metadata = result.ok()
+            # check if the metadata list is empty
+            if len(metadata) == 0:
+                return SyftError(message="No metadata found")
             result = metadata[0]
             return Ok(result)
         else:
@@ -44,7 +47,7 @@ class MetadataService(AbstractService):
         """Set a new the Node Metadata"""
         result = self.stash.set(metadata)
         if result.is_ok():
-            return Ok(result)
+            return result
         else:
             return SyftError(message=result.err())
 
@@ -61,8 +64,10 @@ class MetadataService(AbstractService):
                 )
                 update_result = self.stash.update(new_metadata)
                 if update_result.is_ok():
-                    return Ok(result)
+                    return result
                 else:
                     return SyftError(message=update_result.err())
+            else:
+                return SyftError(message="No metadata found")
         else:
             return SyftError(message=result.err())
