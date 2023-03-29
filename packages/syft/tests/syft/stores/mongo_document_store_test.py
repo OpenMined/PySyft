@@ -24,6 +24,9 @@ from .store_mocks_test import MockSyftObject
 REPEATS = 20
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_sanity(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
