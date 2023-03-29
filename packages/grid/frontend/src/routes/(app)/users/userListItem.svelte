@@ -5,8 +5,10 @@
 
   import { getClient } from '$lib/store';
   import { onMount } from 'svelte';
+  import { MapRoles } from '$lib/utils';
 
   let client = '';
+  let users = '';
 
   onMount(async () => {
     await getClient()
@@ -16,6 +18,10 @@
       .catch((error) => {
         console.log(error);
       });
+
+    await client.users.then((response) => {
+      users = response;
+    });
   });
 
   const setPage = async () => {
@@ -70,17 +76,6 @@
       avatar: '',
       active: 'Jan 10, 2023',
       filter: 'Recent Activity'
-    }
-  ];
-
-  const users = [
-    {
-      name: 'Dr. Javier Alegre-Abarrategui',
-      organisation: 'Institute of Neurology, London',
-      role: 'Data Scientist',
-      avatar: '',
-      dataflow: 1,
-      filter: 'Most dataflows'
     }
   ];
 </script>
@@ -168,12 +163,12 @@
             <div class="user-details">
               <div class="user-identity">
                 <div class="user-name">{user.name}</div>
-                <div class="user-role">{user.role}</div>
+                <div class="user-role">{MapRoles(user.role.value)}</div>
               </div>
-              <div class="user-organisation">{user.organisation}</div>
+              <div class="user-organisation">{user.institution}</div>
             </div>
             <div class="user-dataflows">
-              <div class="user-dataflow">&rarrc; {user.dataflow}</div>
+              <div class="user-dataflow">&rarrc; {1}</div>
               <div class="dataflow-divider" />
               <div class="user-epsilon">0&#603;</div>
             </div>
