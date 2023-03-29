@@ -6,6 +6,7 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
+from .credentials import SyftVerifyKey
 from .document_store import BaseUIDStoreStash
 from .document_store import DocumentStore
 from .document_store import PartitionKey
@@ -29,8 +30,20 @@ class MetadataStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def set(self, metadata: NodeMetadata) -> Result[NodeMetadata, str]:
-        return self.check_type(metadata, self.object_type).and_then(super().set)
+    def set(
+        self, credentials: SyftVerifyKey, metadata: NodeMetadata
+    ) -> Result[NodeMetadata, str]:
+        res = self.check_type(metadata, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        return super().set(credentials=credentials, obj=res.ok())
 
-    def update(self, metadata: NodeMetadata) -> Result[NodeMetadata, str]:
-        return self.check_type(metadata, self.object_type).and_then(super().update)
+    def update(
+        self, credentials: SyftVerifyKey, metadata: NodeMetadata
+    ) -> Result[NodeMetadata, str]:
+        res = self.check_type(metadata, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        return super().update(credentials=credentials, obj=res.ok())

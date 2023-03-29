@@ -7,10 +7,10 @@ from syft.core.node.new.node_metadata import NodeMetadataUpdate
 
 
 def add_mock_metadata(
-    metadata_stash: MetadataStash, metadata: NodeMetadata
+    root_verify_key, metadata_stash: MetadataStash, metadata: NodeMetadata
 ) -> NodeMetadata:
     # prepare: add mock metadata
-    result = metadata_stash.partition.set(metadata)
+    result = metadata_stash.partition.set(root_verify_key, metadata)
     assert result.is_ok()
 
     created_metadata = result.ok()
@@ -20,9 +20,9 @@ def add_mock_metadata(
 
 
 def test_metadatastash_set(
-    metadata_stash: MetadataStash, metadata: NodeMetadata
+    root_verify_key, metadata_stash: MetadataStash, metadata: NodeMetadata
 ) -> None:
-    result = metadata_stash.set(metadata)
+    result = metadata_stash.set(root_verify_key, metadata)
     assert result.is_ok()
 
     created_metadata = result.ok()
@@ -32,12 +32,13 @@ def test_metadatastash_set(
 
 
 def test_metadatastash_update(
+    root_verify_key,
     metadata_stash: MetadataStash,
     metadata: NodeMetadata,
     update_metadata: NodeMetadataUpdate,
 ) -> None:
     # prepare: add a mock metadata
-    mock_metadata = add_mock_metadata(metadata_stash, metadata)
+    mock_metadata = add_mock_metadata(root_verify_key, metadata_stash, metadata)
 
     # update mock_metadata according to update_metadata
     update_kwargs = update_metadata.to_dict(exclude_none=True).items()
@@ -45,7 +46,7 @@ def test_metadatastash_update(
         setattr(mock_metadata, field_name, value)
 
     # update the metadata in the stash
-    result = metadata_stash.update(metadata=mock_metadata)
+    result = metadata_stash.update(root_verify_key, metadata=mock_metadata)
 
     assert result.is_ok()
     updated_metadata = result.ok()

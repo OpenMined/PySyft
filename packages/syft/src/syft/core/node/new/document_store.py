@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from functools import partial
 import types
 from typing import Any
 from typing import Dict
@@ -513,26 +512,34 @@ class BaseStash:
 
 @instrument
 class BaseUIDStoreStash(BaseStash):
-    def delete_by_uid(self, uid: UID) -> Result[SyftSuccess, str]:
+    def delete_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(qk=qk)
+        result = super().delete(credentials=credentials, qk=qk)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result.err()
 
     def get_by_uid(
-        self, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Optional[BaseUIDStoreStash.object_type], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
 
     def set(
         self,
+        credentials: SyftVerifyKey,
         obj: BaseUIDStoreStash.object_type,
         ignore_duplicates: bool = False,
     ) -> Result[BaseUIDStoreStash.object_type, str]:
-        set_method = partial(super().set, ignore_duplicates=ignore_duplicates)
-        return self.check_type(obj, self.object_type).and_then(set_method)
+        res = self.check_type(obj, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        return super().set(
+            credentials=credentials, obj=res.ok(), ignore_duplicates=ignore_duplicates
+        )
 
 
 @serializable(recursive_serde=True)
