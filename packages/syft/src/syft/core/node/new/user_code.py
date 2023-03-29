@@ -6,8 +6,6 @@ import ast
 from enum import Enum
 import hashlib
 import inspect
-from inspect import Parameter
-from inspect import Signature
 from io import StringIO
 import sys
 from typing import Any
@@ -15,6 +13,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
@@ -35,9 +34,7 @@ from .node_metadata import EnclaveMetadata
 from .policy import CustomInputPolicy
 from .policy import CustomOutputPolicy
 from .policy import InputPolicy
-from .policy import InputPolicyState
 from .policy import OutputPolicy
-from .policy import OutputPolicyState
 from .policy import Policy
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
@@ -160,10 +157,12 @@ class UserCode(SyftObject):
     id: UID
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy: Policy  # Union[UserPolicy, InputPolicy, SubmitUserPolicy, UID]
-    input_policy_state: Optional[Union[bytes, InputPolicyState]]
-    output_policy: Policy  # Union[UserPolicy, OutputPolicy, SubmitUserPolicy, UID]
-    output_policy_state: Optional[Union[bytes, OutputPolicyState]]
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_args: Optional[Dict[str, Any]] = None
+    input_policy: InputPolicy
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_args: Optional[Dict[str, Any]] = None
+    output_policy: OutputPolicy
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -173,8 +172,6 @@ class UserCode(SyftObject):
     status: UserCodeStatusContext
     input_kwargs: List[str]
     outputs: List[str]
-    input_policy_init_args: Optional[Dict[str, Any]] = None
-    output_policy_init_args: Optional[Dict[str, Any]] = None
     enclave_metadata: Optional[EnclaveMetadata] = None
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
@@ -211,7 +208,7 @@ class UserCode(SyftObject):
         return self.raw_code
 
 
-@serializable()
+@serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
@@ -221,28 +218,13 @@ class SubmitUserCode(SyftObject):
     code: str
     func_name: str
     signature: inspect.Signature
-    input_policy: Union[SubmitUserPolicy, UID, InputPolicy]
+    input_policy: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
     input_policy_init_args: Optional[Dict[str, Any]] = None
-    output_policy: Union[SubmitUserPolicy, UID, OutputPolicy]
+    output_policy: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
     output_policy_init_args: Optional[Dict[str, Any]] = None
     local_function: Optional[Callable]
     input_kwargs: List[str]
-    outputs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-
-    __attr_state__ = [
-        "id",
-        "code",
-        "func_name",
-        "signature",
-        "input_policy",
-        "output_policy",
-        "input_kwargs",
-        "outputs",
-        "input_policy_init_args",
-        "output_policy_init_args",
-        "enclave_metadata",
-    ]
 
     @property
     def kwargs(self) -> List[str]:
@@ -310,19 +292,14 @@ def get_code_from_class(policy):
 
 
 def syft_function(
-    input_policy: Union[CustomInputPolicy, InputPolicy, UID],
-    output_policy: Union[CustomOutputPolicy, OutputPolicy, UID],
-    outputs: List[str] = [],
-    input_policy_init_args: Dict[str, Any] = None,
-    output_policy_init_args: Dict[str, Any] = None,
+    input_policy: Union[InputPolicy, UID],
+    output_policy: Union[OutputPolicy, UID],
 ) -> SubmitUserCode:
-    # TODO: fix this for jupyter
-    # TODO: add import validator
+    input_policy_init_args = None
+    output_policy_init_args = None
 
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_init_args = input_policy.init_kwargs
-        print(input_policy_init_args)
-
         user_class = input_policy.__class__
         init_f_code = user_class.__init__.__code__
         input_policy = SubmitUserPolicy(
@@ -330,15 +307,14 @@ def syft_function(
             class_name=user_class.__name__,
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
-    elif isinstance(input_policy, UID) or isinstance(input_policy, InputPolicy):
-        input_policy = input_policy
-    elif type(input_policy) == type and issubclass(input_policy, InputPolicy):
-        input_policy = input_policy(**input_policy_init_args)
+    else:
+        input_policy = type(input_policy)
+
+    # elif type(input_policy) == type and issubclass(input_policy, InputPolicy):
+    #     input_policy = input_policy(**input_policy_init_args)
 
     if isinstance(output_policy, CustomOutputPolicy):
         output_policy_init_args = output_policy.init_kwargs
-        print(output_policy_init_args)
-
         user_class = output_policy.__class__
         init_f_code = user_class.__init__.__code__
         output_policy = SubmitUserPolicy(
@@ -346,23 +322,35 @@ def syft_function(
             class_name=user_class.__name__,
             input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
         )
-    elif isinstance(output_policy, UID) or isinstance(output_policy, OutputPolicy):
-        output_policy = output_policy
-    elif type(output_policy) == type and issubclass(output_policy, OutputPolicy):
-        output_policy = output_policy(**output_policy_init_args)
+    else:
+        output_policy = type(output_policy)
+    # elif type(output_policy) == type and issubclass(output_policy, OutputPolicy):
+    #     output_policy = output_policy(**output_policy_init_args)
 
     def decorator(f):
+        print("using the folllowing")
+        code = inspect.getsource(f)
+        print("code", code)
+        func = f.__name__
+        print("Func", func)
+        sig = inspect.signature(f)
+        print("sig", sig)
+        print("input_policy", input_policy)
+        print("output_policy", output_policy)
+        print("input_policy_init_args", input_policy_init_args)
+        print("output_policy_init_args", output_policy_init_args)
+        print("local_function", f)
+        print("input_kwargs", f.__code__.co_varnames[: f.__code__.co_argcount])
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy=input_policy,
             output_policy=output_policy,
-            local_function=f,
-            input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
-            outputs=outputs,
             input_policy_init_args=input_policy_init_args,
             output_policy_init_args=output_policy_init_args,
+            local_function=f,
+            input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
         )
 
     return decorator
@@ -384,7 +372,7 @@ def process_code(
     func_name: str,
     original_func_name: str,
     input_kwargs: List[str],  # Dict[str, Any],
-    outputs: List[str],
+    # outputs: List[str],
 ) -> str:
     tree = ast.parse(raw_code)
 
@@ -408,28 +396,28 @@ def process_code(
         lineno=0,
     )
 
-    if len(outputs) > 0:
-        output_list = ast.List(elts=[ast.Constant(value=x) for x in outputs])
-        return_stmt = ast.Return(
-            value=ast.DictComp(
-                key=ast.Name(id="k"),
-                value=ast.Subscript(
-                    value=ast.Name(id="result"),
-                    slice=ast.Name(id="k"),
-                ),
-                generators=[
-                    ast.comprehension(
-                        target=ast.Name(id="k"), iter=output_list, ifs=[], is_async=0
-                    )
-                ],
-            )
-        )
-        # requires typing module imported but main code returned is FunctionDef not Module
-        # return_annotation = ast.parse("typing.Dict[str, typing.Any]", mode="eval").body
-    else:
-        return_stmt = ast.Return(value=ast.Name(id="result"))
-        # requires typing module imported but main code returned is FunctionDef not Module
-        # return_annotation = ast.parse("typing.Any", mode="eval").body
+    # if len(outputs) > 0:
+    #     output_list = ast.List(elts=[ast.Constant(value=x) for x in outputs])
+    #     return_stmt = ast.Return(
+    #         value=ast.DictComp(
+    #             key=ast.Name(id="k"),
+    #             value=ast.Subscript(
+    #                 value=ast.Name(id="result"),
+    #                 slice=ast.Name(id="k"),
+    #             ),
+    #             generators=[
+    #                 ast.comprehension(
+    #                     target=ast.Name(id="k"), iter=output_list, ifs=[], is_async=0
+    #                 )
+    #             ],
+    #         )
+    #     )
+    #     # requires typing module imported but main code returned is FunctionDef not Module
+    #     # return_annotation = ast.parse("typing.Dict[str, typing.Any]", mode="eval").body
+    # else:
+    return_stmt = ast.Return(value=ast.Name(id="result"))
+    # requires typing module imported but main code returned is FunctionDef not Module
+    # return_annotation = ast.parse("typing.Any", mode="eval").body
 
     new_body = tree.body + [call_stmt, return_stmt]
 
@@ -447,16 +435,18 @@ def process_code(
 
 def new_check_code(context: TransformContext) -> TransformContext:
     try:
+        print("checking new code", context.output["raw_code"])
         processed_code = process_code(
             raw_code=context.output["raw_code"],
             func_name=context.output["unique_func_name"],
             original_func_name=context.output["service_func_name"],
             input_kwargs=context.output["input_kwargs"],
-            outputs=context.output["outputs"],
+            # outputs=context.output["outputs"], # handled by output policy
         )
         context.output["parsed_code"] = processed_code
 
     except Exception as e:
+        print("exception as", e)
         raise e
 
     return context
@@ -497,37 +487,24 @@ def add_credentials_for_key(key: str) -> Callable:
     return add_credentials
 
 
-def generate_signature(context: TransformContext) -> TransformContext:
-    params = [
-        Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
-        for k in context.output["input_kwargs"]
-    ]
-    sig = Signature(parameters=params)
-    context.output["signature"] = sig
-    return context
-
-
-def modify_signature(context: TransformContext) -> TransformContext:
-    sig = context.output["signature"]
-    context.output["signature"] = sig.replace(return_annotation=Dict[str, Any])
-    return context
+# def modify_signature(context: TransformContext) -> TransformContext:
+#     sig = context.output["signature"]
+#     context.output["signature"] = sig.replace(return_annotation=Dict[str, Any])
+#     return context
 
 
 def init_input_policy_state(context: TransformContext) -> TransformContext:
-    context.output["input_policy"]
-    context.output["input_policy_state"] = ""
+    print("cant init until approved?")
+    # context.output["input_policy"] =
     return context
 
 
 def init_output_policy_state(context: TransformContext) -> TransformContext:
-    context.output["output_policy"]
-    context.output["output_policy_state"] = ""
+    # context.output["output_policy"] =
     return context
 
 
 def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
-    # stdlib
-
     policy_service = context.node.get_service(PolicyService)
     if isinstance(policy, SubmitUserPolicy):
         policy = policy.to(UserPolicy, context=context)
@@ -537,7 +514,7 @@ def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
             policy = policy.ok()
 
     # provide node context for method operations until we finish LinkedObjects
-    policy.node_uid = context.node.id
+    # policy.node_uid = context.node.id
     return policy
 
 
@@ -587,14 +564,14 @@ def submit_user_code_to_user_code() -> List[Callable]:
         generate_id,
         hash_code,
         generate_unique_func_name,
-        modify_signature,
-        new_check_code,
-        # compile_code, # don't compile code till its approved
-        add_credentials_for_key("user_verify_key"),
+        # modify_signature,
         check_input_policy,
         check_output_policy,
         init_input_policy_state,
         init_output_policy_state,
+        new_check_code,
+        # compile_code, # don't compile code till its approved
+        add_credentials_for_key("user_verify_key"),
         add_custom_status,
     ]
 

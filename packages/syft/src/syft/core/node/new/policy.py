@@ -15,7 +15,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Type
 from typing import Union
 
 # third party
@@ -149,13 +148,6 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
             raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
 
     return output_kwargs
-
-
-@serializable()
-class InputPolicyState(SyftObject):
-    # version
-    __canonical_name__ = "InputPolicyState"
-    __version__ = SYFT_OBJECT_VERSION_1
 
 
 class InputPolicy(Policy):
@@ -312,75 +304,6 @@ class OutputHistory(SyftObject):
     executing_user_verify_key: SyftVerifyKey
 
 
-@serializable()
-class OutputPolicyState(SyftObject):
-    # version
-    __canonical_name__ = "OutputPolicyState"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    output_history: List[OutputHistory] = []
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        raise NotImplementedError
-
-    def update_state(
-        self,
-        context: NodeServiceContext,
-        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
-    ) -> None:
-        if isinstance(outputs, UID):
-            outputs = [outputs]
-        history = OutputHistory(
-            output_time=DateTime.now(),
-            outputs=outputs,
-            executing_user_verify_key=context.credentials,
-        )
-        self.output_history.append(history)
-
-
-@serializable()
-class OutputPolicyStateExecuteCount(OutputPolicyState):
-    # version
-    __canonical_name__ = "OutputPolicyStateExecuteCount"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    count: int = 0
-    limit: int
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        is_valid = self.count < self.limit
-        if is_valid:
-            return SyftSuccess(
-                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
-            )
-        return SyftError(
-            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
-        )
-
-    def update_state(
-        self,
-        context: NodeServiceContext,
-        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
-    ) -> None:
-        if self.count >= self.limit:
-            raise Exception(
-                f"Update state being called with count: {self.count} "
-                f"beyond execution limit: {self.limit}"
-            )
-        super().update_state(context=context, outputs=outputs)
-        self.count += 1
-
-
-@serializable()
-class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
-    __canonical_name__ = "OutputPolicyStateExecuteOnce"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    limit: int = 1
-
-
 class OutputPolicy(Policy):
     # version
     __canonical_name__ = "OutputPolicy"
@@ -449,13 +372,7 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
     limit: int = 1
 
 
-@serializable()
-class SingleExecutionExactOutput(OutputPolicyExecuteCount):
-    # version
-    __canonical_name__ = "SingleExecutionExactOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    limit: int = 1
+SingleExecutionExactOutput = OutputPolicyExecuteOnce
 
 
 class CustomPolicy(Policy):
@@ -505,7 +422,6 @@ class UserPolicy(Policy):
     code_hash: str
     byte_code: PyCodeObject
     status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
-    state_type: Optional[Type] = None
     policy_version: int
 
     @property

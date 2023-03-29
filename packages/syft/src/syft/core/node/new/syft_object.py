@@ -135,7 +135,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             values["id"] = id_field.type_()
         return values
 
-    __attr_state__: List[str]  # persistent recursive serde keys
     __attr_searchable__: List[str] = []  # keys which can be searched in the ORM
     __attr_unique__: List[str] = []
     # the unique keys for the particular Collection the objects will be stored in

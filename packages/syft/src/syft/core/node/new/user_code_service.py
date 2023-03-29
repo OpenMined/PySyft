@@ -67,9 +67,9 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
-        # relative
-
+        print("trying to conver object")
         user_code = code.to(UserCode, context=context)
+        print("converted object", user_code)
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
