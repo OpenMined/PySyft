@@ -22,6 +22,7 @@ from typeguard import check_type
 
 # relative
 from ....telemetry import instrument
+from .action_permissions import ActionObjectPermission
 from .base import SyftBaseModel
 from .credentials import SyftVerifyKey
 from .response import SyftSuccess
@@ -424,10 +425,14 @@ class BaseStash:
         self,
         credentials: SyftVerifyKey,
         obj: BaseStash.object_type,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
         return self.partition.set(
-            obj=obj, credentials=credentials, ignore_duplicates=ignore_duplicates
+            obj=obj,
+            credentials=credentials,
+            ignore_duplicates=ignore_duplicates,
+            add_permissions=add_permissions,
         )
 
     def query_all(

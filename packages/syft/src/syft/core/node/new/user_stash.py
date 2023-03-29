@@ -7,6 +7,8 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
+from .action_permissions import ActionObjectPermission
+from .action_permissions import ActionPermission
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .document_store import BaseStash
@@ -45,7 +47,16 @@ class UserStash(BaseStash):
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
-        return super().set(credentials=credentials, obj=res.ok())
+        # Make it possible to read all users (services only return UserViews)
+        return super().set(
+            credentials=credentials,
+            obj=res.ok(),
+            add_permissions=[
+                ActionObjectPermission(
+                    uid=user.id, permission=ActionPermission.ALL_READ
+                )
+            ],
+        )
 
     def admin_verify_key(self):
         return Ok(self.partition.root_verify_key)

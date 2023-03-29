@@ -182,6 +182,7 @@ class KeyValueStorePartition(StorePartition):
         self,
         credentials: SyftVerifyKey,
         obj: SyftObject,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         try:
@@ -218,6 +219,8 @@ class KeyValueStorePartition(StorePartition):
                 permission = f"{credentials.verify}_READ"
                 permissions = self.permissions[uid]
                 permissions.add(permission)
+                if add_permissions is not None:
+                    permissions.update([x.permission_string for x in add_permissions])
                 self.permissions[uid] = permissions
                 return Ok(obj)
             else:
@@ -285,8 +288,14 @@ class KeyValueStorePartition(StorePartition):
         # 🟡 TODO 14: add ALL_READ, ALL_EXECUTE etc
         if permission.permission == ActionPermission.OWNER:
             pass
-        elif permission.permission == ActionPermission.READ:
-            pass
+        elif (
+            permission.permission == ActionPermission.READ
+            and ActionObjectPermission(
+                permission.uid, ActionPermission.ALL_READ
+            ).permission_string
+            in self.permissions[permission.uid]
+        ):
+            return True
         elif permission.permission == ActionPermission.WRITE:
             pass
         elif permission.permission == ActionPermission.EXECUTE:
