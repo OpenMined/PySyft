@@ -21,6 +21,15 @@ export function shortName(name) {
   return letters;
 }
 
+export function MapRoles(role) {
+  const roleMap = Object.freeze({
+    1: 'Guest',
+    2: 'Data Scientist',
+    32: 'Data Owner',
+    128: 'Admin'
+  });
+  return roleMap[role];
+}
 export function getPath() {
   return window.location.pathname;
 }
