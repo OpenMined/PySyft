@@ -1,10 +1,27 @@
-def test_node_metadata_serde() -> None:
-    assert True
+# stdlib
+from typing import Any
+
+# third party
+import pytest
+from pytest import FixtureRequest
+
+# syft absolute
+import syft as sy
 
 
-def test_node_metadata_update() -> None:
-    assert True
+@pytest.mark.parametrize(
+    "obj",
+    [
+        "metadata",
+        "update_metadata",
+        "metadata_json",
+    ],
+)
+def test_node_metadata_serde(obj: Any, request: FixtureRequest) -> None:
+    requested_obj = request.getfixturevalue(obj)
+    ser_data = sy.serialize(requested_obj, to_bytes=True)
+    assert isinstance(ser_data, bytes)
 
-
-def test_node_metadata_json() -> None:
-    assert True
+    deser_data = sy.deserialize(ser_data, from_bytes=True)
+    assert isinstance(deser_data, type(requested_obj))
+    assert deser_data == requested_obj
