@@ -117,6 +117,7 @@ class UserUpdate(SyftObject):
     website: Optional[str] = None
     last_login: Optional[str] = None
 
+
 @serializable()
 class UserCreate(UserUpdate):
     __canonical_name__ = "UserCreate"
@@ -161,6 +162,7 @@ def user_update_to_user() -> List[Callable]:
         drop(["password", "password_verify"]),
     ]
 
+
 @transform(UserCreate, User)
 def user_create_to_user() -> List[Callable]:
     return [
@@ -175,7 +177,9 @@ def user_create_to_user() -> List[Callable]:
 
 @transform(User, UserView)
 def user_to_view_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role", "institution", "website", "last_login"])]
+    return [
+        keep(["id", "email", "name", "role", "institution", "website", "last_login"])
+    ]
 
 
 @serializable()
