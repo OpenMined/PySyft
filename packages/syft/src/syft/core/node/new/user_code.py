@@ -18,7 +18,6 @@ from typing import Optional
 from typing import Union
 
 # third party
-import astunparse  # ast.unparse for python 3.8
 from result import Err
 from result import Ok
 from result import Result
@@ -49,6 +48,7 @@ from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .uid import UID
+from .unparse import unparse
 from .user_code_parse import GlobalsVisitor
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
@@ -195,7 +195,7 @@ class UserCode(SyftObject):
             inner_function = ast.parse(self.raw_code).body[0]
             inner_function.decorator_list = []
             # compile the function
-            raw_byte_code = compile_byte_code(astunparse.unparse(inner_function))
+            raw_byte_code = compile_byte_code(unparse(inner_function))
             # load it
             exec(raw_byte_code)  # nosec
             # execute it
@@ -446,7 +446,7 @@ def process_code(
         lineno=0,
     )
 
-    return astunparse.unparse(wrapper_function)
+    return unparse(wrapper_function)
 
 
 def new_check_code(context: TransformContext) -> TransformContext:
@@ -540,7 +540,6 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
 
 def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
     # stdlib
-    import sys
 
     policy_service = context.node.get_service(PolicyService)
     if isinstance(policy, SubmitUserPolicy):

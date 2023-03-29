@@ -247,7 +247,7 @@ class Request(SyftObject):
     #     return result
 
     def accept_by_depositing_result(self, result: Any):
-        # TODO: what is the purpose of this check? 
+        # TODO: what is the purpose of this check?
         # It might be breaking with the new UserPolicyStatusChanges
         # if len(self.changes) != 1:
         #     raise Exception(

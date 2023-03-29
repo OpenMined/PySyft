@@ -16,9 +16,11 @@ from .new_policy import OutputHistory
 from .new_policy import OutputPolicy
 from .new_policy import SubmitUserPolicy
 from .new_policy import UserPolicy
+from .new_policy import UserPolicyStatus
 from .new_policy import get_policy_object
 from .new_policy import init_policy
 from .new_policy import update_policy_state
+from .request import EnumMutation
 from .request import UserCodeStatusChange
 from .response import SyftError
 from .response import SyftNotReady
@@ -35,8 +37,6 @@ from .user_code import UserCode
 from .user_code import UserCodeStatus
 from .user_code_stash import UserCodeStash
 from .user_roles import GUEST_ROLE_LEVEL
-from .request import EnumMutation
-from .new_policy import UserPolicyStatus
 
 
 @instrument
@@ -95,12 +95,11 @@ class UserCodeService(AbstractService):
         code: SubmitUserCode,
     ):
         # stdlib
-        import sys
 
         # relative
+        from .policy_service import PolicyService
         from .request import SubmitRequest
         from .request_service import RequestService
-        from .policy_service import PolicyService
 
         user_code = code.to(UserCode, context=context)
         result = self.stash.set(user_code)
@@ -113,38 +112,38 @@ class UserCodeService(AbstractService):
         CODE_EXECUTE = UserCodeStatusChange(
             value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
         )
-        changes=[CODE_EXECUTE]
-        
+        changes = [CODE_EXECUTE]
+
         if isinstance(user_code.input_policy, UserPolicy):
             policy_service.add_user_policy(context, user_code.input_policy)
             input_policy_linked_obj = LinkedObject.from_obj(
-                                        user_code.input_policy, 
-                                        node_uid=context.node.id,
-                                        service_type=PolicyService
-                                    )
+                user_code.input_policy,
+                node_uid=context.node.id,
+                service_type=PolicyService,
+            )
             INPUT_POLICY_APPROVE = EnumMutation(
-                                    linked_obj=input_policy_linked_obj,
-                                    attr_name="status",
-                                    enum_type=UserPolicyStatus,
-                                    value=UserPolicyStatus.APPROVED
-                                )
+                linked_obj=input_policy_linked_obj,
+                attr_name="status",
+                enum_type=UserPolicyStatus,
+                value=UserPolicyStatus.APPROVED,
+            )
             changes.append(INPUT_POLICY_APPROVE)
-        
+
         if isinstance(user_code.output_policy, UserPolicy):
             policy_service.add_user_policy(context, user_code.output_policy)
             output_policy_linked_obj = LinkedObject.from_obj(
-                                        user_code.output_policy, 
-                                        node_uid=context.node.id,
-                                        service_type=PolicyService
-                                    )
+                user_code.output_policy,
+                node_uid=context.node.id,
+                service_type=PolicyService,
+            )
             OUTPUT_POLICY_APPROVE = EnumMutation(
-                                    linked_obj=output_policy_linked_obj,
-                                    attr_name="status",
-                                    enum_type=UserPolicyStatus,
-                                    value=UserPolicyStatus.APPROVED
-                                )
+                linked_obj=output_policy_linked_obj,
+                attr_name="status",
+                enum_type=UserPolicyStatus,
+                value=UserPolicyStatus.APPROVED,
+            )
             changes.append(OUTPUT_POLICY_APPROVE)
-        
+
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request)
@@ -213,7 +212,7 @@ class UserCodeService(AbstractService):
             if not result.is_ok():
                 return SyftError(message=result.err())
 
-            # Unroll variables  
+            # Unroll variables
             code_item = result.ok()
             output_policy = code_item.output_policy
             op_state = code_item.output_policy_state
@@ -229,7 +228,7 @@ class UserCodeService(AbstractService):
                 return SyftError(
                     message=f"{type(code_item)} Your code cannot be run: {status}"
                 )
-            
+
             # Check if the OutputPolicy is valid
             if isinstance(op_state, bytes) and len(op_state) > 0:
                 is_valid = True
@@ -243,7 +242,7 @@ class UserCodeService(AbstractService):
                         output_history=output_policy.output_history[-1],
                     )
                 return is_valid
-            
+
             # Execute the code item
             action_service = context.node.get_service("actionservice")
             result = action_service._user_code_execute(
@@ -251,10 +250,12 @@ class UserCodeService(AbstractService):
             )
             if isinstance(result, str):
                 return SyftError(message=result)
-            
+
             # Apply Output Policy to the results and update the OutputPolicyState
             final_results = result.ok()
-            if isinstance(output_policy, OutputPolicy) and not isinstance(op_state, bytes):
+            if isinstance(output_policy, OutputPolicy) and not isinstance(
+                op_state, bytes
+            ):
                 op_state.apply_output(context=context, outputs=final_results)
             else:
                 # For User Policies we need to get the object from the byte_code

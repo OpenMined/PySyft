@@ -17,7 +17,6 @@ from typing import Union
 
 # third party
 from RestrictedPython import compile_restricted
-import astunparse  # ast.unparse for python 3.8
 from result import Result
 
 # relative
@@ -43,6 +42,7 @@ from .transforms import generate_id
 from .transforms import transform
 from .twin_object import TwinObject
 from .uid import UID
+from .unparse import unparse
 
 PyCodeObject = Any
 
@@ -438,11 +438,13 @@ def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) 
             if stmt.targets[0].id == "__version__":
                 version = stmt.value.value
                 break
-    if version == None:
-        raise Exception("Version cannot be found. Please specify it in your custom policy")
+    if version is None:
+        raise Exception(
+            "Version cannot be found. Please specify it in your custom policy"
+        )
     new_class.name = class_name
     new_class.decorator_list = [serializable_decorator]
-    return astunparse.unparse(new_class), version
+    return unparse(new_class), version
 
 
 def check_class_code(context: TransformContext) -> TransformContext:
@@ -531,6 +533,7 @@ def execute_policy_code(user_policy: UserPolicy):
         sys.stderr = stderr
         # syft absolute
         import syft as sy  # noqa: F401 # provide sy.Things to user code
+
         class_name = f"{user_policy.unique_name}_{user_policy.policy_version}"
         print("Exec context", file=stderr_)
         if class_name in user_policy.__object_version_registry__.keys():

@@ -10,11 +10,11 @@ from .new_policy import UserPolicy
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
+from .service import AbstractService
 
 # from .policy import Policy, CreatePolicy
-from .service import AbstractService
-from .service import service_method
 from .service import TYPE_TO_SERVICE
+from .service import service_method
 from .uid import UID
 
 # from .policy_stash import PolicyStash
