@@ -161,16 +161,18 @@ def mongo_queue_stash(mongo_server_mock):
     return mongo_queue_stash_fn(store)
 
 
-def dict_store_partition_fn():
+def dict_store_partition_fn(root_verify_key):
     store_config = DictStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    return DictStorePartition(settings=settings, store_config=store_config)
+    return DictStorePartition(
+        root_verify_key, settings=settings, store_config=store_config
+    )
 
 
 @pytest.fixture(scope="function")
-def dict_store_partition():
-    return dict_store_partition_fn()
+def dict_store_partition(root_verify_key):
+    return dict_store_partition_fn(root_verify_key)
 
 
 @pytest.fixture(scope="function")
