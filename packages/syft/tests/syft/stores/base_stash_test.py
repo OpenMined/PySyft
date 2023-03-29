@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Tuple
 
@@ -50,18 +51,25 @@ def base_stash() -> MockStash:
     return MockStash(store=DictDocumentStore())
 
 
-def create_mock_object(faker) -> MockObject:
-    return MockObject(name=faker.name())
+def object_kwargs(faker) -> Dict[str, Any]:
+    return {"name": faker.name()}
+
+
+def multiple_object_kwargs(faker, n=10, same=False) -> List[Dict[str, Any]]:
+    if same:
+        kwargs = {"id": UID(), **object_kwargs(faker)}
+        return [kwargs for _ in range(n)]
+    return [object_kwargs(faker) for _ in range(n)]
 
 
 @pytest.fixture
 def mock_object(faker) -> MockObject:
-    return MockObject(name=faker.name())
+    return MockObject(**object_kwargs(faker))
 
 
 @pytest.fixture
-def mock_objects(faker, n=10) -> List[MockObject]:
-    return [MockObject(name=faker.name()) for _ in range(n)]
+def mock_objects(faker) -> List[MockObject]:
+    return [MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker)]
 
 
 def test_basestash_set(base_stash: MockStash, mock_object: MockObject) -> None:
@@ -69,6 +77,18 @@ def test_basestash_set(base_stash: MockStash, mock_object: MockObject) -> None:
 
     assert result is not None
     assert result == mock_object
+
+
+def test_basestash_set_duplicate(base_stash: MockStash, faker) -> None:
+    original, duplicate = [
+        MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker, n=2, same=True)
+    ]
+
+    result = base_stash.set(original)
+    assert result.is_ok()
+
+    result = base_stash.set(duplicate)
+    assert result.is_err()
 
 
 def test_basestash_delete(base_stash: MockStash, mock_object: MockObject) -> None:
