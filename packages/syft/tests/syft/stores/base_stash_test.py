@@ -6,6 +6,7 @@ from typing import List
 from typing import Tuple
 
 # third party
+from faker import Faker
 import pytest
 
 # syft absolute
@@ -63,11 +64,11 @@ def base_stash() -> MockStash:
     return MockStash(store=DictDocumentStore())
 
 
-def random_sentence(faker):
+def random_sentence(faker: Faker) -> str:
     return faker.paragraph(nb_sentences=1)
 
 
-def object_kwargs(faker, **kwargs) -> Dict[str, Any]:
+def object_kwargs(faker: Faker, **kwargs: Any) -> Dict[str, Any]:
     return {
         "name": faker.name(),
         "desc": random_sentence(faker),
@@ -77,7 +78,9 @@ def object_kwargs(faker, **kwargs) -> Dict[str, Any]:
     }
 
 
-def multiple_object_kwargs(faker, n=10, same=False, **kwargs) -> List[Dict[str, Any]]:
+def multiple_object_kwargs(
+    faker, n=10, same=False, **kwargs: Any
+) -> List[Dict[str, Any]]:
     if same:
         kwargs_ = {"id": UID(), **object_kwargs(faker), **kwargs}
         return [kwargs_ for _ in range(n)]
@@ -85,12 +88,12 @@ def multiple_object_kwargs(faker, n=10, same=False, **kwargs) -> List[Dict[str, 
 
 
 @pytest.fixture
-def mock_object(faker) -> MockObject:
+def mock_object(faker: Faker) -> MockObject:
     return MockObject(**object_kwargs(faker))
 
 
 @pytest.fixture
-def mock_objects(faker) -> List[MockObject]:
+def mock_objects(faker: Faker) -> List[MockObject]:
     return [MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker)]
 
 
@@ -101,7 +104,7 @@ def test_basestash_set(base_stash: MockStash, mock_object: MockObject) -> None:
     assert result == mock_object
 
 
-def test_basestash_set_duplicate(base_stash: MockStash, faker) -> None:
+def test_basestash_set_duplicate(base_stash: MockStash, faker: Faker) -> None:
     original, duplicate = [
         MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker, n=2, same=True)
     ]
@@ -113,7 +116,9 @@ def test_basestash_set_duplicate(base_stash: MockStash, faker) -> None:
     assert result.is_err()
 
 
-def test_basestash_set_duplicate_unique_key(base_stash: MockStash, faker) -> None:
+def test_basestash_set_duplicate_unique_key(
+    base_stash: MockStash, faker: Faker
+) -> None:
     original, duplicate = [
         MockObject(**kwargs)
         for kwargs in multiple_object_kwargs(faker, n=2, name=faker.name())
@@ -136,7 +141,7 @@ def test_basestash_delete(base_stash: MockStash, mock_object: MockObject) -> Non
 
 
 def test_basestash_update(
-    base_stash: MockStash, mock_object: MockObject, faker
+    base_stash: MockStash, mock_object: MockObject, faker: Faker
 ) -> None:
     add_mock_object(base_stash, mock_object)
 
@@ -196,7 +201,7 @@ def test_basestash_delete_by_uid(
 
 
 def test_basestash_query_one(
-    base_stash: MockStash, mock_objects: List[MockObject], faker
+    base_stash: MockStash, mock_objects: List[MockObject], faker: Faker
 ) -> None:
     for obj in mock_objects:
         base_stash.set(obj)
@@ -236,7 +241,7 @@ def test_basestash_query_one(
 
 
 def test_basestash_query_all(
-    base_stash: MockStash, mock_objects: List[MockObject], faker
+    base_stash: MockStash, mock_objects: List[MockObject], faker: Faker
 ) -> None:
     desc = random_sentence(faker)
     n_same = 3
@@ -281,7 +286,7 @@ def test_basestash_query_all(
 
 
 def test_basestash_query_all_kwargs_multiple_params(
-    base_stash: MockStash, mock_objects: List[MockObject], faker
+    base_stash: MockStash, mock_objects: List[MockObject], faker: Faker
 ) -> None:
     desc = random_sentence(faker)
     importance = random.randrange(5)
@@ -330,7 +335,7 @@ def test_basestash_query_all_kwargs_multiple_params(
 
 
 def test_basestash_cannot_query_non_searchable(
-    base_stash: MockStash, mock_objects: List[MockObject], faker
+    base_stash: MockStash, mock_objects: List[MockObject]
 ) -> None:
     for obj in mock_objects:
         base_stash.set(obj)
