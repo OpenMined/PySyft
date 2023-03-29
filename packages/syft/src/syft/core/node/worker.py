@@ -108,7 +108,7 @@ node_uid_env = get_node_uid_env()
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class Worker(NewNode):
     signing_key: Optional[SyftSigningKey]
     required_signed_calls: bool = True
@@ -694,7 +694,7 @@ def create_oblv_key_pair(
         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
         if not len(oblv_keys_stash):
-            public_key, private_key = generate_oblv_key()
+            public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
             res = oblv_keys_stash.set(oblv_keys)
             if res.is_ok():

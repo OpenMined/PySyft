@@ -23,7 +23,7 @@ from .user_roles import GUEST_ROLE_LEVEL
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DatasetService(AbstractService):
     store: DocumentStore
     stash: DatasetStash

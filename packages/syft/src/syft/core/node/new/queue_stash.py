@@ -24,12 +24,10 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    __attr_state__ = ["id", "node_uid", "result", "resolved"]
 
     id: UID
     node_uid: UID
@@ -61,7 +59,7 @@ class QueueItem(SyftObject):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class QueueStash(BaseStash):
     object_type = QueueItem
     settings: PartitionSettings = PartitionSettings(
