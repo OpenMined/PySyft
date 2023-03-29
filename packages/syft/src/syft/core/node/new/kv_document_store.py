@@ -221,7 +221,6 @@ class KeyValueStorePartition(StorePartition):
                 return Ok(obj)
             else:
                 return Err(f"Permission: {write_permission} denied")
-
         except Exception as e:
             return Err(f"Failed to write obj {obj}. {e}")
 
