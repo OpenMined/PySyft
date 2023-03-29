@@ -491,7 +491,7 @@ class CustomInputPolicy(CustomPolicy, InputPolicy):
 
 @serializable()
 class UserPolicy(Policy):
-    __canonical_name__ = "UserPolicy_2"
+    __canonical_name__ = "UserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -590,7 +590,7 @@ def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) 
     serializable_decorator = ast.Call(
         func=serializable_name,
         args=[],
-        keywords=[ast.keyword(arg="recursive_serde", value=ast.Constant(value=True))],
+        keywords=[],
     )
 
     new_class = tree.body[0]
@@ -656,12 +656,6 @@ def generate_signature(context: TransformContext) -> TransformContext:
     return context
 
 
-# def serialization_addon(context: TransformContext) -> TransformContext:
-#     policy_code = context.output["code"]
-#     context.output["code"] = "@serializable()\n" + policy_code
-#     return context
-
-
 @transform(SubmitUserPolicy, UserPolicy)
 def submit_policy_code_to_user_code() -> List[Callable]:
     return [
@@ -670,7 +664,7 @@ def submit_policy_code_to_user_code() -> List[Callable]:
         generate_unique_class_name,
         generate_signature,
         check_class_code,
-        compile_code,
+        # compile_code, # don't compile until approved
         add_credentials_for_key("user_verify_key"),
     ]
 

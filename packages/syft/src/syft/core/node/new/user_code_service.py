@@ -14,14 +14,16 @@ from .document_store import DocumentStore
 from .linked_obj import LinkedObject
 from .policy import OutputHistory
 from .policy import OutputPolicy
-from .policy import SubmitUserPolicy
 from .policy import UserPolicy
 from .policy import UserPolicyStatus
 from .policy import get_policy_object
 from .policy import init_policy
 from .policy import update_policy_state
+from .policy_service import PolicyService
 from .request import EnumMutation
+from .request import SubmitRequest
 from .request import UserCodeStatusChange
+from .request_service import RequestService
 from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
@@ -54,37 +56,8 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
-        code_item = code.to(UserCode, context=context)
-        # relative
-        from .policy_service import PolicyService
-
-        policy_service = context.node.get_service(PolicyService)
-
-        if isinstance(code.input_policy, SubmitUserPolicy):
-            submit_input_policy = code.input_policy
-            code_item.input_policy = submit_input_policy.to(UserPolicy, context=context)
-        elif isinstance(code.input_policy, UID):
-            input_policy = policy_service.get_policy_by_uid(context, code.input_policy)
-            if input_policy.is_ok():
-                code_item.input_policy = input_policy.ok()
-            else:
-                return input_policy
-
-        if isinstance(code.output_policy, SubmitUserPolicy):
-            submit_output_policy = code.output_policy
-            code_item.output_policy = submit_output_policy.to(
-                UserPolicy, context=context
-            )
-        elif isinstance(code.output_policy, UID):
-            output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
-            if output_policy.is_ok():
-                code_item.output_policy = output_policy.ok()
-            else:
-                return output_policy
-        else:
-            code_item.output_policy = code.output_policy
-
-        result = self.stash.set(code_item)
+        user_code = code.to(UserCode, context=context)
+        result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
@@ -94,12 +67,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
-        # stdlib
-
         # relative
-        from .policy_service import PolicyService
-        from .request import SubmitRequest
-        from .request_service import RequestService
 
         user_code = code.to(UserCode, context=context)
         result = self.stash.set(user_code)

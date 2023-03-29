@@ -248,10 +248,6 @@ class SubmitUserCode(SyftObject):
     def kwargs(self) -> List[str]:
         return self.input_policy.inputs
 
-    # @property
-    # def outputs(self) -> List[str]:
-    #     return self.output_policy.outputs
-
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
@@ -298,13 +294,13 @@ def new_getfile(object):
 
 
 def get_code_from_class(policy):
-    # third party
-    from IPython.core.magics.code import extract_symbols
-
     klasses = [inspect.getmro(policy)[0]]  #
     whole_str = ""
     for klass in klasses:
         if is_interpreter_jupyter():
+            # third party
+            from IPython.core.magics.code import extract_symbols
+
             cell_code = "".join(inspect.linecache.getlines(new_getfile(klass)))
             class_code = extract_symbols(cell_code, klass.__name__)[0][0]
         else:
@@ -519,21 +515,12 @@ def modify_signature(context: TransformContext) -> TransformContext:
 
 def init_input_policy_state(context: TransformContext) -> TransformContext:
     context.output["input_policy"]
-    # if ip.state_type:
-    #     context.output["input_policy_state"] = ip.state_type()
     context.output["input_policy_state"] = ""
     return context
 
 
 def init_output_policy_state(context: TransformContext) -> TransformContext:
-    print(
-        "what kind of output_policy",
-        context.output["output_policy"],
-        type(context.output["output_policy"]),
-    )
     context.output["output_policy"]
-    # if op.state_type:
-    #     context.output["output_policy_state"] = op.state_type()
     context.output["output_policy_state"] = ""
     return context
 
@@ -549,9 +536,8 @@ def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
         if policy.is_ok():
             policy = policy.ok()
 
-    # TODO: Why do we need that? If we want to fetch a policy from outside the Domain
-    # then that should probably be a UserPolicy, not a dev one, right?
-    # policy.node_uid = context.node.id
+    # provide node context for method operations until we finish LinkedObjects
+    policy.node_uid = context.node.id
     return policy
 
 
