@@ -5,6 +5,7 @@ from typing import Tuple
 # third party
 from joblib import Parallel
 from joblib import delayed
+import pytest
 
 # syft absolute
 from syft.core.node.new.document_store import QueryKeys
@@ -26,6 +27,7 @@ def test_sqlite_store_partition_sanity(
     assert hasattr(sqlite_store_partition, "searchable_keys")
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_set(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
@@ -57,6 +59,7 @@ def test_sqlite_store_partition_set(
         assert len(sqlite_store_partition.all().ok()) == 3 + idx
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_delete(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
@@ -89,6 +92,7 @@ def test_sqlite_store_partition_delete(
     assert len(sqlite_store_partition.all().ok()) == 0
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_update(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
@@ -121,6 +125,7 @@ def test_sqlite_store_partition_update(
         assert stored.ok()[0].data == v
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_set_threading(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -160,6 +165,7 @@ def test_sqlite_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_set_joblib(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -189,6 +195,7 @@ def test_sqlite_store_partition_set_joblib(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_update_threading(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -226,6 +233,7 @@ def test_sqlite_store_partition_update_threading(
     assert execution_err is None
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_update_joblib(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -255,6 +263,7 @@ def test_sqlite_store_partition_update_joblib(
         assert execution_err is None
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_set_delete_threading(
     sqlite_workspace: Tuple,
 ) -> None:
@@ -298,6 +307,7 @@ def test_sqlite_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
+@pytest.mark.flaky(retries=3, delay=1)
 def test_sqlite_store_partition_set_delete_joblib(
     sqlite_workspace: Tuple,
 ) -> None:

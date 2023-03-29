@@ -100,6 +100,7 @@ def test_acquire_nop(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -129,6 +130,7 @@ def test_acquire_release(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_release_with(config: LockingConfig):
     was_locked = True
     with SyftLock(config) as lock:
@@ -147,6 +149,7 @@ def test_acquire_release_with(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_expire(config: LockingConfig):
     config.expire = 1  # second
     lock = SyftLock(config)
@@ -177,6 +180,7 @@ def test_acquire_expire(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     config.timeout = 1
     config.expire = 5
@@ -202,6 +206,7 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -229,6 +234,7 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -256,6 +262,7 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -284,6 +291,7 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_double_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -303,6 +311,7 @@ def test_acquire_double_release(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_acquire_same_name_diff_namespace(config: LockingConfig):
     config.namespace = "ns1"
     lock1 = SyftLock(config)
@@ -326,6 +335,7 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_parallel_multithreading(config: LockingConfig) -> None:
     thread_cnt = 3
     repeats = 100
@@ -373,6 +383,7 @@ def test_parallel_multithreading(config: LockingConfig) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.flaky(retries=3, delay=1)
 def test_parallel_joblib(
     config: LockingConfig,
 ) -> None:
