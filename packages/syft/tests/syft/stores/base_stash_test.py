@@ -140,6 +140,22 @@ def test_basestash_delete(base_stash: MockStash, mock_object: MockObject) -> Non
     assert len(base_stash.get_all().ok()) == 0
 
 
+def test_basestash_cannot_delete_non_existent(
+    base_stash: MockStash, mock_object: MockObject
+) -> None:
+    add_mock_object(base_stash, mock_object)
+
+    random_uid = UID()
+    for result in [
+        base_stash.delete(UIDPartitionKey.with_obj(random_uid)),
+        base_stash.delete_by_uid(random_uid),
+    ]:
+        result = base_stash.delete(UIDPartitionKey.with_obj(UID()))
+        assert result.is_err()
+
+    assert len(base_stash.get_all().ok()) == 1
+
+
 def test_basestash_update(
     base_stash: MockStash, mock_object: MockObject, faker: Faker
 ) -> None:
@@ -153,6 +169,19 @@ def test_basestash_update(
 
     retrieved = result.ok()
     assert retrieved == updated_obj
+
+
+def test_basestash_cannot_update_non_existent(
+    base_stash: MockStash, mock_object: MockObject, faker: Faker
+) -> None:
+    add_mock_object(base_stash, mock_object)
+
+    updated_obj = mock_object.copy()
+    updated_obj.id = UID()
+    updated_obj.name = faker.name()
+
+    result = base_stash.update(updated_obj)
+    assert result.is_err()
 
 
 def test_basestash_set_get_all(
