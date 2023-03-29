@@ -10,8 +10,8 @@ from .document_store import BaseUIDStoreStash
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
-from .new_policy import UserPolicy
 from .policy import PolicyUserVerifyKeyPartitionKey
+from .policy import UserPolicy
 from .serializable import serializable
 
 

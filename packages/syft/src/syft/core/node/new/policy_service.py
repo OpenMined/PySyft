@@ -5,8 +5,8 @@ from typing import Union
 # relative
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
-from .new_policy import SubmitUserPolicy
-from .new_policy import UserPolicy
+from .policy import SubmitUserPolicy
+from .policy import UserPolicy
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable

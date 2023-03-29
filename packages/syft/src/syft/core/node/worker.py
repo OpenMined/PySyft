@@ -220,7 +220,7 @@ class Worker(NewNode):
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"
-            with contextlib.suppress(FileNotFoundError):
+            with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
 
