@@ -153,7 +153,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
-        row = self._execute(select_sql, [str(key)]).fetchone()
+        cursor = self._execute(select_sql, [str(key)])
+        if cursor is None:
+            raise KeyError(f"Query {select_sql} failed")
+
+        row = cursor.fetchone()
         if row is None or len(row) == 0:
             raise KeyError(f"{key} not in {type(self)}")
         data = row[2]
@@ -161,17 +165,27 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _exists(self, key: UID) -> bool:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
-        row = self._execute(select_sql, [str(key)]).fetchone()
+
+        cursor = self._execute(select_sql, [str(key)])
+        if cursor is None:
+            return False
+
+        row = cursor.fetchone()
         if row is None:
             return False
+
         return bool(row)
 
     def _get_all(self) -> Any:
         select_sql = f"select * from {self.table_name}"  # nosec
         keys = []
         data = []
-        rows = self._execute(select_sql).fetchall()
 
+        cursor = self._execute(select_sql)
+        if cursor is None:
+            return {}
+
+        rows = cursor.fetchall()
         if rows is None:
             return {}
 
@@ -181,17 +195,20 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return dict(zip(keys, data))
 
     def _get_all_keys(self) -> Any:
-        try:
-            select_sql = f"select uid from {self.table_name}"  # nosec
-            keys = []
-            rows = self._execute(select_sql).fetchall()
-            if rows is None:
-                return []
-            for row in rows:
-                keys.append(UID(row[0]))
-            return keys
-        except Exception as e:
-            raise e
+        select_sql = f"select uid from {self.table_name}"  # nosec
+        keys = []
+
+        cursor = self._execute(select_sql)
+        if cursor is None:
+            return []
+
+        rows = cursor.fetchall()
+        if rows is None:
+            return []
+
+        for row in rows:
+            keys.append(UID(row[0]))
+        return keys
 
     def _delete(self, key: UID) -> None:
         select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
