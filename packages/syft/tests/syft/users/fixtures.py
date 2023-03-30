@@ -77,6 +77,7 @@ def admin_user_private_key(admin_user) -> UserPrivateKey:
     return UserPrivateKey(email=admin_user.email, signing_key=admin_user.signing_key)
 
 
+@pytest.fixture
 def guest_user_private_key(guest_user) -> UserPrivateKey:
     return UserPrivateKey(email=guest_user.email, signing_key=guest_user.signing_key)
 
