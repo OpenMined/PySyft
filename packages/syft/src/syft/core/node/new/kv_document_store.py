@@ -189,7 +189,6 @@ class KeyValueStorePartition(StorePartition):
             uid = obj.id
             write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
             can_write = self.has_permission(write_permission)
-
             store_query_key = self.settings.store_key.with_obj(obj)
             exists = store_query_key.value in self.data
             unique_query_keys = self.settings.unique_keys.with_obj(obj)

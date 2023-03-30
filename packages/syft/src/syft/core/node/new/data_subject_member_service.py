@@ -64,7 +64,7 @@ class DataSubjectMemberService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Register relationship between data subject and it's member."""
         relation = DataSubjectMemberRelationship(parent=parent, child=child)
-        result = self.stash.set(relation, ignore_duplicates=True)
+        result = self.stash.set(context.credentials, relation, ignore_duplicates=True)
         if result.is_err():
             return SyftError(result.err())
         return SyftSuccess(message=f"Relationship added for: {parent} -> {child}")
