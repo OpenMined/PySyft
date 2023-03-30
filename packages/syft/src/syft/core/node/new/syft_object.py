@@ -6,6 +6,7 @@ import types
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Generator
 from typing import KeysView
 from typing import List
 from typing import Optional
@@ -26,9 +27,13 @@ from ....util import aggressive_set_attr
 from .credentials import SyftVerifyKey
 from .deserialize import _deserialize as deserialize
 from .serialize import _serialize as serialize
+from .syft_metaclass import Empty
+from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
 from .util import full_name_with_qualname
 from .util import get_qualname_for
+
+TupleGenerator = Generator[Tuple[str, Any], None, None]
 
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
@@ -39,7 +44,7 @@ HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
 
-class SyftBaseObject(BaseModel):
+class SyftBaseObject(BaseModel, metaclass=PartialModelMetaclass):
     class Config:
         arbitrary_types_allowed = True
 
@@ -430,3 +435,30 @@ class StorableObjectType:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
+
+
+class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
+    """Syft Object to which partial arguments can be provided."""
+
+    __canonical_name__ = "PartialSyftObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        fields_with_default = set()
+        for _field_name, _field in self.__fields__.items():
+            if _field.default or _field.allow_none:
+                fields_with_default.add(_field_name)
+
+        # Exclude unset fields
+        unset_fields = set(self.__fields__) - set(self.__fields_set__)
+
+        empty_fields = unset_fields - fields_with_default
+        for field_name in empty_fields:
+            self.__dict__[field_name] = Empty
+
+    def __iter__(self) -> TupleGenerator:
+        for key, value in self.__dict__.items():
+            if value is not Empty:
+                yield key, value
