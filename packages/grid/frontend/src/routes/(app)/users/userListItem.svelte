@@ -7,6 +7,8 @@
   import { onMount } from 'svelte';
   import { MapRoles } from '$lib/utils';
 
+  export let selectedUser;
+
   let client = '';
   let users = '';
 
@@ -24,7 +26,10 @@
     });
   });
 
-  const setPage = async () => {
+  const setPage = async (userId = '') => {
+    if (userId) {
+      selectedUser = await client.getUser(userId);
+    }
     dispatch('setPage', 'isDetail');
   };
 
@@ -152,7 +157,7 @@
       <div class="user-list">
         {#each users as user}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
-          <div class="hover:bg-gray-100 cursor-pointer user-card" on:click={setPage}>
+          <div class="hover:bg-gray-100 cursor-pointer user-card" on:click={setPage(user.id.value)}>
             <div class="user-avatar">
               <img
                 src="https://framerusercontent.com/images/kFml68vMjYxCIgVrL63SRwDEiwU.jpg"
@@ -168,7 +173,7 @@
               <div class="user-organisation">{user.institution}</div>
             </div>
             <div class="user-dataflows">
-              <div class="user-dataflow">&rarrc; {1}</div>
+              <div class="user-dataflow">&rarrc; {user.linked_requests.length}</div>
               <div class="dataflow-divider" />
               <div class="user-epsilon">0&#603;</div>
             </div>

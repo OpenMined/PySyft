@@ -1,14 +1,14 @@
 <script>
   import Info from '$lib/components/icons/Info.svelte';
   import { createEventDispatcher } from 'svelte';
+  import { MapRoles } from '$lib/utils';
 
   const dispatch = createEventDispatcher();
-
   import { getClient } from '$lib/store';
   import { onMount } from 'svelte';
 
-  // export let setPage;
   let client = '';
+  export let selectedUser;
 
   onMount(async () => {
     await getClient()
@@ -40,15 +40,6 @@
 
   const filters = ['Recent Activity', 'Most dataflows'];
 
-  const user = {
-    name: 'Dr. Javier Alegre-Abarrategui',
-    avatar: '',
-    organisation: 'Institute of Neurology, London',
-    roles: ['Member', 'Data Scientist'],
-    avatar: '',
-    dataflow: 1,
-    filter: 'Most dataflows'
-  };
 </script>
 
 <div class="user-container">
@@ -64,13 +55,11 @@
         class="user-image"
       />
     </div>
-    <div class="user-name">{user.name}</div>
-    <div class="user-organisation">{user.organisation}</div>
+    <div class="user-name">{selectedUser.name}</div>
+    <div class="user-organisation">{(selectedUser.institution) ? selectedUser.institution: ''}</div>
     <div class="user-roles">
       <div class="user-role">
-        {#each user.roles as role}
-          <div class="role">{role}</div>
-        {/each}
+          <div class="role">{MapRoles(selectedUser.role.value)}</div>
       </div>
     </div>
   </div>
@@ -88,11 +77,11 @@
     <div class="user-contact">
       <h3 style="font-weight: 700;">CONTACT</h3>
       <div>
-        <a href="mailto:abarrategui@oxford.edu">abarrategui@oxford.edu</a>
+        <a href="mailto:{selectedUser.email}">{selectedUser.email}</a>
       </div>
       <div>
         <a href="http://www.google.scholar.com/995749874597-abarrategui"
-          >www.google.scholar.com/995749874597-abarrategui</a
+          >{(selectedUser.website) ? selectedUser.website: ''}</a
         >
       </div>
     </div>

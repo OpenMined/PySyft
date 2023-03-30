@@ -5,6 +5,7 @@
   import { onMount } from 'svelte';
 
   let client = '';
+  $: selectedUser = {};
 
   onMount(async () => {
     await getClient()
@@ -35,6 +36,7 @@
   <div class="page-container">
     {#if pages.isList}
       <UserListItem
+        bind:selectedUser
         on:setPage={(event) => {
           setPage(event.detail);
         }}
@@ -42,6 +44,7 @@
     {/if}
     {#if pages.isDetail}
       <UserDetail
+        bind:selectedUser
         on:setPage={(event) => {
           setPage(event.detail);
         }}
