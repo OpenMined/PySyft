@@ -190,19 +190,24 @@ class KeyValueStorePartition(StorePartition):
             write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
             can_write = self.has_permission(write_permission)
             store_query_key = self.settings.store_key.with_obj(obj)
-            exists = store_query_key.value in self.data
             unique_query_keys = self.settings.unique_keys.with_obj(obj)
+            store_key_exists = store_query_key.value in self.data
             searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
-            ck_check = self._validate_partition_keys(
-                store_query_key=store_query_key, unique_query_keys=unique_query_keys
+
+            ck_check = self._check_partition_keys_unique(
+                unique_query_keys=unique_query_keys
             )
 
-            if not exists and ck_check == UniqueKeyCheck.EMPTY:
+            if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
                 # attempt to claim it for writing
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
                 can_write = True if ownership_result.is_ok() else False
             elif not ignore_duplicates:
                 return Err(f"Duplication Key Error: {obj}")
+            else:
+                # we are not throwing an error, because we are ignoring duplicates
+                # we are also not writing though
+                return Ok(obj)
 
             if can_write:
                 self._set_data_and_keys(
@@ -535,11 +540,16 @@ class KeyValueStorePartition(StorePartition):
         except Exception as e:
             return Err(f"Failed to query with {qks}. {e}")
 
-    def _validate_partition_keys(
-        self, store_query_key: QueryKey, unique_query_keys: QueryKeys
+    def _check_partition_keys_unique(
+        self, unique_query_keys: QueryKeys
     ) -> UniqueKeyCheck:
+        # dont check the store key
+        qks = [
+            x
+            for x in unique_query_keys.all
+            if x.partition_key != self.settings.store_key
+        ]
         matches = []
-        qks = unique_query_keys.all
         for qk in qks:
             pk_key, pk_value = qk.key, qk.value
             if pk_key not in self.unique_keys:
@@ -547,7 +557,7 @@ class KeyValueStorePartition(StorePartition):
                     f"pk_key: {pk_key} not in unique_keys: {self.unique_keys.keys()}"
                 )
             ck_col = self.unique_keys[pk_key]
-            if pk_value in ck_col or ck_col.get(pk_value) == store_query_key.value:
+            if pk_value in ck_col:
                 matches.append(pk_key)
 
         if len(matches) == 0:
