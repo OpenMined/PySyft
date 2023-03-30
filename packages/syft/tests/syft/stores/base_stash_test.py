@@ -23,7 +23,7 @@ from syft.core.node.new.syft_object import SyftObject
 from syft.core.node.new.uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MockObject(SyftObject):
     __canonical_name__ = "base_stash_mock_object_type"
     id: UID
