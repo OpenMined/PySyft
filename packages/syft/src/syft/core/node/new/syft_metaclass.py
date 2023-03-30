@@ -6,6 +6,7 @@ import inspect
 import threading
 from typing import Any
 from typing import Dict
+from typing import Generator
 from typing import T
 from typing import Tuple
 from typing import Type
@@ -17,7 +18,13 @@ from pydantic.main import BaseModel
 from pydantic.main import ModelField
 from pydantic.main import ModelMetaclass
 
+# relative
+from .serializable import serializable
 
+TupleGenerator = Generator[Tuple[str, Any], None, None]
+
+
+@serializable()
 class Empty:
     pass
 
@@ -125,5 +132,12 @@ class PartialModelMetaclass(ModelMetaclass):
         #     return cls_dict(self, *args, **kwargs, exclude_unset=exclude_unset)
 
         # cls.dict = dict_exclude_unset
+
+        def iter_exclude_empty(self) -> TupleGenerator:
+            for key, value in self.__dict__.items():
+                if value is not Empty:
+                    yield key, value
+
+        cls.__iter__ = iter_exclude_empty
 
         return cls

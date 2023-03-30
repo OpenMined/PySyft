@@ -6,7 +6,6 @@ import types
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import Generator
 from typing import KeysView
 from typing import List
 from typing import Optional
@@ -33,8 +32,6 @@ from .uid import UID
 from .util import full_name_with_qualname
 from .util import get_qualname_for
 
-TupleGenerator = Generator[Tuple[str, Any], None, None]
-
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
 
@@ -44,7 +41,7 @@ HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
 
-class SyftBaseObject(BaseModel, metaclass=PartialModelMetaclass):
+class SyftBaseObject(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
@@ -283,18 +280,22 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
-    def to_dict(self, exclude_none: bool = False) -> Dict[str, Any]:
+    def to_dict(
+        self, exclude_none: bool = False, exclude_empty: bool = False
+    ) -> Dict[str, Any]:
         warnings.warn(
             "`SyftObject.to_dict` is deprecated and will be removed in a future version",
             PendingDeprecationWarning,
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
-        if not exclude_none:
+        if not exclude_none and not exclude_empty:
             return dict(self)
         else:
             new_dict = {}
             for k, v in dict(self).items():
-                if v is not None:
+                if exclude_empty and v is not Empty:
+                    new_dict[k] = v
+                elif exclude_none and v is not None:
                     new_dict[k] = v
             return new_dict
 
@@ -457,8 +458,3 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
         empty_fields = unset_fields - fields_with_default
         for field_name in empty_fields:
             self.__dict__[field_name] = Empty
-
-    def __iter__(self) -> TupleGenerator:
-        for key, value in self.__dict__.items():
-            if value is not Empty:
-                yield key, value
