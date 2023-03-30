@@ -14,6 +14,7 @@ from typing import Union
 
 # relative
 from .context import AuthedServiceContext
+from .context import ChangeContext
 from .linked_obj import LinkedObject
 from .response import SyftError
 from .serializable import serializable
@@ -41,7 +42,13 @@ class AbstractService:
     def resolve_link(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Union[Any, SyftError]:
-        return self.stash.get_by_uid(uid=linked_obj.object_uid)
+        if isinstance(context, AuthedServiceContext):
+            credentials = context.credentials
+        elif isinstance(context, ChangeContext):
+            credentials = context.approving_user_credentials
+        else:
+            return SyftError(message="wrong context passed")
+        return self.stash.get_by_uid(credentials, uid=linked_obj.object_uid)
 
 
 @serializable()

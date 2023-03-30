@@ -4,6 +4,8 @@ from typing import Union
 
 # relative
 from ....telemetry import instrument
+from .action_permissions import ActionObjectPermission
+from .action_permissions import ActionPermission
 from .context import AuthedServiceContext
 from .dataset import Asset
 from .dataset import CreateDataset
@@ -37,8 +39,15 @@ class DatasetService(AbstractService):
         self, context: AuthedServiceContext, dataset: CreateDataset
     ) -> Union[SyftSuccess, SyftError]:
         """Add a Dataset"""
+        dataset = dataset.to(Dataset, context=context)
         result = self.stash.set(
-            context.credentials, dataset.to(Dataset, context=context)
+            context.credentials,
+            dataset,
+            add_permissions=[
+                ActionObjectPermission(
+                    uid=dataset.id, permission=ActionPermission.ALL_READ
+                ),
+            ],
         )
         if result.is_err():
             return SyftError(message=str(result.err()))

@@ -8,6 +8,8 @@ from typing import Union
 from typing_extensions import Self
 
 # relative
+from .context import AuthedServiceContext
+from .context import ChangeContext
 from .context import NodeServiceContext
 from .response import SyftError
 from .response import SyftSuccess
@@ -46,7 +48,15 @@ class LinkedObject(SyftObject):
     def update_with_context(
         self, context: NodeServiceContext, obj: Any
     ) -> Union[SyftSuccess, SyftError]:
-        result = context.node.get_service(self.service_type).stash.update(obj)
+        if isinstance(context, AuthedServiceContext):
+            credentials = context.credentials
+        elif isinstance(context, ChangeContext):
+            credentials = context.approving_user_credentials
+        else:
+            return SyftError(message="wrong context passed")
+        result = context.node.get_service(self.service_type).stash.update(
+            credentials, obj
+        )
         if result.is_ok():
             return result
 

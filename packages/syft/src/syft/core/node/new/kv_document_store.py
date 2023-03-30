@@ -35,7 +35,6 @@ from .serializable import serializable
 from .syft_object import SyftObject
 from .twin_object import TwinObject
 from .uid import UID
-from .user_roles import ServiceRole
 
 
 @serializable()
@@ -263,24 +262,12 @@ class KeyValueStorePartition(StorePartition):
         for permission in permissions:
             results.append(self.add_permission(permission))
 
-    def get_role_for_verify_key(
-        self, verify_key: SyftVerifyKey
-    ) -> Optional[ServiceRole]:
-        # maybe we need a more efficient data structure for this
-        matching_users = [x for x in self.data.values() if x.verify_key == verify_key]
-        if not len(matching_users):
-            return None
-        else:
-            return matching_users[0].role
-
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
-        if (
-            self.root_verify_key.verify == permission.credentials.verify
-            or self.get_role_for_verify_key(permission.credentials) == ServiceRole.ADMIN
-        ):
+        # TODO: fix for other admins
+        if self.root_verify_key.verify == permission.credentials.verify:
             return True
 
         if (

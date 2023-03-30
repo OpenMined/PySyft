@@ -543,6 +543,7 @@ class BaseUIDStoreStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         obj: BaseUIDStoreStash.object_type,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
         ignore_duplicates: bool = False,
     ) -> Result[BaseUIDStoreStash.object_type, str]:
         res = self.check_type(obj, self.object_type)
@@ -550,7 +551,10 @@ class BaseUIDStoreStash(BaseStash):
         if res.is_err():
             return res
         return super().set(
-            credentials=credentials, obj=res.ok(), ignore_duplicates=ignore_duplicates
+            credentials=credentials,
+            obj=res.ok(),
+            ignore_duplicates=ignore_duplicates,
+            add_permissions=add_permissions,
         )
 
 

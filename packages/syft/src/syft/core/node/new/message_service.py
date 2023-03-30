@@ -45,7 +45,9 @@ class MessageService(AbstractService):
 
     @service_method(path="messages.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Message], SyftError]:
-        result = self.stash.get_all_inbox_for_verify_key(verify_key=context.credentials)
+        result = self.stash.get_all_inbox_for_verify_key(
+            context.credentials, verify_key=context.credentials
+        )
         if result.err():
             return SyftError(message=str(result.err()))
         messages = result.ok()
