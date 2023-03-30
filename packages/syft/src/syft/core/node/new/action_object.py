@@ -330,6 +330,8 @@ class ActionObject(SyftObject):
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
     ) -> ActionObject:
+        if isinstance(syft_action_data, ActionObject):
+            return syft_action_data
         if id and syft_lineage_id and id != syft_lineage_id.id:
             raise Exception("UID and LineageID should match")
         action_type = action_type_for_type(syft_action_data)

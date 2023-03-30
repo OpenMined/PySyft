@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import ast
+from copy import deepcopy
 from enum import Enum
 import hashlib
 import inspect
@@ -10,6 +11,7 @@ from inspect import Parameter
 from inspect import Signature
 from io import StringIO
 import sys
+import types
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -23,6 +25,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ....util import is_interpreter_jupyter
 from .action_object import ActionObject
 from .api import NodeView
 from .code_parse import GlobalsVisitor
@@ -88,6 +91,17 @@ class Policy(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
+    init_kwargs: Dict[Any, Any] = {}
+
+    def __init__(self, *args, **kwargs) -> None:
+        if "init_kwargs" in kwargs:
+            init_kwargs = kwargs["init_kwargs"]
+            del kwargs["init_kwargs"]
+        else:
+            init_kwargs = deepcopy(kwargs)
+            if "id" in init_kwargs:
+                del init_kwargs["id"]
+        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)
 
     @property
     def policy_code(self) -> str:
@@ -155,26 +169,31 @@ class InputPolicy(Policy):
     __canonical_name__ = "InputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID
-    inputs: Dict[NodeView, Any]
-    node_uid: Optional[UID]
+    # id: UID
+    # input_kwargs: Dict[NodeView, Any]
+    # node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         # TODO: This method initialization would conflict if one of the input variables
-        # to the code submission function happens to be id or inputs
-        uid = UID()
-        node_uid = None
-        if "id" in kwargs:
-            uid = kwargs["id"]
-        if "node_uid" in kwargs:
-            node_uid = kwargs["node_uid"]
+        # to the code submission function happens to be id or input_kwargs
+        # uid = UID()
+        # node_uid = None
+        # if "id" in kwargs:
+        #     uid = kwargs["id"]
+        # if "node_uid" in kwargs:
+        #     node_uid = kwargs["node_uid"]
 
-        # finally get inputs
-        if "inputs" in kwargs:
-            kwargs = kwargs["inputs"]
+        # # finally get inputs
+        print("getting input policy args and kwargs", args, kwargs)
+        if "init_kwargs" in kwargs:
+            init_kwargs = kwargs["init_kwargs"]
+            del kwargs["init_kwargs"]
         else:
-            kwargs = partition_by_node(kwargs)
-        super().__init__(id=uid, inputs=kwargs, node_uid=node_uid)
+            print("partition by node")
+            init_kwargs = partition_by_node(kwargs)
+        print("after and kwargs", args, kwargs)
+        super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
+        # super().__init__(id=uid, input_kwargs=kwargs, node_uid=node_uid)
 
     def filter_kwargs(
         self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
@@ -182,27 +201,31 @@ class InputPolicy(Policy):
         raise NotImplementedError
 
     @property
-    def assets(self) -> List[Asset]:
-        # relative
-        from .api import APIRegistry
+    def inputs(self) -> Dict[NodeView, Any]:
+        return self.init_kwargs
 
-        api = APIRegistry.api_for(self.node_uid)
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
+    # @property
+    # def assets(self) -> List[Asset]:
+    #     # relative
+    #     from .api import APIRegistry
 
-        node_view = NodeView(
-            node_name=api.node_name, verify_key=api.signing_key.verify_key
-        )
-        inputs = self.inputs[node_view]
-        all_assets = []
-        for k, uid in inputs.items():
-            if isinstance(uid, UID):
-                assets = api.services.dataset.get_assets_by_action_id(uid)
-                if not isinstance(assets, list):
-                    return assets
+    #     api = APIRegistry.api_for(self.node_uid)
+    #     if api is None:
+    #         return SyftError(message=f"You must login to {self.node_uid}")
 
-                all_assets += assets
-        return all_assets
+    #     node_view = NodeView(
+    #         node_name=api.node_name, verify_key=api.signing_key.verify_key
+    #     )
+    #     inputs = self.inputs[node_view]
+    #     all_assets = []
+    #     for k, uid in inputs.items():
+    #         if isinstance(uid, UID):
+    #             assets = api.services.dataset.get_assets_by_action_id(uid)
+    #             if not isinstance(assets, list):
+    #                 return assets
+
+    #             all_assets += assets
+    #     return all_assets
 
 
 def retrieve_from_db(
@@ -310,7 +333,7 @@ class OutputPolicy(Policy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     output_history: List[OutputHistory] = []
-    outputs: List[str] = []
+    output_kwargs: List[str] = []
     node_uid: Optional[UID]
 
     def apply_output(
@@ -328,6 +351,10 @@ class OutputPolicy(Policy):
         )
         self.output_history.append(history)
         return outputs
+
+    @property
+    def outputs(self) -> List[str]:
+        return self.output_kwargs
 
 
 @serializable()
@@ -379,12 +406,6 @@ class CustomPolicy(Policy):
     # version
     __canonical_name__ = "CustomPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    init_args: Dict[str, Any] = {}
-    init_kwargs: Dict[str, Any] = {}
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(init_args=args, init_kwargs=kwargs, *args, **kwargs)
 
 
 class CustomOutputPolicy(CustomPolicy, OutputPolicy):
@@ -440,6 +461,43 @@ class UserPolicy(Policy):
         return outputs
 
 
+def new_getfile(object):
+    if not inspect.isclass(object):
+        return inspect.getfile(object)
+
+    # Lookup by parent module (as in current inspect)
+    if hasattr(object, "__module__"):
+        object_ = sys.modules.get(object.__module__)
+        if hasattr(object_, "__file__"):
+            return object_.__file__
+
+    # If parent module is __main__, lookup by methods (NEW)
+    for _, member in inspect.getmembers(object):
+        if (
+            inspect.isfunction(member)
+            and object.__qualname__ + "." + member.__name__ == member.__qualname__
+        ):
+            return inspect.getfile(member)
+    else:
+        raise TypeError("Source for {!r} not found".format(object))
+
+
+def get_code_from_class(policy):
+    klasses = [inspect.getmro(policy)[0]]  #
+    whole_str = ""
+    for klass in klasses:
+        if is_interpreter_jupyter():
+            # third party
+            from IPython.core.magics.code import extract_symbols
+
+            cell_code = "".join(inspect.linecache.getlines(new_getfile(klass)))
+            class_code = extract_symbols(cell_code, klass.__name__)[0][0]
+        else:
+            class_code = inspect.getsource(klass)
+        whole_str += class_code
+    return whole_str
+
+
 @serializable()
 class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
@@ -452,6 +510,16 @@ class SubmitUserPolicy(Policy):
 
     def compile(self) -> PyCodeObject:
         return compile_restricted(self.code, "<string>", "exec")
+
+    @staticmethod
+    def from_obj(policy_obj: CustomPolicy) -> SubmitUserPolicy:
+        user_class = policy_obj.__class__
+        init_f_code = user_class.__init__.__code__
+        return SubmitUserPolicy(
+            code=get_code_from_class(user_class),
+            class_name=user_class.__name__,
+            input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
+        )
 
 
 def hash_code(context: TransformContext) -> TransformContext:
@@ -511,6 +579,7 @@ def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) 
 
     new_class = tree.body[0]
     version = None
+    # TODO add this manually
     for stmt in new_class.body:
         if isinstance(stmt, ast.Assign):
             if stmt.targets[0].id == "__version__":
@@ -520,6 +589,12 @@ def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) 
         raise Exception(
             "Version cannot be found. Please specify it in your custom policy"
         )
+
+    # change the module that the code will reference
+    # this is required for the @serializable to mount it in the right path for serde
+    new_line = ast.parse(f"__module__ = 'syft.user'")
+    new_class.body.append(new_line.body[0])
+
     new_class.name = class_name
     new_class.decorator_list = [serializable_decorator]
     return unparse(new_class), version
@@ -585,6 +660,22 @@ def submit_policy_code_to_user_code() -> List[Callable]:
     ]
 
 
+def add_class_to_user_module(klass: type, unique_name: str) -> type:
+    klass.__module__ = "syft.user"
+    klass.__name__ = unique_name
+    # syft absolute
+    import syft as sy
+
+    if not hasattr(sy, "user"):
+        user_module = types.ModuleType("user")
+        setattr(sys.modules["syft"], "user", user_module)
+    user_module = sy.user
+    setattr(user_module, unique_name, klass)
+    setattr(sys.modules["syft"], "user", user_module)
+    print("syft user module", sy.user, klass)
+    return klass
+
+
 def execute_policy_code(user_policy: UserPolicy):
     stdout_ = sys.stdout
     stderr_ = sys.stderr
@@ -598,6 +689,13 @@ def execute_policy_code(user_policy: UserPolicy):
         # syft absolute
         import syft as sy  # noqa: F401 # provide sy.Things to user code
 
+        print("executing policy code", file=stderr_)
+        print(
+            "executing policy code unqiue name", user_policy.unique_name, file=stderr_
+        )
+        print(
+            "executing policy code parsed_code", user_policy.parsed_code, file=stderr_
+        )
         class_name = f"{user_policy.unique_name}_{user_policy.policy_version}"
         print("Exec context", file=stderr_)
         if class_name in user_policy.__object_version_registry__.keys():
@@ -605,6 +703,8 @@ def execute_policy_code(user_policy: UserPolicy):
         else:
             exec(user_policy.byte_code)  # nosec
             policy_class = eval(user_policy.unique_name)  # nosec
+
+        policy_class = add_class_to_user_module(policy_class, user_policy.unique_name)
 
         sys.stdout = stdout_
         sys.stderr = stderr_
@@ -619,8 +719,32 @@ def execute_policy_code(user_policy: UserPolicy):
         sys.stderr = stderr_
 
 
+# def import_policy(policy_class_name: str) -> Any:
+#     user_policy =
+#     policy_class = execute_policy_code(user_policy)
+#     return policy_class
+
+
+def load_policy_code(user_policy: UserPolicy) -> Any:
+    try:
+        print("calling load policy code", user_policy)
+        policy_class = execute_policy_code(user_policy)
+        print("finished loading", policy_class)
+        # syft absolute
+        import syft as sy
+
+        a = getattr(sy, "user", None)
+        print("syft.user", dir(a))
+        return policy_class
+    except Exception as e:
+        print("exception loading code", e)
+
+
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
-    policy_class = execute_policy_code(user_policy)
+    policy_class = load_policy_code(user_policy)
+    print("init class with args", policy_class)
+    print("init class with args", init_args)
+    print("class mro", policy_class.mro())
     policy_object = policy_class(**init_args)
     return policy_object
 

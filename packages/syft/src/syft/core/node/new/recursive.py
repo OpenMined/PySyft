@@ -116,6 +116,10 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
     if fqn not in TYPE_BANK:
+        print("failed to get fqn", fqn)
+        a = getattr(sy, "user", None)
+        print("syft user", a)
+        print(dir(a))
         raise Exception(f"{fqn} not in TYPE_BANK")
 
     msg.fullyQualifiedName = fqn

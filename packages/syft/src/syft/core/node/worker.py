@@ -131,6 +131,7 @@ class Worker(NewNode):
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
     ):
+        print("starting a worker we need to load any user code")
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
         if node_uid_env is not None:
@@ -258,6 +259,11 @@ class Worker(NewNode):
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
+        print("load user code")
+        if UserCodeService in self.services:
+            print("got a user code service")
+            user_code_service = self.get_service(UserCodeService)
+            user_code_service.load_user_code()
         if self.is_subprocess:
             # print(f"> Starting Subprocess {self}")
             pass

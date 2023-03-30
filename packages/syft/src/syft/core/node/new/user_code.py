@@ -22,7 +22,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ....util import is_interpreter_jupyter
 from .api import NodeView
 from .code_parse import GlobalsVisitor
 from .context import AuthedServiceContext
@@ -38,6 +37,7 @@ from .policy import OutputPolicy
 from .policy import Policy
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
+from .policy import init_policy
 from .policy_service import PolicyService
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -105,6 +105,12 @@ class UserCodeStatusContext:
             hash_sum = hash(k) + hash(v)
         return hash_sum
 
+    @property
+    def approved(self) -> bool:
+        # approved for this node only
+        statuses = set(self.base_dict.values())
+        return len(statuses) == 1 and UserCodeStatus.EXECUTE in statuses
+
     def for_context(self, context: AuthedServiceContext) -> UserCodeStatus:
         if context.node.node_type == NodeType.ENCLAVE:
             keys = set(self.base_dict.values())
@@ -158,11 +164,11 @@ class UserCode(SyftObject):
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy_type: Union[Type[InputPolicy], UserPolicy]
-    input_policy_init_args: Optional[Dict[str, Any]] = None
-    input_policy: InputPolicy
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: Optional[InputPolicy]
     output_policy_type: Union[Type[OutputPolicy], UserPolicy]
-    output_policy_init_args: Optional[Dict[str, Any]] = None
-    output_policy: OutputPolicy
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: Optional[OutputPolicy]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -171,12 +177,57 @@ class UserCode(SyftObject):
     signature: inspect.Signature
     status: UserCodeStatusContext
     input_kwargs: List[str]
-    outputs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
     __attr_repr_cols__ = ["status", "service_func_name"]
+
+    @property
+    def input_policy(self) -> Optional[InputPolicy]:
+        if not self.status.approved:
+            return None
+
+        if self.input_policy_state is None:
+            if isinstance(self.input_policy_type, type) and issubclass(
+                self.input_policy_type, InputPolicy
+            ):
+                self.input_policy_state = self.input_policy_type(
+                    **self.input_policy_init_kwargs
+                )
+            elif isinstance(self.input_policy_type, UserPolicy):
+                self.input_policy_state = init_policy(
+                    self.input_policy_type, self.input_policy_init_kwargs
+                )
+            else:
+                raise Exception(f"Invalid output_policy_type: {self.input_policy_type}")
+        return self.input_policy_state
+
+    @property
+    def output_policy(self) -> Optional[OutputPolicy]:
+        if not self.status.approved:
+            return None
+        print("self.output_policy_type", self.output_policy_type)
+        print("self.output_policy_type", type(self.output_policy_type))
+        print("self.output_policy_type", type(self.output_policy_type) == type)
+        if isinstance(self.output_policy_type, type):
+            print("self.output_policy_type mro", self.output_policy_type.mro())
+        if self.output_policy_state is None:
+            if isinstance(self.output_policy_type, type) and issubclass(
+                self.output_policy_type, OutputPolicy
+            ):
+                self.output_policy_state = self.output_policy_type(
+                    **self.output_policy_init_kwargs
+                )
+            elif isinstance(self.output_policy_type, UserPolicy):
+                self.output_policy_state = init_policy(
+                    self.output_policy_type, self.output_policy_init_kwargs
+                )
+            else:
+                raise Exception(
+                    f"Invalid output_policy_type: {self.output_policy_type}"
+                )
+        return self.output_policy_state
 
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
@@ -218,10 +269,10 @@ class SubmitUserCode(SyftObject):
     code: str
     func_name: str
     signature: inspect.Signature
-    input_policy: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
-    input_policy_init_args: Optional[Dict[str, Any]] = None
-    output_policy: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
-    output_policy_init_args: Optional[Dict[str, Any]] = None
+    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
@@ -254,104 +305,34 @@ def debox_asset(arg: Any) -> Any:
     return deboxed_arg
 
 
-def new_getfile(object):
-    if not inspect.isclass(object):
-        return inspect.getfile(object)
-
-    # Lookup by parent module (as in current inspect)
-    if hasattr(object, "__module__"):
-        object_ = sys.modules.get(object.__module__)
-        if hasattr(object_, "__file__"):
-            return object_.__file__
-
-    # If parent module is __main__, lookup by methods (NEW)
-    for _, member in inspect.getmembers(object):
-        if (
-            inspect.isfunction(member)
-            and object.__qualname__ + "." + member.__name__ == member.__qualname__
-        ):
-            return inspect.getfile(member)
-    else:
-        raise TypeError("Source for {!r} not found".format(object))
-
-
-def get_code_from_class(policy):
-    klasses = [inspect.getmro(policy)[0]]  #
-    whole_str = ""
-    for klass in klasses:
-        if is_interpreter_jupyter():
-            # third party
-            from IPython.core.magics.code import extract_symbols
-
-            cell_code = "".join(inspect.linecache.getlines(new_getfile(klass)))
-            class_code = extract_symbols(cell_code, klass.__name__)[0][0]
-        else:
-            class_code = inspect.getsource(klass)
-        whole_str += class_code
-    return whole_str
-
-
 def syft_function(
     input_policy: Union[InputPolicy, UID],
     output_policy: Union[OutputPolicy, UID],
 ) -> SubmitUserCode:
-    input_policy_init_args = None
-    output_policy_init_args = None
-
     if isinstance(input_policy, CustomInputPolicy):
-        input_policy_init_args = input_policy.init_kwargs
-        user_class = input_policy.__class__
-        init_f_code = user_class.__init__.__code__
-        input_policy = SubmitUserPolicy(
-            code=get_code_from_class(user_class),
-            class_name=user_class.__name__,
-            input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
-        )
+        input_policy_type = SubmitUserPolicy.from_obj(input_policy)
     else:
-        input_policy = type(input_policy)
-
-    # elif type(input_policy) == type and issubclass(input_policy, InputPolicy):
-    #     input_policy = input_policy(**input_policy_init_args)
+        input_policy_type = type(input_policy)
 
     if isinstance(output_policy, CustomOutputPolicy):
-        output_policy_init_args = output_policy.init_kwargs
-        user_class = output_policy.__class__
-        init_f_code = user_class.__init__.__code__
-        output_policy = SubmitUserPolicy(
-            code=get_code_from_class(user_class),
-            class_name=user_class.__name__,
-            input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
-        )
+        output_policy_type = SubmitUserPolicy.from_obj(output_policy)
     else:
-        output_policy = type(output_policy)
-    # elif type(output_policy) == type and issubclass(output_policy, OutputPolicy):
-    #     output_policy = output_policy(**output_policy_init_args)
+        output_policy_type = type(output_policy)
 
     def decorator(f):
-        print("using the folllowing")
-        code = inspect.getsource(f)
-        print("code", code)
-        func = f.__name__
-        print("Func", func)
-        sig = inspect.signature(f)
-        print("sig", sig)
-        print("input_policy", input_policy)
-        print("output_policy", output_policy)
-        print("input_policy_init_args", input_policy_init_args)
-        print("output_policy_init_args", output_policy_init_args)
-        print("local_function", f)
-        print("input_kwargs", f.__code__.co_varnames[: f.__code__.co_argcount])
-        return SubmitUserCode(
+        x = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
             signature=inspect.signature(f),
-            input_policy=input_policy,
-            output_policy=output_policy,
-            input_policy_init_args=input_policy_init_args,
-            output_policy_init_args=output_policy_init_args,
+            input_policy_type=input_policy_type,
+            input_policy_init_kwargs=input_policy.init_kwargs,
+            output_policy_type=output_policy_type,
+            output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
         )
+        print("submitusercode", x)
+        return x
 
     return decorator
 
@@ -440,7 +421,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
             raw_code=context.output["raw_code"],
             func_name=context.output["unique_func_name"],
             original_func_name=context.output["service_func_name"],
-            input_kwargs=context.output["input_kwargs"],
+            input_kwargs=list(context.output["input_policy_init_kwargs"].keys()),
             # outputs=context.output["outputs"], # handled by output policy
         )
         context.output["parsed_code"] = processed_code
@@ -493,15 +474,15 @@ def add_credentials_for_key(key: str) -> Callable:
 #     return context
 
 
-def init_input_policy_state(context: TransformContext) -> TransformContext:
-    print("cant init until approved?")
-    # context.output["input_policy"] =
-    return context
+# def init_input_policy_state(context: TransformContext) -> TransformContext:
+#     print("cant init until approved?")
+#     # context.output["input_policy"] =
+#     return context
 
 
-def init_output_policy_state(context: TransformContext) -> TransformContext:
-    # context.output["output_policy"] =
-    return context
+# def init_output_policy_state(context: TransformContext) -> TransformContext:
+#     # context.output["output_policy"] =
+#     return context
 
 
 def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
@@ -519,42 +500,55 @@ def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
 
 
 def check_input_policy(context: TransformContext) -> TransformContext:
-    ip = context.output["input_policy"]
+    print("checking input policy")
+    ip = context.output["input_policy_type"]
     ip = check_policy(policy=ip, context=context)
-    ip.node_uid = context.node.id
-    context.output["input_policy"] = ip
+    # ip.node_uid = context.node.id
+    context.output["input_policy_type"] = ip
+    print("finished checking input policy")
     return context
 
 
 def check_output_policy(context: TransformContext) -> TransformContext:
-    op = context.output["output_policy"]
+    print("checking output policy")
+    op = context.output["output_policy_type"]
     op = check_policy(policy=op, context=context)
-    op.node_uid = context.node.id
-    context.output["output_policy"] = op
+    # op.node_uid = context.node.id
+    context.output["output_policy_type"] = op
+    print("finished checking output policy")
     return context
 
 
 def add_custom_status(context: TransformContext) -> TransformContext:
+    print("adding custom status")
+    input_keys = list(context.output["input_policy_init_kwargs"].keys())
+    print("input_keys", input_keys)
     if context.node.node_type == NodeType.DOMAIN:
+        print("1")
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        if node_view in context.obj.input_policy.inputs.keys():
+        print("2", node_view)
+        print("input_keys", input_keys)
+        if node_view in input_keys:
+            p = UserCodeStatusContext(base_dict={node_view: UserCodeStatus.SUBMITTED})
+            print("p", p)
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
+            print("not implemented?")
             raise NotImplementedError
     elif context.node.node_type == NodeType.ENCLAVE:
-        base_dict = {
-            key: UserCodeStatus.SUBMITTED
-            for key in context.obj.input_policy.inputs.keys()
-        }
+        print("3")
+        base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
 
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
+        print("4")
     else:
         # Consult with Madhava, on propogating errors from transforms
         raise NotImplementedError
+    print("finished adding custom status")
     return context
 
 
@@ -567,8 +561,8 @@ def submit_user_code_to_user_code() -> List[Callable]:
         # modify_signature,
         check_input_policy,
         check_output_policy,
-        init_input_policy_state,
-        init_output_policy_state,
+        # init_input_policy_state,
+        # init_output_policy_state,
         new_check_code,
         # compile_code, # don't compile code till its approved
         add_credentials_for_key("user_verify_key"),

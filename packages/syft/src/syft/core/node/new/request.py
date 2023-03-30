@@ -179,34 +179,45 @@ class Request(SyftObject):
         code = change.linked_obj.resolve
         state = code.output_policy
         ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
-        state.apply_output(context=ctx, outputs=action_object.id)
+        print("code", code)
+        print("state", state)
+        print("action objecy", action_object)
+        print("action objecy", action_object.id)
+        state.apply_output(context=ctx, outputs=action_object)
         policy_state_mutation = ObjectMutation(
             linked_obj=change.linked_obj,
-            attr_name="output_policy",
+            attr_name="output_policy_state",
             match_type=True,
             value=state,
         )
-
+        print("4")
+        print("action_object", action_object, type(action_object))
         action_object_link = LinkedObject.from_obj(
             action_object, node_uid=self.node_uid
         )
+        print("5")
 
         permission_change = ActionStoreChange(
             linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
         )
+        print("6")
 
         submit_request = SubmitRequest(
             changes=[policy_state_mutation, permission_change],
             requesting_user_verify_key=self.requesting_user_verify_key,
         )
+        print("7")
 
         new_request = api.services.request.submit(submit_request)
+        print("8")
         if not new_request:
             return new_request
         new_request_result = api.services.request.apply(new_request.id)
+        print("9")
         if not new_request_result:
             return new_request_result
         result = api.services.request.apply(self.id)
+        print("finished the request???")
         return result
 
 
