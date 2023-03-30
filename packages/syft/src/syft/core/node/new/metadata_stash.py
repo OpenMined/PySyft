@@ -20,7 +20,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=List[UID])
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class MetadataStash(BaseUIDStoreStash):
     object_type = NodeMetadata
     settings: PartitionSettings = PartitionSettings(

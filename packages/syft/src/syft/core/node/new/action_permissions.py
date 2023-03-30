@@ -8,7 +8,7 @@ from .serializable import serializable
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionPermission(Enum):
     OWNER = 1
     READ = 2
@@ -28,7 +28,7 @@ COMPOUND_ACTION_PERMISSION = set(
 )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionObjectPermission:
     def __init__(
         self,

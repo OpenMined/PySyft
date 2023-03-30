@@ -30,7 +30,7 @@ from .user_service import UserService
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class RequestService(AbstractService):
     store: DocumentStore
     stash: RequestStash

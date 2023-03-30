@@ -12,7 +12,7 @@ from syft.core.node.new.syft_object import SyftObject
 from syft.core.node.new.uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MockKeyValueBackingStore(dict, KeyValueBackingStore):
     def __init__(
         self,
@@ -45,23 +45,23 @@ class MockKeyValueBackingStore(dict, KeyValueBackingStore):
             raise e
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MockObjectType(SyftObject):
     __canonical_name__ = "mock_type"
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MockStore(DocumentStore):
     pass
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MockSyftObject(SyftObject):
     __canonical_name__ = UID()
     data: Any
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MockStoreConfig(StoreConfig):
     store_type: Type[DocumentStore] = MockStore
     db_name: str = "testing"

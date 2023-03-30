@@ -15,7 +15,7 @@ from .kv_document_store import KeyValueStorePartition
 from .serializable import serializable
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DictBackingStore(dict, KeyValueBackingStore):
     """Dictionary-based Store core logic"""
 
@@ -33,7 +33,7 @@ class DictBackingStore(dict, KeyValueBackingStore):
             raise e
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DictStorePartition(KeyValueStorePartition):
     """Dictionary-based StorePartition
 
@@ -49,7 +49,7 @@ class DictStorePartition(KeyValueStorePartition):
 
 
 # the base document store is already a dict but we can change it later
-@serializable(recursive_serde=True)
+@serializable()
 class DictDocumentStore(DocumentStore):
     """Dictionary-based Document Store
 
@@ -74,7 +74,7 @@ class DictDocumentStore(DocumentStore):
             partition.prune()
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DictStoreConfig(StoreConfig):
     """Dictionary-based configuration
 

@@ -31,7 +31,7 @@ VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class UserStash(BaseStash):
     object_type = User
     settings: PartitionSettings = PartitionSettings(

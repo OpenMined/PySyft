@@ -14,7 +14,7 @@ from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PandasDataFrameObject(ActionObject):
     __canonical_name__ = "PandasDataframeObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -39,7 +39,7 @@ class PandasDataFrameObject(ActionObject):
         return super().syft_is_property(obj, method)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PandasSeriesObject(ActionObject):
     __canonical_name__ = "PandasSeriesObject"
     __version__ = SYFT_OBJECT_VERSION_1

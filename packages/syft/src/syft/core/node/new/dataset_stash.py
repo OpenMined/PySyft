@@ -23,7 +23,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=List[UID])
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DatasetStash(BaseUIDStoreStash):
     object_type = Dataset
     settings: PartitionSettings = PartitionSettings(

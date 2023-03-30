@@ -22,7 +22,7 @@ from .mongo_codecs import SYFT_CODEC_OPTIONS
 from .serializable import serializable
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MongoStoreClientConfig(StoreClientConfig):
     """
     Paramaters:

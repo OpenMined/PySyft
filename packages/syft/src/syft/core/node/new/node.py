@@ -10,7 +10,7 @@ from .serializable import serializable
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class NodeType(Enum):
     DOMAIN = "domain"
     NETWORK = "network"

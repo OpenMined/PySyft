@@ -63,7 +63,7 @@ class APIRegistry:
         return list(cls.__api_registry__.values())
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class APIEndpoint(SyftBaseObject):
     path: str
     name: str
@@ -74,12 +74,11 @@ class APIEndpoint(SyftBaseObject):
     pre_kwargs: Optional[Dict[str, Any]]
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["signature", "credentials", "serialized_message"])
 class SignedSyftAPICall(SyftObject):
     __canonical_name__ = "SignedSyftAPICall"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_allowlist__ = ["signature", "credentials", "serialized_message"]
     credentials: SyftVerifyKey
     signature: bytes
     serialized_message: bytes
@@ -111,7 +110,7 @@ class SignedSyftAPICall(SyftObject):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class SyftAPICall(SyftObject):
     # version
     __canonical_name__ = "SyftAPICall"
@@ -135,7 +134,7 @@ class SyftAPICall(SyftObject):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class SyftAPIData(SyftBaseObject):
     # version
     __canonical_name__ = "SyftAPIData"
@@ -254,7 +253,7 @@ def generate_remote_function(
     return wrapper
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class APIModule:
     _modules: List[APIModule]
     path: str
@@ -291,7 +290,7 @@ class APIModule:
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable(attrs=["endpoints", "node_uid", "node_name"])
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
@@ -305,7 +304,6 @@ class SyftAPI(SyftObject):
     api_module: Optional[APIModule] = None
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
-    __attr_state__ = ["endpoints", "node_uid", "node_name"]
     refresh_api_callback: Optional[Callable] = None
 
     # def __post_init__(self) -> None:
@@ -529,7 +527,7 @@ except Exception:
     pass  # nosec
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class NodeView(BaseModel):
     class Config:
         arbitrary_types_allowed = True

@@ -28,7 +28,7 @@ from .service import service_method
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DataSubjectStash(BaseUIDStoreStash):
     object_type = DataSubject
     settings: PartitionSettings = PartitionSettings(
@@ -55,7 +55,7 @@ class DataSubjectStash(BaseUIDStoreStash):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DataSubjectService(AbstractService):
     store: DocumentStore
     stash: DataSubjectStash

@@ -38,7 +38,7 @@ from .uid import UID
 from .user_roles import ServiceRole
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UniqueKeyCheck(Enum):
     EMPTY = 0
     MATCHES = 1

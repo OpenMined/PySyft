@@ -28,7 +28,7 @@ from .uid import UID
 from .user_roles import ServiceRole
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
@@ -53,19 +53,6 @@ class User(SyftObject):
     created_at: Optional[str]
 
     # serde / storage rules
-    __attr_state__ = [
-        "id",
-        "email",
-        "name",
-        "hashed_password",
-        "salt",
-        "signing_key",
-        "verify_key",
-        "role",
-        "institution",
-        "website",
-        "created_at",
-    ]
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __attr_repr_cols__ = ["name", "email"]
@@ -108,7 +95,7 @@ def check_pwd(password: str, hashed_password: str) -> bool:
     )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserUpdate(SyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -129,7 +116,7 @@ class UserUpdate(SyftObject):
     website: Optional[str] = None
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCreate(UserUpdate):
     __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -146,7 +133,7 @@ class UserCreate(UserUpdate):
     __attr_repr_cols__ = ["name", "email"]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserSearch(SyftObject):
     __canonical_name__ = "UserSearch"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -157,7 +144,7 @@ class UserSearch(SyftObject):
     name: Optional[str]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserView(UserUpdate):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -191,7 +178,7 @@ def user_to_view_user() -> List[Callable]:
     return [keep(["id", "email", "name", "role", "institution", "website"])]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserPrivateKey(SyftObject):
     __canonical_name__ = "UserPrivateKey"
     __version__ = SYFT_OBJECT_VERSION_1

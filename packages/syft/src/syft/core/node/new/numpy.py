@@ -12,18 +12,11 @@ from .action_types import action_types
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
 
-# @serializable(recursive_serde=True)
+# @serializable(attrs=["id", "node_uid", "parent_id"])
 # class NumpyArrayObjectPointer(ActionObjectPointer):
 #     _inflix_operations = ["__add__", "__sub__", "__eq__", "__mul__"]
 #     __canonical_name__ = "NumpyArrayObjectPointer"
 #     __version__ = SYFT_OBJECT_VERSION_1
-
-#     # 🟡 TODO 17: add state / allowlist inheritance to SyftObject and ignore methods by default
-#     __attr_state__ = [
-#         "id",
-#         "node_uid",
-#         "parent_id",
-#     ]
 
 #     def get_from(self, domain_client) -> Any:
 #         return domain_client.api.services.action.get(self.id).syft_action_data
@@ -45,7 +38,7 @@ def numpy_like_eq(left: Any, right: Any) -> bool:
 
 # 🔵 TODO 7: Map TPActionObjects and their 3rd Party types like numpy type to these
 # classes for bi-directional lookup.
-@serializable(recursive_serde=True)
+@serializable()
 class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -87,7 +80,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
             )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyScalarObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -100,7 +93,7 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         return float(self.syft_action_data)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyBoolObject"
     __version__ = SYFT_OBJECT_VERSION_1

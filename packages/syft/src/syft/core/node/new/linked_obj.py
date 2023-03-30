@@ -17,7 +17,7 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class LinkedObject(SyftObject):
     __canonical_name__ = "LinkedObject"
     __version__ = SYFT_OBJECT_VERSION_1

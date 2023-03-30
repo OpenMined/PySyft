@@ -33,7 +33,7 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class BasePartitionSettings(SyftBaseModel):
     """Basic Partition Settings
 
@@ -57,7 +57,7 @@ class StoreClientConfig(BaseModel):
     pass
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PartitionKey(BaseModel):
     key: str
     type_: Union[type, object]
@@ -93,7 +93,7 @@ class PartitionKey(BaseModel):
         return False
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PartitionKeys(BaseModel):
     pks: Union[PartitionKey, Tuple[PartitionKey, ...]]
 
@@ -126,7 +126,7 @@ class PartitionKeys(BaseModel):
             return self.with_tuple(*obj_arg)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class QueryKey(PartitionKey):
     value: Any
 
@@ -183,7 +183,7 @@ class QueryKey(PartitionKey):
         return {key: self.value}
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
@@ -195,7 +195,7 @@ class PartitionKeysWithUID(PartitionKeys):
         return all_keys
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class QueryKeys(SyftBaseModel):
     qks: Union[QueryKey, Tuple[QueryKey, ...]]
 
@@ -277,7 +277,7 @@ class QueryKeys(SyftBaseModel):
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PartitionSettings(BasePartitionSettings):
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
@@ -293,7 +293,7 @@ class PartitionSettings(BasePartitionSettings):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable(attrs=["settings", "store_config", "unique_cks", "searchable_cks"])
 class StorePartition:
     """Base StorePartition
 
@@ -365,7 +365,7 @@ class StorePartition:
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DocumentStore:
     """Base Document Store
 
@@ -531,7 +531,7 @@ class BaseUIDStoreStash(BaseStash):
         result = super().delete(credentials=credentials, qk=qk)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result.err()
+        return result
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
@@ -554,7 +554,7 @@ class BaseUIDStoreStash(BaseStash):
         )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class StoreConfig(SyftBaseObject):
     """Base Store configuration
 
