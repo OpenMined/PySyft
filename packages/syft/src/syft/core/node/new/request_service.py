@@ -55,6 +55,12 @@ class RequestService(AbstractService):
                 user_verify_key = context.node.get_service_method(
                     UserService.user_verify_key
                 )
+                append_user_request = context.node.get_service_method(
+                    UserService.append_user_request
+                )
+
+                append_user_request(verify_key=context.credentials, request_link=link)
+
                 root_verify_key = user_verify_key(email="info@openmined.org")
                 if send_message:
                     message = CreateMessage(

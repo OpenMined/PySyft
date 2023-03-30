@@ -14,6 +14,7 @@ from pydantic.networks import EmailStr
 # relative
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .linked_obj import LinkedObject
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
@@ -52,6 +53,7 @@ class User(SyftObject):
     website: Optional[str] = None
     created_at: Optional[str]
     last_login: Optional[str] = None
+    linked_requests: Optional[List[LinkedObject]] = []
 
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
@@ -116,6 +118,7 @@ class UserUpdate(SyftObject):
     institution: Optional[str] = None
     website: Optional[str] = None
     last_login: Optional[str] = None
+    linked_requests: Optional[List[LinkedObject]] = []
 
 
 @serializable()
@@ -178,7 +181,18 @@ def user_create_to_user() -> List[Callable]:
 @transform(User, UserView)
 def user_to_view_user() -> List[Callable]:
     return [
-        keep(["id", "email", "name", "role", "institution", "website", "last_login"])
+        keep(
+            [
+                "id",
+                "email",
+                "name",
+                "role",
+                "institution",
+                "website",
+                "last_login",
+                "linked_requests",
+            ]
+        )
     ]
 
 

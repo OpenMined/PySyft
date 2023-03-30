@@ -13,6 +13,7 @@ from .context import UnauthedServiceContext
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
 from .document_store import DocumentStore
+from .linked_obj import LinkedObject
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
@@ -71,6 +72,7 @@ class UserService(AbstractService):
     ) -> Union[Optional[UserView], SyftError]:
         """Get user for given uid"""
         result = self.stash.get_by_uid(uid=uid)
+
         if result.is_ok():
             user = result.ok()
             if user is None:
@@ -126,6 +128,9 @@ class UserService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:
         updates_role = user_update.role is not None
+
+        if len(user_update.linked_requests) == 0:
+            user_update.linked_requests = None
 
         if (
             updates_role
@@ -304,6 +309,17 @@ class UserService(AbstractService):
         if result.is_ok():
             return result.ok().verify_key
         return SyftError(message=f"No user with email: {email}")
+
+    def append_user_request(
+        self, verify_key: SyftVerifyKey, request_link: LinkedObject
+    ) -> Union[User, SyftError]:
+        result = self.stash.get_by_verify_key(verify_key=verify_key)
+        if result.is_ok():
+            user = result.ok()
+            user.linked_requests.append(request_link)
+            self.stash.update(user)
+            return result.ok()
+        return SyftError(message=f"No user with verify_key: {verify_key}")
 
 
 TYPE_TO_SERVICE[User] = UserService
