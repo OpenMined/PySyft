@@ -7,6 +7,7 @@ from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.metadata_service import MetadataService
 from syft.core.node.new.metadata_stash import MetadataStash
 from syft.core.node.new.node_metadata import NodeMetadata
+from syft.core.node.new.node_metadata import NodeMetadataJSON
 from syft.core.node.new.node_metadata import NodeMetadataUpdate
 from syft.core.node.new.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from syft.core.node.new.syft_object import LOWEST_SYFT_OBJECT_VERSION
@@ -37,6 +38,19 @@ def update_metadata(faker) -> NodeMetadataUpdate:
         name=faker.name(),
         description=faker.text(),
         on_board=faker.boolean(),
+    )
+
+
+@pytest.fixture
+def metadata_json(faker) -> NodeMetadataJSON:
+    return NodeMetadataJSON(
+        metadata_version=faker.random_int(),
+        name=faker.name(),
+        id=faker.text(),
+        verify_key=faker.text(),
+        highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
+        lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
+        syft_version=__version__,
     )
 
 
