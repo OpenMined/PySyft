@@ -72,7 +72,12 @@ def test_userservice_create_success(
     expected_user = guest_create_user.to(User)
     expected_output = expected_user.to(UserView)
 
-    def mock_set(credentials: SyftVerifyKey, user: User) -> Ok:
+    def mock_set(
+        credentials: SyftVerifyKey,
+        user: User,
+        has_permission: bool = False,
+        add_permissions=None,
+    ) -> Ok:
         return Ok(expected_user)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -93,7 +98,12 @@ def test_userservice_create_error_on_set(
 
     expected_error_msg = "Failed to set user."
 
-    def mock_set(credentials: SyftVerifyKey, user: User) -> Err:
+    def mock_set(
+        credentials: SyftVerifyKey,
+        user: User,
+        has_permission: bool = False,
+        add_permissions=None,
+    ) -> Err:
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -302,7 +312,7 @@ def test_userservice_update_success(
     def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
         return Ok(guest_user)
 
-    def mock_update(credentials: SyftVerifyKey, user: User) -> Ok:
+    def mock_update(credentials: SyftVerifyKey, user: User, has_permission: bool) -> Ok:
         guest_user.name = update_user.name
         guest_user.email = update_user.email
         return Ok(guest_user)
@@ -334,7 +344,7 @@ def test_userservice_update_fails(
     def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
         return Ok(guest_user)
 
-    def mock_update(credentials: SyftVerifyKey, user) -> Err:
+    def mock_update(credentials: SyftVerifyKey, user, has_permission: bool) -> Err:
         return Err(update_error_msg)
 
     authed_context.role = ServiceRole.ADMIN
@@ -357,7 +367,9 @@ def test_userservice_delete_failure(
     id_to_delete = UID()
     expected_error_msg = f"No user exists for given id: {id_to_delete}"
 
-    def mock_delete_by_uid(credentials: SyftVerifyKey, uid: UID) -> Err:
+    def mock_delete_by_uid(
+        credentials: SyftVerifyKey, uid: UID, has_permission=False
+    ) -> Err:
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "delete_by_uid", mock_delete_by_uid)
@@ -375,7 +387,9 @@ def test_userservice_delete_success(
     id_to_delete = UID()
     expected_output = SyftSuccess(message=f"ID: {id_to_delete} deleted")
 
-    def mock_delete_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
+    def mock_delete_by_uid(
+        credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+    ) -> Ok:
         return Ok(expected_output)
 
     def mock_get_target_object(credentials: SyftVerifyKey, uid):
@@ -485,7 +499,12 @@ def test_userservice_register_success(
     def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(None)
 
-    def mock_set(credentials: SyftVerifyKey, user: str) -> Ok:
+    def mock_set(
+        credentials: SyftVerifyKey,
+        user: str,
+        has_permission: bool = False,
+        add_permissions=None,
+    ) -> Ok:
         return Ok(guest_user)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -516,7 +535,12 @@ def test_userservice_register_set_fail(
 
     expected_error_msg = "Failed to connect to server."
 
-    def mock_set(credentials: SyftVerifyKey, user: User) -> Err:
+    def mock_set(
+        credentials: SyftVerifyKey,
+        user: User,
+        add_permissions=None,
+        has_permission: bool = False,
+    ) -> Err:
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)

@@ -1,4 +1,5 @@
 # stdlib
+from typing import List
 from typing import Optional
 
 # third party
@@ -8,7 +9,6 @@ from result import Result
 # relative
 from ....telemetry import instrument
 from .action_permissions import ActionObjectPermission
-from .action_permissions import ActionPermission
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .document_store import BaseStash
@@ -42,20 +42,18 @@ class UserStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def set(self, credentials: SyftVerifyKey, user: User) -> Result[User, str]:
+    def set(
+        self,
+        credentials: SyftVerifyKey,
+        user: User,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
+    ) -> Result[User, str]:
         res = self.check_type(user, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
-        # Make it possible to read all users (services only return UserViews)
         return super().set(
-            credentials=credentials,
-            obj=res.ok(),
-            add_permissions=[
-                ActionObjectPermission(
-                    uid=user.id, permission=ActionPermission.ALL_READ
-                )
-            ],
+            credentials=credentials, obj=res.ok(), add_permissions=add_permissions
         )
 
     def admin_verify_key(self):
@@ -96,17 +94,23 @@ class UserStash(BaseStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID, has_permission=False
     ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(credentials=credentials, qk=qk)
+        result = super().delete(
+            credentials=credentials, qk=qk, has_permission=has_permission
+        )
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result
 
-    def update(self, credentials: SyftVerifyKey, user: User) -> Result[User, str]:
+    def update(
+        self, credentials: SyftVerifyKey, user: User, has_permission=False
+    ) -> Result[User, str]:
         res = self.check_type(user, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
-        return super().update(credentials=credentials, obj=res.ok())
+        return super().update(
+            credentials=credentials, obj=res.ok(), has_permission=has_permission
+        )

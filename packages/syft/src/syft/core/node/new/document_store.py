@@ -504,15 +504,22 @@ class BaseStash:
         return self.delete(credentials=credentials, qk=qk)
 
     def delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
     ) -> Result[SyftSuccess, Err]:
-        return self.partition.delete(credentials=credentials, qk=qk)
+        return self.partition.delete(
+            credentials=credentials, qk=qk, has_permission=has_permission
+        )
 
     def update(
-        self, credentials: SyftVerifyKey, obj: BaseStash.object_type
+        self,
+        credentials: SyftVerifyKey,
+        obj: BaseStash.object_type,
+        has_permission=False,
     ) -> Optional[Result[BaseStash.object_type, str]]:
         qk = self.partition.store_query_key(obj)
-        return self.partition.update(credentials=credentials, qk=qk, obj=obj)
+        return self.partition.update(
+            credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
+        )
 
 
 @instrument

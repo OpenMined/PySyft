@@ -14,9 +14,9 @@ class ActionPermission(Enum):
     READ = 2
     ALL_READ = 4
     WRITE = 8
-    ALL_WRITE = 16
-    EXECUTE = 32
-    ALL_EXECUTE = 64
+    ALL_WRITE = 32
+    EXECUTE = 64
+    ALL_EXECUTE = 128
 
 
 COMPOUND_ACTION_PERMISSION = set(

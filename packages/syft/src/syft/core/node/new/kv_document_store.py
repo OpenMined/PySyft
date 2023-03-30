@@ -286,6 +286,9 @@ class KeyValueStorePartition(StorePartition):
             return True
 
         # 🟡 TODO 14: add ALL_READ, ALL_EXECUTE etc
+        # third party
+        # import ipdb
+        # ipdb.set_trace()
         if permission.permission == ActionPermission.OWNER:
             pass
         elif (
@@ -365,13 +368,17 @@ class KeyValueStorePartition(StorePartition):
             ck_col.pop(pk_value, None)
 
     def update(
-        self, credentials: SyftVerifyKey, qk: QueryKey, obj: SyftObject
+        self,
+        credentials: SyftVerifyKey,
+        qk: QueryKey,
+        obj: SyftObject,
+        has_permission=False,
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
                 return Err(f"No object exists for query key: {qk}")
 
-            if self.has_permission(
+            if has_permission or self.has_permission(
                 ActionObjectWRITE(uid=qk.value, credentials=credentials)
             ):
                 _original_obj = self.data[qk.value]
@@ -430,10 +437,10 @@ class KeyValueStorePartition(StorePartition):
         pass
 
     def delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
     ) -> Result[SyftSuccess, Err]:
         try:
-            if self.has_permission(
+            if has_permission or self.has_permission(
                 ActionObjectWRITE(uid=qk.value, credentials=credentials)
             ):
                 _obj = self.data.pop(qk.value)

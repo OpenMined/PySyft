@@ -6,6 +6,8 @@ from typing import Union
 
 # relative
 from ....telemetry import instrument
+from .action_permissions import ActionObjectPermission
+from .action_permissions import ActionPermission
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .context import UnauthedServiceContext
@@ -60,7 +62,15 @@ class UserService(AbstractService):
         if user_exists:
             return SyftError(message=f"User already exists with email: {user.email}")
 
-        result = self.stash.set(credentials=context.credentials, user=user)
+        result = self.stash.set(
+            credentials=context.credentials,
+            user=user,
+            add_permissions=[
+                ActionObjectPermission(
+                    uid=user.id, permission=ActionPermission.ALL_READ
+                ),
+            ],
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
         user = result.ok()
@@ -195,7 +205,9 @@ class UserService(AbstractService):
             elif not name.startswith("__") and value is not None:
                 setattr(user, name, value)
 
-        result = self.stash.update(credentials=context.credentials, user=user)
+        result = self.stash.update(
+            credentials=context.credentials, user=user, has_permission=True
+        )
 
         if result.is_err():
             error_msg = (
@@ -239,7 +251,9 @@ class UserService(AbstractService):
         else:
             return permission_error
 
-        result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
+        result = self.stash.delete_by_uid(
+            credentials=context.credentials, uid=uid, has_permission=True
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -296,7 +310,15 @@ class UserService(AbstractService):
         if user_exists:
             return SyftError(message=f"User already exists with email: {user.email}")
 
-        result = self.stash.set(credentials=user.verify_key, user=user)
+        result = self.stash.set(
+            credentials=user.verify_key,
+            user=user,
+            add_permissions=[
+                ActionObjectPermission(
+                    uid=user.id, permission=ActionPermission.ALL_READ
+                ),
+            ],
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
 
