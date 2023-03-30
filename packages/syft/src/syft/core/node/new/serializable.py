@@ -20,7 +20,6 @@ def serializable(
     without: Sequence[str] = [],
     inherit: Optional[bool] = True,
     inheritable: Optional[bool] = True,
-    **kwargs,
 ) -> T:
     """
     Recursively serialize attributes of the class.
