@@ -14,6 +14,7 @@ from ...util import bcolors
 from .auth import login
 from .constants import INFRA
 from .constants import REF
+from .constants import REF_TYPE
 from .constants import REGION
 from .constants import REPO_NAME
 from .constants import REPO_OWNER
@@ -119,16 +120,17 @@ def create_deployment(
     users = [{"user_name": profile.oblivious_login, "public key": user_public_key}]
     build_args["users"]["user"] = users
     depl_input = CreateDeploymentInput(
-        REPO_OWNER,
-        REPO_NAME,
-        VCS,
-        REF,
-        region,
-        deployment_name,
-        VISIBILITY,
-        True,
-        [],
-        build_args,
+        owner=REPO_OWNER,
+        repo=REPO_NAME,
+        account_type=VCS,
+        ref=REF,
+        ref_type=REF_TYPE,
+        region_name=region,
+        deployment_name=deployment_name,
+        visibility=VISIBILITY,
+        is_dev_env=True,
+        tags=[],
+        build_args=build_args,
     )
     # By default the deployment is in PROD mode
     res = oblv_client.create_deployment(depl_input)
@@ -136,6 +138,6 @@ def create_deployment(
         deployment_id=res.deployment_id,
         oblv_client=oblv_client,
         domain_clients=domain_clients,
-        user_key_name=key_name,
+        key_name=key_name,
     )
     return result
