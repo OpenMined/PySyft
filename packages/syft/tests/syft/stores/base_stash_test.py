@@ -79,7 +79,7 @@ def object_kwargs(faker: Faker, **kwargs: Any) -> Dict[str, Any]:
 
 
 def multiple_object_kwargs(
-    faker, n=10, same=False, **kwargs: Any
+    faker: Faker, n=10, same=False, **kwargs: Any
 ) -> List[Dict[str, Any]]:
     if same:
         kwargs_ = {"id": UID(), **object_kwargs(faker), **kwargs}
