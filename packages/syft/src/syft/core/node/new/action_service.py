@@ -106,9 +106,11 @@ class ActionService(AbstractService):
         """Get an object from the action store"""
         # TODO 🟣 Temporarily added skip permission arguments for enclave
         # until permissions are fully integrated
+        print("We're about to call store.get! ")
         result = self.store.get(
             uid=uid, credentials=context.credentials, skip_permission=skip_permission
         )
+        print("DId we atleast get result?")
         if result.is_ok():
             obj = result.ok()
             if isinstance(obj, TwinObject):
@@ -207,22 +209,29 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
+        print("Inside execute")
         resolved_self = self.get(
             context=context, uid=action.remote_self, twin_mode=TwinMode.NONE
         )
+        print("resolved self")
         if resolved_self.is_err():
+            print("is err")
             return resolved_self.err()
         resolved_self = resolved_self.ok()
 
         if isinstance(resolved_self, TwinObject):
+            print("Is twin object")
             private_result = execute_object(
                 self, context, resolved_self.private, action, twin_mode=TwinMode.PRIVATE
             )
+            print("got private result")
             if private_result.is_err():
+                print("is err")
                 return private_result.err()
             mock_result = execute_object(
                 self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
             )
+            print("mock object")
             if mock_result.is_err():
                 return mock_result.err()
 
@@ -239,8 +248,10 @@ class ActionService(AbstractService):
                 )
             )
         else:
+            print("not twin object")
             result_action_object = execute_object(self, context, resolved_self, action)
 
+        print("got result action object")
         if result_action_object.is_err():
             return result_action_object.err()
         else:

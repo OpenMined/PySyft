@@ -150,6 +150,14 @@ def debug_original_func(name: str, func: Callable) -> None:
 
 def make_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
     try:
+        if getattr(context.obj, "syft_node_uid", None):
+            # if context.action is not None:
+            # convert to action objects
+            args, kwargs = convert_to_pointers(node_uid=None, args=args, kwargs=kwargs)
+        else:
+            args, kwargs = convert_to_pointers(
+                node_uid=context.obj.syft_node_uid, args=args, kwargs=kwargs
+            )
         action = context.obj.syft_make_method_action(
             op=context.op_name, args=args, kwargs=kwargs
         )
@@ -162,22 +170,31 @@ def make_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
     return context, args, kwargs
 
 
-def convert_to_pointers(client, args: List, kwargs: Dict) -> Tuple[List, Dict]:
+def convert_to_pointers(
+    node_uid: Optional[UID] = None,
+    args: Optional[List] = None,
+    kwargs: Optional[Dict] = None,
+) -> Tuple[List, Dict]:
     arg_list = []
     kwarg_list = {}
-    for arg in args:
-        if not isinstance(arg, ActionObject):
-            action_obj = ActionObject.from_obj(arg)
-            arg = action_obj.send(
-                client
-            )  # make sure this doesn't break things later on in send_method_action
-        arg_list.append(arg)
+    if args is not None:
+        for arg in args:
+            if not isinstance(arg, ActionObject):
+                arg = ActionObject.from_obj(arg)
+                arg.syft_node_uid = node_uid
+                # arg = action_obj.send(
+                #     client
+                # )  # make sure this doesn't break things later on in send_method_action
+            arg_list.append(arg)
 
-    for k, arg in kwargs.items():
-        if not isinstance(arg, ActionObject):
-            action_obj = ActionObject.from_obj(arg)
-            arg = action_obj.send(client)
-        kwarg_list[k] = arg
+    if kwargs is not None:
+        for k, arg in kwargs.items():
+            if not isinstance(arg, ActionObject):
+                arg = ActionObject.from_obj(arg)
+                arg.syft_node_uid = node_uid
+                # arg = action_obj.send(client)
+
+            kwarg_list[k] = arg
 
     return arg_list, kwarg_list
 
@@ -188,27 +205,32 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
             context.obj, "syft_node_uid"
         ):
             if getattr(context.obj, "syft_node_uid", None):
-                if context.action is not None:
-                    args, kwargs = convert_to_pointers(client, args, kwargs)
-
-                    action = context.obj.syft_make_method_action(
-                        op=context.op_name, args=args, kwargs=kwargs
-                    )
-                    context.action = action
-
-                action_result = context.obj.syft_execute_action(action, sync=True)
-                if not isinstance(action_result, ActionObject):
-                    print("Got back unexpected response", action_result)
-                else:
-                    context.node_uid = action_result.syft_node_uid
-                    context.result_id = action.result_id
-                    print("IGNORING: got action result", action_result)
+                # if context.action is not None:
+                # convert to action objects
+                args, kwargs = convert_to_pointers(
+                    node_uid=None, args=args, kwargs=kwargs
+                )
             else:
-                # 🟡 TODO
-                pass
-                # print(
-                #     "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
-                # )
+                args, kwargs = convert_to_pointers(
+                    node_uid=context.obj.syft_node_uid, args=args, kwargs=kwargs
+                )
+
+            action = context.obj.syft_make_method_action(
+                op=context.op_name, args=args, kwargs=kwargs
+            )
+            context.action = action
+            action_result = context.obj.syft_execute_action(action, sync=True)
+            if not isinstance(action_result, ActionObject):
+                print("Got back unexpected response", action_result)
+            else:
+                context.node_uid = action_result.syft_node_uid
+                context.result_id = action.result_id
+                print("IGNORING: got action result", action_result)
+            # 🟡 TODO
+            # pass
+            # print(
+            #     "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
+            # )
     except Exception as e:
         print(
             "Exception in send_action_side_effect", e

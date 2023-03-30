@@ -494,6 +494,12 @@ class Worker(NewNode):
             try:
                 result = method(context, *api_call.args, **api_call.kwargs)
             except Exception as e:
+                # print("args: " + f"{api_call.args}")
+                # print("kwargs: " + f'{api_call.kwargs}')
+                # suspect = list(api_call.kwargs.values())[0]
+                # from .new.action_object import Action
+                # if isinstance(suspect, Action):
+                #     print(suspect.remote_self, suspect.args, suspect.kwargs, suspect.result_id)
                 result = SyftError(message=f"Exception calling {api_call.path}. {e}")
         else:
             worker_settings = WorkerSettings(
