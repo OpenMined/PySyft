@@ -62,12 +62,12 @@ def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
 
     cnt = len(objs)
     for obj in objs:
-        res = queue.find_and_delete(id=obj.id)
+        res = queue.find_and_delete(root_verify_key, id=obj.id)
         assert res.is_ok()
 
         cnt -= 1
         assert len(queue) == cnt
-        item = queue.find_one(id=obj.id)
+        item = queue.find_one(root_verify_key, id=obj.id)
         assert item.is_ok()
         assert item.ok() is None
 

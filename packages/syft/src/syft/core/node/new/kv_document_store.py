@@ -22,7 +22,6 @@ from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import ActionPermission
-from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .document_store import BaseStash
 from .document_store import PartitionSettings
@@ -106,10 +105,7 @@ class KeyValueStorePartition(StorePartition):
         settings: PartitionSettings,
         store_config: StoreConfig,
     ):
-        super().__init__(settings, store_config)
-        if root_verify_key is None:
-            root_verify_key = SyftSigningKey.generate().verify_key
-        self.root_verify_key = root_verify_key
+        super().__init__(root_verify_key, settings, store_config)
 
     def init_store(self) -> Result[Ok, Err]:
         store_status = super().init_store()

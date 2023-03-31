@@ -24,6 +24,7 @@ from typeguard import check_type
 from ....telemetry import instrument
 from .action_permissions import ActionObjectPermission
 from .base import SyftBaseModel
+from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .response import SyftSuccess
 from .serializable import serializable
@@ -306,9 +307,13 @@ class StorePartition:
 
     def __init__(
         self,
+        root_verify_key: SyftVerifyKey,
         settings: PartitionSettings,
         store_config: StoreConfig,
     ) -> None:
+        if root_verify_key is None:
+            root_verify_key = SyftSigningKey.generate().verify_key
+        self.root_verify_key = root_verify_key
         self.settings = settings
         self.store_config = store_config
         self.init_store()
