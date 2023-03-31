@@ -15,13 +15,10 @@ from .linked_obj import LinkedObject
 from .policy import OutputHistory
 from .policy import OutputPolicy
 from .policy import UserPolicy
-from .policy import UserPolicyStatus
 from .policy import get_policy_object
 from .policy import init_policy
 from .policy import load_policy_code
 from .policy import update_policy_state
-from .policy_service import PolicyService
-from .request import EnumMutation
 from .request import SubmitRequest
 from .request import UserCodeStatusChange
 from .request_service import RequestService
@@ -68,13 +65,10 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
-        print("trying to conver object")
         user_code = code.to(UserCode, context=context)
-        print("converted object", user_code)
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        policy_service = context.node.get_service(PolicyService)
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
@@ -148,7 +142,11 @@ class UserCodeService(AbstractService):
         """Get a User Code Item"""
         result = self.stash.get_by_uid(uid=uid)
         if result.is_ok():
-            return result.ok()
+            user_code = result.ok()
+            if user_code.input_policy_state:
+                # TODO replace with LinkedObject Context
+                user_code.node_uid = context.node.id
+            return user_code
         return SyftError(message=result.err())
 
     @service_method(path="code.get_all_for_user", name="get_all_for_user")
@@ -174,24 +172,12 @@ class UserCodeService(AbstractService):
         result = self.stash.get_all()
         if result.is_ok():
             user_code_items = result.ok()
-            print("user_code_items", user_code_items)
             for user_code in user_code_items:
                 if user_code.status.approved:
-                    print(
-                        "!!!! user_code.input_policy_type",
-                        user_code.input_policy_type,
-                        type(user_code.input_policy_type),
-                    )
-                    print(
-                        "!!!!! user_code.output_policy_type",
-                        user_code.output_policy_type,
-                        type(user_code.output_policy_type),
-                    )
                     if isinstance(user_code.input_policy_type, UserPolicy):
                         load_policy_code(user_code.input_policy_type)
                     if isinstance(user_code.output_policy_type, UserPolicy):
                         load_policy_code(user_code.output_policy_type)
-        print("finished loading user code")
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -206,11 +192,6 @@ class UserCodeService(AbstractService):
 
             # Unroll variables
             code_item = result.ok()
-            output_policy = code_item.output_policy
-            if output_policy is None:
-                raise Exception(f"Output policy not approved", code_item)
-            op_state = code_item.output_policy_state
-            op_init_args = code_item.output_policy_init_kwargs
             status = code_item.status
 
             # Check if we are allowed to execute the code
@@ -222,6 +203,12 @@ class UserCodeService(AbstractService):
                 return SyftError(
                     message=f"{type(code_item)} Your code cannot be run: {status}"
                 )
+
+            output_policy = code_item.output_policy
+            if output_policy is None:
+                raise Exception("Output policy not approved", code_item)
+            op_state = code_item.output_policy_state
+            op_init_args = code_item.output_policy_init_kwargs
 
             # Check if the OutputPolicy is valid
             is_valid = output_policy.valid

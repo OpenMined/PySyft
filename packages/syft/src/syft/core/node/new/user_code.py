@@ -39,6 +39,7 @@ from .policy import SubmitUserPolicy
 from .policy import UserPolicy
 from .policy import init_policy
 from .policy_service import PolicyService
+from .response import SyftError
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
@@ -161,6 +162,7 @@ class UserCode(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
+    node_uid: Optional[UID]
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy_type: Union[Type[InputPolicy], UserPolicy]
@@ -192,9 +194,20 @@ class UserCode(SyftObject):
             if isinstance(self.input_policy_type, type) and issubclass(
                 self.input_policy_type, InputPolicy
             ):
-                self.input_policy_state = self.input_policy_type(
-                    **self.input_policy_init_kwargs
-                )
+                # TODO: Tech Debt here
+                node_view_workaround = False
+                for k, v in self.input_policy_init_kwargs.items():
+                    if isinstance(k, NodeView):
+                        node_view_workaround = True
+
+                if node_view_workaround:
+                    self.input_policy_state = self.input_policy_type(
+                        init_kwargs=self.input_policy_init_kwargs
+                    )
+                else:
+                    self.input_policy_state = self.input_policy_type(
+                        **self.input_policy_init_kwargs
+                    )
             elif isinstance(self.input_policy_type, UserPolicy):
                 self.input_policy_state = init_policy(
                     self.input_policy_type, self.input_policy_init_kwargs
@@ -207,11 +220,6 @@ class UserCode(SyftObject):
     def output_policy(self) -> Optional[OutputPolicy]:
         if not self.status.approved:
             return None
-        print("self.output_policy_type", self.output_policy_type)
-        print("self.output_policy_type", type(self.output_policy_type))
-        print("self.output_policy_type", type(self.output_policy_type) == type)
-        if isinstance(self.output_policy_type, type):
-            print("self.output_policy_type mro", self.output_policy_type.mro())
         if self.output_policy_state is None:
             if isinstance(self.output_policy_type, type) and issubclass(
                 self.output_policy_type, OutputPolicy
@@ -232,6 +240,29 @@ class UserCode(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
+
+    @property
+    def assets(self) -> List[Asset]:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(self.node_uid)
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+
+        node_view = NodeView(
+            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        )
+        inputs = self.input_policy_init_kwargs[node_view]
+        all_assets = []
+        for k, uid in inputs.items():
+            if isinstance(uid, UID):
+                assets = api.services.dataset.get_assets_by_action_id(uid)
+                if not isinstance(assets, list):
+                    return assets
+
+                all_assets += assets
+        return all_assets
 
     @property
     def unsafe_function(self) -> Optional[Callable]:
@@ -279,7 +310,7 @@ class SubmitUserCode(SyftObject):
 
     @property
     def kwargs(self) -> List[str]:
-        return self.input_policy.inputs
+        return self.input_policy_init_kwargs
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
@@ -331,7 +362,6 @@ def syft_function(
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
         )
-        print("submitusercode", x)
         return x
 
     return decorator
@@ -415,20 +445,28 @@ def process_code(
 
 
 def new_check_code(context: TransformContext) -> TransformContext:
-    try:
-        print("checking new code", context.output["raw_code"])
-        processed_code = process_code(
-            raw_code=context.output["raw_code"],
-            func_name=context.output["unique_func_name"],
-            original_func_name=context.output["service_func_name"],
-            input_kwargs=list(context.output["input_policy_init_kwargs"].keys()),
-            # outputs=context.output["outputs"], # handled by output policy
-        )
-        context.output["parsed_code"] = processed_code
+    # TODO remove this tech debt hack
+    input_kwargs = context.output["input_policy_init_kwargs"]
+    node_view_workaround = False
+    for k, v in input_kwargs.items():
+        if isinstance(k, NodeView):
+            node_view_workaround = True
 
-    except Exception as e:
-        print("exception as", e)
-        raise e
+    if not node_view_workaround:
+        input_keys = list(input_kwargs.keys())
+    else:
+        input_keys = []
+        for d in input_kwargs.values():
+            input_keys += d.keys()
+
+    processed_code = process_code(
+        raw_code=context.output["raw_code"],
+        func_name=context.output["unique_func_name"],
+        original_func_name=context.output["service_func_name"],
+        input_kwargs=input_keys,
+        # outputs=context.output["outputs"], # handled by output policy
+    )
+    context.output["parsed_code"] = processed_code
 
     return context
 
@@ -494,61 +532,41 @@ def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
         if policy.is_ok():
             policy = policy.ok()
 
-    # provide node context for method operations until we finish LinkedObjects
-    # policy.node_uid = context.node.id
     return policy
 
 
 def check_input_policy(context: TransformContext) -> TransformContext:
-    print("checking input policy")
     ip = context.output["input_policy_type"]
     ip = check_policy(policy=ip, context=context)
-    # ip.node_uid = context.node.id
     context.output["input_policy_type"] = ip
-    print("finished checking input policy")
     return context
 
 
 def check_output_policy(context: TransformContext) -> TransformContext:
-    print("checking output policy")
     op = context.output["output_policy_type"]
     op = check_policy(policy=op, context=context)
-    # op.node_uid = context.node.id
     context.output["output_policy_type"] = op
-    print("finished checking output policy")
     return context
 
 
 def add_custom_status(context: TransformContext) -> TransformContext:
-    print("adding custom status")
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
-    print("input_keys", input_keys)
     if context.node.node_type == NodeType.DOMAIN:
-        print("1")
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        print("2", node_view)
-        print("input_keys", input_keys)
         if node_view in input_keys:
-            p = UserCodeStatusContext(base_dict={node_view: UserCodeStatus.SUBMITTED})
-            print("p", p)
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
-            print("not implemented?")
             raise NotImplementedError
     elif context.node.node_type == NodeType.ENCLAVE:
-        print("3")
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
-
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
-        print("4")
     else:
         # Consult with Madhava, on propogating errors from transforms
         raise NotImplementedError
-    print("finished adding custom status")
     return context
 
 

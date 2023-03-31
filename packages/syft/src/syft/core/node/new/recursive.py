@@ -182,7 +182,6 @@ def rs_proto2object(proto: _DynamicStructBuilder, class_type: Type = type(None))
     # clean this mess, Tudor
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
-
     if class_type == type(None):
         if klass != "NoneType":
             # class_type: Type = type(None)
@@ -233,7 +232,14 @@ def rs_proto2object(proto: _DynamicStructBuilder, class_type: Type = type(None))
     elif issubclass(class_type, BaseModel):
         # if we skip the __new__ flow of BaseModel we get the error
         # AttributeError: object has no attribute '__fields_set__'
-        obj = class_type(**kwargs)
+
+        if "syft.user" in proto.fullyQualifiedName:
+            obj = class_type()
+            for attr_name, attr_value in kwargs.items():
+                setattr(obj, attr_name, attr_value)
+        else:
+            obj = class_type(**kwargs)
+
     else:
         obj = class_type.__new__(class_type)  # type: ignore
         for attr_name, attr_value in kwargs.items():

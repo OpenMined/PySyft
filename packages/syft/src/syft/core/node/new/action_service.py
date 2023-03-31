@@ -145,7 +145,6 @@ class ActionService(AbstractService):
         code_item: UserCode,
         kwargs: Dict[str, Any],
     ) -> Result[ActionObjectPointer, Err]:
-        # TODO Teo: fix this for UserPolicy
         filtered_kwargs = code_item.input_policy.filter_kwargs(
             kwargs=kwargs, context=context, code_item_id=code_item.id
         )
@@ -211,7 +210,6 @@ class ActionService(AbstractService):
         )
         if set_result.is_err():
             return set_result.err()
-
         return Ok(result_action_object)
 
     @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
