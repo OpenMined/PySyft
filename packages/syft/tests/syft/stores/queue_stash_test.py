@@ -40,23 +40,23 @@ def test_queue_stash_sanity(queue: Any) -> None:
     ],
 )
 @pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
-def test_queue_stash_set_get(queue: Any) -> None:
+def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
     objs = []
     for idx in range(REPEATS):
         obj = MockSyftObject(data=idx)
         objs.append(obj)
 
-        res = queue.set(obj, ignore_duplicates=False)
+        res = queue.set(root_verify_key, obj, ignore_duplicates=False)
         assert res.is_ok()
         assert len(queue) == idx + 1
 
-        res = queue.set(obj, ignore_duplicates=False)
+        res = queue.set(root_verify_key, obj, ignore_duplicates=False)
         assert res.is_err()
         assert len(queue) == idx + 1
 
-        assert len(queue.get_all().ok()) == idx + 1
+        assert len(queue.get_all(root_verify_key).ok()) == idx + 1
 
-        item = queue.find_one(id=obj.id)
+        item = queue.find_one(root_verify_key, id=obj.id)
         assert item.is_ok()
         assert item.ok() == obj
 
@@ -81,23 +81,23 @@ def test_queue_stash_set_get(queue: Any) -> None:
     ],
 )
 @pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
-def test_queue_stash_update(queue: Any) -> None:
+def test_queue_stash_update(root_verify_key, queue: Any) -> None:
     obj = MockSyftObject(data=0)
-    res = queue.set(obj, ignore_duplicates=False)
+    res = queue.set(root_verify_key, obj, ignore_duplicates=False)
     assert res.is_ok()
 
     for idx in range(REPEATS):
         obj.data = idx
 
-        res = queue.update(obj)
+        res = queue.update(root_verify_key, obj)
         assert res.is_ok()
         assert len(queue) == 1
 
-        item = queue.find_one(id=obj.id)
+        item = queue.find_one(root_verify_key, id=obj.id)
         assert item.is_ok()
         assert item.ok().data == idx
 
-    res = queue.find_and_delete(id=obj.id)
+    res = queue.find_and_delete(root_verify_key, id=obj.id)
     assert res.is_ok()
     assert len(queue) == 0
 
@@ -111,7 +111,7 @@ def test_queue_stash_update(queue: Any) -> None:
     ],
 )
 @pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
-def test_queue_set_existing_queue_threading(queue: Any) -> None:
+def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None:
     thread_cnt = 5
     repeats = REPEATS
 
@@ -121,7 +121,7 @@ def test_queue_set_existing_queue_threading(queue: Any) -> None:
         nonlocal execution_err
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = queue.set(obj, ignore_duplicates=False)
+            res = queue.set(root_verify_key, obj, ignore_duplicates=False)
 
             if res.is_err():
                 execution_err = res
@@ -150,19 +150,19 @@ def test_queue_set_existing_queue_threading(queue: Any) -> None:
     ],
 )
 @pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
-def test_queue_update_existing_queue_threading(queue: Any) -> None:
+def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> None:
     thread_cnt = 3
     repeats = REPEATS
 
     obj = MockSyftObject(data=0)
-    queue.set(obj, ignore_duplicates=False)
+    queue.set(root_verify_key, obj, ignore_duplicates=False)
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
         for repeat in range(repeats):
             obj.data = repeat
-            res = queue.update(obj)
+            res = queue.update(root_verify_key, obj)
 
             if res.is_err():
                 execution_err = res
@@ -191,6 +191,7 @@ def test_queue_update_existing_queue_threading(queue: Any) -> None:
 )
 @pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_queue_set_delete_existing_queue_threading(
+    root_verify_key,
     queue: Any,
 ) -> None:
     thread_cnt = 3
@@ -201,7 +202,7 @@ def test_queue_set_delete_existing_queue_threading(
 
     for idx in range(repeats * thread_cnt):
         obj = MockSyftObject(data=idx)
-        res = queue.set(obj, ignore_duplicates=False)
+        res = queue.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
 
         assert res.is_ok()
@@ -211,7 +212,7 @@ def test_queue_set_delete_existing_queue_threading(
         for idx in range(repeats):
             item_idx = tid * repeats + idx
 
-            res = queue.find_and_delete(id=objs[item_idx].id)
+            res = queue.find_and_delete(root_verify_key, id=objs[item_idx].id)
             if res.is_err():
                 execution_err = res
             assert res.is_ok()

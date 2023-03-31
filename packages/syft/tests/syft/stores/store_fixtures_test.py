@@ -132,7 +132,9 @@ def mongo_store_partition(mongo_server_mock):
         print("failed to cleanup mongo fixture", e)
 
 
-def mongo_document_store_fn(mongo_db_name: str = "mongo_db", **mongo_kwargs):
+def mongo_document_store_fn(
+    root_verify_key, mongo_db_name: str = "mongo_db", **mongo_kwargs
+):
     mongo_client = MongoClient(**mongo_kwargs)
 
     mongo_config = MongoStoreClientConfig(client=mongo_client)
@@ -144,10 +146,12 @@ def mongo_document_store_fn(mongo_db_name: str = "mongo_db", **mongo_kwargs):
 
 
 @pytest.fixture(scope="function")
-def mongo_document_store(mongo_server_mock):
+def mongo_document_store(root_verify_key, mongo_server_mock):
     mongo_db_name = generate_db_name()
     mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
-    return mongo_document_store_fn(mongo_db_name=mongo_db_name, **mongo_kwargs)
+    return mongo_document_store_fn(
+        root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
+    )
 
 
 def mongo_queue_stash_fn(mongo_document_store):
@@ -155,11 +159,13 @@ def mongo_queue_stash_fn(mongo_document_store):
 
 
 @pytest.fixture(scope="function")
-def mongo_queue_stash(mongo_server_mock):
+def mongo_queue_stash(root_verify_key, mongo_server_mock):
     mongo_db_name = generate_db_name()
     mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
 
-    store = mongo_document_store_fn(mongo_db_name=mongo_db_name, **mongo_kwargs)
+    store = mongo_document_store_fn(
+        root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
+    )
     return mongo_queue_stash_fn(store)
 
 
