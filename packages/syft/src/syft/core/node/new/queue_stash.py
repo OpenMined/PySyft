@@ -54,7 +54,7 @@ class QueueItem(SyftObject):
             self.fetch()
 
         if self.resolved:
-            return self.result
+            return self.result.message
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
 
