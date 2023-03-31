@@ -1,7 +1,7 @@
 # stdlib
-from typing import Any
 from typing import Optional
 from typing import Sequence
+from typing import TypeVar
 
 # syft absolute
 import syft
@@ -12,13 +12,15 @@ from .recursive import recursive_serde_register
 module_type = type(syft)
 
 
+T = TypeVar("T")
+
+
 def serializable(
     attrs: Sequence[str] = [],
     without: Sequence[str] = [],
     inherit: Optional[bool] = True,
     inheritable: Optional[bool] = True,
-    **kwargs,
-) -> Any:
+) -> T:
     """
     Recursively serialize attributes of the class.
 
@@ -44,7 +46,7 @@ def serializable(
         Decorated class
     """
 
-    def rs_decorator(cls: Any) -> Any:
+    def rs_decorator(cls: T) -> T:
         recursive_serde_register(
             cls,
             serialize_attrs=attrs,

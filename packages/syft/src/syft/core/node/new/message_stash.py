@@ -68,7 +68,6 @@ class MessageStash(BaseUIDStoreStash):
     ) -> Result[List[Message], str]:
         qks = QueryKeys(
             qks=[
-                FromUserVerifyKeyPartitionKey.with_obj(verify_key),
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
                 StatusPartitionKey.with_obj(status),
             ]
@@ -89,7 +88,14 @@ class MessageStash(BaseUIDStoreStash):
         return self.update(obj=message)
 
     def delete_all_for_verify_key(self, verify_key: SyftVerifyKey) -> Result[bool, str]:
-        messages = self.get_all_inbox_for_verify_key(verify_key=verify_key)
+        result = self.get_all_inbox_for_verify_key(verify_key=verify_key)
+        # If result is an error then return the error
+        if result.is_err():
+            return result
+
+        # get the list of messages
+        messages = result.ok()
+
         for message in messages:
             result = self.delete_by_uid(uid=message.id)
             if result.is_err():
