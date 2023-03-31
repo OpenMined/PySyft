@@ -148,24 +148,17 @@ class ActionService(AbstractService):
         filtered_kwargs = code_item.input_policy.filter_kwargs(
             kwargs=kwargs, context=context, code_item_id=code_item.id
         )
+
         if filtered_kwargs.is_err():
             return filtered_kwargs
         filtered_kwargs = filtered_kwargs.ok()
         has_twin_inputs = False
 
         real_kwargs = {}
-        for key, arg_id in kwargs.items():
-            kwarg_value = self.get(
-                context=context,
-                uid=arg_id,
-                twin_mode=TwinMode.NONE,
-                skip_permission=True,
-            )
-            if kwarg_value.is_err():
-                return kwarg_value.err()
-            if isinstance(kwarg_value.ok(), TwinObject):
+        for key, kwarg_value in filtered_kwargs.items():
+            if isinstance(kwarg_value, TwinObject):
                 has_twin_inputs = True
-            real_kwargs[key] = kwarg_value.ok()
+            real_kwargs[key] = kwarg_value
 
         result_id = UID()
 
