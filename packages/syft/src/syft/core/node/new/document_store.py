@@ -502,7 +502,7 @@ class BaseUIDStoreStash(BaseStash):
         result = super().delete(qk=qk)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result.err()
+        return result
 
     def get_by_uid(
         self, uid: UID
