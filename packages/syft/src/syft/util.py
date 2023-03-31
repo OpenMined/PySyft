@@ -139,13 +139,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     if attr_list[0] != "syft":
         raise ReferenceError(f"Reference don't match: {attr_list[0]}")
 
-    if (
-        attr_list[1] != "core"
-        and attr_list[1] != "lib"
-        and attr_list[1] != "grid"
-        and attr_list[1] != "wrappers"
-        and attr_list[1] != "proxy"
-    ):
+    if attr_list[1] != "core" and attr_list[1] != "user":
         raise ReferenceError(f"Reference don't match: {attr_list[1]}")
 
     return index_modules(a_dict=get_loaded_syft(), keys=attr_list[1:])

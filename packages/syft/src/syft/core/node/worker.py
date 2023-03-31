@@ -258,6 +258,9 @@ class Worker(NewNode):
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
+        if UserCodeService in self.services:
+            user_code_service = self.get_service(UserCodeService)
+            user_code_service.load_user_code()
         if self.is_subprocess:
             # print(f"> Starting Subprocess {self}")
             pass

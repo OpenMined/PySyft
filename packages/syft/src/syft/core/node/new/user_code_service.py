@@ -15,12 +15,10 @@ from .linked_obj import LinkedObject
 from .policy import OutputHistory
 from .policy import OutputPolicy
 from .policy import UserPolicy
-from .policy import UserPolicyStatus
 from .policy import get_policy_object
 from .policy import init_policy
+from .policy import load_policy_code
 from .policy import update_policy_state
-from .policy_service import PolicyService
-from .request import EnumMutation
 from .request import SubmitRequest
 from .request import UserCodeStatusChange
 from .request_service import RequestService
@@ -67,13 +65,10 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
-        # relative
-
         user_code = code.to(UserCode, context=context)
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        policy_service = context.node.get_service(PolicyService)
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
@@ -82,35 +77,35 @@ class UserCodeService(AbstractService):
         )
         changes = [CODE_EXECUTE]
 
-        if isinstance(user_code.input_policy, UserPolicy):
-            policy_service.add_user_policy(context, user_code.input_policy)
-            input_policy_linked_obj = LinkedObject.from_obj(
-                user_code.input_policy,
-                node_uid=context.node.id,
-                service_type=PolicyService,
-            )
-            INPUT_POLICY_APPROVE = EnumMutation(
-                linked_obj=input_policy_linked_obj,
-                attr_name="status",
-                enum_type=UserPolicyStatus,
-                value=UserPolicyStatus.APPROVED,
-            )
-            changes.append(INPUT_POLICY_APPROVE)
+        # if isinstance(user_code.input_policy, UserPolicy):
+        #     policy_service.add_user_policy(context, user_code.input_policy)
+        #     input_policy_linked_obj = LinkedObject.from_obj(
+        #         user_code.input_policy,
+        #         node_uid=context.node.id,
+        #         service_type=PolicyService,
+        #     )
+        #     INPUT_POLICY_APPROVE = EnumMutation(
+        #         linked_obj=input_policy_linked_obj,
+        #         attr_name="status",
+        #         enum_type=UserPolicyStatus,
+        #         value=UserPolicyStatus.APPROVED,
+        #     )
+        #     changes.append(INPUT_POLICY_APPROVE)
 
-        if isinstance(user_code.output_policy, UserPolicy):
-            policy_service.add_user_policy(context, user_code.output_policy)
-            output_policy_linked_obj = LinkedObject.from_obj(
-                user_code.output_policy,
-                node_uid=context.node.id,
-                service_type=PolicyService,
-            )
-            OUTPUT_POLICY_APPROVE = EnumMutation(
-                linked_obj=output_policy_linked_obj,
-                attr_name="status",
-                enum_type=UserPolicyStatus,
-                value=UserPolicyStatus.APPROVED,
-            )
-            changes.append(OUTPUT_POLICY_APPROVE)
+        # if isinstance(user_code.output_policy, UserPolicy):
+        #     policy_service.add_user_policy(context, user_code.output_policy)
+        #     output_policy_linked_obj = LinkedObject.from_obj(
+        #         user_code.output_policy,
+        #         node_uid=context.node.id,
+        #         service_type=PolicyService,
+        #     )
+        #     OUTPUT_POLICY_APPROVE = EnumMutation(
+        #         linked_obj=output_policy_linked_obj,
+        #         attr_name="status",
+        #         enum_type=UserPolicyStatus,
+        #         value=UserPolicyStatus.APPROVED,
+        #     )
+        #     changes.append(OUTPUT_POLICY_APPROVE)
 
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
@@ -147,7 +142,11 @@ class UserCodeService(AbstractService):
         """Get a User Code Item"""
         result = self.stash.get_by_uid(uid=uid)
         if result.is_ok():
-            return result.ok()
+            user_code = result.ok()
+            if user_code.input_policy_state:
+                # TODO replace with LinkedObject Context
+                user_code.node_uid = context.node.id
+            return user_code
         return SyftError(message=result.err())
 
     @service_method(path="code.get_all_for_user", name="get_all_for_user")
@@ -169,6 +168,17 @@ class UserCodeService(AbstractService):
             return SyftSuccess(message="Code State Updated")
         return SyftError(message="Unable to Update Code State")
 
+    def load_user_code(self) -> None:
+        result = self.stash.get_all()
+        if result.is_ok():
+            user_code_items = result.ok()
+            for user_code in user_code_items:
+                if user_code.status.approved:
+                    if isinstance(user_code.input_policy_type, UserPolicy):
+                        load_policy_code(user_code.input_policy_type)
+                    if isinstance(user_code.output_policy_type, UserPolicy):
+                        load_policy_code(user_code.output_policy_type)
+
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
@@ -182,9 +192,6 @@ class UserCodeService(AbstractService):
 
             # Unroll variables
             code_item = result.ok()
-            output_policy = code_item.output_policy
-            op_state = code_item.output_policy_state
-            op_init_args = code_item.output_policy_init_args
             status = code_item.status
 
             # Check if we are allowed to execute the code
@@ -197,11 +204,14 @@ class UserCodeService(AbstractService):
                     message=f"{type(code_item)} Your code cannot be run: {status}"
                 )
 
+            output_policy = code_item.output_policy
+            if output_policy is None:
+                raise Exception("Output policy not approved", code_item)
+            op_state = code_item.output_policy_state
+            op_init_args = code_item.output_policy_init_kwargs
+
             # Check if the OutputPolicy is valid
-            if isinstance(op_state, bytes) and len(op_state) > 0:
-                is_valid = True
-            else:
-                is_valid = output_policy.valid
+            is_valid = output_policy.valid
 
             if not is_valid:
                 if len(output_policy.output_history) > 0:

@@ -176,13 +176,18 @@ class Request(SyftObject):
         if not result:
             return result
 
+        permission_request = self.approve()
+        if not permission_request:
+            return permission_request
+
         code = change.linked_obj.resolve
         state = code.output_policy
         ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
-        state.apply_output(context=ctx, outputs=action_object.id)
+
+        state.apply_output(context=ctx, outputs=action_object)
         policy_state_mutation = ObjectMutation(
             linked_obj=change.linked_obj,
-            attr_name="output_policy",
+            attr_name="output_policy_state",
             match_type=True,
             value=state,
         )
@@ -190,7 +195,6 @@ class Request(SyftObject):
         action_object_link = LinkedObject.from_obj(
             action_object, node_uid=self.node_uid
         )
-
         permission_change = ActionStoreChange(
             linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
         )

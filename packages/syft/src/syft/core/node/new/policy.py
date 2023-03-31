@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import ast
+from copy import deepcopy
 from enum import Enum
 import hashlib
 import inspect
@@ -10,12 +11,12 @@ from inspect import Parameter
 from inspect import Signature
 from io import StringIO
 import sys
+import types
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Type
 from typing import Union
 
 # third party
@@ -24,6 +25,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ....util import is_interpreter_jupyter
 from .action_object import ActionObject
 from .api import NodeView
 from .code_parse import GlobalsVisitor
@@ -89,11 +91,27 @@ class Policy(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
+    init_kwargs: Dict[Any, Any] = {}
 
+    def __init__(self, *args, **kwargs) -> None:
+        if "init_kwargs" in kwargs:
+            init_kwargs = kwargs["init_kwargs"]
+            del kwargs["init_kwargs"]
+        else:
+            init_kwargs = deepcopy(kwargs)
+            if "id" in init_kwargs:
+                del init_kwargs["id"]
+        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)
+
+    @classmethod
     @property
-    def policy_code(self) -> str:
-        cls = type(self)
-        op_code = inspect.getsource(cls)
+    def policy_code(cls) -> str:
+        mro = reversed(cls.mro())
+        op_code = ""
+        for klass in mro:
+            if "Policy" in klass.__name__:
+                op_code += inspect.getsource(klass)
+                op_code += "\n"
         return op_code
 
     def public_state() -> None:
@@ -151,66 +169,27 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     return output_kwargs
 
 
-@serializable()
-class InputPolicyState(SyftObject):
-    # version
-    __canonical_name__ = "InputPolicyState"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-
 class InputPolicy(Policy):
-    # version
     __canonical_name__ = "InputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID
-    inputs: Dict[NodeView, Any]
-    node_uid: Optional[UID]
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # TODO: This method initialization would conflict if one of the input variables
-        # to the code submission function happens to be id or inputs
-        uid = UID()
-        node_uid = None
-        if "id" in kwargs:
-            uid = kwargs["id"]
-        if "node_uid" in kwargs:
-            node_uid = kwargs["node_uid"]
-
-        # finally get inputs
-        if "inputs" in kwargs:
-            kwargs = kwargs["inputs"]
+        if "init_kwargs" in kwargs:
+            init_kwargs = kwargs["init_kwargs"]
+            del kwargs["init_kwargs"]
         else:
-            kwargs = partition_by_node(kwargs)
-        super().__init__(id=uid, inputs=kwargs, node_uid=node_uid)
+            # TODO: remove this tech debt
+            init_kwargs = partition_by_node(kwargs)
+        super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
 
     def filter_kwargs(
-        self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
-    ) -> Dict[str, Any]:
+        self, kwargs: Dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
+    ) -> Dict[Any, Any]:
         raise NotImplementedError
 
     @property
-    def assets(self) -> List[Asset]:
-        # relative
-        from .api import APIRegistry
-
-        api = APIRegistry.api_for(self.node_uid)
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
-
-        node_view = NodeView(
-            node_name=api.node_name, verify_key=api.signing_key.verify_key
-        )
-        inputs = self.inputs[node_view]
-        all_assets = []
-        for k, uid in inputs.items():
-            if isinstance(uid, UID):
-                assets = api.services.dataset.get_assets_by_action_id(uid)
-                if not isinstance(assets, list):
-                    return assets
-
-                all_assets += assets
-        return all_assets
+    def inputs(self) -> Dict[NodeView, Any]:
+        return self.init_kwargs
 
 
 def retrieve_from_db(
@@ -291,14 +270,15 @@ class ExactMatch(InputPolicy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     def filter_kwargs(
-        self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
-    ) -> Dict[str, Any]:
+        self, kwargs: Dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
+    ) -> Dict[Any, Any]:
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         )
-        return retrieve_from_db(
+        results = retrieve_from_db(
             code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
         )
+        return results
 
 
 @serializable()
@@ -312,82 +292,13 @@ class OutputHistory(SyftObject):
     executing_user_verify_key: SyftVerifyKey
 
 
-@serializable()
-class OutputPolicyState(SyftObject):
-    # version
-    __canonical_name__ = "OutputPolicyState"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    output_history: List[OutputHistory] = []
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        raise NotImplementedError
-
-    def update_state(
-        self,
-        context: NodeServiceContext,
-        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
-    ) -> None:
-        if isinstance(outputs, UID):
-            outputs = [outputs]
-        history = OutputHistory(
-            output_time=DateTime.now(),
-            outputs=outputs,
-            executing_user_verify_key=context.credentials,
-        )
-        self.output_history.append(history)
-
-
-@serializable()
-class OutputPolicyStateExecuteCount(OutputPolicyState):
-    # version
-    __canonical_name__ = "OutputPolicyStateExecuteCount"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    count: int = 0
-    limit: int
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        is_valid = self.count < self.limit
-        if is_valid:
-            return SyftSuccess(
-                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
-            )
-        return SyftError(
-            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
-        )
-
-    def update_state(
-        self,
-        context: NodeServiceContext,
-        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
-    ) -> None:
-        if self.count >= self.limit:
-            raise Exception(
-                f"Update state being called with count: {self.count} "
-                f"beyond execution limit: {self.limit}"
-            )
-        super().update_state(context=context, outputs=outputs)
-        self.count += 1
-
-
-@serializable()
-class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
-    __canonical_name__ = "OutputPolicyStateExecuteOnce"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    limit: int = 1
-
-
 class OutputPolicy(Policy):
     # version
     __canonical_name__ = "OutputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     output_history: List[OutputHistory] = []
-    outputs: List[str] = []
+    output_kwargs: List[str] = []
     node_uid: Optional[UID]
 
     def apply_output(
@@ -405,6 +316,10 @@ class OutputPolicy(Policy):
         )
         self.output_history.append(history)
         return outputs
+
+    @property
+    def outputs(self) -> List[str]:
+        return self.output_kwargs
 
 
 @serializable()
@@ -449,32 +364,18 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
     limit: int = 1
 
 
-@serializable()
-class SingleExecutionExactOutput(OutputPolicyExecuteCount):
-    # version
-    __canonical_name__ = "SingleExecutionExactOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    limit: int = 1
+SingleExecutionExactOutput = OutputPolicyExecuteOnce
 
 
-class CustomPolicy(Policy):
-    # version
-    __canonical_name__ = "CustomPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    init_args: Dict[str, Any] = {}
-    init_kwargs: Dict[str, Any] = {}
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(init_args=args, init_kwargs=kwargs, *args, **kwargs)
+class CustomPolicy(type):
+    # capture the init_kwargs transparently
+    def __call__(cls, *args: Any, **kwargs: Any) -> None:
+        obj = super().__call__(*args, **kwargs)
+        setattr(obj, "init_kwargs", kwargs)
+        return obj
 
 
-class CustomOutputPolicy(CustomPolicy, OutputPolicy):
-    # version
-    __canonical_name__ = "CustomOutputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
-
+class CustomOutputPolicy(metaclass=CustomPolicy):
     def apply_output(
         self,
         context: NodeServiceContext,
@@ -483,10 +384,16 @@ class CustomOutputPolicy(CustomPolicy, OutputPolicy):
         return outputs
 
 
-class CustomInputPolicy(CustomPolicy, InputPolicy):
-    # version
-    __canonical_name__ = "CustomInputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
+class UserOutputPolicy(OutputPolicy):
+    pass
+
+
+class UserInputPolicy(InputPolicy):
+    pass
+
+
+class CustomInputPolicy(metaclass=CustomPolicy):
+    pass
 
 
 @serializable()
@@ -505,8 +412,6 @@ class UserPolicy(Policy):
     code_hash: str
     byte_code: PyCodeObject
     status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
-    state_type: Optional[Type] = None
-    policy_version: int
 
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
@@ -524,6 +429,43 @@ class UserPolicy(Policy):
         return outputs
 
 
+def new_getfile(object):
+    if not inspect.isclass(object):
+        return inspect.getfile(object)
+
+    # Lookup by parent module (as in current inspect)
+    if hasattr(object, "__module__"):
+        object_ = sys.modules.get(object.__module__)
+        if hasattr(object_, "__file__"):
+            return object_.__file__
+
+    # If parent module is __main__, lookup by methods (NEW)
+    for _, member in inspect.getmembers(object):
+        if (
+            inspect.isfunction(member)
+            and object.__qualname__ + "." + member.__name__ == member.__qualname__
+        ):
+            return inspect.getfile(member)
+    else:
+        raise TypeError("Source for {!r} not found".format(object))
+
+
+def get_code_from_class(policy):
+    klasses = [inspect.getmro(policy)[0]]  #
+    whole_str = ""
+    for klass in klasses:
+        if is_interpreter_jupyter():
+            # third party
+            from IPython.core.magics.code import extract_symbols
+
+            cell_code = "".join(inspect.linecache.getlines(new_getfile(klass)))
+            class_code = extract_symbols(cell_code, klass.__name__)[0][0]
+        else:
+            class_code = inspect.getsource(klass)
+        whole_str += class_code
+    return whole_str
+
+
 @serializable()
 class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
@@ -536,6 +478,16 @@ class SubmitUserPolicy(Policy):
 
     def compile(self) -> PyCodeObject:
         return compile_restricted(self.code, "<string>", "exec")
+
+    @staticmethod
+    def from_obj(policy_obj: CustomPolicy) -> SubmitUserPolicy:
+        user_class = policy_obj.__class__
+        init_f_code = user_class.__init__.__code__
+        return SubmitUserPolicy(
+            code=get_code_from_class(user_class),
+            class_name=user_class.__name__,
+            input_kwargs=init_f_code.co_varnames[1 : init_f_code.co_argcount],
+        )
 
 
 def hash_code(context: TransformContext) -> TransformContext:
@@ -564,19 +516,16 @@ def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
     return None
 
 
-def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) -> str:
+def process_class_code(raw_code: str, class_name: str) -> str:
     tree = ast.parse(raw_code)
-
     v = GlobalsVisitor()
     v.visit(tree)
-
     if len(tree.body) != 1 or not isinstance(tree.body[0], ast.ClassDef):
         raise Exception(
             "Class code should only contain the Class Definition for your policy."
         )
-
     old_class = tree.body[0]
-    if len(old_class.bases) != 1 or old_class.bases[0].id not in [
+    if len(old_class.bases) != 1 or old_class.bases[0].attr not in [
         "CustomInputPolicy",
         "CustomOutputPolicy",
     ]:
@@ -585,8 +534,9 @@ def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) 
         )
 
     # TODO: changes the bases
+    old_class.bases[0].attr = old_class.bases[0].attr.replace("Custom", "User")
 
-    serializable_name = ast.Name(id="serializable", ctx=ast.Load())
+    serializable_name = ast.Name(id="sy.serializable", ctx=ast.Load())
     serializable_decorator = ast.Call(
         func=serializable_name,
         args=[],
@@ -594,19 +544,56 @@ def process_class_code(raw_code: str, class_name: str, input_kwargs: List[str]) 
     )
 
     new_class = tree.body[0]
-    version = None
+    # TODO add this manually
     for stmt in new_class.body:
-        if isinstance(stmt, ast.Assign):
-            if stmt.targets[0].id == "__version__":
-                version = stmt.value.value
-                break
-    if version is None:
-        raise Exception(
-            "Version cannot be found. Please specify it in your custom policy"
-        )
+        if isinstance(stmt, ast.FunctionDef) and stmt.name == "__init__":
+            stmt.name = "__user_init__"
+
+    # change the module that the code will reference
+    # this is required for the @serializable to mount it in the right path for serde
+    new_line = ast.parse('__module__ = "syft.user"')
+    new_class.body.append(new_line.body[0])
+    new_line = ast.parse(f'__canonical_name__ = "{class_name}"')
+    new_class.body.append(new_line.body[0])
+    new_line = ast.parse("__version__ = 1")
+    new_class.body.append(new_line.body[0])
     new_class.name = class_name
     new_class.decorator_list = [serializable_decorator]
-    return unparse(new_class), version
+    new_body = []
+    new_body.append(
+        ast.ImportFrom(
+            module="__future__",
+            names=[ast.alias(name="annotations", asname="annotations")],
+            level=0,
+        )
+    )
+    new_body.append(ast.Import(names=[ast.alias(name="syft", asname="sy")], level=0))
+    typing_types = [
+        "Any",
+        "Callable",
+        "ClassVar",
+        "Dict",
+        "List",
+        "Optional",
+        "Set",
+        "Tuple",
+        "Type",
+    ]
+    for typing_type in typing_types:
+        new_body.append(
+            ast.ImportFrom(
+                module="typing",
+                names=[ast.alias(name=typing_type, asname=typing_type)],
+                level=0,
+            )
+        )
+    new_body.append(new_class)
+    module = ast.Module(new_body)
+    try:
+        return unparse(module)
+    except Exception as e:
+        print("failed to unparse", e)
+        raise e
 
 
 def check_class_code(context: TransformContext) -> TransformContext:
@@ -616,13 +603,11 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
     try:
-        processed_code, policy_version = process_class_code(
+        processed_code = process_class_code(
             raw_code=context.output["raw_code"],
             class_name=context.output["unique_name"],
-            input_kwargs=context.output["input_kwargs"],
         )
         context.output["parsed_code"] = processed_code
-        context.output["policy_version"] = policy_version
     except Exception as e:
         raise e
     return context
@@ -669,6 +654,21 @@ def submit_policy_code_to_user_code() -> List[Callable]:
     ]
 
 
+def add_class_to_user_module(klass: type, unique_name: str) -> type:
+    klass.__module__ = "syft.user"
+    klass.__name__ = unique_name
+    # syft absolute
+    import syft as sy
+
+    if not hasattr(sy, "user"):
+        user_module = types.ModuleType("user")
+        setattr(sys.modules["syft"], "user", user_module)
+    user_module = sy.user
+    setattr(user_module, unique_name, klass)
+    setattr(sys.modules["syft"], "user", user_module)
+    return klass
+
+
 def execute_policy_code(user_policy: UserPolicy):
     stdout_ = sys.stdout
     stderr_ = sys.stderr
@@ -679,16 +679,15 @@ def execute_policy_code(user_policy: UserPolicy):
 
         sys.stdout = stdout
         sys.stderr = stderr
-        # syft absolute
-        import syft as sy  # noqa: F401 # provide sy.Things to user code
 
-        class_name = f"{user_policy.unique_name}_{user_policy.policy_version}"
-        print("Exec context", file=stderr_)
+        class_name = f"{user_policy.unique_name}"
         if class_name in user_policy.__object_version_registry__.keys():
             policy_class = user_policy.__object_version_registry__[class_name]
         else:
             exec(user_policy.byte_code)  # nosec
             policy_class = eval(user_policy.unique_name)  # nosec
+
+        policy_class = add_class_to_user_module(policy_class, user_policy.unique_name)
 
         sys.stdout = stdout_
         sys.stderr = stderr_
@@ -703,9 +702,18 @@ def execute_policy_code(user_policy: UserPolicy):
         sys.stderr = stderr_
 
 
+def load_policy_code(user_policy: UserPolicy) -> Any:
+    try:
+        policy_class = execute_policy_code(user_policy)
+        return policy_class
+    except Exception as e:
+        raise Exception(f"Exception loading code. {user_policy}. {e}")
+
+
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
-    policy_class = execute_policy_code(user_policy)
-    policy_object = policy_class(**init_args)
+    policy_class = load_policy_code(user_policy)
+    policy_object = policy_class()
+    policy_object.__user_init__(**init_args)
     return policy_object
 
 
