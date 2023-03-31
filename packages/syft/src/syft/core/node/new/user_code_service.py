@@ -13,12 +13,8 @@ from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
 from .policy import OutputHistory
-from .policy import OutputPolicy
 from .policy import UserPolicy
-from .policy import get_policy_object
-from .policy import init_policy
 from .policy import load_policy_code
-from .policy import update_policy_state
 from .request import SubmitRequest
 from .request import UserCodeStatusChange
 from .request_service import RequestService
@@ -207,8 +203,6 @@ class UserCodeService(AbstractService):
             output_policy = code_item.output_policy
             if output_policy is None:
                 raise Exception("Output policy not approved", code_item)
-            op_state = code_item.output_policy_state
-            op_init_args = code_item.output_policy_init_kwargs
 
             # Check if the OutputPolicy is valid
             is_valid = output_policy.valid
@@ -231,35 +225,14 @@ class UserCodeService(AbstractService):
 
             # Apply Output Policy to the results and update the OutputPolicyState
             final_results = result.ok()
-            if isinstance(output_policy, OutputPolicy) and not isinstance(
-                op_state, bytes
-            ):
-                op_state.apply_output(context=context, outputs=final_results)
-            else:
-                # For User Policies we need to get the object from the byte_code
-                if hasattr(output_policy, "byte_code"):
-                    if len(op_state) == 0:
-                        policy_object = init_policy(output_policy, op_init_args)
-                    else:
-                        policy_object = get_policy_object(output_policy, op_state)
-                else:
-                    policy_object = code_item.output_policy
-
-                policy_object.apply_output(context, final_results)
-                if hasattr(code_item.output_policy, "byte_code"):
-                    code_item.output_policy_state = update_policy_state(policy_object)
-
+            output_policy.apply_output(context=context, outputs=final_results)
+            code_item.output_policy_state = output_policy
             state_result = self.update_code_state(context=context, code_item=code_item)
-            if state_result:
-                # TODO: there are probably circumstances where we
-                # can return the mock if the policy is invalid?
-                #
-                # Answer: I think it would be cleaner if we would return an error
-                # or both even
-                if isinstance(final_results, TwinObject):
-                    return final_results.private
-                return final_results
-            return state_result
+            if not state_result:
+                return state_result
+            if isinstance(final_results, TwinObject):
+                return final_results.private
+            return final_results
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
 

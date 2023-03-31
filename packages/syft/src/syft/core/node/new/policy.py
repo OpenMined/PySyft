@@ -22,7 +22,6 @@ from typing import Union
 # third party
 from RestrictedPython import compile_restricted
 from result import Ok
-from result import Result
 
 # relative
 from ....util import is_interpreter_jupyter
@@ -34,13 +33,11 @@ from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
 from .datetime import DateTime
-from .deserialize import _deserialize
 from .document_store import PartitionKey
 from .node import NodeType
 from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
-from .serialize import _serialize
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .transforms import TransformContext
@@ -715,13 +712,3 @@ def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
     policy_object = policy_class()
     policy_object.__user_init__(**init_args)
     return policy_object
-
-
-def get_policy_object(user_policy: UserPolicy, state: str) -> Result[Any, str]:
-    policy_class = execute_policy_code(user_policy)
-    policy_object = _deserialize(state, from_bytes=True, class_type=policy_class)
-    return policy_object
-
-
-def update_policy_state(policy_object):
-    return _serialize(policy_object, to_bytes=True)

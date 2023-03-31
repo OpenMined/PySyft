@@ -116,10 +116,6 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
     if fqn not in TYPE_BANK:
-        print("failed to get fqn", fqn)
-        a = getattr(sy, "user", None)
-        print("syft user", a)
-        print(dir(a))
         raise Exception(f"{fqn} not in TYPE_BANK")
 
     msg.fullyQualifiedName = fqn
@@ -159,6 +155,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
 
         if isinstance(field_obj, types.FunctionType):
             continue
+
         serialized = sy.serialize(field_obj, to_bytes=True)
         msg.fieldsName[idx] = attr_name
         chunk_bytes(serialized, idx, msg.fieldsData)
@@ -166,37 +163,29 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     return msg
 
 
-def rs_bytes2object(blob: bytes, class_type: Type = type(None)) -> Any:
+def rs_bytes2object(blob: bytes) -> Any:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
     with recursive_scheme.from_bytes(  # type: ignore
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
-        return rs_proto2object(msg, class_type)
+        return rs_proto2object(msg)
 
 
-def rs_proto2object(proto: _DynamicStructBuilder, class_type: Type = type(None)) -> Any:
+def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # relative
     from .deserialize import _deserialize
 
     # clean this mess, Tudor
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
-    if class_type == type(None):
-        if klass != "NoneType":
-            # class_type: Type = type(None)
-            try:
-                class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
-            except Exception:  # nosec
-                try:
-                    class_type = getattr(sys.modules[".".join(module_parts)], klass)
-                except Exception:
-                    # failed the first two checks
-                    print(
-                        "failed to get proto.fullyQualifiedName",
-                        proto.fullyQualifiedName,
-                    )
-                    class_type = locals()[klass]
+
+    class_type: Type = type(None)
+    if klass != "NoneType":
+        try:
+            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
+        except Exception:  # nosec
+            class_type = getattr(sys.modules[".".join(module_parts)], klass)
 
     if proto.fullyQualifiedName not in TYPE_BANK:
         raise Exception(f"{proto.fully_qualified_name} not in TYPE_BANK")
@@ -234,6 +223,8 @@ def rs_proto2object(proto: _DynamicStructBuilder, class_type: Type = type(None))
         # AttributeError: object has no attribute '__fields_set__'
 
         if "syft.user" in proto.fullyQualifiedName:
+            # weird issues with pydantic and ForwardRef on user classes being inited
+            # with custom state args / kwargs
             obj = class_type()
             for attr_name, attr_value in kwargs.items():
                 setattr(obj, attr_name, attr_value)
