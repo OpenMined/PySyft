@@ -74,7 +74,7 @@ class MessageService(AbstractService):
         status: MessageStatus,
     ) -> Union[List[Message], SyftError]:
         result = self.stash.get_all_by_verify_key_for_status(
-            verify_key=context.credentials, status=status
+            context.credentials, verify_key=context.credentials, status=status
         )
         if result.err():
             return SyftError(message=str(result.err()))
