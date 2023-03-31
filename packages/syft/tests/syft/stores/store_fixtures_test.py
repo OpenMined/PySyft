@@ -142,7 +142,7 @@ def mongo_document_store_fn(
 
     mongo_client.drop_database(mongo_db_name)
 
-    return MongoDocumentStore(store_config=store_config)
+    return MongoDocumentStore(root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function")
@@ -190,14 +190,14 @@ def dict_action_store():
     return DictActionStore(store_config=store_config, root_verify_key=ver_key)
 
 
-def dict_document_store_fn():
+def dict_document_store_fn(root_verify_key):
     store_config = DictStoreConfig()
-    return DictDocumentStore(store_config=store_config)
+    return DictDocumentStore(root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function")
-def dict_document_store():
-    return dict_document_store_fn()
+def dict_document_store(root_verify_key):
+    return dict_document_store_fn(root_verify_key)
 
 
 def dict_queue_stash_fn(dict_document_store):

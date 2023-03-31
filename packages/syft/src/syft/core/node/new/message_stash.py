@@ -49,14 +49,14 @@ class MessageStash(BaseUIDStoreStash):
         )
 
     def get_all_sent_for_verify_key(
-        self, verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[List[Message], str]:
         qks = QueryKeys(
             qks=[
                 FromUserVerifyKeyPartitionKey.with_obj(verify_key),
             ]
         )
-        return self.get_all_for_verify_key(verify_key=verify_key, qks=qks)
+        return self.get_all_for_verify_key(credentials, verify_key=verify_key, qks=qks)
 
     def get_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey, qks: QueryKeys
@@ -66,21 +66,23 @@ class MessageStash(BaseUIDStoreStash):
         return self.query_all(credentials, qks=qks)
 
     def get_all_by_verify_key_for_status(
-        self, verify_key: SyftVerifyKey, status: MessageStatus
+        self,
+        credentials: SyftVerifyKey,
+        verify_key: SyftVerifyKey,
+        status: MessageStatus,
     ) -> Result[List[Message], str]:
         qks = QueryKeys(
             qks=[
-                FromUserVerifyKeyPartitionKey.with_obj(verify_key),
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
                 StatusPartitionKey.with_obj(status),
             ]
         )
-        return self.query_all(qks=qks)
+        return self.query_all(credentials, qks=qks)
 
     def update_message_status(
-        self, uid: UID, status: MessageStatus
+        self, credentials: SyftVerifyKey, uid: UID, status: MessageStatus
     ) -> Result[Message, str]:
-        result = self.get_by_uid(uid=uid)
+        result = self.get_by_uid(credentials, uid=uid)
         if result.is_err():
             return result.err()
 
@@ -88,12 +90,21 @@ class MessageStash(BaseUIDStoreStash):
         if message is None:
             return Err(f"No message exists for id: {uid}")
         message.status = status
-        return self.update(obj=message)
+        return self.update(credentials, obj=message)
 
-    def delete_all_for_verify_key(self, verify_key: SyftVerifyKey) -> Result[bool, str]:
-        messages = self.get_all_inbox_for_verify_key(verify_key=verify_key)
+    def delete_all_for_verify_key(
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+    ) -> Result[bool, str]:
+        result = self.get_all_inbox_for_verify_key(credentials, verify_key=verify_key)
+        # If result is an error then return the error
+        if result.is_err():
+            return result
+
+        # get the list of messages
+        messages = result.ok()
+
         for message in messages:
-            result = self.delete_by_uid(uid=message.id)
+            result = self.delete_by_uid(credentials, uid=message.id)
             if result.is_err():
                 return result
         return Ok(True)

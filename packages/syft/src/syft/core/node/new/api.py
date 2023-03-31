@@ -98,7 +98,7 @@ class SignedSyftAPICall(SyftObject):
         return self.cached_deseralized_message
 
     @property
-    def is_valid(self) -> Result[SyftSuccess, SyftSuccess]:
+    def is_valid(self) -> Result[SyftSuccess, SyftError]:
         try:
             _ = self.credentials.verify_key.verify(
                 self.serialized_message, self.signature

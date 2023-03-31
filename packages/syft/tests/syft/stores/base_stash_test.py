@@ -1,9 +1,19 @@
 # stdlib
 import random
+import sys
 from typing import Any
+from typing import Callable
+from typing import Container
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import TypeVar
+
+if sys.version_info >= (3, 10):
+    # stdlib
+    from typing import ParamSpec
+else:
+    from typing_extensions import ParamSpec
 
 # third party
 from faker import Faker
@@ -23,7 +33,7 @@ from syft.core.node.new.syft_object import SyftObject
 from syft.core.node.new.uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class MockObject(SyftObject):
     __canonical_name__ = "base_stash_mock_object_type"
     id: UID
@@ -59,6 +69,21 @@ def add_mock_object(root_verify_key, stash: MockStash, obj: MockObject) -> MockO
     return result.ok()
 
 
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+def create_unique(
+    gen: Callable[P, T], xs: Container[T], *args: P.args, **kwargs: P.kwargs
+) -> T:
+    """Generate a value with `gen()` that does not collide with any element in xs"""
+    x = gen(*args, **kwargs)
+    while x in xs:
+        x = gen(*args, **kwargs)
+
+    return x
+
+
 @pytest.fixture
 def base_stash(root_verify_key) -> MockStash:
     return MockStash(store=DictDocumentStore(root_verify_key))
@@ -79,7 +104,7 @@ def object_kwargs(faker: Faker, **kwargs: Any) -> Dict[str, Any]:
 
 
 def multiple_object_kwargs(
-    faker, n=10, same=False, **kwargs: Any
+    faker: Faker, n=10, same=False, **kwargs: Any
 ) -> List[Dict[str, Any]]:
     if same:
         kwargs_ = {"id": UID(), **object_kwargs(faker), **kwargs}
@@ -153,7 +178,7 @@ def test_basestash_cannot_delete_non_existent(
 ) -> None:
     add_mock_object(root_verify_key, base_stash, mock_object)
 
-    random_uid = UID()
+    random_uid = create_unique(UID, [mock_object.id])
     for result in [
         base_stash.delete(root_verify_key, UIDPartitionKey.with_obj(random_uid)),
         base_stash.delete_by_uid(root_verify_key, random_uid),
@@ -192,7 +217,7 @@ def test_basestash_cannot_update_non_existent(
     add_mock_object(root_verify_key, base_stash, mock_object)
 
     updated_obj = mock_object.copy()
-    updated_obj.id = UID()
+    updated_obj.id = create_unique(UID, [mock_object.id])
     updated_obj.name = faker.name()
 
     result = base_stash.update(root_verify_key, updated_obj)
@@ -227,7 +252,7 @@ def test_basestash_get_by_uid(
     assert result.is_ok()
     assert result.ok() == mock_object
 
-    random_uid = UID()
+    random_uid = create_unique(UID, [mock_object.id])
     result = base_stash.get_by_uid(root_verify_key, random_uid)
     assert result.is_ok()
     assert result.ok() is None
@@ -265,7 +290,9 @@ def test_basestash_query_one(
         assert result.is_ok()
         assert result.ok() == obj
 
-    random_name = faker.name()
+    existing_names = set(obj.name for obj in mock_objects)
+    random_name = create_unique(faker.name, existing_names)
+
     for result in (
         base_stash.query_one_kwargs(root_verify_key, name=random_name),
         base_stash.query_one(
@@ -283,7 +310,7 @@ def test_basestash_query_one(
         assert result.is_ok()
         assert result.ok() == obj
 
-    params = {"name": faker.name(), "desc": random_sentence(faker)}
+    params = {"name": random_name, "desc": random_sentence(faker)}
     for result in [
         base_stash.query_one_kwargs(root_verify_key, **params),
         base_stash.query_one(root_verify_key, QueryKeys.from_dict(params)),
@@ -299,8 +326,9 @@ def test_basestash_query_all(
     n_same = 3
     kwargs_list = multiple_object_kwargs(faker, n=n_same, desc=desc)
     similar_objects = [MockObject(**kwargs) for kwargs in kwargs_list]
+    all_objects = mock_objects + similar_objects
 
-    for obj in mock_objects + similar_objects:
+    for obj in all_objects:
         base_stash.set(root_verify_key, obj)
 
     for result in [
@@ -317,7 +345,9 @@ def test_basestash_query_all(
         retrived_objects_values = set(get_object_values(obj) for obj in objects)
         assert original_object_values == retrived_objects_values
 
-    random_desc = random_sentence(faker)
+    random_desc = create_unique(
+        random_sentence, [obj.desc for obj in all_objects], faker
+    )
     for result in [
         base_stash.query_all_kwargs(root_verify_key, desc=random_desc),
         base_stash.query_all(
@@ -337,7 +367,9 @@ def test_basestash_query_all(
     ]:
         assert result.is_ok()
         objects = result.ok()
-        assert len(objects) == 1
+        assert len(objects) == sum(
+            1 for obj_ in all_objects if (obj_.name, obj_.desc) == (obj.name, obj.desc)
+        )
         assert objects[0] == obj
 
 
@@ -351,8 +383,9 @@ def test_basestash_query_all_kwargs_multiple_params(
         faker, n=n_same, importance=importance, desc=desc
     )
     similar_objects = [MockObject(**kwargs) for kwargs in kwargs_list]
+    all_objects = mock_objects + similar_objects
 
-    for obj in mock_objects + similar_objects:
+    for obj in all_objects:
         base_stash.set(root_verify_key, obj)
 
     params = {"importance": importance, "desc": desc}
@@ -368,7 +401,10 @@ def test_basestash_query_all_kwargs_multiple_params(
         retrived_objects_values = set(get_object_values(obj) for obj in objects)
         assert original_object_values == retrived_objects_values
 
-    params = {"name": faker.name(), "desc": random_sentence(faker)}
+    params = {
+        "name": create_unique(faker.name, [obj.name for obj in all_objects]),
+        "desc": random_sentence(faker),
+    }
     for result in [
         base_stash.query_all_kwargs(root_verify_key, **params),
         base_stash.query_all(root_verify_key, QueryKeys.from_dict(params)),

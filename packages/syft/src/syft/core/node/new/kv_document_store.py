@@ -511,6 +511,7 @@ class KeyValueStorePartition(StorePartition):
                     # this is the normal path
                     if pk_value not in ck_col.keys():
                         # must be at least one in all query keys
+                        subsets.append(set())
                         continue
                     store_values = ck_col[pk_value]
                     subsets.append(set(store_values))
