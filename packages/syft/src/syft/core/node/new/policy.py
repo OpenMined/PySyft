@@ -562,7 +562,9 @@ def process_class_code(raw_code: str, class_name: str) -> str:
     new_body = []
     new_body.append(
         ast.ImportFrom(
-            module="__future__", names=[ast.alias(name="annotations")], level=0
+            module="__future__",
+            names=[ast.alias(name="annotations", asname="annotations")],
+            level=0,
         )
     )
     new_body.append(ast.Import(names=[ast.alias(name="syft", asname="sy")], level=0))
@@ -580,7 +582,9 @@ def process_class_code(raw_code: str, class_name: str) -> str:
     for typing_type in typing_types:
         new_body.append(
             ast.ImportFrom(
-                module="typing", names=[ast.alias(name=typing_type)], level=0
+                module="typing",
+                names=[ast.alias(name=typing_type, asname=typing_type)],
+                level=0,
             )
         )
     new_body.append(new_class)
