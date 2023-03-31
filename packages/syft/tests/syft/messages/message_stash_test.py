@@ -52,7 +52,7 @@ def add_mock_message(
 
     # print("*******", mock_message._repr_debug_())
 
-    result = message_stash.partition.set(mock_message)
+    result = message_stash.set(mock_message)
     assert result.is_ok()
 
     return mock_message
@@ -227,7 +227,7 @@ def test_messagestash_get_all_by_verify_key_for_status(document_store) -> None:
     mock_message = add_mock_message(test_stash, test_verify_key, random_verify_key)
 
     response2 = test_stash.get_all_by_verify_key_for_status(
-        mock_message.from_user_verify_key, messeage_status_undelivered
+        mock_message.to_user_verify_key, messeage_status_undelivered
     )
     assert response2.is_ok()
 
