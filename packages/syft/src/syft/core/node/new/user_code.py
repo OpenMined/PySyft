@@ -351,7 +351,7 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
-        x = SubmitUserCode(
+        return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
             signature=inspect.signature(f),
@@ -362,7 +362,6 @@ def syft_function(
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
         )
-        return x
 
     return decorator
 
@@ -382,8 +381,7 @@ def process_code(
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    input_kwargs: List[str],  # Dict[str, Any],
-    # outputs: List[str],
+    input_kwargs: List[str],
 ) -> str:
     tree = ast.parse(raw_code)
 
@@ -394,11 +392,7 @@ def process_code(
     f = tree.body[0]
     f.decorator_list = []
 
-    keywords = [
-        ast.keyword(arg=i, value=[ast.Name(id=i)])
-        # for _, inputs in input_kwargs.items()
-        for i in input_kwargs
-    ]
+    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
         value=ast.Call(
@@ -407,29 +401,7 @@ def process_code(
         lineno=0,
     )
 
-    # if len(outputs) > 0:
-    #     output_list = ast.List(elts=[ast.Constant(value=x) for x in outputs])
-    #     return_stmt = ast.Return(
-    #         value=ast.DictComp(
-    #             key=ast.Name(id="k"),
-    #             value=ast.Subscript(
-    #                 value=ast.Name(id="result"),
-    #                 slice=ast.Name(id="k"),
-    #             ),
-    #             generators=[
-    #                 ast.comprehension(
-    #                     target=ast.Name(id="k"), iter=output_list, ifs=[], is_async=0
-    #                 )
-    #             ],
-    #         )
-    #     )
-    #     # requires typing module imported but main code returned is FunctionDef not Module
-    #     # return_annotation = ast.parse("typing.Dict[str, typing.Any]", mode="eval").body
-    # else:
     return_stmt = ast.Return(value=ast.Name(id="result"))
-    # requires typing module imported but main code returned is FunctionDef not Module
-    # return_annotation = ast.parse("typing.Any", mode="eval").body
-
     new_body = tree.body + [call_stmt, return_stmt]
 
     wrapper_function = ast.FunctionDef(
@@ -464,7 +436,6 @@ def new_check_code(context: TransformContext) -> TransformContext:
         func_name=context.output["unique_func_name"],
         original_func_name=context.output["service_func_name"],
         input_kwargs=input_keys,
-        # outputs=context.output["outputs"], # handled by output policy
     )
     context.output["parsed_code"] = processed_code
 
@@ -504,23 +475,6 @@ def add_credentials_for_key(key: str) -> Callable:
         return context
 
     return add_credentials
-
-
-# def modify_signature(context: TransformContext) -> TransformContext:
-#     sig = context.output["signature"]
-#     context.output["signature"] = sig.replace(return_annotation=Dict[str, Any])
-#     return context
-
-
-# def init_input_policy_state(context: TransformContext) -> TransformContext:
-#     print("cant init until approved?")
-#     # context.output["input_policy"] =
-#     return context
-
-
-# def init_output_policy_state(context: TransformContext) -> TransformContext:
-#     # context.output["output_policy"] =
-#     return context
 
 
 def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
@@ -576,13 +530,9 @@ def submit_user_code_to_user_code() -> List[Callable]:
         generate_id,
         hash_code,
         generate_unique_func_name,
-        # modify_signature,
         check_input_policy,
         check_output_policy,
-        # init_input_policy_state,
-        # init_output_policy_state,
         new_check_code,
-        # compile_code, # don't compile code till its approved
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
     ]

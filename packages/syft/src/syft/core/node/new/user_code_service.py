@@ -73,36 +73,6 @@ class UserCodeService(AbstractService):
         )
         changes = [CODE_EXECUTE]
 
-        # if isinstance(user_code.input_policy, UserPolicy):
-        #     policy_service.add_user_policy(context, user_code.input_policy)
-        #     input_policy_linked_obj = LinkedObject.from_obj(
-        #         user_code.input_policy,
-        #         node_uid=context.node.id,
-        #         service_type=PolicyService,
-        #     )
-        #     INPUT_POLICY_APPROVE = EnumMutation(
-        #         linked_obj=input_policy_linked_obj,
-        #         attr_name="status",
-        #         enum_type=UserPolicyStatus,
-        #         value=UserPolicyStatus.APPROVED,
-        #     )
-        #     changes.append(INPUT_POLICY_APPROVE)
-
-        # if isinstance(user_code.output_policy, UserPolicy):
-        #     policy_service.add_user_policy(context, user_code.output_policy)
-        #     output_policy_linked_obj = LinkedObject.from_obj(
-        #         user_code.output_policy,
-        #         node_uid=context.node.id,
-        #         service_type=PolicyService,
-        #     )
-        #     OUTPUT_POLICY_APPROVE = EnumMutation(
-        #         linked_obj=output_policy_linked_obj,
-        #         attr_name="status",
-        #         enum_type=UserPolicyStatus,
-        #         value=UserPolicyStatus.APPROVED,
-        #     )
-        #     changes.append(OUTPUT_POLICY_APPROVE)
-
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request)
