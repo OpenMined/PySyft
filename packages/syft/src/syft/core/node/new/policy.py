@@ -382,10 +382,12 @@ class CustomOutputPolicy(metaclass=CustomPolicy):
 
 
 class UserOutputPolicy(OutputPolicy):
+    __canonical_name__ = "UserOutputPolicy"
     pass
 
 
 class UserInputPolicy(InputPolicy):
+    __canonical_name__ = "UserInputPolicy"
     pass
 
 
