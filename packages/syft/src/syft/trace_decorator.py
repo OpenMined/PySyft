@@ -41,13 +41,13 @@ T = TypeVar("T")
 
 
 def instrument(
-    _func_or_class: Optional[T] = None,
+    _func_or_class: T,
     *,
     span_name: str = "",
     record_exception: bool = True,
     attributes: Optional[Dict[str, str]] = None,
     existing_tracer: Optional[Tracer] = None,
-    ignore=False
+    ignore=False,
 ):
     """
     A decorator to instrument a class or function with an OTEL tracing span.
@@ -159,7 +159,4 @@ def instrument(
 
         return wrapper
 
-    if _func_or_class is None:
-        return span_decorator
-    else:
-        return span_decorator(_func_or_class)
+    return span_decorator(_func_or_class)
