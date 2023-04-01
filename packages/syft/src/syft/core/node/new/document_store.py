@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from functools import partial
 import types
+import typing
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -44,7 +45,7 @@ class BasePartitionSettings(SyftBaseModel):
     name: str
 
 
-def first_or_none(result: Any) -> Optional[Any]:
+def first_or_none(result: Any) -> Ok:
     if hasattr(result, "__len__") and len(result) > 0:
         return Ok(result[0])
     return Ok(None)
@@ -62,22 +63,26 @@ class PartitionKey(BaseModel):
     type_: Union[type, object]
 
     def __eq__(self, other: Any) -> bool:
-        if type(other) == type(self):
-            return self.key == other.key and self.type_ == other.type_
-        return False
+        return (
+            type(other) == type(self)
+            and self.key == other.key
+            and self.type_ == other.type_
+        )
 
-    def with_obj(self, obj: SyftObject) -> QueryKey:
+    def with_obj(self, obj: Any) -> QueryKey:
         return QueryKey.from_obj(partition_key=self, obj=obj)
 
-    def is_valid_list(self, obj: SyftObject) -> bool:
+    def is_valid_list(self, obj: Any) -> bool:
         # not a list and matches the internal list type of the _GenericAlias
         if not isinstance(obj, list):
-            if not isinstance(obj, self.type_.__args__):
+            if not isinstance(obj, typing.get_args(self.type_)):
                 obj = getattr(obj, self.key)
                 if isinstance(obj, (types.FunctionType, types.MethodType)):
                     obj = obj()
 
-            if not isinstance(obj, list) and isinstance(obj, self.type_.__args__):
+            if not isinstance(obj, list) and isinstance(
+                obj, typing.get_args(self.type_)
+            ):
                 # still not a list but the right type
                 obj = [obj]
 
@@ -87,14 +92,12 @@ class PartitionKey(BaseModel):
 
     @property
     def type_list(self) -> bool:
-        if isinstance(self.type_, _GenericAlias) and self.type_.__origin__ == list:
-            return True
-        return False
+        return isinstance(self.type_, _GenericAlias) and self.type_.__origin__ == list
 
 
 @serializable()
 class PartitionKeys(BaseModel):
-    pks: Union[PartitionKey, Tuple[PartitionKey, ...]]
+    pks: Union[PartitionKey, Tuple[PartitionKey, ...], List[PartitionKey]]
 
     @property
     def all(self) -> Iterable[PartitionKey]:
@@ -102,10 +105,10 @@ class PartitionKeys(BaseModel):
         _keys = self.pks if isinstance(self.pks, (tuple, list)) else (self.pks,)
         return _keys
 
-    def with_obj(self, obj: SyftObject) -> QueryKeys:
+    def with_obj(self, obj: Any) -> QueryKeys:
         return QueryKeys.from_obj(partition_keys=self, obj=obj)
 
-    def with_tuple(self, *args: Tuple[Any, ...]) -> QueryKeys:
+    def with_tuple(self, *args: Any) -> QueryKeys:
         return QueryKeys.from_tuple(partition_keys=self, args=args)
 
     def add(self, pk: PartitionKey) -> PartitionKeys:
@@ -130,20 +133,19 @@ class QueryKey(PartitionKey):
     value: Any
 
     def __eq__(self, other: Any) -> bool:
-        if type(other) == type(self):
-            return (
-                self.key == other.key
-                and self.type_ == other.type_
-                and self.value == other.value
-            )
-        return False
+        return (
+            type(other) == type(self)
+            and self.key == other.key
+            and self.type_ == other.type_
+            and self.value == other.value
+        )
 
     @property
     def partition_key(self) -> PartitionKey:
         return PartitionKey(key=self.key, type_=self.type_)
 
     @staticmethod
-    def from_obj(partition_key: PartitionKey, obj: SyftObject) -> List[Any]:
+    def from_obj(partition_key: PartitionKey, obj: Any) -> QueryKey:
         pk_key = partition_key.key
         pk_type = partition_key.type_
 
@@ -196,7 +198,7 @@ class PartitionKeysWithUID(PartitionKeys):
 
 @serializable()
 class QueryKeys(SyftBaseModel):
-    qks: Union[QueryKey, Tuple[QueryKey, ...]]
+    qks: Union[QueryKey, Tuple[QueryKey, ...], List[QueryKey]]
 
     @property
     def all(self) -> Iterable[QueryKey]:
@@ -228,7 +230,7 @@ class QueryKeys(SyftBaseModel):
         return QueryKeys(qks=qks)
 
     @staticmethod
-    def from_tuple(partition_keys: PartitionKeys, args: Tuple[Any, ...]) -> QueryKeys:
+    def from_tuple(partition_keys: PartitionKeys, args: Tuple) -> QueryKeys:
         qks = []
         for partition_key, pk_value in zip(partition_keys.all, args):
             pk_key = partition_key.key
@@ -322,14 +324,10 @@ class StorePartition:
         return Ok()
 
     def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
-        if partition_key in self.unique_cks:
-            return True
-        return False
+        return partition_key in self.unique_cks
 
     def matches_searchable_cks(self, partition_key: PartitionKey) -> bool:
-        if partition_key in self.searchable_cks:
-            return True
-        return False
+        return partition_key in self.searchable_cks
 
     def store_query_key(self, obj: Any) -> QueryKey:
         return self.settings.store_key.with_obj(obj)
