@@ -9,6 +9,7 @@ from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import TypeVar
+from typing import Union
 
 # third party
 from opentelemetry import trace
@@ -37,7 +38,7 @@ class TracingDecoratorOptions:
             TracingDecoratorOptions.default_attributes[att] = attributes[att]
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=Union[Callable, type])
 
 
 def instrument(
