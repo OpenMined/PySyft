@@ -275,6 +275,7 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
                     port += 1
                 else:
                     break
+            sock.close()
 
         except Exception as e:
             print(f"Failed to check port {port}. {e}")
