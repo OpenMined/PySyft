@@ -13,7 +13,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
-from typing import _GenericAlias
 
 # third party
 from pydantic import BaseModel
@@ -92,7 +91,10 @@ class PartitionKey(BaseModel):
 
     @property
     def type_list(self) -> bool:
-        return isinstance(self.type_, _GenericAlias) and self.type_.__origin__ == list
+        return (
+            isinstance(self.type_, (types.GenericAlias, typing._GenericAlias))
+            and self.type_.__origin__ == list
+        )
 
 
 @serializable()
