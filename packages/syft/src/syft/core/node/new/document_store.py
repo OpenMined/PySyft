@@ -123,12 +123,6 @@ class PartitionKeys(BaseModel):
             pks.append(PartitionKey(key=k, type_=t))
         return PartitionKeys(pks=pks)
 
-    def make(self, *obj_arg: Union[SyftObject, Tuple[Any, ...]]) -> QueryKeys:
-        if isinstance(obj_arg, SyftObject):
-            return self.with_obj(obj_arg)
-        else:
-            return self.with_tuple(*obj_arg)
-
 
 @serializable()
 class QueryKey(PartitionKey):
