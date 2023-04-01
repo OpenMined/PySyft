@@ -134,6 +134,26 @@ class SyftAPICall(SyftObject):
         )
 
 
+@instrument
+@serializable(recursive_serde=True)
+class SyftAPIData(SyftBaseObject):
+    # version
+    __canonical_name__ = "SyftAPIData"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    # fields
+    data: Any
+
+    def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
+        signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
+
+        return SignedSyftAPICall(
+            credentials=credentials.verify_key,
+            serialized_message=signed_message.message,
+            signature=signed_message.signature,
+        )
+
+
 def generate_remote_function(
     node_uid: UID,
     signature: Signature,
@@ -320,7 +340,15 @@ class SyftAPI(SyftObject):
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
-        result = self.connection.make_call(signed_call)
+        signed_result = self.connection.make_call(signed_call)
+
+        if not isinstance(signed_result, SignedSyftAPICall):
+            return SyftError(message="The result is not signed")  # type: ignore
+
+        if not signed_result.is_valid.is_ok():
+            return SyftError(message="The result signature is invalid")  # type: ignore
+
+        result = signed_result.message.data
 
         if isinstance(result, OkErr):
             if result.is_ok():
@@ -465,7 +493,7 @@ except Exception:
 
 
 @serializable(recursive_serde=True)
-class UserNodeView(BaseModel):
+class NodeView(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
@@ -476,13 +504,13 @@ class UserNodeView(BaseModel):
     def from_api(api: SyftAPI):
         # stores the name root verify key of the domain node
         node_metadata = api.connection.get_node_metadata(api.signing_key)
-        return UserNodeView(
+        return NodeView(
             node_name=node_metadata.name,
             verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
         )
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, UserNodeView):
+        if not isinstance(other, NodeView):
             return False
         return self.node_name == other.node_name and self.verify_key == other.verify_key
 

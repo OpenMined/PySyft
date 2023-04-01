@@ -38,12 +38,14 @@ from .new.action_store import SQLiteActionStore
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
+from .new.api import SyftAPIData
 from .new.context import AuthedServiceContext
 from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
 from .new.credentials import SyftVerifyKey
+from .new.data_subject_member_service import DataSubjectMemberService
 from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
@@ -164,6 +166,7 @@ class Worker(NewNode):
                 NetworkService,
                 MessageService,
                 ProjectService,
+                DataSubjectMemberService,
             ]
             if services is None
             else services
@@ -297,6 +300,7 @@ class Worker(NewNode):
                 NetworkService,
                 MessageService,
                 ProjectService,
+                DataSubjectMemberService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
@@ -392,13 +396,23 @@ class Worker(NewNode):
 
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+    ) -> Result[SignedSyftAPICall, Err]:
+        # Get the result
+        result = self.handle_api_call_with_unsigned_result(api_call)
+        # Sign the result
+        signed_result = SyftAPIData(data=result).sign(self.signing_key)
+
+        return signed_result
+
+    def handle_api_call_with_unsigned_result(
+        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
                 message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
             )
         else:
-            if not api_call.is_valid:
+            if not api_call.is_valid.is_ok():
                 return SyftError(message="Your message signature is invalid")  # type: ignore
 
         if api_call.message.node_uid != self.id:
@@ -450,7 +464,12 @@ class Worker(NewNode):
             )
             if api_call.message.blocking:
                 gevent.joinall([thread])
-                result = thread.value
+                signed_result = thread.value
+
+                if not signed_result.is_valid.is_ok():
+                    return SyftError(message="The result signature is invalid")  # type: ignore
+
+                result = signed_result.message.data
             else:
                 result = item
         return result
@@ -509,6 +528,7 @@ def task_runner(
     try:
         with pipe:
             api_call = pipe.get()
+
             result = worker.handle_api_call(api_call)
             if blocking:
                 pipe.put(result)

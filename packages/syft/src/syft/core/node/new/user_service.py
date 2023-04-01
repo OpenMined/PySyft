@@ -33,6 +33,7 @@ from .user import UserSearch
 from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
+from .user import salt_and_hash_password
 from .user_stash import UserStash
 
 
@@ -115,14 +116,24 @@ class UserService(AbstractService):
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:
-        user = user_update.to(User)
-        user.id = uid
-        result = self.stash.update(user=user)
+        # TODO: ADD Email Validation
 
-        if result.err():
-            return SyftError(message=str(result.err()))
+        # Get user to be updated by its UID
+        user = self.stash.get_by_uid(uid=uid).ok()
+        if user is None:
+            return SyftError(message=f"No user exists for given UID: {uid}")
 
-        user = result.ok()
+        # Fill User Update fields that will not be changed by replacing it
+        # for the current values found in user obj.
+        for name, value in vars(user_update).items():
+            if name == "password" and value:
+                salt, hashed = salt_and_hash_password(value, 12)
+                user.hashed_password = hashed
+                user.salt = salt
+            elif not name.startswith("__") and value is not None:
+                setattr(user, name, value)
+
+        user = self.stash.update(user=user).ok()
         return user.to(UserView)
 
     @service_method(path="user.delete", name="delete")

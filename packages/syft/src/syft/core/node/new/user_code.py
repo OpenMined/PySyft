@@ -29,7 +29,7 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ....oblv.deployment_client import EnclaveMetadata
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
-from .api import UserNodeView
+from .api import NodeView
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
@@ -56,10 +56,10 @@ class InputPolicy(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     # relative
-    from .api import UserNodeView
+    from .api import NodeView
 
     id: UID
-    inputs: Dict[UserNodeView, Any]
+    inputs: Dict[NodeView, Any]
     node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -98,8 +98,12 @@ class InputPolicy(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
+        node_view = NodeView(
+            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        )
+        inputs = self.inputs[node_view]
         all_assets = []
-        for k, uid in self.inputs.items():
+        for k, uid in inputs.items():
             if isinstance(uid, UID):
                 assets = api.services.dataset.get_assets_by_action_id(uid)
                 if not isinstance(assets, list):
@@ -151,10 +155,10 @@ def allowed_ids_only(
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
     if context.node.node_type == NodeType.DOMAIN:
-        user_node_view = UserNodeView(
+        node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        allowed_inputs = allowed_inputs[user_node_view]
+        allowed_inputs = allowed_inputs[node_view]
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
         for key in allowed_inputs.values():
@@ -284,10 +288,14 @@ class OutputPolicy(SyftObject):
     def update() -> None:
         raise NotImplementedError
 
-    @classmethod
     @property
-    def policy_code(cls) -> str:
-        return inspect.getsource(cls)
+    def policy_code(self) -> str:
+        cls = type(self)
+        op_code = inspect.getsource(cls)
+        if self.state_type:
+            state_code = inspect.getsource(self.state_type)
+            op_code += "\n" + state_code
+        return op_code
 
 
 @serializable(recursive_serde=True)
@@ -345,12 +353,12 @@ class UserCodeStatusContext:
                 return Exception(f"Invalid types in {keys} for Code Submission")
 
         elif context.node.node_type == NodeType.DOMAIN:
-            user_node_view = UserNodeView(
+            node_view = NodeView(
                 node_name=context.node.name,
                 verify_key=context.node.signing_key.verify_key,
             )
-            if user_node_view in self.base_dict:
-                return self.base_dict[user_node_view]
+            if node_view in self.base_dict:
+                return self.base_dict[node_view]
             else:
                 raise Exception(
                     f"Code Object does not contain {context.node.name} Domain's data"
@@ -363,10 +371,10 @@ class UserCodeStatusContext:
     def mutate(
         self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
     ) -> Result[Ok, Err]:
-        user_node_view = UserNodeView(node_name=node_name, verify_key=verify_key)
+        node_view = NodeView(node_name=node_name, verify_key=verify_key)
         base_dict = self.base_dict
-        if user_node_view in base_dict:
-            base_dict[user_node_view] = value
+        if node_view in base_dict:
+            base_dict[node_view] = value
             setattr(self, "base_dict", base_dict)
             return Ok(self)
         else:
@@ -396,13 +404,34 @@ class UserCode(SyftObject):
     status: UserCodeStatusContext
     enclave_metadata: Optional[EnclaveMetadata] = None
 
-    __attr_searchable__ = ["status", "service_func_name"]
-    __attr_unique__ = ["user_verify_key", "code_hash", "user_unique_func_name"]
+    __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
+    __attr_unique__ = ["code_hash", "user_unique_func_name"]
     __attr_repr_cols__ = ["status", "service_func_name"]
 
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
+
+    @property
+    def unsafe_function(self) -> Optional[Callable]:
+        print("WARNING: This code was submitted by a User and could be UNSAFE.")
+
+        # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
+        def wrapper(*args: Any, **kwargs: Any) -> Callable:
+            # remove the decorator
+            inner_function = ast.parse(self.raw_code).body[0]
+            inner_function.decorator_list = []
+            # compile the function
+            raw_byte_code = compile_byte_code(ast.unparse(inner_function))
+            # load it
+            exec(raw_byte_code)  # nosec
+            # execute it
+            evil_string = f"{self.service_func_name}(*args, **kwargs)"
+            result = eval(evil_string, None, locals())  # nosec
+            # return the results
+            return result
+
+        return wrapper
 
     @property
     def code(self) -> str:
@@ -413,12 +442,11 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
     from .action_object import ActionObject
     from .api import APIRegistry
-    from .api import UserNodeView
+    from .api import NodeView
     from .twin_object import TwinObject
 
     # fetches the all the current api's connected
     api_list = APIRegistry.get_all_api()
-
     output_kwargs = {}
     for k, v in kwargs.items():
         uid = v
@@ -435,12 +463,12 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
         _obj_exists = False
         for api in api_list:
             if api.services.action.exists(uid):
-                user_node_view = UserNodeView.from_api(api)
-                output_kwargs[user_node_view] = (
-                    output_kwargs[user_node_view].update({k: uid})
-                    if user_node_view in output_kwargs
-                    else {k: uid}
-                )
+                node_view = NodeView.from_api(api)
+                if node_view not in output_kwargs:
+                    output_kwargs[node_view] = {k: uid}
+                else:
+                    output_kwargs[node_view].update({k: uid})
+
                 _obj_exists = True
                 break
 
@@ -580,10 +608,12 @@ def process_code(
                 ],
             )
         )
-        return_annotation = ast.parse("Dict[str, Any]", mode="eval").body
+        # requires typing module imported but main code returned is FunctionDef not Module
+        # return_annotation = ast.parse("typing.Dict[str, typing.Any]", mode="eval").body
     else:
         return_stmt = ast.Return(value=ast.Name(id="result"))
-        return_annotation = ast.parse("Any", mode="eval").body
+        # requires typing module imported but main code returned is FunctionDef not Module
+        # return_annotation = ast.parse("typing.Any", mode="eval").body
 
     new_body = tree.body + [call_stmt, return_stmt]
 
@@ -592,7 +622,7 @@ def process_code(
         args=f.args,
         body=new_body,
         decorator_list=[],
-        returns=return_annotation,
+        returns=None,
         lineno=0,
     )
 
@@ -681,12 +711,12 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
 
 def add_custom_status(context: TransformContext) -> TransformContext:
     if context.node.node_type == NodeType.DOMAIN:
-        user_node_view = UserNodeView(
+        node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        if user_node_view in context.obj.input_policy.inputs.keys():
+        if node_view in context.obj.input_policy.inputs.keys():
             context.output["status"] = UserCodeStatusContext(
-                base_dict={user_node_view: UserCodeStatus.SUBMITTED}
+                base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
             raise NotImplementedError

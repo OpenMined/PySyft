@@ -1,6 +1,6 @@
-ARG PYTHON_VERSION='3.10.7'
+ARG PYTHON_VERSION='3.10.10'
 
-FROM python:3.10.7-slim as build
+FROM python:3.10.10-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
@@ -56,8 +56,8 @@ ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
 # 🟣 TODO: Remove install_oblivious.sh
-COPY grid/backend/install_oblivious.sh /install_oblivious.sh
-RUN chmod +x /install_oblivious.sh
+# COPY grid/backend/install_oblivious.sh /install_oblivious.sh
+# RUN chmod +x /install_oblivious.sh
 
 RUN --mount=type=cache,target=/root/.cache \
   pip install -U pip
