@@ -13,8 +13,10 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from uuid import uuid4
 
 # third party
+from pydantic import Field
 from typing_extensions import Self
 
 # relative
@@ -312,20 +314,14 @@ class SQLiteStoreClientConfig(StoreClientConfig):
             database, it will be locked until that transaction is committed. Default five seconds.
     """
 
-    filename: Optional[str]
-    path: Optional[Union[str, Path]] = None
+    filename: str = Field(default_factory=lambda: f"{uuid4().hex}.sqlite")
+    path: Union[str, Path] = Field(default_factory=tempfile.gettempdir)
     check_same_thread: bool = True
     timeout: int = 5
 
     @property
-    def temp_path(self) -> str:
-        return tempfile.gettempdir()
-
-    @property
-    def file_path(self) -> str:
-        path = self.path if self.path else self.temp_path
-        path = Path(path)
-        return path / self.filename
+    def file_path(self) -> Path:
+        return Path(self.path) / self.filename
 
 
 @serializable()
