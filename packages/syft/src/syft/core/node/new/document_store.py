@@ -7,7 +7,6 @@ import types
 import typing
 from typing import Any
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -102,10 +101,9 @@ class PartitionKeys(BaseModel):
     pks: Union[PartitionKey, Tuple[PartitionKey, ...], List[PartitionKey]]
 
     @property
-    def all(self) -> Iterable[PartitionKey]:
-        # make sure we always return Tuple's even if theres a single value
-        _keys = self.pks if isinstance(self.pks, (tuple, list)) else (self.pks,)
-        return _keys
+    def all(self) -> List[PartitionKey]:
+        # make sure we always return a list even if there's a single value
+        return self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
 
     def with_obj(self, obj: Any) -> QueryKeys:
         return QueryKeys.from_obj(partition_keys=self, obj=obj)
@@ -185,7 +183,7 @@ class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
     @property
-    def all(self) -> Iterable[PartitionKey]:
+    def all(self) -> List[PartitionKey]:
         all_keys = self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
         if self.uid_pk not in all_keys:
             all_keys.insert(0, self.uid_pk)
@@ -197,10 +195,9 @@ class QueryKeys(SyftBaseModel):
     qks: Union[QueryKey, Tuple[QueryKey, ...], List[QueryKey]]
 
     @property
-    def all(self) -> Iterable[QueryKey]:
-        # make sure we always return Tuple's even if theres a single value
-        _keys = self.qks if isinstance(self.qks, (tuple, list)) else (self.qks,)
-        return _keys
+    def all(self) -> List[QueryKey]:
+        # make sure we always return a list even if there's a single value
+        return self.qks if isinstance(self.qks, (tuple, list)) else [self.qks]
 
     @staticmethod
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
