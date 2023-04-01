@@ -70,7 +70,7 @@ class PartitionKey(BaseModel):
     def with_obj(self, obj: Any) -> QueryKey:
         return QueryKey.from_obj(partition_key=self, obj=obj)
 
-    def is_valid_list(self, obj: Any) -> bool:
+    def extract_list(self, obj: Any) -> List:
         # not a list and matches the internal list type of the _GenericAlias
         if not isinstance(obj, list):
             if not isinstance(obj, typing.get_args(self.type_)):
@@ -145,7 +145,7 @@ class QueryKey(PartitionKey):
 
         # 🟡 TODO: support more advanced types than List[type]
         if partition_key.type_list:
-            pk_value = partition_key.is_valid_list(obj)
+            pk_value = partition_key.extract_list(obj)
         else:
             if isinstance(obj, pk_type):
                 pk_value = obj
@@ -212,7 +212,7 @@ class QueryKeys(SyftBaseModel):
             if isinstance(pk_value, (types.FunctionType, types.MethodType)):
                 pk_value = pk_value()
             if partition_key.type_list:
-                pk_value = partition_key.is_valid_list(obj)
+                pk_value = partition_key.extract_list(obj)
             else:
                 if pk_value and not isinstance(pk_value, pk_type):
                     raise Exception(
