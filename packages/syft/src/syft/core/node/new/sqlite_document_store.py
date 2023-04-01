@@ -69,7 +69,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.store_config = store_config
         self._ddtype = ddtype
         self._db: Dict[int, sqlite3.Connection] = {}
-        self._cur: Dict[int, sqlite3.Connection] = {}
+        self._cur: Dict[int, sqlite3.Cursor] = {}
         self.create_table()
 
     @property
