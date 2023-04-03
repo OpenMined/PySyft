@@ -286,7 +286,6 @@ class Worker(NewNode):
             isinstance(document_store_config, SQLiteStoreConfig)
             and document_store_config.client_config.filename is None
         ):
-            document_store_config.client_config.filename
             document_store_config.client_config.filename = f"{self.id}.sqlite"
             print(
                 f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
