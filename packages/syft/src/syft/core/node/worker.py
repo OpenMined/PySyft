@@ -243,7 +243,7 @@ class Worker(NewNode):
         return credentials == self.signing_key.verify_key
 
     @property
-    def root_client(self) -> Any:
+    def root_client(self):
         # relative
         from .new.client import PythonConnection
         from .new.client import SyftClient
@@ -252,7 +252,7 @@ class Worker(NewNode):
         return SyftClient(connection=connection, credentials=self.signing_key)
 
     @property
-    def guest_client(self) -> Any:
+    def guest_client(self):
         # relative
         from .new.client import PythonConnection
         from .new.client import SyftClient
