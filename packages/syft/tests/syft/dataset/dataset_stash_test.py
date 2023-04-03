@@ -93,20 +93,24 @@ def test_dataset_search_action_ids(
     # action store fixture
     # retrieving dataset by single action_id
 
-    action_id = mock_dataset.id
-    result = mock_dataset_stash.search_action_ids(uid=action_id)
-    print(f"action_id: {action_id}; result: {result}; result.ok(): {result.ok()}")
-    assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
-    assert result.ok() != [], f"Dataset was not found by action_id {action_id}"
-    assert isinstance(result.ok()[0], Dataset)
-    assert result.ok().id == mock_dataset.id
-    # retrieving dataset by list of action_ids
-    result = mock_dataset_stash.search_action_ids(uid=[action_id])
-    assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
-    assert isinstance(result.ok()[0], Dataset)
-    assert result.ok()[0].id == mock_dataset.id
-    # retrieving dataset by non-existing action_id
-    other_action_id = UID()
-    result = mock_dataset_stash.search_action_ids(uid=other_action_id)
-    assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
-    assert result.ok() is None
+    print(type(mock_dataset), mock_dataset)
+
+    assert 1 == 2
+
+    # action_id = mock_dataset.id
+    # result = mock_dataset_stash.search_action_ids(uid=action_id)
+    # print(f"action_id: {action_id}; result: {result}; result.ok(): {result.ok()}")
+    # assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
+    # assert result.ok() != [], f"Dataset was not found by action_id {action_id}"
+    # assert isinstance(result.ok()[0], Dataset)
+    # assert result.ok().id == mock_dataset.id
+    # # retrieving dataset by list of action_ids
+    # result = mock_dataset_stash.search_action_ids(uid=[action_id])
+    # assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
+    # assert isinstance(result.ok()[0], Dataset)
+    # assert result.ok()[0].id == mock_dataset.id
+    # # retrieving dataset by non-existing action_id
+    # other_action_id = UID()
+    # result = mock_dataset_stash.search_action_ids(uid=other_action_id)
+    # assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
+    # assert result.ok() is None
