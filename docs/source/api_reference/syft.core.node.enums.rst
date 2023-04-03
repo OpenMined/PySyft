@@ -1,4 +1,4 @@
-syft.core.node.enums
+﻿syft.core.node.enums
 ====================
 
 .. automodule:: syft.core.node.enums
@@ -18,6 +18,7 @@ syft.core.node.enums
    .. autosummary::
    
       AssociationRequestResponses
+      PointerStatus
       PyGridClientEnums
       RequestAPIFields
       ResponseObjectEnum

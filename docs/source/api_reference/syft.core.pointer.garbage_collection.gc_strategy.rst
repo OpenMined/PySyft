@@ -13,12 +13,6 @@ syft.core.pointer.garbage\_collection.gc\_strategy
 
    
    
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      GCStrategy
-   
    
 
    

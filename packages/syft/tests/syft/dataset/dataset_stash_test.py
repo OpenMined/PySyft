@@ -9,25 +9,48 @@ from syft.core.node.new.dataset import Dataset
 from syft.core.node.new.dataset_stash import ActionIDsPartitionKey
 from syft.core.node.new.dataset_stash import NamePartitionKey
 from syft.core.node.new.document_store import QueryKey
-from syft.core.node.new.document_store import QueryKeys
 from syft.core.node.new.uid import UID
 
 
-def test_dataset_namepartitionkey():
-    name_partition_key = QueryKeys(qks=NamePartitionKey).all[0]
+def test_dataset_namepartitionkey() -> None:
+    mock_obj = "dummy_name_key"
+
+    assert NamePartitionKey.key == "name"
+    assert NamePartitionKey.type_ == str
+
+    name_partition_key = NamePartitionKey.with_obj(obj=mock_obj)
+
     assert isinstance(name_partition_key, QueryKey)
     assert name_partition_key.key == "name"
     assert name_partition_key.type_ == str
+    assert name_partition_key.value == mock_obj
+
+    with pytest.raises(AttributeError):
+        NamePartitionKey.with_obj(obj=[UID()])
 
 
-def test_dataset_actionidpartitionkey():
-    action_ids_partition_key = QueryKeys(qks=ActionIDsPartitionKey).all[0]
+def test_dataset_actionidpartitionkey() -> None:
+    mock_obj = [UID() for _ in range(3)]
+
+    assert ActionIDsPartitionKey.key == "action_ids"
+    assert ActionIDsPartitionKey.type_ == List[UID]
+
+    action_ids_partition_key = ActionIDsPartitionKey.with_obj(obj=mock_obj)
+
     assert isinstance(action_ids_partition_key, QueryKey)
     assert action_ids_partition_key.key == "action_ids"
     assert action_ids_partition_key.type_ == List[UID]
+    assert action_ids_partition_key.value == mock_obj
+
+    with pytest.raises(AttributeError):
+        ActionIDsPartitionKey.with_obj(obj="dummy_str")
+
+    # the Not sure what Exception should be raised here, Type or Attibute
+    with pytest.raises(TypeError):
+        ActionIDsPartitionKey.with_obj(obj=["first_str", "second_str"])
 
 
-def test_dataset_get_by_name(mock_dataset_stash, mock_dataset):
+def test_dataset_get_by_name(mock_dataset_stash, mock_dataset) -> None:
     # retrieving existing dataset
     result = mock_dataset_stash.get_by_name(mock_dataset.name)
     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
@@ -43,7 +66,7 @@ def test_dataset_get_by_name(mock_dataset_stash, mock_dataset):
     raises=AttributeError,
     reason="DatasetUpdate is not implemeted yet",
 )
-def test_dataset_update(mock_dataset_stash, mock_dataset, mock_dataset_update):
+def test_dataset_update(mock_dataset_stash, mock_dataset, mock_dataset_update) -> None:
     # succesful dataset update
     result = mock_dataset_stash.update(dataset_update=mock_dataset_update)
     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
@@ -60,9 +83,16 @@ def test_dataset_update(mock_dataset_stash, mock_dataset, mock_dataset_update):
 @pytest.mark.xfail(
     raises=(NotImplementedError, AssertionError),
     reason="StorePartition.find_index_or_search_keys is not implemeted yet",
+    strinct=True,
 )
-def test_dataset_serach_action_ids(mock_dataset_stash, mock_dataset):
+def test_dataset_search_action_ids(
+    mock_dataset_stash, mock_dataset, mock_asset, root_domain_client
+):
+    # create the mock asset via CreateAsset
+    # asset = CreateAsset().to(Asset)
+    # action store fixture
     # retrieving dataset by single action_id
+
     action_id = mock_dataset.id
     result = mock_dataset_stash.search_action_ids(uid=action_id)
     print(f"action_id: {action_id}; result: {result}; result.ok(): {result.ok()}")

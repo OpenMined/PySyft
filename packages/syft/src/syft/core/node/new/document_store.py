@@ -32,7 +32,7 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class BasePartitionSettings(SyftBaseModel):
     """Basic Partition Settings
 
@@ -56,7 +56,7 @@ class StoreClientConfig(BaseModel):
     pass
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class PartitionKey(BaseModel):
     key: str
     type_: Union[type, object]
@@ -92,7 +92,7 @@ class PartitionKey(BaseModel):
         return False
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class PartitionKeys(BaseModel):
     pks: Union[PartitionKey, Tuple[PartitionKey, ...]]
 
@@ -125,7 +125,7 @@ class PartitionKeys(BaseModel):
             return self.with_tuple(*obj_arg)
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class QueryKey(PartitionKey):
     value: Any
 
@@ -182,7 +182,7 @@ class QueryKey(PartitionKey):
         return {key: self.value}
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
@@ -194,7 +194,7 @@ class PartitionKeysWithUID(PartitionKeys):
         return all_keys
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class QueryKeys(SyftBaseModel):
     qks: Union[QueryKey, Tuple[QueryKey, ...]]
 
@@ -276,7 +276,7 @@ class QueryKeys(SyftBaseModel):
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class PartitionSettings(BasePartitionSettings):
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
@@ -292,7 +292,7 @@ class PartitionSettings(BasePartitionSettings):
 
 
 @instrument
-@serializable(attrs=["settings", "store_config", "unique_cks", "searchable_cks"])
+@serializable(recursive_serde=True)
 class StorePartition:
     """Base StorePartition
 
@@ -364,7 +364,7 @@ class StorePartition:
 
 
 @instrument
-@serializable()
+@serializable(recursive_serde=True)
 class DocumentStore:
     """Base Document Store
 
@@ -519,7 +519,7 @@ class BaseUIDStoreStash(BaseStash):
         return self.check_type(obj, self.object_type).and_then(set_method)
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class StoreConfig(SyftBaseObject):
     """Base Store configuration
 

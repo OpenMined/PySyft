@@ -14,6 +14,7 @@ syft.core.tensor.autodp.phi\_tensor
    .. autosummary::
    
       ones_like
+      zeros_like
    
    
 
