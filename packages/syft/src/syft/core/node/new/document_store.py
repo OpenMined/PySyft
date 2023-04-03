@@ -292,7 +292,7 @@ class PartitionSettings(BasePartitionSettings):
 
 
 @instrument
-@serializable()
+@serializable(attrs=["settings", "store_config", "unique_cks", "searchable_cks"])
 class StorePartition:
     """Base StorePartition
 
