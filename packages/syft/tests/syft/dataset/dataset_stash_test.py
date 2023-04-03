@@ -45,17 +45,19 @@ def test_dataset_actionidpartitionkey() -> None:
     with pytest.raises(AttributeError):
         ActionIDsPartitionKey.with_obj(obj="dummy_str")
 
-    # the Not sure what Exception should be raised here, Type or Attibute
+    # Not sure what Exception should be raised here, Type or Attibute
     with pytest.raises(TypeError):
         ActionIDsPartitionKey.with_obj(obj=["first_str", "second_str"])
 
 
 def test_dataset_get_by_name(mock_dataset_stash, mock_dataset) -> None:
+
     # retrieving existing dataset
     result = mock_dataset_stash.get_by_name(mock_dataset.name)
     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
     assert isinstance(result.ok(), Dataset)
     assert result.ok().id == mock_dataset.id
+
     # retrieving non-existing dataset
     result = mock_dataset_stash.get_by_name("non_existing_dataset")
     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
@@ -72,6 +74,7 @@ def test_dataset_update(mock_dataset_stash, mock_dataset, mock_dataset_update) -
     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
     assert isinstance(result.ok(), Dataset)
     assert mock_dataset.id == result.ok().id
+
     # error should be raised
     other_obj = object()
     result = mock_dataset_stash.update(dataset_update=other_obj)
@@ -80,37 +83,30 @@ def test_dataset_update(mock_dataset_stash, mock_dataset, mock_dataset_update) -
     )
 
 
-@pytest.mark.xfail(
-    raises=(NotImplementedError, AssertionError),
-    reason="StorePartition.find_index_or_search_keys is not implemeted yet",
-    strinct=True,
-)
-def test_dataset_search_action_ids(
-    mock_dataset_stash, mock_dataset, mock_asset, root_domain_client
-):
-    # create the mock asset via CreateAsset
-    # asset = CreateAsset().to(Asset)
-    # action store fixture
-    # retrieving dataset by single action_id
+def test_dataset_search_action_ids(mock_dataset_stash, mock_dataset):
+    action_id = mock_dataset.assets[0].action_id
 
-    print(type(mock_dataset), mock_dataset)
+    result = mock_dataset_stash.search_action_ids(uid=action_id)
+    assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
+    assert result.ok() != [], f"Dataset was not found by action_id {action_id}"
+    assert isinstance(result.ok()[0], Dataset)
+    assert result.ok()[0].id == mock_dataset.id
 
-    assert 1 == 2
+    # retrieving dataset by list of action_ids
+    result = mock_dataset_stash.search_action_ids(uid=[action_id])
+    assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
+    assert isinstance(result.ok()[0], Dataset)
+    assert result.ok()[0].id == mock_dataset.id
 
-    # action_id = mock_dataset.id
-    # result = mock_dataset_stash.search_action_ids(uid=action_id)
-    # print(f"action_id: {action_id}; result: {result}; result.ok(): {result.ok()}")
-    # assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
-    # assert result.ok() != [], f"Dataset was not found by action_id {action_id}"
-    # assert isinstance(result.ok()[0], Dataset)
-    # assert result.ok().id == mock_dataset.id
-    # # retrieving dataset by list of action_ids
-    # result = mock_dataset_stash.search_action_ids(uid=[action_id])
-    # assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
-    # assert isinstance(result.ok()[0], Dataset)
-    # assert result.ok()[0].id == mock_dataset.id
-    # # retrieving dataset by non-existing action_id
-    # other_action_id = UID()
-    # result = mock_dataset_stash.search_action_ids(uid=other_action_id)
-    # assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
-    # assert result.ok() is None
+    # retrieving dataset by non-existing action_id
+    other_action_id = UID()
+    result = mock_dataset_stash.search_action_ids(uid=other_action_id)
+    assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
+    assert result.ok() == [] 
+    # inconsitent behaviour, line 62 return None, this returns []
+
+    # passing random object
+    random_obj = object()
+    with pytest.raises(AttributeError):
+        result = mock_dataset_stash.search_action_ids(uid=random_obj)
+

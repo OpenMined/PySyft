@@ -9,7 +9,18 @@ from syft.core.node.new.dataset import CreateDataset
 from syft.core.node.new.dataset import Dataset
 from syft.core.node.new.dataset import DatasetUpdate
 from syft.core.node.new.dataset_stash import DatasetStash
+from syft.core.node.new.transforms import TransformContext
 from syft.core.node.new.uid import UID
+
+
+def create_asset() -> CreateAsset:
+    return CreateAsset(
+        name="mock_asset",
+        description="essential obj",
+        data=np.array([0, 1, 2, 3, 4]),
+        mock=np.array([0, 1, 1, 1, 1]),
+        mock_is_real=False
+    )
 
 
 @pytest.fixture
@@ -18,48 +29,32 @@ def mock_dataset_stash(document_store) -> DatasetStash:
 
 
 @pytest.fixture
-def mock_asset(action_store, root_domain_client) -> Asset:
+def mock_asset(worker, root_domain_client) -> Asset:
+    # sometimes the access rights for client are overwritten
+    # so we need to assing the root_client manually
     create_asset = CreateAsset(
         name="mock_asset",
         description="essential obj",
         data=np.array([0, 1, 2, 3, 4]),
-        mock=[0, 1],
+        mock=np.array([0, 1, 1, 1, 1]),
         mock_is_real=False,
+        node_uid=worker.id
     )
-
-    # mock_asset = create_asset.to(Asset)
-    asset_uid = UID()
-    action_store.set(
-        uid=asset_uid,
-        credentials=root_domain_client.credentials,
-        syft_object=create_asset,
+    node_transform_context = TransformContext(
+        node=worker,
+        credentials=root_domain_client.credentials.verify_key,
+        obj=create_asset
     )
-    resoponse = action_store.get(
-        uid=asset_uid, credentials=root_domain_client.credentials
-    )
-    return resoponse.ok()
-
+    mock_asset = create_asset.to(Asset, context=node_transform_context)
+    return mock_asset
 
 @pytest.fixture
-def mock_dataset(root_domain_client, mock_dataset_stash, mock_asset) -> Dataset:
-    mock_dataset = CreateDataset(id=UID(), name="test_dataset")
-    # print(type(mock_dataset), mock_dataset, mock_dataset.assets)
-    mock_dataset.add_asset(mock_asset)
-    # print(type(mock_dataset), mock_dataset, mock_dataset.assets)
-    root_domain_client.upload_dataset(mock_dataset)
-    # mock_dataset = root_domain_client.datasets[0]
+def mock_dataset(mock_dataset_stash, mock_asset) -> Dataset:
+    mock_dataset = Dataset(id=UID(), name="test_dataset")
+    mock_dataset.asset_list.append(mock_asset)
+    result = mock_dataset_stash.partition.set(mock_dataset)
+    mock_dataset = result.ok()
     return mock_dataset
-
-
-# @pytest.fixture
-# def mock_dataset(root_domain_client, mock_dataset_stash, mock_asset) -> Dataset:
-#     mock_dataset = Dataset(id=UID(), name="test_dataset")
-#     result = mock_dataset_stash.partition.set(mock_dataset)
-#     # root_domain_client.upload_dataset(mock_dataset)
-#     # mock_dataset = root_domain_client.api.services.dataset.get_all()
-#     # print(mock_dataset[0])
-#     mock_dataset = result.ok()
-#     return mock_dataset
 
 
 @pytest.fixture
