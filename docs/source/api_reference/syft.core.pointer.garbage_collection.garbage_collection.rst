@@ -13,6 +13,12 @@ syft.core.pointer.garbage\_collection.garbage\_collection
 
    
    
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GarbageCollection
+   
    
 
    

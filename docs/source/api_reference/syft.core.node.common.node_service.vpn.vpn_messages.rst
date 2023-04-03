@@ -1,4 +1,4 @@
-﻿syft.core.node.common.node\_service.vpn.vpn\_messages
+syft.core.node.common.node\_service.vpn.vpn\_messages
 =====================================================
 
 .. automodule:: syft.core.node.common.node_service.vpn.vpn_messages
@@ -18,7 +18,6 @@
       disconnect
       extract_nested_json
       generate_key
-      get_network_url
       get_result
       get_status
       grid_url_from_kwargs

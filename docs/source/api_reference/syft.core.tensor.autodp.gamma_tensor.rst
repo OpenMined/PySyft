@@ -15,15 +15,10 @@ syft.core.tensor.autodp.gamma\_tensor
    
       create_lookup_tables
       create_new_lookup_tables
-      debox_child
-      debox_linear
-      debox_other
-      debox_phi
       jax2numpy
+      no_op
       numpy2jax
       ones_like
-      update_state
-      zeros_like
    
    
 

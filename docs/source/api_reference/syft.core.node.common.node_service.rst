@@ -1,4 +1,4 @@
-﻿syft.core.node.common.node\_service
+syft.core.node.common.node\_service
 ===================================
 
 .. automodule:: syft.core.node.common.node_service
@@ -58,8 +58,8 @@
    syft.core.node.common.node_service.simple
    syft.core.node.common.node_service.sleep
    syft.core.node.common.node_service.success_resp_message
+   syft.core.node.common.node_service.tensor_manager
    syft.core.node.common.node_service.testing_services
-   syft.core.node.common.node_service.tff
    syft.core.node.common.node_service.upload_service
    syft.core.node.common.node_service.user_auth
    syft.core.node.common.node_service.user_manager

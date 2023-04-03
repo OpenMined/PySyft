@@ -1,4 +1,4 @@
-﻿syft.core.pointer.garbage\_collection
+syft.core.pointer.garbage\_collection
 =====================================
 
 .. automodule:: syft.core.pointer.garbage_collection
@@ -8,6 +8,13 @@
    
 
    
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      gc_get_default_strategy
+      gc_set_default_strategy
    
    
 

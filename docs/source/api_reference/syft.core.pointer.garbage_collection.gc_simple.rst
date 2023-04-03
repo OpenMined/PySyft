@@ -13,6 +13,12 @@ syft.core.pointer.garbage\_collection.gc\_simple
 
    
    
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GCSimple
+   
    
 
    

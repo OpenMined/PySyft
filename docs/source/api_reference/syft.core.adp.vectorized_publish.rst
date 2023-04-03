@@ -1,4 +1,4 @@
-﻿syft.core.adp.vectorized\_publish
+syft.core.adp.vectorized\_publish
 =================================
 
 .. automodule:: syft.core.adp.vectorized_publish
@@ -14,8 +14,7 @@
    .. autosummary::
    
       calculate_bounds_for_mechanism
-      compute_epsilon
-      publish
+      vectorized_publish
    
    
 

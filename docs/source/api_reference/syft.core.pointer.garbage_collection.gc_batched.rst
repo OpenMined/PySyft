@@ -13,6 +13,12 @@ syft.core.pointer.garbage\_collection.gc\_batched
 
    
    
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GCBatched
+   
    
 
    
