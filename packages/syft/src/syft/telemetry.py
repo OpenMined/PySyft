@@ -1,6 +1,5 @@
 # stdlib
 import os
-from typing import Any
 from typing import Optional
 
 
@@ -15,10 +14,10 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
 TRACE_MODE = str_to_bool(os.environ.get("TRACE", "False"))
 
 
-def setup_tracer() -> Any:
+def setup_tracer():
     if not TRACE_MODE:
 
-        def noop(func: Any) -> Any:
+        def noop(func):
             return func
 
         return noop

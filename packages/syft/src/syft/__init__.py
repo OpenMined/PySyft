@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.8.0-beta.4"
+__version__ = "0.8.0-beta.5"
 
 # stdlib
 from pathlib import Path
@@ -48,6 +48,7 @@ from .core.node.new.data_subject import DataSubjectCreate as DataSubject  # noqa
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
 from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
 from .core.node.new.deserialize import _deserialize as deserialize  # noqa: F401
+from .core.node.new.messages import MessageStatus  # noqa: F401
 from .core.node.new.project import ProjectSubmit as Project  # noqa: F401
 from .core.node.new.request import SubmitRequest as Request  # noqa: F401
 from .core.node.new.response import SyftError  # noqa: F401

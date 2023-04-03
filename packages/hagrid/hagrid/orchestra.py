@@ -48,6 +48,11 @@ def get_syft_client() -> Optional[Any]:
     return None
 
 
+def container_exists_with(name: str, port: int) -> bool:
+    output = shell(f"docker ps -q -f name='{name}' -f expose='{port}'")
+    return len(output) > 0
+
+
 class NodeType(Enum):
     GATEWAY = "gateway"
     DOMAIN = "domain"
@@ -107,9 +112,10 @@ class Orchestra:
         cmd: bool = False,
         reset: bool = False,
         tail: bool = False,
-        port: Optional[int] = 8080,
+        port: Optional[int] = None,
         processes: int = 1,  # temporary work around for jax in subprocess
     ) -> Optional[NodeHandle]:
+        default_port = 8080
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
         if not node_type_enum:
             return None
@@ -121,7 +127,16 @@ class Orchestra:
 
         # Currently by default we launch in dev mode
         if reset:
-            Orchestra.reset(name)
+            Orchestra.reset(name, node_type)
+        else:
+            _port = default_port if port is None else port
+            if container_exists_with(name=name, port=_port):
+                return NodeHandle(
+                    node_type=node_type_enum,
+                    name=name,
+                    port=_port,
+                    url="http://localhost",
+                )
 
         # Start a subprocess and capture its output
         commands = ["hagrid", "launch"]
@@ -130,7 +145,7 @@ class Orchestra:
         commands.extend([name, node_type_enum.value])
 
         if port is None:
-            port = find_available_port(host="localhost", port=port, search=True)
+            port = find_available_port(host="localhost", port=default_port, search=True)
 
         commands.append("to")
         commands.append(f"docker:{port}")
@@ -157,7 +172,7 @@ class Orchestra:
         stderr_thread = gevent.spawn(read_stream, process.stderr)
 
         # Wait for the threads to finish
-        gevent.joinall([stdout_thread, stderr_thread])
+        gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
 
         if not cmd:
             return NodeHandle(
