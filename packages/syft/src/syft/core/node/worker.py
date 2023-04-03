@@ -194,8 +194,8 @@ class Worker(NewNode):
 
         create_admin_new(  # nosec B106
             name="Jane Doe",
-            email="info@openmined.org",
-            password="changethis",
+            email=root_email,
+            password=root_password,
             node=self,
         )
 
