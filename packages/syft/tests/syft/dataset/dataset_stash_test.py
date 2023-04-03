@@ -102,7 +102,7 @@ def test_dataset_search_action_ids(mock_dataset_stash, mock_dataset):
     other_action_id = UID()
     result = mock_dataset_stash.search_action_ids(uid=other_action_id)
     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
-    assert result.ok() == [] 
+    assert result.ok() == []
     # inconsitent behaviour, line 62 return None, this returns []
 
     # passing random object
