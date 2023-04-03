@@ -7,12 +7,19 @@ from datetime import datetime
 from functools import partial
 import hashlib
 import os
+import sys
 from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+
+if sys.version_info >= (3, 11):
+    # stdlib
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 # third party
 import gevent
@@ -204,14 +211,15 @@ class Worker(NewNode):
 
         self.post_init()
 
-    @staticmethod
+    @classmethod
     def named(
+        cls,
         name: str,
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-    ) -> Worker:
+    ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
@@ -222,7 +230,7 @@ class Worker(NewNode):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
 
-        return Worker(
+        return cls(
             name=name,
             id=uid,
             signing_key=key,
