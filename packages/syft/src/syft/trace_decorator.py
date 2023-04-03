@@ -7,6 +7,8 @@ from functools import wraps
 import inspect
 from typing import Callable
 from typing import Dict
+from typing import Optional
+from typing import TypeVar
 
 # third party
 from opentelemetry import trace
@@ -35,13 +37,16 @@ class TracingDecoratorOptions:
             TracingDecoratorOptions.default_attributes[att] = attributes[att]
 
 
+T = TypeVar("T")
+
+
 def instrument(
-    _func_or_class=None,
+    _func_or_class: Optional[T] = None,
     *,
     span_name: str = "",
     record_exception: bool = True,
-    attributes: Dict[str, str] = None,
-    existing_tracer: Tracer = None,
+    attributes: Optional[Dict[str, str]] = None,
+    existing_tracer: Optional[Tracer] = None,
     ignore=False
 ):
     """
@@ -59,7 +64,7 @@ def instrument(
     :return:The decorator function
     """
 
-    def decorate_class(cls):
+    def decorate_class(cls: T) -> T:
         for name, method in inspect.getmembers(cls, inspect.isfunction):
             # Ignore private functions, TODO: maybe make this a setting?
             if not name.startswith("_"):
@@ -92,7 +97,7 @@ def instrument(
     if inspect.isclass(_func_or_class):
         return decorate_class(_func_or_class)
 
-    def span_decorator(func_or_class):
+    def span_decorator(func_or_class: T) -> T:
         if inspect.isclass(func_or_class):
             return decorate_class(func_or_class)
 
