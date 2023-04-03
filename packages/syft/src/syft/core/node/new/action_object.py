@@ -225,7 +225,6 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
             else:
                 context.node_uid = action_result.syft_node_uid
                 context.result_id = action.result_id
-                print("IGNORING: got action result", action_result)
             # 🟡 TODO
             # pass
             # print(

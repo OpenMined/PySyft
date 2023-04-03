@@ -111,23 +111,18 @@ class KeyValueActionStore(ActionStore):
     def get(
         self, uid: UID, credentials: SyftVerifyKey, skip_permission: bool = False
     ) -> Result[SyftObject, str]:
-        print("Line 113 is the get method we're calling, and we're inside it")
         # TODO 🟣 Temporarily added skip permission argument for enclave
         # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         # if True:
         if skip_permission or self.has_permission(read_permission):
-            print("We have permission!")
             if isinstance(uid, LineageID):
                 syft_object = self.data[uid.id]
-                print("We got syft_object!!!", syft_object)
             elif isinstance(uid, UID):
                 syft_object = self.data[uid]
-                print("We got syft_object!!!", syft_object)
             else:
                 raise Exception(f"Unrecognized UID type: {type(uid)}")
-            print("We set syft_object successfully")
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
 
