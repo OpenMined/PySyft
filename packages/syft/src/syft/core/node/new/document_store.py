@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import partial
 import types
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -24,6 +25,8 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .base import SyftBaseModel
+from .locks import NoLockingConfig
+from .locks import SyftLock
 from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -311,6 +314,10 @@ class StorePartition:
         self.settings = settings
         self.store_config = store_config
         self.init_store()
+        # TODO = move lock config to StoreConfig
+        lock_config = NoLockingConfig(name="test")
+        # TODO
+        self.lock = SyftLock(lock_config)
 
     def init_store(self) -> Result[Ok, Err]:
         try:
@@ -337,29 +344,72 @@ class StorePartition:
     def store_query_keys(self, objs: Any) -> QueryKeys:
         return QueryKeys(qks=[self.store_query_key(obj) for obj in objs])
 
-    def find_index_or_search_keys(self, index_qks: QueryKeys, search_qks: QueryKeys):
-        raise NotImplementedError
+    # Thread-safe methods
+    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
+        self.lock.acquire()
+        try:
+            result = cbk(*args, **kwargs)
+        except BaseException as e:
+            result = Err(str(e))
+        self.lock.release()
 
-    def all(self) -> Result[List[BaseStash.object_type], str]:
-        raise NotImplementedError
+        return result
 
     def set(
+        self, obj: SyftObject, ignore_duplicates: bool = False
+    ) -> Result[SyftObject, str]:
+        return self._thread_safe_cbk(
+            self._set, obj=obj, ignore_duplicates=ignore_duplicates
+        )
+
+    def find_index_or_search_keys(
+        self, index_qks: QueryKeys, search_qks: QueryKeys
+    ) -> Result[List[SyftObject], str]:
+        return self._thread_safe_cbk(
+            self._find_index_or_search_keys, index_qks=index_qks, search_qks=search_qks
+        )
+
+    def remove_keys(
+        self,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+    ) -> None:
+        self._thread_safe_cbk(
+            self._remove_keys,
+            unique_query_keys=unique_query_keys,
+            searchable_query_keys=searchable_query_keys,
+        )
+
+    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+        return self._thread_safe_cbk(self._update, qk=qk, obj=obj)
+
+    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+        return self._thread_safe_cbk(self._get_all_from_store, qks)
+
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+        return self._thread_safe_cbk(self._delete, qk)
+
+    def all(self) -> Result[List[BaseStash.object_type], str]:
+        return self._thread_safe_cbk(self._all)
+
+    # Potentially Thread-unsafe methods
+    def _set(
         self,
         obj: SyftObject,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
-    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+    def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
         raise NotImplementedError
 
-    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+    def _get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         raise NotImplementedError
 
-    def create(self, obj: SyftObject) -> Result[SyftObject, str]:
+    def _delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         raise NotImplementedError
 
-    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+    def _all(self) -> Result[List[BaseStash.object_type], str]:
         raise NotImplementedError
 
 

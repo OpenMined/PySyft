@@ -118,17 +118,21 @@ class KeyValueStorePartition(StorePartition):
 
         return Ok()
 
-    def set(
+    def __len__(self) -> int:
+        return len(self.data)
+
+    # Potentially Thread-unsafe methods
+    def _set(
         self, obj: SyftObject, ignore_duplicates: bool = False
     ) -> Result[SyftObject, str]:
         try:
             store_query_key = self.settings.store_key.with_obj(obj)
-            exists = store_query_key.value in self.data
             unique_query_keys = self.settings.unique_keys.with_obj(obj)
             searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
             ck_check = self._validate_partition_keys(
                 store_query_key=store_query_key, unique_query_keys=unique_query_keys
             )
+            exists = store_query_key.value in self.data
             if not exists and ck_check == UniqueKeyCheck.EMPTY:
                 self._set_data_and_keys(
                     store_query_key=store_query_key,
@@ -142,13 +146,24 @@ class KeyValueStorePartition(StorePartition):
             return Err(f"Failed to write obj {obj}. {e}")
         return Ok(obj)
 
-    def all(self) -> Result[List[BaseStash.object_type], str]:
-        return Ok(list(self.data.values()))
+    def _remove_keys(
+        self,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+    ) -> None:
+        uqks = unique_query_keys.all
+        for qk in uqks:
+            pk_key, pk_value = qk.key, qk.value
+            ck_col = self.unique_keys[pk_key]
+            ck_col.pop(pk_value, None)
 
-    def __len__(self) -> Result[List[BaseStash.object_type], str]:
-        return len(self.data)
+        sqks = searchable_query_keys.all
+        for qk in sqks:
+            pk_key, pk_value = qk.key, qk.value
+            ck_col = self.searchable_keys[pk_key]
+            ck_col.pop(pk_value, None)
 
-    def find_index_or_search_keys(
+    def _find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
         ids: Optional[Set] = None
@@ -182,24 +197,7 @@ class KeyValueStorePartition(StorePartition):
         qks = self.store_query_keys(ids)
         return self.get_all_from_store(qks=qks)
 
-    def remove_keys(
-        self,
-        unique_query_keys: QueryKeys,
-        searchable_query_keys: QueryKeys,
-    ) -> None:
-        uqks = unique_query_keys.all
-        for qk in uqks:
-            pk_key, pk_value = qk.key, qk.value
-            ck_col = self.unique_keys[pk_key]
-            ck_col.pop(pk_value, None)
-
-        sqks = searchable_query_keys.all
-        for qk in sqks:
-            pk_key, pk_value = qk.key, qk.value
-            ck_col = self.searchable_keys[pk_key]
-            ck_col.pop(pk_value, None)
-
-    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+    def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
                 return Err(f"No object exists for query key: {qk}")
@@ -210,10 +208,8 @@ class KeyValueStorePartition(StorePartition):
                 _original_obj
             )
 
-            # 🟡 TODO 28: Add locking in this transaction
-
             # remove old keys
-            self.remove_keys(
+            self._remove_keys(
                 unique_query_keys=_original_unique_keys,
                 searchable_query_keys=_original_searchable_keys,
             )
@@ -239,17 +235,14 @@ class KeyValueStorePartition(StorePartition):
         except Exception as e:
             return Err(f"Failed to update obj {obj} with error: {e}")
 
-    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+    def _get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         matches = []
         for qk in qks.all:
             if qk.value in self.data:
                 matches.append(self.data[qk.value])
         return Ok(matches)
 
-    def create(self, obj: SyftObject) -> Result[SyftObject, str]:
-        pass
-
-    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+    def _delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         try:
             _obj = self.data.pop(qk.value)
             self._delete_unique_keys_for(_obj)
@@ -370,7 +363,7 @@ class KeyValueStorePartition(StorePartition):
         searchable_query_keys: QueryKeys,
         obj: SyftObject,
     ) -> None:
-        # we should lock
+        # NOTE: not thread-safe
         uqks = unique_query_keys.all
 
         for qk in uqks:
@@ -395,3 +388,6 @@ class KeyValueStorePartition(StorePartition):
             self.searchable_keys[pk_key] = ck_col
 
         self.data[store_query_key.value] = obj
+
+    def _all(self) -> Result[List[BaseStash.object_type], str]:
+        return Ok(list(self.data.values()))

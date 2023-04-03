@@ -258,6 +258,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return self._get_all().items()
 
     def pop(self, key: Any) -> Self:
+        # NOTE: not thread-safe
         value = self._get(key)
         self._delete(key)
         return value
@@ -287,14 +288,24 @@ class SQLiteStorePartition(KeyValueStorePartition):
     """
 
     def close(self) -> None:
-        self.data._close()
-        self.unique_keys._close()
-        self.searchable_keys._close()
+        self.lock.acquire()
+        try:
+            self.data._close()
+            self.unique_keys._close()
+            self.searchable_keys._close()
+        except BaseException:
+            pass
+        self.lock.release()
 
     def commit(self) -> None:
-        self.data._commit()
-        self.unique_keys._commit()
-        self.searchable_keys._commit()
+        self.lock.acquire()
+        try:
+            self.data._commit()
+            self.unique_keys._commit()
+            self.searchable_keys._commit()
+        except BaseException:
+            pass
+        self.lock.release()
 
 
 # the base document store is already a dict but we can change it later

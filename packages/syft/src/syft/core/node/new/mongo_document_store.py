@@ -180,7 +180,7 @@ class MongoStorePartition(StorePartition):
 
         return Ok(self._collection)
 
-    def set(
+    def _set(
         self,
         obj: SyftObject,
         ignore_duplicates: bool = False,
@@ -201,7 +201,8 @@ class MongoStorePartition(StorePartition):
 
         return Ok(obj)
 
-    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+    def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+        # NOTE: not thread-safe
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -237,14 +238,14 @@ class MongoStorePartition(StorePartition):
 
         return Ok(obj)
 
-    def find_index_or_search_keys(
+    def _find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
         # TODO: pass index as hint to find method
         qks = QueryKeys(qks=(index_qks.all + search_qks.all))
         return self.get_all_from_store(qks=qks)
 
-    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+    def _get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -258,7 +259,7 @@ class MongoStorePartition(StorePartition):
             syft_objs.append(obj.to(self.settings.object_type, transform_context))
         return Ok(syft_objs)
 
-    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+    def _delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -272,7 +273,7 @@ class MongoStorePartition(StorePartition):
 
         return Err(f"Failed to delete object with qk: {qk}")
 
-    def all(self):
+    def _all(self):
         qks = QueryKeys(qks=())
         return self.get_all_from_store(qks=qks)
 
