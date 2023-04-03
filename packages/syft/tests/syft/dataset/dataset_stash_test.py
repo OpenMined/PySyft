@@ -51,7 +51,6 @@ def test_dataset_actionidpartitionkey() -> None:
 
 
 def test_dataset_get_by_name(mock_dataset_stash, mock_dataset) -> None:
-
     # retrieving existing dataset
     result = mock_dataset_stash.get_by_name(mock_dataset.name)
     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
@@ -109,4 +108,3 @@ def test_dataset_search_action_ids(mock_dataset_stash, mock_dataset):
     random_obj = object()
     with pytest.raises(AttributeError):
         result = mock_dataset_stash.search_action_ids(uid=random_obj)
-
