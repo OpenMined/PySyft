@@ -35,14 +35,16 @@ def test_mongo_store_partition_sanity(
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
-def test_mongo_store_partition_init_failed() -> None:
+def test_mongo_store_partition_init_failed(root_verify_key) -> None:
     # won't connect
     mongo_config = MongoStoreClientConfig(connectTimeoutMS=1, timeoutMS=1)
 
     store_config = MongoStoreConfig(client_config=mongo_config)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    store = MongoStorePartition(settings=settings, store_config=store_config)
+    store = MongoStorePartition(
+        root_verify_key, settings=settings, store_config=store_config
+    )
 
     res = store.init_store()
     assert res.is_err()
