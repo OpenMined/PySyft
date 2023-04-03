@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from functools import partial
+import sys
 import types
 import typing
 from typing import Any
@@ -49,6 +50,17 @@ def first_or_none(result: Any) -> Ok:
     return Ok(None)
 
 
+if sys.version_info >= (3, 9):
+
+    def is_generic_alias(t: type):
+        return isinstance(t, (types.GenericAlias, typing._GenericAlias))
+
+else:
+
+    def is_generic_alias(t: type):
+        return isinstance(t, typing._GenericAlias)
+
+
 class StoreClientConfig(BaseModel):
     """Base Client specific configuration"""
 
@@ -90,10 +102,7 @@ class PartitionKey(BaseModel):
 
     @property
     def type_list(self) -> bool:
-        return (
-            isinstance(self.type_, (types.GenericAlias, typing._GenericAlias))
-            and self.type_.__origin__ == list
-        )
+        return is_generic_alias(self.type_) and self.type_.__origin__ == list
 
 
 @serializable()
