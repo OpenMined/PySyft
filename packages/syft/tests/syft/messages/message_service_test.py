@@ -360,7 +360,7 @@ def test_messageservice_mark_as_delivered_error_on_update_message_status(
 
 
 # TODO: Fix this test - unsure how to return a LinkedObject Message.
-# Test executes code but does not return a Message ojbject.
+# Test executes code but does not return a Message object.
 def test_messageservice_resolve_object_success(
     monkeypatch: MonkeyPatch,
     authed_context: AuthedServiceContext,
