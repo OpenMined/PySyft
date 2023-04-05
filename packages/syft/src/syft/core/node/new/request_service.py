@@ -63,10 +63,11 @@ class RequestService(AbstractService):
             if result.is_ok():
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
-                user_verify_key = context.node.get_service_method(
-                    UserService.user_verify_key
+                admin_verify_key = context.node.get_service_method(
+                    UserService.admin_verify_key
                 )
-                root_verify_key = user_verify_key(email="info@openmined.org")
+
+                root_verify_key = admin_verify_key()
                 if send_message:
                     message = CreateMessage(
                         subject="Approval Request",

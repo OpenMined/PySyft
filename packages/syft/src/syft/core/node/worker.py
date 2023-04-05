@@ -21,6 +21,7 @@ from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ... import __version__
@@ -194,8 +195,8 @@ class Worker(NewNode):
 
         create_admin_new(  # nosec B106
             name="Jane Doe",
-            email="info@openmined.org",
-            password="changethis",
+            email=root_email,
+            password=root_password,
             node=self,
         )
 
@@ -204,14 +205,15 @@ class Worker(NewNode):
 
         self.post_init()
 
-    @staticmethod
+    @classmethod
     def named(
+        cls,
         name: str,
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-    ) -> Worker:
+    ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
@@ -222,7 +224,7 @@ class Worker(NewNode):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
 
-        return Worker(
+        return cls(
             name=name,
             id=uid,
             signing_key=key,
@@ -235,7 +237,7 @@ class Worker(NewNode):
         return credentials == self.signing_key.verify_key
 
     @property
-    def root_client(self) -> Any:
+    def root_client(self):
         # relative
         from .new.client import PythonConnection
         from .new.client import SyftClient
@@ -244,7 +246,7 @@ class Worker(NewNode):
         return SyftClient(connection=connection, credentials=self.signing_key)
 
     @property
-    def guest_client(self) -> Any:
+    def guest_client(self):
         # relative
         from .new.client import PythonConnection
         from .new.client import SyftClient
@@ -278,7 +280,6 @@ class Worker(NewNode):
             isinstance(document_store_config, SQLiteStoreConfig)
             and document_store_config.client_config.filename is None
         ):
-            document_store_config.client_config.filename
             document_store_config.client_config.filename = f"{self.id}.sqlite"
             print(
                 f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
