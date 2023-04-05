@@ -162,6 +162,10 @@ class ActionService(AbstractService):
                 # no twins
                 filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.NONE)
                 exec_result = execute_byte_code(code_item, filtered_kwargs)
+                        
+                import sys
+                print("what", file=sys.stderr)
+                print(exec_result, file=sys.stderr)
                 result_action_object = wrap_result(
                     code_item.id, result_id, exec_result.result
                 )
@@ -369,6 +373,9 @@ def execute_object(
 
 def wrap_result(parent_id: UID, result_id: UID, result: Any) -> ActionObject:
     # 🟡 TODO 11: Figure out how we want to store action object results
+    import sys
+    print("wrap result", file=sys.stderr)
+    print(result, file=sys.stderr)
     action_type = action_type_for_type(result)
     result_action_object = action_type(
         id=result_id, parent_id=parent_id, syft_action_data=result

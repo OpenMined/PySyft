@@ -59,10 +59,14 @@ class UserCodeService(AbstractService):
         from .request import SubmitRequest
         from .request_service import RequestService
 
+        import sys
+        print(code, file=sys.stderr)
         user_code = code.to(UserCode, context=context)
+        print(user_code, file=sys.stderr)
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
+        print(result, file=sys.stderr)
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
@@ -131,6 +135,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
+        import sys
         try:
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(uid=uid)
@@ -138,6 +143,8 @@ class UserCodeService(AbstractService):
                 code_item = result.ok()
                 if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
                     is_valid = code_item.output_policy_state.valid
+                    
+                    print(is_valid, file=sys.stderr)
                     if not is_valid:
                         if (
                             len(
@@ -157,6 +164,8 @@ class UserCodeService(AbstractService):
                         result = action_service._user_code_execute(
                             context, code_item, filtered_kwargs
                         )
+                        
+                        print(result, file=sys.stderr)
                         if isinstance(result, str):
                             return SyftError(message=result)
                         if result.is_ok():

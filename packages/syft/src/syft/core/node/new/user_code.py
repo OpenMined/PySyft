@@ -685,6 +685,8 @@ def modify_signature(context: TransformContext) -> TransformContext:
 
 
 def check_input_policy(context: TransformContext) -> TransformContext:
+    import sys
+    print(context.output["input_policy"], file=sys.stderr)
     ip = context.output["input_policy"]
     ip.node_uid = context.node.id
     context.output["input_policy"] = ip
@@ -697,6 +699,8 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
 
 
 def add_custom_status(context: TransformContext) -> TransformContext:
+    import sys
+    print(context.obj.input_policy.inputs, file=sys.stderr)
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
@@ -706,7 +710,10 @@ def add_custom_status(context: TransformContext) -> TransformContext:
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
-            raise NotImplementedError
+            # TODO: Teo this was raise NotImplemented, figure out why
+            context.output["status"] = UserCodeStatusContext(
+                base_dict={node_view: UserCodeStatus.SUBMITTED}
+            )
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {
             key: UserCodeStatus.SUBMITTED
@@ -771,6 +778,8 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         # restore stdout and stderr
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+        print("execute_byte_code", file=sys.stderr)
 
         return UserCodeExecutionResult(
             user_code_id=code_item.id,
