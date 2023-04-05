@@ -7,19 +7,12 @@ from datetime import datetime
 from functools import partial
 import hashlib
 import os
-import sys
 from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
-
-if sys.version_info >= (3, 11):
-    # stdlib
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 # third party
 import gevent
@@ -28,6 +21,7 @@ from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ... import __version__
