@@ -544,6 +544,8 @@ def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
 
 
 def check_input_policy(context: TransformContext) -> TransformContext:
+    import sys
+    print(context.output["input_policy"], file=sys.stderr)
     ip = context.output["input_policy_type"]
     ip = check_policy(policy=ip, context=context)
     context.output["input_policy_type"] = ip
@@ -558,6 +560,8 @@ def check_output_policy(context: TransformContext) -> TransformContext:
 
 
 def add_custom_status(context: TransformContext) -> TransformContext:
+    import sys
+    print(context.obj.input_policy.inputs, file=sys.stderr)
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(

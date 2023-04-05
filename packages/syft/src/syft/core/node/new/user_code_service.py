@@ -61,6 +61,8 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
+        import sys
+        print(code, file=sys.stderr)
         # relative
         from .request import SubmitRequest
         from .request_service import RequestService
@@ -185,6 +187,8 @@ class UserCodeService(AbstractService):
 
             # Check if the OutputPolicy is valid
             is_valid = output_policy.valid
+                    
+                    print(is_valid, file=sys.stderr)
 
             if not is_valid:
                 if len(output_policy.output_history) > 0:
@@ -199,6 +203,8 @@ class UserCodeService(AbstractService):
             result = action_service._user_code_execute(
                 context, code_item, filtered_kwargs
             )
+                        
+                        print(result, file=sys.stderr)
             if isinstance(result, str):
                 return SyftError(message=result)
 

@@ -181,6 +181,10 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs)
+                        
+                import sys
+                print("what", file=sys.stderr)
+                print(exec_result, file=sys.stderr)
                 result_action_object = wrap_result(
                     code_item.id, result_id, exec_result.result
                 )
