@@ -121,7 +121,12 @@ class KeyValueStorePartition(StorePartition):
     def __len__(self) -> int:
         return len(self.data)
 
-    # Potentially Thread-unsafe methods
+    # Potentially thread-unsafe methods.
+    # CAUTION:
+    #       * Don't use self.lock here.
+    #       * Do not call the public thread-safe methods here(with locking).
+    # These methods are called from the public thread-safe API, and will hang the process.
+
     def _set(
         self, obj: SyftObject, ignore_duplicates: bool = False
     ) -> Result[SyftObject, str]:

@@ -25,8 +25,9 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .base import SyftBaseModel
-from .locks import NoLockingConfig
+from .locks import LockingConfig
 from .locks import SyftLock
+from .locks import ThreadingLockingConfig
 from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -314,10 +315,9 @@ class StorePartition:
         self.settings = settings
         self.store_config = store_config
         self.init_store()
-        # TODO = move lock config to StoreConfig
-        lock_config = NoLockingConfig(lock_name=str(UID()))
-        # TODO
-        self.lock = SyftLock(lock_config)
+
+        store_config.locking_config.lock_name = settings.name
+        self.lock = SyftLock(store_config.locking_config)
 
     def init_store(self) -> Result[Ok, Err]:
         try:
@@ -346,7 +346,7 @@ class StorePartition:
 
     # Thread-safe methods
     def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
-        locked = self.lock.acquire()
+        locked = self.lock.acquire(blocking=True)
         if not locked:
             return Err("Failed to acquire lock for the operation")
 
@@ -395,7 +395,11 @@ class StorePartition:
     def all(self) -> Result[List[BaseStash.object_type], str]:
         return self._thread_safe_cbk(self._all)
 
-    # Potentially Thread-unsafe methods
+    # Potentially thread-unsafe methods.
+    # CAUTION:
+    #       * Don't use self.lock here.
+    #       * Do not call the public thread-safe methods here(with locking).
+    # These methods are called from the public thread-safe API, and will hang the process.
     def _set(
         self,
         obj: SyftObject,
@@ -581,6 +585,12 @@ class StoreConfig(SyftBaseObject):
             Document Store type
         client_config: Optional[StoreClientConfig]
             Backend-specific config
+        locking_config: LockingConfig
+            The config used for multithreading locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-instance different-processes stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-instances stores.
     """
 
     __canonical_name__ = "StoreConfig"
@@ -588,3 +598,4 @@ class StoreConfig(SyftBaseObject):
 
     store_type: Type[DocumentStore]
     client_config: Optional[StoreClientConfig]
+    locking_config: LockingConfig = ThreadingLockingConfig()

@@ -5,6 +5,7 @@ from pathlib import Path
 import threading
 import time
 from typing import Optional
+import uuid
 
 # third party
 from pydantic import BaseModel
@@ -94,6 +95,43 @@ class PatchedFileLock(FileLock):
                 tzinfo=datetime.timezone.utc
             ).astimezone(datetime.timezone.utc)
         return expiry_time.isoformat()
+
+    def _acquire(self) -> bool:
+        owner = str(uuid.uuid4())
+
+        # Make sure we have unique lock on the file.
+        with self._lock_file:
+            if self._data_file.exists():
+                for retry in range(10):
+                    try:
+                        data = json.loads(self._data_file.read_text())
+                        break
+                    except BaseException:
+                        time.sleep(0.1)
+
+                now = self._now()
+                has_expired = self._has_expired(data, now)
+                if owner != data["owner"]:
+                    if not has_expired:
+                        # Someone else holds the lock.
+                        return False
+                    else:
+                        # Lock is available for us to take.
+                        data = {"owner": owner, "expiry_time": self._expiry_time()}
+                else:
+                    # Same owner so do not set or modify Lease.
+                    return False
+            else:
+                data = {"owner": owner, "expiry_time": self._expiry_time()}
+
+            # Write new data back to file.
+            self._data_file.touch()
+            self._data_file.write_text(json.dumps(data))
+
+            # We succeeded in writing to the file so we now hold the lock.
+            self._owner = owner
+
+            return True
 
     @property
     def _locked(self):

@@ -118,6 +118,12 @@ class MongoStorePartition(StorePartition):
 
         return self._create_update_index()
 
+    # Potentially thread-unsafe methods.
+    # CAUTION:
+    #       * Don't use self.lock here.
+    #       * Do not call the public thread-safe methods here(with locking).
+    # These methods are called from the public thread-safe API, and will hang the process.
+
     def _create_update_index(self) -> Result[Ok, Err]:
         """Create or update mongo database indexes"""
         collection_status = self.collection
@@ -202,7 +208,6 @@ class MongoStorePartition(StorePartition):
         return Ok(obj)
 
     def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
-        # NOTE: not thread-safe
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -211,7 +216,7 @@ class MongoStorePartition(StorePartition):
         # TODO: optimize the update. The ID should not be overwritten,
         # but the qk doesn't necessarily have to include the `id` field either.
 
-        prev_obj_status = self.get_all_from_store(QueryKeys(qks=[qk]))
+        prev_obj_status = self._get_all_from_store(QueryKeys(qks=[qk]))
         if prev_obj_status.is_err():
             return Err(f"No object found with query key: {qk}")
 
@@ -243,7 +248,7 @@ class MongoStorePartition(StorePartition):
     ) -> Result[List[SyftObject], str]:
         # TODO: pass index as hint to find method
         qks = QueryKeys(qks=(index_qks.all + search_qks.all))
-        return self.get_all_from_store(qks=qks)
+        return self._get_all_from_store(qks=qks)
 
     def _get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         collection_status = self.collection
@@ -275,7 +280,7 @@ class MongoStorePartition(StorePartition):
 
     def _all(self):
         qks = QueryKeys(qks=())
-        return self.get_all_from_store(qks=qks)
+        return self._get_all_from_store(qks=qks)
 
     def __len__(self):
         collection_status = self.collection
