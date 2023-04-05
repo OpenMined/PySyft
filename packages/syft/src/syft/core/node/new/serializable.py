@@ -1,6 +1,6 @@
 # stdlib
+from typing import List
 from typing import Optional
-from typing import Sequence
 from typing import TypeVar
 
 # syft absolute
@@ -12,12 +12,12 @@ from .recursive import recursive_serde_register
 module_type = type(syft)
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=type)
 
 
 def serializable(
-    attrs: Sequence[str] = [],
-    without: Sequence[str] = [],
+    attrs: Optional[List[str]] = None,
+    without: Optional[List[str]] = None,
     inherit: Optional[bool] = True,
     inheritable: Optional[bool] = True,
 ) -> T:
