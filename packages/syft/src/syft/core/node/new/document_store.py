@@ -25,7 +25,7 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .base import SyftBaseModel
-from .locks import NoLockingConfig
+from .locks import FileLockingConfig
 from .locks import SyftLock
 from .response import SyftSuccess
 from .serializable import serializable
@@ -315,7 +315,7 @@ class StorePartition:
         self.store_config = store_config
         self.init_store()
         # TODO = move lock config to StoreConfig
-        lock_config = NoLockingConfig(name="test")
+        lock_config = FileLockingConfig(lock_name=str(UID()))
         # TODO
         self.lock = SyftLock(lock_config)
 
@@ -346,7 +346,10 @@ class StorePartition:
 
     # Thread-safe methods
     def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
-        self.lock.acquire()
+        locked = self.lock.acquire()
+        if not locked:
+            return Err("Failed to acquire lock for the operation")
+
         try:
             result = cbk(*args, **kwargs)
         except BaseException as e:

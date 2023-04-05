@@ -195,7 +195,7 @@ class KeyValueStorePartition(StorePartition):
             return Ok([])
 
         qks = self.store_query_keys(ids)
-        return self.get_all_from_store(qks=qks)
+        return self._get_all_from_store(qks=qks)
 
     def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
         try:
@@ -363,7 +363,6 @@ class KeyValueStorePartition(StorePartition):
         searchable_query_keys: QueryKeys,
         obj: SyftObject,
     ) -> None:
-        # NOTE: not thread-safe
         uqks = unique_query_keys.all
 
         for qk in uqks:

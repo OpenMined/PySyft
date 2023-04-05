@@ -1,5 +1,7 @@
 # stdlib
+import datetime
 from pathlib import Path
+import threading
 import time
 from typing import Optional
 
@@ -46,6 +48,14 @@ class NoLockingConfig(LockingConfig):
     pass
 
 
+class ThreadingLockingConfig(LockingConfig):
+    """
+    Threading-based locking policy
+    """
+
+    pass
+
+
 class FileLockingConfig(LockingConfig):
     """File locking policy"""
 
@@ -66,9 +76,74 @@ class RedisLockingConfig(LockingConfig):
     client: RedisClientConfig = RedisClientConfig()
 
 
+class PatchedFileLock(FileLock):
+    """
+    Implementation of lock with the file system as the backend for synchronization.
+    This version patches for the `FileLock._expiry_time` crash(https://github.com/py-sherlock/sherlock/issues/71)
+
+
+    """
+
+    def _expiry_time(self) -> str:
+        if self.expire is not None:
+            expiry_time = self._now() + datetime.timedelta(seconds=self.expire)
+        else:
+            expiry_time = datetime.datetime.max.replace(
+                tzinfo=datetime.timezone.utc
+            ).astimezone(datetime.timezone.utc)
+        return expiry_time.isoformat()
+
+
+class ThreadingLock(BaseLock):
+    """
+    Threading-based Lock. Used to provide the same API as the rest of the locks.
+    """
+
+    def __init__(self, **kwargs):
+        self.lock = threading.Lock()
+
+    @property
+    def _locked(self):
+        """
+        Implementation of method to check if lock has been acquired. Must be
+        :returns: if the lock is acquired or not
+        :rtype: bool
+        """
+
+        return self.lock.locked()
+
+    def _acquire(self):
+        """
+        Implementation of acquiring a lock in a non-blocking fashion.
+        :returns: if the lock was successfully acquired or not
+        :rtype: bool
+        """
+
+        print("threading locking")
+        return self.lock.acquire(
+            blocking=False, timeout=-1
+        )  # timeout/retries handle in the `acquire` method
+
+    def _release(self):
+        """
+        Implementation of releasing an acquired lock.
+        """
+
+        return self.lock.release()
+
+    def _renew(self) -> bool:
+        """
+        Implementation of renewing an acquired lock.
+        """
+        return True
+
+
 class SyftLock(BaseLock):
     """
     Syft Lock implementations.
+
+    Params:
+        config: Config specific to a locking strategy.
     """
 
     def __init__(self, config: LockingConfig):
@@ -93,9 +168,11 @@ class SyftLock(BaseLock):
         }
         if isinstance(config, NoLockingConfig):
             self.passthrough = True
+        elif isinstance(config, ThreadingLockingConfig):
+            self._lock = ThreadingLock()
         elif isinstance(config, FileLockingConfig):
             client = config.client_path
-            self._lock = FileLock(
+            self._lock = PatchedFileLock(
                 **base_params,
                 client=client,
             )
@@ -112,7 +189,7 @@ class SyftLock(BaseLock):
     @property
     def _locked(self):
         """
-        Implementation of method to check if lock has been acquired. i
+        Implementation of method to check if lock has been acquired.
 
         :returns: if the lock is acquired or not
         :rtype: bool

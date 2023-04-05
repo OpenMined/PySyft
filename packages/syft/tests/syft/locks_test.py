@@ -20,6 +20,7 @@ from syft.core.node.new.locks import LockingConfig
 from syft.core.node.new.locks import NoLockingConfig
 from syft.core.node.new.locks import RedisLockingConfig
 from syft.core.node.new.locks import SyftLock
+from syft.core.node.new.locks import ThreadingLockingConfig
 
 redis_server_mock = create_redis_fixture(scope="session")
 
@@ -43,6 +44,12 @@ def locks_nop_config(request):
 
 
 @pytest.fixture(scope="function")
+def locks_threading_config(request):
+    def_params["lock_name"] = generate_lock_name()
+    return ThreadingLockingConfig(**def_params)
+
+
+@pytest.fixture(scope="function")
 def locks_file_config():
     def_params["lock_name"] = generate_lock_name()
     return FileLockingConfig(**def_params)
@@ -59,6 +66,7 @@ def locks_redis_config(redis_server_mock):
     "config",
     [
         pytest.lazy_fixture("locks_nop_config"),
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -96,6 +104,7 @@ def test_acquire_nop(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -126,6 +135,7 @@ def test_acquire_release(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -145,6 +155,7 @@ def test_acquire_release_with(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -176,6 +187,7 @@ def test_acquire_expire(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -202,6 +214,7 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -230,6 +243,7 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -258,6 +272,7 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -287,6 +302,7 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -307,6 +323,7 @@ def test_acquire_double_release(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
@@ -331,6 +348,7 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
