@@ -25,7 +25,7 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .base import SyftBaseModel
-from .locks import FileLockingConfig
+from .locks import NoLockingConfig
 from .locks import SyftLock
 from .response import SyftSuccess
 from .serializable import serializable
@@ -315,7 +315,7 @@ class StorePartition:
         self.store_config = store_config
         self.init_store()
         # TODO = move lock config to StoreConfig
-        lock_config = FileLockingConfig(lock_name=str(UID()))
+        lock_config = NoLockingConfig(lock_name=str(UID()))
         # TODO
         self.lock = SyftLock(lock_config)
 

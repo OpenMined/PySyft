@@ -1,5 +1,6 @@
 # stdlib
 import datetime
+import json
 from pathlib import Path
 import threading
 import time
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 import redis
 from sherlock.lock import BaseLock
 from sherlock.lock import FileLock
+from sherlock.lock import LockException
 from sherlock.lock import RedisLock
 
 # relative
@@ -93,13 +95,62 @@ class PatchedFileLock(FileLock):
             ).astimezone(datetime.timezone.utc)
         return expiry_time.isoformat()
 
+    @property
+    def _locked(self):
+        if not self._data_file.exists():
+            # File doesn't exist so can't be locked.
+            return False
+
+        with self._lock_file:
+            data = None
+            for retry in range(10):
+                try:
+                    data = json.loads(self._data_file.read_text())
+                    break
+                except BaseException:
+                    time.sleep(0.1)
+
+        if data is None:
+            raise RuntimeError("Cannot load lock file")
+
+        if self._has_expired(data, self._now()):
+            # File exists but has expired.
+            return False
+
+        # Lease exists and has not expired.
+        return True
+
+    def _release(self) -> None:
+        if self._owner is None:
+            raise LockException("Lock was not set by this process.")
+
+        if not self._data_file.exists():
+            return
+
+        with self._lock_file:
+            data = None
+            for retry in range(10):
+                try:
+                    data = json.loads(self._data_file.read_text())
+                    break
+                except BaseException:
+                    time.sleep(0.1)
+
+            if data is None:
+                raise RuntimeError("Cannot load lock file")
+
+            if self._owner == data["owner"]:
+                self._data_file.unlink()
+
 
 class ThreadingLock(BaseLock):
     """
     Threading-based Lock. Used to provide the same API as the rest of the locks.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, expire: int, **kwargs):
+        self.expire = expire
+        self.locked_timestamp = 0
         self.lock = threading.Lock()
 
     @property
@@ -109,6 +160,13 @@ class ThreadingLock(BaseLock):
         :returns: if the lock is acquired or not
         :rtype: bool
         """
+        locked = self.lock.locked()
+        if (
+            locked
+            and time.time() - self.locked_timestamp >= self.expire
+            and self.expire != -1
+        ):
+            self._release()
 
         return self.lock.locked()
 
@@ -118,18 +176,30 @@ class ThreadingLock(BaseLock):
         :returns: if the lock was successfully acquired or not
         :rtype: bool
         """
+        locked = self.lock.locked()
+        if (
+            locked
+            and time.time() - self.locked_timestamp > self.expire
+            and self.expire != -1
+        ):
+            self._release()
 
-        print("threading locking")
-        return self.lock.acquire(
-            blocking=False, timeout=-1
+        status = self.lock.acquire(
+            blocking=False
         )  # timeout/retries handle in the `acquire` method
+        if status:
+            self.locked_timestamp = time.time()
+        return status
 
     def _release(self):
         """
         Implementation of releasing an acquired lock.
         """
 
-        return self.lock.release()
+        try:
+            return self.lock.release()
+        except RuntimeError:  # already unlocked
+            pass
 
     def _renew(self) -> bool:
         """
@@ -169,7 +239,7 @@ class SyftLock(BaseLock):
         if isinstance(config, NoLockingConfig):
             self.passthrough = True
         elif isinstance(config, ThreadingLockingConfig):
-            self._lock = ThreadingLock()
+            self._lock = ThreadingLock(**base_params)
         elif isinstance(config, FileLockingConfig):
             client = config.client_path
             self._lock = PatchedFileLock(

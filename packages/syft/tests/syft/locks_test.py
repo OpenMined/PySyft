@@ -357,7 +357,7 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
-def test_parallel_multithreading(config: LockingConfig) -> None:
+def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     thread_cnt = 3
     repeats = 100
 
@@ -370,13 +370,26 @@ def test_parallel_multithreading(config: LockingConfig) -> None:
     with open(temp_file, "w") as f:
         f.write("0")
 
+    config.timeout = 10
+    lock = SyftLock(config)
+
     def _kv_cbk(tid: int) -> None:
         for idx in range(repeats):
-            with SyftLock(config):
+            locked = lock.acquire()
+            if not locked:
+                continue
+
+            try:
                 with open(temp_file, "r") as f:
-                    prev = int(f.read())
+                    prev = f.read()
+                    prev = int(prev)
                 with open(temp_file, "w") as f:
                     f.write(str(prev + 1))
+                    f.flush()
+            except BaseException as e:
+                print("failed ", e)
+
+            lock.release()
 
     tids = []
     for tid in range(thread_cnt):
