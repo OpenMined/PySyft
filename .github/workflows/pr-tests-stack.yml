@@ -22,8 +22,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest, windows]
         python-version: ["3.10"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -31,14 +30,6 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: "clean .git/config"
-        if: matrix.os == 'windows'
-        continue-on-error: true
-        shell: bash
-        run: |
-          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
-          rm ${GITHUB_WORKSPACE}/.git/config
-
       - uses: actions/checkout@v3
 
       - name: Check for file changes
@@ -79,36 +70,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install -U tox
-
-      - name: Show choco installed packages
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: list --localonly
-
-      - name: Install git
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
-
-      - name: Install cmake
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-      - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
-        run: |
-          cmake --version
-        shell: cmd
-
-      - name: Install visualcpp-build-tools
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install visualstudio2019-workload-vctools -y
 
       - name: Install jaxlib
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -167,7 +128,6 @@ jobs:
         run: |
           tox -e stack.test.integration
 
-      #Run log collector python script
       - name: Run log collector
         timeout-minutes: 5
         if: failure()
@@ -175,7 +135,6 @@ jobs:
         run: |
           python ./scripts/container_log_collector.py
 
-      # Get Job name and url
       - name: Get job name and url
         id: job_name
         if: failure()
@@ -196,21 +155,6 @@ jobs:
           name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
-      - name: Mandatory Container cleanup
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          docker rm `docker ps -aq` --force || true
-          docker volume prune -f || true
-
-      # Get Job name and url
-      - name: Reboot node
-        if: matrix.os == 'windows' && failure()
-        run: |
-          shutdown /r /t 1
-
-      #Get Pull request url
       - name: Get pull request url
         id: pull_request
         if: failure()
@@ -218,7 +162,6 @@ jobs:
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
       - name: Job Report Status
-        # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
