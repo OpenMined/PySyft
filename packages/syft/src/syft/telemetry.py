@@ -1,7 +1,13 @@
 # stdlib
 import os
-from typing import Any
+from typing import Callable
 from typing import Optional
+from typing import TypeVar
+from typing import Union
+
+# third party
+from typing_extensions import Concatenate
+from typing_extensions import ParamSpec
 
 
 def str_to_bool(bool_str: Optional[str]) -> bool:
@@ -15,10 +21,14 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
 TRACE_MODE = str_to_bool(os.environ.get("TRACE", "False"))
 
 
-def setup_tracer() -> Any:
+T = TypeVar("T", bound=Union[Callable, type])
+P = ParamSpec("P")
+
+
+def setup_tracer() -> Callable[Concatenate[T, P], T]:
     if not TRACE_MODE:
 
-        def noop(func: Any) -> Any:
+        def noop(func: T) -> T:
             return func
 
         return noop

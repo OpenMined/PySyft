@@ -3,16 +3,16 @@ from __future__ import annotations
 
 # stdlib
 from functools import partial
+import sys
 import types
+import typing
 from typing import Any
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
-from typing import _GenericAlias
 
 # third party
 from pydantic import BaseModel
@@ -44,10 +44,21 @@ class BasePartitionSettings(SyftBaseModel):
     name: str
 
 
-def first_or_none(result: Any) -> Optional[Any]:
+def first_or_none(result: Any) -> Ok:
     if hasattr(result, "__len__") and len(result) > 0:
         return Ok(result[0])
     return Ok(None)
+
+
+if sys.version_info >= (3, 9):
+
+    def is_generic_alias(t: type):
+        return isinstance(t, (types.GenericAlias, typing._GenericAlias))
+
+else:
+
+    def is_generic_alias(t: type):
+        return isinstance(t, typing._GenericAlias)
 
 
 class StoreClientConfig(BaseModel):
@@ -62,22 +73,26 @@ class PartitionKey(BaseModel):
     type_: Union[type, object]
 
     def __eq__(self, other: Any) -> bool:
-        if type(other) == type(self):
-            return self.key == other.key and self.type_ == other.type_
-        return False
+        return (
+            type(other) == type(self)
+            and self.key == other.key
+            and self.type_ == other.type_
+        )
 
-    def with_obj(self, obj: SyftObject) -> QueryKey:
+    def with_obj(self, obj: Any) -> QueryKey:
         return QueryKey.from_obj(partition_key=self, obj=obj)
 
-    def is_valid_list(self, obj: SyftObject) -> bool:
+    def extract_list(self, obj: Any) -> List:
         # not a list and matches the internal list type of the _GenericAlias
         if not isinstance(obj, list):
-            if not isinstance(obj, self.type_.__args__):
+            if not isinstance(obj, typing.get_args(self.type_)):
                 obj = getattr(obj, self.key)
                 if isinstance(obj, (types.FunctionType, types.MethodType)):
                     obj = obj()
 
-            if not isinstance(obj, list) and isinstance(obj, self.type_.__args__):
+            if not isinstance(obj, list) and isinstance(
+                obj, typing.get_args(self.type_)
+            ):
                 # still not a list but the right type
                 obj = [obj]
 
@@ -87,25 +102,22 @@ class PartitionKey(BaseModel):
 
     @property
     def type_list(self) -> bool:
-        if isinstance(self.type_, _GenericAlias) and self.type_.__origin__ == list:
-            return True
-        return False
+        return is_generic_alias(self.type_) and self.type_.__origin__ == list
 
 
 @serializable()
 class PartitionKeys(BaseModel):
-    pks: Union[PartitionKey, Tuple[PartitionKey, ...]]
+    pks: Union[PartitionKey, Tuple[PartitionKey, ...], List[PartitionKey]]
 
     @property
-    def all(self) -> Iterable[PartitionKey]:
-        # make sure we always return Tuple's even if theres a single value
-        _keys = self.pks if isinstance(self.pks, (tuple, list)) else (self.pks,)
-        return _keys
+    def all(self) -> List[PartitionKey]:
+        # make sure we always return a list even if there's a single value
+        return self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
 
-    def with_obj(self, obj: SyftObject) -> QueryKeys:
+    def with_obj(self, obj: Any) -> QueryKeys:
         return QueryKeys.from_obj(partition_keys=self, obj=obj)
 
-    def with_tuple(self, *args: Tuple[Any, ...]) -> QueryKeys:
+    def with_tuple(self, *args: Any) -> QueryKeys:
         return QueryKeys.from_tuple(partition_keys=self, args=args)
 
     def add(self, pk: PartitionKey) -> PartitionKeys:
@@ -118,38 +130,31 @@ class PartitionKeys(BaseModel):
             pks.append(PartitionKey(key=k, type_=t))
         return PartitionKeys(pks=pks)
 
-    def make(self, *obj_arg: Union[SyftObject, Tuple[Any, ...]]) -> QueryKeys:
-        if isinstance(obj_arg, SyftObject):
-            return self.with_obj(obj_arg)
-        else:
-            return self.with_tuple(*obj_arg)
-
 
 @serializable()
 class QueryKey(PartitionKey):
     value: Any
 
     def __eq__(self, other: Any) -> bool:
-        if type(other) == type(self):
-            return (
-                self.key == other.key
-                and self.type_ == other.type_
-                and self.value == other.value
-            )
-        return False
+        return (
+            type(other) == type(self)
+            and self.key == other.key
+            and self.type_ == other.type_
+            and self.value == other.value
+        )
 
     @property
     def partition_key(self) -> PartitionKey:
         return PartitionKey(key=self.key, type_=self.type_)
 
     @staticmethod
-    def from_obj(partition_key: PartitionKey, obj: SyftObject) -> List[Any]:
+    def from_obj(partition_key: PartitionKey, obj: Any) -> QueryKey:
         pk_key = partition_key.key
         pk_type = partition_key.type_
 
         # 🟡 TODO: support more advanced types than List[type]
         if partition_key.type_list:
-            pk_value = partition_key.is_valid_list(obj)
+            pk_value = partition_key.extract_list(obj)
         else:
             if isinstance(obj, pk_type):
                 pk_value = obj
@@ -187,7 +192,7 @@ class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
     @property
-    def all(self) -> Iterable[PartitionKey]:
+    def all(self) -> List[PartitionKey]:
         all_keys = self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
         if self.uid_pk not in all_keys:
             all_keys.insert(0, self.uid_pk)
@@ -196,13 +201,12 @@ class PartitionKeysWithUID(PartitionKeys):
 
 @serializable()
 class QueryKeys(SyftBaseModel):
-    qks: Union[QueryKey, Tuple[QueryKey, ...]]
+    qks: Union[QueryKey, Tuple[QueryKey, ...], List[QueryKey]]
 
     @property
-    def all(self) -> Iterable[QueryKey]:
-        # make sure we always return Tuple's even if theres a single value
-        _keys = self.qks if isinstance(self.qks, (tuple, list)) else (self.qks,)
-        return _keys
+    def all(self) -> List[QueryKey]:
+        # make sure we always return a list even if there's a single value
+        return self.qks if isinstance(self.qks, (tuple, list)) else [self.qks]
 
     @staticmethod
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
@@ -217,7 +221,7 @@ class QueryKeys(SyftBaseModel):
             if isinstance(pk_value, (types.FunctionType, types.MethodType)):
                 pk_value = pk_value()
             if partition_key.type_list:
-                pk_value = partition_key.is_valid_list(obj)
+                pk_value = partition_key.extract_list(obj)
             else:
                 if pk_value and not isinstance(pk_value, pk_type):
                     raise Exception(
@@ -228,7 +232,7 @@ class QueryKeys(SyftBaseModel):
         return QueryKeys(qks=qks)
 
     @staticmethod
-    def from_tuple(partition_keys: PartitionKeys, args: Tuple[Any, ...]) -> QueryKeys:
+    def from_tuple(partition_keys: PartitionKeys, args: Tuple) -> QueryKeys:
         qks = []
         for partition_key, pk_value in zip(partition_keys.all, args):
             pk_key = partition_key.key
@@ -322,14 +326,10 @@ class StorePartition:
         return Ok()
 
     def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
-        if partition_key in self.unique_cks:
-            return True
-        return False
+        return partition_key in self.unique_cks
 
     def matches_searchable_cks(self, partition_key: PartitionKey) -> bool:
-        if partition_key in self.searchable_cks:
-            return True
-        return False
+        return partition_key in self.searchable_cks
 
     def store_query_key(self, obj: Any) -> QueryKey:
         return self.settings.store_key.with_obj(obj)
@@ -502,7 +502,7 @@ class BaseUIDStoreStash(BaseStash):
         result = super().delete(qk=qk)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result.err()
+        return result
 
     def get_by_uid(
         self, uid: UID
