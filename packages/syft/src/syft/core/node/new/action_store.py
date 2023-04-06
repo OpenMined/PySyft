@@ -21,6 +21,7 @@ from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import SyftObject
 from .twin_object import TwinObject
+from .uid import LineageID
 from .uid import UID
 
 
@@ -116,7 +117,12 @@ class KeyValueActionStore(ActionStore):
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         # if True:
         if skip_permission or self.has_permission(read_permission):
-            syft_object = self.data[uid]
+            if isinstance(uid, LineageID):
+                syft_object = self.data[uid.id]
+            elif isinstance(uid, UID):
+                syft_object = self.data[uid]
+            else:
+                raise Exception(f"Unrecognized UID type: {type(uid)}")
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
 

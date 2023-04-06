@@ -630,7 +630,7 @@ class ActionObject(SyftObject):
 
     def syft_get_path(self) -> str:
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
-            return f"{self.syft_internal_type.__name__}"
+            return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
 
     def syft_remote_method(
