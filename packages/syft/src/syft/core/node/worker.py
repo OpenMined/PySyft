@@ -233,6 +233,22 @@ class Worker(NewNode):
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"
+
+            # stdlib
+            import sqlite3
+
+            with contextlib.closing(sqlite3.connect(store_config.file_path)) as db:
+                cursor = db.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                tables = cursor.fetchall()
+
+                for table_name in tables:
+                    drop_table_sql = f"DROP TABLE IF EXISTS {table_name[0]};"
+                    cursor.execute(drop_table_sql)
+
+                db.commit()
+                db.close()
+
             with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
