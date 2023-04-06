@@ -57,26 +57,265 @@ CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
 PyCodeObject = Any
 
 
+
+
 def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
     from .action_object import ActionObject
     from .twin_object import TwinObject
 
-    uid_kwargs = {}
-    for k, v in kwargs.items():
-        uid = v
-        if isinstance(v, ActionObject):
-            uid = v.id
-        if isinstance(v, TwinObject):
-            uid = v.id
-        if isinstance(v, Asset):
-            uid = v.action_id
+    id: UID
+    inputs: Dict[NodeView, Any]
+    node_uid: Optional[UID]
 
-        if not isinstance(uid, UID):
-            raise Exception(f"Input {k} must have a UID not {type(v)}")
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # TODO: This method initialization would conflict if one of the input variables
+        # to the code submission function happens to be id or inputs
+        uid = UID()
+        node_uid = None
+        if "id" in kwargs:
+            uid = kwargs["id"]
+        if "node_uid" in kwargs:
+            node_uid = kwargs["node_uid"]
 
-        uid_kwargs[k] = uid
-    return uid_kwargs
+        # finally get inputs
+        if "inputs" in kwargs:
+            kwargs = kwargs["inputs"]
+        else:
+            kwargs = partition_by_node(kwargs)
+        super().__init__(id=uid, inputs=kwargs, node_uid=node_uid)
+
+    def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        raise NotImplementedError
+
+    def __getitem__(self, key: Union[int, str]) -> Optional[SyftObject]:
+        if isinstance(key, int):
+            key = list(self.inputs.keys())[key]
+        uid = self.inputs[key]
+        # TODO Add NODE UID or LINK so we can resolve this object
+        return uid
+
+    @property
+    def assets(self) -> List[Asset]:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(self.node_uid)
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+
+        node_view = NodeView(
+            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        )
+        inputs = self.inputs[node_view]
+        all_assets = []
+        for k, uid in inputs.items():
+            if isinstance(uid, UID):
+                assets = api.services.dataset.get_assets_by_action_id(uid)
+                if not isinstance(assets, list):
+                    return assets
+
+                all_assets += assets
+        return all_assets
+
+
+def retrieve_from_db(
+    code_item_id: UID, allowed_inputs: Dict[str, UID], context: AuthedServiceContext
+) -> Dict:
+    # relative
+    from .action_service import TwinMode
+
+    action_service = context.node.get_service("actionservice")
+    code_inputs = {}
+
+    if context.node.node_type == NodeType.DOMAIN:
+        for var_name, arg_id in allowed_inputs.items():
+            kwarg_value = action_service.get(
+                context=context, uid=arg_id, twin_mode=TwinMode.NONE
+            )
+            if kwarg_value.is_err():
+                return kwarg_value
+            code_inputs[var_name] = kwarg_value.ok()
+
+    elif context.node.node_type == NodeType.ENCLAVE:
+        # TODO 🟣 Temporarily added skip permission arguments for enclave
+        # until permissions are fully integrated
+        dict_object = action_service.get(
+            context=context, uid=code_item_id, skip_permission=True
+        )
+        if dict_object.is_err():
+            return dict_object
+        for value in dict_object.ok().base_dict.values():
+            code_inputs.update(value)
+
+    else:
+        raise Exception(
+            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+        )
+    return Ok(code_inputs)
+
+
+def allowed_ids_only(
+    allowed_inputs: Dict[str, UID],
+    kwargs: Dict[str, Any],
+    context: AuthedServiceContext,
+) -> Dict[str, UID]:
+    if context.node.node_type == NodeType.DOMAIN:
+        node_view = NodeView(
+            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        )
+        import sys
+        print(node_view, file=sys.stderr)
+        allowed_inputs = allowed_inputs[node_view]
+    elif context.node.node_type == NodeType.ENCLAVE:
+        base_dict = {}
+        for key in allowed_inputs.values():
+            base_dict.update(key)
+        allowed_inputs = base_dict
+    else:
+        raise Exception(
+            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+        )
+    filtered_kwargs = {}
+    for key in allowed_inputs.keys():
+        if key in kwargs:
+            value = kwargs[key]
+            uid = value
+            if not isinstance(uid, UID):
+                uid = getattr(value, "id", None)
+
+            if uid != allowed_inputs[key]:
+                raise Exception(
+                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
+                )
+            filtered_kwargs[key] = value
+    return filtered_kwargs
+
+
+@serializable()
+class ExactMatch(InputPolicy):
+    # version
+    __canonical_name__ = "ExactMatch"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def filter_kwargs(
+        self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
+    ) -> Dict[str, Any]:
+        import sys
+        print(kwargs, file=sys.stderr)
+        allowed_inputs = allowed_ids_only(
+            allowed_inputs=self.inputs, kwargs=kwargs, context=context
+        )
+        print(allowed_inputs, file=sys.stderr)
+        return retrieve_from_db(
+            code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
+        )
+
+
+@serializable()
+class OutputHistory(SyftObject):
+    # version
+    __canonical_name__ = "OutputHistory"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    output_time: DateTime
+    outputs: Optional[Union[List[UID], Dict[str, UID]]]
+    executing_user_verify_key: SyftVerifyKey
+
+
+class OutputPolicyState(SyftObject):
+    # version
+    __canonical_name__ = "OutputPolicyState"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    output_history: List[OutputHistory] = []
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        raise NotImplementedError
+
+    def update_state(self) -> None:
+        raise NotImplementedError
+
+
+@serializable()
+class OutputPolicyStateExecuteCount(OutputPolicyState):
+    # version
+    __canonical_name__ = "OutputPolicyStateExecuteCount"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    count: int = 0
+    limit: int
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        is_valid = self.count < self.limit
+        if is_valid:
+            return SyftSuccess(
+                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
+            )
+        return SyftError(
+            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
+        )
+
+    def update_state(
+        self,
+        context: NodeServiceContext,
+        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
+    ) -> None:
+        if self.count >= self.limit:
+            raise Exception(
+                f"Update state being called with count: {self.count} "
+                f"beyond execution limit: {self.limit}"
+            )
+        if isinstance(outputs, UID):
+            outputs = [outputs]
+        history = OutputHistory(
+            output_time=DateTime.now(),
+            outputs=outputs,
+            executing_user_verify_key=context.credentials,
+        )
+        self.output_history.append(history)
+        self.count += 1
+
+
+@serializable()
+class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
+    __canonical_name__ = "OutputPolicyStateExecuteOnce"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    limit: int = 2
+
+
+class OutputPolicy(SyftObject):
+    # version
+    __canonical_name__ = "OutputPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    outputs: List[str] = []
+    state_type: Optional[Type[OutputPolicyState]]
+
+    def update() -> None:
+        raise NotImplementedError
+
+    @property
+    def policy_code(self) -> str:
+        cls = type(self)
+        op_code = inspect.getsource(cls)
+        if self.state_type:
+            state_code = inspect.getsource(self.state_type)
+            op_code += "\n" + state_code
+        return op_code
+
+
+@serializable()
+class SingleExecutionExactOutput(OutputPolicy):
+    # version
+    __canonical_name__ = "SingleExecutionExactOutput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
 
 
 @serializable()
@@ -329,11 +568,12 @@ class UserCode(SyftObject):
             # compile the function
             raw_byte_code = compile_byte_code(unparse(inner_function))
             # load it
-            exec(raw_byte_code)  # nosec
-            # execute it
-            evil_string = f"{self.service_func_name}(*args, **kwargs)"
-            result = eval(evil_string, None, locals())  # nosec
-            # return the results
+            # exec(raw_byte_code)  # nosec
+            # # execute it
+            # evil_string = f"{self.service_func_name}(*args, **kwargs)"
+            # result = eval(evil_string, None, locals())  # nosec
+            # # return the results
+            result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
             # result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
             return result
 
@@ -542,7 +782,6 @@ def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
 
     return policy
 
-
 def check_input_policy(context: TransformContext) -> TransformContext:
     import sys
     print(context.output["input_policy"], file=sys.stderr)
@@ -611,11 +850,19 @@ class UserCodeExecutionResult(SyftObject):
     stderr: str
     result: Any
     
+def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+    execute_byte_code(
+        code_item.byte_code, 
+        code_item.unique_func_name, 
+        code_item.id,
+        args=[],
+        kwargs=kwargs
+    )
     
     def __repr__(self) -> str:
         return self.plot.show()
 
-def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+def execute_code_item(byte_code, func_name, code_id, args, kwargs: Dict[str, Any]) -> Any:
     return execute_byte_code(
         code_item.byte_code, 
         code_item.unique_func_name, 

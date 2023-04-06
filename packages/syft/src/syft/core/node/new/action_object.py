@@ -372,11 +372,14 @@ class ActionObject(SyftObject):
         import sys
         print(type(syft_action_data),file=sys.stderr)
         action_type = action_type_for_type(syft_action_data)
+        import sys
+        print(action_type, file=sys.stderr)
         
         print(action_type, file=sys.stderr)
         if action_type is None:
             raise Exception(f"{type(syft_action_data)} not in action_types")
         action_object = action_type(syft_action_data=syft_action_data)
+        print(action_object, file=sys.stderr)
         print(action_object, file=sys.stderr)
         if id:
             action_object.id = id

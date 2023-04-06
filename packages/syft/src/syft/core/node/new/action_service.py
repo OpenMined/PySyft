@@ -35,6 +35,7 @@ from .twin_object import TwinObject
 from .uid import UID
 from .user_code import UserCode
 from .user_code import execute_code_item
+from .user_code import execute_code_item
 from .user_roles import GUEST_ROLE_LEVEL
 
 
@@ -158,7 +159,10 @@ class ActionService(AbstractService):
         filtered_kwargs = code_item.input_policy.filter_kwargs(
             kwargs=kwargs, context=context, code_item_id=code_item.id
         )
+<<<<<<< HEAD
+=======
         print(filtered_kwargs, file=sys.stderr)
+>>>>>>> 1d5405dbd (changed execute_byte_code to execute_code_item)
 
         if filtered_kwargs.is_err():
             return filtered_kwargs
@@ -177,12 +181,16 @@ class ActionService(AbstractService):
         try:
             if not has_twin_inputs:
                 # no twins
+<<<<<<< HEAD
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs)
+=======
+                filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.NONE)
+                exec_result = execute_code_item(code_item, filtered_kwargs)
+>>>>>>> 1d5405dbd (changed execute_byte_code to execute_code_item)
                         
-                import sys
                 print("what", file=sys.stderr)
                 print(exec_result, file=sys.stderr)
                 result_action_object = wrap_result(
@@ -190,16 +198,26 @@ class ActionService(AbstractService):
                 )
             else:
                 # twins
+<<<<<<< HEAD
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.PRIVATE
                 )
                 private_exec_result = execute_byte_code(code_item, private_kwargs)
+=======
+                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE)
+                private_exec_result = execute_code_item(code_item, private_kwargs)
+>>>>>>> 1d5405dbd (changed execute_byte_code to execute_code_item)
                 result_action_object_private = wrap_result(
                     code_item.id, result_id, private_exec_result.result
                 )
 
+<<<<<<< HEAD
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
                 mock_exec_result = execute_byte_code(code_item, mock_kwargs)
+=======
+                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.MOCK)
+                mock_exec_result = execute_code_item(code_item, mock_kwargs)
+>>>>>>> 1d5405dbd (changed execute_byte_code to execute_code_item)
                 result_action_object_mock = wrap_result(
                     code_item.id, result_id, mock_exec_result.result
                 )
