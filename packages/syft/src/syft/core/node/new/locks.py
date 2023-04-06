@@ -167,8 +167,8 @@ class PatchedFileLock(FileLock):
         self._lock_file_enabled = True
         try:
             super().__init__(*args, **kwargs)
-        except BaseException:
-            print("Failed to create a file lock = {e}. Using memory-lock only")
+        except BaseException as e:
+            print(f"Failed to create a file lock = {e}. Using memory-lock only")
             self._lock_file_enabled = False
 
         self._lock_py_thread = ThreadingLock(*args, **kwargs)

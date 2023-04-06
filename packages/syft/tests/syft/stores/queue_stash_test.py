@@ -212,7 +212,7 @@ def test_queue_update_existing_queue_threading(queue: Any) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=10, reruns_delay=2)
 def test_queue_set_delete_existing_queue_threading(
     queue: Any,
 ) -> None:

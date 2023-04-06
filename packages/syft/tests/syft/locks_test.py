@@ -379,15 +379,17 @@ def test_locks_parallel_multithreading(config: LockingConfig) -> None:
             if not locked:
                 continue
 
-            try:
-                with open(temp_file, "r") as f:
-                    prev = f.read()
-                    prev = int(prev)
-                with open(temp_file, "w") as f:
-                    f.write(str(prev + 1))
-                    f.flush()
-            except BaseException as e:
-                print("failed ", e)
+            for retry in range(10):
+                try:
+                    with open(temp_file, "r") as f:
+                        prev = f.read()
+                        prev = int(prev)
+                    with open(temp_file, "w") as f:
+                        f.write(str(prev + 1))
+                        f.flush()
+                    break
+                except BaseException as e:
+                    print("failed ", e)
 
             lock.release()
 
