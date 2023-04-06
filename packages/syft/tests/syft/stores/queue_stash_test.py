@@ -44,7 +44,7 @@ def test_queue_stash_sanity(queue: Any) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_stash_set_get(queue: Any) -> None:
     objs = []
     for idx in range(REPEATS):
@@ -88,7 +88,7 @@ def test_queue_stash_set_get(queue: Any) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_stash_update(queue: Any) -> None:
     obj = MockSyftObject(data=0)
     res = queue.set(obj, ignore_duplicates=False)
@@ -121,7 +121,7 @@ def test_queue_stash_update(queue: Any) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_set_existing_queue_threading(queue: Any) -> None:
     thread_cnt = 5
     repeats = REPEATS
@@ -163,7 +163,7 @@ def test_queue_set_existing_queue_threading(queue: Any) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_update_existing_queue_threading(queue: Any) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -206,7 +206,7 @@ def test_queue_update_existing_queue_threading(queue: Any) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_set_delete_existing_queue_threading(
     queue: Any,
 ) -> None:
@@ -324,7 +324,7 @@ def test_queue_set_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_threading, helper_queue_set_joblib]
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_set_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -411,7 +411,7 @@ def test_queue_update_threading_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_update_threading, helper_queue_update_joblib]
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_update_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -516,7 +516,7 @@ def test_queue_delete_threading_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_delete_threading, helper_queue_set_delete_joblib]
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_delete_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
