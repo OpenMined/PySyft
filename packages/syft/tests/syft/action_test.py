@@ -4,11 +4,9 @@
 
 # syft absolute
 from syft import ActionObject
-from syft import Worker
 
 
-def test_actionobject_method():
-    worker = Worker.named("test-domain-2", processes=0, reset=True)
+def test_actionobject_method(worker):
     root_domain_client = worker.root_client
     action_store = worker.get_service("actionservice").store
     obj = ActionObject.from_obj("abc")
