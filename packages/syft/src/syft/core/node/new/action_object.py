@@ -154,11 +154,11 @@ def make_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
             op=context.op_name, args=args, kwargs=kwargs
         )
         context.action = action
-    except Exception as e:
-        print(
-            "Exception detected in make_action_side_effect", e
-        )  # TODO: Put this Exception back
-        # pass
+    except Exception:
+        # print(
+        #     "Exception detected in make_action_side_effect", e
+        # )  # TODO: Put this Exception back
+        pass
     return context, args, kwargs
 
 
@@ -176,22 +176,23 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
 
                 action_result = context.obj.syft_execute_action(action, sync=True)
                 if not isinstance(action_result, ActionObject):
-                    print("Got back unexpected response", action_result)
+                    # print("Got back unexpected response", action_result)
+                    pass
                 else:
                     context.node_uid = action_result.syft_node_uid
                     context.result_id = action.result_id
-                    print("IGNORING: got action result", action_result)
+                    # print("IGNORING: got action result", action_result)
             else:
                 # 🟡 TODO
                 pass
                 # print(
                 #     "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
                 # )
-    except Exception as e:
-        print(
-            "Exception in send_action_side_effect", e
-        )  # TODO: Put this Exception back
-        # pass
+    except Exception:
+        # print(
+        #     "Exception in send_action_side_effect", e
+        # )  # TODO: Put this Exception back
+        pass
     return context, args, kwargs
 
 
@@ -209,13 +210,15 @@ def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
                     if hasattr(result, "syft_node_uid"):
                         setattr(result, "syft_node_uid", syft_node_uid)
                 else:
-                    print("dont propogate node_uid because output isnt wrapped")
+                    # print("dont propogate node_uid because output isnt wrapped")
+                    pass
             else:
                 # 🟡 TODO
                 # print("Can't proagate node_uid because parent doesnt have one")
                 pass
-    except Exception as e:
-        print("Exception in propagate_node_uid", e)
+    except Exception:
+        # print("Exception in propagate_node_uid", e)
+        pass
     return result
 
 

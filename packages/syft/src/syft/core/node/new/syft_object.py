@@ -60,8 +60,23 @@ class SyftObjectRegistry:
         if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
             mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
             if mapping_string in cls.__object_version_registry__:
-                raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
-            cls.__object_version_registry__[mapping_string] = cls
+                current_cls = cls.__object_version_registry__[mapping_string]
+                if cls == current_cls:
+                    # same class so noop
+                    return None
+
+                # user code is reinitialized which means it might have a new address
+                # in memory so for that we can just skip
+                if "syft.user" in cls.__module__:
+                    # this happens every time we reload the user code
+                    return None
+                else:
+                    # this shouldn't happen and is usually a mistake of reusing the
+                    # same __canonical_name__ and __version__ in two classes
+                    raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
+            else:
+                # only if the cls has not been registered do we want to register it
+                cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
     def versioned_class(cls, name: str, version: int) -> Optional[Type["SyftObject"]]:

@@ -7,8 +7,10 @@ from datetime import datetime
 from functools import partial
 import hashlib
 import os
+import threading
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -79,6 +81,15 @@ from .new.user_roles import ServiceRole
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
+
+
+def thread_ident() -> int:
+    return threading.current_thread().ident
+
+
+# if user code needs to be serded and its not available we can call this to refresh
+# the code for a specific node UID and thread
+CODE_RELOADER: Dict[int, Callable] = {}
 
 
 def gipc_encoder(obj):
@@ -268,6 +279,7 @@ class Worker(NewNode):
             pass
         else:
             print(f"> Starting {self}")
+        CODE_RELOADER[thread_ident()] = user_code_service.load_user_code
         # super().post_init()
 
     def init_stores(

@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 import sys
+import threading
 import types
 from typing import Any
 from typing import Callable
@@ -24,6 +25,10 @@ from .capnp import get_capnp_schema
 TYPE_BANK = {}
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
+
+
+def thread_ident() -> int:
+    return threading.current_thread().ident
 
 
 def recursive_serde_register(
@@ -87,6 +92,7 @@ def recursive_serde_register(
         _deserialize,
         attribute_list,
         serde_overrides,
+        cls,
     )
 
 
@@ -125,6 +131,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         deserialize,
         attribute_list,
         serde_overrides,
+        cls,
     ) = TYPE_BANK[fqn]
 
     if nonrecursive:
@@ -179,20 +186,46 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # clean this mess, Tudor
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
-
     class_type: Type = type(None)
+
     if klass != "NoneType":
         try:
             class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
         except Exception:  # nosec
-            class_type = getattr(sys.modules[".".join(module_parts)], klass)
+            try:
+                class_type = getattr(sys.modules[".".join(module_parts)], klass)
+            except Exception:  # nosec
+                if "syft.user" in proto.fullyQualifiedName:
+                    # relative
+                    from ..worker import CODE_RELOADER
+
+                    for _, load_user_code in CODE_RELOADER.items():
+                        load_user_code()
+                try:
+                    class_type = getattr(sys.modules[".".join(module_parts)], klass)
+                except Exception:
+                    pass
 
     if proto.fullyQualifiedName not in TYPE_BANK:
         raise Exception(f"{proto.fully_qualified_name} not in TYPE_BANK")
 
-    nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
-        proto.fullyQualifiedName
-    ]
+    # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
+    # module name space in sub-processes or threads even though they are loaded on start
+    # its possible that the uvicorn awsgi server is preloading a bunch of threads
+    # however simply getting the class from the TYPE_BANK doesn't always work and
+    # causes some errors so it seems like we want to get the local one where possible
+    (
+        nonrecursive,
+        serialize,
+        deserialize,
+        attribute_list,
+        serde_overrides,
+        cls,
+    ) = TYPE_BANK[proto.fullyQualifiedName]
+
+    if class_type == type(None):
+        # yes this looks stupid but it works and the opposite breaks
+        class_type = cls
 
     if nonrecursive:
         if deserialize is None:
