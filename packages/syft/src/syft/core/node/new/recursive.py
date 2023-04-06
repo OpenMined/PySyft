@@ -203,7 +203,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
                         load_user_code()
                 try:
                     class_type = getattr(sys.modules[".".join(module_parts)], klass)
-                except Exception:
+                except Exception:  # nosec
                     pass
 
     if proto.fullyQualifiedName not in TYPE_BANK:

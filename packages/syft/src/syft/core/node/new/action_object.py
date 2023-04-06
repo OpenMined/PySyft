@@ -154,7 +154,7 @@ def make_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
             op=context.op_name, args=args, kwargs=kwargs
         )
         context.action = action
-    except Exception:
+    except Exception:  # nosec
         # print(
         #     "Exception detected in make_action_side_effect", e
         # )  # TODO: Put this Exception back
@@ -188,7 +188,7 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
                 # print(
                 #     "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
                 # )
-    except Exception:
+    except Exception:  # nosec
         # print(
         #     "Exception in send_action_side_effect", e
         # )  # TODO: Put this Exception back
@@ -216,7 +216,7 @@ def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
                 # 🟡 TODO
                 # print("Can't proagate node_uid because parent doesnt have one")
                 pass
-    except Exception:
+    except Exception:  # nosec
         # print("Exception in propagate_node_uid", e)
         pass
     return result
