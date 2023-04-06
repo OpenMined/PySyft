@@ -164,7 +164,12 @@ class PatchedFileLock(FileLock):
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        self._lock_file_enabled = True
+        try:
+            super().__init__(*args, **kwargs)
+        except BaseException:
+            print("Failed to create a file lock = {e}. Using memory-lock only")
+            self._lock_file_enabled = False
 
         self._lock_py_thread = ThreadingLock(*args, **kwargs)
 
@@ -198,6 +203,9 @@ class PatchedFileLock(FileLock):
         return self._thread_safe_cbk(self._release_file_lock)
 
     def _acquire_file_lock(self) -> bool:
+        if not self._lock_file_enabled:
+            return True
+
         owner = str(uuid.uuid4())
 
         # Acquire lock at OS level
@@ -239,6 +247,9 @@ class PatchedFileLock(FileLock):
         if self._lock_py_thread.locked():
             return True
 
+        if not self._lock_file_enabled:
+            return False
+
         if not self._data_file.exists():
             # File doesn't exist so can't be locked.
             return False
@@ -263,6 +274,9 @@ class PatchedFileLock(FileLock):
         return True
 
     def _release_file_lock(self) -> None:
+        if not self._lock_file_enabled:
+            return
+
         if self._owner is None:
             return
 

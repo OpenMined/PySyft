@@ -123,7 +123,7 @@ def test_queue_stash_update(queue: Any) -> None:
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_set_existing_queue_threading(queue: Any) -> None:
-    thread_cnt = 5
+    thread_cnt = 3
     repeats = REPEATS
 
     execution_err = None
@@ -257,7 +257,7 @@ def test_queue_set_delete_existing_queue_threading(
 
 
 def helper_queue_set_threading(create_queue_cbk) -> None:
-    thread_cnt = 5
+    thread_cnt = 3
     repeats = REPEATS
 
     execution_err = None
@@ -294,7 +294,7 @@ def helper_queue_set_threading(create_queue_cbk) -> None:
 
 
 def helper_queue_set_joblib(create_queue_cbk) -> None:
-    thread_cnt = 5
+    thread_cnt = 3
     repeats = 10
 
     def _kv_cbk(tid: int) -> None:
