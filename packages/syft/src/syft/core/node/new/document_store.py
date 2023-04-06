@@ -533,7 +533,7 @@ class BaseStash:
     def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[SyftSuccess, Err]:
         obj = self.query_one_kwargs(**kwargs)
         if obj.is_err():
-            return obj.err()
+            return obj
         else:
             obj = obj.ok()
 
