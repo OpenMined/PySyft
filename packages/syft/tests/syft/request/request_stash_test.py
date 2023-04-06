@@ -1,6 +1,5 @@
-# stdlib
-
 # third party
+import pytest
 
 # syft absolute
 from syft.core.node.new.client import SyftClient
@@ -53,10 +52,16 @@ def test_requeststash_get_all_for_verify_key_success(
     assert requests.ok()[1] == stash_set_result_2.ok()
 
 
-# def test_requeststash_get_all_for_verify_key_error
+@pytest.mark.skip
+def test_requeststash_get_all_for_verify_key_error() -> None:
+    pass
 
 
-#  def test_requeststash_get_all_for_status
+@pytest.mark.skip
+def test_requeststash_get_all_for_status():
+    pass
 
 
-#  def test_requeststash_get_all_for_status_error
+@pytest.mark.skip
+def test_requeststash_get_all_for_status_error():
+    pass
