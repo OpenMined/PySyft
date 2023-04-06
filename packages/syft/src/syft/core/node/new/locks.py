@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import threading
 import time
+from typing import Callable
 from typing import Optional
 import uuid
 
@@ -176,17 +177,31 @@ class PatchedFileLock(FileLock):
             ).astimezone(datetime.timezone.utc)
         return expiry_time.isoformat()
 
-    def _acquire(self) -> bool:
-        owner = str(uuid.uuid4())
-
+    def _thread_safe_cbk(self, cbk: Callable) -> bool:
         # Acquire lock at Python level(if-needed)
         locked = self._lock_py_thread._acquire()
+        if not locked:
+            return False
+
+        try:
+            result = cbk()
+        except BaseException:
+            result = False
+
+        self._lock_py_thread._release()
+        return result
+
+    def _acquire(self) -> bool:
+        return self._thread_safe_cbk(self._acquire_file_lock)
+
+    def _release(self) -> None:
+        return self._thread_safe_cbk(self._release_file_lock)
+
+    def _acquire_file_lock(self) -> bool:
+        owner = str(uuid.uuid4())
 
         # Acquire lock at OS level
         with self._lock_file:
-            if not locked:
-                return False
-
             if self._data_file.exists():
                 for retry in range(10):
                     try:
@@ -200,15 +215,12 @@ class PatchedFileLock(FileLock):
                 if owner != data["owner"]:
                     if not has_expired:
                         # Someone else holds the lock.
-
-                        self._lock_py_thread._release()
                         return False
                     else:
                         # Lock is available for us to take.
                         data = {"owner": owner, "expiry_time": self._expiry_time()}
                 else:
                     # Same owner so do not set or modify Lease.
-                    self._lock_py_thread._release()
                     return False
             else:
                 data = {"owner": owner, "expiry_time": self._expiry_time()}
@@ -220,16 +232,15 @@ class PatchedFileLock(FileLock):
             # We succeeded in writing to the file so we now hold the lock.
             self._owner = owner
 
-            self._lock_py_thread._release()
             return True
 
     @property
     def _locked(self):
-        self._lock_py_thread._acquire()
+        if self._lock_py_thread.locked():
+            return True
 
         if not self._data_file.exists():
             # File doesn't exist so can't be locked.
-            self._lock_py_thread._release()
             return False
 
         with self._lock_file:
@@ -242,27 +253,20 @@ class PatchedFileLock(FileLock):
                     time.sleep(0.1)
 
         if data is None:
-            self._lock_py_thread._release()
             return False
 
         if self._has_expired(data, self._now()):
             # File exists but has expired.
-            self._lock_py_thread._release()
             return False
 
         # Lease exists and has not expired.
-        self._lock_py_thread._release()
         return True
 
-    def _release(self) -> None:
-        self._lock_py_thread._acquire()
-
+    def _release_file_lock(self) -> None:
         if self._owner is None:
-            self._lock_py_thread._release()
             return
 
         if not self._data_file.exists():
-            self._lock_py_thread._release()
             return
 
         with self._lock_file:
@@ -275,14 +279,11 @@ class PatchedFileLock(FileLock):
                     time.sleep(0.1)
 
             if data is None:
-                self._lock_py_thread._release()
                 return
 
             if self._owner == data["owner"]:
                 self._data_file.unlink()
                 self._owner = None
-
-        self._lock_py_thread._release()
 
 
 class SyftLock(BaseLock):

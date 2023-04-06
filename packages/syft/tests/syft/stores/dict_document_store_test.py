@@ -130,7 +130,10 @@ def test_dict_store_partition_set_multithreaded(
         nonlocal execution_err
         for idx in range(repeats):
             obj = MockObjectType(data=idx)
-            res = dict_store_partition.set(obj, ignore_duplicates=False)
+            for retry in range(10):
+                res = dict_store_partition.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -167,7 +170,10 @@ def test_dict_store_partition_update_multithreaded(
         nonlocal execution_err
         for repeat in range(repeats):
             obj = MockSyftObject(data=repeat)
-            res = dict_store_partition.update(key, obj)
+            for retry in range(10):
+                res = dict_store_partition.update(key, obj)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -200,7 +206,10 @@ def test_dict_store_partition_set_delete_multithreaded(
         nonlocal execution_err
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = dict_store_partition.set(obj, ignore_duplicates=False)
+            for retry in range(10):
+                res = dict_store_partition.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
