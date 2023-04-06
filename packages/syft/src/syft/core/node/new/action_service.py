@@ -32,7 +32,7 @@ from .service import service_method
 from .twin_object import TwinObject
 from .uid import UID
 from .user_code import UserCode
-from .user_code import execute_byte_code
+from .user_code import execute_code_item
 from .user_roles import GUEST_ROLE_LEVEL
 
 
@@ -142,9 +142,15 @@ class ActionService(AbstractService):
     def _user_code_execute(
         self, context: AuthedServiceContext, code_item: UserCode, kwargs: Dict[str, Any]
     ) -> Result[ActionObjectPointer, Err]:
+        import sys
+        print('_user_code_execute', file=sys.stderr)
+        print(code_item.input_policy, file=sys.stderr)
+        print(kwargs, file=sys.stderr)
         filtered_kwargs = code_item.input_policy.filter_kwargs(
             kwargs=kwargs, context=context, code_item_id=code_item.id
         )
+        print(filtered_kwargs, file=sys.stderr)
+
         if filtered_kwargs.is_err():
             return filtered_kwargs
         filtered_kwargs = filtered_kwargs.ok()
@@ -157,13 +163,13 @@ class ActionService(AbstractService):
 
         result_id = UID()
 
+        print("data ready to execute", file=sys.stderr)
         try:
             if not has_twin_inputs:
                 # no twins
                 filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.NONE)
-                exec_result = execute_byte_code(code_item, filtered_kwargs)
+                exec_result = execute_code_item(code_item, filtered_kwargs)
                         
-                import sys
                 print("what", file=sys.stderr)
                 print(exec_result, file=sys.stderr)
                 result_action_object = wrap_result(
@@ -172,13 +178,13 @@ class ActionService(AbstractService):
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE)
-                private_exec_result = execute_byte_code(code_item, private_kwargs)
+                private_exec_result = execute_code_item(code_item, private_kwargs)
                 result_action_object_private = wrap_result(
                     code_item.id, result_id, private_exec_result.result
                 )
 
                 mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.MOCK)
-                mock_exec_result = execute_byte_code(code_item, mock_kwargs)
+                mock_exec_result = execute_code_item(code_item, mock_kwargs)
                 result_action_object_mock = wrap_result(
                     code_item.id, result_id, mock_exec_result.result
                 )
@@ -192,6 +198,7 @@ class ActionService(AbstractService):
             print("what is this exception", e)
             return Err("_user_code_execute failed")
 
+        print("no exception in _user_code_execute", file=sys.stderr)
         set_result = self.store.set(
             uid=result_id,
             credentials=context.credentials,

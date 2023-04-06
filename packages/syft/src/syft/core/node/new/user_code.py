@@ -159,6 +159,8 @@ def allowed_ids_only(
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
+        import sys
+        print(node_view, file=sys.stderr)
         allowed_inputs = allowed_inputs[node_view]
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
@@ -194,9 +196,12 @@ class ExactMatch(InputPolicy):
     def filter_kwargs(
         self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
     ) -> Dict[str, Any]:
+        import sys
+        print(kwargs, file=sys.stderr)
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         )
+        print(allowed_inputs, file=sys.stderr)
         return retrieve_from_db(
             code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
         )
@@ -274,7 +279,7 @@ class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
     __canonical_name__ = "OutputPolicyStateExecuteOnce"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    limit: int = 1
+    limit: int = 2
 
 
 class OutputPolicy(SyftObject):
@@ -421,11 +426,12 @@ class UserCode(SyftObject):
             # compile the function
             raw_byte_code = compile_byte_code(astunparse.unparse(inner_function))
             # load it
-            exec(raw_byte_code)  # nosec
-            # execute it
-            evil_string = f"{self.service_func_name}(*args, **kwargs)"
-            result = eval(evil_string, None, locals())  # nosec
-            # return the results
+            # exec(raw_byte_code)  # nosec
+            # # execute it
+            # evil_string = f"{self.service_func_name}(*args, **kwargs)"
+            # result = eval(evil_string, None, locals())  # nosec
+            # # return the results
+            result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
             return result
 
         return wrapper
@@ -755,8 +761,16 @@ class UserCodeExecutionResult(SyftObject):
     stderr: str
     result: Any
 
+def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+    execute_byte_code(
+        code_item.byte_code, 
+        code_item.unique_func_name, 
+        code_item.id,
+        args=[],
+        kwargs=kwargs
+    )
 
-def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+def execute_byte_code(byte_code, func_name, code_id, args, kwargs: Dict[str, Any]) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
@@ -770,9 +784,9 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         # statisfy lint checker
         result = None
 
-        exec(code_item.byte_code)  # nosec
+        exec(byte_code)  # nosec
 
-        evil_string = f"{code_item.unique_func_name}(**kwargs)"
+        evil_string = f"{func_name}(*args, **kwargs)"
         result = eval(evil_string, None, locals())  # nosec
 
         # restore stdout and stderr
@@ -782,7 +796,7 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         print("execute_byte_code", file=sys.stderr)
 
         return UserCodeExecutionResult(
-            user_code_id=code_item.id,
+            user_code_id=code_id,
             stdout=str(stdout.getvalue()),
             stderr=str(stderr.getvalue()),
             result=result,

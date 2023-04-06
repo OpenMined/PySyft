@@ -161,6 +161,7 @@ class UserCodeService(AbstractService):
                         return is_valid
                     else:
                         action_service = context.node.get_service("actionservice")
+                        print(action_service, file=sys.stderr)
                         result = action_service._user_code_execute(
                             context, code_item, filtered_kwargs
                         )
