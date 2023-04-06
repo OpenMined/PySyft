@@ -1,6 +1,5 @@
-# stdlib
-
 # third party
+import pytest
 
 # syft absolute
 from syft.core.node.new.client import SyftClient
@@ -57,14 +56,9 @@ def test_requeststash_get_all_for_verify_key_success(
     )  # sometimes pass, sometimes not
 
 
-# def test_requeststash_get_all_for_verify_key_error(
-#     request_stash: RequestStash,
-#     monkeypatch: MonkeyPatch,
-# ) -> None:
-#     qk = "Query Key"
-#     Err(
-#         f"{qk} not in {type(request_stash.store.partition)} unique or searchable keys"
-#     )
+@pytest.mark.skip
+def test_requeststash_get_all_for_verify_key_error() -> None:
+    pass
 
 # def mock_stash_get_all_error() -> Err:
 #     return Err(mock_error_message)
@@ -73,7 +67,11 @@ def test_requeststash_get_all_for_verify_key_success(
 
 # assert False
 
-#  def test_requeststash_get_all_for_status
+@pytest.mark.skip
+def test_requeststash_get_all_for_status():
+    pass
 
 
-#  def test_requeststash_get_all_for_status_error
+@pytest.mark.skip
+def test_requeststash_get_all_for_status_error():
+    pass
