@@ -11,7 +11,6 @@ from typing import Dict
 from typing import KeysView
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -173,6 +172,7 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
                         op=context.op_name, args=args, kwargs=kwargs
                     )
                     context.action = action
+                print(context.action)
 
                 action_result = context.obj.syft_execute_action(action, sync=True)
                 if not isinstance(action_result, ActionObject):
@@ -280,8 +280,8 @@ class ActionObject(SyftObject):
     syft_history_hash: Optional[int]
     syft_internal_type: ClassVar[Type[Any]]
     syft_node_uid: Optional[UID]
-    _syft_pre_hooks__: Dict[str, Set] = {}
-    _syft_post_hooks__: Dict[str, Set] = {}
+    _syft_pre_hooks__: Dict[str, List] = {}
+    _syft_post_hooks__: Dict[str, List] = {}
 
     @property
     def syft_lineage_id(self) -> LineageID:
@@ -360,13 +360,20 @@ class ActionObject(SyftObject):
 
     def __post_init__(self) -> None:
         if HOOK_ALWAYS not in self._syft_pre_hooks__:
-            self._syft_pre_hooks__[HOOK_ALWAYS] = set()
-        self._syft_pre_hooks__[HOOK_ALWAYS].add(make_action_side_effect)
-        self._syft_pre_hooks__[HOOK_ALWAYS].add(send_action_side_effect)
+            self._syft_pre_hooks__[HOOK_ALWAYS] = []
+
+        # this should be a list as orders matters
+        if make_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
+            self._syft_pre_hooks__[HOOK_ALWAYS].append(make_action_side_effect)
+
+        if send_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
+            self._syft_pre_hooks__[HOOK_ALWAYS].append(send_action_side_effect)
 
         if HOOK_ALWAYS not in self._syft_post_hooks__:
-            self._syft_post_hooks__[HOOK_ALWAYS] = set()
-        self._syft_post_hooks__[HOOK_ALWAYS].add(propagate_node_uid)
+            self._syft_post_hooks__[HOOK_ALWAYS] = []
+
+        if propagate_node_uid not in self._syft_post_hooks__[HOOK_ALWAYS]:
+            self._syft_post_hooks__[HOOK_ALWAYS].append(propagate_node_uid)
 
         if isinstance(self.syft_action_data, ActionObject):
             raise Exception("Nested ActionObjects", self.syft_action_data)
