@@ -12,13 +12,14 @@ from pydantic import BaseModel
 import redis
 from sherlock.lock import BaseLock
 from sherlock.lock import FileLock
-from sherlock.lock import LockException
 from sherlock.lock import RedisLock
 
 # relative
 from ....logger import debug
+from .serializable import serializable
 
 
+@serializable()
 class LockingConfig(BaseModel):
     """
     Locking config
@@ -43,6 +44,7 @@ class LockingConfig(BaseModel):
     retry_interval: float = 0.1
 
 
+@serializable()
 class NoLockingConfig(LockingConfig):
     """
     No-locking policy
@@ -51,6 +53,7 @@ class NoLockingConfig(LockingConfig):
     pass
 
 
+@serializable()
 class ThreadingLockingConfig(LockingConfig):
     """
     Threading-based locking policy
@@ -59,12 +62,14 @@ class ThreadingLockingConfig(LockingConfig):
     pass
 
 
+@serializable()
 class FileLockingConfig(LockingConfig):
     """File locking policy"""
 
     client_path: Optional[Path] = None
 
 
+@serializable()
 class RedisClientConfig(BaseModel):
     host: str = "localhost"
     port: int = 6379
@@ -73,112 +78,11 @@ class RedisClientConfig(BaseModel):
     password: Optional[str] = None
 
 
+@serializable()
 class RedisLockingConfig(LockingConfig):
     """Redis locking policy"""
 
     client: RedisClientConfig = RedisClientConfig()
-
-
-class PatchedFileLock(FileLock):
-    """
-    Implementation of lock with the file system as the backend for synchronization.
-    This version patches for the `FileLock._expiry_time` crash(https://github.com/py-sherlock/sherlock/issues/71)
-
-
-    """
-
-    def _expiry_time(self) -> str:
-        if self.expire is not None:
-            expiry_time = self._now() + datetime.timedelta(seconds=self.expire)
-        else:
-            expiry_time = datetime.datetime.max.replace(
-                tzinfo=datetime.timezone.utc
-            ).astimezone(datetime.timezone.utc)
-        return expiry_time.isoformat()
-
-    def _acquire(self) -> bool:
-        owner = str(uuid.uuid4())
-
-        # Make sure we have unique lock on the file.
-        with self._lock_file:
-            if self._data_file.exists():
-                for retry in range(10):
-                    try:
-                        data = json.loads(self._data_file.read_text())
-                        break
-                    except BaseException:
-                        time.sleep(0.1)
-
-                now = self._now()
-                has_expired = self._has_expired(data, now)
-                if owner != data["owner"]:
-                    if not has_expired:
-                        # Someone else holds the lock.
-                        return False
-                    else:
-                        # Lock is available for us to take.
-                        data = {"owner": owner, "expiry_time": self._expiry_time()}
-                else:
-                    # Same owner so do not set or modify Lease.
-                    return False
-            else:
-                data = {"owner": owner, "expiry_time": self._expiry_time()}
-
-            # Write new data back to file.
-            self._data_file.touch()
-            self._data_file.write_text(json.dumps(data))
-
-            # We succeeded in writing to the file so we now hold the lock.
-            self._owner = owner
-
-            return True
-
-    @property
-    def _locked(self):
-        if not self._data_file.exists():
-            # File doesn't exist so can't be locked.
-            return False
-
-        with self._lock_file:
-            data = None
-            for retry in range(10):
-                try:
-                    data = json.loads(self._data_file.read_text())
-                    break
-                except BaseException:
-                    time.sleep(0.1)
-
-        if data is None:
-            raise RuntimeError("Cannot load lock file")
-
-        if self._has_expired(data, self._now()):
-            # File exists but has expired.
-            return False
-
-        # Lease exists and has not expired.
-        return True
-
-    def _release(self) -> None:
-        if self._owner is None:
-            raise LockException("Lock was not set by this process.")
-
-        if not self._data_file.exists():
-            return
-
-        with self._lock_file:
-            data = None
-            for retry in range(10):
-                try:
-                    data = json.loads(self._data_file.read_text())
-                    break
-                except BaseException:
-                    time.sleep(0.1)
-
-            if data is None:
-                raise RuntimeError("Cannot load lock file")
-
-            if self._owner == data["owner"]:
-                self._data_file.unlink()
 
 
 class ThreadingLock(BaseLock):
@@ -244,6 +148,143 @@ class ThreadingLock(BaseLock):
         Implementation of renewing an acquired lock.
         """
         return True
+
+
+class PatchedFileLock(FileLock):
+    """
+    Implementation of lock with the file system as the backend for synchronization.
+    This version patches for the `FileLock._expiry_time` crash(https://github.com/py-sherlock/sherlock/issues/71)
+
+    `sherlock.FileLock` might not work as expected for Python threads.
+    It uses re-entrant OS locks, meaning that multiple Python threads could acquire the lock at the same time.
+    For different processes/OS threads, the file lock will work as expected.
+    We need to patch the lock to handle Python threads too.
+
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._lock_py_thread = ThreadingLock(*args, **kwargs)
+
+    def _expiry_time(self) -> str:
+        if self.expire is not None:
+            expiry_time = self._now() + datetime.timedelta(seconds=self.expire)
+        else:
+            expiry_time = datetime.datetime.max.replace(
+                tzinfo=datetime.timezone.utc
+            ).astimezone(datetime.timezone.utc)
+        return expiry_time.isoformat()
+
+    def _acquire(self) -> bool:
+        owner = str(uuid.uuid4())
+
+        # Acquire lock at Python level(if-needed)
+        locked = self._lock_py_thread._acquire()
+
+        # Make sure we have unique lock on the file.
+        #
+        # Acquire lock at OS level
+        with self._lock_file:
+            if not locked:
+                return False
+
+            if self._data_file.exists():
+                for retry in range(10):
+                    try:
+                        data = json.loads(self._data_file.read_text())
+                        break
+                    except BaseException:
+                        time.sleep(0.1)
+
+                now = self._now()
+                has_expired = self._has_expired(data, now)
+                if owner != data["owner"]:
+                    if not has_expired:
+                        # Someone else holds the lock.
+
+                        self._lock_py_thread._release()
+                        return False
+                    else:
+                        # Lock is available for us to take.
+                        data = {"owner": owner, "expiry_time": self._expiry_time()}
+                else:
+                    # Same owner so do not set or modify Lease.
+                    self._lock_py_thread._release()
+                    return False
+            else:
+                data = {"owner": owner, "expiry_time": self._expiry_time()}
+
+            # Write new data back to file.
+            self._data_file.touch()
+            self._data_file.write_text(json.dumps(data))
+
+            # We succeeded in writing to the file so we now hold the lock.
+            self._owner = owner
+
+            self._lock_py_thread._release()
+            return True
+
+    @property
+    def _locked(self):
+        self._lock_py_thread._acquire()
+
+        if not self._data_file.exists():
+            # File doesn't exist so can't be locked.
+            self._lock_py_thread._release()
+            return False
+
+        with self._lock_file:
+            data = None
+            for retry in range(10):
+                try:
+                    data = json.loads(self._data_file.read_text())
+                    break
+                except BaseException:
+                    time.sleep(0.1)
+
+        if data is None:
+            self._lock_py_thread._release()
+            return False
+
+        if self._has_expired(data, self._now()):
+            # File exists but has expired.
+            self._lock_py_thread._release()
+            return False
+
+        # Lease exists and has not expired.
+        self._lock_py_thread._release()
+        return True
+
+    def _release(self) -> None:
+        self._lock_py_thread._acquire()
+
+        if self._owner is None:
+            self._lock_py_thread._release()
+            return
+
+        if not self._data_file.exists():
+            self._lock_py_thread._release()
+            return
+
+        with self._lock_file:
+            data = None
+            for retry in range(10):
+                try:
+                    data = json.loads(self._data_file.read_text())
+                    break
+                except BaseException:
+                    time.sleep(0.1)
+
+            if data is None:
+                self._lock_py_thread._release()
+                return
+
+            if self._owner == data["owner"]:
+                self._data_file.unlink()
+                self._owner = None
+
+        self._lock_py_thread._release()
 
 
 class SyftLock(BaseLock):

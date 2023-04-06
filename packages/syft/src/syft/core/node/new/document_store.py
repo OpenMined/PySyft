@@ -26,8 +26,8 @@ from typeguard import check_type
 from ....telemetry import instrument
 from .base import SyftBaseModel
 from .locks import LockingConfig
+from .locks import NoLockingConfig
 from .locks import SyftLock
-from .locks import ThreadingLockingConfig
 from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -598,4 +598,4 @@ class StoreConfig(SyftBaseObject):
 
     store_type: Type[DocumentStore]
     client_config: Optional[StoreClientConfig]
-    locking_config: LockingConfig = ThreadingLockingConfig()
+    locking_config: LockingConfig = NoLockingConfig()
