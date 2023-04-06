@@ -1,5 +1,6 @@
 # stdlib
 from pathlib import Path
+import tempfile
 from typing import Generator
 from typing import Tuple
 
@@ -45,11 +46,14 @@ def str_to_locking_config(conf: str) -> LockingConfig:
     if conf == "nop":
         return NoLockingConfig()
     elif conf == "file":
-        sqlite_lock_name = generate_db_name()
+        lock_name = generate_db_name()
 
-        sqlite_workspace_folder.mkdir(parents=True, exist_ok=True)
-        client_path = sqlite_workspace_folder / sqlite_lock_name
-        print(client_path)
+        temp_dir = tempfile.TemporaryDirectory().name
+
+        workspace_folder = Path(temp_dir) / "filelock"
+        workspace_folder.mkdir(parents=True, exist_ok=True)
+
+        client_path = workspace_folder / lock_name
 
         return FileLockingConfig(client_path=client_path)
     elif conf == "threading":
