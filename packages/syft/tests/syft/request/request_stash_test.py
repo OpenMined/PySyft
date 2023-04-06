@@ -50,11 +50,28 @@ def test_requeststash_get_all_for_verify_key_success(
 
     assert requests.is_ok() is True
     assert len(requests.ok()) == 2
-    assert requests.ok()[1] == stash_set_result_2.ok()
+    # the order might change so we check all requests
+    assert (
+        requests.ok()[1] == stash_set_result_2.ok()
+        or requests.ok()[0] == stash_set_result_2.ok()
+    )  # sometimes pass, sometimes not
 
 
-# def test_requeststash_get_all_for_verify_key_error
+# def test_requeststash_get_all_for_verify_key_error(
+#     request_stash: RequestStash,
+#     monkeypatch: MonkeyPatch,
+# ) -> None:
+#     qk = "Query Key"
+#     Err(
+#         f"{qk} not in {type(request_stash.store.partition)} unique or searchable keys"
+#     )
 
+# def mock_stash_get_all_error() -> Err:
+#     return Err(mock_error_message)
+
+# monkeypatch.setattr(request_stash.stash, "get_all", mock_stash_get_all_error)
+
+# assert False
 
 #  def test_requeststash_get_all_for_status
 

@@ -38,7 +38,6 @@ def test_metadataservice_get_success(
 def test_metadataservice_get_stash_fail(
     monkeypatch: MonkeyPatch,
     metadata_service: MetadataService,
-    metadata: NodeMetadata,
     authed_context: AuthedServiceContext,
 ) -> None:
     # case 1: we got an empty list from the stash
