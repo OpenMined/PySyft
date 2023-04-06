@@ -225,6 +225,9 @@ class LineageID(UID):
     def id(self) -> UID:
         return UID(self.value)
 
+    def __hash__(self):
+        return hash((self.syft_history_hash, self.value))
+
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, LineageID):
             return (
