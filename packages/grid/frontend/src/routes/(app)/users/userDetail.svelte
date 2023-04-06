@@ -1,6 +1,7 @@
 <script>
   import Info from '$lib/components/icons/Info.svelte';
   import { createEventDispatcher } from 'svelte';
+
   import { MapRoles } from '$lib/utils';
 
   const dispatch = createEventDispatcher();
@@ -9,6 +10,7 @@
 
   let client = '';
   export let selectedUser;
+
 
   onMount(async () => {
     await getClient()

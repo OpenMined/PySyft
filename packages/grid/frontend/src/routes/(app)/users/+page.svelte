@@ -36,6 +36,7 @@
   <div class="page-container">
     {#if pages.isList}
       <UserListItem
+
         bind:selectedUser
         on:setPage={(event) => {
           setPage(event.detail);

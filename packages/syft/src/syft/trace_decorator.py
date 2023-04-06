@@ -9,6 +9,7 @@ from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import TypeVar
+from typing import Union
 
 # third party
 from opentelemetry import trace
@@ -37,17 +38,17 @@ class TracingDecoratorOptions:
             TracingDecoratorOptions.default_attributes[att] = attributes[att]
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=Optional[Union[Callable, type]])
 
 
 def instrument(
-    _func_or_class: Optional[T] = None,
+    _func_or_class: T = None,
     *,
     span_name: str = "",
     record_exception: bool = True,
     attributes: Optional[Dict[str, str]] = None,
     existing_tracer: Optional[Tracer] = None,
-    ignore=False
+    ignore=False,
 ):
     """
     A decorator to instrument a class or function with an OTEL tracing span.
