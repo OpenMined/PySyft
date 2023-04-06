@@ -25,6 +25,8 @@ from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
+from .locks import FileLockingConfig
+from .locks import LockingConfig
 from .serializable import serializable
 from .serialize import _serialize
 from .uid import UID
@@ -368,8 +370,16 @@ class SQLiteStoreConfig(StoreConfig):
             Class interacting with QueueStash. Default: SQLiteDocumentStore
         `backing_store`: KeyValueBackingStore
             The Store core logic. Default: SQLiteBackingStore
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to NoLockingConfig.
     """
 
     client_config: SQLiteStoreClientConfig
     store_type: Type[DocumentStore] = SQLiteDocumentStore
     backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore
+    locking_config: LockingConfig = FileLockingConfig()

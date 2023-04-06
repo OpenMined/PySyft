@@ -20,6 +20,8 @@ from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StoreConfig
 from .document_store import StorePartition
+from .locks import LockingConfig
+from .locks import NoLockingConfig
 from .mongo_client import MongoClient
 from .mongo_client import MongoStoreClientConfig
 from .response import SyftSuccess
@@ -313,8 +315,17 @@ class MongoStoreConfig(StoreConfig):
             The type of the DocumentStore. Default: MongoDocumentStore
         `db_name`: str
             Database name
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to NoLockingConfig.
     """
 
     client_config: MongoStoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"
+    # TODO: should use a distributed lock, with RedisLockingConfig
+    locking_config: LockingConfig = NoLockingConfig()

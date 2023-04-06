@@ -586,11 +586,12 @@ class StoreConfig(SyftBaseObject):
         client_config: Optional[StoreClientConfig]
             Backend-specific config
         locking_config: LockingConfig
-            The config used for multithreading locking. Available options:
+            The config used for store locking. Available options:
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
-                * FileLockingConfig: file based locking, ideal for same-instance different-processes stores.
-                * RedisLockingConfig: Redis-based locking, ideal for multi-instances stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to NoLockingConfig.
     """
 
     __canonical_name__ = "StoreConfig"
