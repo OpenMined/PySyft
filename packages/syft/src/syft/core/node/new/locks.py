@@ -182,8 +182,6 @@ class PatchedFileLock(FileLock):
         # Acquire lock at Python level(if-needed)
         locked = self._lock_py_thread._acquire()
 
-        # Make sure we have unique lock on the file.
-        #
         # Acquire lock at OS level
         with self._lock_file:
             if not locked:
