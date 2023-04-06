@@ -3,24 +3,19 @@
 # third party
 
 # syft absolute
-from syft.core.node.new.api import APIRegistry
-from syft.core.node.new.api import SyftAPI
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.credentials import SyftSigningKey
-from syft.core.node.worker import Worker
+from syft import ActionObject
+from syft import Worker
 
 
-def setup_worker():
-    test_signing_key = SyftSigningKey.generate()
-    credentials = test_signing_key.verify_key
-    worker = Worker(name="Test Worker", signing_key=test_signing_key.signing_key)
-    context = AuthedServiceContext(node=worker, credentials=credentials)
-
-    api = SyftAPI.for_user(node=worker)
-
-    APIRegistry.set_api_for(node_uid=worker.id, api=api)
-
-    return worker, context
+def test_actionobject_method():
+    worker = Worker.named("test-domain-2", processes=0, reset=True)
+    root_domain_client = worker.root_client
+    action_store = worker.get_service("actionservice").store
+    obj = ActionObject.from_obj("abc")
+    pointer = root_domain_client.api.services.action.set(obj)
+    assert len(action_store.data) == 1
+    pointer.capitalize()
+    assert len(action_store.data) == 2
 
 
 # def test_pointer_addition():
