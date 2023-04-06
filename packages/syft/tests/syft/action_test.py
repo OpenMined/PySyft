@@ -14,8 +14,9 @@ def test_actionobject_method():
     obj = ActionObject.from_obj("abc")
     pointer = root_domain_client.api.services.action.set(obj)
     assert len(action_store.data) == 1
-    pointer.capitalize()
+    res = pointer.capitalize()
     assert len(action_store.data) == 2
+    assert res[0] == "A"
 
 
 # def test_pointer_addition():
