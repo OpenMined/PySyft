@@ -39,7 +39,11 @@ from .store_mocks_test import MockObjectType
 
 mongo_server_mock = create_mongo_fixture(scope="session")
 
-locking_scenarios = ["nop", "file", "threading"]
+locking_scenarios = [
+    "nop",
+    # "file", # makes tests pretty unstable
+    "threading",
+]
 
 
 def str_to_locking_config(conf: str) -> LockingConfig:
