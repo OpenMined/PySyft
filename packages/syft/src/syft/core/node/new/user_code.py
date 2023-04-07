@@ -284,7 +284,7 @@ class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
     __canonical_name__ = "OutputPolicyStateExecuteOnce"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    limit: int = 2
+    limit: int = 1
 
 
 class OutputPolicy(SyftObject):
@@ -566,10 +566,15 @@ class UserCode(SyftObject):
             inner_function = ast.parse(self.raw_code).body[0]
             inner_function.decorator_list = []
             # compile the function
+<<<<<<< HEAD
             raw_byte_code = compile_byte_code(unparse(inner_function))
             # load it
+=======
+            raw_byte_code = compile_byte_code(astunparse.unparse(inner_function))
+            # # load it
+>>>>>>> 9ff6cc1f3 (save progress)
             # exec(raw_byte_code)  # nosec
-            # # execute it
+            # # # execute it
             # evil_string = f"{self.service_func_name}(*args, **kwargs)"
             # result = eval(evil_string, None, locals())  # nosec
             # # return the results
@@ -851,7 +856,7 @@ class UserCodeExecutionResult(SyftObject):
     result: Any
     
 def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
-    execute_byte_code(
+    return execute_byte_code(
         code_item.byte_code, 
         code_item.unique_func_name, 
         code_item.id,
