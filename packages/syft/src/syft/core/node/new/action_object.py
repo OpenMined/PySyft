@@ -318,6 +318,7 @@ class ActionObject(SyftObject):
         )
 
     def syft_point_to(self, node_uid: UID) -> None:
+        """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
 
     def syft_get_property(self, obj: Any, method: str) -> Any:

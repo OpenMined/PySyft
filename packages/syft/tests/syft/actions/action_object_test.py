@@ -193,6 +193,40 @@ def test_actionobject_hooks_propagate_node_uid_ok(worker):
     assert result.is_ok()
 
 
+def test_actionobject_syft_point_to():
+    orig_obj = "abc"
+
+    obj_id = Action.make_id(None)
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    obj.syft_point_to(obj_id)
+
+    assert obj.syft_node_uid == obj_id
+
+
+def test_actionobject_syft_execute(worker):
+    orig_obj = "abc"
+    op = "capitalize"
+
+    obj_id = Action.make_id(None)
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+    obj.syft_point_to(obj_id)
+
+    root_domain_client = worker.root_client
+    worker.get_service("actionservice").store
+    pointer = root_domain_client.api.services.action.set(obj)
+
+    context = PreHookContext(obj=pointer, op_name=op)
+    result = make_action_side_effect(context)
+    context, _, _ = result.ok()
+
+    action_result = obj.syft_execute_action(context.action, sync=True)
+
+    print(action_result)
+
+
 # TODO
 def test_actionobject_method(worker):
     root_domain_client = worker.root_client
