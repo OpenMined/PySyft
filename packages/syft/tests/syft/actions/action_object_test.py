@@ -155,7 +155,6 @@ def test_actionobject_hooks_send_action_side_effect(worker):
     obj = obj.ok()
 
     root_domain_client = worker.root_client
-    worker.get_service("actionservice").store
     pointer = root_domain_client.api.services.action.set(obj)
 
     context = PreHookContext(obj=pointer, op_name=op)
@@ -205,26 +204,57 @@ def test_actionobject_syft_point_to():
     assert obj.syft_node_uid == obj_id
 
 
-def test_actionobject_syft_execute(worker):
-    orig_obj = "abc"
-    op = "capitalize"
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        ("abc", "capitalize", "Abc"),
+    ],
+)
+def test_actionobject_syft_execute(worker, testcase):
+    orig_obj, op, expected = testcase
 
-    obj_id = Action.make_id(None)
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
-    obj.syft_point_to(obj_id)
 
     root_domain_client = worker.root_client
-    worker.get_service("actionservice").store
     pointer = root_domain_client.api.services.action.set(obj)
 
     context = PreHookContext(obj=pointer, op_name=op)
     result = make_action_side_effect(context)
     context, _, _ = result.ok()
 
-    action_result = obj.syft_execute_action(context.action, sync=True)
+    action_result = context.obj.syft_execute_action(context.action, sync=True)
+    assert action_result == expected
 
-    print(action_result)
+
+def test_actionobject_syft_make_action():
+    raise NotImplementedError()
+
+
+def test_actionobject_syft_make_method_action():
+    raise NotImplementedError()
+
+
+def test_actionobject_syft_get_path():
+    raise NotImplementedError()
+
+
+# TODO: improve
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        ("abc", "capitalize", "Abc"),
+        ("a b c", "strip", "abc"),
+        ("123", "isnumeric", True),
+    ],
+)
+def test_actionobject_syft_getattr(worker, testcase):
+    orig_obj, attribute, expected = testcase
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    assert obj.__getattribute__(attribute) == expected
 
 
 # TODO

@@ -6,6 +6,7 @@ from typing import Dict
 from nacl.exceptions import BadSignatureError
 import numpy as np
 import pytest
+from result import Ok
 
 # syft absolute
 import syft as sy
@@ -187,7 +188,7 @@ def test_worker() -> None:
 
 def test_action_object_add() -> None:
     raw_data = np.array([1, 2, 3])
-    action_object = ActionObject.from_obj(raw_data)
+    action_object = ActionObject.from_obj(raw_data).ok()
     result = action_object + action_object
     x = result.syft_action_data
     y = raw_data * 2
@@ -196,17 +197,17 @@ def test_action_object_add() -> None:
 
 def test_action_object_hooks() -> None:
     raw_data = np.array([1, 2, 3])
-    action_object = ActionObject.from_obj(raw_data)
+    action_object = ActionObject.from_obj(raw_data).ok()
 
     def pre_add(context: Any, *args: Any, **kwargs: Any) -> Any:
         # double it
         new_value = args[0]
         new_value.syft_action_data = new_value.syft_action_data * 2
-        return context, (new_value,), kwargs
+        return Ok((context, (new_value,), kwargs))
 
     def post_add(context: Any, name: str, new_result: Any) -> Any:
         # change return type to sum
-        return sum(new_result)
+        return Ok(sum(new_result))
 
     action_object._syft_pre_hooks__["__add__"] = [pre_add]
     action_object._syft_post_hooks__["__add__"] = [post_add]

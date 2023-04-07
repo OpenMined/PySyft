@@ -187,7 +187,19 @@ class PreHookContext(SyftBaseObject):
 def make_action_side_effect(
     context: PreHookContext, *args: List[Any, ...], **kwargs: Dict[str, Any]
 ) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
-    """Create a new action from context_op_name, and add it to the PreHookContext"""
+    """Create a new action from context_op_name, and add it to the PreHookContext
+
+    Parameters:
+        context: PreHookContext
+            PreHookContext object
+        *args:
+            Operation *args
+        **kwargs
+            Operation *kwargs
+    Returns:
+        - Ok[[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]] on success
+        - Err[str] on failure
+    """
     try:
         action = context.obj.syft_make_method_action(
             op=context.op_name, args=args, kwargs=kwargs
@@ -201,7 +213,19 @@ def make_action_side_effect(
 def send_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
 ) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
-    """Create a new action from the context.op_name, and execute it on the remote node."""
+    """Create a new action from the context.op_name, and execute it on the remote node.
+
+    Parameters:
+        context: PreHookContext
+            PreHookContext object
+        *args:
+            Operation *args
+        **kwargs
+            Operation *kwargs
+    Returns:
+        - Ok[[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]] on success
+        - Err[str] on failure
+    """
     if context.op_name in dont_make_side_effects or not hasattr(
         context.obj, "syft_node_uid"
     ):
@@ -234,7 +258,19 @@ def send_action_side_effect(
 def propagate_node_uid(
     context: PreHookContext, op: str, result: Any
 ) -> Result[Ok[Any], Err[str]]:
-    """Patch the result to include the syft_node_uid"""
+    """Patch the result to include the syft_node_uid
+
+    Parameters:
+        context: PreHookContext
+            PreHookContext object
+        op: str
+            Which operation was executed
+        result: Any
+            The result to patch
+    Returns:
+        - Ok[[result] on success
+        - Err[str] on failure
+    """
     if context.op_name in dont_make_side_effects or not hasattr(
         context.obj, "syft_node_uid"
     ):
@@ -336,6 +372,17 @@ class ActionObject(SyftObject):
     def syft_execute_action(
         self, action: Action, sync: bool = True
     ) -> ActionObjectPointer:
+        """Execute a remote action
+
+        Parameters:
+            action: Action
+                Which action to execute
+            sync: bool
+                Run sync/async
+
+        Returns:
+            ActionObjectPointer
+        """
         if self.syft_node_uid is None:
             raise SyftException("Pointers can't execute without a node_uid.")
         # relative
@@ -358,6 +405,22 @@ class ActionObject(SyftObject):
         args: Optional[List[Union[UID, ActionObjectPointer, LineageID]]] = None,
         kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer, LineageID]]] = None,
     ) -> Action:
+        """Generate new action from the information
+
+        Parameters:
+            path: str
+                The Type of the remote object.
+            op: str
+                The method to be executed from the remote object.
+            remote_self: Optional[LineageID]
+                The extended UID of the SyftObject
+            args: List[LineageID]
+                `op` args
+            kwargs: Dict[str, LineageID]
+                `op` kwargs
+        Returns:
+            Action object
+        """
         if args is None:
             args = []
         if kwargs is None:
@@ -565,7 +628,7 @@ class ActionObject(SyftObject):
         if show_print:
             print(">> ", name, ", defined_on_self = ", defined_on_self)
 
-        # use the custom definied version
+        # use the custom defined version
         context_self = self
         if not defined_on_self:
             context_self = self.syft_action_data  # type: ignore
