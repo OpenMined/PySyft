@@ -69,7 +69,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.store_config = store_config
         self._ddtype = ddtype
         self._db: Dict[int, sqlite3.Connection] = {}
-        self._cur: Dict[int, sqlite3.Connection] = {}
+        self._cur: Dict[int, sqlite3.Cursor] = {}
         self.create_table()
 
     @property
@@ -343,20 +343,24 @@ class SQLiteStoreClientConfig(StoreClientConfig):
             database, it will be locked until that transaction is committed. Default five seconds.
     """
 
-    filename: Optional[str]
-    path: Optional[Union[str, Path]] = None
+    filename: Optional[str] = None
+    path: Union[str, Path]
     check_same_thread: bool = True
     timeout: int = 5
 
-    @property
-    def temp_path(self) -> str:
-        return tempfile.gettempdir()
+    def __init__(
+        self,
+        filename: Optional[str] = None,
+        path: Optional[Union[str, Path]] = None,
+        *args,
+        **kwargs,
+    ):
+        path_ = tempfile.gettempdir() if path is None else path
+        super().__init__(filename=filename, path=path_, *args, **kwargs)
 
     @property
-    def file_path(self) -> str:
-        path = self.path if self.path else self.temp_path
-        path = Path(path)
-        return path / self.filename
+    def file_path(self) -> Optional[Path]:
+        return Path(self.path) / self.filename if self.filename is not None else None
 
 
 @serializable()
