@@ -1,14 +1,24 @@
 # stdlib
 
 # stdlib
+from typing import Any
 from typing import Tuple
+from typing import Type
 
 # third party
+import numpy as np
 import pytest
 
 # syft absolute
+from syft.core.node.new.action_data_empty import ActionDataEmpty
 from syft.core.node.new.action_object import Action
 from syft.core.node.new.action_object import ActionObject
+from syft.core.node.new.action_object import HOOK_ALWAYS
+from syft.core.node.new.action_object import PreHookContext
+from syft.core.node.new.action_object import make_action_side_effect
+from syft.core.node.new.action_object import propagate_node_uid
+from syft.core.node.new.action_object import send_action_side_effect
+from syft.core.node.new.action_types import action_type_for_type
 
 
 # Test Action class
@@ -38,10 +48,152 @@ def test_action_sanity(path_op: Tuple[str, str]):
 
 
 # Test ActionObject class
-def test_actionobject_from_obj():
-    ActionObject.from_obj("abc")
+@pytest.mark.parametrize("orig_obj", ["abc", 1, 2.3, False, ActionDataEmpty()])
+def test_actionobject_from_obj_sanity(orig_obj: Any):
+    # no id
+    obj = ActionObject.from_obj(orig_obj)
+    assert obj.is_ok()
+    assert obj.ok().id is not None
+    assert obj.ok().syft_history_hash is not None
+
+    # with id
+    obj_id = Action.make_id(None)
+    obj = ActionObject.from_obj(orig_obj, id=obj_id)
+    assert obj.is_ok()
+    assert obj.ok().id == obj_id
+    assert obj.ok().syft_history_hash == hash(obj_id)
+
+    # with id and lineage id
+    obj_id = Action.make_id(None)
+    lin_obj_id = Action.make_result_id(obj_id)
+    obj = ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
+    assert obj.is_ok()
+    assert obj.ok().id == obj_id
+    assert obj.ok().syft_history_hash == lin_obj_id.syft_history_hash
 
 
+def test_actionobject_from_obj_fail():
+    obj_id = Action.make_id(None)
+    lineage_id = Action.make_result_id(None)
+
+    obj = ActionObject.from_obj("abc", id=obj_id, syft_lineage_id=lineage_id)
+    assert obj.is_err()
+
+
+@pytest.mark.parametrize("dtype", [int, float, str, Any, bool])
+def test_actionobject_make_empty_sanity(dtype: Type):
+    syft_type = action_type_for_type(dtype)
+
+    obj = ActionObject.empty(
+        syft_internal_type=syft_type, id=None, syft_lineage_id=None
+    )
+    assert obj.is_ok()
+    assert obj.ok().id is not None
+    assert obj.ok().syft_history_hash is not None
+
+    # with id
+    obj_id = Action.make_id(None)
+    obj = ActionObject.empty(syft_internal_type=syft_type, id=obj_id)
+    assert obj.is_ok()
+    assert obj.ok().id == obj_id
+    assert obj.ok().syft_history_hash == hash(obj_id)
+
+    # with id and lineage id
+    obj_id = Action.make_id(None)
+    lin_obj_id = Action.make_result_id(obj_id)
+    obj = ActionObject.empty(
+        syft_internal_type=syft_type, id=obj_id, syft_lineage_id=lin_obj_id
+    )
+    assert obj.is_ok()
+    assert obj.ok().id == obj_id
+    assert obj.ok().syft_history_hash == lin_obj_id.syft_history_hash
+
+
+@pytest.mark.parametrize("orig_obj", ["abc", 1, 2.3, False, ActionDataEmpty()])
+def test_actionobject_hooks_init(orig_obj: Any):
+    obj = ActionObject.from_obj(orig_obj)
+    assert obj.is_ok()
+    obj = obj.ok()
+
+    assert HOOK_ALWAYS in obj._syft_pre_hooks__
+    assert HOOK_ALWAYS in obj._syft_post_hooks__
+
+    assert make_action_side_effect in obj._syft_pre_hooks__[HOOK_ALWAYS]
+    assert send_action_side_effect in obj._syft_pre_hooks__[HOOK_ALWAYS]
+    assert propagate_node_uid in obj._syft_post_hooks__[HOOK_ALWAYS]
+
+
+@pytest.mark.parametrize(
+    "orig_obj_op",
+    [
+        ("abc", "__len__"),
+        (np.asarray([1, 2, 3]), "shape"),
+    ],
+)
+def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
+    orig_obj, op = orig_obj_op
+    action_type_for_type(type(orig_obj))
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    context = PreHookContext(obj=obj, op_name=op)
+    result = make_action_side_effect(context)
+    assert result.is_ok()
+
+    context, args, kwargs = result.ok()
+    assert context.action is not None
+    assert isinstance(context.action, Action)
+    assert context.action.full_path.endswith("." + op)
+
+
+def test_actionobject_hooks_send_action_side_effect(worker):
+    orig_obj = "abc"
+    op = "capitalize"
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    root_domain_client = worker.root_client
+    worker.get_service("actionservice").store
+    pointer = root_domain_client.api.services.action.set(obj)
+
+    context = PreHookContext(obj=pointer, op_name=op)
+    result = send_action_side_effect(context)
+    assert result.is_ok()
+
+    context, args, kwargs = result.ok()
+    assert context.result_id is not None
+
+
+def test_actionobject_hooks_propagate_node_uid_err(worker):
+    orig_obj = "abc"
+    op = "capitalize"
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    context = PreHookContext(obj=obj, op_name=op)
+    result = propagate_node_uid(context, op=op, result="orig_obj")
+    assert result.is_err()
+
+
+def test_actionobject_hooks_propagate_node_uid_ok(worker):
+    orig_obj = "abc"
+    op = "capitalize"
+
+    obj_id = Action.make_id(None)
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    obj.syft_point_to(obj_id)
+
+    context = PreHookContext(obj=obj, op_name=op)
+    result = propagate_node_uid(context, op=op, result="orig_obj")
+    assert result.is_ok()
+
+
+# TODO
 def test_actionobject_method(worker):
     root_domain_client = worker.root_client
     action_store = worker.get_service("actionservice").store

@@ -184,8 +184,7 @@ class ActionService(AbstractService):
                     private_obj=result_action_object_private,
                     mock_obj=result_action_object_mock,
                 )
-        except Exception as e:
-            print("what is this exception", e)
+        except Exception:
             return Err("_user_code_execute failed")
 
         set_result = self.store.set(
@@ -219,12 +218,12 @@ class ActionService(AbstractService):
                 self, context, resolved_self.private, action, twin_mode=TwinMode.PRIVATE
             )
             if private_result.is_err():
-                return private_result.err()
+                return private_result
             mock_result = execute_object(
                 self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
             )
             if mock_result.is_err():
-                return mock_result.err()
+                return mock_result
 
             private_result = private_result.ok()
             mock_result = mock_result.ok()
@@ -358,10 +357,12 @@ def execute_object(
                 raise Exception(
                     f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
                 )
+        else:
+            raise Exception("Missing target method")
 
     except Exception as e:
-        print("what is this exception", e)
         return Err(e)
+
     return Ok(result_action_object)
 
 
