@@ -283,6 +283,8 @@ class PreHookContext(SyftBaseObject):
 
 
 class ActionObject(SyftObject):
+    """Action object for remote execution."""
+
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -348,6 +350,11 @@ class ActionObject(SyftObject):
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
     ) -> ActionObject:
+        """Create an ActionObject from an existing object.
+
+        Parameters:
+
+        """
         if id and syft_lineage_id and id != syft_lineage_id.id:
             raise Exception("UID and LineageID should match")
         action_type = action_type_for_type(syft_action_data)

@@ -37,9 +37,9 @@ def test_action_sanity(path_op: Tuple[str, str]):
     assert new_action.syft_history_hash != 0
 
 
-# Test Action Pointer
-
 # Test ActionObject class
+def test_actionobject_from_obj():
+    ActionObject.from_obj("abc")
 
 
 def test_actionobject_method(worker):
