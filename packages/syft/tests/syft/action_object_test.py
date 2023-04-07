@@ -1,9 +1,45 @@
 # stdlib
 
+# stdlib
+from typing import Tuple
+
 # third party
+import pytest
 
 # syft absolute
-from syft import ActionObject
+from syft.core.node.new.action_object import Action
+from syft.core.node.new.action_object import ActionObject
+
+
+# Test Action class
+@pytest.mark.parametrize(
+    "path_op",
+    [
+        ("str", "__len__"),
+        ("ActionDataEmpty", "__version__"),
+    ],
+)
+def test_action_sanity(path_op: Tuple[str, str]):
+    path, op = path_op
+
+    remote_self = Action.make_result_id(None)
+    result_id = Action.make_result_id(None)
+    new_action = Action(
+        path=path,
+        op=op,
+        remote_self=remote_self,
+        args=[],
+        kwargs={},
+        result_id=result_id,
+    )
+    assert new_action is not None
+    assert new_action.full_path == f"{path}.{op}"
+    assert new_action.syft_history_hash != 0
+
+
+# Test Action Pointer
+
+# Test ActionObject class
 
 
 def test_actionobject_method(worker):

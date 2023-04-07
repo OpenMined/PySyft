@@ -201,6 +201,8 @@ class UID:
 
 @serializable(attrs=["syft_history_hash"])
 class LineageID(UID):
+    """Extended UID containing a history hash as well, which is used for comparisons."""
+
     syft_history_hash: int
 
     def __init__(

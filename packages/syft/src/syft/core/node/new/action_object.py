@@ -35,6 +35,23 @@ from .uid import UID
 
 @serializable()
 class Action(SyftObject):
+    """Serializable Action object.
+
+    Parameters:
+        path: str
+            The Type of the remote object.
+        op: str
+            The method to be executed from the remote object.
+        remote_self: Optional[LineageID]
+            The extended UID of the SyftObject
+        args: List[LineageID]
+            `op` args
+        kwargs: Dict[str, LineageID]
+            `op` kwargs
+        result_id: Optional[LineageID]
+            Extended UID of the resulted SyftObject
+    """
+
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -64,6 +81,7 @@ class Action(SyftObject):
         hashes = 0
         if self.remote_self:
             hashes += hash(self.remote_self.syft_history_hash)
+        print(self.op)
         # 🔵 TODO: resolve this
         # if the object is ActionDataEmpty then the type might not be equal to the
         # real thing. This is the same issue with determining the result type from
@@ -615,6 +633,7 @@ class ActionObject(SyftObject):
             else uid.syft_lineage_id
             for k, uid in kwargs.items()
         }
+        print("Create action !!!!!!! ", path, op, remote_self, arg_ids, kwarg_ids)
         action = Action(
             path=path,
             op=op,
@@ -631,6 +650,7 @@ class ActionObject(SyftObject):
         kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
     ) -> Action:
         path = self.syft_get_path()
+        print("syft_make_method_action", path)
         return self.syft_make_action(
             path=path, op=op, remote_self=self.syft_lineage_id, args=args, kwargs=kwargs
         )
