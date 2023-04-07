@@ -150,6 +150,8 @@ class KeyValueActionStore(ActionStore):
             ownership_result = self.take_ownership(uid=uid, credentials=credentials)
             can_write = True if ownership_result.is_ok() else False
 
+        print("initial data", type(self.data))
+        print(uid)
         if can_write:
             self.data[uid] = syft_object
             if uid not in self.permissions:
@@ -159,6 +161,7 @@ class KeyValueActionStore(ActionStore):
             permissions = self.permissions[uid]
             permissions.add(permission)
             self.permissions[uid] = permissions
+            print("final data", self.data)
             return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
         return Err(f"Permission: {write_permission} denied")
 

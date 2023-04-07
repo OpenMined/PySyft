@@ -91,6 +91,7 @@ class ActionService(AbstractService):
             credentials=context.credentials,
             syft_object=action_object,
         )
+        print("ActionServiceSave:", result)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"{type(action_object)} saved"))
         return result.err()
@@ -106,6 +107,9 @@ class ActionService(AbstractService):
         """Get an object from the action store"""
         # TODO 🟣 Temporarily added skip permission arguments for enclave
         # until permissions are fully integrated
+        result = self.store.data
+        import sys
+        # print(list(result.items())[0][1].private, file=sys.stderr)
         result = self.store.get(
             uid=uid, credentials=context.credentials, skip_permission=skip_permission
         )

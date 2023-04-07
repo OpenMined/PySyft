@@ -199,16 +199,19 @@ class UserCodeService(AbstractService):
 def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) -> Any:
     # relative
     from .action_service import TwinMode
-
+    import sys
+    print(output_history.outputs)
     if isinstance(output_history.outputs, list):
         if len(output_history.outputs) == 0:
             return None
         outputs = []
         for output_id in output_history.outputs:
             action_service = context.node.get_service("actionservice")
+            print(action_service)
             result = action_service.get(
                 context, uid=output_id, twin_mode=TwinMode.PRIVATE
             )
+            print(result)
             if isinstance(result, OkErr):
                 result = result.value
             outputs.append(result)
