@@ -9,6 +9,7 @@ import inspect
 from inspect import Parameter
 from inspect import Signature
 from io import StringIO
+import re
 import sys
 from typing import Any
 from typing import Callable
@@ -49,6 +50,74 @@ UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerify
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
 
 PyCodeObject = Any
+
+# ******* START WIP: Exploring filtering out dangerous stdout/stderr ********
+
+# Option 1: Use regural expressions to filter out dangerous stdout/stderr
+SENSITIVE_PATTERNS = [
+    # IPv4 addresses
+    r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b',
+    # File paths (Unix-style)
+    r'/[^\s]+',
+    # Example API key pattern (alphanumeric with dashes)
+    r'\b[a-zA-Z0-9-]{32}\b',
+    # ...
+]
+
+def redact_sensitive_data(text):
+    for pattern in SENSITIVE_PATTERNS:
+        text = re.sub(pattern, '[REDACTED]', text)
+    return text
+
+
+""" 
+Notes on dangerous stdout/stderr:
+
+Options for filtering out dangerous stdout/stderr:
+
+Option 1. Use regular expressions to filter out dangerous stdout/stderr
+    * see above example
+    * PROS: easy to implement and iterate on, can filter out some most obvious cases (e.g. IP addresses), 
+    * CONS: perhaps not flexible enough, may filter out only parts of the dangerous information
+Option 2. Static analysis tools with custom rules to notify dangerous outputs before execution
+    * bandit, semgrep, etc.
+    * PROS: can be more flexible than regexes
+    * CONS: not exactly filtering out any information
+Option 3. Limit the environment and access in general
+    * what privileges does the user code currently have?
+
+Types of dangerous information in stdout/stderr:
+* Usernames and passwords:
+    Plain-text credentials
+    Hashed or encrypted passwords
+    Access tokens and API keys
+    OAuth tokens
+* Network information:
+    IP addresses (internal and external)
+    Domain names
+    Port numbers
+    Network topology details
+    Firewall and routing rules
+* System information:
+    File paths and names (particularly for sensitive files)
+    System architecture and operating system details
+    Installed software and library versions
+    Running services and processes
+    Configuration files with sensitive settings
+* Application and code-related data:
+    Source code snippets or entire files
+    Stack traces revealing internal code structure
+    Error messages with sensitive information
+    Database connection strings or URLs
+    Encryption keys or certificates
+* Log data:
+    Access logs with user activity or behavior
+    Debug logs containing sensitive variables or data
+    Audit logs with privileged actions or changes
+
+"""
+
+# ******* END WIP: Exploring filtering out dangerous stdout/stderr ********
 
 
 class InputPolicy(SyftObject):
@@ -797,8 +866,8 @@ def execute_byte_code(byte_code, func_name, code_id, args, kwargs: Dict[str, Any
 
         return UserCodeExecutionResult(
             user_code_id=code_id,
-            stdout=str(stdout.getvalue()),
-            stderr=str(stderr.getvalue()),
+            stdout=str(redact_sensitive_data(stdout.getvalue())),
+            stderr=str(redact_sensitive_data(stderr.getvalue())),
             result=result,
         )
 
