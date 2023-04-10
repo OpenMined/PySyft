@@ -225,4 +225,7 @@ def compute_epsilon(
         original_output = tensor.reconstruct(new_state)
     else:
         original_output = tensor.child
+    if isinstance(original_output, FixedPrecisionTensor):
+        original_output = original_output.decode()
+
     return original_output, epsilon_spend, rdp_constants
