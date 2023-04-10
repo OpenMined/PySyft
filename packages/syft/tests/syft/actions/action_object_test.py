@@ -574,19 +574,96 @@ def test_actionobject_syft_execute_hooks_inplace(worker, testcase):
     assert result.syft_node_uid == context.obj.syft_node_uid
 
 
-# TODO: improve
-@pytest.mark.parametrize(
-    "testcase",
-    [
-        ("abc", "capitalize", "Abc"),
-        ("a b c", "strip", "abc"),
-        ("123", "isnumeric", True),
-    ],
-)
-def test_actionobject_syft_getattr(worker, testcase):
-    orig_obj, attribute, expected = testcase
+def test_actionobject_syft_getattr_str():
+    orig_obj = "a bC"
 
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
 
-    assert obj.__getattribute__(attribute) == expected
+    assert obj == orig_obj
+    assert obj.capitalize() == "A bc"
+    assert obj.casefold() == "a bc"
+    assert obj.endswith("C") is True
+    assert obj.isascii() is True
+    assert obj.isdigit() is False
+    assert obj.upper() == "A BC"
+
+
+def test_actionobject_syft_getattr_list():
+    orig_obj = [3, 2, 1, 4]
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    assert obj == orig_obj
+    assert len(obj) == 4
+    assert obj.count(1) == 1
+    assert obj.append(5) == [1, 2, 3, 4, 5]
+    assert obj.sort() == [1, 2, 3, 4, 5]
+    assert obj.clear() == []
+
+
+def test_actionobject_syft_getattr_dict():
+    orig_obj = {"a": 1, "b": 2}
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    assert obj == orig_obj
+    assert obj.get("a") == 1
+    assert obj.update({"c": 3}) == {"a": 1, "b": 2, "c": 3}
+    assert obj.clear() == {}
+
+
+def test_actionobject_syft_getattr_tuple():
+    orig_obj = (1, 2, 3, 4, 4)
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    assert obj == orig_obj
+    assert obj.count(4) == 2
+    assert obj.index(2) == 1
+    assert len(obj) == 5
+
+
+def test_actionobject_syft_getattr_set():
+    orig_obj = set({1, 2, 3, 4})
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    assert obj == orig_obj
+    assert obj.add(4) == set({1, 2, 3, 4})
+    assert obj.intersection(set({1, 2, 121})) == set({1, 2})
+    assert len(obj) == 4
+
+
+def test_actionobject_syft_getattr_bool():
+    orig_obj = True
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    assert obj.__and__(False) is False
+    assert obj.__or__(False) is True
+
+
+def test_actionobject_syft_getattr_int():
+    orig_obj = 5
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    assert obj == orig_obj
+    assert str(obj) == "5"
+    assert obj.__add__(1) == 6
+    assert obj.__sub__(1) == 4
+    assert obj.__mul__(2) == 10
+    assert obj < 6
+    assert obj <= 5
+    assert obj > 4
+    assert obj >= 4
+    assert obj % 2 == 1
+    assert bool(obj) == 1
+    assert float(obj) == 5.0
