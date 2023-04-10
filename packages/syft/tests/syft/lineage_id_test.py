@@ -8,8 +8,12 @@ from syft.core.node.new.uid import UID
 
 
 def test_lineage_id() -> None:
-    data1 = sy.ActionObject.from_obj(syft_action_data=2 * np.random.rand(10, 10) - 1)
-    data2 = sy.ActionObject.from_obj(syft_action_data=2 * np.random.rand(10, 10) - 1)
+    data1 = sy.ActionObject.from_obj(
+        syft_action_data=2 * np.random.rand(10, 10) - 1
+    ).ok()
+    data2 = sy.ActionObject.from_obj(
+        syft_action_data=2 * np.random.rand(10, 10) - 1
+    ).ok()
 
     # test lineage id creation
     left_lineage_id = data1.syft_lineage_id

@@ -562,7 +562,6 @@ class ActionObject(SyftObject):
         if syft_lineage_id:
             action_object.id = syft_lineage_id.id
             action_object.syft_history_hash = syft_lineage_id.syft_history_hash
-
         elif id:
             action_object.syft_history_hash = hash(id)
 
@@ -676,6 +675,7 @@ class ActionObject(SyftObject):
     def _syft_dont_wrap_attrs(self) -> List[str]:
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
+    # TODO: proper testing
     def __getattribute__(self, name: str) -> Any:
         # bypass certain attrs to prevent recursion issues
         if name.startswith("_syft") or name.startswith("syft"):

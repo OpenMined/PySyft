@@ -583,9 +583,9 @@ def test_actionobject_syft_getattr_str():
     assert obj == orig_obj
     assert obj.capitalize() == "A bc"
     assert obj.casefold() == "a bc"
-    assert obj.endswith("C") is True
-    assert obj.isascii() is True
-    assert obj.isdigit() is False
+    assert obj.endswith("C") == True  # noqa
+    assert obj.isascii() == True  # noqa
+    assert obj.isdigit() == False  # noqa
     assert obj.upper() == "A BC"
 
 
@@ -645,8 +645,8 @@ def test_actionobject_syft_getattr_bool():
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
 
-    assert obj.__and__(False) is False
-    assert obj.__or__(False) is True
+    assert obj.__and__(False) == False  # noqa
+    assert obj.__or__(False) == True  # noqa
 
 
 def test_actionobject_syft_getattr_int():
