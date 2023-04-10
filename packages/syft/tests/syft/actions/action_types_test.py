@@ -12,7 +12,20 @@ from syft.core.node.new.action_types import action_type_for_type
 from syft.core.node.new.action_types import action_types
 
 
-@pytest.mark.parametrize("obj", [1, "str", 2.3, False, ActionDataEmpty()])
+@pytest.mark.parametrize(
+    "obj",
+    [
+        1,
+        "str",
+        2.3,
+        False,
+        [1, 2, 3],
+        (1, 2, 3),
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+        ActionDataEmpty(),
+    ],
+)
 def test_action_type_for_type_any(obj: Any):
     assert Any in action_types
     assert action_type_for_type(obj) == action_types[Any]

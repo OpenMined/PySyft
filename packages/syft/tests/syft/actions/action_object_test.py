@@ -1,12 +1,9 @@
 # stdlib
-
-# stdlib
 from typing import Any
 from typing import Tuple
 from typing import Type
 
 # third party
-import numpy as np
 import pytest
 
 # syft absolute
@@ -21,12 +18,58 @@ from syft.core.node.new.action_object import send_action_side_effect
 from syft.core.node.new.action_types import action_type_for_type
 
 
+def helper_make_action_obj(orig_obj: Any):
+    obj_id = Action.make_id(None)
+    lin_obj_id = Action.make_result_id(obj_id)
+    obj = ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
+
+    return obj.ok()
+
+
+def helper_make_action_args(*args, **kwargs):
+    act_args = []
+    act_kwargs = {}
+
+    for v in args:
+        act_args.append(helper_make_action_obj(v))
+
+    for v in kwargs:
+        act_kwargs[v] = helper_make_action_obj(kwargs[v])
+
+    return act_args, act_kwargs
+
+
+def helper_make_action_pointers(worker, obj, *args, **kwargs):
+    args_pointers, kwargs_pointers = [], {}
+
+    root_domain_client = worker.root_client
+    obj_pointer = root_domain_client.api.services.action.set(obj)
+
+    for arg in args:
+        root_domain_client.api.services.action.set(arg)
+        args_pointers.append(arg.id)
+
+    for key in kwargs:
+        root_domain_client.api.services.action.set(kwargs[key])
+        kwargs_pointers[key] = kwargs[key].id
+
+    return obj_pointer, args_pointers, kwargs_pointers
+
+
 # Test Action class
 @pytest.mark.parametrize(
     "path_op",
     [
+        # (object, operation)
         ("str", "__len__"),
         ("ActionDataEmpty", "__version__"),
+        ("int", "__add__"),
+        ("float", "__add__"),
+        ("bool", "__and__"),
+        ("tuple", "count"),
+        ("list", "count"),
+        ("dict", "keys"),
+        ("set", "add"),
     ],
 )
 def test_action_sanity(path_op: Tuple[str, str]):
@@ -48,7 +91,20 @@ def test_action_sanity(path_op: Tuple[str, str]):
 
 
 # Test ActionObject class
-@pytest.mark.parametrize("orig_obj", ["abc", 1, 2.3, False, ActionDataEmpty()])
+@pytest.mark.parametrize(
+    "orig_obj",
+    [
+        "abc",
+        1,
+        2.3,
+        False,
+        (1, 2, 3),
+        [1, 2, 3],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+        ActionDataEmpty(),
+    ],
+)
 def test_actionobject_from_obj_sanity(orig_obj: Any):
     # no id
     obj = ActionObject.from_obj(orig_obj)
@@ -72,7 +128,7 @@ def test_actionobject_from_obj_sanity(orig_obj: Any):
     assert obj.ok().syft_history_hash == lin_obj_id.syft_history_hash
 
 
-def test_actionobject_from_obj_fail():
+def test_actionobject_from_obj_fail_id_mismatch():
     obj_id = Action.make_id(None)
     lineage_id = Action.make_result_id(None)
 
@@ -80,7 +136,7 @@ def test_actionobject_from_obj_fail():
     assert obj.is_err()
 
 
-@pytest.mark.parametrize("dtype", [int, float, str, Any, bool])
+@pytest.mark.parametrize("dtype", [int, float, str, Any, bool, dict, set, tuple, list])
 def test_actionobject_make_empty_sanity(dtype: Type):
     syft_type = action_type_for_type(dtype)
 
@@ -109,7 +165,20 @@ def test_actionobject_make_empty_sanity(dtype: Type):
     assert obj.ok().syft_history_hash == lin_obj_id.syft_history_hash
 
 
-@pytest.mark.parametrize("orig_obj", ["abc", 1, 2.3, False, ActionDataEmpty()])
+@pytest.mark.parametrize(
+    "orig_obj",
+    [
+        "abc",
+        1,
+        2.3,
+        False,
+        (1, 2, 3),
+        [1, 2, 3],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+        ActionDataEmpty(),
+    ],
+)
 def test_actionobject_hooks_init(orig_obj: Any):
     obj = ActionObject.from_obj(orig_obj)
     assert obj.is_ok()
@@ -126,8 +195,16 @@ def test_actionobject_hooks_init(orig_obj: Any):
 @pytest.mark.parametrize(
     "orig_obj_op",
     [
+        # (object, operation)
         ("abc", "__len__"),
-        (np.asarray([1, 2, 3]), "shape"),
+        (ActionDataEmpty(), "__version__"),
+        (int(1), "__add__"),
+        (float(1.2), "__add__"),
+        (True, "__and__"),
+        ((1, 2, 3), "count"),
+        ([1, 2, 3], "count"),
+        ({"a": 1, "b": 2}, "keys"),
+        (set({1, 2, 3, 3}), "add"),
     ],
 )
 def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
@@ -147,25 +224,99 @@ def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
     assert context.action.full_path.endswith("." + op)
 
 
-def test_actionobject_hooks_send_action_side_effect(worker):
+def test_actionobject_hooks_send_action_side_effect_err_no_id(worker):
     orig_obj = "abc"
     op = "capitalize"
 
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
 
-    root_domain_client = worker.root_client
-    pointer = root_domain_client.api.services.action.set(obj)
-
-    context = PreHookContext(obj=pointer, op_name=op)
+    context = PreHookContext(obj=obj, op_name=op)
     result = send_action_side_effect(context)
+    assert result.is_err()
+
+
+def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
+    orig_obj, op, args, kwargs = (1, 2, 3), "count", [], {}  # count expect one argument
+
+    obj = helper_make_action_obj(orig_obj)
+    args, kwargs = helper_make_action_args(*args, **kwargs)
+
+    obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
+        worker, obj, *args, **kwargs
+    )
+
+    context = PreHookContext(obj=obj_pointer, op_name=op)
+    result = send_action_side_effect(context, *args_pointers, **kwargs_pointers)
+    assert result.is_err()
+
+
+@pytest.mark.parametrize(
+    "orig_obj_op",
+    [
+        # (object, operation, *args, **kwargs)
+        ("abc", "__len__", [], {}),
+        (int(1), "__len__", [1], {}),
+        (float(1.2), "__len__", [1], {}),
+        (True, "__len__", [True], {}),
+        ((1, 2, 3), "__len__", [], {}),
+        ([1, 2, 3], "__len__", [4], {}),
+        ({"a": 1, "b": 2}, "__len__", [], {}),
+        (set({1, 2, 3, 3}), "__len__", [5], {}),
+    ],
+)
+def test_actionobject_hooks_send_action_side_effect_ignore_op(orig_obj_op):
+    orig_obj, op, args, kwargs = orig_obj_op
+
+    obj = helper_make_action_obj(orig_obj)
+    args, kwargs = helper_make_action_args(*args, **kwargs)
+
+    context = PreHookContext(obj=obj, op_name=op)
+    result = send_action_side_effect(context, *args, **kwargs)
+    assert result.is_ok()
+
+    context, args, kwargs = result.ok()
+    assert context.result_id is None  # operation was ignored
+
+
+@pytest.mark.parametrize(
+    "orig_obj_op",
+    [
+        # (object, operation, *args, **kwargs)
+        ("abc", "capitalize", [], {}),
+        ("abc", "find", ["b"], {}),
+        # (ActionDataEmpty(), "__version__", [], {}), TODO :ActionService cannot handle ActionDataEmpty
+        (int(1), "__add__", [1], {}),
+        (float(1.2), "__add__", [1], {}),
+        (True, "__and__", [True], {}),
+        ((1, 2, 3), "count", [1], {}),
+        ([1, 2, 3], "count", [1], {}),
+        ([1, 2, 3], "append", [4], {}),
+        # ({"a"  :1, "b" : 2}, "keys", [], {}), TODO: dict_keys cannot be serialized
+        ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
+        (set({1, 2, 3, 3}), "add", [5], {}),
+        (set({1, 2, 3, 3}), "clear", [], {}),
+    ],
+)
+def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
+    orig_obj, op, args, kwargs = orig_obj_op
+
+    obj = helper_make_action_obj(orig_obj)
+    args, kwargs = helper_make_action_args(*args, **kwargs)
+
+    obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
+        worker, obj, *args, **kwargs
+    )
+
+    context = PreHookContext(obj=obj_pointer, op_name=op)
+    result = send_action_side_effect(context, *args_pointers, **kwargs_pointers)
     assert result.is_ok()
 
     context, args, kwargs = result.ok()
     assert context.result_id is not None
 
 
-def test_actionobject_hooks_propagate_node_uid_err(worker):
+def test_actionobject_hooks_propagate_node_uid_err():
     orig_obj = "abc"
     op = "capitalize"
 
@@ -177,7 +328,7 @@ def test_actionobject_hooks_propagate_node_uid_err(worker):
     assert result.is_err()
 
 
-def test_actionobject_hooks_propagate_node_uid_ok(worker):
+def test_actionobject_hooks_propagate_node_uid_ok():
     orig_obj = "abc"
     op = "capitalize"
 
@@ -207,36 +358,220 @@ def test_actionobject_syft_point_to():
 @pytest.mark.parametrize(
     "testcase",
     [
-        ("abc", "capitalize", "Abc"),
+        # (object, operation, *args, **kwargs, expected_result)
+        ("abc", "capitalize", [], {}, "Abc"),
+        ("abc", "find", ["b"], {}, 1),
+        (int(1), "__add__", [1], {}, 2),
+        (float(1.2), "__add__", [1], {}, 2.2),
+        (True, "__and__", [False], {}, False),
+        ((1, 1, 3), "count", [1], {}, 2),
+        ([1, 2, 1], "count", [1], {}, 2),
+        ([1, 2, 3], "append", [4], {}, [1, 2, 3, 4]),
+        ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
+        (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
+        (set({1, 2, 3, 3}), "clear", [], {}, set({})),
     ],
 )
-def test_actionobject_syft_execute(worker, testcase):
-    orig_obj, op, expected = testcase
+def test_actionobject_syft_execute_ok(worker, testcase):
+    orig_obj, op, args, kwargs, expected = testcase
 
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
+    obj = helper_make_action_obj(orig_obj)
+    args, kwargs = helper_make_action_args(*args, **kwargs)
 
-    root_domain_client = worker.root_client
-    pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
+        worker, obj, *args, **kwargs
+    )
 
-    context = PreHookContext(obj=pointer, op_name=op)
-    result = make_action_side_effect(context)
+    context = PreHookContext(obj=obj_pointer, op_name=op)
+    result = make_action_side_effect(context, *args_pointers, **kwargs_pointers)
     context, _, _ = result.ok()
 
     action_result = context.obj.syft_execute_action(context.action, sync=True)
     assert action_result == expected
 
 
-def test_actionobject_syft_make_action():
-    raise NotImplementedError()
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # (object, operation, *args, **kwargs)
+        ("abc", "capitalize", [], {}),
+        ("abc", "find", ["b"], {}),
+        (int(1), "__add__", [1], {}),
+        (float(1.2), "__add__", [1], {}),
+        (True, "__and__", [False], {}),
+        ((1, 1, 3), "count", [1], {}),
+        ([1, 2, 1], "count", [1], {}),
+        ([1, 2, 3], "append", [4], {}),
+        ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
+        (set({1, 2, 3, 3}), "add", [5], {}),
+        (set({1, 2, 3, 3}), "clear", [], {}),
+    ],
+)
+def test_actionobject_syft_make_action(worker, testcase):
+    orig_obj, op, args, kwargs = testcase
+
+    obj = helper_make_action_obj(orig_obj)
+    args, kwargs = helper_make_action_args(*args, **kwargs)
+    obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
+        worker, obj, *args, **kwargs
+    )
+
+    path = str(type(orig_obj))
+    action = obj.syft_make_action(path, op, args=args_pointers, kwargs=kwargs_pointers)
+
+    assert action.full_path.endswith("." + op)
 
 
-def test_actionobject_syft_make_method_action():
-    raise NotImplementedError()
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # (object, operation, *args, **kwargs)
+        ("abc", "capitalize", [], {}),
+        ("abc", "find", ["b"], {}),
+        (int(1), "__add__", [1], {}),
+        (float(1.2), "__add__", [1], {}),
+        (True, "__and__", [False], {}),
+        ((1, 1, 3), "count", [1], {}),
+        ([1, 2, 1], "count", [1], {}),
+        ([1, 2, 3], "append", [4], {}),
+        ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
+        (set({1, 2, 3, 3}), "add", [5], {}),
+        (set({1, 2, 3, 3}), "clear", [], {}),
+    ],
+)
+def test_actionobject_syft_make_method_action(worker, testcase):
+    orig_obj, op, args, kwargs = testcase
+
+    obj = helper_make_action_obj(orig_obj)
+    args, kwargs = helper_make_action_args(*args, **kwargs)
+    obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
+        worker, obj, *args, **kwargs
+    )
+
+    action = obj.syft_make_method_action(op, args=args_pointers, kwargs=kwargs_pointers)
+
+    assert action.full_path.endswith("." + op)
 
 
-def test_actionobject_syft_get_path():
-    raise NotImplementedError()
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # (object, operation, *args, **kwargs)
+        ("abc", "capitalize", [], {}),
+        ("abc", "find", ["b"], {}),
+        (int(1), "__add__", [1], {}),
+        (float(1.2), "__add__", [1], {}),
+        (True, "__and__", [False], {}),
+        ((1, 1, 3), "count", [1], {}),
+        ([1, 2, 1], "count", [1], {}),
+        ([1, 2, 3], "append", [4], {}),
+        ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
+        (set({1, 2, 3, 3}), "add", [5], {}),
+        (set({1, 2, 3, 3}), "clear", [], {}),
+    ],
+)
+def test_actionobject_syft_make_remote_method_action(worker, testcase):
+    orig_obj, op, args, kwargs = testcase
+
+    obj = helper_make_action_obj(orig_obj)
+    args, kwargs = helper_make_action_args(*args, **kwargs)
+    obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
+        worker, obj, *args, **kwargs
+    )
+
+    remote_cbk = obj.syft_remote_method(op)
+    action = remote_cbk(*args_pointers, **kwargs_pointers)
+
+    assert action.full_path.endswith("." + op)
+
+
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # object
+        "abc",
+        int(1),
+        float(1.2),
+        True,
+        (1, 1, 3),
+        [1, 2, 1],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+    ],
+)
+def test_actionobject_syft_get_path(testcase):
+    (orig_obj,) = testcase
+    obj = helper_make_action_obj(orig_obj)
+
+    assert obj.syft_get_path() == type(orig_obj).__name__
+
+
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # object
+        "abc",
+        int(1),
+        float(1.2),
+        True,
+        (1, 1, 3),
+        [1, 2, 1],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+    ],
+)
+def test_actionobject_syft_send_get(worker, testcase):
+    root_domain_client = worker.root_client
+    action_store = worker.get_service("actionservice").store
+
+    orig_obj = testcase
+    obj = helper_make_action_obj(orig_obj)
+
+    assert len(action_store.data) == 0
+
+    obj.send(root_domain_client)
+    assert len(action_store.data) == 1
+
+    retrieved = obj.get_from(root_domain_client)
+
+    assert obj.syft_action_data == retrieved
+
+
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # (object, operation, *args, **kwargs, expected_result)
+        (int(1), "__add__", [1], {}, 2),
+        (float(1.2), "__add__", [1], {}, 2.2),
+        (True, "__and__", [False], {}, False),
+        ([1, 2, 3], "append", [4], {}, [1, 2, 3, 4]),
+        ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
+        (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
+        (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+    ],
+)
+def test_actionobject_syft_execute_hooks_inplace(worker, testcase):
+    client = worker.root_client
+    orig_obj, op, args, kwargs, expected = testcase
+
+    obj = helper_make_action_obj(orig_obj)
+    args, kwargs = helper_make_action_args(*args, **kwargs)
+
+    obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
+        worker, obj, *args, **kwargs
+    )
+    obj_pointer.syft_point_to(client.id)
+
+    context = PreHookContext(obj=obj_pointer, op_name=op)
+
+    context, result_args, result_kwargs = obj_pointer._syft_run_pre_hooks__(
+        context, name=op, args=args_pointers, kwargs=kwargs_pointers
+    )
+    assert context.result_id is not None
+
+    context.obj.syft_node_uid = Action.make_id(None)
+    result = obj_pointer._syft_run_post_hooks__(context, name=op, result=obj_pointer)
+    assert result.syft_node_uid == context.obj.syft_node_uid
 
 
 # TODO: improve
@@ -255,74 +590,3 @@ def test_actionobject_syft_getattr(worker, testcase):
     obj = obj.ok()
 
     assert obj.__getattribute__(attribute) == expected
-
-
-# TODO
-def test_actionobject_method(worker):
-    root_domain_client = worker.root_client
-    action_store = worker.get_service("actionservice").store
-    obj = ActionObject.from_obj("abc")
-    pointer = root_domain_client.api.services.action.set(obj)
-    assert len(action_store.data) == 1
-    res = pointer.capitalize()
-    assert len(action_store.data) == 2
-    assert res[0] == "A"
-
-
-# def test_pointer_addition():
-#     worker, context = setup_worker()
-
-#     x1 = np.array([1, 2, 3])
-
-#     x2 = np.array([2, 3, 4])
-
-#     x1_action_obj = NumpyArrayObject(syft_action_data=x1)
-
-#     x2_action_obj = NumpyArrayObject(syft_action_data=x2)
-
-#     action_service_set_method = worker._get_service_method_from_path(
-#         "ActionService.set"
-#     )
-
-#     pointer1 = action_service_set_method(context, x1_action_obj)
-
-#     assert pointer1.is_ok()
-
-#     pointer1 = pointer1.ok()
-
-#     pointer2 = action_service_set_method(context, x2_action_obj)
-
-#     assert pointer2.is_ok()
-
-#     pointer2 = pointer2.ok()
-
-#     def mock_func(self, action, sync) -> Result:
-#         action_service_execute_method = worker._get_service_method_from_path(
-#             "ActionService.execute"
-#         )
-#         return action_service_execute_method(context, action)
-
-#     with mock.patch(
-#         "syft.core.node.new.action_object.ActionObjectPointer.execute_action", mock_func
-#     ):
-#         result = pointer1 + pointer2
-
-#         assert result.is_ok()
-
-#         result = result.ok()
-
-#         actual_result = x1 + x2
-
-#         action_service_get_method = worker._get_service_method_from_path(
-#             "ActionService.get"
-#         )
-
-#         result_action_obj = action_service_get_method(context, result.id)
-
-#         assert result_action_obj.is_ok()
-
-#         result_action_obj = result_action_obj.ok()
-
-#         print("actual result addition result: ", actual_result)
-#         print("Result of adding pointers: ", result_action_obj.syft_action_data)
-#         assert (result_action_obj.syft_action_data == actual_result).all()

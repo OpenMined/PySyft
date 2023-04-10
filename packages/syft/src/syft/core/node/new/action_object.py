@@ -23,6 +23,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ....logger import debug
 from .action_data_empty import ActionDataEmpty
 from .action_types import action_type_for_type
 from .action_types import action_types
@@ -158,7 +159,6 @@ dont_make_side_effects = [
 action_data_empty_must_run = [
     "__repr__",
 ]
-show_print = False
 
 
 class PreHookContext(SyftBaseObject):
@@ -385,6 +385,7 @@ class ActionObject(SyftObject):
         """
         if self.syft_node_uid is None:
             raise SyftException("Pointers can't execute without a node_uid.")
+
         # relative
         from .api import APIRegistry
         from .api import SyftAPICall
@@ -420,21 +421,42 @@ class ActionObject(SyftObject):
                 `op` kwargs
         Returns:
             Action object
+
+        Raises:
+            ValueError: For invalid args or kwargs
+            PydanticValidationError: For args and kwargs
         """
         if args is None:
             args = []
         if kwargs is None:
             kwargs = {}
-        arg_ids = [
-            LineageID(uid) if isinstance(uid, (UID, LineageID)) else uid.syft_lineage_id
-            for uid in args
-        ]
-        kwarg_ids = {
-            k: LineageID(uid)
-            if isinstance(uid, (LineageID, UID))
-            else uid.syft_lineage_id
-            for k, uid in kwargs.items()
-        }
+
+        arg_ids = []
+        kwarg_ids = {}
+
+        for uid in args:
+            if isinstance(uid, (UID, LineageID)):
+                arg_ids.append(LineageID(uid))
+                continue
+
+            if isinstance(uid, ActionObjectPointer):
+                arg_ids.append(uid.syft_lineage_id)
+                continue
+            raise ValueError(
+                f"Invalid args type {type(uid)}. Must be [UID, LineageID or ActionObjectPointer]"
+            )
+
+        for k, uid in kwargs.items():
+            if isinstance(uid, (LineageID, UID)):
+                kwarg_ids[k] = LineageID(uid)
+                continue
+            if isinstance(uid, ActionObjectPointer):
+                kwarg_ids[k] = uid
+                continue
+            raise ValueError(
+                f"Invalid kwargs type {type(uid)}. Must be [UID, LineageID or ActionObjectPointer]"
+            )
+
         action = Action(
             path=path,
             op=op,
@@ -450,12 +472,29 @@ class ActionObject(SyftObject):
         args: Optional[List[Union[UID, ActionObjectPointer]]] = None,
         kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
     ) -> Action:
+        """Generate new method action from the current object.
+
+        Parameters:
+            op: str
+                The method to be executed from the remote object.
+            args: List[LineageID]
+                `op` args
+            kwargs: Dict[str, LineageID]
+                `op` kwargs
+        Returns:
+            Action object
+
+        Raises:
+            ValueError: For invalid args or kwargs
+            PydanticValidationError: For args and kwargs
+        """
         path = self.syft_get_path()
         return self.syft_make_action(
             path=path, op=op, remote_self=self.syft_lineage_id, args=args, kwargs=kwargs
         )
 
     def syft_get_path(self) -> str:
+        """Get the type of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
             return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
@@ -464,6 +503,16 @@ class ActionObject(SyftObject):
         self,
         op: str,
     ) -> Callable:
+        """Generate a Callable object for remote calls.
+
+        Parameters:
+            op: str
+                he method to be executed from the remote object.
+
+        Returns:
+            A function
+        """
+
         def wrapper(
             *args: Optional[List[Union[UID, ActionObjectPointer]]],
             **kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]],
@@ -472,13 +521,14 @@ class ActionObject(SyftObject):
 
         return wrapper
 
-    def keys(self) -> KeysView[str]:
-        return self.syft_action_data.keys()  # type: ignore
-
     def send(self, client: SyftClient) -> Self:
+        """Send the object to a Syft Client"""
+
         return client.api.services.action.set(self)
 
     def get_from(self, client: SyftClient) -> Any:
+        """Get the object from a Syft Client"""
+
         return client.api.services.action.get(self.id).syft_action_data
 
     @staticmethod
@@ -501,7 +551,10 @@ class ActionObject(SyftObject):
             return Err("UID and LineageID should match")
 
         action_type = action_type_for_type(syft_action_data)
-        action_object = action_type(syft_action_data=syft_action_data)
+        try:
+            action_object = action_type(syft_action_data=syft_action_data)
+        except BaseException as e:
+            return Err[str(e)]
 
         if id:
             action_object.id = id
@@ -563,6 +616,7 @@ class ActionObject(SyftObject):
     def _syft_run_pre_hooks__(
         self, context: PreHookContext, name: str, args: Any, kwargs: Any
     ) -> Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]:
+        """Hooks executed before the actual call"""
         result_args, result_kwargs = args, kwargs
         if name in self._syft_pre_hooks__:
             for hook in self._syft_pre_hooks__[name]:
@@ -584,6 +638,7 @@ class ActionObject(SyftObject):
     def _syft_run_post_hooks__(
         self, context: PreHookContext, name: str, result: Any
     ) -> Any:
+        """Hooks executed after the actual call"""
         new_result = result
         if name in self._syft_post_hooks__:
             for hook in self._syft_post_hooks__[name]:
@@ -628,9 +683,10 @@ class ActionObject(SyftObject):
 
         if name in self._syft_passthrough_attrs():
             return object.__getattribute__(self, name)
+
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
-        if show_print:
-            print(">> ", name, ", defined_on_self = ", defined_on_self)
+
+        debug(">> ", name, ", defined_on_self = ", defined_on_self)
 
         # use the custom defined version
         context_self = self
@@ -656,8 +712,8 @@ class ActionObject(SyftObject):
             return __wrapper__bool__
 
         if self.syft_is_property(context_self, name):
-            if show_print:
-                print("Property detected: ", name)
+            debug("Property detected: ", name)
+
             if self.syft_is_property(context_self, name):
                 context = PreHookContext(obj=self, op_name=name)
                 context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
@@ -683,11 +739,9 @@ class ActionObject(SyftObject):
         else:
             original_func = getattr(self.syft_action_data, name)
 
-        if show_print:
-            debug_original_func(name, original_func)
+        debug_original_func(name, original_func)
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
-            if show_print:
-                print("Running method: ", name)
+            debug("Running method: ", name)
 
             def wrapper(_self: Any, *args: Any, **kwargs: Any) -> Any:
                 context = PreHookContext(obj=self, op_name=name)
@@ -718,8 +772,7 @@ class ActionObject(SyftObject):
 
             wrapper = types.MethodType(wrapper, type(self))
         else:
-            if show_print:
-                print("Running non-method: ", name)
+            debug("Running non-method: ", name)
 
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 context = PreHookContext(obj=self, op_name=name)
@@ -748,20 +801,23 @@ class ActionObject(SyftObject):
 
         try:
             wrapper.__doc__ = original_func.__doc__
-            if show_print:
-                print(
-                    "Found original signature for ",
-                    name,
-                    inspect.signature(original_func),
-                )
+            debug(
+                "Found original signature for ",
+                name,
+                inspect.signature(original_func),
+            )
             wrapper.__ipython_inspector_signature_override__ = inspect.signature(
                 original_func
             )
         except Exception:
-            if show_print:
-                print("name", name, "has no signature")
+            debug("name", name, "has no signature")
 
         return wrapper
+
+    def keys(self) -> KeysView[str]:
+        if not isinstance(self.syft_action_data, dict):
+            raise ValueError("`keys` should be used only on dicts")
+        return self.syft_action_data.keys()  # type: ignore
 
     ###### __DUNDER_MIFFLIN__
 
@@ -864,13 +920,13 @@ action_types[Any] = AnyActionObject
 
 
 def debug_original_func(name: str, func: Callable) -> None:
-    print(f"{name} func is:")
-    print("inspect.isdatadescriptor", inspect.isdatadescriptor(func))
-    print("inspect.isgetsetdescriptor", inspect.isgetsetdescriptor(func))
-    print("inspect.isfunction", inspect.isfunction(func))
-    print("inspect.isbuiltin", inspect.isbuiltin(func))
-    print("inspect.ismethod", inspect.ismethod(func))
-    print("inspect.ismethoddescriptor", inspect.ismethoddescriptor(func))
+    debug(f"{name} func is:")
+    debug("inspect.isdatadescriptor", inspect.isdatadescriptor(func))
+    debug("inspect.isgetsetdescriptor", inspect.isgetsetdescriptor(func))
+    debug("inspect.isfunction", inspect.isfunction(func))
+    debug("inspect.isbuiltin", inspect.isbuiltin(func))
+    debug("inspect.ismethod", inspect.ismethod(func))
+    debug("inspect.ismethoddescriptor", inspect.ismethoddescriptor(func))
 
 
 def is_action_data_empty(obj: Any) -> bool:
