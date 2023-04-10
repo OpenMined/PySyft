@@ -6,6 +6,7 @@ import asyncio
 from functools import wraps
 import inspect
 from typing import Callable
+from typing import ClassVar
 from typing import Dict
 from typing import Optional
 from typing import TypeVar
@@ -20,22 +21,22 @@ from opentelemetry.trace import Tracer
 class TracingDecoratorOptions:
     class NamingSchemes:
         @staticmethod
-        def function_qualified_name(func: Callable):
+        def function_qualified_name(func: Callable) -> str:
             return func.__qualname__
 
         default_scheme = function_qualified_name
 
-    naming_scheme: Callable[[Callable], str] = NamingSchemes.default_scheme
-    default_attributes: Dict[str, str] = {}
+    naming_scheme: ClassVar[Callable[[Callable], str]] = NamingSchemes.default_scheme
+    default_attributes: ClassVar[Dict[str, str]] = {}
 
-    @staticmethod
-    def set_naming_scheme(naming_scheme: Callable[[Callable], str]):
-        TracingDecoratorOptions.naming_scheme = naming_scheme
+    @classmethod
+    def set_naming_scheme(cls, naming_scheme: Callable[[Callable], str]) -> None:
+        cls.naming_scheme = naming_scheme
 
-    @staticmethod
-    def set_default_attributes(attributes: Dict[str, str] = None):
+    @classmethod
+    def set_default_attributes(cls, attributes: Dict[str, str]) -> None:
         for att in attributes:
-            TracingDecoratorOptions.default_attributes[att] = attributes[att]
+            cls.default_attributes[att] = attributes[att]
 
 
 T = TypeVar("T", bound=Optional[Union[Callable, type]])
