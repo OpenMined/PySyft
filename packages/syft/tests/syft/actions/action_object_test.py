@@ -500,7 +500,7 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
     ],
 )
 def test_actionobject_syft_get_path(testcase):
-    (orig_obj,) = testcase
+    orig_obj = testcase
     obj = helper_make_action_obj(orig_obj)
 
     assert obj.syft_get_path() == type(orig_obj).__name__
