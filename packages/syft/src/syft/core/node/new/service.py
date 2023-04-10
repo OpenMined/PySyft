@@ -18,6 +18,7 @@ from result import OkErr
 
 # relative
 from .context import AuthedServiceContext
+from .lib_service_registry import api_registry_libs
 from .linked_obj import LinkedObject
 from .response import SyftError
 from .serializable import serializable
@@ -28,6 +29,7 @@ from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
 from .user_roles import DATA_OWNER_ROLE_LEVEL
+from .user_roles import GUEST_ROLE_LEVEL
 from .user_roles import ServiceRole
 
 TYPE_TO_SERVICE = {}
@@ -62,9 +64,10 @@ class ServiceConfig(SyftBaseObject):
     public_name: str
     method_name: str
     doc_string: Optional[str]
-    signature: Signature
+    signature: Optional[Signature]
     permissions: List
     roles: List[ServiceRole]
+    is_from_lib: bool = False
 
     def has_permission(self, user_service_role: ServiceRole):
         return user_service_role in self.roles
@@ -96,6 +99,35 @@ class UserServiceConfigRegistry:
         return self.__service_config_registry__
 
 
+def register_lib_func(path: str, lib_obj: Callable):
+    # this is for functions
+    func = lib_obj
+    func_name = func.__name__
+
+    # problems with some numpy functions
+    try:
+        signature = inspect.signature(func)
+    except ValueError:
+        signature = None
+
+    # maybe we do want to allow this?
+    if signature is not None:
+        service_config = ServiceConfig(
+            public_path=path,
+            private_path=path,
+            # do we want the "public_" + func_name here?
+            public_name=func_name,
+            method_name=func_name,
+            doc_string=func.__doc__,
+            signature=signature,
+            roles=GUEST_ROLE_LEVEL,
+            permissions=["Guest"],
+            is_from_lib=True,
+        )
+
+        ServiceConfigRegistry.register(service_config)
+
+
 class ServiceConfigRegistry:
     __service_config_registry__: Dict[str, ServiceConfig] = {}
     # __public_to_private_path_map__: Dict[str, str] = {}
@@ -113,6 +145,19 @@ class ServiceConfigRegistry:
     @classmethod
     def path_exists(cls, path: str):
         return path in cls.__service_config_registry__
+
+
+for lib_module in api_registry_libs:
+    parent_path = lib_module.__name__
+    for attr in dir(lib_module):
+        lib_obj = getattr(lib_module, attr)
+        path = f"{parent_path}.{attr}"
+
+        if inspect.isfunction(lib_obj):
+            register_lib_func(path, lib_obj)
+        elif inspect.isclass(lib_obj):
+            # todo
+            pass
 
 
 def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:

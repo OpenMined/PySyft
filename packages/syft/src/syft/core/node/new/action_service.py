@@ -221,6 +221,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
+
         resolved_self = self.get(
             context=context, uid=action.remote_self, twin_mode=TwinMode.NONE
         )
