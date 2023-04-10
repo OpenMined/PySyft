@@ -550,7 +550,7 @@ def test_actionobject_syft_send_get(worker, testcase):
         (set({1, 2, 3, 3}), "clear", [], {}, set({})),
     ],
 )
-def test_actionobject_syft_execute_hooks_inplace(worker, testcase):
+def test_actionobject_syft_execute_hooks(worker, testcase):
     client = worker.root_client
     orig_obj, op, args, kwargs, expected = testcase
 
@@ -581,12 +581,23 @@ def test_actionobject_syft_getattr_str():
     obj = obj.ok()
 
     assert obj == orig_obj
+
     assert obj.capitalize() == "A bc"
     assert obj.casefold() == "a bc"
     assert obj.endswith("C") == True  # noqa
     assert obj.isascii() == True  # noqa
     assert obj.isdigit() == False  # noqa
     assert obj.upper() == "A BC"
+
+
+def test_actionobject_syft_getattr_str_history():
+    orig_obj = "a bC"
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    res = obj.capitalize()
+    assert res.syft_history_hash == obj.syft_history_hash
 
 
 def test_actionobject_syft_getattr_list():
@@ -603,6 +614,16 @@ def test_actionobject_syft_getattr_list():
     assert obj.clear() == []
 
 
+def test_actionobject_syft_getattr_list_history():
+    orig_obj = [3, 2, 1, 4]
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    res = obj.append(5)
+    assert res.syft_history_hash == obj.syft_history_hash
+
+
 def test_actionobject_syft_getattr_dict():
     orig_obj = {"a": 1, "b": 2}
 
@@ -613,6 +634,16 @@ def test_actionobject_syft_getattr_dict():
     assert obj.get("a") == 1
     assert obj.update({"c": 3}) == {"a": 1, "b": 2, "c": 3}
     assert obj.clear() == {}
+
+
+def test_actionobject_syft_getattr_dict_history():
+    orig_obj = {"a": 1, "b": 2}
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    res = obj.update({"c": 3})
+    assert res.syft_history_hash == obj.syft_history_hash
 
 
 def test_actionobject_syft_getattr_tuple():
@@ -639,6 +670,16 @@ def test_actionobject_syft_getattr_set():
     assert len(obj) == 4
 
 
+def test_actionobject_syft_getattr_set_history():
+    orig_obj = set({1, 2, 3, 4})
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    res = obj.add(4)
+    assert res.syft_history_hash == obj.syft_history_hash
+
+
 def test_actionobject_syft_getattr_bool():
     orig_obj = True
 
@@ -647,6 +688,21 @@ def test_actionobject_syft_getattr_bool():
 
     assert obj.__and__(False) == False  # noqa
     assert obj.__or__(False) == True  # noqa
+    assert not obj == False  # noqa
+    assert obj and True == True  # noqa
+    assert obj and False == False  # noqa
+    assert obj or False == True  # noqa
+    assert obj or True == True  # noqa
+
+
+def test_actionobject_syft_getattr_bool_history():
+    orig_obj = True
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    res = obj or True
+    assert res.syft_history_hash == obj.syft_history_hash
 
 
 def test_actionobject_syft_getattr_int():
@@ -667,3 +723,55 @@ def test_actionobject_syft_getattr_int():
     assert obj % 2 == 1
     assert bool(obj) == 1
     assert float(obj) == 5.0
+    assert obj + 2 == 7
+    assert 2 + obj == 7
+    assert obj - 2 == 3
+    assert 7 - obj == 2
+    assert 2 * obj == 10
+    assert obj * 2 == 10
+
+
+def test_actionobject_syft_getattr_int_history():
+    orig_obj = 5
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    res = obj + 5
+    assert res.syft_history_hash == obj.syft_history_hash
+
+
+def test_actionobject_syft_getattr_float():
+    orig_obj = float(5.5)
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    assert obj == orig_obj
+    assert str(obj) == "5.5"
+    assert obj.__add__(1.1) == 6.6
+    assert obj.__sub__(1.5) == 4
+    assert obj.__mul__(2) == 11
+    assert obj < 6
+    assert obj <= 5.5
+    assert obj > 4
+    assert obj >= 4
+    assert bool(obj) == 1
+    assert float(obj) == 5.5
+    assert int(obj) == 5
+    assert obj + 2 == 7.5
+    assert 2 + obj == 7.5
+    assert obj - 2 == 3.5
+    assert 7 - obj == 1.5
+    assert 2 * obj == 11
+    assert obj * 2 == 11
+
+
+def test_actionobject_syft_getattr_float_history():
+    orig_obj = 5.5
+
+    obj = ActionObject.from_obj(orig_obj)
+    obj = obj.ok()
+
+    res = obj + 5.1
+    assert res.syft_history_hash == obj.syft_history_hash

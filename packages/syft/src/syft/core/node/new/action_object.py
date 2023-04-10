@@ -899,6 +899,9 @@ class ActionObject(SyftObject):
     def __rsub__(self, other: Any) -> Any:
         return self.__rsub__(other)
 
+    def __rmul__(self, other: Any) -> Any:
+        return self.__rmul__(other)
+
     def __rmatmul__(self, other: Any) -> Any:
         return self.__rmatmul__(other)
 
@@ -914,6 +917,9 @@ class AnyActionObject(ActionObject):
 
     def __float__(self) -> float:
         return float(self.syft_action_data)
+
+    def __int__(self) -> float:
+        return int(self.syft_action_data)
 
 
 action_types[Any] = AnyActionObject
