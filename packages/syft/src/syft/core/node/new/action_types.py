@@ -9,6 +9,7 @@ action_types = {}
 
 
 def action_type_for_type(obj_or_type: Union[object, type]) -> type:
+    print(action_types.keys())
     if type(obj_or_type) != type:
         if isinstance(obj_or_type, ActionDataEmpty):
             obj_or_type = obj_or_type.syft_internal_type
