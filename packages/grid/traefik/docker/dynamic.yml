@@ -78,3 +78,7 @@ http:
       stripprefix:
         prefixes: /vpn
         forceslash: true
+    test-ipwhitelist:
+      ipWhiteList:
+        sourceRange:
+          - "127.0.0.1"
