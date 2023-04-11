@@ -459,7 +459,17 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     __version__ = SYFT_OBJECT_VERSION_1
 
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        # Filter out Empty values from args and kwargs
+        args_, kwargs_ = (), {}
+        for arg in args:
+            if arg is not Empty:
+                args_.append(arg)
+
+        for key, val in kwargs.items():
+            if val is not Empty:
+                kwargs_[key] = val
+
+        super().__init__(*args_, **kwargs_)
 
         fields_with_default = set()
         for _field_name, _field in self.__fields__.items():

@@ -32,6 +32,7 @@ class Empty:
 EmptyType = Union[T, Empty]
 
 
+@serializable()
 class PartialModelMetaclass(ModelMetaclass):
     def __new__(
         meta: Type["PartialModelMetaclass"], *args: Any, **kwargs: Any
@@ -54,7 +55,8 @@ class PartialModelMetaclass(ModelMetaclass):
                 ) -> None:
                     for _, field in fields.items():
                         if not restore:
-                            assert not isinstance(field.required, UndefinedType)
+                            if isinstance(field.required, UndefinedType):
+                                raise Exception(f"{field.name} is a required field.")
                             fields_map[field] = (field.type_, field.required)
                             # If field has None allowed as a value
                             # then it becomes a required field.
