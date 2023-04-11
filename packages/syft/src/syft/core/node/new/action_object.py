@@ -85,6 +85,7 @@ class Action(SyftObject):
 
     @property
     def syft_history_hash(self) -> int:
+        """Create a unique hash for the operations applied on the object."""
         hashes = 0
         if self.remote_self:
             hashes += hash(self.remote_self.syft_history_hash)
@@ -403,8 +404,12 @@ class ActionObject(SyftObject):
         path: str,
         op: str,
         remote_self: Optional[Union[UID, LineageID]] = None,
-        args: Optional[List[Union[UID, ActionObjectPointer, LineageID]]] = None,
-        kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer, LineageID]]] = None,
+        args: Optional[
+            List[Union[UID, LineageID, ActionObjectPointer, ActionObject]]
+        ] = None,
+        kwargs: Optional[
+            Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject]]
+        ] = None,
     ) -> Action:
         """Generate new action from the information
 
@@ -413,11 +418,11 @@ class ActionObject(SyftObject):
                 The Type of the remote object.
             op: str
                 The method to be executed from the remote object.
-            remote_self: Optional[LineageID]
+            remote_self: Optional[Union[UID, LineageID]]
                 The extended UID of the SyftObject
-            args: List[LineageID]
+            args: Optional[List[Union[UID, LineageID, ActionObjectPointer, ActionObject]]]
                 `op` args
-            kwargs: Dict[str, LineageID]
+            kwargs: Optional[Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject]]]
                 `op` kwargs
         Returns:
             Action object
@@ -439,22 +444,22 @@ class ActionObject(SyftObject):
                 arg_ids.append(LineageID(uid))
                 continue
 
-            if isinstance(uid, ActionObjectPointer):
+            if isinstance(uid, (ActionObjectPointer, ActionObject)):
                 arg_ids.append(uid.syft_lineage_id)
                 continue
             raise ValueError(
-                f"Invalid args type {type(uid)}. Must be [UID, LineageID or ActionObjectPointer]"
+                f"Invalid args type {type(uid)}. Must be [UID, LineageID or ActionObject, or ActionObjectPointer]"
             )
 
         for k, uid in kwargs.items():
             if isinstance(uid, (LineageID, UID)):
                 kwarg_ids[k] = LineageID(uid)
                 continue
-            if isinstance(uid, ActionObjectPointer):
+            if isinstance(uid, (ActionObjectPointer, ActionObject)):
                 kwarg_ids[k] = uid
                 continue
             raise ValueError(
-                f"Invalid kwargs type {type(uid)}. Must be [UID, LineageID or ActionObjectPointer]"
+                f"Invalid kwargs type {type(uid)}. Must be [UID, LineageID, ActionObject or ActionObjectPointer]"
             )
 
         action = Action(

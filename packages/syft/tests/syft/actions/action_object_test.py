@@ -745,13 +745,12 @@ def test_actionobject_syft_getattr_str():
 
 
 def test_actionobject_syft_getattr_str_history():
-    orig_obj = "a bC"
+    obj1 = ActionObject.from_obj("abc").ok()
+    obj2 = ActionObject.from_obj("xyz").ok()
 
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
-
-    res = obj.capitalize()
-    assert res.syft_history_hash == obj.syft_history_hash
+    res1 = obj1 + obj2
+    res2 = obj1 + obj2
+    assert res1.syft_history_hash == res2.syft_history_hash
 
 
 def test_actionobject_syft_getattr_list():
@@ -777,13 +776,12 @@ def test_actionobject_syft_getattr_list():
 
 
 def test_actionobject_syft_getattr_list_history():
-    orig_obj = [3, 2, 1, 4]
+    obj1 = ActionObject.from_obj([1, 2, 3, 4]).ok()
+    obj2 = ActionObject.from_obj([5, 6, 7]).ok()
 
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
-
-    res = obj.append(5)
-    assert res.syft_history_hash == obj.syft_history_hash
+    res1 = obj1.extend(obj2)
+    res2 = obj1.extend(obj2)
+    assert res1.syft_history_hash == res2.syft_history_hash
 
 
 def test_actionobject_syft_getattr_dict():
@@ -801,13 +799,12 @@ def test_actionobject_syft_getattr_dict():
 
 
 def test_actionobject_syft_getattr_dict_history():
-    orig_obj = {"a": 1, "b": 2}
+    obj1 = ActionObject.from_obj({"a": 1, "b": 2}).ok()
+    obj2 = ActionObject.from_obj({"c": 1, "b": 2}).ok()
 
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
-
-    res = obj.update({"c": 3})
-    assert res.syft_history_hash == obj.syft_history_hash
+    res1 = obj1.update(obj2)
+    res2 = obj1.update(obj2)
+    assert res1.syft_history_hash == res2.syft_history_hash
 
 
 def test_actionobject_syft_getattr_tuple():
@@ -832,8 +829,7 @@ def test_actionobject_syft_getattr_tuple():
 def test_actionobject_syft_getattr_set():
     orig_obj = set({1, 2, 3, 4})
 
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
+    obj = ActionObject.from_obj(orig_obj).ok()
 
     assert obj == orig_obj
     assert obj.add(4) == set({1, 2, 3, 4})
@@ -842,13 +838,12 @@ def test_actionobject_syft_getattr_set():
 
 
 def test_actionobject_syft_getattr_set_history():
-    orig_obj = set({1, 2, 3, 4})
+    obj1 = ActionObject.from_obj({1, 2, 3, 4}).ok()
+    obj2 = ActionObject.from_obj({1, 2}).ok()
 
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
-
-    res = obj.add(5)
-    assert res.syft_history_hash == obj.syft_history_hash
+    res1 = obj1.intersection(obj2)
+    res2 = obj1.intersection(obj2)
+    assert res1.syft_history_hash == res2.syft_history_hash
 
 
 @pytest.mark.parametrize("orig_obj", [True, False])
@@ -873,11 +868,13 @@ def test_actionobject_syft_getattr_bool(orig_obj):
 def test_actionobject_syft_getattr_bool_history():
     orig_obj = True
 
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
+    obj1 = ActionObject.from_obj(orig_obj).ok()
+    obj2 = ActionObject.from_obj(orig_obj).ok()
 
-    res = obj or True
-    assert res.syft_history_hash == obj.syft_history_hash
+    res1 = obj1 or obj2
+    res2 = obj1 or obj2
+
+    assert res1.syft_history_hash == res2.syft_history_hash
 
 
 @pytest.mark.parametrize("orig_obj", [-5, 0, 5])
@@ -937,14 +934,12 @@ def test_actionobject_syft_getattr_int(orig_obj: int):
 
 def test_actionobject_syft_getattr_int_history(worker):
     orig_obj = 5
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
+    obj1 = ActionObject.from_obj(orig_obj).ok()
+    obj2 = ActionObject.from_obj(orig_obj).ok()
 
-    res = obj + 5
-    assert res.syft_history_hash == obj.syft_history_hash
-
-    res = 4 + obj
-    assert res.syft_history_hash == obj.syft_history_hash
+    res1 = obj1 + obj2
+    res2 = obj1 + obj2
+    assert res1.syft_history_hash == res2.syft_history_hash
 
 
 @pytest.mark.parametrize("orig_obj", [-5.5, 0.0, 5.5])
@@ -989,10 +984,10 @@ def test_actionobject_syft_getattr_float(orig_obj: float):
 
 
 def test_actionobject_syft_getattr_float_history():
-    orig_obj = 5.5
+    obj1 = ActionObject.from_obj(float(5.5)).ok()
+    obj2 = ActionObject.from_obj(float(5.2)).ok()
 
-    obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
+    res1 = obj1 + obj2
+    res2 = obj1 + obj2
 
-    res = obj + 5.1
-    assert res.syft_history_hash == obj.syft_history_hash
+    assert res1.syft_history_hash == res2.syft_history_hash
