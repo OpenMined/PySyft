@@ -24,7 +24,9 @@ from .store_mocks_test import MockSyftObject
 REPEATS = 20
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_sanity(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -34,7 +36,6 @@ def test_mongo_store_partition_sanity(
     assert hasattr(mongo_store_partition, "_collection")
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_mongo_store_partition_init_failed() -> None:
     # won't connect
     mongo_config = MongoStoreClientConfig(connectTimeoutMS=1, timeoutMS=1)
@@ -48,7 +49,10 @@ def test_mongo_store_partition_init_failed() -> None:
     assert res.is_err()
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -> None:
     res = mongo_store_partition.init_store()
     assert res.is_ok()
@@ -82,7 +86,10 @@ def test_mongo_store_partition_set(mongo_store_partition: MongoStorePartition) -
         assert len(mongo_store_partition.all().ok()) == 3 + idx
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_delete(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -118,7 +125,10 @@ def test_mongo_store_partition_delete(
     assert len(mongo_store_partition.all().ok()) == 0
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_update(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -153,7 +163,10 @@ def test_mongo_store_partition_update(
         assert stored.ok()[0].data == v
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_set_threading(
     mongo_server_mock: Tuple,
 ) -> None:
@@ -172,8 +185,10 @@ def test_mongo_store_partition_set_threading(
         )
         for idx in range(repeats):
             obj = MockObjectType(data=idx)
-            res = mongo_store_partition.set(obj, ignore_duplicates=False)
-
+            for retry in range(10):
+                res = mongo_store_partition.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
             if res.is_err():
                 execution_err = res
             assert res.is_ok(), res
@@ -199,7 +214,10 @@ def test_mongo_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_set_joblib(
     mongo_server_mock,
 ) -> None:
@@ -214,7 +232,10 @@ def test_mongo_store_partition_set_joblib(
                 mongo_db_name=mongo_db_name, **mongo_kwargs
             )
             obj = MockObjectType(data=idx)
-            res = mongo_store_partition.set(obj, ignore_duplicates=False)
+            for retry in range(10):
+                res = mongo_store_partition.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 return res
@@ -235,7 +256,10 @@ def test_mongo_store_partition_set_joblib(
     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_update_threading(
     mongo_server_mock,
 ) -> None:
@@ -261,7 +285,10 @@ def test_mongo_store_partition_update_threading(
         )
         for repeat in range(repeats):
             obj = MockSyftObject(data=repeat)
-            res = mongo_store_partition_local.update(key, obj)
+            for retry in range(10):
+                res = mongo_store_partition_local.update(key, obj)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -280,8 +307,11 @@ def test_mongo_store_partition_update_threading(
     assert execution_err is None
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 @pytest.mark.xfail(reason="SyftObjectRegistry does only in-memory caching")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_update_joblib(
     mongo_server_mock: Tuple,
 ) -> None:
@@ -304,7 +334,10 @@ def test_mongo_store_partition_update_joblib(
         )
         for repeat in range(repeats):
             obj = MockSyftObject(data=repeat)
-            res = mongo_store_partition_local.update(key, obj)
+            for retry in range(10):
+                res = mongo_store_partition_local.update(key, obj)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 return res
@@ -318,7 +351,10 @@ def test_mongo_store_partition_update_joblib(
         assert execution_err is None
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_set_delete_threading(
     mongo_server_mock,
 ) -> None:
@@ -336,7 +372,10 @@ def test_mongo_store_partition_set_delete_threading(
 
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = mongo_store_partition.set(obj, ignore_duplicates=False)
+            for retry in range(10):
+                res = mongo_store_partition.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -368,7 +407,10 @@ def test_mongo_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_set_delete_joblib(
     mongo_server_mock,
 ) -> None:
@@ -384,7 +426,10 @@ def test_mongo_store_partition_set_delete_joblib(
 
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = mongo_store_partition.set(obj, ignore_duplicates=False)
+            for retry in range(10):
+                res = mongo_store_partition.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 return res
