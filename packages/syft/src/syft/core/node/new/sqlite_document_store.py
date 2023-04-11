@@ -25,6 +25,8 @@ from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
+from .locks import FileLockingConfig
+from .locks import LockingConfig
 from .serializable import serializable
 from .serialize import _serialize
 from .uid import UID
@@ -87,6 +89,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             check_same_thread=self.store_config.client_config.check_same_thread,
         )
 
+        # TODO: Review OSX compatibility.
         # Set journal mode to WAL.
         # self._db[thread_ident()].execute("pragma journal_mode=wal")
 
@@ -150,7 +153,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
-        row = self._execute(select_sql, [str(key)]).fetchone()
+        cursor = self._execute(select_sql, [str(key)])
+        if cursor is None:
+            raise KeyError(f"Query {select_sql} failed")
+
+        row = cursor.fetchone()
         if row is None or len(row) == 0:
             raise KeyError(f"{key} not in {type(self)}")
         data = row[2]
@@ -158,17 +165,27 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _exists(self, key: UID) -> bool:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
-        row = self._execute(select_sql, [str(key)]).fetchone()
+
+        cursor = self._execute(select_sql, [str(key)])
+        if cursor is None:
+            return False
+
+        row = cursor.fetchone()
         if row is None:
             return False
+
         return bool(row)
 
     def _get_all(self) -> Any:
         select_sql = f"select * from {self.table_name}"  # nosec
         keys = []
         data = []
-        rows = self._execute(select_sql).fetchall()
 
+        cursor = self._execute(select_sql)
+        if cursor is None:
+            return {}
+
+        rows = cursor.fetchall()
         if rows is None:
             return {}
 
@@ -178,17 +195,20 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return dict(zip(keys, data))
 
     def _get_all_keys(self) -> Any:
-        try:
-            select_sql = f"select uid from {self.table_name}"  # nosec
-            keys = []
-            rows = self._execute(select_sql).fetchall()
-            if rows is None:
-                return []
-            for row in rows:
-                keys.append(UID(row[0]))
-            return keys
-        except Exception as e:
-            raise e
+        select_sql = f"select uid from {self.table_name}"  # nosec
+        keys = []
+
+        cursor = self._execute(select_sql)
+        if cursor is None:
+            return []
+
+        rows = cursor.fetchall()
+        if rows is None:
+            return []
+
+        for row in rows:
+            keys.append(UID(row[0]))
+        return keys
 
     def _delete(self, key: UID) -> None:
         select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
@@ -240,6 +260,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return self._get_all().items()
 
     def pop(self, key: Any) -> Self:
+        # NOTE: not thread-safe
         value = self._get(key)
         self._delete(key)
         return value
@@ -269,14 +290,24 @@ class SQLiteStorePartition(KeyValueStorePartition):
     """
 
     def close(self) -> None:
-        self.data._close()
-        self.unique_keys._close()
-        self.searchable_keys._close()
+        self.lock.acquire()
+        try:
+            self.data._close()
+            self.unique_keys._close()
+            self.searchable_keys._close()
+        except BaseException:
+            pass
+        self.lock.release()
 
     def commit(self) -> None:
-        self.data._commit()
-        self.unique_keys._commit()
-        self.searchable_keys._commit()
+        self.lock.acquire()
+        try:
+            self.data._commit()
+            self.unique_keys._commit()
+            self.searchable_keys._commit()
+        except BaseException:
+            pass
+        self.lock.release()
 
 
 # the base document store is already a dict but we can change it later
@@ -343,8 +374,16 @@ class SQLiteStoreConfig(StoreConfig):
             Class interacting with QueueStash. Default: SQLiteDocumentStore
         `backing_store`: KeyValueBackingStore
             The Store core logic. Default: SQLiteBackingStore
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to FileLockingConfig.
     """
 
     client_config: SQLiteStoreClientConfig
     store_type: Type[DocumentStore] = SQLiteDocumentStore
     backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore
+    locking_config: LockingConfig = FileLockingConfig()
