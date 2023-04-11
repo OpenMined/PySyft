@@ -209,6 +209,7 @@ def generate_remote_function(
 
 
 def generate_remote_lib_function(
+    api: SyftAPI,
     node_uid: UID,
     signature: Signature,
     path: str,
@@ -241,7 +242,7 @@ def generate_remote_lib_function(
         from .action_object import convert_to_pointers
 
         action_args, action_kwargs = convert_to_pointers(
-            node_uid, _valid_args, _valid_kwargs
+            api, node_uid, _valid_args, _valid_kwargs
         )
 
         # e.g. numpy.array -> numpy, array
@@ -342,8 +343,8 @@ class SyftAPI(SyftObject):
         # TODO: we should probably not allow empty verify keys but instead make user always register
         role = node.get_role_for_credentials(user_verify_key)
         _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
-        endpoints = {}
-        lib_endpoints = {}
+        endpoints: Dict[str, APIEndpoint] = {}
+        lib_endpoints: Dict[str, LibEndpoint] = {}
 
         for (
             path,
@@ -468,6 +469,7 @@ class SyftAPI(SyftObject):
                     )
                 elif isinstance(v, LibEndpoint):
                     endpoint_function = generate_remote_lib_function(
+                        self,
                         self.node_uid,
                         signature,
                         v.service_path,

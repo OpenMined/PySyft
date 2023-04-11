@@ -23,6 +23,7 @@ from typing_extensions import Self
 from .action_data_empty import ActionDataEmpty
 from .action_types import action_type_for_type
 from .action_types import action_types
+from .api import SyftAPI
 from .client import SyftClient
 from .response import SyftException
 from .serializable import serializable
@@ -162,6 +163,7 @@ def make_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
 
 
 def convert_to_pointers(
+    api: SyftAPI,
     node_uid: Optional[UID] = None,
     args: Optional[List] = None,
     kwargs: Optional[Dict] = None,
@@ -173,6 +175,7 @@ def convert_to_pointers(
             if not isinstance(arg, ActionObject):
                 arg = ActionObject.from_obj(arg)
                 arg.syft_node_uid = node_uid
+                arg = api.services.action.set(arg)
                 # arg = action_obj.send(
                 #     client
                 # )  # make sure this doesn't break things later on in send_method_action
@@ -183,6 +186,7 @@ def convert_to_pointers(
             if not isinstance(arg, ActionObject):
                 arg = ActionObject.from_obj(arg)
                 arg.syft_node_uid = node_uid
+                arg = api.services.action.set(arg)
                 # arg = action_obj.send(client)
 
             kwarg_dict[k] = arg

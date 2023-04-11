@@ -17,6 +17,17 @@ def test_actionobject_method(worker):
     assert res[0] == "A"
 
 
+def test_function_action(worker):
+    root_domain_client = worker.root_client
+    numpy_client = root_domain_client.api.lib.numpy
+    res = numpy_client.zeros_like([1, 2, 3])
+    # third party
+    import numpy as np
+
+    assert isinstance(res, ActionObject)
+    assert all(res == np.array([0, 0, 0]))
+
+
 # def test_pointer_addition():
 #     worker, context = setup_worker()
 

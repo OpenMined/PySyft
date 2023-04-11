@@ -12,6 +12,9 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 
+# third party
+import numpy
+
 # relative
 from .context import AuthedServiceContext
 from .lib_service_registry import api_registry_libs
@@ -100,21 +103,32 @@ def register_lib_func(path: str, lib_obj: Callable):
         signature = None
 
     # maybe we do want to allow this?
-    if signature is not None:
-        service_config = ServiceConfig(
-            public_path=path,
-            private_path=path,
-            # do we want the "public_" + func_name here?
-            public_name=func_name,
-            method_name=func_name,
-            doc_string=func.__doc__,
-            signature=signature,
-            roles=GUEST_ROLE_LEVEL,
-            permissions=["Guest"],
-            is_from_lib=True,
-        )
+    # TODO: properly fix
+    # has problems with ipykernel.iostream.OutStream not in TYPE_BANK
+    # and numpy._globals._NoValueType not in TYPE_BANK
+    # it would be much better if we could just check whether we can serialize
 
-        ServiceConfigRegistry.register(service_config)
+    if signature is not None:
+        skip = False
+
+        for v in signature.parameters.values():
+            if type(v.default) == numpy._globals._NoValueType or path == "numpy.source":
+                skip = True
+        if not skip:
+            service_config = ServiceConfig(
+                public_path=str(path),
+                private_path=str(path),
+                # do we want the "public_" + func_name here?
+                public_name=str(func_name),
+                method_name=str(func_name),
+                doc_string=str(func.__doc__),
+                signature=signature,
+                roles=GUEST_ROLE_LEVEL,
+                permissions=["Guest"],
+                is_from_lib=True,
+            )
+
+            ServiceConfigRegistry.register(service_config)
 
 
 class ServiceConfigRegistry:
@@ -136,6 +150,7 @@ class ServiceConfigRegistry:
         return path in cls.__service_config_registry__
 
 
+# hacky, prevent circular imports
 for lib_module in api_registry_libs:
     parent_path = lib_module.__name__
     for attr in dir(lib_module):
