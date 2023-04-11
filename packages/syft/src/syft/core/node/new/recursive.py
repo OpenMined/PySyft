@@ -207,7 +207,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
                     pass
 
     if proto.fullyQualifiedName not in TYPE_BANK:
-        raise Exception(f"{proto.fully_qualified_name} not in TYPE_BANK")
+        raise Exception(f"{proto.fullyQualifiedName} not in TYPE_BANK")
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
     # module name space in sub-processes or threads even though they are loaded on start

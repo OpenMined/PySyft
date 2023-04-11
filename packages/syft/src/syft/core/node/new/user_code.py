@@ -27,6 +27,7 @@ from .code_parse import GlobalsVisitor
 from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
+from .deserialize import _deserialize
 from .document_store import PartitionKey
 from .node import NodeType
 from .node_metadata import EnclaveMetadata
@@ -41,6 +42,7 @@ from .policy import init_policy
 from .policy_service import PolicyService
 from .response import SyftError
 from .serializable import serializable
+from .serialize import _serialize
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .transforms import TransformContext
@@ -167,10 +169,10 @@ class UserCode(SyftObject):
     raw_code: str
     input_policy_type: Union[Type[InputPolicy], UserPolicy]
     input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
-    input_policy_state: Optional[InputPolicy]
+    input_policy_state: bytes = b""
     output_policy_type: Union[Type[OutputPolicy], UserPolicy]
     output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
-    output_policy_state: Optional[OutputPolicy]
+    output_policy_state: bytes = b""
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -185,57 +187,108 @@ class UserCode(SyftObject):
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
     __attr_repr_cols__ = ["status", "service_func_name"]
 
+    def __setattr__(self, key: str, value: Any) -> None:
+        attr = getattr(type(self), key, None)
+        if inspect.isdatadescriptor(attr):
+            attr.fset(self, value)
+        else:
+            return super().__setattr__(key, value)
+
     @property
     def input_policy(self) -> Optional[InputPolicy]:
         if not self.status.approved:
             return None
 
-        if self.input_policy_state is None:
+        if len(self.input_policy_state) == 0:
+            input_policy = None
             if isinstance(self.input_policy_type, type) and issubclass(
                 self.input_policy_type, InputPolicy
             ):
                 # TODO: Tech Debt here
                 node_view_workaround = False
-                for k, v in self.input_policy_init_kwargs.items():
+                for k, _ in self.input_policy_init_kwargs.items():
                     if isinstance(k, NodeView):
                         node_view_workaround = True
 
                 if node_view_workaround:
-                    self.input_policy_state = self.input_policy_type(
+                    input_policy = self.input_policy_type(
                         init_kwargs=self.input_policy_init_kwargs
                     )
                 else:
-                    self.input_policy_state = self.input_policy_type(
+                    input_policy = self.input_policy_type(
                         **self.input_policy_init_kwargs
                     )
             elif isinstance(self.input_policy_type, UserPolicy):
-                self.input_policy_state = init_policy(
+                input_policy = init_policy(
                     self.input_policy_type, self.input_policy_init_kwargs
                 )
             else:
                 raise Exception(f"Invalid output_policy_type: {self.input_policy_type}")
-        return self.input_policy_state
+
+            if input_policy is not None:
+                input_blob = _serialize(input_policy, to_bytes=True)
+                self.input_policy_state = input_blob
+                return input_policy
+            else:
+                raise Exception("input_policy is None during init")
+        try:
+            return _deserialize(self.input_policy_state, from_bytes=True)
+        except Exception as e:
+            print(f"Failed to deserialize custom input policy state. {e}")
+            return None
 
     @property
     def output_policy(self) -> Optional[OutputPolicy]:
         if not self.status.approved:
             return None
-        if self.output_policy_state is None:
+
+        if len(self.output_policy_state) == 0:
+            output_policy = None
             if isinstance(self.output_policy_type, type) and issubclass(
                 self.output_policy_type, OutputPolicy
             ):
-                self.output_policy_state = self.output_policy_type(
+                output_policy = self.output_policy_type(
                     **self.output_policy_init_kwargs
                 )
             elif isinstance(self.output_policy_type, UserPolicy):
-                self.output_policy_state = init_policy(
+                output_policy = init_policy(
                     self.output_policy_type, self.output_policy_init_kwargs
                 )
             else:
                 raise Exception(
                     f"Invalid output_policy_type: {self.output_policy_type}"
                 )
-        return self.output_policy_state
+
+            if output_policy is not None:
+                output_blob = _serialize(output_policy, to_bytes=True)
+                self.output_policy_state = output_blob
+                return output_policy
+            else:
+                raise Exception("output_policy is None during init")
+
+        try:
+            return _deserialize(self.output_policy_state, from_bytes=True)
+        except Exception as e:
+            print(f"Failed to deserialize custom output policy state. {e}")
+            return None
+
+    @input_policy.setter
+    def input_policy(self, value: Any) -> None:
+        if isinstance(value, InputPolicy):
+            self.input_policy_state = _serialize(value, to_bytes=True)
+        elif (isinstance(value, bytes) and len(value) == 0) or value is None:
+            self.input_policy_state = b""
+        else:
+            raise Exception(f"You can't set {type(value)} as input_policy_state")
+
+    @output_policy.setter
+    def output_policy(self, value: Any) -> None:
+        if isinstance(value, OutputPolicy):
+            self.output_policy_state = _serialize(value, to_bytes=True)
+        elif (isinstance(value, bytes) and len(value) == 0) or value is None:
+            self.output_policy_state = b""
+        else:
+            raise Exception(f"You can't set {type(value)} as output_policy_state")
 
     @property
     def byte_code(self) -> Optional[PyCodeObject]:

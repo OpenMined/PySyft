@@ -196,7 +196,7 @@ class UserCodeService(AbstractService):
             # Apply Output Policy to the results and update the OutputPolicyState
             final_results = result.ok()
             output_policy.apply_output(context=context, outputs=final_results)
-            code_item.output_policy_state = output_policy
+            code_item.output_policy = output_policy
             state_result = self.update_code_state(context=context, code_item=code_item)
             if not state_result:
                 return state_result

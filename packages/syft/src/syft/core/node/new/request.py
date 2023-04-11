@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 import hashlib
+import inspect
 from typing import Any
 from typing import Callable
 from typing import List
@@ -187,7 +188,7 @@ class Request(SyftObject):
         state.apply_output(context=ctx, outputs=action_object)
         policy_state_mutation = ObjectMutation(
             linked_obj=change.linked_obj,
-            attr_name="output_policy_state",
+            attr_name="output_policy",
             match_type=True,
             value=state,
         )
@@ -280,7 +281,13 @@ class ObjectMutation(Change):
     __attr_repr_cols__ = ["linked_obj", "attr_name"]
 
     def mutate(self, obj: Any) -> Any:
-        setattr(obj, self.attr_name, self.value)
+        # check if attribute is a property setter first
+        # this seems necessary for pydantic types
+        attr = getattr(type(obj), self.attr_name, None)
+        if inspect.isdatadescriptor(attr):
+            attr.fset(obj, self.value)
+        else:
+            setattr(obj, self.attr_name, self.value)
         return obj
 
     def _run(
