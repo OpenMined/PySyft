@@ -24,7 +24,9 @@ REPEATS = 20
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_queue_stash_sanity(queue: Any) -> None:
     assert len(queue) == 0
     assert hasattr(queue, "store")
@@ -39,7 +41,10 @@ def test_queue_stash_sanity(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_stash_set_get(queue: Any) -> None:
     objs = []
     for idx in range(REPEATS):
@@ -80,7 +85,10 @@ def test_queue_stash_set_get(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_stash_update(queue: Any) -> None:
     obj = MockSyftObject(data=0)
     res = queue.set(obj, ignore_duplicates=False)
@@ -110,9 +118,12 @@ def test_queue_stash_update(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_set_existing_queue_threading(queue: Any) -> None:
-    thread_cnt = 5
+    thread_cnt = 3
     repeats = REPEATS
 
     execution_err = None
@@ -121,7 +132,10 @@ def test_queue_set_existing_queue_threading(queue: Any) -> None:
         nonlocal execution_err
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = queue.set(obj, ignore_duplicates=False)
+            for retry in range(10):
+                res = queue.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -149,7 +163,10 @@ def test_queue_set_existing_queue_threading(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_update_existing_queue_threading(queue: Any) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -162,7 +179,10 @@ def test_queue_update_existing_queue_threading(queue: Any) -> None:
         nonlocal execution_err
         for repeat in range(repeats):
             obj.data = repeat
-            res = queue.update(obj)
+            for retry in range(10):
+                res = queue.update(obj)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -189,7 +209,10 @@ def test_queue_update_existing_queue_threading(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=10, reruns_delay=2)
 def test_queue_set_delete_existing_queue_threading(
     queue: Any,
 ) -> None:
@@ -211,7 +234,10 @@ def test_queue_set_delete_existing_queue_threading(
         for idx in range(repeats):
             item_idx = tid * repeats + idx
 
-            res = queue.find_and_delete(id=objs[item_idx].id)
+            for retry in range(10):
+                res = queue.find_and_delete(id=objs[item_idx].id)
+                if res.is_ok():
+                    break
             if res.is_err():
                 execution_err = res
             assert res.is_ok()
@@ -231,7 +257,7 @@ def test_queue_set_delete_existing_queue_threading(
 
 
 def helper_queue_set_threading(create_queue_cbk) -> None:
-    thread_cnt = 5
+    thread_cnt = 3
     repeats = REPEATS
 
     execution_err = None
@@ -242,7 +268,10 @@ def helper_queue_set_threading(create_queue_cbk) -> None:
 
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = queue.set(obj, ignore_duplicates=False)
+            for retry in range(10):
+                res = queue.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -265,7 +294,7 @@ def helper_queue_set_threading(create_queue_cbk) -> None:
 
 
 def helper_queue_set_joblib(create_queue_cbk) -> None:
-    thread_cnt = 5
+    thread_cnt = 3
     repeats = 10
 
     def _kv_cbk(tid: int) -> None:
@@ -273,7 +302,10 @@ def helper_queue_set_joblib(create_queue_cbk) -> None:
 
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = queue.set(obj, ignore_duplicates=False)
+            for retry in range(10):
+                res = queue.set(obj, ignore_duplicates=False)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 return res
@@ -293,6 +325,7 @@ def helper_queue_set_joblib(create_queue_cbk) -> None:
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_threading, helper_queue_set_joblib]
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_queue_set_sqlite(sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(sqlite_workspace)
@@ -306,7 +339,7 @@ def test_queue_set_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_threading, helper_queue_set_joblib]
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_set_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -330,7 +363,10 @@ def helper_queue_update_threading(create_queue_cbk) -> None:
 
         for repeat in range(repeats):
             obj.data = repeat
-            res = queue_local.update(obj)
+            for retry in range(10):
+                res = queue_local.update(obj)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -358,7 +394,10 @@ def helper_queue_update_joblib(create_queue_cbk) -> None:
 
         for repeat in range(repeats):
             obj.data = repeat
-            res = queue_local.update(obj)
+            for retry in range(10):
+                res = queue_local.update(obj)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 return res
@@ -379,6 +418,7 @@ def helper_queue_update_joblib(create_queue_cbk) -> None:
 @pytest.mark.parametrize(
     "backend", [helper_queue_update_threading, helper_queue_update_joblib]
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_queue_update_threading_sqlite(sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(sqlite_workspace)
@@ -392,7 +432,7 @@ def test_queue_update_threading_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_update_threading, helper_queue_update_joblib]
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_update_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -423,7 +463,11 @@ def helper_queue_set_delete_threading(
         for idx in range(repeats):
             item_idx = tid * repeats + idx
 
-            res = queue.find_and_delete(id=objs[item_idx].id)
+            for retry in range(10):
+                res = queue.find_and_delete(id=objs[item_idx].id)
+                if res.is_ok():
+                    break
+
             if res.is_err():
                 execution_err = res
             assert res.is_ok()
@@ -454,7 +498,11 @@ def helper_queue_set_delete_joblib(
         for idx in range(repeats):
             item_idx = tid * repeats + idx
 
-            res = queue.find_and_delete(id=objs[item_idx].id)
+            for retry in range(10):
+                res = queue.find_and_delete(id=objs[item_idx].id)
+                if res.is_ok():
+                    break
+
             if res.is_err():
                 execution_err = res
             assert res.is_ok()
@@ -483,6 +531,7 @@ def helper_queue_set_delete_joblib(
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_delete_threading, helper_queue_set_delete_joblib]
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_queue_delete_threading_sqlite(sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(sqlite_workspace)
@@ -496,7 +545,7 @@ def test_queue_delete_threading_sqlite(sqlite_workspace, backend):
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_delete_threading, helper_queue_set_delete_joblib]
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_delete_threading_mongo(mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)

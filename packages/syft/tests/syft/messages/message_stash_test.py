@@ -27,11 +27,6 @@ test_verify_key_string = (
 test_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
 
 
-@pytest.fixture(autouse=True)
-def message_stash(document_store):
-    return MessageStash(store=document_store)
-
-
 def add_mock_message(
     message_stash: MessageStash,
     from_user_verify_key: SyftVerifyKey,
