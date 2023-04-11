@@ -521,15 +521,16 @@ def process_class_code(raw_code: str, class_name: str) -> str:
     v.visit(tree)
     if len(tree.body) != 1 or not isinstance(tree.body[0], ast.ClassDef):
         raise Exception(
-            "Class code should only contain the Class Definition for your policy."
+            "Class code should only contain the Class definition for your policy"
         )
     old_class = tree.body[0]
     if len(old_class.bases) != 1 or old_class.bases[0].attr not in [
-        "CustomInputPolicy",
-        "CustomOutputPolicy",
+        CustomInputPolicy.__name__,
+        CustomOutputPolicy.__name__,
     ]:
         raise Exception(
-            "Class code should either implement CustomInputPolicy or CustomOutputPolicy"
+            f"Class code should either implement {CustomInputPolicy.__name__} "
+            f"or {CustomOutputPolicy.__name__}"
         )
 
     # TODO: changes the bases
