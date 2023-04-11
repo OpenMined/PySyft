@@ -39,11 +39,11 @@ class TracingDecoratorOptions:
             cls.default_attributes[att] = attributes[att]
 
 
-T = TypeVar("T", bound=Optional[Union[Callable, type]])
+T = TypeVar("T", bound=Union[Callable, type])
 
 
 def instrument(
-    _func_or_class: T = None,
+    _func_or_class: T,
     *,
     span_name: str = "",
     record_exception: bool = True,
@@ -76,10 +76,11 @@ def instrument(
                         name,
                         staticmethod(
                             instrument(
+                                method,
                                 record_exception=record_exception,
                                 attributes=attributes,
                                 existing_tracer=existing_tracer,
-                            )(method)
+                            )
                         ),
                     )
                 else:
@@ -87,10 +88,11 @@ def instrument(
                         cls,
                         name,
                         instrument(
+                            method,
                             record_exception=record_exception,
                             attributes=attributes,
                             existing_tracer=existing_tracer,
-                        )(method),
+                        ),
                     )
 
         return cls
@@ -161,7 +163,4 @@ def instrument(
 
         return wrapper
 
-    if _func_or_class is None:
-        return span_decorator
-    else:
-        return span_decorator(_func_or_class)
+    return span_decorator(_func_or_class)
