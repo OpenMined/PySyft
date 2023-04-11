@@ -660,30 +660,25 @@ class ActionObject(SyftObject):
         self,
         result: Any,
     ) -> Any:
-        # can check types here
-        if not issubclass(type(result), ActionObject):
-            constructor = action_type_for_type(result)
-            if not constructor:
-                raise Exception(f"output: {type(result)} no in action_types")
-            result = constructor(syft_action_data=result)
+        """Wrap the result in an ActionObject"""
+        if issubclass(type(result), ActionObject):
+            return result
+
+        constructor = action_type_for_type(result)
+        result = constructor(syft_action_data=result)
 
         return result
 
     def _syft_passthrough_attrs(self) -> List[str]:
+        """These attributes are forwarded to the `object` base class."""
         return passthrough_attrs + getattr(self, "syft_passthrough_attrs", [])
 
     def _syft_dont_wrap_attrs(self) -> List[str]:
+        """The results from these attributes are ignored from ID patching."""
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
-    # TODO: proper testing
-    def __getattribute__(self, name: str) -> Any:
-        # bypass certain attrs to prevent recursion issues
-        if name.startswith("_syft") or name.startswith("syft"):
-            return object.__getattribute__(self, name)
-
-        if name in self._syft_passthrough_attrs():
-            return object.__getattribute__(self, name)
-
+    def _syft_get_attr_context(self, name: str) -> Any:
+        """Find which instance - Syft ActionObject or the original object - has the requested attribute."""
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
 
         debug(">> ", name, ", defined_on_self = ", defined_on_self)
@@ -693,44 +688,81 @@ class ActionObject(SyftObject):
         if not defined_on_self:
             context_self = self.syft_action_data  # type: ignore
 
-        # TODO: weird edge cases here for things like tuples
-        if name == "__bool__" and not hasattr(self.syft_action_data, "__bool__"):
-            context = PreHookContext(obj=self, op_name=name)
-            context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
-            # no input needs to propagate
-            result = self._syft_run_post_hooks__(
-                context, name, bool(self.syft_action_data)
+        return context_self
+
+    def _syft_attr_propagate_ids(self, context, name: str, result: Any) -> Any:
+        """Patch the results with the syft_history_hash, node_uid, and result_id."""
+        if name in self._syft_dont_wrap_attrs():
+            return result
+
+        # Wrap as Syft Object
+        result = self._syft_output_action_object(result)
+
+        # Propagate History
+        if context.action is not None:
+            result.syft_history_hash = context.action.syft_history_hash
+
+        # Propagate Syft Node UID
+        result.syft_node_uid = context.node_uid
+
+        # Propagate Result ID
+        if context.result_id is not None:
+            result.id = context.result_id
+
+        return result
+
+    def _syft_wrap_attribute_for_bool_on_nonbools(self, name: str) -> Any:
+        """Handle `__getattribute__` for bool casting."""
+        if name != "__bool__":
+            raise RuntimeError(
+                "[_wrap_attribute_for_bool_on_nonbools] Use this only for the __bool__ operator"
             )
-            if name not in self._syft_dont_wrap_attrs():
-                result = self._syft_output_action_object(result)
-                if context.action is not None:
-                    result.syft_history_hash = context.action.syft_history_hash
 
-            def __wrapper__bool__() -> bool:
-                return result
+        if hasattr(self.syft_action_data, "__bool__"):
+            raise RuntimeError(
+                "[_wrap_attribute_for_bool_on_nonbools] self.syft_action_data already implements the bool operator"
+            )
 
-            return __wrapper__bool__
+        debug("[__getattribute__] Handling bool on nonbools")
+        context = PreHookContext(obj=self, op_name=name)
+        context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
 
-        if self.syft_is_property(context_self, name):
-            debug("Property detected: ", name)
+        # no input needs to propagate
+        result = self._syft_run_post_hooks__(context, name, bool(self.syft_action_data))
+        result = self._syft_attr_propagate_ids(context, name, result)
 
-            if self.syft_is_property(context_self, name):
-                context = PreHookContext(obj=self, op_name=name)
-                context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
-                # no input needs to propagate
-                result = self._syft_run_post_hooks__(
-                    context, name, self.syft_get_property(context_self, name)
-                )
-                if name not in self._syft_dont_wrap_attrs():
-                    result = self._syft_output_action_object(result)
-                    if context.action is not None:
-                        result.syft_history_hash = context.action.syft_history_hash
-                return result
+        def __wrapper__bool__() -> bool:
+            return result
+
+        return __wrapper__bool__
+
+    def _syft_wrap_attribute_for_properties(self, name: str) -> Any:
+        """Handle `__getattribute__` for properties."""
+        context_self = self._syft_get_attr_context(name)
+
+        if not self.syft_is_property(context_self, name):
+            raise RuntimeError(
+                "[_wrap_attribute_for_properties] Use this only on properties"
+            )
+        debug(f"[__getattribute__] Handling property {name} ")
+
+        context = PreHookContext(obj=self, op_name=name)
+        context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
+        # no input needs to propagate
+        result = self._syft_run_post_hooks__(
+            context, name, self.syft_get_property(context_self, name)
+        )
+
+        return self._syft_attr_propagate_ids(context, name, result)
+
+    def _syft_wrap_attribute_for_methods(self, name: str) -> Any:
+        """Handle `__getattribute__` for methods."""
 
         # check for other types that aren't methods, functions etc
         def fake_func(*args: Any, **kwargs: Any) -> Any:
             return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
+        debug(f"[__getattribute__] Handling method {name} ")
         if (
             isinstance(self.syft_action_data, ActionDataEmpty)
             and name not in action_data_empty_must_run
@@ -740,64 +772,37 @@ class ActionObject(SyftObject):
             original_func = getattr(self.syft_action_data, name)
 
         debug_original_func(name, original_func)
+
+        def _base_wrapper(*args: Any, **kwargs: Any) -> Any:
+            context = PreHookContext(obj=self, op_name=name)
+            context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
+                context, name, args, kwargs
+            )
+
+            if has_action_data_empty(args=args, kwargs=kwargs):
+                result = fake_func(*args, **kwargs)
+            else:
+                original_args, original_kwargs = debox_args_and_kwargs(
+                    pre_hook_args, pre_hook_kwargs
+                )
+                result = original_func(*original_args, **original_kwargs)
+
+            post_result = self._syft_run_post_hooks__(context, name, result)
+            post_result = self._syft_attr_propagate_ids(context, name, post_result)
+
+            return post_result
+
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
             debug("Running method: ", name)
 
-            def wrapper(_self: Any, *args: Any, **kwargs: Any) -> Any:
-                context = PreHookContext(obj=self, op_name=name)
-                context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
-                    context, name, args, kwargs
-                )
-
-                if not has_action_data_empty(args=args, kwargs=kwargs):
-                    original_args, original_kwargs = debox_args_and_kwargs(
-                        pre_hook_args, pre_hook_kwargs
-                    )
-
-                    result = original_func(*original_args, **original_kwargs)
-                else:
-                    result = fake_func(*args, **kwargs)
-
-                post_result = self._syft_run_post_hooks__(context, name, result)
-                if name not in self._syft_dont_wrap_attrs():
-                    post_result = self._syft_output_action_object(
-                        post_result,
-                    )
-                    if context.action is not None:
-                        post_result.syft_history_hash = context.action.syft_history_hash
-                    post_result.syft_node_uid = context.node_uid
-                    if context.result_id is not None:
-                        post_result.id = context.result_id
-                return post_result
+            def wrapper(_self: Any, *args: Any, **kwargs: Any):
+                return _base_wrapper(*args, **kwargs)
 
             wrapper = types.MethodType(wrapper, type(self))
         else:
             debug("Running non-method: ", name)
 
-            def wrapper(*args: Any, **kwargs: Any) -> Any:
-                context = PreHookContext(obj=self, op_name=name)
-                context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
-                    context, name, args, kwargs
-                )
-
-                if not has_action_data_empty(args=args, kwargs=kwargs):
-                    original_args, original_kwargs = debox_args_and_kwargs(
-                        pre_hook_args, pre_hook_kwargs
-                    )
-
-                    result = original_func(*original_args, **original_kwargs)
-                else:
-                    result = fake_func(*args, **kwargs)
-
-                post_result = self._syft_run_post_hooks__(context, name, result)
-                if name not in self._syft_dont_wrap_attrs():
-                    post_result = self._syft_output_action_object(post_result)
-                    if context.action is not None:
-                        post_result.syft_history_hash = context.action.syft_history_hash
-                    post_result.syft_node_uid = context.node_uid
-                    if context.result_id is not None:
-                        post_result.id = context.result_id
-                return post_result
+            wrapper = _base_wrapper
 
         try:
             wrapper.__doc__ = original_func.__doc__
@@ -813,6 +818,41 @@ class ActionObject(SyftObject):
             debug("name", name, "has no signature")
 
         return wrapper
+
+    def __getattribute__(self, name: str) -> Any:
+        """Called unconditionally to implement attribute accesses for instances of the class.
+        If the class also defines __getattr__(), the latter will not be called unless __getattribute__()
+        either calls it explicitly or raises an AttributeError.
+        This method should return the (computed) attribute value or raise an AttributeError exception.
+        In order to avoid infinite recursion in this method, its implementation should always:
+         * call the base class method with the same name to access any attributes it needs
+            for example : object.__getattribute__(self, name).
+         * use the syft/_syft prefix for internal methods.
+         * add the method name to the passthrough_attrs.
+
+        Parameters:
+            name: str
+                The name of the attribute to access.
+        """
+        # bypass certain attrs to prevent recursion issues
+        if name.startswith("_syft") or name.startswith("syft"):
+            return object.__getattribute__(self, name)
+
+        if name in self._syft_passthrough_attrs():
+            return object.__getattribute__(self, name)
+
+        context_self = self._syft_get_attr_context(name)
+
+        # Handle bool operator on nonbools
+        if name == "__bool__" and not hasattr(self.syft_action_data, "__bool__"):
+            return self._syft_wrap_attribute_for_bool_on_nonbools(name)
+
+        # Handle Properties
+        if self.syft_is_property(context_self, name):
+            return self._syft_wrap_attribute_for_properties(name)
+
+        # Handle anything else
+        return self._syft_wrap_attribute_for_methods(name)
 
     def keys(self) -> KeysView[str]:
         if not isinstance(self.syft_action_data, dict):
@@ -879,8 +919,17 @@ class ActionObject(SyftObject):
     def __delitem__(self, key: Any) -> None:
         self.__delitem__(key)
 
-    def __invert__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__invert__(other))
+    def __invert__(self) -> Any:
+        return self._syft_output_action_object(self.__invert__())
+
+    def __round__(self) -> Any:
+        return self._syft_output_action_object(self.__round__())
+
+    def __pos__(self) -> Any:
+        return self._syft_output_action_object(self.__pos__())
+
+    def __trunc__(self) -> Any:
+        return self._syft_output_action_object(self.__trunc__())
 
     def __divmod__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__divmod__(other))
@@ -890,6 +939,39 @@ class ActionObject(SyftObject):
 
     def __mod__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__mod__(other))
+
+    def __abs__(self) -> Any:
+        return self._syft_output_action_object(self.__abs__())
+
+    def __neg__(self) -> Any:
+        return self._syft_output_action_object(self.__neg__())
+
+    def __or__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__or__(other))
+
+    def __and__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__and__(other))
+
+    def __xor__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__xor__(other))
+
+    def __pow__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__pow__(other))
+
+    def __truediv__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__truediv__(other))
+
+    def __lshift__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__lshift__(other))
+
+    def __rshift__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__rshift__(other))
+
+    def __iter__(self):
+        return self._syft_output_action_object(self.__iter__())
+
+    def __next__(self):
+        return self._syft_output_action_object(self.__next__())
 
     # r ops
     # we want the underlying implementation so we should just call into __getattribute__
@@ -904,6 +986,33 @@ class ActionObject(SyftObject):
 
     def __rmatmul__(self, other: Any) -> Any:
         return self.__rmatmul__(other)
+
+    def __rmod__(self, other: Any) -> Any:
+        return self.__rmod__(other)
+
+    def __ror__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__ror__(other))
+
+    def __rand__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__rand__(other))
+
+    def __rxor__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__rxor__(other))
+
+    def __rpow__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__rpow__(other))
+
+    def __rtruediv__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__rtruediv__(other))
+
+    def __rfloordiv__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__rfloordiv__(other))
+
+    def __rlshift__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__rlshift__(other))
+
+    def __rrshift__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__rrshift__(other))
 
 
 @serializable()

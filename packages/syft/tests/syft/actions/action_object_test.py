@@ -1,5 +1,8 @@
 # stdlib
+import inspect
+import math
 from typing import Any
+from typing import Callable
 from typing import Tuple
 from typing import Type
 
@@ -389,6 +392,9 @@ def test_actionobject_syft_execute_ok(worker, testcase):
     action_result = context.obj.syft_execute_action(context.action, sync=True)
     assert action_result == expected
 
+    action_result = context.obj._syft_output_action_object(action_result)
+    assert isinstance(action_result, ActionObject)
+
 
 @pytest.mark.parametrize(
     "testcase",
@@ -540,6 +546,54 @@ def test_actionobject_syft_send_get(worker, testcase):
 @pytest.mark.parametrize(
     "testcase",
     [
+        # object
+        "abc",
+        int(1),
+        float(1.2),
+        True,
+        (1, 1, 3),
+        [1, 2, 1],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+    ],
+)
+def test_actionobject_syft_passthrough_attrs(testcase):
+    obj = helper_make_action_obj(testcase)
+
+    assert str(obj) == str(testcase)
+    assert repr(obj) == repr(testcase)
+
+
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # object
+        "abc",
+        (1, 1, 3),
+        [1, 2, 1],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+    ],
+)
+def test_actionobject_syft_dont_wrap_output_attrs(testcase):
+    obj = helper_make_action_obj(testcase)
+
+    assert not hasattr(len(obj), "id")
+    assert not hasattr(len(obj), "syft_history_hash")
+
+
+def test_actionobject_syft_get_attr_context():
+    orig_obj = "test"
+    obj = helper_make_action_obj(orig_obj)
+
+    assert obj._syft_get_attr_context("capitalize") is orig_obj
+    assert obj._syft_get_attr_context("__add__") is orig_obj
+    assert obj._syft_get_attr_context("syft_action_data") is obj
+
+
+@pytest.mark.parametrize(
+    "testcase",
+    [
         # (object, operation, *args, **kwargs, expected_result)
         (int(1), "__add__", [1], {}, 2),
         (float(1.2), "__add__", [1], {}, 2.2),
@@ -574,6 +628,90 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     assert result.syft_node_uid == context.obj.syft_node_uid
 
 
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # object
+        "abc",
+        int(1),
+        float(1.2),
+        True,
+        (1, 1, 3),
+        [1, 2, 1],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+    ],
+)
+def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
+    obj = helper_make_action_obj(testcase)
+
+    assert isinstance(bool(obj), bool)
+
+
+@pytest.mark.parametrize(
+    "orig_obj",
+    [
+        # object
+        "abc",
+        int(1),
+        float(1.2),
+        True,
+        (1, 1, 3),
+        [1, 2, 1],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+    ],
+)
+def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
+    obj = helper_make_action_obj(orig_obj)
+
+    # test properties from the original object
+    for method in dir(orig_obj):
+        klass_method = getattr(type(orig_obj), method, None)
+        if klass_method is None:
+            continue
+
+        if isinstance(klass_method, property) or inspect.isdatadescriptor(klass_method):
+            prop = getattr(obj, method)
+            assert prop is not None
+            assert isinstance(prop, ActionObject)
+            assert hasattr(prop, "id")
+            assert hasattr(prop, "syft_node_uid")
+            assert hasattr(prop, "syft_history_hash")
+
+
+@pytest.mark.parametrize(
+    "orig_obj",
+    [
+        # object
+        "abc",
+        int(1),
+        float(1.2),
+        True,
+        (1, 1, 3),
+        [1, 2, 1],
+        {"a": 1, "b": 2},
+        set({1, 2, 3, 3}),
+    ],
+)
+def test_actionobject_syft_wrap_attribute_for_methods(orig_obj):
+    obj = helper_make_action_obj(orig_obj)
+
+    # test properties from the original object
+    for name in dir(orig_obj):
+        method = getattr(obj, name)
+        klass_method = getattr(type(orig_obj), name, None)
+        if klass_method is None:
+            continue
+
+        if isinstance(klass_method, property) or inspect.isdatadescriptor(klass_method):
+            # ignore properties
+            continue
+
+        assert method is not None
+        assert isinstance(method, Callable)
+
+
 def test_actionobject_syft_getattr_str():
     orig_obj = "a bC"
 
@@ -581,13 +719,29 @@ def test_actionobject_syft_getattr_str():
     obj = obj.ok()
 
     assert obj == orig_obj
+    assert obj != "sdfsfs"
 
-    assert obj.capitalize() == "A bc"
-    assert obj.casefold() == "a bc"
-    assert obj.endswith("C") == True  # noqa
-    assert obj.isascii() == True  # noqa
-    assert obj.isdigit() == False  # noqa
-    assert obj.upper() == "A BC"
+    assert obj.capitalize() == orig_obj.capitalize()
+    assert obj.casefold() == orig_obj.casefold()
+    assert obj.endswith("C") == orig_obj.endswith("C")  # noqa
+    assert obj.isascii() == orig_obj.isascii()  # noqa
+    assert obj.isdigit() == orig_obj.isdigit()  # noqa
+    assert obj.upper() == orig_obj.upper()
+    assert "C" in obj
+    assert "z" not in obj
+    assert obj[0] == orig_obj[0]
+    assert f"test {obj}" == f"test {orig_obj}"
+    assert obj > "a"
+    assert obj < "zzzz"
+    for idx, c in enumerate(obj):
+        assert c == orig_obj[idx]
+        assert obj[idx] == orig_obj[idx]
+    for idx, c in enumerate(orig_obj):
+        assert c == obj[idx]
+
+    assert sorted(obj) == sorted(orig_obj)
+    assert list(obj) == list(orig_obj)
+    assert list(reversed(obj)) == list(reversed(orig_obj))
 
 
 def test_actionobject_syft_getattr_str_history():
@@ -605,6 +759,14 @@ def test_actionobject_syft_getattr_list():
 
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
+
+    assert 1 in obj
+    assert obj[0] == 3
+
+    for idx, item in enumerate(obj):
+        assert item == orig_obj[idx]
+    for idx, item in enumerate(orig_obj):
+        assert item == obj[idx]
 
     assert obj == orig_obj
     assert len(obj) == 4
@@ -633,6 +795,8 @@ def test_actionobject_syft_getattr_dict():
     assert obj == orig_obj
     assert obj.get("a") == 1
     assert obj.update({"c": 3}) == {"a": 1, "b": 2, "c": 3}
+    assert "a" in obj
+    assert obj["a"] == 1
     assert obj.clear() == {}
 
 
@@ -656,6 +820,13 @@ def test_actionobject_syft_getattr_tuple():
     assert obj.count(4) == 2
     assert obj.index(2) == 1
     assert len(obj) == 5
+    assert 1 in obj
+    assert obj[0] == 1
+
+    for idx, item in enumerate(obj):
+        assert item == orig_obj[idx]
+    for idx, item in enumerate(orig_obj):
+        assert item == obj[idx]
 
 
 def test_actionobject_syft_getattr_set():
@@ -676,23 +847,27 @@ def test_actionobject_syft_getattr_set_history():
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
 
-    res = obj.add(4)
+    res = obj.add(5)
     assert res.syft_history_hash == obj.syft_history_hash
 
 
-def test_actionobject_syft_getattr_bool():
-    orig_obj = True
-
+@pytest.mark.parametrize("orig_obj", [True, False])
+def test_actionobject_syft_getattr_bool(orig_obj):
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
 
-    assert obj.__and__(False) == False  # noqa
-    assert obj.__or__(False) == True  # noqa
-    assert not obj == False  # noqa
-    assert obj and True == True  # noqa
-    assert obj and False == False  # noqa
-    assert obj or False == True  # noqa
-    assert obj or True == True  # noqa
+    assert obj.__and__(False) == (orig_obj and False)  # noqa
+    assert obj.__or__(False) == (orig_obj or False)  # noqa
+    assert (not obj) == (not orig_obj)  # noqa
+    assert (obj and True) == (orig_obj and True)  # noqa
+    assert (True and obj) == (orig_obj and True)  # noqa
+    assert (obj and False) == (orig_obj and False)  # noqa
+    assert (False and obj) == (orig_obj and False)  # noqa
+    assert (obj or False) == (orig_obj or False)  # noqa
+    assert (False or obj) == (orig_obj or False)  # noqa
+    assert (obj or True) == (orig_obj or True)  # noqa
+    assert (True or obj) == (orig_obj or True)  # noqa
+    assert (obj + obj) == orig_obj + orig_obj
 
 
 def test_actionobject_syft_getattr_bool_history():
@@ -705,66 +880,112 @@ def test_actionobject_syft_getattr_bool_history():
     assert res.syft_history_hash == obj.syft_history_hash
 
 
-def test_actionobject_syft_getattr_int():
-    orig_obj = 5
-
+@pytest.mark.parametrize("orig_obj", [-5, 0, 5])
+def test_actionobject_syft_getattr_int(orig_obj: int):
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
 
     assert obj == orig_obj
-    assert str(obj) == "5"
-    assert obj.__add__(1) == 6
-    assert obj.__sub__(1) == 4
-    assert obj.__mul__(2) == 10
-    assert obj < 6
-    assert obj <= 5
-    assert obj > 4
-    assert obj >= 4
-    assert obj % 2 == 1
-    assert bool(obj) == 1
-    assert float(obj) == 5.0
-    assert obj + 2 == 7
-    assert 2 + obj == 7
-    assert obj - 2 == 3
-    assert 7 - obj == 2
-    assert 2 * obj == 10
-    assert obj * 2 == 10
+    assert obj != orig_obj + 1
+    assert str(obj) == str(orig_obj)
+    assert obj.__add__(1) == orig_obj + 1
+    assert obj.__sub__(1) == orig_obj - 1
+    assert obj.__mul__(2) == 2 * orig_obj
+    assert obj < orig_obj + 1
+    assert obj <= orig_obj
+    assert obj > orig_obj - 1
+    assert obj >= orig_obj - 1
+    assert obj**2 == orig_obj**2
+    assert obj**3 == orig_obj**3
+    assert 2**obj == 2**orig_obj
+    assert obj % 2 == orig_obj % 2
+    assert obj / 2 == orig_obj / 2
+    assert obj // 2 == orig_obj // 2
+    if obj != 0:
+        assert 10 % obj == 10 % orig_obj
+        assert 11 / obj == 11 / orig_obj
+        assert 11 // obj == 11 // orig_obj
+    assert bool(obj) == bool(orig_obj)
+    assert float(obj) == float(orig_obj)
+    assert round(obj) == round(orig_obj)
+    assert obj + 2 == 2 + orig_obj
+    assert 2 + obj == 2 + orig_obj
+    assert obj - 2 == orig_obj - 2
+    assert 7 - obj == 7 - orig_obj
+    assert 2 * obj == 2 * orig_obj
+    assert obj * 2 == 2 * orig_obj
+    assert -obj == -orig_obj
+    assert +obj == +orig_obj
+    assert abs(obj) == abs(orig_obj)
+    assert math.ceil(obj) == math.ceil(orig_obj)
+    assert math.floor(obj) == math.floor(orig_obj)
+
+    # bitwise
+    assert (obj | 3) == (orig_obj | 3)
+    assert (3 | obj) == (orig_obj | 3)
+    assert (obj & 3) == (orig_obj & 3)
+    assert (3 & obj) == (orig_obj & 3)
+    assert (obj ^ 3) == (orig_obj ^ 3)
+    assert (3 ^ obj) == (orig_obj ^ 3)
+    assert ~obj == ~orig_obj
+    assert (obj >> 1) == (orig_obj >> 1)
+    assert (obj << 1) == (orig_obj << 1)
+    if obj > 0:
+        assert (3 << obj) == (3 << orig_obj)
+        assert (3 >> obj) == (3 >> orig_obj)
 
 
-def test_actionobject_syft_getattr_int_history():
+def test_actionobject_syft_getattr_int_history(worker):
     orig_obj = 5
-
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
 
     res = obj + 5
     assert res.syft_history_hash == obj.syft_history_hash
 
+    res = 4 + obj
+    assert res.syft_history_hash == obj.syft_history_hash
 
-def test_actionobject_syft_getattr_float():
-    orig_obj = float(5.5)
 
+@pytest.mark.parametrize("orig_obj", [-5.5, 0.0, 5.5])
+def test_actionobject_syft_getattr_float(orig_obj: float):
     obj = ActionObject.from_obj(orig_obj)
     obj = obj.ok()
 
     assert obj == orig_obj
-    assert str(obj) == "5.5"
-    assert obj.__add__(1.1) == 6.6
-    assert obj.__sub__(1.5) == 4
-    assert obj.__mul__(2) == 11
-    assert obj < 6
-    assert obj <= 5.5
-    assert obj > 4
-    assert obj >= 4
-    assert bool(obj) == 1
-    assert float(obj) == 5.5
-    assert int(obj) == 5
-    assert obj + 2 == 7.5
-    assert 2 + obj == 7.5
-    assert obj - 2 == 3.5
-    assert 7 - obj == 1.5
-    assert 2 * obj == 11
-    assert obj * 2 == 11
+    assert obj != orig_obj + 1
+    assert str(obj) == str(orig_obj)
+    assert obj.__add__(1.1) == orig_obj + 1.1
+    assert obj.__sub__(1.5) == orig_obj - 1.5
+    assert obj.__mul__(2) == 2 * orig_obj
+    assert obj < orig_obj + 1
+    assert obj <= orig_obj
+    assert obj > orig_obj - 1
+    assert obj >= orig_obj - 1
+    assert bool(obj) == bool(orig_obj)
+    assert float(obj) == float(orig_obj)
+    assert int(obj) == int(orig_obj)
+    assert round(obj) == round(orig_obj)
+    assert obj**2 == orig_obj**2
+    assert obj**3 == orig_obj**3
+    assert 2**obj == 2**orig_obj
+    assert obj + 2 == 2 + orig_obj
+    assert 2 + obj == 2 + orig_obj
+    assert obj - 2 == orig_obj - 2
+    assert 7 - obj == 7 - orig_obj
+    assert 2 * obj == 2 * orig_obj
+    assert obj * 2 == 2 * orig_obj
+    assert obj / 2 == orig_obj / 2
+    assert obj // 2 == orig_obj // 2
+    if obj != 0:
+        assert 11 / obj == 11 / orig_obj
+        assert 11 // obj == 11 // orig_obj
+    assert -obj == -orig_obj
+    assert +obj == +orig_obj
+    assert abs(obj) == abs(orig_obj)
+    assert math.ceil(obj) == math.ceil(orig_obj)
+    assert math.floor(obj) == math.floor(orig_obj)
+    assert math.trunc(obj) == math.trunc(orig_obj)
 
 
 def test_actionobject_syft_getattr_float_history():
