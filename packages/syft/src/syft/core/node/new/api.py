@@ -482,7 +482,8 @@ class SyftAPI(SyftObject):
                 self._add_route(api_module, v, endpoint_function)
             return api_module
 
-        self.libs = build_endpoint_tree(self.lib_endpoints)
+        if self.lib_endpoints is not None:
+            self.libs = build_endpoint_tree(self.lib_endpoints)
         self.api_module = build_endpoint_tree(self.endpoints)
 
     @property
