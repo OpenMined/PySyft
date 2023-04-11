@@ -69,13 +69,12 @@ jobs:
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-      - name: Install MacOS dependencies
-        run: |
-          brew install docker
-          colima start
-          docker image ls
-        if: ${{ matrix.os == 'macos-latest' }}
-      - name: Run notebook tests
+
+      - name: Docker on MacOS
+        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
+        uses: crazy-max/ghaction-setup-docker@v1.1.0
+
+      - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
         run: |
           tox -e syft.test.unit
@@ -197,7 +196,7 @@ jobs:
           pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
-      - name: Install Docker Compose - Linux
+      - name: Docker Compose on Linux
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
@@ -207,11 +206,11 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker compose version
 
-      - name: Install Docker - macOS
+      - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
-      - name: Install Docker Compose - macOS
+      - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         shell: bash
         run: |
@@ -220,7 +219,7 @@ jobs:
           ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose || true
           docker compose version
 
-      - name: Install Docker - Windows
+      - name: Docker on Windows
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
         shell: pwsh
         run: |
