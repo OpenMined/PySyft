@@ -11,6 +11,8 @@ from .document_store import DocumentStore
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
+from .locks import LockingConfig
+from .locks import ThreadingLockingConfig
 from .serializable import serializable
 
 
@@ -78,8 +80,15 @@ class DictStoreConfig(StoreConfig):
             The Document type used. Default: DictDocumentStore
         `backing_store`: Type[KeyValueBackingStore]
             The backend type used. Default: DictBackingStore
-
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to ThreadingLockingConfig.
     """
 
     store_type: Type[DocumentStore] = DictDocumentStore
     backing_store: Type[KeyValueBackingStore] = DictBackingStore
+    locking_config: LockingConfig = ThreadingLockingConfig()

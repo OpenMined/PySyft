@@ -14,6 +14,8 @@ from typing import Union
 
 # third party
 import numpy
+from result import Ok
+from result import OkErr
 
 # relative
 from .context import AuthedServiceContext
@@ -46,7 +48,14 @@ class AbstractService:
     def resolve_link(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Union[Any, SyftError]:
-        return self.stash.get_by_uid(uid=linked_obj.object_uid)
+        obj = self.stash.get_by_uid(uid=linked_obj.object_uid)
+        if isinstance(obj, OkErr) and obj.is_ok():
+            obj = obj.ok()
+        if hasattr(obj, "node_uid"):
+            obj.node_uid = context.node.id
+        if not isinstance(obj, OkErr):
+            obj = Ok(obj)
+        return obj
 
 
 @serializable()

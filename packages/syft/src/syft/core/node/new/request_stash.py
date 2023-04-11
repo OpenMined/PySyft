@@ -13,7 +13,6 @@ from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .request import Request
 from .request import RequestStatus
-from .response import SyftError
 from .serializable import serializable
 
 RequestingUserVerifyKeyPartitionKey = PartitionKey(
@@ -32,14 +31,12 @@ class RequestStash(BaseUIDStoreStash):
 
     def get_all_for_verify_key(
         self, verify_key: RequestingUserVerifyKeyPartitionKey
-    ) -> Result[List[Request], SyftError]:
+    ) -> Result[List[Request], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_all(qks=qks)
 
-    def get_all_for_status(
-        self, status: RequestStatus
-    ) -> Result[List[Request], SyftError]:
+    def get_all_for_status(self, status: RequestStatus) -> Result[List[Request], str]:
         qks = QueryKeys(qks=[StatusPartitionKey.with_obj(status)])
         return self.query_all(qks=qks)
