@@ -139,13 +139,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     if attr_list[0] != "syft":
         raise ReferenceError(f"Reference don't match: {attr_list[0]}")
 
-    if (
-        attr_list[1] != "core"
-        and attr_list[1] != "lib"
-        and attr_list[1] != "grid"
-        and attr_list[1] != "wrappers"
-        and attr_list[1] != "proxy"
-    ):
+    if attr_list[1] != "core" and attr_list[1] != "user":
         raise ReferenceError(f"Reference don't match: {attr_list[1]}")
 
     return index_modules(a_dict=get_loaded_syft(), keys=attr_list[1:])
@@ -730,3 +724,24 @@ def print_dynamic_log(
         target=print_process, args=(message, finish, success, lock)
     ).start()
     return (finish, success)
+
+
+# Note: In the future there might be other interpreters that we want to use
+def is_interpreter_jupyter() -> bool:
+    return get_interpreter_module() == "ipykernel.zmqshell"
+
+
+def is_interpreter_colab() -> bool:
+    return get_interpreter_module() == "google.colab._shell"
+
+
+def is_interpreter_standard() -> bool:
+    return get_interpreter_module() == "StandardInterpreter"
+
+
+def get_interpreter_module() -> str:
+    try:
+        shell = get_ipython().__class__.__module__
+        return shell
+    except NameError:
+        return "StandardInterpreter"  # not sure

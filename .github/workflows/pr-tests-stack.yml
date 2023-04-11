@@ -85,7 +85,7 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
-      - name: Docker Setup Docker
+      - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
@@ -98,7 +98,7 @@ jobs:
           ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose || true
           docker compose version
 
-      - name: Docker Setup Docker - Windows
+      - name: Docker on Windows
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
         shell: pwsh
         run: |
