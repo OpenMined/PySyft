@@ -1,7 +1,6 @@
 # stdlib
 
 # stdlib
-import time
 
 # third party
 import pytest
@@ -57,16 +56,6 @@ def test_requeststash_get_all_for_verify_key_success(
     stash_set_result_2 = request_stash.set(
         submit_request_2.to(Request, context=authed_context_guest_domain_client)
     )
-
-    for retry in range(10):
-        try:
-            requests = request_stash.get_all_for_verify_key(verify_key)
-
-            assert requests.is_ok() is True
-            assert len(requests.ok()) == 2
-            break
-        except BaseException:
-            time.sleep(0.5)
 
     requests = request_stash.get_all_for_verify_key(verify_key)
 
