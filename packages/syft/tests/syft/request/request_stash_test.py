@@ -1,5 +1,8 @@
 # stdlib
 
+# stdlib
+import time
+
 # third party
 import pytest
 from pytest import MonkeyPatch
@@ -45,10 +48,6 @@ def test_requeststash_get_all_for_verify_key_success(
     verify_key: SyftVerifyKey = guest_domain_client.credentials.verify_key
     requests = request_stash.get_all_for_verify_key(verify_key)
 
-    print("submit_request:1", id(submit_request))
-    for idx, req in enumerate(requests.ok()):
-        print("stash_set_result:1", idx, id(requests.ok()[idx]))
-
     assert requests.is_ok() is True
     assert len(requests.ok()) == 1
     assert requests.ok()[0] == stash_set_result.ok()
@@ -58,14 +57,22 @@ def test_requeststash_get_all_for_verify_key_success(
     stash_set_result_2 = request_stash.set(
         submit_request_2.to(Request, context=authed_context_guest_domain_client)
     )
-    requests = request_stash.get_all_for_verify_key(verify_key)
 
-    print("submit_request:2", id(submit_request_2))
-    for idx, req in enumerate(requests.ok()):
-        print("stash_set_result:2", idx, id(requests.ok()[idx]))
+    for retry in range(10):
+        try:
+            requests = request_stash.get_all_for_verify_key(verify_key)
+
+            assert requests.is_ok() is True
+            assert len(requests.ok()) == 2
+            break
+        except BaseException:
+            time.sleep(0.5)
+
+    requests = request_stash.get_all_for_verify_key(verify_key)
 
     assert requests.is_ok() is True
     assert len(requests.ok()) == 2
+
     # the order might change so we check all requests
     assert (
         requests.ok()[1] == stash_set_result_2.ok()
