@@ -142,6 +142,22 @@ class KeyValueStorePartition(StorePartition):
     def __len__(self) -> int:
         return len(self.data)
 
+    def _get(
+        self, uid: UID, credentials: SyftVerifyKey, skip_permission: bool = False
+    ) -> Result[SyftObject, str]:
+        # relative
+        from .action_store import ActionObjectREAD
+
+        # TODO 🟣 Temporarily added skip permission argument for enclave
+        # until permissions are fully integrated
+        # if you get something you need READ permission
+        read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+        # if True:
+        if skip_permission or self.has_permission(read_permission):
+            syft_object = self.data[uid]
+            return Ok(syft_object)
+        return Err(f"Permission: {read_permission} denied")
+
     # Potentially thread-unsafe methods.
     # CAUTION:
     #       * Don't use self.lock here.
@@ -156,10 +172,12 @@ class KeyValueStorePartition(StorePartition):
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         try:
-            uid = obj.id
+            if obj.id is None:
+                obj.id = UID()
+            store_query_key = self.settings.store_key.with_obj(obj)
+            uid = store_query_key.value
             write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
             can_write = self.has_permission(write_permission)
-            store_query_key = self.settings.store_key.with_obj(obj)
             unique_query_keys = self.settings.unique_keys.with_obj(obj)
             store_key_exists = store_query_key.value in self.data
             searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
@@ -270,7 +288,7 @@ class KeyValueStorePartition(StorePartition):
         self, credentials: SyftVerifyKey
     ) -> Result[List[BaseStash.object_type], str]:
         # this checks permissions
-        res = [self.get(uid, credentials) for uid in self.data.keys()]
+        res = [self._get(uid, credentials) for uid in self.data.keys()]
         return Ok([x.ok() for x in res if x.is_ok()])
 
     def _remove_keys(
@@ -295,6 +313,7 @@ class KeyValueStorePartition(StorePartition):
     ) -> Result[List[SyftObject], str]:
         ids: Optional[Set] = None
         errors = []
+        # third party
         if len(index_qks.all) > 0:
             index_results = self._get_keys_index(qks=index_qks)
             if index_results.is_ok():
@@ -383,18 +402,11 @@ class KeyValueStorePartition(StorePartition):
                     searchable_query_keys=self.settings.searchable_keys.with_obj(
                         _original_obj
                     ),
-                    _original_searchable_keys=self.settings.searchable_keys.with_obj(
-                        _original_obj
-                    ),
+                    # has been updated
+                    obj=_original_obj,
                 )
 
                 # 🟡 TODO 28: Add locking in this transaction
-
-                # remove old keys
-                self.remove_keys(
-                    unique_query_keys=_original_unique_keys,
-                    searchable_query_keys=_original_searchable_keys,
-                )
 
                 # update the object with new data
                 for key, value in obj.to_dict(exclude_none=True).items():

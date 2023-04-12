@@ -228,7 +228,8 @@ def test_basestash_set_get_all(
     root_verify_key, base_stash: MockStash, mock_objects: List[MockObject]
 ) -> None:
     for obj in mock_objects:
-        base_stash.set(root_verify_key, obj)
+        res = base_stash.set(root_verify_key, obj)
+        assert res.is_ok()
 
     stored_objects = base_stash.get_all(
         root_verify_key,

@@ -379,11 +379,27 @@ class StorePartition:
             ignore_duplicates=ignore_duplicates,
         )
 
+    def get(
+        self,
+        credentials: SyftVerifyKey,
+        uid: UID,
+        skip_permissions: bool = False,
+    ) -> Result[SyftObject, str]:
+        return self._thread_safe_cbk(
+            self._get,
+            uid=uid,
+            credentials=credentials,
+            skip_permissions=skip_permissions,
+        )
+
     def find_index_or_search_keys(
-        self, index_qks: QueryKeys, search_qks: QueryKeys
+        self, credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
         return self._thread_safe_cbk(
-            self._find_index_or_search_keys, index_qks=index_qks, search_qks=search_qks
+            self._find_index_or_search_keys,
+            credentials,
+            index_qks=index_qks,
+            search_qks=search_qks,
         )
 
     def remove_keys(
@@ -398,15 +414,27 @@ class StorePartition:
         )
 
     def update(
-        self, credentials: SyftVerifyKey, qk: QueryKey, obj: SyftObject
+        self,
+        credentials: SyftVerifyKey,
+        qk: QueryKey,
+        obj: SyftObject,
+        has_permission=False,
     ) -> Result[SyftObject, str]:
-        return self._thread_safe_cbk(self._update, credentials, qk=qk, obj=obj)
+        return self._thread_safe_cbk(
+            self._update, credentials, qk=qk, obj=obj, has_permission=has_permission
+        )
 
-    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
-        return self._thread_safe_cbk(self._get_all_from_store, qks)
+    def get_all_from_store(
+        self, credentials: SyftVerifyKey, qks: QueryKeys
+    ) -> Result[List[SyftObject], str]:
+        return self._thread_safe_cbk(self._get_all_from_store, credentials, qks)
 
-    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
-        return self._thread_safe_cbk(self._delete, qk)
+    def delete(
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
+    ) -> Result[SyftSuccess, Err]:
+        return self._thread_safe_cbk(
+            self._delete, credentials, qk, has_permission=has_permission
+        )
 
     def all(
         self, credentials: SyftVerifyKey
@@ -428,7 +456,9 @@ class StorePartition:
     def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
         raise NotImplementedError
 
-    def _get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+    def _get_all_from_store(
+        self, credentials: SyftVerifyKey, qks: QueryKeys
+    ) -> Result[List[SyftObject], str]:
         raise NotImplementedError
 
     def _delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
