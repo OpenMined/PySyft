@@ -103,7 +103,7 @@ def test_messageservice_get_all_success(
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
-        root_verify_key, test_stash, random_verify_key, test_verify_key
+        authed_context.credentials, test_stash, random_verify_key, test_verify_key
     )
 
     def mock_get_all_inbox_for_verify_key() -> Ok:
@@ -159,7 +159,7 @@ def test_messageservice_get_sent_success(
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
+        authed_context.credentials, test_stash, test_verify_key, random_verify_key
     )
 
     def mock_get_all_sent_for_verify_key(credentials, verify_key) -> Ok:
@@ -216,7 +216,7 @@ def test_messageservice_get_all_by_verify_key_for_status_success(
     messeage_status_undelivered = MessageStatus(0)
 
     expected_message = add_mock_message(
-        root_verify_key, test_stash, random_verify_key, test_verify_key
+        authed_context.credentials, test_stash, random_verify_key, test_verify_key
     )
 
     def mock_get_all_by_verify_key_for_status() -> Ok:
@@ -280,7 +280,7 @@ def test_messageservice_mark_as_deilvered_success(
     messeage_status_delivered = MessageStatus(1)
 
     expected_message = add_mock_message(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
+        authed_context.credentials, test_stash, test_verify_key, random_verify_key
     )
 
     assert expected_message.status == messeage_status_undelivered
@@ -417,12 +417,14 @@ def test_messageservice_clear_success(
     test_stash = MessageStash(store=document_store)
 
     expected_success_message = "All messages cleared !!"
-    add_mock_message(root_verify_key, test_stash, random_verify_key, test_verify_key)
+    add_mock_message(
+        authed_context.credentials, test_stash, random_verify_key, test_verify_key
+    )
     inbox_before_delete = test_message_service.get_all(authed_context)
 
     assert len(inbox_before_delete) == 1
 
-    def mock_delete_all_for_verify_key() -> Ok:
+    def mock_delete_all_for_verify_key(credentials, verify_key) -> Ok:
         return Ok(SyftSuccess.message)
 
     monkeypatch.setattr(
@@ -451,12 +453,14 @@ def test_messageservice_clear_error_on_delete_all_for_verify_key(
     test_stash = MessageStash(store=document_store)
 
     expected_error = "Failed to clear messages."
-    add_mock_message(root_verify_key, test_stash, random_verify_key, test_verify_key)
+    add_mock_message(
+        authed_context.credentials, test_stash, random_verify_key, test_verify_key
+    )
     inbox_before_delete = test_message_service.get_all(authed_context)
 
     assert len(inbox_before_delete) == 1
 
-    def mock_delete_all_for_verify_key(verify_key: SyftVerifyKey) -> Err:
+    def mock_delete_all_for_verify_key(**kwargs) -> Err:
         return Err(expected_error)
 
     monkeypatch.setattr(

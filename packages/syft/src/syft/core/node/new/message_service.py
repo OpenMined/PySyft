@@ -106,7 +106,9 @@ class MessageService(AbstractService):
 
     @service_method(path="messages.clear", name="clear")
     def clear(self, context: AuthedServiceContext) -> Union[SyftError, SyftSuccess]:
-        result = self.stash.delete_all_for_verify_key(verify_key=context.credentials)
+        result = self.stash.delete_all_for_verify_key(
+            credentials=context.credentials, verify_key=context.credentials
+        )
         if result.is_ok():
             return SyftSuccess(message="All messages cleared !!")
         return SyftError(message=str(result.err()))
