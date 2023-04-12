@@ -237,7 +237,7 @@ class MongoStorePartition(StorePartition):
         # TODO: optimize the update. The ID should not be overwritten,
         # but the qk doesn't necessarily have to include the `id` field either.
 
-        prev_obj_status = self._get_all_from_store(QueryKeys(qks=[qk]))
+        prev_obj_status = self._get_all_from_store(credentials, QueryKeys(qks=[qk]))
         if prev_obj_status.is_err():
             return Err(f"No object found with query key: {qk}")
 
