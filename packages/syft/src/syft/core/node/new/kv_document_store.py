@@ -145,12 +145,8 @@ class KeyValueStorePartition(StorePartition):
                     searchable_query_keys=searchable_query_keys,
                     obj=obj,
                 )
-            elif exists and ignore_duplicates:
-                pass  # nothing to do
-            elif exists and not ignore_duplicates:
+            elif not ignore_duplicates:
                 return Err(f"Duplication Key Error: {obj}")
-            else:
-                return Err(f"KV store Generic Error: {obj} {ck_check}")
         except Exception as e:
             return Err(f"Failed to write obj {obj}. {e}")
         return Ok(obj)
