@@ -6,6 +6,7 @@ import sys
 import types
 import typing
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -26,6 +27,9 @@ from .action_permissions import ActionObjectPermission
 from .base import SyftBaseModel
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .locks import LockingConfig
+from .locks import NoLockingConfig
+from .locks import SyftLock
 from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -322,6 +326,9 @@ class StorePartition:
         self.store_config = store_config
         self.init_store()
 
+        store_config.locking_config.lock_name = settings.name
+        self.lock = SyftLock(store_config.locking_config)
+
     def init_store(self) -> Result[Ok, Err]:
         try:
             self.unique_cks = self.settings.unique_keys.all
@@ -343,29 +350,91 @@ class StorePartition:
     def store_query_keys(self, objs: Any) -> QueryKeys:
         return QueryKeys(qks=[self.store_query_key(obj) for obj in objs])
 
-    def find_index_or_search_keys(self, index_qks: QueryKeys, search_qks: QueryKeys):
-        raise NotImplementedError
+    # Thread-safe methods
+    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
+        locked = self.lock.acquire(blocking=True)
+        if not locked:
+            return Err("Failed to acquire lock for the operation")
 
-    def all(self) -> Result[List[BaseStash.object_type], str]:
-        raise NotImplementedError
+        try:
+            result = cbk(*args, **kwargs)
+        except BaseException as e:
+            result = Err(str(e))
+        self.lock.release()
+
+        return result
 
     def set(
+        self,
+        credentials: SyftVerifyKey,
+        obj: SyftObject,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        ignore_duplicates: bool = False,
+    ) -> Result[SyftObject, str]:
+        return self._thread_safe_cbk(
+            self._set,
+            credentials=credentials,
+            obj=obj,
+            add_permissions=add_permissions,
+            ignore_duplicates=ignore_duplicates,
+        )
+
+    def find_index_or_search_keys(
+        self, index_qks: QueryKeys, search_qks: QueryKeys
+    ) -> Result[List[SyftObject], str]:
+        return self._thread_safe_cbk(
+            self._find_index_or_search_keys, index_qks=index_qks, search_qks=search_qks
+        )
+
+    def remove_keys(
+        self,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+    ) -> None:
+        self._thread_safe_cbk(
+            self._remove_keys,
+            unique_query_keys=unique_query_keys,
+            searchable_query_keys=searchable_query_keys,
+        )
+
+    def update(
+        self, credentials: SyftVerifyKey, qk: QueryKey, obj: SyftObject
+    ) -> Result[SyftObject, str]:
+        return self._thread_safe_cbk(self._update, credentials, qk=qk, obj=obj)
+
+    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+        return self._thread_safe_cbk(self._get_all_from_store, qks)
+
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+        return self._thread_safe_cbk(self._delete, qk)
+
+    def all(
+        self, credentials: SyftVerifyKey
+    ) -> Result[List[BaseStash.object_type], str]:
+        return self._thread_safe_cbk(self._all, credentials)
+
+    # Potentially thread-unsafe methods.
+    # CAUTION:
+    #       * Don't use self.lock here.
+    #       * Do not call the public thread-safe methods here(with locking).
+    # These methods are called from the public thread-safe API, and will hang the process.
+    def _set(
         self,
         obj: SyftObject,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
-    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+    def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
         raise NotImplementedError
 
-    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+    def _get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         raise NotImplementedError
 
-    def create(self, obj: SyftObject) -> Result[SyftObject, str]:
+    def _delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         raise NotImplementedError
 
-    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+    def _all(self) -> Result[List[BaseStash.object_type], str]:
         raise NotImplementedError
 
 
@@ -434,8 +503,8 @@ class BaseStash:
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
         return self.partition.set(
-            obj=obj,
             credentials=credentials,
+            obj=obj,
             ignore_duplicates=ignore_duplicates,
             add_permissions=add_permissions,
         )
@@ -499,7 +568,7 @@ class BaseStash:
     ) -> Result[SyftSuccess, Err]:
         obj = self.query_one_kwargs(credentials=credentials, **kwargs)
         if obj.is_err():
-            return obj.err()
+            return obj
         else:
             obj = obj.ok()
 
@@ -572,6 +641,13 @@ class StoreConfig(SyftBaseObject):
             Document Store type
         client_config: Optional[StoreClientConfig]
             Backend-specific config
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to NoLockingConfig.
     """
 
     __canonical_name__ = "StoreConfig"
@@ -579,3 +655,4 @@ class StoreConfig(SyftBaseObject):
 
     store_type: Type[DocumentStore]
     client_config: Optional[StoreClientConfig]
+    locking_config: LockingConfig = NoLockingConfig()

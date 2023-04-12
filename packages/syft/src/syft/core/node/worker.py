@@ -7,8 +7,10 @@ from datetime import datetime
 from functools import partial
 import hashlib
 import os
+import threading
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -54,6 +56,7 @@ from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node import NodeType
 from .new.node_metadata import NodeMetadata
+from .new.policy_service import PolicyService
 from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
@@ -78,6 +81,15 @@ from .new.user_roles import ServiceRole
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
+
+
+def thread_ident() -> int:
+    return threading.current_thread().ident
+
+
+# if user code needs to be serded and its not available we can call this to refresh
+# the code for a specific node UID and thread
+CODE_RELOADER: Dict[int, Callable] = {}
 
 
 def gipc_encoder(obj):
@@ -167,6 +179,7 @@ class Worker(NewNode):
                 RequestService,
                 DataSubjectService,
                 NetworkService,
+                PolicyService,
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
@@ -220,7 +233,23 @@ class Worker(NewNode):
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"
-            with contextlib.suppress(FileNotFoundError):
+
+            # stdlib
+            import sqlite3
+
+            with contextlib.closing(sqlite3.connect(store_config.file_path)) as db:
+                cursor = db.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                tables = cursor.fetchall()
+
+                for table_name in tables:
+                    drop_table_sql = f"DROP TABLE IF EXISTS {table_name[0]};"
+                    cursor.execute(drop_table_sql)
+
+                db.commit()
+                db.close()
+
+            with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
 
@@ -258,11 +287,23 @@ class Worker(NewNode):
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
+        context = AuthedServiceContext(
+            node=self, credentials=self.signing_key.verify_key
+        )
+
+        if UserCodeService in self.services:
+            user_code_service = self.get_service(UserCodeService)
+            user_code_service.load_user_code(context=context)
         if self.is_subprocess:
             # print(f"> Starting Subprocess {self}")
             pass
         else:
             print(f"> Starting {self}")
+
+        def reload_user_code() -> None:
+            user_code_service.load_user_code(context=context)
+
+        CODE_RELOADER[thread_ident()] = reload_user_code
         # super().post_init()
 
     def init_stores(
@@ -332,6 +373,7 @@ class Worker(NewNode):
                 RequestService,
                 DataSubjectService,
                 NetworkService,
+                PolicyService,
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,

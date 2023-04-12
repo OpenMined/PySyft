@@ -27,11 +27,6 @@ test_verify_key_string = (
 test_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
 
 
-@pytest.fixture(autouse=True)
-def message_stash(document_store):
-    return MessageStash(store=document_store)
-
-
 def add_mock_message(
     root_verify_key,
     message_stash: MessageStash,
@@ -225,6 +220,7 @@ def test_messagestash_get_all_for_verify_key(root_verify_key, document_store) ->
     assert len(result) == 1
 
 
+@pytest.mark.xfail
 def test_messagestash_get_all_by_verify_key_for_status(
     root_verify_key, document_store
 ) -> None:

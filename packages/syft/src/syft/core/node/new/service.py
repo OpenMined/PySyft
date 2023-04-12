@@ -12,6 +12,10 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 
+# third party
+from result import Ok
+from result import OkErr
+
 # relative
 from .context import AuthedServiceContext
 from .context import ChangeContext
@@ -48,7 +52,15 @@ class AbstractService:
             credentials = context.approving_user_credentials
         else:
             return SyftError(message="wrong context passed")
-        return self.stash.get_by_uid(credentials, uid=linked_obj.object_uid)
+
+        obj = self.stash.get_by_uid(credentials, uid=linked_obj.object_uid)
+        if isinstance(obj, OkErr) and obj.is_ok():
+            obj = obj.ok()
+        if hasattr(obj, "node_uid"):
+            obj.node_uid = context.node.id
+        if not isinstance(obj, OkErr):
+            obj = Ok(obj)
+        return obj
 
 
 @serializable()

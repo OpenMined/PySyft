@@ -32,7 +32,6 @@ from .document_store import StorePartition
 from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import SyftObject
-from .twin_object import TwinObject
 from .uid import UID
 
 
@@ -140,40 +139,16 @@ class KeyValueStorePartition(StorePartition):
 
         return Ok()
 
-    def get(
-        self, uid: UID, credentials: SyftVerifyKey, skip_permission: bool = False
-    ) -> Result[SyftObject, str]:
-        # relative
-        from .action_store import ActionObjectREAD
+    def __len__(self) -> int:
+        return len(self.data)
 
-        # TODO 🟣 Temporarily added skip permission argument for enclave
-        # until permissions are fully integrated
-        # if you get something you need READ permission
-        read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        # if True:
-        if skip_permission or self.has_permission(read_permission):
-            syft_object = self.data[uid]
-            return Ok(syft_object)
-        return Err(f"Permission: {read_permission} denied")
+    # Potentially thread-unsafe methods.
+    # CAUTION:
+    #       * Don't use self.lock here.
+    #       * Do not call the public thread-safe methods here(with locking).
+    # These methods are called from the public thread-safe API, and will hang the process.
 
-    def get_pointer(
-        self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
-    ) -> Result[SyftObject, str]:
-        try:
-            # TODO: is this only for actions?
-            # 🟡 TODO 34: do we want pointer read permissions?
-            if uid in self.data:
-                obj = self.data[uid]
-                if isinstance(obj, TwinObject):
-                    obj = obj.mock
-                obj.syft_point_to(node_uid)
-                return Ok(obj)
-            return Err("Permission denied")
-        except Exception as e:
-            return Err(str(e))
-
-    def set(
-        # self, obj: SyftObject, ignore_duplicates: bool = False
+    def _set(
         self,
         credentials: SyftVerifyKey,
         obj: SyftObject,
@@ -291,17 +266,31 @@ class KeyValueStorePartition(StorePartition):
 
         return False
 
-    def all(
+    def _all(
         self, credentials: SyftVerifyKey
     ) -> Result[List[BaseStash.object_type], str]:
         # this checks permissions
         res = [self.get(uid, credentials) for uid in self.data.keys()]
         return Ok([x.ok() for x in res if x.is_ok()])
 
-    def __len__(self) -> Result[List[BaseStash.object_type], str]:
-        return len(self.data)
+    def _remove_keys(
+        self,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+    ) -> None:
+        uqks = unique_query_keys.all
+        for qk in uqks:
+            pk_key, pk_value = qk.key, qk.value
+            ck_col = self.unique_keys[pk_key]
+            ck_col.pop(pk_value, None)
 
-    def find_index_or_search_keys(
+        sqks = searchable_query_keys.all
+        for qk in sqks:
+            pk_key, pk_value = qk.key, qk.value
+            ck_col = self.searchable_keys[pk_key]
+            ck_col.pop(pk_value, None)
+
+    def _find_index_or_search_keys(
         self, credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
         ids: Optional[Set] = None
@@ -333,7 +322,7 @@ class KeyValueStorePartition(StorePartition):
             return Ok([])
 
         qks: QueryKeys = self.store_query_keys(ids)
-        return self.get_all_from_store(credentials=credentials, qks=qks)
+        return self._get_all_from_store(credentials=credentials, qks=qks)
 
     def remove_keys(
         self,
@@ -352,7 +341,7 @@ class KeyValueStorePartition(StorePartition):
             ck_col = self.searchable_keys[pk_key]
             ck_col.pop(pk_value, None)
 
-    def update(
+    def _update(
         self,
         credentials: SyftVerifyKey,
         qk: QueryKey,
@@ -374,10 +363,8 @@ class KeyValueStorePartition(StorePartition):
                     _original_obj
                 )
 
-                # 🟡 TODO 28: Add locking in this transaction
-
                 # remove old keys
-                self.remove_keys(
+                self._remove_keys(
                     unique_query_keys=_original_unique_keys,
                     searchable_query_keys=_original_searchable_keys,
                 )
@@ -396,8 +383,25 @@ class KeyValueStorePartition(StorePartition):
                     searchable_query_keys=self.settings.searchable_keys.with_obj(
                         _original_obj
                     ),
-                    obj=_original_obj,
+                    _original_searchable_keys=self.settings.searchable_keys.with_obj(
+                        _original_obj
+                    ),
                 )
+
+                # 🟡 TODO 28: Add locking in this transaction
+
+                # remove old keys
+                self.remove_keys(
+                    unique_query_keys=_original_unique_keys,
+                    searchable_query_keys=_original_searchable_keys,
+                )
+
+                # update the object with new data
+                for key, value in obj.to_dict(exclude_none=True).items():
+                    if key == "id":
+                        # protected field
+                        continue
+                    setattr(_original_obj, key, value)
 
                 return Ok(_original_obj)
             else:
@@ -406,7 +410,7 @@ class KeyValueStorePartition(StorePartition):
         except Exception as e:
             return Err(f"Failed to update obj {obj} with error: {e}")
 
-    def get_all_from_store(
+    def _get_all_from_store(
         self, credentials: SyftVerifyKey, qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
         matches = []
@@ -421,7 +425,7 @@ class KeyValueStorePartition(StorePartition):
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
         pass
 
-    def delete(
+    def _delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
     ) -> Result[SyftSuccess, Err]:
         try:
@@ -556,7 +560,6 @@ class KeyValueStorePartition(StorePartition):
         searchable_query_keys: QueryKeys,
         obj: SyftObject,
     ) -> None:
-        # we should lock
         uqks = unique_query_keys.all
 
         for qk in uqks:

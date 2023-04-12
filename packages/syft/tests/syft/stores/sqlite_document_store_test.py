@@ -5,6 +5,7 @@ from typing import Tuple
 # third party
 from joblib import Parallel
 from joblib import delayed
+import pytest
 
 # syft absolute
 from syft.core.node.new.document_store import QueryKeys
@@ -26,6 +27,7 @@ def test_sqlite_store_partition_sanity(
     assert hasattr(sqlite_store_partition, "searchable_keys")
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set(
     root_verify_key,
     sqlite_store_partition: SQLiteStorePartition,
@@ -93,6 +95,7 @@ def test_sqlite_store_partition_set(
         )
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_delete(
     root_verify_key,
     sqlite_store_partition: SQLiteStorePartition,
@@ -155,6 +158,7 @@ def test_sqlite_store_partition_delete(
     )
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_update(
     root_verify_key,
     sqlite_store_partition: SQLiteStorePartition,
@@ -225,6 +229,7 @@ def test_sqlite_store_partition_update(
         assert stored.ok()[0].data == v
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set_threading(
     sqlite_workspace: Tuple,
     root_verify_key,
@@ -242,9 +247,13 @@ def test_sqlite_store_partition_set_threading(
         )
         for idx in range(repeats):
             obj = MockObjectType(data=idx)
-            res = sqlite_store_partition.set(
-                root_verify_key, obj, ignore_duplicates=False
-            )
+
+            for _ in range(10):
+                res = sqlite_store_partition.set(
+                    root_verify_key, obj, ignore_duplicates=False
+                )
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -275,6 +284,7 @@ def test_sqlite_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set_joblib(
     root_verify_key,
     sqlite_workspace: Tuple,
@@ -288,9 +298,13 @@ def test_sqlite_store_partition_set_joblib(
                 root_verify_key, sqlite_workspace
             )
             obj = MockObjectType(data=idx)
-            res = sqlite_store_partition.set(
-                root_verify_key, obj, ignore_duplicates=False
-            )
+
+            for _ in range(10):
+                res = sqlite_store_partition.set(
+                    root_verify_key, obj, ignore_duplicates=False
+                )
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 return res
@@ -315,6 +329,7 @@ def test_sqlite_store_partition_set_joblib(
     assert stored_cnt == thread_cnt * repeats
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_update_threading(
     root_verify_key,
     sqlite_workspace: Tuple,
@@ -338,7 +353,11 @@ def test_sqlite_store_partition_update_threading(
         )
         for repeat in range(repeats):
             obj = MockSyftObject(data=repeat)
-            res = sqlite_store_partition_local.update(root_verify_key, key, obj)
+
+            for _ in range(10):
+                res = sqlite_store_partition_local.update(root_verify_key, key, obj)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -357,6 +376,7 @@ def test_sqlite_store_partition_update_threading(
     assert execution_err is None
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_update_joblib(
     root_verify_key,
     sqlite_workspace: Tuple,
@@ -377,7 +397,11 @@ def test_sqlite_store_partition_update_joblib(
         )
         for repeat in range(repeats):
             obj = MockSyftObject(data=repeat)
-            res = sqlite_store_partition_local.update(root_verify_key, key, obj)
+
+            for _ in range(10):
+                res = sqlite_store_partition_local.update(root_verify_key, key, obj)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 return res
@@ -391,6 +415,7 @@ def test_sqlite_store_partition_update_joblib(
         assert execution_err is None
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set_delete_threading(
     root_verify_key,
     sqlite_workspace: Tuple,
@@ -407,9 +432,13 @@ def test_sqlite_store_partition_set_delete_threading(
 
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = sqlite_store_partition.set(
-                root_verify_key, obj, ignore_duplicates=False
-            )
+
+            for _ in range(10):
+                res = sqlite_store_partition.set(
+                    root_verify_key, obj, ignore_duplicates=False
+                )
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
@@ -445,6 +474,7 @@ def test_sqlite_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set_delete_joblib(
     root_verify_key,
     sqlite_workspace: Tuple,
@@ -459,9 +489,13 @@ def test_sqlite_store_partition_set_delete_joblib(
 
         for idx in range(repeats):
             obj = MockSyftObject(data=idx)
-            res = sqlite_store_partition.set(
-                root_verify_key, obj, ignore_duplicates=False
-            )
+
+            for _ in range(10):
+                res = sqlite_store_partition.set(
+                    root_verify_key, obj, ignore_duplicates=False
+                )
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 return res

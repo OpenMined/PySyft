@@ -24,6 +24,8 @@ from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StoreConfig
 from .document_store import StorePartition
+from .locks import LockingConfig
+from .locks import NoLockingConfig
 from .mongo_client import MongoClient
 from .mongo_client import MongoStoreClientConfig
 from .response import SyftSuccess
@@ -122,6 +124,12 @@ class MongoStorePartition(StorePartition):
 
         return self._create_update_index()
 
+    # Potentially thread-unsafe methods.
+    # CAUTION:
+    #       * Don't use self.lock here.
+    #       * Do not call the public thread-safe methods here(with locking).
+    # These methods are called from the public thread-safe API, and will hang the process.
+
     def _create_update_index(self) -> Result[Ok, Err]:
         """Create or update mongo database indexes"""
         collection_status = self.collection
@@ -184,7 +192,7 @@ class MongoStorePartition(StorePartition):
 
         return Ok(self._collection)
 
-    def set(
+    def _set(
         self,
         credentials: SyftVerifyKey,
         obj: SyftObject,
@@ -214,7 +222,7 @@ class MongoStorePartition(StorePartition):
         else:
             return Err(f"No permission to write object with id {obj.id}")
 
-    def update(
+    def _update(
         self,
         credentials: SyftVerifyKey,
         qk: QueryKey,
@@ -229,7 +237,7 @@ class MongoStorePartition(StorePartition):
         # TODO: optimize the update. The ID should not be overwritten,
         # but the qk doesn't necessarily have to include the `id` field either.
 
-        prev_obj_status = self.get_all_from_store(QueryKeys(qks=[qk]))
+        prev_obj_status = self._get_all_from_store(QueryKeys(qks=[qk]))
         if prev_obj_status.is_err():
             return Err(f"No object found with query key: {qk}")
 
@@ -265,14 +273,14 @@ class MongoStorePartition(StorePartition):
         else:
             return Err(f"Failed to update obj {obj}, you have no permission")
 
-    def find_index_or_search_keys(
+    def _find_index_or_search_keys(
         self, credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
         # TODO: pass index as hint to find method
         qks = QueryKeys(qks=(index_qks.all + search_qks.all))
-        return self.get_all_from_store(credentials=credentials, qks=qks)
+        return self._get_all_from_store(credentials=credentials, qks=qks)
 
-    def get_all_from_store(
+    def _get_all_from_store(
         self, credentials: SyftVerifyKey, qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
         collection_status = self.collection
@@ -294,7 +302,7 @@ class MongoStorePartition(StorePartition):
                 res.append(s)
         return Ok(res)
 
-    def delete(
+    def _delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Result[SyftSuccess, Err]:
         collection_status = self.collection
@@ -317,9 +325,9 @@ class MongoStorePartition(StorePartition):
         # TODO: implement
         return True
 
-    def all(self, credentials: SyftVerifyKey):
+    def _all(self, credentials: SyftVerifyKey):
         qks = QueryKeys(qks=())
-        return self.get_all_from_store(credentials=credentials, qks=qks)
+        return self._get_all_from_store(credentials=credentials, qks=qks)
 
     def __len__(self):
         collection_status = self.collection
@@ -352,8 +360,17 @@ class MongoStoreConfig(StoreConfig):
             The type of the DocumentStore. Default: MongoDocumentStore
         `db_name`: str
             Database name
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to NoLockingConfig.
     """
 
     client_config: MongoStoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"
+    # TODO: should use a distributed lock, with RedisLockingConfig
+    locking_config: LockingConfig = NoLockingConfig()
