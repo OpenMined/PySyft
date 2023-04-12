@@ -43,7 +43,7 @@ class Action(SyftObject):
 
     Parameters:
         path: str
-            The Type of the remote object.
+            The path of the Type of the remote object.
         op: str
             The method to be executed from the remote object.
         remote_self: Optional[LineageID]
@@ -415,7 +415,7 @@ class ActionObject(SyftObject):
 
         Parameters:
             path: str
-                The Type of the remote object.
+                The path of the Type of the remote object.
             op: str
                 The method to be executed from the remote object.
             remote_self: Optional[Union[UID, LineageID]]
