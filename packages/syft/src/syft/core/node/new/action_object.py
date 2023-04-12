@@ -541,7 +541,7 @@ class ActionObject(SyftObject):
         syft_action_data: Any,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
-    ) -> Result[Ok[ActionObject], Err[str]]:
+    ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
         Parameters:
@@ -553,13 +553,10 @@ class ActionObject(SyftObject):
                 Which LineageID to use for the ActionObject. Optional
         """
         if id and syft_lineage_id and id != syft_lineage_id.id:
-            return Err("UID and LineageID should match")
+            raise ValueError("UID and LineageID should match")
 
         action_type = action_type_for_type(syft_action_data)
-        try:
-            action_object = action_type(syft_action_data=syft_action_data)
-        except BaseException as e:
-            return Err[str(e)]
+        action_object = action_type(syft_action_data=syft_action_data)
 
         if id:
             action_object.id = id
@@ -570,14 +567,14 @@ class ActionObject(SyftObject):
         elif id:
             action_object.syft_history_hash = hash(id)
 
-        return Ok(action_object)
+        return action_object
 
     @staticmethod
     def empty(
         syft_internal_type: Any = Any,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
-    ) -> Result[Ok[ActionObject], Err[str]]:
+    ) -> ActionObject:
         """Create an ActionObject from a type, using a ActionDataEmpty object
 
         Parameters:

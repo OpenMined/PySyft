@@ -188,7 +188,7 @@ def test_worker() -> None:
 
 def test_action_object_add() -> None:
     raw_data = np.array([1, 2, 3])
-    action_object = ActionObject.from_obj(raw_data).ok()
+    action_object = ActionObject.from_obj(raw_data)
     result = action_object + action_object
     x = result.syft_action_data
     y = raw_data * 2
@@ -197,7 +197,7 @@ def test_action_object_add() -> None:
 
 def test_action_object_hooks() -> None:
     raw_data = np.array([1, 2, 3])
-    action_object = ActionObject.from_obj(raw_data).ok()
+    action_object = ActionObject.from_obj(raw_data)
 
     def pre_add(context: Any, *args: Any, **kwargs: Any) -> Any:
         # double it

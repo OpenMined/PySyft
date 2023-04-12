@@ -24,9 +24,7 @@ from syft.core.node.new.action_types import action_type_for_type
 def helper_make_action_obj(orig_obj: Any):
     obj_id = Action.make_id(None)
     lin_obj_id = Action.make_result_id(obj_id)
-    obj = ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
-
-    return obj.ok()
+    return ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
 
 
 def helper_make_action_args(*args, **kwargs):
@@ -111,32 +109,29 @@ def test_action_sanity(path_op: Tuple[str, str]):
 def test_actionobject_from_obj_sanity(orig_obj: Any):
     # no id
     obj = ActionObject.from_obj(orig_obj)
-    assert obj.is_ok()
-    assert obj.ok().id is not None
-    assert obj.ok().syft_history_hash is not None
+    assert obj.id is not None
+    assert obj.syft_history_hash is not None
 
     # with id
     obj_id = Action.make_id(None)
     obj = ActionObject.from_obj(orig_obj, id=obj_id)
-    assert obj.is_ok()
-    assert obj.ok().id == obj_id
-    assert obj.ok().syft_history_hash == hash(obj_id)
+    assert obj.id == obj_id
+    assert obj.syft_history_hash == hash(obj_id)
 
     # with id and lineage id
     obj_id = Action.make_id(None)
     lin_obj_id = Action.make_result_id(obj_id)
     obj = ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
-    assert obj.is_ok()
-    assert obj.ok().id == obj_id
-    assert obj.ok().syft_history_hash == lin_obj_id.syft_history_hash
+    assert obj.id == obj_id
+    assert obj.syft_history_hash == lin_obj_id.syft_history_hash
 
 
 def test_actionobject_from_obj_fail_id_mismatch():
     obj_id = Action.make_id(None)
     lineage_id = Action.make_result_id(None)
 
-    obj = ActionObject.from_obj("abc", id=obj_id, syft_lineage_id=lineage_id)
-    assert obj.is_err()
+    with pytest.raises(ValueError):
+        ActionObject.from_obj("abc", id=obj_id, syft_lineage_id=lineage_id)
 
 
 @pytest.mark.parametrize("dtype", [int, float, str, Any, bool, dict, set, tuple, list])
@@ -146,16 +141,14 @@ def test_actionobject_make_empty_sanity(dtype: Type):
     obj = ActionObject.empty(
         syft_internal_type=syft_type, id=None, syft_lineage_id=None
     )
-    assert obj.is_ok()
-    assert obj.ok().id is not None
-    assert obj.ok().syft_history_hash is not None
+    assert obj.id is not None
+    assert obj.syft_history_hash is not None
 
     # with id
     obj_id = Action.make_id(None)
     obj = ActionObject.empty(syft_internal_type=syft_type, id=obj_id)
-    assert obj.is_ok()
-    assert obj.ok().id == obj_id
-    assert obj.ok().syft_history_hash == hash(obj_id)
+    assert obj.id == obj_id
+    assert obj.syft_history_hash == hash(obj_id)
 
     # with id and lineage id
     obj_id = Action.make_id(None)
@@ -163,9 +156,8 @@ def test_actionobject_make_empty_sanity(dtype: Type):
     obj = ActionObject.empty(
         syft_internal_type=syft_type, id=obj_id, syft_lineage_id=lin_obj_id
     )
-    assert obj.is_ok()
-    assert obj.ok().id == obj_id
-    assert obj.ok().syft_history_hash == lin_obj_id.syft_history_hash
+    assert obj.id == obj_id
+    assert obj.syft_history_hash == lin_obj_id.syft_history_hash
 
 
 @pytest.mark.parametrize(
@@ -184,8 +176,6 @@ def test_actionobject_make_empty_sanity(dtype: Type):
 )
 def test_actionobject_hooks_init(orig_obj: Any):
     obj = ActionObject.from_obj(orig_obj)
-    assert obj.is_ok()
-    obj = obj.ok()
 
     assert HOOK_ALWAYS in obj._syft_pre_hooks__
     assert HOOK_ALWAYS in obj._syft_post_hooks__
@@ -215,7 +205,6 @@ def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
     action_type_for_type(type(orig_obj))
 
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     context = PreHookContext(obj=obj, op_name=op)
     result = make_action_side_effect(context)
@@ -232,7 +221,6 @@ def test_actionobject_hooks_send_action_side_effect_err_no_id(worker):
     op = "capitalize"
 
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     context = PreHookContext(obj=obj, op_name=op)
     result = send_action_side_effect(context)
@@ -324,7 +312,6 @@ def test_actionobject_hooks_propagate_node_uid_err():
     op = "capitalize"
 
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     context = PreHookContext(obj=obj, op_name=op)
     result = propagate_node_uid(context, op=op, result="orig_obj")
@@ -337,7 +324,6 @@ def test_actionobject_hooks_propagate_node_uid_ok():
 
     obj_id = Action.make_id(None)
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     obj.syft_point_to(obj_id)
 
@@ -351,7 +337,6 @@ def test_actionobject_syft_point_to():
 
     obj_id = Action.make_id(None)
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     obj.syft_point_to(obj_id)
 
@@ -716,7 +701,6 @@ def test_actionobject_syft_getattr_str():
     orig_obj = "a bC"
 
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     assert obj == orig_obj
     assert obj != "sdfsfs"
@@ -745,8 +729,8 @@ def test_actionobject_syft_getattr_str():
 
 
 def test_actionobject_syft_getattr_str_history():
-    obj1 = ActionObject.from_obj("abc").ok()
-    obj2 = ActionObject.from_obj("xyz").ok()
+    obj1 = ActionObject.from_obj("abc")
+    obj2 = ActionObject.from_obj("xyz")
 
     res1 = obj1 + obj2
     res2 = obj1 + obj2
@@ -757,7 +741,6 @@ def test_actionobject_syft_getattr_list():
     orig_obj = [3, 2, 1, 4]
 
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     assert 1 in obj
     assert obj[0] == 3
@@ -776,8 +759,8 @@ def test_actionobject_syft_getattr_list():
 
 
 def test_actionobject_syft_getattr_list_history():
-    obj1 = ActionObject.from_obj([1, 2, 3, 4]).ok()
-    obj2 = ActionObject.from_obj([5, 6, 7]).ok()
+    obj1 = ActionObject.from_obj([1, 2, 3, 4])
+    obj2 = ActionObject.from_obj([5, 6, 7])
 
     res1 = obj1.extend(obj2)
     res2 = obj1.extend(obj2)
@@ -788,7 +771,6 @@ def test_actionobject_syft_getattr_dict():
     orig_obj = {"a": 1, "b": 2}
 
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     assert obj == orig_obj
     assert obj.get("a") == 1
@@ -799,8 +781,8 @@ def test_actionobject_syft_getattr_dict():
 
 
 def test_actionobject_syft_getattr_dict_history():
-    obj1 = ActionObject.from_obj({"a": 1, "b": 2}).ok()
-    obj2 = ActionObject.from_obj({"c": 1, "b": 2}).ok()
+    obj1 = ActionObject.from_obj({"a": 1, "b": 2})
+    obj2 = ActionObject.from_obj({"c": 1, "b": 2})
 
     res1 = obj1.update(obj2)
     res2 = obj1.update(obj2)
@@ -811,7 +793,6 @@ def test_actionobject_syft_getattr_tuple():
     orig_obj = (1, 2, 3, 4, 4)
 
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     assert obj == orig_obj
     assert obj.count(4) == 2
@@ -829,7 +810,7 @@ def test_actionobject_syft_getattr_tuple():
 def test_actionobject_syft_getattr_set():
     orig_obj = set({1, 2, 3, 4})
 
-    obj = ActionObject.from_obj(orig_obj).ok()
+    obj = ActionObject.from_obj(orig_obj)
 
     assert obj == orig_obj
     assert obj.add(4) == set({1, 2, 3, 4})
@@ -838,8 +819,8 @@ def test_actionobject_syft_getattr_set():
 
 
 def test_actionobject_syft_getattr_set_history():
-    obj1 = ActionObject.from_obj({1, 2, 3, 4}).ok()
-    obj2 = ActionObject.from_obj({1, 2}).ok()
+    obj1 = ActionObject.from_obj({1, 2, 3, 4})
+    obj2 = ActionObject.from_obj({1, 2})
 
     res1 = obj1.intersection(obj2)
     res2 = obj1.intersection(obj2)
@@ -849,7 +830,6 @@ def test_actionobject_syft_getattr_set_history():
 @pytest.mark.parametrize("orig_obj", [True, False])
 def test_actionobject_syft_getattr_bool(orig_obj):
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     assert obj.__and__(False) == (orig_obj and False)  # noqa
     assert obj.__or__(False) == (orig_obj or False)  # noqa
@@ -868,9 +848,8 @@ def test_actionobject_syft_getattr_bool(orig_obj):
 def test_actionobject_syft_getattr_bool_history():
     orig_obj = True
 
-    obj1 = ActionObject.from_obj(orig_obj).ok()
-    obj2 = ActionObject.from_obj(orig_obj).ok()
-
+    obj1 = ActionObject.from_obj(orig_obj)
+    obj2 = ActionObject.from_obj(orig_obj)
     res1 = obj1 or obj2
     res2 = obj1 or obj2
 
@@ -880,7 +859,6 @@ def test_actionobject_syft_getattr_bool_history():
 @pytest.mark.parametrize("orig_obj", [-5, 0, 5])
 def test_actionobject_syft_getattr_int(orig_obj: int):
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     assert obj == orig_obj
     assert obj != orig_obj + 1
@@ -934,9 +912,8 @@ def test_actionobject_syft_getattr_int(orig_obj: int):
 
 def test_actionobject_syft_getattr_int_history(worker):
     orig_obj = 5
-    obj1 = ActionObject.from_obj(orig_obj).ok()
-    obj2 = ActionObject.from_obj(orig_obj).ok()
-
+    obj1 = ActionObject.from_obj(orig_obj)
+    obj2 = ActionObject.from_obj(orig_obj)
     res1 = obj1 + obj2
     res2 = obj1 + obj2
     assert res1.syft_history_hash == res2.syft_history_hash
@@ -945,7 +922,6 @@ def test_actionobject_syft_getattr_int_history(worker):
 @pytest.mark.parametrize("orig_obj", [-5.5, 0.0, 5.5])
 def test_actionobject_syft_getattr_float(orig_obj: float):
     obj = ActionObject.from_obj(orig_obj)
-    obj = obj.ok()
 
     assert obj == orig_obj
     assert obj != orig_obj + 1
@@ -984,8 +960,8 @@ def test_actionobject_syft_getattr_float(orig_obj: float):
 
 
 def test_actionobject_syft_getattr_float_history():
-    obj1 = ActionObject.from_obj(float(5.5)).ok()
-    obj2 = ActionObject.from_obj(float(5.2)).ok()
+    obj1 = ActionObject.from_obj(float(5.5))
+    obj2 = ActionObject.from_obj(float(5.2))
 
     res1 = obj1 + obj2
     res2 = obj1 + obj2

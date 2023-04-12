@@ -23,13 +23,13 @@ def data2() -> ActionObject:
 @pytest.fixture
 def empty1(data1) -> ActionObject:
     """Returns an Empty Action Object corresponding to data1"""
-    return ActionObject.empty(syft_internal_type=np.ndarray, id=data1.id).ok()
+    return ActionObject.empty(syft_internal_type=np.ndarray, id=data1.id)
 
 
 @pytest.fixture
 def empty2(data1) -> ActionObject:
     """Returns an Empty Action Object corresponding to data2"""
-    return NumpyArrayObject(syft_action_data=ActionDataEmpty(), id=data2.id).ok()
+    return NumpyArrayObject(syft_action_data=ActionDataEmpty(), id=data2.id)
 
 
 def test_add_private(data1: ActionObject, data2: ActionObject) -> None:
@@ -91,7 +91,7 @@ def test_empty_arithmetic_hash(data1: ActionObject, empty1: ActionObject) -> Non
 def test_empty_multiple_operations(data1: ActionObject, empty1: ActionObject) -> None:
     """Test that EmptyActionObjects are good for multiple operations"""
     real_tuple = (20, 5)
-    remote_tuple = ActionObject.from_obj(real_tuple).ok()
+    remote_tuple = ActionObject.from_obj(real_tuple)
 
     step1 = data1.transpose()
     step2 = step1.reshape(remote_tuple)
@@ -116,8 +116,8 @@ def test_history_hash_reproducibility(data1: ActionObject) -> None:
     result2 = data1.mean().std()
     assert result1.syft_history_hash == result2.syft_history_hash
 
-    remote_0 = ActionObject.from_obj(0).ok()
-    remote_10 = ActionObject.from_obj(10).ok()
+    remote_0 = ActionObject.from_obj(0)
+    remote_10 = ActionObject.from_obj(10)
 
     mask = data1 > remote_0
     amount = data1 * remote_10

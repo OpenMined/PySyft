@@ -14,7 +14,7 @@ def get_auth_ctx(worker):
 def test_action_service_sanity(worker):
     service = worker.get_service("actionservice")
 
-    obj = ActionObject.from_obj("abc").ok()
+    obj = ActionObject.from_obj("abc")
 
     pointer = service.set(get_auth_ctx(worker), obj).ok()
 
