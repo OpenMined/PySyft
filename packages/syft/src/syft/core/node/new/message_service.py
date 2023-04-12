@@ -57,11 +57,12 @@ class MessageService(AbstractService):
     def get_all_sent(
         self, context: AuthedServiceContext
     ) -> Union[List[Message], SyftError]:
-        result = self.stash.get_all_sent_for_verify_key(verify_key=context.credentials)
+        result = self.stash.get_all_sent_for_verify_key(
+            context.credentials, context.credentials
+        )
         if result.err():
             return SyftError(message=str(result.err()))
         messages = result.ok()
-        print(messages)
         return messages
 
     @service_method(
@@ -86,7 +87,7 @@ class MessageService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[Message, SyftError]:
         result = self.stash.update_message_status(
-            uid=uid, status=MessageStatus.DELIVERED
+            context.credentials, uid=uid, status=MessageStatus.DELIVERED
         )
         if result.is_err():
             return SyftError(message=str(result.err()))

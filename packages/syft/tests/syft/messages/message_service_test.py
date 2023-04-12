@@ -77,7 +77,7 @@ def test_messageservice_send_error_on_set(
     authed_context: AuthedServiceContext,
     mock_create_message: CreateMessage,
 ) -> None:
-    def mock_set(message_service: MessageService) -> Err:
+    def mock_set(credentials: SyftVerifyKey, message_service: MessageService) -> Err:
         return Err(expected_error)
 
     test_message_service = message_service
@@ -91,6 +91,7 @@ def test_messageservice_send_error_on_set(
 
 
 def test_messageservice_get_all_success(
+    root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
     authed_context: AuthedServiceContext,
@@ -101,7 +102,9 @@ def test_messageservice_get_all_success(
     test_message_service = MessageService(document_store)
     test_stash = MessageStash(store=document_store)
 
-    expected_message = add_mock_message(test_stash, random_verify_key, test_verify_key)
+    expected_message = add_mock_message(
+        root_verify_key, test_stash, random_verify_key, test_verify_key
+    )
 
     def mock_get_all_inbox_for_verify_key() -> Ok:
         return Ok(expected_message)
@@ -126,7 +129,9 @@ def test_messageservice_get_all_error_on_get_all_inbox(
 ) -> None:
     expected_error = "Failed to get all inbox."
 
-    def mock_get_all_inbox_for_verify_key(verify_key: SyftVerifyKey) -> Err:
+    def mock_get_all_inbox_for_verify_key(
+        credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+    ) -> Err:
         return Err(expected_error)
 
     monkeypatch.setattr(
@@ -142,6 +147,7 @@ def test_messageservice_get_all_error_on_get_all_inbox(
 
 
 def test_messageservice_get_sent_success(
+    root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
     authed_context: AuthedServiceContext,
@@ -152,9 +158,11 @@ def test_messageservice_get_sent_success(
     test_message_service = MessageService(document_store)
     test_stash = MessageStash(store=document_store)
 
-    expected_message = add_mock_message(test_stash, test_verify_key, random_verify_key)
+    expected_message = add_mock_message(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
 
-    def mock_get_all_sent_for_verify_key() -> Ok:
+    def mock_get_all_sent_for_verify_key(credentials, verify_key) -> Ok:
         return Ok(expected_message)
 
     monkeypatch.setattr(
@@ -177,7 +185,9 @@ def test_messageservice_get_all_error_on_get_all_sent(
 ) -> None:
     expected_error = "Failed to get all sent."
 
-    def mock_get_all_sent_for_verify_key(verify_key: SyftVerifyKey) -> Err:
+    def mock_get_all_sent_for_verify_key(
+        credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+    ) -> Err:
         return Err(expected_error)
 
     monkeypatch.setattr(
@@ -193,6 +203,7 @@ def test_messageservice_get_all_error_on_get_all_sent(
 
 
 def test_messageservice_get_all_by_verify_key_for_status_success(
+    root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
     authed_context: AuthedServiceContext,
@@ -204,7 +215,9 @@ def test_messageservice_get_all_by_verify_key_for_status_success(
     test_stash = MessageStash(store=document_store)
     messeage_status_undelivered = MessageStatus(0)
 
-    expected_message = add_mock_message(test_stash, random_verify_key, test_verify_key)
+    expected_message = add_mock_message(
+        root_verify_key, test_stash, random_verify_key, test_verify_key
+    )
 
     def mock_get_all_by_verify_key_for_status() -> Ok:
         return Ok(expected_message)
@@ -233,7 +246,7 @@ def test_messageservice_error_on_get_all_for_status(
     expected_error = "Failed to get all for status."
 
     def mock_get_all_by_verify_key_for_status(
-        verify_key: SyftVerifyKey, status: MessageStatus
+        credentials: SyftVerifyKey, verify_key: SyftVerifyKey, status: MessageStatus
     ) -> Err:
         return Err(expected_error)
 
@@ -253,6 +266,7 @@ def test_messageservice_error_on_get_all_for_status(
 
 
 def test_messageservice_mark_as_deilvered_success(
+    root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
     authed_context: AuthedServiceContext,
@@ -265,7 +279,9 @@ def test_messageservice_mark_as_deilvered_success(
     messeage_status_undelivered = MessageStatus(0)
     messeage_status_delivered = MessageStatus(1)
 
-    expected_message = add_mock_message(test_stash, test_verify_key, random_verify_key)
+    expected_message = add_mock_message(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
 
     assert expected_message.status == messeage_status_undelivered
 
@@ -286,6 +302,7 @@ def test_messageservice_mark_as_deilvered_success(
 
 
 def test_messageservice_mark_as_delivered_error_on_update_message_status(
+    root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
     authed_context: AuthedServiceContext,
@@ -295,10 +312,14 @@ def test_messageservice_mark_as_delivered_error_on_update_message_status(
     random_verify_key = random_signing_key.verify_key
     test_stash = MessageStash(store=document_store)
 
-    expected_message = add_mock_message(test_stash, test_verify_key, random_verify_key)
+    expected_message = add_mock_message(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
     expected_error = "Failed to update message status."
 
-    def mock_update_message_status(uid: UID, status: MessageStatus) -> Err:
+    def mock_update_message_status(
+        credentials: SyftVerifyKey, uid: UID, status: MessageStatus
+    ) -> Err:
         return Err(expected_error)
 
     monkeypatch.setattr(
@@ -384,6 +405,7 @@ def test_messageservice_resolve_object_error_on_resolve_link(
 
 
 def test_messageservice_clear_success(
+    root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
     authed_context: AuthedServiceContext,
@@ -395,7 +417,7 @@ def test_messageservice_clear_success(
     test_stash = MessageStash(store=document_store)
 
     expected_success_message = "All messages cleared !!"
-    add_mock_message(test_stash, random_verify_key, test_verify_key)
+    add_mock_message(root_verify_key, test_stash, random_verify_key, test_verify_key)
     inbox_before_delete = test_message_service.get_all(authed_context)
 
     assert len(inbox_before_delete) == 1
@@ -417,6 +439,7 @@ def test_messageservice_clear_success(
 
 
 def test_messageservice_clear_error_on_delete_all_for_verify_key(
+    root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
     authed_context: AuthedServiceContext,
@@ -428,7 +451,7 @@ def test_messageservice_clear_error_on_delete_all_for_verify_key(
     test_stash = MessageStash(store=document_store)
 
     expected_error = "Failed to clear messages."
-    add_mock_message(test_stash, random_verify_key, test_verify_key)
+    add_mock_message(root_verify_key, test_stash, random_verify_key, test_verify_key)
     inbox_before_delete = test_message_service.get_all(authed_context)
 
     assert len(inbox_before_delete) == 1
