@@ -31,7 +31,6 @@ def test_requeststash_get_all_for_verify_key_no_requests(
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
-@pytest.mark.xfail(reason="Windows fails")
 def test_requeststash_get_all_for_verify_key_success(
     request_stash: RequestStash,
     guest_domain_client: SyftClient,
