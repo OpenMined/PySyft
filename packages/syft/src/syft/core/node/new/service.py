@@ -3,6 +3,8 @@ from collections import defaultdict
 from copy import deepcopy
 import inspect
 from inspect import Parameter
+from inspect import _signature_fromstr
+import re
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -98,6 +100,39 @@ class UserServiceConfigRegistry:
         return self.__service_config_registry__
 
 
+def get_text_signature(doc):
+    s = doc.split(")\n\n")[0] + ")".replace("\n", "")
+    # todo: many np signature contain a "/"  https://numpy.org/doc/stable/reference/generated/numpy.add.html
+    s = s.replace("/,", "")
+    # trailing case
+    s = s.replace(", /)", ")")
+    # todo: some signatures have a * https://numpy.org/doc/stable/reference/generated/numpy.matmul.html
+    s = s.replace(" *,", "")
+    # todo: many np signature contain "[, signature, extobj]" https://numpy.org/doc/stable/reference/generated/numpy.add.html
+    s = s.replace("[, signature, extobj]", "")
+    # todo, fix for matmul
+    s = s.replace("[, signature, extobj, axes, axis]", "")
+    # remove leading whitespace
+    return re.sub(r"^\s+", "", s)
+
+
+def get_signature_from_doc(_callable):
+    doc = _callable.__doc__
+    text_signature = get_text_signature(doc)
+    return _signature_fromstr(inspect.Signature, _callable, text_signature, True)
+
+
+def get_signature(_callable):
+    try:
+        res = inspect.signature(_callable)
+        if res is None:
+            raise ValueError("")
+        else:
+            return res
+    except Exception:
+        return get_signature_from_doc(_callable)
+
+
 def register_lib_func(path: str, lib_obj: Callable):
     # this is for functions
     func = lib_obj
@@ -105,7 +140,7 @@ def register_lib_func(path: str, lib_obj: Callable):
 
     # problems with some numpy functions
     try:
-        signature = inspect.signature(func)
+        signature = get_signature(func)
     except ValueError:
         signature = None
 

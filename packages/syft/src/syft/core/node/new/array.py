@@ -37,6 +37,11 @@ recursive_serde_register(
     np.ndarray, serialize=numpy_serialize, deserialize=numpy_deserialize
 )
 
+recursive_serde_register(
+    np._globals._NoValueType,
+)
+#  serialize=numpy_serialize, deserialize=numpy_deserialize
+
 
 recursive_serde_register(
     np.bool_,
