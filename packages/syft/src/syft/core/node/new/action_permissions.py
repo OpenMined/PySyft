@@ -37,7 +37,8 @@ class ActionObjectPermission:
         credentials: Optional[SyftVerifyKey] = None,
     ):
         if credentials is None:
-            assert permission in COMPOUND_ACTION_PERMISSION
+            if permission not in COMPOUND_ACTION_PERMISSION:
+                raise Exception(f"{permission} not in {COMPOUND_ACTION_PERMISSION}")
         self.uid = uid
         self.credentials = credentials
         self.permission = permission
