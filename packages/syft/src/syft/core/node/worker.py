@@ -544,6 +544,8 @@ class Worker(NewNode):
             # 🟡 TODO 36: Needs distributed lock
             # self.queue_stash.set_placeholder(item)
             # self.queue_stash.partition.commit()
+
+            # 🟡 TODO:  Integrate ZeroMQ here possibly
             thread = gevent.spawn(
                 queue_task,
                 api_call,
