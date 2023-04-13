@@ -1,17 +1,22 @@
 # stdlib
 from enum import Enum
 from typing import Any
+from typing import Iterable
+from typing import List
 from typing import Optional
+from typing import Type
 
 # third party
 import networkx as nx
 import pydantic
+from typing_extensions import Self
 
 # relative
 from .action_object import Action
 from .datetime import DateTime
+from .document_store import StoreClientConfig
+from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
-from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -47,38 +52,117 @@ class ActionGraphNode(SyftObject):
         return self._repr_debug_()
 
 
-class GraphClient(SyftBaseObject):
-    __canonical_name__ = "GraphClient"
-    __version__ = SYFT_OBJECT_VERSION_1
+# class NetworkXClientConfig(StoreClientConfig):
+#     __canonical_name__ = "NetworkXClientConfig"
+#     __version__ = SYFT_OBJECT_VERSION_1
 
-    client: Any
+# class Neo4JClientConfig(StoreClientConfig):
+#     __canonical_name__ = "Neo4JClientConfig"
+#     __version__ = SYFT_OBJECT_VERSION_1
+
+#     db_name: str
+#     host: str
+#     port: int
 
 
-class InMemoryGraphClient(GraphClient):
-    client: nx.DiGraph = nx.DiGraph()
+@serializable()
+class BaseGraphClient:
+    graph_type: Any
+    client_config: Optional[StoreClientConfig]
 
-    # TODO 🟡: Make this abstract such the we have common
-    # methods to interact with the graph
+    @staticmethod
+    def init_graph() -> Self:
+        raise NotImplementedError
+
+    def add_node(self, node: ActionGraphNode):
+        raise NotImplementedError
+
+    def remove_node(self, node: ActionGraphNode):
+        raise NotImplementedError
+
+    def find_neighbors(self, node: ActionGraphNode) -> List[ActionGraphNode]:
+        raise NotImplementedError
+
+    def update(self, updated_node: ActionGraphNode):
+        raise NotImplementedError
+
+    def add_edge(self, parent: ActionGraphNode, child: ActionGraphNode):
+        raise NotImplementedError
+
+    def remove_edge(self, parent: ActionGraphNode, child: ActionGraphNode):
+        raise NotImplementedError
+
+    def visualize(self):
+        raise NotImplementedError
+
+    def save(self):
+        # TODO 🟡: Add functionality to save the graph
+        pass
+
+
+@serializable()
+class InMemoryGraphClient(BaseGraphClient):
+    graph_type: nx.DiGraph = nx.DiGraph
+
+    def __init__(self):
+        self.graph = nx.DiGraph()
+
+    @staticmethod
+    def init_graph() -> Self:
+        return InMemoryGraphClient()
+
+    def add_node(self, node: ActionGraphNode):
+        self.graph.add_node(node)
+
+    def remove_node(self, node: ActionGraphNode):
+        self.graph.remove_node(node)
+
+    def find_neighbors(self, node: ActionGraphNode) -> List[ActionGraphNode]:
+        return self.graph.neighbors(node)
+
+    def update(self, updated_node: ActionGraphNode):
+        self.graph.update(updated_node)
+
+    def add_edge(self, parent: ActionGraphNode, child: ActionGraphNode):
+        self.graph.add_edge(parent, child)
+
+    def remove_edge(self, parent: ActionGraphNode, child: ActionGraphNode):
+        self.graph.remove_edge(parent, child)
+
+    def visualize(self):
+        return nx.draw_networkx(self.graph, True)
+
+    @property
+    def nodes(self) -> Iterable:
+        return self.graph.nodes
+
+    def save(self):
+        # TODO 🟡: Add functionality to save the graph
+        pass
+
+
+# class GraphClientConfig:
+#    pass
 
 
 class ActionGraph:
-    def __init__(self, node_uid: UID, graph: GraphClient):
+    def __init__(self, node_uid: UID, graph_client: Type[BaseGraphClient]):
         self.node_uid = node_uid
-        self.graph = graph
+        self.client = graph_client.init_graph()
 
     def add_action(self, action: Action) -> None:
         node = ActionGraphNode.from_action(action)
-        self.graph.client.add_node(node)
-        self._add_parents_for(node)
+        self.client.add_node(node)
+        self._search_parents_for(node)
 
-    def _add_parents_for(self, node: ActionGraphNode) -> None:
+    def _search_parents_for(self, node: ActionGraphNode) -> None:
         input_ids = []
         parents = set()
         if node.action.remote_self:
             input_ids.append(node.action.remote_self)
         input_ids.extend(node.action.args)
         input_ids.extend(node.action.kwargs.values())
-        for _node in self.graph.client.nodes:
+        for _node in self.client.nodes:
             if (
                 _node.action.result_id in input_ids
                 or _node.action.remote_self in input_ids
@@ -86,15 +170,14 @@ class ActionGraph:
                 parents.add(_node)
 
         for parent in parents:
-            self.graph.client.add_edge(parent, node)
+            self.client.add_edge(parent, node)
 
     def remove_action(self, action: Action):
         node = ActionGraphNode.from_action(action)
-        self.graph.client.remove_node(node)
+        self.client.remove_node(node)
 
-    def visualize(self):
-        # TODO: Move this to graph Client level
-        return nx.draw_networkx(self.graph.client)
+    def draw_graph(self):
+        return self.client.visualize()
 
 
 # class ActionGraphVersion2:
