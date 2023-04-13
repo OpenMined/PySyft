@@ -753,6 +753,12 @@ class AnyActionObject(ActionObject):
 
     def __float__(self) -> float:
         return float(self.syft_action_data)
+    
+    def __hash__(self) -> int:
+        return hash(self.syft_action_data)
+        
+    # def __eq__(self, other: Any) -> Any:
+    #     return super().__eq__(other)
 
 
 action_types[Any] = AnyActionObject
