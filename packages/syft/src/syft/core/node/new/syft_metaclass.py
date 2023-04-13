@@ -43,7 +43,6 @@ class PartialModelMetaclass(ModelMetaclass):
         init_lock = threading.Lock()
         # To preserve identical hashes of temporary nested partial models,
         # only one instance of each temporary partial class can exist
-        temporary_partial_classes: Dict[str, ModelMetaclass] = {}
 
         def __init__(self: BaseModel, *args: Any, **kwargs: Any) -> None:
             with init_lock:
@@ -64,26 +63,9 @@ class PartialModelMetaclass(ModelMetaclass):
                                 field.required = True
                             else:
                                 field.required = False
-                            if (
-                                inspect.isclass(field.type_)
-                                and issubclass(field.type_, BaseModel)
-                                and not field.type_.__name__.startswith(
-                                    "TemporaryPartial"
-                                )
+                            if inspect.isclass(field.type_) and issubclass(
+                                field.type_, BaseModel
                             ):
-                                # Assign a temporary type to optionalize to avoid
-                                # modifying *other* classes
-                                class_name = f"TemporaryPartial{field.type_.__name__}"
-                                if class_name in temporary_partial_classes:
-                                    field.type_ = temporary_partial_classes[class_name]
-                                else:
-                                    field.type_ = ModelMetaclass(
-                                        class_name,
-                                        (field.type_,),
-                                        {},
-                                    )
-                                    temporary_partial_classes[class_name] = field.type_
-
                                 field.populate_validators()
                                 if field.sub_fields is not None:
                                     for sub_field in field.sub_fields:
@@ -100,6 +82,7 @@ class PartialModelMetaclass(ModelMetaclass):
 
                 # Make fields and fields of nested model types optional
                 optionalize(fields)
+
                 # Transform kwargs that are PartialModels to their dict() forms. This
                 # will exclude `None` (see below) from the dictionary used to construct
                 # the temporarily-partial model field, avoiding ValidationErrors of
@@ -121,19 +104,6 @@ class PartialModelMetaclass(ModelMetaclass):
                 optionalize(fields, restore=True)
 
         setattr(cls, "__init__", __init__)
-
-        # Exclude unset (`None`) from dict(), which isn't allowed in the schema
-        # but will be the default for non-required fields. This enables
-        # PartialModel(**PartialModel().dict()) to work correctly.
-
-        # cls_dict = cls.dict
-
-        # def dict_exclude_unset(
-        #     self: BaseModel, *args: Any, exclude_unset: bool = None, **kwargs: Any
-        # ) -> Dict[str, Any]:
-        #     return cls_dict(self, *args, **kwargs, exclude_unset=exclude_unset)
-
-        # cls.dict = dict_exclude_unset
 
         def iter_exclude_empty(self) -> TupleGenerator:
             for key, value in self.__dict__.items():
