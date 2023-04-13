@@ -2,15 +2,21 @@
 import pytest
 
 # syft absolute
-from syft.core.node.new.user import ServiceRole
+from syft.core.node.new.context import AuthedServiceContext
+from syft.core.node.new.context import NodeServiceContext
+from syft.core.node.new.context import UnauthedServiceContext
+from syft.core.node.new.credentials import UserLoginCredentials
+from syft.core.node.new.document_store import DocumentStore
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user import UserSearch
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user import UserView
+from syft.core.node.new.user_roles import ServiceRole
 from syft.core.node.new.user_service import UserService
 from syft.core.node.new.user_stash import UserStash
+from syft.core.node.worker import Worker
 
 
 @pytest.fixture(autouse=True)
@@ -71,6 +77,7 @@ def admin_user_private_key(admin_user) -> UserPrivateKey:
     return UserPrivateKey(email=admin_user.email, signing_key=admin_user.signing_key)
 
 
+@pytest.fixture
 def guest_user_private_key(guest_user) -> UserPrivateKey:
     return UserPrivateKey(email=guest_user.email, signing_key=guest_user.signing_key)
 
@@ -91,10 +98,30 @@ def guest_user_search(guest_user) -> UserSearch:
 
 
 @pytest.fixture(autouse=True)
-def user_stash(document_store):
+def user_stash(document_store: DocumentStore) -> UserStash:
     return UserStash(store=document_store)
 
 
 @pytest.fixture
-def user_service(document_store):
+def user_service(document_store: DocumentStore):
     return UserService(store=document_store)
+
+
+@pytest.fixture
+def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
+    return AuthedServiceContext(credentials=admin_user.verify_key, node=worker)
+
+
+@pytest.fixture
+def node_context(worker: Worker) -> NodeServiceContext:
+    return NodeServiceContext(node=worker)
+
+
+@pytest.fixture
+def unauthed_context(
+    guest_create_user: UserCreate, worker: Worker
+) -> UnauthedServiceContext:
+    login_credentials = UserLoginCredentials(
+        email=guest_create_user.email, password=guest_create_user.password
+    )
+    return UnauthedServiceContext(login_credentials=login_credentials, node=worker)

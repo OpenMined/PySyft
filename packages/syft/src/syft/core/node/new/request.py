@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 import hashlib
+import inspect
 from typing import Any
 from typing import Callable
 from typing import List
@@ -41,14 +42,14 @@ from .user_code import UserCode
 from .user_code import UserCodeStatus
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class RequestStatus(Enum):
     PENDING = 0
     REJECTED = 1
     APPROVED = 2
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Change(SyftObject):
     __canonical_name__ = "Change"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -59,7 +60,7 @@ class Change(SyftObject):
         return self.linked_obj and type_ == self.linked_obj.object_type
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -108,7 +109,7 @@ class ActionStoreChange(Change):
         return self._run(context=context, apply=False)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Request(SyftObject):
     __canonical_name__ = "Request"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -153,11 +154,8 @@ class Request(SyftObject):
         return Ok(SyftSuccess(message=f"Request {self.id} changes reverted"))
 
     def accept_by_depositing_result(self, result: Any):
-        if len(self.changes) != 1:
-            raise Exception(
-                f"accept_by_depositing_result can only be run on {UserCode} Requests"
-            )
-
+        # this code is extremely brittle because its a work around that relies on
+        # the type of request being very specifically tied to code which needs approving
         change = self.changes[0]
         if not change.is_type(UserCode):
             raise Exception(
@@ -179,13 +177,18 @@ class Request(SyftObject):
         if not result:
             return result
 
+        permission_request = self.approve()
+        if not permission_request:
+            return permission_request
+
         code = change.linked_obj.resolve
-        state = code.output_policy_state
+        state = code.output_policy
         ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
-        state.update_state(outputs=action_object.id, context=ctx)
+
+        state.apply_output(context=ctx, outputs=action_object)
         policy_state_mutation = ObjectMutation(
             linked_obj=change.linked_obj,
-            attr_name="output_policy_state",
+            attr_name="output_policy",
             match_type=True,
             value=state,
         )
@@ -193,7 +196,6 @@ class Request(SyftObject):
         action_object_link = LinkedObject.from_obj(
             action_object, node_uid=self.node_uid
         )
-
         permission_change = ActionStoreChange(
             linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
         )
@@ -213,7 +215,7 @@ class Request(SyftObject):
         return result
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SubmitRequest(SyftObject):
     __canonical_name__ = "SubmitRequest"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -266,7 +268,7 @@ def submit_request_to_request() -> List[Callable]:
     ]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -279,7 +281,13 @@ class ObjectMutation(Change):
     __attr_repr_cols__ = ["linked_obj", "attr_name"]
 
     def mutate(self, obj: Any) -> Any:
-        setattr(obj, self.attr_name, self.value)
+        # check if attribute is a property setter first
+        # this seems necessary for pydantic types
+        attr = getattr(type(obj), self.attr_name, None)
+        if inspect.isdatadescriptor(attr):
+            attr.fset(obj, self.value)
+        else:
+            setattr(obj, self.attr_name, self.value)
         return obj
 
     def _run(
@@ -316,7 +324,7 @@ def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
     return field_type
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class EnumMutation(ObjectMutation):
     __canonical_name__ = "EnumMutation"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -382,6 +390,7 @@ class EnumMutation(ObjectMutation):
             obj = obj.ok()
             if apply:
                 obj = self.mutate(obj)
+
                 self.linked_obj.update_with_context(context, obj)
             else:
                 raise NotImplementedError
@@ -403,7 +412,7 @@ class EnumMutation(ObjectMutation):
         return None
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCodeStatusChange(Change):
     __canonical_name__ = "UserCodeStatusChange"
     __version__ = SYFT_OBJECT_VERSION_1

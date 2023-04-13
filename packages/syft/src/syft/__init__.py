@@ -26,12 +26,13 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.8.0-beta.3"
+__version__ = "0.8.0-beta.6"
 
 # stdlib
 from pathlib import Path
 import sys
 from typing import Any
+from typing import Callable
 
 # relative
 from . import filterwarnings  # noqa: F401
@@ -47,16 +48,22 @@ from .core.node.new.data_subject import DataSubjectCreate as DataSubject  # noqa
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
 from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
 from .core.node.new.deserialize import _deserialize as deserialize  # noqa: F401
+from .core.node.new.messages import MessageStatus  # noqa: F401
+from .core.node.new.policy import CustomInputPolicy  # noqa: F401
+from .core.node.new.policy import CustomOutputPolicy  # noqa: F401
+from .core.node.new.policy import ExactMatch  # noqa: F401
+from .core.node.new.policy import SingleExecutionExactOutput  # noqa: F401
+from .core.node.new.policy import UserInputPolicy  # noqa: F401
+from .core.node.new.policy import UserOutputPolicy  # noqa: F401
 from .core.node.new.project import ProjectSubmit as Project  # noqa: F401
 from .core.node.new.request import SubmitRequest as Request  # noqa: F401
 from .core.node.new.response import SyftError  # noqa: F401
 from .core.node.new.response import SyftNotReady  # noqa: F401
 from .core.node.new.response import SyftSuccess  # noqa: F401
 from .core.node.new.roles import Roles as roles  # noqa: F401
+from .core.node.new.serializable import serializable  # noqa: F401
 from .core.node.new.serialize import _serialize as serialize  # noqa: F401
 from .core.node.new.uid import UID  # noqa: F401
-from .core.node.new.user_code import ExactMatch  # noqa: F401
-from .core.node.new.user_code import SingleExecutionExactOutput  # noqa: F401
 from .core.node.new.user_code import UserCodeStatus  # noqa: F401
 from .core.node.new.user_code import syft_function  # noqa: F401
 from .core.node.new.user_service import UserService  # noqa: F401
@@ -85,7 +92,7 @@ if OBLV:
     enable_external_lib("oblv")
 
 
-def module_property(func: Any) -> None:
+def module_property(func: Any) -> Callable:
     """Decorator to turn module functions into properties.
     Function names must be prefixed with an underscore."""
     module = sys.modules[func.__module__]

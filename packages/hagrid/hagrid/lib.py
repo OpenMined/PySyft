@@ -275,6 +275,7 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
                     port += 1
                 else:
                     break
+            sock.close()
 
         except Exception as e:
             print(f"Failed to check port {port}. {e}")
@@ -334,7 +335,7 @@ def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
 # Check api metadata
 def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
-        url = f"http://{ip}/api/v1/syft/metadata"
+        url = f"http://{ip}/api/v1/new/metadata"
         response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True

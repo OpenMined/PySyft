@@ -12,6 +12,7 @@ from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Type
+import warnings
 
 # third party
 import pydantic
@@ -59,8 +60,23 @@ class SyftObjectRegistry:
         if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
             mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
             if mapping_string in cls.__object_version_registry__:
-                raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
-            cls.__object_version_registry__[mapping_string] = cls
+                current_cls = cls.__object_version_registry__[mapping_string]
+                if cls == current_cls:
+                    # same class so noop
+                    return None
+
+                # user code is reinitialized which means it might have a new address
+                # in memory so for that we can just skip
+                if "syft.user" in cls.__module__:
+                    # this happens every time we reload the user code
+                    return None
+                else:
+                    # this shouldn't happen and is usually a mistake of reusing the
+                    # same __canonical_name__ and __version__ in two classes
+                    raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
+            else:
+                # only if the cls has not been registered do we want to register it
+                cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
     def versioned_class(cls, name: str, version: int) -> Optional[Type["SyftObject"]]:
@@ -132,7 +148,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             values["id"] = id_field.type_()
         return values
 
-    __attr_state__: List[str]  # persistent recursive serde keys
     __attr_searchable__: List[str] = []  # keys which can be searched in the ORM
     __attr_unique__: List[str] = []
     # the unique keys for the particular Collection the objects will be stored in
@@ -144,6 +159,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     __attr_repr_cols__: List[str] = []  # show these in html repr collections
 
     def to_mongo(self) -> Dict[str, Any]:
+        warnings.warn(
+            "`SyftObject.to_mongo` is deprecated and will be removed in a future version",
+            PendingDeprecationWarning,
+        )
+
         d = {}
         for k in self.__attr_searchable__:
             # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
@@ -227,6 +247,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
+        warnings.warn(
+            "`SyftObject.from_mongo` is deprecated and will be removed in a future version",
+            PendingDeprecationWarning,
+        )
+
         constructor = SyftObjectRegistry.versioned_class(
             name=bson["__canonical_name__"], version=bson["__version__"]
         )
@@ -268,6 +293,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return transform(self, context)
 
     def to_dict(self, exclude_none: bool = False) -> Dict[str, Any]:
+        warnings.warn(
+            "`SyftObject.to_dict` is deprecated and will be removed in a future version",
+            PendingDeprecationWarning,
+        )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none:
             return dict(self)

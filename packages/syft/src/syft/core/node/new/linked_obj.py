@@ -17,7 +17,7 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class LinkedObject(SyftObject):
     __canonical_name__ = "LinkedObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -59,9 +59,14 @@ class LinkedObject(SyftObject):
     ) -> Self:
         if service_type is None:
             # relative
+            from .action_object import ActionObject
+            from .action_service import ActionService
             from .service import TYPE_TO_SERVICE
 
-            service_type = TYPE_TO_SERVICE[type(obj)]
+            if isinstance(obj, ActionObject):
+                service_type = ActionService
+            else:
+                service_type = TYPE_TO_SERVICE[type(obj)]
 
         object_uid = getattr(obj, "id", None)
         if object_uid is None:

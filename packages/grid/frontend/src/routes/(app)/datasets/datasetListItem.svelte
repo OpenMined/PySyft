@@ -5,6 +5,8 @@
 
   export let name;
   export let author;
+  export let datasetId;
+  export let description;
   export let lastUpdated;
   export let assets;
   export let requests;
@@ -16,7 +18,9 @@
     e.preventDefault();
     dispatch('hide', {
       openName: name,
+      openDatasetId: datasetId,
       openAuthor: author,
+      openDescription: description,
       openLastUpdated: lastUpdated,
       openAssets: assets,
       openRequests: requests,
@@ -36,11 +40,11 @@
       </li>
       <li class="flex items-center text-gray-600 font-small">
         <Fa class="px-2" icon={faWaveSquare} size="sm" />
-        {assets}
+        {requests}
       </li>
     </div>
     <div class="flex items-center pb-2">
-      <li class="text-gray-600 font-small">{author}</li>
+      <li class="text-gray-600 font-small">Jana Doe</li>
       <Fa class="px-2" icon={faCircle} size="0.3x" />
       <li class="text-gray-600 font-small">{`Updated ${lastUpdated}`}</li>
     </div>

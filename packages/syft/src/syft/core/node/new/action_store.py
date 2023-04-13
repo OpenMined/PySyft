@@ -24,7 +24,7 @@ from .twin_object import TwinObject
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionPermission(Enum):
     OWNER = 1
     READ = 2
@@ -32,7 +32,7 @@ class ActionPermission(Enum):
     EXECUTE = 8
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class ActionObjectPermission:
     def __init__(
         self, uid: UID, credentials: SyftVerifyKey, permission: ActionPermission
@@ -81,8 +81,17 @@ class ActionStore:
     pass
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class KeyValueActionStore(ActionStore):
+    """Generic Key-Value Action store.
+
+    Parameters:
+        store_config: StoreConfig
+            Backend specific configuration, including connection configuration, database name, or client class type.
+        root_verify_key: Optional[SyftVerifyKey]
+            Signature verification key, used for checking access permissions.
+    """
+
     def __init__(
         self, store_config: StoreConfig, root_verify_key: Optional[SyftVerifyKey] = None
     ) -> None:
@@ -175,8 +184,10 @@ class KeyValueActionStore(ActionStore):
         # perhaps we should keep permissions but no data?
         owner_permission = ActionObjectOWNER(uid=uid, credentials=credentials)
         if self.has_permission(owner_permission):
-            del self.data[uid]
-            del self.permissions[uid]
+            if uid in self.data:
+                del self.data[uid]
+            if uid in self.permissions:
+                del self.permissions[uid]
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return Err(f"Permission: {owner_permission} denied")
 
@@ -221,8 +232,17 @@ class KeyValueActionStore(ActionStore):
             results.append(self.add_permission(permission))
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DictActionStore(KeyValueActionStore):
+    """Dictionary-Based Key-Value Action store.
+
+    Parameters:
+        store_config: StoreConfig
+            Backend specific configuration, including client class type.
+        root_verify_key: Optional[SyftVerifyKey]
+            Signature verification key, used for checking access permissions.
+    """
+
     def __init__(
         self,
         store_config: Optional[StoreConfig] = None,
@@ -232,6 +252,15 @@ class DictActionStore(KeyValueActionStore):
         super().__init__(store_config=store_config, root_verify_key=root_verify_key)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteActionStore(KeyValueActionStore):
+    """SQLite-Based Key-Value Action store.
+
+    Parameters:
+        store_config: StoreConfig
+            SQLite specific configuration, including connection settings or client class type.
+        root_verify_key: Optional[SyftVerifyKey]
+            Signature verification key, used for checking access permissions.
+    """
+
     pass

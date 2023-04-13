@@ -24,12 +24,10 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    __attr_state__ = ["id", "node_uid", "result", "resolved"]
 
     id: UID
     node_uid: UID
@@ -56,12 +54,12 @@ class QueueItem(SyftObject):
             self.fetch()
 
         if self.resolved:
-            return self.result
+            return self.result.message
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class QueueStash(BaseStash):
     object_type = QueueItem
     settings: PartitionSettings = PartitionSettings(
@@ -76,13 +74,13 @@ class QueueStash(BaseStash):
             return self.check_type(item, self.object_type).and_then(super().set)
         return None
 
-    # def set_placeholder(self, item: QueueItem) -> Result[QueueItem, str]:
-    #     # 🟡 TODO 36: Needs distributed lock
-    #     if not item.resolved:
-    #         exists = self.get_by_uid(item.id)
-    #         if exists.is_ok() and exists.ok() is None:
-    #             return self.check_type(item, self.object_type).and_then(super().set)
-    #     return item
+    def set_placeholder(self, item: QueueItem) -> Result[QueueItem, str]:
+        # 🟡 TODO 36: Needs distributed lock
+        if not item.resolved:
+            exists = self.get_by_uid(item.id)
+            if exists.is_ok() and exists.ok() is None:
+                return self.check_type(item, self.object_type).and_then(super().set)
+        return item
 
     def get_by_uid(self, uid: UID) -> Result[Optional[QueueItem], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])

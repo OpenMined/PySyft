@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from copy import deepcopy
-import os
+from pathlib import Path
 import sqlite3
 import tempfile
 import threading
@@ -12,18 +12,21 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 from typing_extensions import Self
 
 # relative
 from .deserialize import _deserialize
-from .document_store import BasePartitionSettings
 from .document_store import DocumentStore
+from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
+from .locks import FileLockingConfig
+from .locks import LockingConfig
 from .serializable import serializable
 from .serialize import _serialize
 from .uid import UID
@@ -39,14 +42,25 @@ def thread_ident() -> int:
     return threading.current_thread().ident
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["index_name", "settings", "store_config"])
 class SQLiteBackingStore(KeyValueBackingStore):
-    __attr_state__ = ["index_name", "settings", "store_config"]
+    """Core Store logic for the SQLite stores.
+
+    Parameters:
+        `index_name`: str
+            Index name
+        `settings`: PartitionSettings
+            Syft specific settings
+        `store_config`: SQLiteStoreConfig
+            Connection Configuration
+        `ddtype`: Type
+            Class used as fallback on `get` errors
+    """
 
     def __init__(
         self,
         index_name: str,
-        settings: BasePartitionSettings,
+        settings: PartitionSettings,
         store_config: StoreConfig,
         ddtype: Optional[type] = None,
     ) -> None:
@@ -55,7 +69,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.store_config = store_config
         self._ddtype = ddtype
         self._db: Dict[int, sqlite3.Connection] = {}
-        self._cur: Dict[int, sqlite3.Connection] = {}
+        self._cur: Dict[int, sqlite3.Cursor] = {}
         self.create_table()
 
     @property
@@ -68,9 +82,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # there will be many threads handling incoming requests so we need to ensure
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
-        # print(f"Creating new {type(self)} connection on Thread: {thread_ident()}")
         self.file_path = self.store_config.client_config.file_path
-        self._db[thread_ident()] = sqlite3.connect(self.file_path)
+        self._db[thread_ident()] = sqlite3.connect(
+            self.file_path,
+            timeout=self.store_config.client_config.timeout,
+            check_same_thread=self.store_config.client_config.check_same_thread,
+        )
+
+        # TODO: Review OSX compatibility.
+        # Set journal mode to WAL.
+        # self._db[thread_ident()].execute("pragma journal_mode=wal")
 
     def create_table(self):
         try:
@@ -103,9 +124,18 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _commit(self) -> None:
         self.db.commit()
 
-    def _execute(self, sql: str, *args: Optional[List[Any]]) -> None:
-        cursor = self.cur.execute(sql, *args)
-        self._commit()
+    def _execute(
+        self, sql: str, *args: Optional[List[Any]]
+    ) -> Optional[sqlite3.Cursor]:
+        cursor: Optional[sqlite3.Cursor] = None
+
+        try:
+            cursor = self.cur.execute(sql, *args)
+        except BaseException:
+            self.db.rollback()  # Roll back all changes if an exception occurs.
+        else:
+            self.db.commit()  # Commit if everything went ok
+
         return cursor
 
     def _set(self, key: UID, value: Any) -> None:
@@ -123,37 +153,62 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
-        row = self._execute(select_sql, [str(key)]).fetchone()
+        cursor = self._execute(select_sql, [str(key)])
+        if cursor is None:
+            raise KeyError(f"Query {select_sql} failed")
+
+        row = cursor.fetchone()
         if row is None or len(row) == 0:
             raise KeyError(f"{key} not in {type(self)}")
         data = row[2]
         return _deserialize(data, from_bytes=True)
 
-    def _exists(self, key: UID) -> Any:
+    def _exists(self, key: UID) -> bool:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
-        row = self._execute(select_sql, [str(key)]).fetchone()
+
+        cursor = self._execute(select_sql, [str(key)])
+        if cursor is None:
+            return False
+
+        row = cursor.fetchone()
+        if row is None:
+            return False
+
         return bool(row)
 
     def _get_all(self) -> Any:
         select_sql = f"select * from {self.table_name}"  # nosec
         keys = []
         data = []
-        rows = self._execute(select_sql).fetchall()
+
+        cursor = self._execute(select_sql)
+        if cursor is None:
+            return {}
+
+        rows = cursor.fetchall()
+        if rows is None:
+            return {}
+
         for row in rows:
             keys.append(UID(row[0]))
             data.append(_deserialize(row[2], from_bytes=True))
         return dict(zip(keys, data))
 
     def _get_all_keys(self) -> Any:
-        try:
-            select_sql = f"select uid from {self.table_name}"  # nosec
-            keys = []
-            rows = self._execute(select_sql).fetchall()
-            for row in rows:
-                keys.append(UID(row[0]))
-            return keys
-        except Exception as e:
-            raise e
+        select_sql = f"select uid from {self.table_name}"  # nosec
+        keys = []
+
+        cursor = self._execute(select_sql)
+        if cursor is None:
+            return []
+
+        rows = cursor.fetchall()
+        if rows is None:
+            return []
+
+        for row in rows:
+            keys.append(UID(row[0]))
+        return keys
 
     def _delete(self, key: UID) -> None:
         select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
@@ -164,11 +219,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self._execute(select_sql)
 
     def _len(self) -> int:
-        select_sql = f"select uid from {self.table_name}"  # nosec
-        result = self._execute(select_sql)
-        if hasattr(result, "__len__"):
-            return len(result)
-        return 0
+        select_sql = f"select count(uid) from {self.table_name}"  # nosec
+        cursor = self._execute(select_sql)
+        cnt = cursor.fetchone()[0]
+        return cnt
 
     def __setitem__(self, key: Any, value: Any) -> None:
         self._set(key, value)
@@ -206,6 +260,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return self._get_all().items()
 
     def pop(self, key: Any) -> Self:
+        # NOTE: not thread-safe
         value = self._get(key)
         self._delete(key)
         return value
@@ -216,43 +271,119 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __iter__(self) -> Any:
         return iter(self.keys())
 
+    def __del__(self):
+        try:
+            self._close()
+        except BaseException:
+            pass
 
-@serializable(recursive_serde=True)
+
+@serializable()
 class SQLiteStorePartition(KeyValueStorePartition):
+    """SQLite StorePartition
+
+    Parameters:
+        `settings`: PartitionSettings
+            PySyft specific settings, used for indexing and partitioning
+        `store_config`: SQLiteStoreConfig
+            SQLite specific configuration
+    """
+
     def close(self) -> None:
-        self.data._close()
-        self.unique_keys._close()
-        self.searchable_keys._close()
+        self.lock.acquire()
+        try:
+            self.data._close()
+            self.unique_keys._close()
+            self.searchable_keys._close()
+        except BaseException:
+            pass
+        self.lock.release()
 
     def commit(self) -> None:
-        self.data._commit()
-        self.unique_keys._commit()
-        self.searchable_keys._commit()
+        self.lock.acquire()
+        try:
+            self.data._commit()
+            self.unique_keys._commit()
+            self.searchable_keys._commit()
+        except BaseException:
+            pass
+        self.lock.release()
 
 
 # the base document store is already a dict but we can change it later
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteDocumentStore(DocumentStore):
+    """SQLite Document Store
+
+    Parameters:
+        `store_config`: StoreConfig
+            SQLite specific configuration, including connection details and client class type.
+    """
+
     partition_type = SQLiteStorePartition
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteStoreClientConfig(StoreClientConfig):
-    filename: Optional[str]
-    path: Optional[str]
+    """SQLite connection config
+
+    Parameters:
+        `filename` : str
+            Database name
+        `path` : Path or str
+            Database folder
+        `check_same_thread`: bool
+            If True (default), ProgrammingError will be raised if the database connection is used
+            by a thread other than the one that created it. If False, the connection may be accessed
+            in multiple threads; write operations may need to be serialized by the user to avoid
+            data corruption.
+        `timeout`: int
+            How many seconds the connection should wait before raising an exception, if the database
+            is locked by another connection. If another connection opens a transaction to modify the
+            database, it will be locked until that transaction is committed. Default five seconds.
+    """
+
+    filename: Optional[str] = None
+    path: Union[str, Path]
+    check_same_thread: bool = True
+    timeout: int = 5
+
+    def __init__(
+        self,
+        filename: Optional[str] = None,
+        path: Optional[Union[str, Path]] = None,
+        *args,
+        **kwargs,
+    ):
+        path_ = tempfile.gettempdir() if path is None else path
+        super().__init__(filename=filename, path=path_, *args, **kwargs)
 
     @property
-    def temp_path(self) -> str:
-        return tempfile.gettempdir()
-
-    @property
-    def file_path(self) -> str:
-        path = self.path if self.path else self.temp_path
-        return path + os.sep + self.filename
+    def file_path(self) -> Optional[Path]:
+        return Path(self.path) / self.filename if self.filename is not None else None
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SQLiteStoreConfig(StoreConfig):
-    client_config: StoreClientConfig
+    """SQLite Store config, used by SQLiteStorePartition
+
+    Parameters:
+        `client_config`: SQLiteStoreClientConfig
+            SQLite connection configuration
+        `store_type`: DocumentStore
+            Class interacting with QueueStash. Default: SQLiteDocumentStore
+        `backing_store`: KeyValueBackingStore
+            The Store core logic. Default: SQLiteBackingStore
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to FileLockingConfig.
+    """
+
+    client_config: SQLiteStoreClientConfig
     store_type: Type[DocumentStore] = SQLiteDocumentStore
     backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore
+    locking_config: LockingConfig = FileLockingConfig()

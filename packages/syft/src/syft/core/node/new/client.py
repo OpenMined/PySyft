@@ -80,12 +80,10 @@ DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 
 
-@serializable(recursive_serde=True)
+@serializable(attrs=["proxy_target_uid", "url"])
 class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    __attr_state__ = ["proxy_target_uid", "url"]
 
     proxy_target_uid: Optional[UID]
     url: GridURL
@@ -120,9 +118,11 @@ class HTTPConnection(NodeConnection):
             self.session_cache = session
         return self.session_cache
 
-    def _make_get(self, path: str) -> bytes:
+    def _make_get(self, path: str, params: Optional[Dict] = None) -> bytes:
         url = self.url.with_path(path)
-        response = self.session.get(str(url), verify=verify_tls(), proxies={})
+        response = self.session.get(
+            str(url), verify=verify_tls(), proxies={}, params=params
+        )
         if response.status_code != 200:
             raise requests.ConnectionError(
                 f"Failed to fetch {url}. Response returned with code {response.status_code}"
@@ -173,7 +173,8 @@ class HTTPConnection(NodeConnection):
             return NodeMetadataJSON(**metadata_json)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        content = self._make_get(self.routes.ROUTE_API.value)
+        params = {"verify_key": str(credentials.verify_key)}
+        content = self._make_get(self.routes.ROUTE_API.value, params=params)
         obj = _deserialize(content, from_bytes=True)
         obj.connection = self
         obj.signing_key = credentials
@@ -220,7 +221,7 @@ class HTTPConnection(NodeConnection):
         return hash(self.proxy_target_uid) + hash(self.url)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PythonConnection(NodeConnection):
     __canonical_name__ = "PythonConnection"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -249,7 +250,8 @@ class PythonConnection(NodeConnection):
             return self.node.metadata.to(NodeMetadataJSON)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        obj = self.node.get_api()
+        # todo: its a bit odd to identify a user by its verify key maybe?
+        obj = self.node.get_api(for_user=credentials.verify_key)
         obj.connection = self
         obj.signing_key = credentials
         if self.proxy_target_uid:
@@ -294,7 +296,7 @@ class PythonConnection(NodeConnection):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class SyftClient:
     connection: NodeConnection
     metadata: Optional[NodeMetadataJSON]
@@ -515,7 +517,12 @@ class SyftClient:
             self.metadata = metadata
 
     def _fetch_api(self, credentials: SyftSigningKey):
-        _api = self.connection.get_api(credentials=credentials)
+        _api: SyftAPI = self.connection.get_api(credentials=credentials)
+
+        def refresh_callback():
+            return self._fetch_api(self.credentials)
+
+        _api.refresh_api_callback = refresh_callback
         APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
 

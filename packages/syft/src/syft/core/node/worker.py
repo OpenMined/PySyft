@@ -7,8 +7,10 @@ from datetime import datetime
 from functools import partial
 import hashlib
 import os
+import threading
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -21,6 +23,7 @@ from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ... import __version__
@@ -53,6 +56,7 @@ from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node import NodeType
 from .new.node_metadata import NodeMetadata
+from .new.policy_service import PolicyService
 from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
@@ -62,6 +66,7 @@ from .new.serializable import serializable
 from .new.serialize import _serialize
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.service import UserServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
 from .new.syft_object import HIGHEST_SYFT_OBJECT_VERSION
@@ -69,13 +74,22 @@ from .new.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from .new.syft_object import SyftObject
 from .new.test_service import TestService
 from .new.uid import UID
-from .new.user import ServiceRole
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
+from .new.user_roles import ServiceRole
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
+
+
+def thread_ident() -> int:
+    return threading.current_thread().ident
+
+
+# if user code needs to be serded and its not available we can call this to refresh
+# the code for a specific node UID and thread
+CODE_RELOADER: Dict[int, Callable] = {}
 
 
 def gipc_encoder(obj):
@@ -107,7 +121,7 @@ node_uid_env = get_node_uid_env()
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class Worker(NewNode):
     signing_key: Optional[SyftSigningKey]
     required_signed_calls: bool = True
@@ -165,6 +179,7 @@ class Worker(NewNode):
                 RequestService,
                 DataSubjectService,
                 NetworkService,
+                PolicyService,
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
@@ -193,8 +208,8 @@ class Worker(NewNode):
 
         create_admin_new(  # nosec B106
             name="Jane Doe",
-            email="info@openmined.org",
-            password="changethis",
+            email=root_email,
+            password=root_password,
             node=self,
         )
 
@@ -203,25 +218,42 @@ class Worker(NewNode):
 
         self.post_init()
 
-    @staticmethod
+    @classmethod
     def named(
+        cls,
         name: str,
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-    ) -> Worker:
+    ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"
-            with contextlib.suppress(FileNotFoundError):
+
+            # stdlib
+            import sqlite3
+
+            with contextlib.closing(sqlite3.connect(store_config.file_path)) as db:
+                cursor = db.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                tables = cursor.fetchall()
+
+                for table_name in tables:
+                    drop_table_sql = f"DROP TABLE IF EXISTS {table_name[0]};"
+                    cursor.execute(drop_table_sql)
+
+                db.commit()
+                db.close()
+
+            with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
 
-        return Worker(
+        return cls(
             name=name,
             id=uid,
             signing_key=key,
@@ -234,7 +266,7 @@ class Worker(NewNode):
         return credentials == self.signing_key.verify_key
 
     @property
-    def root_client(self) -> Any:
+    def root_client(self):
         # relative
         from .new.client import PythonConnection
         from .new.client import SyftClient
@@ -243,7 +275,7 @@ class Worker(NewNode):
         return SyftClient(connection=connection, credentials=self.signing_key)
 
     @property
-    def guest_client(self) -> Any:
+    def guest_client(self):
         # relative
         from .new.client import PythonConnection
         from .new.client import SyftClient
@@ -255,11 +287,15 @@ class Worker(NewNode):
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
+        if UserCodeService in self.services:
+            user_code_service = self.get_service(UserCodeService)
+            user_code_service.load_user_code()
         if self.is_subprocess:
             # print(f"> Starting Subprocess {self}")
             pass
         else:
             print(f"> Starting {self}")
+        CODE_RELOADER[thread_ident()] = user_code_service.load_user_code
         # super().post_init()
 
     def init_stores(
@@ -277,7 +313,6 @@ class Worker(NewNode):
             isinstance(document_store_config, SQLiteStoreConfig)
             and document_store_config.client_config.filename is None
         ):
-            document_store_config.client_config.filename
             document_store_config.client_config.filename = f"{self.id}.sqlite"
             print(
                 f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
@@ -327,6 +362,7 @@ class Worker(NewNode):
                 RequestService,
                 DataSubjectService,
                 NetworkService,
+                PolicyService,
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
@@ -431,6 +467,12 @@ class Worker(NewNode):
 
         return SyftError(message=(f"Node has no route to {node_uid}"))
 
+    def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
+        role = self.get_service("userservice").get_role_for_credentials(
+            credentials=credentials
+        )
+        return role
+
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SignedSyftAPICall, Err]:
@@ -463,16 +505,26 @@ class Worker(NewNode):
 
         result = None
         if self.is_subprocess or self.processes == 0:
-            credentials = api_call.credentials
+            credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
-            context = AuthedServiceContext(node=self, credentials=credentials)
+            role = self.get_role_for_credentials(credentials=credentials)
+            context = AuthedServiceContext(
+                node=self, credentials=credentials, role=role
+            )
 
-            # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
-            if api_call.path not in self.service_config:
-                return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+            user_config_registry = UserServiceConfigRegistry.from_role(role)
 
-            _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
+            if api_call.path not in user_config_registry:
+                if ServiceConfigRegistry.path_exists(api_call.path):
+                    return SyftError(
+                        message=f"As a `{role}`,"
+                        "you have has no access to: {api_call.path}"
+                    )  # type: ignore
+                else:
+                    return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+
+            _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
             try:
                 result = method(context, *api_call.args, **api_call.kwargs)
@@ -511,8 +563,8 @@ class Worker(NewNode):
                 result = item
         return result
 
-    def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node=self)
+    def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
+        return SyftAPI.for_user(node=self, user_verify_key=for_user)
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext
@@ -677,7 +729,7 @@ def create_oblv_key_pair(
         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
         if not len(oblv_keys_stash):
-            public_key, private_key = generate_oblv_key()
+            public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
             res = oblv_keys_stash.set(oblv_keys)
             if res.is_ok():

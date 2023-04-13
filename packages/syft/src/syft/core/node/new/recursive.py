@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 import sys
+import threading
 import types
 from typing import Any
 from typing import Callable
@@ -26,43 +27,72 @@ TYPE_BANK = {}
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
 
 
+def thread_ident() -> int:
+    return threading.current_thread().ident
+
+
 def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
     deserialize: Optional[Callable] = None,
-    attr_allowlist: Optional[List] = None,
+    serialize_attrs: Optional[List] = None,
+    exclude_attrs: Optional[List] = None,
+    inherit_attrs: Optional[bool] = True,
+    inheritable_attrs: Optional[bool] = True,
 ) -> None:
-    if not isinstance(cls, type):
-        cls = type(cls)
+    pydantic_fields = None
+    base_attrs = None
+    attribute_list = set()
 
-    if serialize is not None and deserialize is not None:
-        nonrecursive = True
-    else:
-        nonrecursive = False
+    cls = type(cls) if not isinstance(cls, type) else cls
+    fqn = f"{cls.__module__}.{cls.__name__}"
 
+    nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
     _deserialize = deserialize if nonrecursive else rs_proto2object
+    is_pydantic = issubclass(cls, BaseModel)
 
-    if attr_allowlist is not None:
-        attribute_list = attr_allowlist
-    else:
-        attribute_list = getattr(cls, "__attr_allowlist__", None)
-        if attribute_list is None:
-            attribute_list = getattr(cls, "__attr_state__", None)
-    serde_overrides = getattr(cls, "__serde_overrides__", {})
+    if inherit_attrs and not is_pydantic:
+        # get attrs from base class
+        base_attrs = getattr(cls, "__syft_serializable__", [])
+        attribute_list.update(base_attrs)
+
+    if is_pydantic and not serialize_attrs:
+        # if pydantic object and attrs are provided, the get attrs from __fields__
+        # cls.__fields__ auto inherits attrs
+        pydantic_fields = [
+            f.name
+            for f in cls.__fields__.values()
+            if f.outer_type_ not in (Callable, types.FunctionType, types.LambdaType)
+        ]
+        attribute_list.update(pydantic_fields)
+
+    if serialize_attrs:
+        # If serialize_attrs is provided, append it to our attr list
+        attribute_list.update(serialize_attrs)
+
+    if exclude_attrs:
+        attribute_list = attribute_list - set(exclude_attrs)
 
     if issubclass(cls, Enum):
-        if attribute_list is None:
-            attribute_list = []
-        attribute_list += ["value"]
+        attribute_list.update(["value"])
+
+    if inheritable_attrs and attribute_list and not is_pydantic:
+        # only set __syft_serializable__ for non-pydantic classes because
+        # pydantic objects inherit by default
+        setattr(cls, "__syft_serializable__", attribute_list)
+
+    attribute_list = list(attribute_list) if attribute_list else None
+    serde_overrides = getattr(cls, "__serde_overrides__", {})
+
     # without fqn duplicate class names overwrite
-    fqn = f"{cls.__module__}.{cls.__name__}"
     TYPE_BANK[fqn] = (
         nonrecursive,
         _serialize,
         _deserialize,
         attribute_list,
         serde_overrides,
+        cls,
     )
 
 
@@ -101,6 +131,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         deserialize,
         attribute_list,
         serde_overrides,
+        cls,
     ) = TYPE_BANK[fqn]
 
     if nonrecursive:
@@ -155,20 +186,46 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # clean this mess, Tudor
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
-
     class_type: Type = type(None)
+
     if klass != "NoneType":
         try:
             class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
         except Exception:  # nosec
-            class_type = getattr(sys.modules[".".join(module_parts)], klass)
+            try:
+                class_type = getattr(sys.modules[".".join(module_parts)], klass)
+            except Exception:  # nosec
+                if "syft.user" in proto.fullyQualifiedName:
+                    # relative
+                    from ..worker import CODE_RELOADER
+
+                    for _, load_user_code in CODE_RELOADER.items():
+                        load_user_code()
+                try:
+                    class_type = getattr(sys.modules[".".join(module_parts)], klass)
+                except Exception:  # nosec
+                    pass
 
     if proto.fullyQualifiedName not in TYPE_BANK:
-        raise Exception(f"{proto.fully_qualified_name} not in TYPE_BANK")
+        raise Exception(f"{proto.fullyQualifiedName} not in TYPE_BANK")
 
-    nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
-        proto.fullyQualifiedName
-    ]
+    # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
+    # module name space in sub-processes or threads even though they are loaded on start
+    # its possible that the uvicorn awsgi server is preloading a bunch of threads
+    # however simply getting the class from the TYPE_BANK doesn't always work and
+    # causes some errors so it seems like we want to get the local one where possible
+    (
+        nonrecursive,
+        serialize,
+        deserialize,
+        attribute_list,
+        serde_overrides,
+        cls,
+    ) = TYPE_BANK[proto.fullyQualifiedName]
+
+    if class_type == type(None):
+        # yes this looks stupid but it works and the opposite breaks
+        class_type = cls
 
     if nonrecursive:
         if deserialize is None:
@@ -197,7 +254,16 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     elif issubclass(class_type, BaseModel):
         # if we skip the __new__ flow of BaseModel we get the error
         # AttributeError: object has no attribute '__fields_set__'
-        obj = class_type(**kwargs)
+
+        if "syft.user" in proto.fullyQualifiedName:
+            # weird issues with pydantic and ForwardRef on user classes being inited
+            # with custom state args / kwargs
+            obj = class_type()
+            for attr_name, attr_value in kwargs.items():
+                setattr(obj, attr_name, attr_value)
+        else:
+            obj = class_type(**kwargs)
+
     else:
         obj = class_type.__new__(class_type)  # type: ignore
         for attr_name, attr_value in kwargs.items():

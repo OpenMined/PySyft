@@ -18,8 +18,8 @@ from .document_store import UIDPartitionKey
 from .response import SyftSuccess
 from .serializable import serializable
 from .uid import UID
-from .user import ServiceRole
 from .user import User
+from .user_roles import ServiceRole
 
 # 🟡 TODO 27: it would be nice if these could be defined closer to the User
 EmailPartitionKey = PartitionKey(key="email", type_=str)
@@ -29,7 +29,7 @@ VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class UserStash(BaseStash):
     object_type = User
     settings: PartitionSettings = PartitionSettings(

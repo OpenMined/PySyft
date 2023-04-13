@@ -11,11 +11,15 @@ from .document_store import DocumentStore
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
+from .locks import LockingConfig
+from .locks import ThreadingLockingConfig
 from .serializable import serializable
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DictBackingStore(dict, KeyValueBackingStore):
+    """Dictionary-based Store core logic"""
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super(dict).__init__()
         self._ddtype = kwargs.get("ddtype", None)
@@ -30,15 +34,31 @@ class DictBackingStore(dict, KeyValueBackingStore):
             raise e
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DictStorePartition(KeyValueStorePartition):
+    """Dictionary-based StorePartition
+
+    Parameters:
+        `settings`: PartitionSettings
+            PySyft specific settings, used for indexing and partitioning
+        `store_config`: DictStoreConfig
+            DictStore specific configuration
+    """
+
     def prune(self):
         self.init_store()
 
 
 # the base document store is already a dict but we can change it later
-@serializable(recursive_serde=True)
+@serializable()
 class DictDocumentStore(DocumentStore):
+    """Dictionary-based Document Store
+
+    Parameters:
+        `store_config`: DictStoreConfig
+            Dictionary Store specific configuration, containing the store type and the backing store type
+    """
+
     partition_type = DictStorePartition
 
     def __init__(self, store_config: Optional[DictStoreConfig] = None) -> None:
@@ -51,7 +71,24 @@ class DictDocumentStore(DocumentStore):
             partition.prune()
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class DictStoreConfig(StoreConfig):
+    """Dictionary-based configuration
+
+    Parameters:
+        `store_type`: Type[DocumentStore]
+            The Document type used. Default: DictDocumentStore
+        `backing_store`: Type[KeyValueBackingStore]
+            The backend type used. Default: DictBackingStore
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to ThreadingLockingConfig.
+    """
+
     store_type: Type[DocumentStore] = DictDocumentStore
     backing_store: Type[KeyValueBackingStore] = DictBackingStore
+    locking_config: LockingConfig = ThreadingLockingConfig()

@@ -20,7 +20,6 @@ from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .uid import UID
-from .user import ServiceRole
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -29,11 +28,15 @@ from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
 from .user import salt_and_hash_password
+from .user_roles import DATA_OWNER_ROLE_LEVEL
+from .user_roles import GUEST_ROLE_LEVEL
+from .user_roles import ServiceRole
+from .user_roles import ServiceRoleCapability
 from .user_stash import UserStash
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash
@@ -75,16 +78,27 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.get_all", name="get_all")
+    @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[Optional[UserView], SyftError]:
         result = self.stash.get_all()
         if result.is_ok():
-            return result.ok()
+            return [user.to(UserView) for user in result.ok()]
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
         return SyftError(message="No users exists")
+
+    def get_role_for_credentials(
+        self, credentials: SyftVerifyKey
+    ) -> Union[Optional[ServiceRole], SyftError]:
+        result = self.stash.get_by_verify_key(verify_key=credentials)
+        if result.is_ok():
+            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+            if user:
+                return user.role
+        return ServiceRole.GUEST
 
     @service_method(path="user.search", name="search", autosplat=["user_search"])
     def search(
@@ -106,15 +120,22 @@ class UserService(AbstractService):
         users = result.ok()
         return [user.to(UserView) for user in users] if users is not None else []
 
-    @service_method(path="user.update", name="update")
+    @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:
-        # TODO: ADD Email Validation
+        updates_role = user_update.role is not None
+
+        if (
+            updates_role
+            and ServiceRoleCapability.CAN_EDIT_ROLES not in context.capabilities()
+        ):
+            return SyftError(message=f"{context.role} is not allowed to edit roles")
 
         # Get user to be updated by its UID
         result = self.stash.get_by_uid(uid=uid)
 
+        # TODO: ADD Email Validation
         if result.is_err():
             error_msg = (
                 f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
@@ -125,6 +146,39 @@ class UserService(AbstractService):
 
         if user is None:
             return SyftError(message=f"No user exists for given UID: {uid}")
+
+        if updates_role:
+            if context.role == ServiceRole.ADMIN:
+                # do anything
+                pass
+            elif (
+                context.role == ServiceRole.DATA_OWNER
+                and context.role > user.role
+                and context.role > user_update.role
+            ):
+                # as a data owner, only update lower roles to < data owner
+                pass
+            else:
+                return SyftError(
+                    message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}"
+                )
+
+        edits_non_role_attrs = any(
+            [
+                getattr(user_update, attr) is not None
+                for attr in user_update.to_dict(exclude_none=True)
+                if attr != "role"
+            ]
+        )
+
+        if (
+            edits_non_role_attrs
+            and user.verify_key != context.credentials
+            and ServiceRoleCapability.CAN_MANAGE_USERS not in context.capabilities()
+        ):
+            return SyftError(
+                message=f"As a {context.role}, you are not allowed to edit users"
+            )
 
         # Fill User Update fields that will not be changed by replacing it
         # for the current values found in user obj.
@@ -148,8 +202,38 @@ class UserService(AbstractService):
 
         return user.to(UserView)
 
-    @service_method(path="user.delete", name="delete")
+    def get_target_object(self, uid: UID):
+        user_result = self.stash.get_by_uid(uid=uid)
+        if user_result.is_err():
+            return SyftError(message=str(user_result.err()))
+        user = user_result.ok()
+        if user is None:
+            return SyftError(message=f"No user exists for given id: {uid}")
+        else:
+            return user
+
+    @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
+        # third party
+        user = self.get_target_object(uid)
+        if isinstance(user, SyftError):
+            return user
+
+        permission_error = SyftError(
+            message=str(
+                f"As a {context.role} you have no permission to delete user with {user.role} permission"
+            )
+        )
+        if context.role == ServiceRole.DATA_OWNER and user.role in [
+            ServiceRole.GUEST,
+            ServiceRole.DATA_SCIENTIST,
+        ]:
+            pass
+        elif context.role == ServiceRole.ADMIN:
+            pass
+        else:
+            return permission_error
+
         result = self.stash.delete_by_uid(uid=uid)
         if result.is_err():
             return SyftError(message=str(result.err()))

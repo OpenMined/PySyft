@@ -25,7 +25,7 @@ from .service import TYPE_TO_SERVICE
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DataSubjectMemberStash(BaseUIDStoreStash):
     object_type = DataSubjectMemberRelationship
     settings: PartitionSettings = PartitionSettings(
@@ -50,7 +50,7 @@ class DataSubjectMemberStash(BaseUIDStoreStash):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DataSubjectMemberService(AbstractService):
     store: DocumentStore
     stash: DataSubjectMemberStash

@@ -3,16 +3,17 @@ from __future__ import annotations
 
 # stdlib
 from functools import partial
+import sys
 import types
+import typing
 from typing import Any
+from typing import Callable
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
-from typing import _GenericAlias
 
 # third party
 from pydantic import BaseModel
@@ -24,6 +25,9 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .base import SyftBaseModel
+from .locks import LockingConfig
+from .locks import NoLockingConfig
+from .locks import SyftLock
 from .response import SyftSuccess
 from .serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
@@ -32,43 +36,67 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class BasePartitionSettings(SyftBaseModel):
+    """Basic Partition Settings
+
+    Parameters:
+        name: str
+            Identifier to be used as prefix by stores and for partitioning
+    """
+
     name: str
 
 
-def first_or_none(result: Any) -> Optional[Any]:
+def first_or_none(result: Any) -> Ok:
     if hasattr(result, "__len__") and len(result) > 0:
         return Ok(result[0])
     return Ok(None)
 
 
+if sys.version_info >= (3, 9):
+
+    def is_generic_alias(t: type):
+        return isinstance(t, (types.GenericAlias, typing._GenericAlias))
+
+else:
+
+    def is_generic_alias(t: type):
+        return isinstance(t, typing._GenericAlias)
+
+
 class StoreClientConfig(BaseModel):
+    """Base Client specific configuration"""
+
     pass
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PartitionKey(BaseModel):
     key: str
     type_: Union[type, object]
 
     def __eq__(self, other: Any) -> bool:
-        if type(other) == type(self):
-            return self.key == other.key and self.type_ == other.type_
-        return False
+        return (
+            type(other) == type(self)
+            and self.key == other.key
+            and self.type_ == other.type_
+        )
 
-    def with_obj(self, obj: SyftObject) -> QueryKey:
+    def with_obj(self, obj: Any) -> QueryKey:
         return QueryKey.from_obj(partition_key=self, obj=obj)
 
-    def is_valid_list(self, obj: SyftObject) -> bool:
+    def extract_list(self, obj: Any) -> List:
         # not a list and matches the internal list type of the _GenericAlias
         if not isinstance(obj, list):
-            if not isinstance(obj, self.type_.__args__):
+            if not isinstance(obj, typing.get_args(self.type_)):
                 obj = getattr(obj, self.key)
                 if isinstance(obj, (types.FunctionType, types.MethodType)):
                     obj = obj()
 
-            if not isinstance(obj, list) and isinstance(obj, self.type_.__args__):
+            if not isinstance(obj, list) and isinstance(
+                obj, typing.get_args(self.type_)
+            ):
                 # still not a list but the right type
                 obj = [obj]
 
@@ -78,25 +106,22 @@ class PartitionKey(BaseModel):
 
     @property
     def type_list(self) -> bool:
-        if isinstance(self.type_, _GenericAlias) and self.type_.__origin__ == list:
-            return True
-        return False
+        return is_generic_alias(self.type_) and self.type_.__origin__ == list
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PartitionKeys(BaseModel):
-    pks: Union[PartitionKey, Tuple[PartitionKey, ...]]
+    pks: Union[PartitionKey, Tuple[PartitionKey, ...], List[PartitionKey]]
 
     @property
-    def all(self) -> Iterable[PartitionKey]:
-        # make sure we always return Tuple's even if theres a single value
-        _keys = self.pks if isinstance(self.pks, (tuple, list)) else (self.pks,)
-        return _keys
+    def all(self) -> List[PartitionKey]:
+        # make sure we always return a list even if there's a single value
+        return self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
 
-    def with_obj(self, obj: SyftObject) -> QueryKeys:
+    def with_obj(self, obj: Any) -> QueryKeys:
         return QueryKeys.from_obj(partition_keys=self, obj=obj)
 
-    def with_tuple(self, *args: Tuple[Any, ...]) -> QueryKeys:
+    def with_tuple(self, *args: Any) -> QueryKeys:
         return QueryKeys.from_tuple(partition_keys=self, args=args)
 
     def add(self, pk: PartitionKey) -> PartitionKeys:
@@ -109,38 +134,31 @@ class PartitionKeys(BaseModel):
             pks.append(PartitionKey(key=k, type_=t))
         return PartitionKeys(pks=pks)
 
-    def make(self, *obj_arg: Union[SyftObject, Tuple[Any, ...]]) -> QueryKeys:
-        if isinstance(obj_arg, SyftObject):
-            return self.with_obj(obj_arg)
-        else:
-            return self.with_tuple(*obj_arg)
 
-
-@serializable(recursive_serde=True)
+@serializable()
 class QueryKey(PartitionKey):
     value: Any
 
     def __eq__(self, other: Any) -> bool:
-        if type(other) == type(self):
-            return (
-                self.key == other.key
-                and self.type_ == other.type_
-                and self.value == other.value
-            )
-        return False
+        return (
+            type(other) == type(self)
+            and self.key == other.key
+            and self.type_ == other.type_
+            and self.value == other.value
+        )
 
     @property
     def partition_key(self) -> PartitionKey:
         return PartitionKey(key=self.key, type_=self.type_)
 
     @staticmethod
-    def from_obj(partition_key: PartitionKey, obj: SyftObject) -> List[Any]:
+    def from_obj(partition_key: PartitionKey, obj: Any) -> QueryKey:
         pk_key = partition_key.key
         pk_type = partition_key.type_
 
         # 🟡 TODO: support more advanced types than List[type]
         if partition_key.type_list:
-            pk_value = partition_key.is_valid_list(obj)
+            pk_value = partition_key.extract_list(obj)
         else:
             if isinstance(obj, pk_type):
                 pk_value = obj
@@ -173,27 +191,26 @@ class QueryKey(PartitionKey):
         return {key: self.value}
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
     @property
-    def all(self) -> Iterable[PartitionKey]:
+    def all(self) -> List[PartitionKey]:
         all_keys = self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
         if self.uid_pk not in all_keys:
             all_keys.insert(0, self.uid_pk)
         return all_keys
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class QueryKeys(SyftBaseModel):
-    qks: Union[QueryKey, Tuple[QueryKey, ...]]
+    qks: Union[QueryKey, Tuple[QueryKey, ...], List[QueryKey]]
 
     @property
-    def all(self) -> Iterable[QueryKey]:
-        # make sure we always return Tuple's even if theres a single value
-        _keys = self.qks if isinstance(self.qks, (tuple, list)) else (self.qks,)
-        return _keys
+    def all(self) -> List[QueryKey]:
+        # make sure we always return a list even if there's a single value
+        return self.qks if isinstance(self.qks, (tuple, list)) else [self.qks]
 
     @staticmethod
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
@@ -208,7 +225,7 @@ class QueryKeys(SyftBaseModel):
             if isinstance(pk_value, (types.FunctionType, types.MethodType)):
                 pk_value = pk_value()
             if partition_key.type_list:
-                pk_value = partition_key.is_valid_list(obj)
+                pk_value = partition_key.extract_list(obj)
             else:
                 if pk_value and not isinstance(pk_value, pk_type):
                     raise Exception(
@@ -219,7 +236,7 @@ class QueryKeys(SyftBaseModel):
         return QueryKeys(qks=qks)
 
     @staticmethod
-    def from_tuple(partition_keys: PartitionKeys, args: Tuple[Any, ...]) -> QueryKeys:
+    def from_tuple(partition_keys: PartitionKeys, args: Tuple) -> QueryKeys:
         qks = []
         for partition_key, pk_value in zip(partition_keys.all, args):
             pk_key = partition_key.key
@@ -267,7 +284,7 @@ class QueryKeys(SyftBaseModel):
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PartitionSettings(BasePartitionSettings):
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
@@ -283,8 +300,17 @@ class PartitionSettings(BasePartitionSettings):
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable(attrs=["settings", "store_config", "unique_cks", "searchable_cks"])
 class StorePartition:
+    """Base StorePartition
+
+    Parameters:
+        settings: PartitionSettings
+            PySyft specific settings
+        store_config: StoreConfig
+            Backend specific configuration
+    """
+
     def __init__(
         self,
         settings: PartitionSettings,
@@ -294,19 +320,23 @@ class StorePartition:
         self.store_config = store_config
         self.init_store()
 
-    def init_store(self) -> None:
-        self.unique_cks = self.settings.unique_keys.all
-        self.searchable_cks = self.settings.searchable_keys.all
+        store_config.locking_config.lock_name = settings.name
+        self.lock = SyftLock(store_config.locking_config)
+
+    def init_store(self) -> Result[Ok, Err]:
+        try:
+            self.unique_cks = self.settings.unique_keys.all
+            self.searchable_cks = self.settings.searchable_keys.all
+        except BaseException as e:
+            return Err(str(e))
+
+        return Ok()
 
     def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
-        if partition_key in self.unique_cks:
-            return True
-        return False
+        return partition_key in self.unique_cks
 
     def matches_searchable_cks(self, partition_key: PartitionKey) -> bool:
-        if partition_key in self.searchable_cks:
-            return True
-        return False
+        return partition_key in self.searchable_cks
 
     def store_query_key(self, obj: Any) -> QueryKey:
         return self.settings.store_key.with_obj(obj)
@@ -314,35 +344,92 @@ class StorePartition:
     def store_query_keys(self, objs: Any) -> QueryKeys:
         return QueryKeys(qks=[self.store_query_key(obj) for obj in objs])
 
-    def find_index_or_search_keys(self, index_qks: QueryKeys, search_qks: QueryKeys):
-        raise NotImplementedError
+    # Thread-safe methods
+    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
+        locked = self.lock.acquire(blocking=True)
+        if not locked:
+            return Err("Failed to acquire lock for the operation")
 
-    def all(self) -> Result[List[BaseStash.object_type], str]:
-        raise NotImplementedError
+        try:
+            result = cbk(*args, **kwargs)
+        except BaseException as e:
+            result = Err(str(e))
+        self.lock.release()
+
+        return result
 
     def set(
+        self, obj: SyftObject, ignore_duplicates: bool = False
+    ) -> Result[SyftObject, str]:
+        return self._thread_safe_cbk(
+            self._set, obj=obj, ignore_duplicates=ignore_duplicates
+        )
+
+    def find_index_or_search_keys(
+        self, index_qks: QueryKeys, search_qks: QueryKeys
+    ) -> Result[List[SyftObject], str]:
+        return self._thread_safe_cbk(
+            self._find_index_or_search_keys, index_qks=index_qks, search_qks=search_qks
+        )
+
+    def remove_keys(
+        self,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+    ) -> None:
+        self._thread_safe_cbk(
+            self._remove_keys,
+            unique_query_keys=unique_query_keys,
+            searchable_query_keys=searchable_query_keys,
+        )
+
+    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+        return self._thread_safe_cbk(self._update, qk=qk, obj=obj)
+
+    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+        return self._thread_safe_cbk(self._get_all_from_store, qks)
+
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+        return self._thread_safe_cbk(self._delete, qk)
+
+    def all(self) -> Result[List[BaseStash.object_type], str]:
+        return self._thread_safe_cbk(self._all)
+
+    # Potentially thread-unsafe methods.
+    # CAUTION:
+    #       * Don't use self.lock here.
+    #       * Do not call the public thread-safe methods here(with locking).
+    # These methods are called from the public thread-safe API, and will hang the process.
+    def _set(
         self,
         obj: SyftObject,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
-    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+    def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
         raise NotImplementedError
 
-    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+    def _get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         raise NotImplementedError
 
-    def create(self, obj: SyftObject) -> Result[SyftObject, str]:
+    def _delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         raise NotImplementedError
 
-    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+    def _all(self) -> Result[List[BaseStash.object_type], str]:
         raise NotImplementedError
 
 
 @instrument
-@serializable(recursive_serde=True)
+@serializable()
 class DocumentStore:
+    """Base Document Store
+
+    Parameters:
+        store_config: StoreConfig
+            Store specific configuration.
+    """
+
     partitions: Dict[str, StorePartition]
     partition_type: Type[StorePartition]
 
@@ -381,7 +468,7 @@ class BaseStash:
         return self.partition.all()
 
     def __len__(self) -> int:
-        return self.partition.__len__()
+        return len(self.partition)
 
     def set(
         self,
@@ -446,7 +533,7 @@ class BaseStash:
     def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[SyftSuccess, Err]:
         obj = self.query_one_kwargs(**kwargs)
         if obj.is_err():
-            return obj.err()
+            return obj
         else:
             obj = obj.ok()
 
@@ -472,7 +559,7 @@ class BaseUIDStoreStash(BaseStash):
         result = super().delete(qk=qk)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result.err()
+        return result
 
     def get_by_uid(
         self, uid: UID
@@ -489,10 +576,27 @@ class BaseUIDStoreStash(BaseStash):
         return self.check_type(obj, self.object_type).and_then(set_method)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class StoreConfig(SyftBaseObject):
+    """Base Store configuration
+
+    Parameters:
+        store_type: Type
+            Document Store type
+        client_config: Optional[StoreClientConfig]
+            Backend-specific config
+        locking_config: LockingConfig
+            The config used for store locking. Available options:
+                * NoLockingConfig: no locking, ideal for single-thread stores.
+                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
+                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
+            Defaults to NoLockingConfig.
+    """
+
     __canonical_name__ = "StoreConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
     store_type: Type[DocumentStore]
     client_config: Optional[StoreClientConfig]
+    locking_config: LockingConfig = NoLockingConfig()

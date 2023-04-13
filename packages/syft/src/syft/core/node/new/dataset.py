@@ -1,6 +1,8 @@
 # stdlib
 from collections import OrderedDict
+from datetime import datetime
 from enum import Enum
+import sys
 from typing import Any
 from typing import Callable
 from typing import List
@@ -32,7 +34,7 @@ from .transforms import validate_url
 from .uid import UID
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class TupleDict(OrderedDict):
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int):
@@ -43,7 +45,7 @@ class TupleDict(OrderedDict):
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Contributor(SyftObject):
     __canonical_name__ = "Contributor"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -57,7 +59,7 @@ class Contributor(SyftObject):
     __attr_repr_cols__ = ["name", "role", "email"]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
@@ -106,7 +108,7 @@ class Asset(SyftObject):
         return api.services.action.get(self.action_id)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class CreateAsset(SyftObject):
     # version
     __canonical_name__ = "CreateAsset"
@@ -184,7 +186,7 @@ def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
     return None
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Dataset(SyftObject):
     # version
     __canonical_name__ = "Dataset"
@@ -198,6 +200,9 @@ class Dataset(SyftObject):
     citation: Optional[str]
     url: Optional[str]
     description: Optional[str]
+    updated_at: Optional[str]
+    requests: Optional[int] = 0
+    mb_size: Optional[int]
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
@@ -243,7 +248,7 @@ class Dataset(SyftObject):
         return client
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class CreateDataset(Dataset):
     # version
     __canonical_name__ = "CreateDataset"
@@ -356,16 +361,26 @@ def createasset_to_asset() -> List[Callable]:
 
 def convert_asset(context: TransformContext) -> TransformContext:
     assets = context.output.pop("asset_list", [])
+    dataset_size = 0
     for idx, create_asset in enumerate(assets):
+        dataset_size += sys.getsizeof(assets) / 1024
         asset_context = TransformContext.from_context(obj=create_asset, context=context)
         assets[idx] = create_asset.to(Asset, context=asset_context)
     context.output["asset_list"] = assets
+    context.output["mb_size"] = dataset_size
+    return context
+
+
+def add_current_date(context: TransformContext) -> TransformContext:
+    current_date = datetime.now()
+    formatted_date = current_date.strftime("%b %d, %Y")
+    context.output["updated_at"] = formatted_date
     return context
 
 
 @transform(CreateDataset, Dataset)
 def createdataset_to_dataset() -> List[Callable]:
-    return [generate_id, validate_url, convert_asset]
+    return [generate_id, validate_url, convert_asset, add_current_date]
 
 
 class DatasetUpdate:

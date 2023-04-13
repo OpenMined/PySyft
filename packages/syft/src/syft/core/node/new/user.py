@@ -1,5 +1,4 @@
 # stdlib
-from enum import Enum
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -26,28 +25,10 @@ from .transforms import make_set_default
 from .transforms import transform
 from .transforms import validate_email
 from .uid import UID
+from .user_roles import ServiceRole
 
 
-class ServiceRoleCapability(Enum):
-    CAN_MAKE_DATA_REQUESTS = 1
-    CAN_TRIAGE_DATA_REQUESTS = 2
-    CAN_MANAGE_PRIVACY_BUDGET = 4
-    CAN_CREATE_USERS = 8
-    CAN_MANAGE_USERS = 16
-    CAN_EDIT_ROLES = 32
-    CAN_MANAGE_INFRASTRUCTURE = 64
-    CAN_UPLOAD_DATA = 128
-    CAN_UPLOAD_LEGAL_DOCUMENT = 256
-    CAN_EDIT_DOMAIN_SETTINGS = 512
-
-
-@serializable(recursive_serde=True)
-class ServiceRole(Enum):
-    ADMIN = 0
-    GUEST = 1
-
-
-@serializable(recursive_serde=True)
+@serializable()
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
@@ -72,19 +53,6 @@ class User(SyftObject):
     created_at: Optional[str]
 
     # serde / storage rules
-    __attr_state__ = [
-        "id",
-        "email",
-        "name",
-        "hashed_password",
-        "salt",
-        "signing_key",
-        "verify_key",
-        "role",
-        "institution",
-        "website",
-        "created_at",
-    ]
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __attr_repr_cols__ = ["name", "email"]
@@ -127,7 +95,7 @@ def check_pwd(password: str, hashed_password: str) -> bool:
     )
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserUpdate(SyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -148,7 +116,7 @@ class UserUpdate(SyftObject):
     website: Optional[str] = None
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserCreate(UserUpdate):
     __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -165,7 +133,7 @@ class UserCreate(UserUpdate):
     __attr_repr_cols__ = ["name", "email"]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserSearch(SyftObject):
     __canonical_name__ = "UserSearch"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -176,7 +144,7 @@ class UserSearch(SyftObject):
     name: Optional[str]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserView(UserUpdate):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -210,7 +178,7 @@ def user_to_view_user() -> List[Callable]:
     return [keep(["id", "email", "name", "role", "institution", "website"])]
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class UserPrivateKey(SyftObject):
     __canonical_name__ = "UserPrivateKey"
     __version__ = SYFT_OBJECT_VERSION_1

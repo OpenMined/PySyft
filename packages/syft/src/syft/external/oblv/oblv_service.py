@@ -9,6 +9,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 from typing import cast
 
 # third party
@@ -36,6 +37,7 @@ from ...core.node.new.syft_object import SyftObject
 from ...core.node.new.uid import UID
 from ...core.node.new.user_code import UserCode
 from ...core.node.new.user_code import UserCodeStatus
+from ...core.node.new.user_roles import GUEST_ROLE_LEVEL
 from ...core.node.new.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
@@ -51,7 +53,7 @@ OBLV_PROCESS_CACHE: Dict[str, List] = {}
 
 # TODO: 🟡 Duplication of PyPrimitive Dict
 # This is emulated since the action store curently accepts  only SyftObject types
-@serializable(recursive_serde=True)
+@serializable()
 class DictObject(SyftObject):
     # version
     __canonical_name__ = "Dict"
@@ -60,8 +62,6 @@ class DictObject(SyftObject):
     base_dict: Dict[Any, Any] = {}
 
     # serde / storage rules
-    __attr_state__ = ["id", "base_dict"]
-
     __attr_searchable__ = []
     __attr_unique__ = ["id"]
 
@@ -74,7 +74,8 @@ def connect_to_enclave(
     oblv_client: OblvClient,
     deployment_id: str,
     connection_port: int,
-) -> subprocess.Popen:
+    oblv_key_name: str,
+) -> Optional[subprocess.Popen]:
     global OBLV_PROCESS_CACHE
     if deployment_id in OBLV_PROCESS_CACHE:
         process = OBLV_PROCESS_CACHE[deployment_id][0]
@@ -84,12 +85,11 @@ def connect_to_enclave(
         del OBLV_PROCESS_CACHE[deployment_id]
 
     # Always create key file each time, which ensures consistency when there is key change in database
-    create_keys_from_db(oblv_keys_stash)
-    key_path = os.getenv("OBLV_KEY_PATH", "/app/content")
-    # Temporary new key name for the new service
-    key_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
-    public_file_name = key_path + "/" + key_name + "_public.der"
-    private_file_name = key_path + "/" + key_name + "_private.der"
+    create_keys_from_db(oblv_keys_stash=oblv_keys_stash, oblv_key_name=oblv_key_name)
+    oblv_key_path = os.path.expanduser(os.getenv("OBLV_KEY_PATH", "~/.oblv"))
+
+    public_file_name = oblv_key_path + "/" + oblv_key_name + "_public.der"
+    private_file_name = oblv_key_path + "/" + oblv_key_name + "_private.der"
 
     depl = oblv_client.deployment_info(deployment_id)
     if depl.is_deleted:
@@ -99,7 +99,7 @@ def connect_to_enclave(
     if depl.is_dev_env:
         process = subprocess.Popen(  # nosec
             [
-                "/usr/local/bin/oblv",
+                "oblv",
                 "connect",
                 "--private-key",
                 private_file_name,
@@ -125,7 +125,7 @@ def connect_to_enclave(
     else:
         process = subprocess.Popen(  # nosec
             [
-                "/usr/local/bin/oblv",
+                "oblv",
                 "connect",
                 "--private-key",
                 private_file_name,
@@ -157,6 +157,7 @@ def connect_to_enclave(
             break
 
     OBLV_PROCESS_CACHE[deployment_id] = [process, connection_port]
+    return None
 
 
 def make_request_to_enclave(
@@ -166,17 +167,19 @@ def make_request_to_enclave(
     request_method: Callable,
     connection_string: str,
     connection_port: int,
+    oblv_key_name: str,
     params: Optional[Dict] = None,
     files: Optional[Dict] = None,
     data: Optional[Dict] = None,
     json: Optional[Dict] = None,
-):
+) -> Any:
     if not LOCAL_MODE:
         _ = connect_to_enclave(
             oblv_keys_stash=oblv_keys_stash,
             oblv_client=oblv_client,
             deployment_id=deployment_id,
             connection_port=connection_port,
+            oblv_key_name=oblv_key_name,
         )
         req = request_method(
             connection_string,
@@ -200,58 +203,59 @@ def make_request_to_enclave(
         )
 
 
-def create_keys_from_db(oblv_keys_stash: OblvKeysStash):
-    file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
+def create_keys_from_db(oblv_keys_stash: OblvKeysStash, oblv_key_name: str):
+    oblv_key_path = os.path.expanduser(os.getenv("OBLV_KEY_PATH", "~/.oblv"))
+
+    os.makedirs(oblv_key_path, exist_ok=True)
     # Temporary new key name for the new service
-    file_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
 
-    keys = oblv_keys_stash.get_all()[0]
+    keys = oblv_keys_stash.get_all()
+    if keys.is_ok():
+        keys = keys.ok()[0]
+    else:
+        return keys.err()
 
-    # Creating directory if not exist
-    os.makedirs(
-        os.path.dirname(file_path + "/" + file_name + "_private.der"), exist_ok=True
-    )
-    f_private = open(file_path + "/" + file_name + "_private.der", "w+b")
+    f_private = open(oblv_key_path + "/" + oblv_key_name + "_private.der", "w+b")
     f_private.write(keys.private_key)
     f_private.close()
-    f_public = open(file_path + "/" + file_name + "_public.der", "w+b")
+    f_public = open(oblv_key_path + "/" + oblv_key_name + "_public.der", "w+b")
     f_public.write(keys.public_key)
     f_public.close()
 
 
-def generate_oblv_key() -> Tuple[bytes]:
-    file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
-    # Temporary new key name for the new service
-    file_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
+def generate_oblv_key(oblv_key_name: str) -> Tuple[bytes]:
+    oblv_key_path = os.path.expanduser(os.getenv("OBLV_KEY_PATH", "~/.oblv"))
+    os.makedirs(oblv_key_path, exist_ok=True)
+
     result = subprocess.run(  # nosec
         [
-            "/usr/local/bin/oblv",
+            "oblv",
             "keygen",
             "--key-name",
-            file_name,
+            oblv_key_name,
             "--output",
-            file_path,
+            oblv_key_path,
         ],
         capture_output=True,
     )
+
     if result.stderr:
         raise Err(
             subprocess.CalledProcessError(  # nosec
                 returncode=result.returncode, cmd=result.args, stderr=result.stderr
             )
         )
-
-    f_private = open(file_path + "/" + file_name + "_private.der", "rb")
+    f_private = open(oblv_key_path + "/" + oblv_key_name + "_private.der", "rb")
     private_key = f_private.read()
     f_private.close()
-    f_public = open(file_path + "/" + file_name + "_public.der", "rb")
+    f_public = open(oblv_key_path + "/" + oblv_key_name + "_public.der", "rb")
     public_key = f_public.read()
     f_public.close()
 
     return (public_key, private_key)
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OblvService(AbstractService):
     store: DocumentStore
     oblv_keys_stash: OblvKeysStash
@@ -260,7 +264,7 @@ class OblvService(AbstractService):
         self.store = store
         self.oblv_keys_stash = OblvKeysStash(store=store)
 
-    @service_method(path="oblv.create_key", name="create_key")
+    @service_method(path="oblv.create_key", name="create_key", roles=GUEST_ROLE_LEVEL)
     def create_key(
         self,
         context: AuthedServiceContext,
@@ -282,7 +286,9 @@ class OblvService(AbstractService):
             )
         return res.err()
 
-    @service_method(path="oblv.get_public_key", name="get_public_key")
+    @service_method(
+        path="oblv.get_public_key", name="get_public_key", roles=GUEST_ROLE_LEVEL
+    )
     def get_public_key(
         self,
         context: AuthedServiceContext,
@@ -309,7 +315,8 @@ class OblvService(AbstractService):
         self,
         enclave_metadata: OblvMetadata,
         signing_key: SyftSigningKey,
-    ):
+        worker_name: str,
+    ) -> SyftAPI:
         deployment_id = enclave_metadata.deployment_id
         oblv_client = enclave_metadata.oblv_client
         if not LOCAL_MODE:
@@ -335,6 +342,7 @@ class OblvService(AbstractService):
                     "127.0.0.1", "host.docker.internal"
                 )
 
+        params = {"verify_key": str(signing_key.verify_key)}
         req = make_request_to_enclave(
             connection_string=connection_string + Routes.ROUTE_API.value,
             deployment_id=deployment_id,
@@ -342,6 +350,8 @@ class OblvService(AbstractService):
             oblv_keys_stash=self.oblv_keys_stash,
             request_method=requests.get,
             connection_port=port,
+            oblv_key_name=worker_name,
+            params=params,
         )
 
         obj = deserialize(req.content, from_bytes=True)
@@ -353,6 +363,7 @@ class OblvService(AbstractService):
     @service_method(
         path="oblv.send_user_code_inputs_to_enclave",
         name="send_user_code_inputs_to_enclave",
+        roles=GUEST_ROLE_LEVEL,
     )
     def send_user_code_inputs_to_enclave(
         self,
@@ -361,6 +372,10 @@ class OblvService(AbstractService):
         inputs: Dict,
         node_name: str,
     ) -> Result[Ok, Err]:
+        if not context.node or not context.node.signing_key:
+            return Err(f"{type(context)} has no node")
+        signing_key = context.node.signing_key
+
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
         user_code = user_code_service.get_by_uid(context, uid=user_code_id)
@@ -380,20 +395,20 @@ class OblvService(AbstractService):
             dict_object.base_dict[str(context.credentials)] = inputs
             action_service.store.set(
                 uid=user_code_id,
-                credentials=context.node.signing_key.verify_key,
+                credentials=signing_key.verify_key,
                 syft_object=dict_object,
             )
 
         else:
             res = action_service.store.get(
-                uid=user_code_id, credentials=context.node.signing_key.verify_key
+                uid=user_code_id, credentials=signing_key.verify_key
             )
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object.base_dict[str(context.credentials)] = inputs
                 action_service.store.set(
                     uid=user_code_id,
-                    credentials=context.node.signing_key.verify_key,
+                    credentials=signing_key.verify_key,
                     syft_object=dict_object,
                 )
             else:
@@ -405,7 +420,10 @@ class OblvService(AbstractService):
 # Checks if the given user code would  propogate value to enclave on acceptance
 def check_enclave_transfer(
     user_code: UserCode, value: UserCodeStatus, context: ChangeContext
-):
+) -> Union[Any, Ok]:
+    if not context.node or not context.node.signing_key:
+        return Err(f"{type(context)} has no node")
+    signing_key = context.node.signing_key
     if (
         isinstance(user_code.enclave_metadata, OblvMetadata)
         and value == UserCodeStatus.EXECUTE
@@ -415,16 +433,17 @@ def check_enclave_transfer(
         api = method(
             user_code.enclave_metadata,
             context.node.signing_key,
+            worker_name=context.node.name,
         )
         # send data of the current node to enclave
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name, verify_key=signing_key.verify_key
         )
         inputs = user_code.input_policy.inputs[node_view]
         action_service = context.node.get_service("actionservice")
         for var_name, uid in inputs.items():
             action_object = action_service.store.get(
-                uid=uid, credentials=context.node.signing_key.verify_key
+                uid=uid, credentials=signing_key.verify_key
             )
             if action_object.is_err():
                 return action_object

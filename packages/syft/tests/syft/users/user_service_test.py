@@ -5,7 +5,6 @@ from typing import Union
 
 # third party
 from faker import Faker
-import pytest
 from pytest import MonkeyPatch
 from result import Err
 from result import Ok
@@ -15,38 +14,16 @@ from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.context import NodeServiceContext
 from syft.core.node.new.context import UnauthedServiceContext
 from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.response import SyftError
 from syft.core.node.new.response import SyftSuccess
 from syft.core.node.new.uid import UID
-from syft.core.node.new.user import ServiceRole
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user import UserView
+from syft.core.node.new.user_roles import ServiceRole
 from syft.core.node.new.user_service import UserService
-from syft.core.node.worker import Worker
-
-
-@pytest.fixture
-def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
-    return AuthedServiceContext(credentials=admin_user.verify_key, node=worker)
-
-
-@pytest.fixture
-def node_context(worker: Worker) -> NodeServiceContext:
-    return NodeServiceContext(node=worker)
-
-
-@pytest.fixture
-def unauthed_context(
-    guest_create_user: UserCreate, worker: Worker
-) -> UnauthedServiceContext:
-    login_credentials = UserLoginCredentials(
-        email=guest_create_user.email, password=guest_create_user.password
-    )
-    return UnauthedServiceContext(login_credentials=login_credentials, node=worker)
 
 
 def test_userservice_create_when_user_exists(
@@ -185,10 +162,11 @@ def test_userservice_get_all_success(
     guest_user: User,
     admin_user: User,
 ) -> None:
-    expected_output = [guest_user, admin_user]
+    mock_get_all_output = [guest_user, admin_user]
+    expected_output = [x.to(UserView) for x in mock_get_all_output]
 
     def mock_get_all() -> Ok:
-        return Ok(expected_output)
+        return Ok(mock_get_all_output)
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
     response = user_service.get_all(authed_context)
@@ -331,6 +309,7 @@ def test_userservice_update_success(
 
     monkeypatch.setattr(user_service.stash, "update", mock_update)
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
+    authed_context.role = ServiceRole.ADMIN
 
     resultant_user = user_service.update(
         authed_context, uid=guest_user.id, user_update=update_user
@@ -357,6 +336,8 @@ def test_userservice_update_fails(
 
     def mock_update(user) -> Err:
         return Err(update_error_msg)
+
+    authed_context.role = ServiceRole.ADMIN
 
     monkeypatch.setattr(user_service.stash, "update", mock_update)
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
@@ -397,7 +378,12 @@ def test_userservice_delete_success(
     def mock_delete_by_uid(uid: UID) -> Ok:
         return Ok(expected_output)
 
+    def mock_get_target_object(uid):
+        return User(email=Faker().email())
+
     monkeypatch.setattr(user_service.stash, "delete_by_uid", mock_delete_by_uid)
+    monkeypatch.setattr(user_service, "get_target_object", mock_get_target_object)
+    authed_context.role = ServiceRole.ADMIN
 
     response = user_service.delete(context=authed_context, uid=id_to_delete)
     assert isinstance(response, SyftSuccess)
