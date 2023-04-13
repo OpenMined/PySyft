@@ -20,6 +20,8 @@ from typing import Union
 from result import Err
 from result import Ok
 from result import Result
+from PIL import Image
+from PIL.PngImagePlugin import PngImageFile  
 
 # relative
 from .api import NodeView
@@ -329,12 +331,12 @@ class UserCode(SyftObject):
             # compile the function
             raw_byte_code = compile_byte_code(unparse(inner_function))
             # load it
-            exec(raw_byte_code)  # nosec
+            # exec(raw_byte_code)  # nosec
             # execute it
-            evil_string = f"{self.service_func_name}(*args, **kwargs)"
-            result = eval(evil_string, None, locals())  # nosec
+            # evil_string = f"{self.service_func_name}(*args, **kwargs)"
+            # result = eval(evil_string, None, locals())  # nosec
             # return the results
-            # result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
+            result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
             return result
 
         return wrapper
@@ -606,6 +608,12 @@ class UserCodeExecutionResult(SyftObject):
     stdout: str
     stderr: str
     result: Any
+    serialized_plot: Optional[str] = None
+    
+    # @property
+    # def plot(self) -> :
+        
+    
 
 def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     return execute_byte_code(
