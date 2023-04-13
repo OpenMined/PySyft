@@ -108,7 +108,7 @@ class UserCodeService(AbstractService):
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             user_code = result.ok()
-            if user_code.input_policy_state:
+            if user_code and user_code.input_policy_state:
                 # TODO replace with LinkedObject Context
                 user_code.node_uid = context.node.id
             return user_code

@@ -745,7 +745,7 @@ def create_oblv_key_pair(
         if not len(oblv_keys_stash):
             public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
-            res = oblv_keys_stash.set(oblv_keys)
+            res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
             if res.is_ok():
                 print("Successfully generated Oblv Key pair at startup")
             return res.err()
