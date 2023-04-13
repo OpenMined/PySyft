@@ -1,5 +1,7 @@
 # stdlib
 
+# stdlib
+
 # third party
 import pytest
 from pytest import MonkeyPatch
@@ -54,10 +56,12 @@ def test_requeststash_get_all_for_verify_key_success(
     stash_set_result_2 = request_stash.set(
         submit_request_2.to(Request, context=authed_context_guest_domain_client)
     )
+
     requests = request_stash.get_all_for_verify_key(verify_key)
 
     assert requests.is_ok() is True
     assert len(requests.ok()) == 2
+
     # the order might change so we check all requests
     assert (
         requests.ok()[1] == stash_set_result_2.ok()

@@ -173,9 +173,6 @@ class Request(SyftObject):
             raise Exception(f"Login to {self.node_uid} first.")
 
         action_object = ActionObject.from_obj(result)
-        # print(action_object.syft_action_data.result)
-        # print(action_object.syft_action_data.stdout)
-        # print(action_object.syft_action_data.stderr)
         result = api.services.action.save(action_object)
         print(result)
         from .action_service import TwinMode

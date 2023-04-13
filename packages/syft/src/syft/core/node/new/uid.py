@@ -201,6 +201,8 @@ class UID:
 
 @serializable(attrs=["syft_history_hash"])
 class LineageID(UID):
+    """Extended UID containing a history hash as well, which is used for comparisons."""
+
     syft_history_hash: int
 
     def __init__(
@@ -224,6 +226,9 @@ class LineageID(UID):
     @property
     def id(self) -> UID:
         return UID(self.value)
+
+    def __hash__(self):
+        return hash((self.syft_history_hash, self.value))
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, LineageID):

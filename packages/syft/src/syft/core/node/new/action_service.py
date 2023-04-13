@@ -233,12 +233,12 @@ class ActionService(AbstractService):
                 self, context, resolved_self.private, action, twin_mode=TwinMode.PRIVATE
             )
             if private_result.is_err():
-                return private_result.err()
+                return private_result
             mock_result = execute_object(
                 self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
             )
             if mock_result.is_err():
-                return mock_result.err()
+                return mock_result
 
             private_result = private_result.ok()
             mock_result = mock_result.ok()
@@ -329,9 +329,7 @@ def execute_object(
                 filtered_args = filter_twin_args(args, twin_mode=twin_mode)
                 filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 result = target_method(*filtered_args, **filtered_kwargs)
-                result_action_object = wrap_result(
-                    action.parent_id, action.result_id, result
-                )
+                result_action_object = wrap_result(action.id, action.result_id, result)
             elif twin_mode == TwinMode.NONE and has_twin_inputs:
                 # self isn't a twin but one of the inputs is
                 private_args = filter_twin_args(args, twin_mode=twin_mode)
@@ -374,10 +372,12 @@ def execute_object(
                 raise Exception(
                     f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
                 )
+        else:
+            raise Exception("Missing target method")
 
     except Exception as e:
-        print("what is this exception", e)
         return Err(e)
+
     return Ok(result_action_object)
 
 
