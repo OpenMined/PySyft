@@ -25,6 +25,8 @@ from typeguard import check_type
 from ....util import aggressive_set_attr
 from .credentials import SyftVerifyKey
 from .deserialize import _deserialize as deserialize
+from .recursive_primitives import recursive_serde_register_type
+from .serializable import serializable
 from .serialize import _serialize as serialize
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
@@ -452,6 +454,7 @@ class StorableObjectType:
         return transform(self, context)
 
 
+@serializable()
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
@@ -482,3 +485,6 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
         empty_fields = unset_fields - fields_with_default
         for field_name in empty_fields:
             self.__dict__[field_name] = Empty
+
+
+recursive_serde_register_type(PartialSyftObject)
