@@ -311,7 +311,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             for k, v in dict(self).items():
                 if exclude_empty and v is not Empty:
                     new_dict[k] = v
-                elif exclude_none and v is not None:
+                if exclude_none and v is not None:
                     new_dict[k] = v
             return new_dict
 

@@ -101,8 +101,6 @@ class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None
-
     @pydantic.validator("email", pre=True)
     def make_email(cls, v: EmailStr) -> Optional[EmailStr]:
         return EmailStr(v) if v is not None else v

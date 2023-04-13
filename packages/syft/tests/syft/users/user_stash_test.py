@@ -159,7 +159,8 @@ def test_userstash_update(
     # prepare: add mock data
     user = add_mock_user(user_stash, guest_user)
 
-    update_kwargs = update_user.to_dict(exclude_none=True).items()
+    update_kwargs = update_user.to_dict(exclude_empty=True).items()
+
     for field_name, value in update_kwargs:
         setattr(user, field_name, value)
 
