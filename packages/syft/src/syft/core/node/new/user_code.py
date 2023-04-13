@@ -606,6 +606,10 @@ class UserCodeExecutionResult(SyftObject):
     stdout: str
     stderr: str
     result: Any
+    
+    
+    def __repr__(self) -> str:
+        return self.plot.show()
 
 def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     return execute_byte_code(
@@ -646,6 +650,7 @@ def execute_byte_code(byte_code, func_name, code_id, args, kwargs: Dict[str, Any
             stdout=str(stdout.getvalue()),
             stderr=str(stderr.getvalue()),
             result=result,
+            plot=...
         )
 
     except Exception as e:

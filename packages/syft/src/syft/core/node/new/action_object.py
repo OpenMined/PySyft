@@ -439,6 +439,7 @@ class ActionObject(SyftObject):
 
     def __getattribute__(self, name: str) -> Any:
         # bypass certain attrs to prevent recursion issues
+        # print("Name:", name)
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)
 
