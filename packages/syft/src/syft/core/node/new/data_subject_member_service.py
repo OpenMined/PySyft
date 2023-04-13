@@ -9,6 +9,7 @@ from result import Result
 # relative
 from ....telemetry import instrument
 from .context import AuthedServiceContext
+from .credentials import SyftVerifyKey
 from .data_subject_member import ChildPartitionKey
 from .data_subject_member import DataSubjectMemberRelationship
 from .data_subject_member import ParentPartitionKey
@@ -37,16 +38,16 @@ class DataSubjectMemberStash(BaseUIDStoreStash):
         super().__init__(store=store)
 
     def get_all_for_parent(
-        self, name: str
+        self, credentials: SyftVerifyKey, name: str
     ) -> Result[Optional[DataSubjectMemberRelationship], str]:
         qks = QueryKeys(qks=[ParentPartitionKey.with_obj(name)])
-        return self.query_all(qks=qks)
+        return self.query_all(credentials=credentials, qks=qks)
 
     def get_all_for_child(
-        self, name: str
+        self, credentials: SyftVerifyKey, name: str
     ) -> Result[Optional[DataSubjectMemberRelationship], str]:
         qks = QueryKeys(qks=[ChildPartitionKey.with_obj(name)])
-        return self.query_all(qks=qks)
+        return self.query_all(credentials=credentials, qks=qks)
 
 
 @instrument
@@ -73,7 +74,9 @@ class DataSubjectMemberService(AbstractService):
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> Union[List[str], SyftError]:
         """Get all Members for given data subject"""
-        result = self.stash.get_all_for_parent(name=data_subject_name)
+        result = self.stash.get_all_for_parent(
+            context.credentials, name=data_subject_name
+        )
         if result.is_ok():
             data_subject_members = result.ok()
             return data_subject_members

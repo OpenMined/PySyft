@@ -246,7 +246,6 @@ class MongoStorePartition(StorePartition):
             return Err(f"Missing values for query key: {qk}")
 
         prev_obj = prev_obj[0]
-
         if has_permission or self.has_permission(
             ActionObjectWRITE(uid=prev_obj.id, credentials=credentials)
         ):
@@ -254,7 +253,7 @@ class MongoStorePartition(StorePartition):
             obj_id = obj["id"]
 
             # Set ID to the updated object value
-            setattr(obj, "id", prev_obj[0]["id"])
+            setattr(obj, "id", prev_obj["id"])
 
             # Create the Mongo object
             storage_obj = obj.to(self.storage_type)

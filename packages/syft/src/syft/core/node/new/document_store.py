@@ -421,7 +421,11 @@ class StorePartition:
         has_permission=False,
     ) -> Result[SyftObject, str]:
         return self._thread_safe_cbk(
-            self._update, credentials, qk=qk, obj=obj, has_permission=has_permission
+            self._update,
+            credentials=credentials,
+            qk=qk,
+            obj=obj,
+            has_permission=has_permission,
         )
 
     def get_all_from_store(
@@ -561,8 +565,9 @@ class BaseStash:
 
         index_qks = QueryKeys(qks=unique_keys)
         search_qks = QueryKeys(qks=searchable_keys)
+
         return self.partition.find_index_or_search_keys(
-            credentials, index_qks=index_qks, search_qks=search_qks
+            credentials=credentials, index_qks=index_qks, search_qks=search_qks
         )
 
     def query_all_kwargs(

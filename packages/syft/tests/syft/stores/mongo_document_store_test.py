@@ -264,7 +264,9 @@ def test_mongo_store_partition_update(
             == v
         )
 
-        stored = mongo_store_partition.get_all_from_store(QueryKeys(qks=[key]))
+        stored = mongo_store_partition.get_all_from_store(
+            root_verify_key, QueryKeys(qks=[key])
+        )
         assert stored.ok()[0].data == v
 
 

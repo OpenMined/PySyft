@@ -91,7 +91,6 @@ def test_messageservice_send_error_on_set(
 
 
 def test_messageservice_get_all_success(
-    root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
     authed_context: AuthedServiceContext,
