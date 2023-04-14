@@ -14,6 +14,9 @@ from jax import numpy as jnp
 from jaxlib.xla_extension import DeviceArray
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import networkx as nx
+from networkx import DiGraph
+from networkx import Graph
 import numpy as np
 from pandas import DataFrame
 from pandas import Series
@@ -164,3 +167,22 @@ recursive_serde_register(
 
 # how else do you import a relative file to execute it?
 NOTHING = None
+
+
+# serializing and deserializing networkx Graphs
+def serialize_networkx_graph(graph: Graph) -> bytes:
+    graph_dict = nx.to_dict_of_dicts(graph)
+    return serialize(graph_dict, to_bytes=True)
+
+
+def deserialize_networkx_graph(buf: bytes) -> Graph:
+    graph_dict = deserialize(buf, from_bytes=True)
+    graph = nx.from_dict_of_dicts(graph_dict)
+    return graph
+
+
+recursive_serde_register(
+    DiGraph,
+    serialize=serialize_networkx_graph,
+    deserialize=deserialize_networkx_graph,
+)
