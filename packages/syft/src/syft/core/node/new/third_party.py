@@ -50,7 +50,7 @@ recursive_serde_register(Ok, serialize_attrs=["_value"])
 recursive_serde_register(Err, serialize_attrs=["_value"])
 
 recursive_serde_register_type(pydantic.main.ModelMetaclass)
-recursive_serde_register_type(Result, serialize_attrs=["_value"])
+recursive_serde_register(Result)
 
 # exceptions
 recursive_serde_register(cls=TypeError)

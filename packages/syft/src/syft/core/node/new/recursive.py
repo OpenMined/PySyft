@@ -119,6 +119,10 @@ def combine_bytes(capnp_list: List[bytes]) -> bytes:
 
 
 def rs_object2proto(self: Any) -> _DynamicStructBuilder:
+    is_type = False
+    if isinstance(self, type):
+        is_type = True
+
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
     if fqn not in TYPE_BANK:
@@ -134,7 +138,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         cls,
     ) = TYPE_BANK[fqn]
 
-    if nonrecursive:
+    if nonrecursive or is_type:
         if serialize is None:
             raise Exception(
                 f"Cant serialize {type(self)} nonrecursive without serialize."

@@ -21,6 +21,7 @@ from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .syft_metaclass import Empty
 from .uid import UID
 from .user import User
 from .user import UserCreate
@@ -121,7 +122,7 @@ class UserService(AbstractService):
         context: AuthedServiceContext,
         user_search: UserSearch,
     ) -> Union[List[UserView], SyftError]:
-        kwargs = user_search.to_dict(exclude_none=True)
+        kwargs = user_search.to_dict(exclude_empty=True)
 
         if len(kwargs) == 0:
             valid_search_params = list(UserSearch.__fields__.keys())
@@ -139,7 +140,7 @@ class UserService(AbstractService):
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:
-        updates_role = user_update.role is not None
+        updates_role = user_update.role is not Empty
 
         if (
             updates_role
@@ -180,8 +181,8 @@ class UserService(AbstractService):
 
         edits_non_role_attrs = any(
             [
-                getattr(user_update, attr) is not None
-                for attr in user_update.to_dict(exclude_none=True)
+                getattr(user_update, attr) is not Empty
+                for attr in dict(user_update)
                 if attr != "role"
             ]
         )
@@ -197,7 +198,7 @@ class UserService(AbstractService):
 
         # Fill User Update fields that will not be changed by replacing it
         # for the current values found in user obj.
-        for name, value in vars(user_update).items():
+        for name, value in user_update.to_dict(exclude_empty=True).items():
             if name == "password" and value:
                 salt, hashed = salt_and_hash_password(value, 12)
                 user.hashed_password = hashed

@@ -65,11 +65,12 @@ jobs:
           pip install --upgrade tox bandit safety setuptools packaging wheel twine pytest
           pip install -e .
 
+      # 42923 is ansible 7.4.0 (latest 2023.04.14)
       - name: Scan for security issues python 3.8+
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           bandit -r hagrid
-          safety check -i 42923 -i 51457 -i 52495
+          safety check -i 42923
 
       - name: Run normal tests
         if: steps.changes.outputs.hagrid == 'true'
