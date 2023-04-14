@@ -287,15 +287,23 @@ class Worker(NewNode):
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
+        context = AuthedServiceContext(
+            node=self, credentials=self.signing_key.verify_key
+        )
+
         if UserCodeService in self.services:
             user_code_service = self.get_service(UserCodeService)
-            user_code_service.load_user_code()
+            user_code_service.load_user_code(context=context)
         if self.is_subprocess:
             # print(f"> Starting Subprocess {self}")
             pass
         else:
             print(f"> Starting {self}")
-        CODE_RELOADER[thread_ident()] = user_code_service.load_user_code
+
+        def reload_user_code() -> None:
+            user_code_service.load_user_code(context=context)
+
+        CODE_RELOADER[thread_ident()] = reload_user_code
         # super().post_init()
 
     def init_stores(
@@ -320,7 +328,10 @@ class Worker(NewNode):
         document_store = document_store_config.store_type
         self.document_store_config = document_store_config
 
-        self.document_store = document_store(store_config=document_store_config)
+        self.document_store = document_store(
+            root_verify_key=self.signing_key.verify_key,
+            store_config=document_store_config,
+        )
         if action_store_config is None:
             if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
@@ -519,7 +530,7 @@ class Worker(NewNode):
                 if ServiceConfigRegistry.path_exists(api_call.path):
                     return SyftError(
                         message=f"As a `{role}`,"
-                        "you have has no access to: {api_call.path}"
+                        f"you have has no access to: {api_call.path}"
                     )  # type: ignore
                 else:
                     return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
@@ -693,7 +704,9 @@ def create_admin_new(
 ) -> Optional[User]:
     try:
         user_stash = UserStash(store=node.document_store)
-        row_exists = user_stash.get_by_email(email=email).ok()
+        row_exists = user_stash.get_by_email(
+            credentials=node.signing_key.verify_key, email=email
+        ).ok()
         if row_exists:
             return None
         else:
@@ -709,10 +722,11 @@ def create_admin_new(
             user = create_user.to(User)
             user.signing_key = node.signing_key
             user.verify_key = user.signing_key.verify_key
-            result = user_stash.set(user=user)
+            result = user_stash.set(credentials=node.signing_key.verify_key, user=user)
             if result.is_ok():
                 return result.ok()
-            return None
+            else:
+                raise Exception(f"Could not create user: {result}")
     except Exception as e:
         print("Unable to create new admin", e)
 
@@ -731,7 +745,7 @@ def create_oblv_key_pair(
         if not len(oblv_keys_stash):
             public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
-            res = oblv_keys_stash.set(oblv_keys)
+            res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
             if res.is_ok():
                 print("Successfully generated Oblv Key pair at startup")
             return res.err()

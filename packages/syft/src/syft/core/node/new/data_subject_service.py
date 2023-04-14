@@ -9,6 +9,7 @@ from result import Result
 # relative
 from ....telemetry import instrument
 from .context import AuthedServiceContext
+from .credentials import SyftVerifyKey
 from .data_subject import DataSubject
 from .data_subject import DataSubjectCreate
 from .data_subject import NamePartitionKey
@@ -37,12 +38,20 @@ class DataSubjectStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def get_by_name(self, name: str) -> Result[Optional[DataSubject], str]:
+    def get_by_name(
+        self, credentials: SyftVerifyKey, name: str
+    ) -> Result[Optional[DataSubject], str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials, qks=qks)
 
-    def update(self, data_subject: DataSubject) -> Result[DataSubject, str]:
-        return self.check_type(data_subject, DataSubject).and_then(super().update)
+    def update(
+        self, credentials: SyftVerifyKey, data_subject: DataSubject
+    ) -> Result[DataSubject, str]:
+        res = self.check_type(data_subject, DataSubject)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        return super().update(credentials=credentials, obj=res.ok())
 
 
 @instrument
@@ -70,7 +79,9 @@ class DataSubjectService(AbstractService):
             parent_ds, child_ds = member_relationship
             for ds in [parent_ds, child_ds]:
                 result = self.stash.set(
-                    ds.to(DataSubject, context=context), ignore_duplicates=True
+                    context.credentials,
+                    ds.to(DataSubject, context=context),
+                    ignore_duplicates=True,
                 )
                 if result.is_err():
                     return SyftError(message=str(result.err()))
@@ -87,7 +98,7 @@ class DataSubjectService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[DataSubject], SyftError]:
         """Get all Data subjects"""
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             data_subjects = result.ok()
             return data_subjects
@@ -120,7 +131,7 @@ class DataSubjectService(AbstractService):
         self, context: AuthedServiceContext, name: str
     ) -> Union[SyftSuccess, SyftError]:
         """Get a Data Subject by its name."""
-        result = self.stash.get_by_name(name=name)
+        result = self.stash.get_by_name(context.credentials, name=name)
         if result.is_ok():
             data_subject = result.ok()
             return data_subject

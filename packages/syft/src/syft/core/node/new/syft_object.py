@@ -25,7 +25,10 @@ from typeguard import check_type
 from ....util import aggressive_set_attr
 from .credentials import SyftVerifyKey
 from .deserialize import _deserialize as deserialize
+from .recursive_primitives import recursive_serde_register_type
 from .serialize import _serialize as serialize
+from .syft_metaclass import Empty
+from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
 from .util import full_name_with_qualname
 from .util import get_qualname_for
@@ -292,18 +295,22 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
-    def to_dict(self, exclude_none: bool = False) -> Dict[str, Any]:
+    def to_dict(
+        self, exclude_none: bool = False, exclude_empty: bool = False
+    ) -> Dict[str, Any]:
         warnings.warn(
             "`SyftObject.to_dict` is deprecated and will be removed in a future version",
             PendingDeprecationWarning,
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
-        if not exclude_none:
+        if not exclude_none and not exclude_empty:
             return dict(self)
         else:
             new_dict = {}
             for k, v in dict(self).items():
-                if v is not None:
+                if exclude_empty and v is not Empty:
+                    new_dict[k] = v
+                if exclude_none and v is not None:
                     new_dict[k] = v
             return new_dict
 
@@ -444,3 +451,38 @@ class StorableObjectType:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
+
+
+class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
+    """Syft Object to which partial arguments can be provided."""
+
+    __canonical_name__ = "PartialSyftObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def __init__(self, *args, **kwargs) -> None:
+        # Filter out Empty values from args and kwargs
+        args_, kwargs_ = (), {}
+        for arg in args:
+            if arg is not Empty:
+                args_.append(arg)
+
+        for key, val in kwargs.items():
+            if val is not Empty:
+                kwargs_[key] = val
+
+        super().__init__(*args_, **kwargs_)
+
+        fields_with_default = set()
+        for _field_name, _field in self.__fields__.items():
+            if _field.default or _field.allow_none:
+                fields_with_default.add(_field_name)
+
+        # Exclude unset fields
+        unset_fields = set(self.__fields__) - set(self.__fields_set__)
+
+        empty_fields = unset_fields - fields_with_default
+        for field_name in empty_fields:
+            self.__dict__[field_name] = Empty
+
+
+recursive_serde_register_type(PartialSyftObject)

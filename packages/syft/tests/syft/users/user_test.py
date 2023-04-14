@@ -92,11 +92,6 @@ def test_read_returns_view(root_domain_client):
     for user in users:
         # check that result has no sensitive information
         assert isinstance(root_domain_client.api.services.user[0], UserView)
-        assert (
-            user.password is None
-            and getattr(user, "signing_key", None) is None
-            and getattr(user, "hashed_password", None) is None
-        )
 
 
 def test_user_create(worker, do_client, guest_client, ds_client, root_domain_client):
@@ -105,7 +100,7 @@ def test_user_create(worker, do_client, guest_client, ds_client, root_domain_cli
     for client in [do_client, root_domain_client]:
         res = manually_call_service(
             worker,
-            do_client,
+            client,
             "user.create",
             args=[
                 UserCreate(

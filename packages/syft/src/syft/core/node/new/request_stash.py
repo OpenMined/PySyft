@@ -30,13 +30,17 @@ class RequestStash(BaseUIDStoreStash):
     )
 
     def get_all_for_verify_key(
-        self, verify_key: RequestingUserVerifyKeyPartitionKey
+        self,
+        credentials: SyftVerifyKey,
+        verify_key: SyftVerifyKey,
     ) -> Result[List[Request], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_all(qks=qks)
+        return self.query_all(credentials=credentials, qks=qks)
 
-    def get_all_for_status(self, status: RequestStatus) -> Result[List[Request], str]:
+    def get_all_for_status(
+        self, credentials: SyftVerifyKey, status: RequestStatus
+    ) -> Result[List[Request], str]:
         qks = QueryKeys(qks=[StatusPartitionKey.with_obj(status)])
-        return self.query_all(qks=qks)
+        return self.query_all(credentials=credentials, qks=qks)

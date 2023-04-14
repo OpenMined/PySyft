@@ -7,8 +7,8 @@ from syft.core.node.new.api import SyftAPICall
 
 
 @pytest.fixture
-def guest_mock_user(user_stash, guest_user):
-    result = user_stash.partition.set(guest_user)
+def guest_mock_user(root_verify_key, user_stash, guest_user):
+    result = user_stash.partition.set(root_verify_key, guest_user)
     assert result.is_ok()
 
     user = result.ok()

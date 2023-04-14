@@ -15,6 +15,7 @@ from pydantic.networks import EmailStr
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .serializable import serializable
+from .syft_object import PartialSyftObject
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .transforms import TransformContext
@@ -50,7 +51,7 @@ class User(SyftObject):
     role: Optional[ServiceRole]
     institution: Optional[str]
     website: Optional[str] = None
-    created_at: Optional[str]
+    created_at: Optional[str] = None
 
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
@@ -96,24 +97,22 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 
 
 @serializable()
-class UserUpdate(SyftObject):
+class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None
-
-    @pydantic.validator("email", pre=True, always=True)
-    def make_email(cls, v: EmailStr) -> EmailStr:
+    @pydantic.validator("email", pre=True)
+    def make_email(cls, v: EmailStr) -> Optional[EmailStr]:
         return EmailStr(v) if v is not None else v
 
-    email: Optional[EmailStr]
-    name: Optional[str]
-    role: Optional[ServiceRole] = None  # make sure role cant be set without uid
-    password: Optional[str] = None
-    password_verify: Optional[str] = None
-    verify_key: Optional[SyftVerifyKey] = None
-    institution: Optional[str] = None
-    website: Optional[str] = None
+    email: EmailStr
+    name: str
+    role: ServiceRole  # make sure role cant be set without uid
+    password: str
+    password_verify: str
+    verify_key: SyftVerifyKey
+    institution: str
+    website: str
 
 
 @serializable()
@@ -126,28 +125,31 @@ class UserCreate(UserUpdate):
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: str
     password_verify: str
-    verify_key: Optional[SyftVerifyKey] = None
-    institution: Optional[str] = None
-    website: Optional[str] = None
+    verify_key: Optional[SyftVerifyKey]
+    institution: Optional[str]
+    website: Optional[str]
 
     __attr_repr_cols__ = ["name", "email"]
 
 
 @serializable()
-class UserSearch(SyftObject):
+class UserSearch(PartialSyftObject):
     __canonical_name__ = "UserSearch"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
-    email: Optional[EmailStr]
-    verify_key: Optional[SyftVerifyKey]
-    name: Optional[str]
+    id: UID
+    email: EmailStr
+    verify_key: SyftVerifyKey
+    name: str
 
 
 @serializable()
-class UserView(UserUpdate):
+class UserView(SyftObject):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    email: EmailStr
+    name: str
 
     __attr_repr_cols__ = ["name", "email"]
 

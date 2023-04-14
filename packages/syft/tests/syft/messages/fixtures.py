@@ -68,6 +68,7 @@ def mock_create_message(faker) -> CreateMessage:
 
 @pytest.fixture(autouse=True)
 def mock_message(
+    root_verify_key,
     message_stash: MessageStash,
 ) -> Message:
     mock_message = Message(
@@ -78,7 +79,7 @@ def mock_message(
         created_at=DateTime.now(),
     )
 
-    result = message_stash.set(mock_message)
+    result = message_stash.set(root_verify_key, mock_message)
     assert result.is_ok()
 
     return mock_message

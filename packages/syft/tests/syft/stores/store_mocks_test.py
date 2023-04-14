@@ -35,9 +35,14 @@ class MockKeyValueBackingStore(dict, KeyValueBackingStore):
         return value
 
     def __getitem__(self, key: Any) -> Any:
-        self._check_if_crashed()
-        value = super().__getitem__(key)
-        return value
+        try:
+            self._check_if_crashed()
+            value = super().__getitem__(key)
+            return value
+        except KeyError as e:
+            if self._ddtype:
+                return self._ddtype()
+            raise e
 
 
 @serializable()

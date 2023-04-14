@@ -8,6 +8,8 @@ from result import Ok
 
 # relative
 from ....telemetry import instrument
+from .action_permissions import ActionObjectPermission
+from .action_permissions import ActionPermission
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
@@ -48,7 +50,16 @@ class RequestService(AbstractService):
     ) -> Union[Request, SyftError]:
         """Submit a Request"""
         try:
-            result = self.stash.set(request.to(Request, context=context))
+            req = request.to(Request, context=context)
+            result = self.stash.set(
+                context.credentials,
+                req,
+                add_permissions=[
+                    ActionObjectPermission(
+                        uid=req.id, permission=ActionPermission.ALL_READ
+                    ),
+                ],
+            )
             if result.is_ok():
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
@@ -82,7 +93,7 @@ class RequestService(AbstractService):
 
     @service_method(path="request.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Request], SyftError]:
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
         requests = result.ok()
@@ -102,7 +113,7 @@ class RequestService(AbstractService):
     def apply(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
-        request = self.stash.get_by_uid(uid)
+        request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
             request = request.ok()
             result = request.apply(context=context)
