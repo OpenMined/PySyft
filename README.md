@@ -305,3 +305,5 @@ Syft is under active development and is not yet ready for pilots on private data
 
 [Apache License 2.0](LICENSE)<br />
 <a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
+
+<!-- 🥇 -->
