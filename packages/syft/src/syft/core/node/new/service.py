@@ -100,25 +100,31 @@ class UserServiceConfigRegistry:
         return self.__service_config_registry__
 
 
-def get_text_signature(doc):
-    s = doc.split(")\n\n")[0] + ")".replace("\n", "")
-    # todo: many np signature contain a "/"  https://numpy.org/doc/stable/reference/generated/numpy.add.html
-    s = s.replace("/,", "")
-    # trailing case
-    s = s.replace(", /)", ")")
-    # todo: some signatures have a * https://numpy.org/doc/stable/reference/generated/numpy.matmul.html
-    s = s.replace(" *,", "")
-    # todo: many np signature contain "[, signature, extobj]" https://numpy.org/doc/stable/reference/generated/numpy.add.html
-    s = s.replace("[, signature, extobj]", "")
-    # todo, fix for matmul
-    s = s.replace("[, signature, extobj, axes, axis]", "")
-    # remove leading whitespace
-    return re.sub(r"^\s+", "", s)
+def get_text_signature(doc, callable_name):
+    if callable_name not in doc:
+        return None
+    else:
+        search_res = re.search(rf"{callable_name}\((.*)\)\n\n", doc)
+        if search_res:
+            signature = search_res.group(1)
+            params = re.findall(r"\[(.*?)\]", signature)
+            if params:
+                for param in params[:-1]:
+                    signature = signature.replace(f"[{param}]", param)
+                signature = signature.replace(
+                    f"[{params[-1]}]",
+                    f', {", ".join([f"{param}=None" for param in params[-1].split(", ") if param])}',
+                )
+            signature = re.sub(r"(( ,)|(, )|,)(\/|\*)", "", signature)
+            return f"{callable_name}({signature})"
+        else:
+            return None
 
 
 def get_signature_from_doc(_callable):
     doc = _callable.__doc__
-    text_signature = get_text_signature(doc)
+    name = _callable.__name__
+    text_signature = get_text_signature(doc, name)
     return _signature_fromstr(inspect.Signature, _callable, text_signature, True)
 
 
