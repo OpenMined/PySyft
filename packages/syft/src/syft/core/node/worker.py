@@ -103,6 +103,13 @@ def gipc_decoder(obj_bytes):
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 
+DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
+DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
+
+
+def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
+    return os.environ.get(key, default)
+
 
 def get_private_key_env() -> Optional[str]:
     return get_env(NODE_PRIVATE_KEY)
@@ -112,12 +119,19 @@ def get_node_uid_env() -> Optional[str]:
     return get_env(NODE_UID)
 
 
-def get_env(key: str) -> Optional[str]:
-    return os.environ.get(key, None)
+def get_default_root_email() -> Optional[str]:
+    return get_env(DEFAULT_ROOT_EMAIL, "info@openmined.org")
+
+
+def get_default_root_password() -> Optional[str]:
+    return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
 
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
+
+default_root_email = get_default_root_email()
+default_root_password = get_default_root_password()
 
 
 @instrument
@@ -135,8 +149,8 @@ class Worker(NewNode):
         signing_key: Optional[Union[SyftSigningKey, SigningKey]] = None,
         action_store_config: Optional[StoreConfig] = None,
         document_store_config: Optional[StoreConfig] = None,
-        root_email: str = "info@openmined.org",
-        root_password: str = "changethis",
+        root_email: str = default_root_email,
+        root_password: str = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
         node_type: NodeType = NodeType.DOMAIN,

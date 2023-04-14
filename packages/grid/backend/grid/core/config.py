@@ -70,8 +70,8 @@ class Settings(BaseSettings):
             and values.get("EMAILS_FROM_EMAIL")
         )
 
-    FIRST_SUPERUSER: EmailStr = EmailStr("info@openmined.org")
-    FIRST_SUPERUSER_PASSWORD: str = "changethis"
+    DEFAULT_ROOT_EMAIL: EmailStr = EmailStr("info@openmined.org")
+    DEFAULT_ROOT_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
     NODE_NAME: str = "default_node_name"
