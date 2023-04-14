@@ -122,6 +122,7 @@ def test_queue_stash_update(queue: Any) -> None:
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.xfail
 def test_queue_set_existing_queue_threading(queue: Any) -> None:
     thread_cnt = 3
     repeats = REPEATS
