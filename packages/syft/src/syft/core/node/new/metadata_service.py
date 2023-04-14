@@ -7,6 +7,7 @@ from result import Result
 
 # relative
 from .context import AuthedServiceContext
+from .context import UnauthedServiceContext
 from .document_store import DocumentStore
 from .metadata_stash import MetadataStash
 from .node_metadata import NodeMetadata
@@ -27,9 +28,9 @@ class MetadataService(AbstractService):
         self.stash = MetadataStash(store=store)
 
     @service_method(path="metadata.get", name="get")
-    def get(self, context: AuthedServiceContext) -> Result[Ok, Err]:
+    def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Metadata"""
-        result = self.stash.get_all(context.credentials)
+        result = self.stash.get_all(context.node.signing_key.verify_key)
         if result.is_ok():
             metadata = result.ok()
             # check if the metadata list is empty
