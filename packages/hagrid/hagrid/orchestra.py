@@ -8,6 +8,7 @@ import getpass
 import os
 import subprocess  # nosec
 from typing import Any
+from typing import Callable
 from typing import Optional
 
 # third party
@@ -69,20 +70,22 @@ class NodeHandle:
         port: Optional[int] = None,
         url: Optional[str] = None,
         python_node: Optional[Any] = None,
+        shutdown_handle: Optional[Callable] = None,
     ) -> None:
         self.node_type = node_type
         self.name = name
         self.port = port
         self.url = url
         self.python_node = python_node
+        self.shutdown_handle = shutdown_handle
 
     @property
     def client(self) -> Any:
-        if self.node_type == NodeType.PYTHON:
-            return self.python_node.guest_client  # type: ignore
-        else:
+        if self.port:
             sy = get_syft_client()
             return sy.login(port=self.port)  # type: ignore
+        elif self.node_type == NodeType.PYTHON:
+            return self.python_node.guest_client  # type: ignore
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None
@@ -122,8 +125,22 @@ class Orchestra:
 
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
-            worker = sy.Worker.named(name, processes=processes, reset=reset)  # type: ignore
-            return NodeHandle(node_type=node_type_enum, name=name, python_node=worker)
+            if port:
+                # from syft.core.node.new.server import bind_worker
+                start, stop = sy.bind_worker(port=port)  # type: ignore
+                start()
+                return NodeHandle(
+                    node_type=node_type_enum,
+                    name=name,
+                    port=port,
+                    url="http://localhost",
+                    shutdown_handle=stop,
+                )
+            else:
+                worker = sy.Worker.named(name, processes=processes, reset=reset)  # type: ignore
+                return NodeHandle(
+                    node_type=node_type_enum, name=name, python_node=worker
+                )
 
         # Currently by default we launch in dev mode
         if reset:

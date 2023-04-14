@@ -12,22 +12,22 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import ValidationError
 
-# syft absolute
-from syft import deserialize
-from syft import serialize  # type: ignore
-from syft.core.node.new.context import NodeServiceContext
-from syft.core.node.new.context import UnauthedServiceContext
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.credentials import UserLoginCredentials
-from syft.core.node.new.metadata_service import MetadataService
-from syft.core.node.new.node import NewNode
-from syft.core.node.new.node_metadata import NodeMetadataJSON
-from syft.core.node.new.response import SyftError
-from syft.core.node.new.user import UserCreate
-from syft.core.node.new.user import UserPrivateKey
-from syft.core.node.new.user_service import UserService
-from syft.core.node.worker import Worker
-from syft.telemetry import TRACE_MODE
+# relative
+from .... import deserialize
+from .... import serialize  # type: ignore
+from ....telemetry import TRACE_MODE
+from ..worker import Worker
+from .context import NodeServiceContext
+from .context import UnauthedServiceContext
+from .credentials import SyftVerifyKey
+from .credentials import UserLoginCredentials
+from .metadata_service import MetadataService
+from .node import NewNode
+from .node_metadata import NodeMetadataJSON
+from .response import SyftError
+from .user import UserCreate
+from .user import UserPrivateKey
+from .user_service import UserService
 
 
 def make_routes(worker: Worker) -> APIRouter:

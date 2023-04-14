@@ -39,4 +39,5 @@ jupyter_notebook = is_notebook()
 
 if jupyter_notebook:
     # print("Patching Gevent in Jupyter")
+    print(">>>> are we patching jupyter???")
     monkey.patch_all(thread=False)
