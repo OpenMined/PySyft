@@ -1,4 +1,5 @@
 # stdlib
+from typing import List
 from typing import Optional
 
 # third party
@@ -7,6 +8,7 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
+from .action_permissions import ActionObjectPermission
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .document_store import BaseStash
@@ -40,43 +42,75 @@ class UserStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def set(self, user: User) -> Result[User, str]:
-        return self.check_type(user, self.object_type).and_then(super().set)
+    def set(
+        self,
+        credentials: SyftVerifyKey,
+        user: User,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
+    ) -> Result[User, str]:
+        res = self.check_type(user, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        return super().set(
+            credentials=credentials, obj=res.ok(), add_permissions=add_permissions
+        )
 
-    def get_by_uid(self, uid: UID) -> Result[Optional[User], str]:
+    def admin_verify_key(self):
+        return Ok(self.partition.root_verify_key)
+
+    def get_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
 
-    def get_by_email(self, email: str) -> Result[Optional[User], str]:
+    def get_by_email(
+        self, credentials: SyftVerifyKey, email: str
+    ) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
 
-    def get_by_role(self, role: ServiceRole) -> Result[Optional[User], str]:
+    def get_by_role(
+        self, credentials: SyftVerifyKey, role: ServiceRole
+    ) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[RolePartitionKey.with_obj(role)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_signing_key(
-        self, signing_key: SyftSigningKey
+        self, credentials: SyftVerifyKey, signing_key: SyftSigningKey
     ) -> Result[Optional[User], str]:
         if isinstance(signing_key, str):
             signing_key = SyftSigningKey.from_string(signing_key)
         qks = QueryKeys(qks=[SigningKeyPartitionKey.with_obj(signing_key)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_verify_key(
-        self, verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[Optional[User], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
 
-    def delete_by_uid(self, uid: UID) -> Result[SyftSuccess, str]:
+    def delete_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID, has_permission=False
+    ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(qk=qk)
+        result = super().delete(
+            credentials=credentials, qk=qk, has_permission=has_permission
+        )
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result
 
-    def update(self, user: User) -> Result[User, str]:
-        return self.check_type(user, self.object_type).and_then(super().update)
+    def update(
+        self, credentials: SyftVerifyKey, user: User, has_permission=False
+    ) -> Result[User, str]:
+        res = self.check_type(user, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        return super().update(
+            credentials=credentials, obj=res.ok(), has_permission=has_permission
+        )

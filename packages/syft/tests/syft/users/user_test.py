@@ -105,7 +105,7 @@ def test_user_create(worker, do_client, guest_client, ds_client, root_domain_cli
     for client in [do_client, root_domain_client]:
         res = manually_call_service(
             worker,
-            do_client,
+            client,
             "user.create",
             args=[
                 UserCreate(

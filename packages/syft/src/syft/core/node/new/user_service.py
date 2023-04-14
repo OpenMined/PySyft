@@ -6,6 +6,8 @@ from typing import Union
 
 # relative
 from ....telemetry import instrument
+from .action_permissions import ActionObjectPermission
+from .action_permissions import ActionPermission
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .context import UnauthedServiceContext
@@ -51,14 +53,24 @@ class UserService(AbstractService):
     ) -> Union[UserView, SyftError]:
         """Create a new user"""
         user = user_create.to(User)
-        result = self.stash.get_by_email(email=user.email)
+        result = self.stash.get_by_email(
+            credentials=context.credentials, email=user.email
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
         user_exists = result.ok() is not None
         if user_exists:
             return SyftError(message=f"User already exists with email: {user.email}")
 
-        result = self.stash.set(user=user)
+        result = self.stash.set(
+            credentials=context.credentials,
+            user=user,
+            add_permissions=[
+                ActionObjectPermission(
+                    uid=user.id, permission=ActionPermission.ALL_READ
+                ),
+            ],
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
         user = result.ok()
@@ -69,7 +81,7 @@ class UserService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[Optional[UserView], SyftError]:
         """Get user for given uid"""
-        result = self.stash.get_by_uid(uid=uid)
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_ok():
             user = result.ok()
             if user is None:
@@ -82,7 +94,7 @@ class UserService(AbstractService):
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[Optional[UserView], SyftError]:
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return [user.to(UserView) for user in result.ok()]
 
@@ -92,7 +104,10 @@ class UserService(AbstractService):
     def get_role_for_credentials(
         self, credentials: SyftVerifyKey
     ) -> Union[Optional[ServiceRole], SyftError]:
-        result = self.stash.get_by_verify_key(verify_key=credentials)
+        # they could be different
+        result = self.stash.get_by_verify_key(
+            credentials=credentials, verify_key=credentials
+        )
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
             user = result.ok()
@@ -114,7 +129,7 @@ class UserService(AbstractService):
                 message=f"Invalid Search parameters. \
                 Allowed params: {valid_search_params}"
             )
-        result = self.stash.find_all(**kwargs)
+        result = self.stash.find_all(credentials=context.credentials, **kwargs)
         if result.is_err():
             return SyftError(message=str(result.err()))
         users = result.ok()
@@ -133,7 +148,7 @@ class UserService(AbstractService):
             return SyftError(message=f"{context.role} is not allowed to edit roles")
 
         # Get user to be updated by its UID
-        result = self.stash.get_by_uid(uid=uid)
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
 
         # TODO: ADD Email Validation
         if result.is_err():
@@ -190,7 +205,9 @@ class UserService(AbstractService):
             elif not name.startswith("__") and value is not None:
                 setattr(user, name, value)
 
-        result = self.stash.update(user=user)
+        result = self.stash.update(
+            credentials=context.credentials, user=user, has_permission=True
+        )
 
         if result.is_err():
             error_msg = (
@@ -202,8 +219,8 @@ class UserService(AbstractService):
 
         return user.to(UserView)
 
-    def get_target_object(self, uid: UID):
-        user_result = self.stash.get_by_uid(uid=uid)
+    def get_target_object(self, credentials: SyftVerifyKey, uid: UID):
+        user_result = self.stash.get_by_uid(credentials=credentials, uid=uid)
         if user_result.is_err():
             return SyftError(message=str(user_result.err()))
         user = user_result.ok()
@@ -215,7 +232,7 @@ class UserService(AbstractService):
     @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
         # third party
-        user = self.get_target_object(uid)
+        user = self.get_target_object(context.credentials, uid)
         if isinstance(user, SyftError):
             return user
 
@@ -234,7 +251,9 @@ class UserService(AbstractService):
         else:
             return permission_error
 
-        result = self.stash.delete_by_uid(uid=uid)
+        result = self.stash.delete_by_uid(
+            credentials=context.credentials, uid=uid, has_permission=True
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -246,7 +265,9 @@ class UserService(AbstractService):
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
-        result = self.stash.get_by_email(email=context.login_credentials.email)
+        result = self.stash.get_by_email(
+            credentials=self.admin_verify_key(), email=context.login_credentials.email
+        )
         if result.is_ok():
             user = result.ok()
             if user is not None and check_pwd(
@@ -266,10 +287,15 @@ class UserService(AbstractService):
         )
 
     def admin_verify_key(self) -> Union[SyftVerifyKey, SyftError]:
-        result = self.stash.get_by_role(role=ServiceRole.ADMIN)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return result.ok().verify_key
+        try:
+            result = self.stash.admin_verify_key()
+            if result.is_ok():
+                return result.ok()
+            else:
+                return SyftError(message="failed to get admin verify_key")
+
+        except Exception as e:
+            return SyftError(message=str(e))
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
@@ -277,14 +303,22 @@ class UserService(AbstractService):
         """Register new user"""
 
         user = new_user.to(User)
-        result = self.stash.get_by_email(email=user.email)
+        result = self.stash.get_by_email(credentials=user.verify_key, email=user.email)
         if result.is_err():
             return SyftError(message=str(result.err()))
         user_exists = result.ok() is not None
         if user_exists:
             return SyftError(message=f"User already exists with email: {user.email}")
 
-        result = self.stash.set(user=user)
+        result = self.stash.set(
+            credentials=user.verify_key,
+            user=user,
+            add_permissions=[
+                ActionObjectPermission(
+                    uid=user.id, permission=ActionPermission.ALL_READ
+                ),
+            ],
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -293,7 +327,9 @@ class UserService(AbstractService):
         return tuple([msg, user.to(UserPrivateKey)])
 
     def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:
-        result = self.stash.get_by_email(email=email)
+        # we are bypassing permissions here, so dont use to return a result directly to the user
+        credentials = self.admin_verify_key()
+        result = self.stash.get_by_email(credentials=credentials, email=email)
         if result.is_ok():
             return result.ok().verify_key
         return SyftError(message=f"No user with email: {email}")

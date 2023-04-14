@@ -38,14 +38,16 @@ class MessageService(AbstractService):
         """Send a new message"""
 
         new_message = message.to(Message, context=context)
-        result = self.stash.set(new_message)
+        result = self.stash.set(context.credentials, new_message)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()
 
     @service_method(path="messages.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Message], SyftError]:
-        result = self.stash.get_all_inbox_for_verify_key(verify_key=context.credentials)
+        result = self.stash.get_all_inbox_for_verify_key(
+            context.credentials, verify_key=context.credentials
+        )
         if result.err():
             return SyftError(message=str(result.err()))
         messages = result.ok()
@@ -55,11 +57,12 @@ class MessageService(AbstractService):
     def get_all_sent(
         self, context: AuthedServiceContext
     ) -> Union[List[Message], SyftError]:
-        result = self.stash.get_all_sent_for_verify_key(verify_key=context.credentials)
+        result = self.stash.get_all_sent_for_verify_key(
+            context.credentials, context.credentials
+        )
         if result.err():
             return SyftError(message=str(result.err()))
         messages = result.ok()
-        print(messages)
         return messages
 
     @service_method(
@@ -72,7 +75,7 @@ class MessageService(AbstractService):
         status: MessageStatus,
     ) -> Union[List[Message], SyftError]:
         result = self.stash.get_all_by_verify_key_for_status(
-            verify_key=context.credentials, status=status
+            context.credentials, verify_key=context.credentials, status=status
         )
         if result.err():
             return SyftError(message=str(result.err()))
@@ -84,7 +87,7 @@ class MessageService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[Message, SyftError]:
         result = self.stash.update_message_status(
-            uid=uid, status=MessageStatus.DELIVERED
+            context.credentials, uid=uid, status=MessageStatus.DELIVERED
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -103,7 +106,9 @@ class MessageService(AbstractService):
 
     @service_method(path="messages.clear", name="clear")
     def clear(self, context: AuthedServiceContext) -> Union[SyftError, SyftSuccess]:
-        result = self.stash.delete_all_for_verify_key(verify_key=context.credentials)
+        result = self.stash.delete_all_for_verify_key(
+            credentials=context.credentials, verify_key=context.credentials
+        )
         if result.is_ok():
             return SyftSuccess(message="All messages cleared !!")
         return SyftError(message=str(result.err()))

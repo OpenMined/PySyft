@@ -29,7 +29,7 @@ class MetadataService(AbstractService):
     @service_method(path="metadata.get", name="get")
     def get(self, context: AuthedServiceContext) -> Result[Ok, Err]:
         """Get Metadata"""
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             metadata = result.ok()
             # check if the metadata list is empty
@@ -45,7 +45,7 @@ class MetadataService(AbstractService):
         self, context: AuthedServiceContext, metadata: NodeMetadata
     ) -> Result[Ok, Err]:
         """Set a new the Node Metadata"""
-        result = self.stash.set(metadata)
+        result = self.stash.set(context.credentials, metadata)
         if result.is_ok():
             return result
         else:
@@ -55,14 +55,14 @@ class MetadataService(AbstractService):
     def update(
         self, context: AuthedServiceContext, metadata: NodeMetadataUpdate
     ) -> Result[Ok, Err]:
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             current_metadata = result.ok()
             if len(current_metadata) > 0:
                 new_metadata = current_metadata[0].copy(
                     update=metadata.dict(exclude_unset=True)
                 )
-                update_result = self.stash.update(new_metadata)
+                update_result = self.stash.update(context.credentials, new_metadata)
                 if update_result.is_ok():
                     return result
                 else:
