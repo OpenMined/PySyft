@@ -49,10 +49,10 @@ def mock_asset(worker, root_domain_client) -> Asset:
 
 
 @pytest.fixture
-def mock_dataset(mock_dataset_stash, mock_asset) -> Dataset:
+def mock_dataset(root_verify_key, mock_dataset_stash, mock_asset) -> Dataset:
     mock_dataset = Dataset(id=UID(), name="test_dataset")
     mock_dataset.asset_list.append(mock_asset)
-    result = mock_dataset_stash.partition.set(mock_dataset)
+    result = mock_dataset_stash.partition.set(root_verify_key, mock_dataset)
     mock_dataset = result.ok()
     return mock_dataset
 

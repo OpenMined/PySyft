@@ -30,11 +30,13 @@ class UserCodeStash(BaseUIDStoreStash):
         super().__init__(store=store)
 
     def get_all_by_user_verify_key(
-        self, user_verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
     ) -> Result[List[UserCode], str]:
         qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(user_verify_key)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
 
-    def get_by_code_hash(self, code_hash: int) -> Result[Optional[UserCode], str]:
+    def get_by_code_hash(
+        self, credentials: SyftVerifyKey, code_hash: int
+    ) -> Result[Optional[UserCode], str]:
         qks = QueryKeys(qks=[CodeHashPartitionKey.with_obj(code_hash)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
