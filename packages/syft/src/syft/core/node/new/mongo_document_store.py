@@ -15,6 +15,10 @@ from result import Ok
 from result import Result
 
 # relative
+from .action_permissions import ActionObjectPermission
+from .action_permissions import ActionObjectREAD
+from .action_permissions import ActionObjectWRITE
+from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
@@ -190,26 +194,41 @@ class MongoStorePartition(StorePartition):
 
     def _set(
         self,
+        credentials: SyftVerifyKey,
         obj: SyftObject,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
-        storage_obj = obj.to(self.storage_type)
+        write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
+        can_write = self.has_permission(write_permission)
+        if can_write:
+            storage_obj = obj.to(self.storage_type)
 
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection = collection_status.ok()
+            collection_status = self.collection
+            if collection_status.is_err():
+                return collection_status
+            collection = collection_status.ok()
 
-        if ignore_duplicates:
-            collection = collection.with_options(write_concern=WriteConcern(w=0))
-        try:
-            collection.insert_one(storage_obj)
-        except DuplicateKeyError as e:
-            return Err(f"Duplicate Key Error for {obj}: {e}")
+            if ignore_duplicates:
+                collection = collection.with_options(write_concern=WriteConcern(w=0))
+            try:
+                collection.insert_one(storage_obj)
+            except DuplicateKeyError as e:
+                return Err(f"Duplicate Key Error for {obj}: {e}")
+            if add_permissions is not None:
+                pass
+                # TODO: update permissions
+            return Ok(obj)
+        else:
+            return Err(f"No permission to write object with id {obj.id}")
 
-        return Ok(obj)
-
-    def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+    def _update(
+        self,
+        credentials: SyftVerifyKey,
+        qk: QueryKey,
+        obj: SyftObject,
+        has_permission: bool = False,
+    ) -> Result[SyftObject, str]:
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -218,7 +237,7 @@ class MongoStorePartition(StorePartition):
         # TODO: optimize the update. The ID should not be overwritten,
         # but the qk doesn't necessarily have to include the `id` field either.
 
-        prev_obj_status = self._get_all_from_store(QueryKeys(qks=[qk]))
+        prev_obj_status = self._get_all_from_store(credentials, QueryKeys(qks=[qk]))
         if prev_obj_status.is_err():
             return Err(f"No object found with query key: {qk}")
 
@@ -226,33 +245,43 @@ class MongoStorePartition(StorePartition):
         if len(prev_obj) == 0:
             return Err(f"Missing values for query key: {qk}")
 
-        # we don't want to overwrite Mongo's "id_" or Syft's "id" on update
-        obj_id = obj["id"]
+        prev_obj = prev_obj[0]
+        if has_permission or self.has_permission(
+            ActionObjectWRITE(uid=prev_obj.id, credentials=credentials)
+        ):
+            # we don't want to overwrite Mongo's "id_" or Syft's "id" on update
+            obj_id = obj["id"]
 
-        # Set ID to the updated object value
-        setattr(obj, "id", prev_obj[0]["id"])
+            # Set ID to the updated object value
+            setattr(obj, "id", prev_obj["id"])
 
-        # Create the Mongo object
-        storage_obj = obj.to(self.storage_type)
+            # Create the Mongo object
+            storage_obj = obj.to(self.storage_type)
 
-        # revert the ID
-        setattr(obj, "id", obj_id)
+            # revert the ID
+            setattr(obj, "id", obj_id)
 
-        try:
-            collection.update_one(filter=qk.as_dict_mongo, update={"$set": storage_obj})
-        except Exception as e:
-            return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
+            try:
+                collection.update_one(
+                    filter=qk.as_dict_mongo, update={"$set": storage_obj}
+                )
+            except Exception as e:
+                return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
 
-        return Ok(obj)
+            return Ok(obj)
+        else:
+            return Err(f"Failed to update obj {obj}, you have no permission")
 
     def _find_index_or_search_keys(
-        self, index_qks: QueryKeys, search_qks: QueryKeys
+        self, credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
         # TODO: pass index as hint to find method
         qks = QueryKeys(qks=(index_qks.all + search_qks.all))
-        return self._get_all_from_store(qks=qks)
+        return self._get_all_from_store(credentials=credentials, qks=qks)
 
-    def _get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+    def _get_all_from_store(
+        self, credentials: SyftVerifyKey, qks: QueryKeys
+    ) -> Result[List[SyftObject], str]:
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -264,25 +293,40 @@ class MongoStorePartition(StorePartition):
             obj = self.storage_type(storage_obj)
             transform_context = TransformContext(output={}, obj=obj)
             syft_objs.append(obj.to(self.settings.object_type, transform_context))
-        return Ok(syft_objs)
 
-    def _delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+        # TODO: maybe do this in loop before this
+        res = []
+        for s in syft_objs:
+            if self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials)):
+                res.append(s)
+        return Ok(res)
+
+    def _delete(
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
+    ) -> Result[SyftSuccess, Err]:
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
         collection = collection_status.ok()
 
-        qks = QueryKeys(qks=qk)
-        result = collection.delete_one(filter=qks.as_dict_mongo)
+        if has_permission or self.has_permission(
+            ActionObjectWRITE(uid=qk.value, credentials=credentials)
+        ):
+            qks = QueryKeys(qks=qk)
+            result = collection.delete_one(filter=qks.as_dict_mongo)
 
-        if result.deleted_count == 1:
-            return Ok(SyftSuccess(message="Deleted"))
+            if result.deleted_count == 1:
+                return Ok(SyftSuccess(message="Deleted"))
 
         return Err(f"Failed to delete object with qk: {qk}")
 
-    def _all(self):
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
+        # TODO: implement
+        return True
+
+    def _all(self, credentials: SyftVerifyKey):
         qks = QueryKeys(qks=())
-        return self._get_all_from_store(qks=qks)
+        return self._get_all_from_store(credentials=credentials, qks=qks)
 
     def __len__(self):
         collection_status = self.collection

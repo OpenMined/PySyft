@@ -318,6 +318,20 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Installs Oblivious CLI tool",
 )
+@click.option(
+    "--set-root-email",
+    default=None,
+    required=False,
+    type=str,
+    help="Set root email of node",
+)
+@click.option(
+    "--set-root-password",
+    default=None,
+    required=False,
+    type=str,
+    help="Set root password of node",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1163,6 +1177,14 @@ def create_launch_cmd(
 
     parsed_kwargs["tail"] = tail
 
+    parsed_kwargs["set_root_password"] = (
+        kwargs["set_root_password"] if "set_root_password" in kwargs else None
+    )
+
+    parsed_kwargs["set_root_email"] = (
+        kwargs["set_root_email"] if "set_root_email" in kwargs else None
+    )
+
     if parsed_kwargs["from_template"] and host is not None:
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(host_type=host)
@@ -1945,6 +1967,12 @@ def create_launch_docker_cmd(
     # currently we only have a domain frontend for dev mode
     if kwargs.get("release", "") == "development" and str(node_type.input) != "network":
         envs["FRONTEND_TARGET"] = "grid-ui-development"
+
+    if "set_root_password" in kwargs and kwargs["set_root_password"] is not None:
+        envs["DEFAULT_ROOT_PASSWORD"] = kwargs["set_root_password"]
+
+    if "set_root_email" in kwargs and kwargs["set_root_email"] is not None:
+        envs["DEFAULT_ROOT_EMAIL"] = kwargs["set_root_email"]
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]

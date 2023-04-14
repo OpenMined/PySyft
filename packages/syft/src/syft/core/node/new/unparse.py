@@ -1,5 +1,7 @@
 # stdlib
 import _ast
+import ast
+import sys
 
 # third party
 import astunparse  # ast.unparse for python 3.8
@@ -21,6 +23,9 @@ class FixUnparser(astunparse.Unparser):
 
 
 def unparse(tree: _ast.Module) -> str:
-    v = cStringIO()
-    FixUnparser(tree, file=v)
-    return v.getvalue()
+    if sys.version_info >= (3, 9):
+        return ast.unparse(tree)
+    else:
+        v = cStringIO()
+        FixUnparser(tree, file=v)
+        return v.getvalue()

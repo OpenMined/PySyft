@@ -26,7 +26,7 @@ class UserPolicyStash(BaseUIDStoreStash):
         super().__init__(store=store)
 
     def get_all_by_user_verify_key(
-        self, user_verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
     ) -> Result[List[UserPolicy], str]:
         qks = QueryKeys(qks=[PolicyUserVerifyKeyPartitionKey.with_obj(user_verify_key)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
