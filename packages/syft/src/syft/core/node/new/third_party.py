@@ -1,7 +1,6 @@
 # stdlib
 
 # stdlib
-from copy import deepcopy
 from datetime import date
 from datetime import datetime
 from datetime import time
@@ -49,73 +48,6 @@ recursive_serde_register(
 # result Ok and Err
 recursive_serde_register(Ok, serialize_attrs=["_value"])
 recursive_serde_register(Err, serialize_attrs=["_value"])
-
-
-def serialize_modelfield(mf: pydantic.fields.ModelField) -> bytes:
-    keys = list(
-        set(mf.__slots__)
-        - set(
-            [
-                "validators",
-                "pre_validators",
-                "post_validators",
-                "class_validators",
-                "model_config",
-            ]
-        )
-    )
-    dict_values = {}
-    for k in keys:
-        dict_values[k] = getattr(mf, k, None)
-    return serialize(dict_values, to_bytes=True)
-
-
-def deserialize_modelfield(buf: bytes) -> pydantic.fields.ModelField:
-    dict_values = deserialize(buf, from_bytes=True)
-    # hard to serde inline class Config
-    dict_values["model_config"] = pydantic.config.BaseConfig
-    constructors = deepcopy(dict_values)
-    after_init = {}
-    skip_init = [
-        "annotation",
-        "has_alias",
-        "discriminator_key",
-        "shape",
-        "key_field",
-        "outer_type_",
-        "sub_fields_mapping",
-        "parse_json",
-        "validate_always",
-        "pre_validators",
-        "post_validators",
-        "sub_fields",
-        "discriminator_alias",
-        "allow_none",
-    ]
-    for key in skip_init:
-        after_init[key] = constructors.pop(key)
-    mf = pydantic.fields.ModelField(**constructors)
-    for key in skip_init:
-        setattr(mf, key, after_init[key])
-    mf.populate_validators()
-    return mf
-
-
-recursive_serde_register(
-    pydantic.fields.ModelField,
-    serialize=serialize_modelfield,
-    deserialize=deserialize_modelfield,
-)
-
-recursive_serde_register(
-    pydantic.fields.FieldInfo,
-    serialize_attrs=list(pydantic.fields.FieldInfo.__slots__),
-)
-
-recursive_serde_register(
-    pydantic.fields.UndefinedType,
-)
-recursive_serde_register(pydantic.class_validators.Validator)
 
 recursive_serde_register_type(pydantic.main.ModelMetaclass)
 recursive_serde_register(Result)
