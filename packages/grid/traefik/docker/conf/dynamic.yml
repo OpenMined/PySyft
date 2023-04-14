@@ -62,6 +62,24 @@ http:
         - web
         - vpn
       service: "ping@internal"
+    ping_ratelimit:
+      rule: "PathPrefix(`/ping_rate_limit`)"
+      entryPoints:
+        - web
+        - vpn
+      service: "ping@internal"  
+      middlewares:
+        - "ddos-ratelimit"
+
+    ping_fail2ban:
+      rule: "PathPrefix(`/ping_fail2ban`)"
+      entryPoints:
+        - web
+        - vpn
+      service: "ping@internal"  
+      middlewares:
+        - "ddos-fail2ban"
+
 
   middlewares:
     # by rewriting the customrequestheaders.Host with the same host:port as the
@@ -82,3 +100,39 @@ http:
       ipWhiteList:
         sourceRange:
           - "127.0.0.1"
+    ddos-ratelimit:
+      rateLimit:
+        average: 1
+    ddos-fail2ban:
+      plugin:
+        fail2ban:
+          blacklist:
+            ip:
+              - 192.168.0.0/24
+          rules:
+            action: ""
+            actionAbuseipdb: ""
+            backend: ""
+            banaction: ""
+            banactionAllports: ""
+            bantime: 3h
+            chain: ""
+            destemail: ""
+            enabled: "true"
+            fail2banAgent: ""
+            filter: ""
+            findtime: 10m
+            ignorecommand: ""
+            logencoding: UTF-8
+            maxretry: "4"
+            mode: ""
+            mta: ""
+            ports: 0:8000
+            protocol: ""
+            sender: ""
+            urlregexp: ""
+            usedns: ""
+          whitelist:
+            ip:
+              - ::1
+              - 127.0.0.1

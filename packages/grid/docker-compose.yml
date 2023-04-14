@@ -15,7 +15,7 @@ services:
       - default
     volumes:
       - "./traefik/docker/traefik.yml:/etc/traefik/traefik.yml"
-      - "./traefik/docker/dynamic.yml:/etc/traefik/conf/dynamic.yml"
+      - "./traefik/docker/conf:/etc/traefik/conf"
     environment:
       - SERVICE_NAME=proxy
       - RELEASE=${RELEASE:-production}
@@ -257,4 +257,4 @@ volumes:
 networks:
   traefik-public:
     # Allow setting it to false for testing
-    external: ${TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL-true}
+    external: ${TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL-false}
