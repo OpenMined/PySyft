@@ -21,12 +21,14 @@ from .syft_object import SyftObject
 from .uid import UID
 
 
+@serializable()
 class ActionStatus(Enum):
     PROCESSING = 0
     DONE = 1
     FAILED = 2
 
 
+@serializable()
 class ActionGraphNode(SyftObject):
     __canonical_name__ = "ActionGraphNode"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -130,11 +132,15 @@ class InMemoryGraphClient(BaseGraphClient):
         self.graph.remove_edge(parent, child)
 
     def visualize(self):
-        return nx.draw_networkx(self.graph, True)
+        return nx.draw_networkx(self.graph, with_labels=True)
 
     @property
     def nodes(self) -> Iterable:
-        return self.graph.nodes
+        return self.graph.nodes()
+
+    @property
+    def edges(self) -> Iterable:
+        return self.graph.edges()
 
     def save(self):
         # TODO 🟡: Add functionality to save the graph
@@ -145,6 +151,7 @@ class InMemoryGraphClient(BaseGraphClient):
 #    pass
 
 
+@serializable()
 class ActionGraph:
     def __init__(self, node_uid: UID, graph_client: Type[BaseGraphClient]):
         self.node_uid = node_uid
@@ -178,6 +185,14 @@ class ActionGraph:
 
     def draw_graph(self):
         return self.client.visualize()
+
+    @property
+    def nodes(self):
+        return self.client.nodes
+
+    @property
+    def edges(self):
+        return self.client.edges
 
 
 # class ActionGraphVersion2:
