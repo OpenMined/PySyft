@@ -19,6 +19,7 @@ from pydantic.main import ModelField
 from pydantic.main import ModelMetaclass
 
 # relative
+from .recursive_primitives import recursive_serde_register_type
 from .serializable import serializable
 
 TupleGenerator = Generator[Tuple[str, Any], None, None]
@@ -32,7 +33,6 @@ class Empty:
 EmptyType = Union[T, Empty]
 
 
-@serializable()
 class PartialModelMetaclass(ModelMetaclass):
     def __new__(
         meta: Type["PartialModelMetaclass"], *args: Any, **kwargs: Any
@@ -113,3 +113,6 @@ class PartialModelMetaclass(ModelMetaclass):
         cls.__iter__ = iter_exclude_empty
 
         return cls
+
+
+recursive_serde_register_type(PartialModelMetaclass)

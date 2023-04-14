@@ -26,7 +26,6 @@ from ....util import aggressive_set_attr
 from .credentials import SyftVerifyKey
 from .deserialize import _deserialize as deserialize
 from .recursive_primitives import recursive_serde_register_type
-from .serializable import serializable
 from .serialize import _serialize as serialize
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
@@ -454,7 +453,6 @@ class StorableObjectType:
         return transform(self, context)
 
 
-@serializable()
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
