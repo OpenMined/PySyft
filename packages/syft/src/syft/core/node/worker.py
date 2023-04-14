@@ -107,8 +107,8 @@ DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
 
 
-def get_env(key: str) -> Optional[str]:
-    return os.environ.get(key, None)
+def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
+    return os.environ.get(key, default)
 
 
 def get_private_key_env() -> Optional[str]:
@@ -120,11 +120,11 @@ def get_node_uid_env() -> Optional[str]:
 
 
 def get_default_root_email() -> Optional[str]:
-    return get_env(DEFAULT_ROOT_EMAIL)
+    return get_env(DEFAULT_ROOT_EMAIL, "info@openmined.org")
 
 
 def get_default_root_password() -> Optional[str]:
-    return get_env(DEFAULT_ROOT_PASSWORD)
+    return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
 
 signing_key_env = get_private_key_env()
