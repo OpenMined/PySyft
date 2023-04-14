@@ -228,6 +228,12 @@ recursive_serde_register(
 )
 
 recursive_serde_register(
+    frozenset,
+    serialize=serialize_iterable,
+    deserialize=functools.partial(deserialize_iterable, frozenset),
+)
+
+recursive_serde_register(
     complex,
     serialize=lambda x: serialize_iterable((x.real, x.imag)),
     deserialize=lambda x: complex(*deserialize_iterable(tuple, x)),
