@@ -331,12 +331,12 @@ class UserCode(SyftObject):
             # compile the function
             raw_byte_code = compile_byte_code(unparse(inner_function))
             # load it
-            # exec(raw_byte_code)  # nosec
+            exec(raw_byte_code)  # nosec
             # execute it
-            # evil_string = f"{self.service_func_name}(*args, **kwargs)"
-            # result = eval(evil_string, None, locals())  # nosec
+            evil_string = f"{self.service_func_name}(*args, **kwargs)"
+            result = eval(evil_string, None, locals())  # nosec
             # return the results
-            result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
+            # result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
             return result
 
         return wrapper
