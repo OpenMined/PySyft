@@ -249,14 +249,23 @@ class NetworkStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def get_by_name(self, name: str) -> Result[Optional[NodePeer], str]:
+    def get_by_name(
+        self, credentials: SyftVerifyKey, name: str
+    ) -> Result[Optional[NodePeer], str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
-        return self.query_one(qks=qks)
+        return self.query_one(credentials=credentials, qks=qks)
 
-    def update(self, peer: NodePeer) -> Result[NodePeer, str]:
-        return self.check_type(peer, NodePeer).and_then(super().update)
+    def update(
+        self, credentials: SyftVerifyKey, peer: NodePeer
+    ) -> Result[NodePeer, str]:
+        valid = self.check_type(peer, NodePeer)
+        if valid.is_err():
+            return SyftError(message=valid.err())
+        return super().update(credentials, peer)
 
-    def update_peer(self, peer: NodePeer) -> Result[NodePeer, str]:
+    def update_peer(
+        self, credentials: SyftVerifyKey, peer: NodePeer
+    ) -> Result[NodePeer, str]:
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
@@ -267,14 +276,14 @@ class NetworkStash(BaseUIDStoreStash):
             result = self.update(existing)
             return result
         else:
-            result = self.set(peer)
+            result = self.set(credentials, peer)
             return result
 
     def get_for_verify_key(
-        self, verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[NodePeer, SyftError]:
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_one(qks)
+        return self.query_one(credentials, qks)
 
 
 @instrument

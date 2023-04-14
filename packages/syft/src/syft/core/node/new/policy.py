@@ -588,7 +588,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
             )
         )
     new_body.append(new_class)
-    module = ast.Module(new_body)
+    module = ast.Module(new_body, type_ignores=[])
     try:
         return unparse(module)
     except Exception as e:

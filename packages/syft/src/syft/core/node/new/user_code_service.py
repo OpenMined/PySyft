@@ -50,8 +50,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
-        user_code = code.to(UserCode, context=context)
-        result = self.stash.set(user_code)
+        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
@@ -68,8 +67,7 @@ class UserCodeService(AbstractService):
         import sys
         print(code, file=sys.stderr)
         user_code = code.to(UserCode, context=context)
-        print(user_code, file=sys.stderr)
-        result = self.stash.set(user_code)
+        result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
         print(result, file=sys.stderr)
@@ -104,7 +102,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[UserCode], SyftError]:
         """Get a Dataset"""
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
@@ -114,10 +112,10 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         """Get a User Code Item"""
-        result = self.stash.get_by_uid(uid=uid)
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             user_code = result.ok()
-            if user_code.input_policy_state:
+            if user_code and user_code.input_policy_state:
                 # TODO replace with LinkedObject Context
                 user_code.node_uid = context.node.id
             return user_code
@@ -129,7 +127,7 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Get All User Code Items for User's VerifyKey"""
         # TODO: replace with incoming user context and key
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
@@ -137,13 +135,13 @@ class UserCodeService(AbstractService):
     def update_code_state(
         self, context: AuthedServiceContext, code_item: UserCode
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.stash.update(code_item)
+        result = self.stash.update(context.credentials, code_item)
         if result.is_ok():
             return SyftSuccess(message="Code State Updated")
         return SyftError(message="Unable to Update Code State")
 
-    def load_user_code(self) -> None:
-        result = self.stash.get_all()
+    def load_user_code(self, context: AuthedServiceContext) -> None:
+        result = self.stash.get_all(credentials=context.credentials)
         if result.is_ok():
             user_code_items = result.ok()
             for user_code in user_code_items:
@@ -161,7 +159,7 @@ class UserCodeService(AbstractService):
         import sys
         try:
             filtered_kwargs = filter_kwargs(kwargs)
-            result = self.stash.get_by_uid(uid=uid)
+            result = self.stash.get_by_uid(context.credentials, uid=uid)
             if not result.is_ok():
                 return SyftError(message=result.err())
 
