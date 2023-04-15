@@ -30,7 +30,7 @@ class PolicyService(AbstractService):
     def get_all_user_policy(
         self, context: AuthedServiceContext
     ) -> Union[List[UserPolicy], SyftError]:
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
@@ -43,7 +43,7 @@ class PolicyService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         if isinstance(policy_code, SubmitUserPolicy):
             policy_code = policy_code.to(UserPolicy, context=context)
-        result = self.stash.set(policy_code)
+        result = self.stash.set(context.credentials, policy_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Policy Code Submitted")
@@ -52,7 +52,7 @@ class PolicyService(AbstractService):
     def get_policy_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.stash.get_by_uid(uid=uid)
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())

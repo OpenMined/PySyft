@@ -1,7 +1,12 @@
 # stdlib
 import asyncio
-import threading
+import multiprocessing
+import os
+import platform
+import signal
+import subprocess
 from typing import Callable
+from typing import List
 from typing import Tuple
 
 # third party
@@ -26,40 +31,115 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     return app
 
 
-# shutdown_event = asyncio.Event()
-
-
-def run_uvicorn(port: int, host: str):
-    print("port and host", port, host)
-
-    async def _run_uvicorn(port: int, host: str):
-        worker = Worker.named("test", processes=1, reset=True)
+def run_uvicorn(name: str, port: int, host: str, reset: bool):
+    async def _run_uvicorn(name: str, port: int, host: str, reset: bool):
+        worker = Worker.named(name, processes=0, reset=reset)
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
 
-        print("got app in async thread", app)
+        if reset:
+            try:
+                python_pids = find_python_processes_on_port(port)
+                for pid in python_pids:
+                    print(f"Stopping process on port: {port}")
+                    kill_process(pid)
+            except Exception:  # nosec
+                print(f"Failed to kill python process on port: {port}")
+
         # logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
         # logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
         config = uvicorn.Config(app, host=host, port=port, log_level="info")
         server = uvicorn.Server(config)
+
         await server.serve()
-        # await shutdown_event.wait()
-        # await server.shutdown()
+        asyncio.get_running_loop().stop()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(_run_uvicorn(port, host))
+    loop.run_until_complete(_run_uvicorn(name, port, host, reset))
     loop.close()
 
 
-def bind_worker(port: int = 8080, host: str = "0.0.0.0") -> Tuple[Callable, Callable]:
-    server_thread = threading.Thread(target=run_uvicorn, args=(port, host))
+def bind_worker(
+    name: str, port: int = 8080, host: str = "0.0.0.0", reset: bool = False
+) -> Tuple[Callable, Callable]:
+    server_process = multiprocessing.Process(
+        target=run_uvicorn, args=(name, port, host, reset)
+    )
 
     def start():
-        server_thread.start()
+        print(f"Starting {name} server on {host}:{port}")
+        server_process.start()
 
     def stop():
-        # asyncio.run(shutdown_event.set())
-        server_thread.join()
+        print(f"Stopping {name}")
+        server_process.terminate()
+        server_process.join()
 
     return start, stop
+
+
+def find_python_processes_on_port(port: int) -> List[int]:
+    system = platform.system()
+
+    if system == "Windows":
+        command = f"netstat -ano | findstr :{port}"
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        output, _ = process.communicate()
+        pids = [
+            int(line.strip().split()[-1]) for line in output.split("\n") if line.strip()
+        ]
+
+    else:  # Linux and MacOS
+        command = f"lsof -i :{port} -sTCP:LISTEN -t"
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        output, _ = process.communicate()
+        pids = [int(pid.strip()) for pid in output.split("\n") if pid.strip()]
+
+    python_pids = []
+    for pid in pids:
+        try:
+            if system == "Windows":
+                command = (
+                    f"wmic process where (ProcessId='{pid}') get ProcessId,CommandLine"
+                )
+            else:
+                command = f"ps -p {pid} -o pid,command"
+
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            output, _ = process.communicate()
+            lines = output.strip().split("\n")
+
+            if len(lines) > 1 and "python" in lines[1].lower():
+                python_pids.append(pid)
+
+        except Exception as e:
+            print(f"Error checking process {pid}: {e}")
+
+    return python_pids
+
+
+def kill_process(pid: int) -> None:
+    try:
+        os.kill(pid, signal.SIGTERM)
+        print(f"Process {pid} terminated.")
+    except Exception as e:
+        print(f"Error killing process {pid}: {e}")

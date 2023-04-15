@@ -70,14 +70,14 @@ class NodeHandle:
         port: Optional[int] = None,
         url: Optional[str] = None,
         python_node: Optional[Any] = None,
-        shutdown_handle: Optional[Callable] = None,
+        shutdown: Optional[Callable] = None,
     ) -> None:
         self.node_type = node_type
         self.name = name
         self.port = port
         self.url = url
         self.python_node = python_node
-        self.shutdown_handle = shutdown_handle
+        self.shutdown = shutdown
 
     @property
     def client(self) -> Any:
@@ -94,6 +94,13 @@ class NodeHandle:
         if email and password:
             return client.login(email=email, password=password)
         return None
+
+    def land(self) -> None:
+        if self.node_type == NodeType.PYTHON:
+            if self.shutdown:
+                self.shutdown()
+        else:
+            Orchestra.land(self.name, node_type=self.node_type.value)
 
 
 def get_node_type(node_type: Optional[str]) -> Optional[NodeType]:
@@ -126,15 +133,14 @@ class Orchestra:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
             if port:
-                # from syft.core.node.new.server import bind_worker
-                start, stop = sy.bind_worker(port=port)  # type: ignore
+                start, stop = sy.bind_worker(name=name, port=port, reset=reset)  # type: ignore
                 start()
                 return NodeHandle(
                     node_type=node_type_enum,
                     name=name,
                     port=port,
                     url="http://localhost",
-                    shutdown_handle=stop,
+                    shutdown=stop,
                 )
             else:
                 worker = sy.Worker.named(name, processes=processes, reset=reset)  # type: ignore
@@ -198,16 +204,15 @@ class Orchestra:
         return None
 
     @staticmethod
-    def land(name: str, node_type: Optional[str] = None) -> None:
-        Orchestra.reset(name, node_type=node_type)
+    def land(name: str, node_type: Optional[str] = None, reset: bool = False) -> None:
+        node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
+        Orchestra.shutdown(name=name, node_type_enum=node_type_enum)
+        if reset:
+            Orchestra.reset(name, node_type_enum=node_type_enum)
 
     @staticmethod
-    def reset(name: str, node_type: Optional[str] = None) -> None:
-        node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
-        if node_type_enum == NodeType.PYTHON:
-            sy = get_syft_client()
-            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
-        else:
+    def shutdown(name: str, node_type_enum: NodeType) -> None:
+        if node_type_enum != NodeType.PYTHON:
             snake_name = to_snake_case(name)
 
             land_output = shell(f"hagrid land {snake_name} --force")
@@ -215,6 +220,14 @@ class Orchestra:
                 print(f" ✅ {snake_name} Container Removed")
             else:
                 print(f"❌ Unable to remove container: {snake_name} :{land_output}")
+
+    @staticmethod
+    def reset(name: str, node_type_enum: NodeType) -> None:
+        if node_type_enum == NodeType.PYTHON:
+            sy = get_syft_client()
+            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+        else:
+            snake_name = to_snake_case(name)
 
             volume_output = shell(
                 f"docker volume rm {snake_name}_credentials-data --force || true"
