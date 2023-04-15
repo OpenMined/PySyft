@@ -63,6 +63,24 @@ http:
         - vpn
       service: "ping@internal"
 
+    ping_ratelimit:
+      rule: "Path(`/rate_limit`)"
+      entryPoints:
+        - web
+        - vpn
+      service: "ping@internal"
+      middlewares:
+        - "fire-ratelimit"
+
+    ping_fail2ban:
+      rule: "Path(`/fail2ban`)"
+      entryPoints:
+        - web
+        - vpn
+      service: "ping@internal"
+      middlewares:
+        - "fire-fail2ban"
+
   middlewares:
     # by rewriting the customrequestheaders.Host with the same host:port as the
     # code uses internally any S3 presigned urls will still validate
@@ -78,7 +96,40 @@ http:
       stripprefix:
         prefixes: /vpn
         forceslash: true
-    test-ipwhitelist:
-      ipWhiteList:
-        sourceRange:
-          - "127.0.0.1"
+
+    fire-ratelimit:
+      rateLimit:
+        average: 1
+    fire-fail2ban:
+      plugin:
+        fail2ban:
+          blacklist:
+            ip:
+              - 192.168.0.0/24
+          rules:
+            action: ""
+            actionAbuseipdb: ""
+            backend: ""
+            banaction: ""
+            banactionAllports: ""
+            bantime: 3h
+            chain: ""
+            destemail: ""
+            enabled: "true"
+            fail2banAgent: ""
+            filter: ""
+            findtime: 10m
+            ignorecommand: ""
+            logencoding: UTF-8
+            maxretry: "4"
+            mode: ""
+            mta: ""
+            ports: 0:8000
+            protocol: ""
+            sender: ""
+            urlregexp: ""
+            usedns: ""
+          whitelist:
+            ip:
+              - ::1
+              - 127.0.0.1

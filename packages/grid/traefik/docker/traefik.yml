@@ -18,3 +18,9 @@ providers:
   file:
     directory: /etc/traefik/conf
     watch: true
+
+experimental:
+  plugins:
+    fail2ban:
+      moduleName: "github.com/tomMoulard/fail2ban"
+      version: "v0.6.6"
