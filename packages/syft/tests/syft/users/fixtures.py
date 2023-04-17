@@ -2,21 +2,21 @@
 import pytest
 
 # syft absolute
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.context import NodeServiceContext
-from syft.core.node.new.context import UnauthedServiceContext
-from syft.core.node.new.credentials import UserLoginCredentials
-from syft.core.node.new.document_store import DocumentStore
-from syft.core.node.new.user import User
-from syft.core.node.new.user import UserCreate
-from syft.core.node.new.user import UserPrivateKey
-from syft.core.node.new.user import UserSearch
-from syft.core.node.new.user import UserUpdate
-from syft.core.node.new.user import UserView
-from syft.core.node.new.user_roles import ServiceRole
-from syft.core.node.new.user_service import UserService
-from syft.core.node.new.user_stash import UserStash
-from syft.core.node.worker import Worker
+from syft.node.credentials import UserLoginCredentials
+from syft.node.worker import Worker
+from syft.service.context import AuthedServiceContext
+from syft.service.context import NodeServiceContext
+from syft.service.context import UnauthedServiceContext
+from syft.service.user.user import User
+from syft.service.user.user import UserCreate
+from syft.service.user.user import UserPrivateKey
+from syft.service.user.user import UserSearch
+from syft.service.user.user import UserUpdate
+from syft.service.user.user import UserView
+from syft.service.user.user_roles import ServiceRole
+from syft.service.user.user_service import UserService
+from syft.service.user.user_stash import UserStash
+from syft.store.document_store import DocumentStore
 
 
 @pytest.fixture(autouse=True)

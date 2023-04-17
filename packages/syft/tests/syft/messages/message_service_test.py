@@ -4,20 +4,20 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.credentials import SyftSigningKey
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.datetime import DateTime
-from syft.core.node.new.document_store import DocumentStore
-from syft.core.node.new.linked_obj import LinkedObject
-from syft.core.node.new.message_service import MessageService
-from syft.core.node.new.message_stash import MessageStash
-from syft.core.node.new.messages import CreateMessage
-from syft.core.node.new.messages import Message
-from syft.core.node.new.messages import MessageStatus
-from syft.core.node.new.response import SyftError
-from syft.core.node.new.response import SyftSuccess
-from syft.core.node.new.uid import UID
+from syft.node.credentials import SyftSigningKey
+from syft.node.credentials import SyftVerifyKey
+from syft.service.context import AuthedServiceContext
+from syft.service.message.message_service import MessageService
+from syft.service.message.message_stash import MessageStash
+from syft.service.message.messages import CreateMessage
+from syft.service.message.messages import Message
+from syft.service.message.messages import MessageStatus
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
+from syft.store.document_store import DocumentStore
+from syft.store.linked_obj import LinkedObject
+from syft.types.datetime import DateTime
+from syft.types.uid import UID
 
 test_verify_key_string = (
     "e143d6cec3c7701e6ca9c6fb83d09e06fdad947742126831a684a111aba41a8c"

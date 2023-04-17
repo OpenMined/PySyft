@@ -6,16 +6,16 @@ from pytest import MonkeyPatch
 from result import Err
 
 # syft absolute
-from syft.core.node.new.client import SyftClient
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.document_store import QueryKeys
-from syft.core.node.new.request import Request
-from syft.core.node.new.request import RequestStatus
-from syft.core.node.new.request import SubmitRequest
-from syft.core.node.new.request_stash import RequestStash
-from syft.core.node.new.request_stash import RequestingUserVerifyKeyPartitionKey
-from syft.core.node.new.request_stash import StatusPartitionKey
+from syft.client.client import SyftClient
+from syft.node.credentials import SyftVerifyKey
+from syft.service.context import AuthedServiceContext
+from syft.service.request.request import Request
+from syft.service.request.request import RequestStatus
+from syft.service.request.request import SubmitRequest
+from syft.service.request.request_stash import RequestStash
+from syft.service.request.request_stash import RequestingUserVerifyKeyPartitionKey
+from syft.service.request.request_stash import StatusPartitionKey
+from syft.store.document_store import QueryKeys
 
 
 def test_requeststash_get_all_for_verify_key_no_requests(

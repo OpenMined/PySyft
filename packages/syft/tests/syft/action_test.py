@@ -3,11 +3,11 @@
 # third party
 
 # syft absolute
-from syft.core.node.new.api import APIRegistry
-from syft.core.node.new.api import SyftAPI
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.credentials import SyftSigningKey
-from syft.core.node.worker import Worker
+from syft.client.api import APIRegistry
+from syft.client.api import SyftAPI
+from syft.node.credentials import SyftSigningKey
+from syft.node.worker import Worker
+from syft.service.context import AuthedServiceContext
 
 
 def setup_worker():
