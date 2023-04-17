@@ -44,7 +44,6 @@ WORKDIR /app
 # copy grid
 COPY grid/worker /app/
 COPY grid/backend/grid/bootstrap.py /app/bootstrap.py
-COPY grid/backend/grid/api/new/new_routes.py /app/new_routes.py
 RUN chmod +x /app/start.sh
 
 # copy skeleton to do package install
