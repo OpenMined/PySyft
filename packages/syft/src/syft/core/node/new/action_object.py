@@ -624,7 +624,8 @@ class ActionObject(SyftObject):
                 result = hook(context, *result_args, **result_kwargs)
                 if result.is_ok():
                     context, result_args, result_kwargs = result.ok()
-                # TODO : What to do on error?
+                else:
+                    debug(f"Pre-hook failed with {result.err()}")
 
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self._syft_pre_hooks__:
@@ -632,7 +633,8 @@ class ActionObject(SyftObject):
                     result = hook(context, *result_args, **result_kwargs)
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
-                    # TODO : What to do on error?
+                    else:
+                        debug(f"Pre-hook failed with {result.err()}")
 
         return context, result_args, result_kwargs
 
@@ -646,7 +648,8 @@ class ActionObject(SyftObject):
                 result = hook(context, name, new_result)
                 if result.is_ok():
                     new_result = result.ok()
-                # TODO : What to do on error?
+                else:
+                    debug(f"Post hook failed with {result.err()}")
 
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self._syft_post_hooks__:
@@ -654,7 +657,8 @@ class ActionObject(SyftObject):
                     result = hook(context, name, new_result)
                     if result.is_ok():
                         new_result = result.ok()
-                    # TODO : What to do on error?
+                    else:
+                        debug(f"Post hook failed with {result.err()}")
 
         return new_result
 
@@ -857,8 +861,6 @@ class ActionObject(SyftObject):
         return self._syft_wrap_attribute_for_methods(name)
 
     def keys(self) -> KeysView[str]:
-        if not isinstance(self.syft_action_data, dict):
-            raise ValueError("`keys` should be used only on dicts")
         return self.syft_action_data.keys()  # type: ignore
 
     ###### __DUNDER_MIFFLIN__
