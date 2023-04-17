@@ -383,13 +383,11 @@ class StorePartition:
         self,
         credentials: SyftVerifyKey,
         uid: UID,
-        skip_permissions: bool = False,
     ) -> Result[SyftObject, str]:
         return self._thread_safe_cbk(
             self._get,
             uid=uid,
             credentials=credentials,
-            skip_permissions=skip_permissions,
         )
 
     def find_index_or_search_keys(
