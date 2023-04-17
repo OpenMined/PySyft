@@ -343,9 +343,10 @@ class SyftAPI(SyftObject):
         code_items = method()
 
         for code_item in code_items:
-            path = "code.call"
+            api_path = "code.call"
+            unique_path = f"code.call_{code_item.service_func_name}"
             endpoint = APIEndpoint(
-                path=path,
+                path=api_path,
                 name=code_item.service_func_name,
                 description="",
                 doc_string=f"Users custom func {code_item.service_func_name}",
@@ -353,7 +354,7 @@ class SyftAPI(SyftObject):
                 has_self=False,
                 pre_kwargs={"uid": code_item.id},
             )
-            endpoints[path] = endpoint
+            endpoints[unique_path] = endpoint
 
         return SyftAPI(node_name=node.name, node_uid=node.id, endpoints=endpoints)
 
@@ -411,7 +412,7 @@ class SyftAPI(SyftObject):
 
     def generate_endpoints(self) -> None:
         api_module = APIModule(path="")
-        for k, v in self.endpoints.items():
+        for _, v in self.endpoints.items():
             signature = v.signature
             if not v.has_self:
                 signature = signature_remove_self(signature)
