@@ -26,6 +26,19 @@ def test_function_action(worker):
 
     assert isinstance(res, ActionObject)
     assert all(res == np.array([0, 0, 0]))
+    assert len(worker.get_service("actionservice").store.data) > 0
+
+
+def test_class_init_action(worker):
+    root_domain_client = worker.root_client
+    numpy_client = root_domain_client.api.lib.numpy
+    res = numpy_client.float32(4.0)
+    # third party
+    import numpy as np
+
+    assert isinstance(res, ActionObject)
+    assert res == np.float32(4.0)
+    assert len(worker.get_service("actionservice").store.data) > 0
 
 
 # def test_pointer_addition():
