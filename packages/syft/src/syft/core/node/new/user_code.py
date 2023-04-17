@@ -6,7 +6,7 @@ import ast
 from enum import Enum
 import hashlib
 import inspect
-from io import StringIO
+from io import StringIO, BytesIO
 import sys
 from typing import Any
 from typing import Callable
@@ -331,12 +331,12 @@ class UserCode(SyftObject):
             # compile the function
             raw_byte_code = compile_byte_code(unparse(inner_function))
             # load it
-            exec(raw_byte_code)  # nosec
+            # exec(raw_byte_code)  # nosec
             # execute it
-            evil_string = f"{self.service_func_name}(*args, **kwargs)"
-            result = eval(evil_string, None, locals())  # nosec
+            # evil_string = f"{self.service_func_name}(*args, **kwargs)"
+            # result = eval(evil_string, None, locals())  # nosec
             # return the results
-            # result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
+            result = execute_byte_code(raw_byte_code, self.service_func_name, self.id, args, kwargs)
             return result
 
         return wrapper
@@ -608,11 +608,25 @@ class UserCodeExecutionResult(SyftObject):
     stdout: str
     stderr: str
     result: Any
-    serialized_plot: Optional[str] = None
+    serialized_plot: Optional[bytes] = None
+    syft_dont_wrap_attrs = ["get_plot"]
+    syft_passthrough_attrs = ["get_plot"]
+
+    def get_plot(self) -> Image:
+        # TODO: add caching to optimize memory
+        if self.serialized_plot is not None:
+            return Image.open(BytesIO(self.serialized_plot), 'r')
+        else:
+            return None
     
-    # @property
-    # def plot(self) -> :
-        
+    def get_result(self) -> Any:
+        return self.result
+    
+    def get_stdout(self) -> str:
+        return self.stdout
+    
+    def get_stderr(self) -> str:
+        return self.stderr
     
 
 def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
@@ -643,6 +657,16 @@ def execute_byte_code(byte_code, func_name, code_id, args, kwargs: Dict[str, Any
         evil_string = f"{func_name}(*args, **kwargs)"
         result = eval(evil_string, None, locals())  # nosec
 
+        plot = None
+        serialized_plot = None
+        import matplotlib.pyplot as plt
+        plot = plt.gcf()
+
+        if plot.get_axes():
+            buf = BytesIO()
+            plot.savefig(buf, format='png')
+            serialized_plot = buf.getvalue()   
+
         # restore stdout and stderr
         sys.stdout = stdout_
         sys.stderr = stderr_
@@ -654,6 +678,7 @@ def execute_byte_code(byte_code, func_name, code_id, args, kwargs: Dict[str, Any
             stdout=str(stdout.getvalue()),
             stderr=str(stderr.getvalue()),
             result=result,
+            serialized_plot=serialized_plot
         )
 
     except Exception as e:
