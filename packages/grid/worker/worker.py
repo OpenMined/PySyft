@@ -3,10 +3,10 @@ import os
 
 # third party
 from fastapi import FastAPI
-from new_routes import make_routes
 
 # syft absolute
 from syft.core.node.new.client import API_PATH
+from syft.core.node.new.routes import make_routes
 from syft.core.node.worker import Worker
 
 node_name = os.environ.get("NODE_NAME", "default_node_name")

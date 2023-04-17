@@ -142,9 +142,7 @@ class KeyValueStorePartition(StorePartition):
     def __len__(self) -> int:
         return len(self.data)
 
-    def _get(
-        self, uid: UID, credentials: SyftVerifyKey, skip_permission: bool = False
-    ) -> Result[SyftObject, str]:
+    def _get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
         # relative
         from .action_store import ActionObjectREAD
 
@@ -153,7 +151,7 @@ class KeyValueStorePartition(StorePartition):
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         # if True:
-        if skip_permission or self.has_permission(read_permission):
+        if self.has_permission(read_permission):
             syft_object = self.data[uid]
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")

@@ -63,6 +63,7 @@ from .core.node.new.response import SyftSuccess  # noqa: F401
 from .core.node.new.roles import Roles as roles  # noqa: F401
 from .core.node.new.serializable import serializable  # noqa: F401
 from .core.node.new.serialize import _serialize as serialize  # noqa: F401
+from .core.node.new.server import bind_worker  # noqa: F401
 from .core.node.new.uid import UID  # noqa: F401
 from .core.node.new.user_code import UserCodeStatus  # noqa: F401
 from .core.node.new.user_code import syft_function  # noqa: F401

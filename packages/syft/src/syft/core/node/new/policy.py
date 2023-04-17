@@ -210,9 +210,7 @@ def retrieve_from_db(
     elif context.node.node_type == NodeType.ENCLAVE:
         # TODO 🟣 Temporarily added skip permission arguments for enclave
         # until permissions are fully integrated
-        dict_object = action_service.get(
-            context=context, uid=code_item_id, skip_permission=True
-        )
+        dict_object = action_service.get(context=context, uid=code_item_id)
         if dict_object.is_err():
             return dict_object
         for value in dict_object.ok().base_dict.values():
