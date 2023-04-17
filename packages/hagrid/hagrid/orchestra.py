@@ -124,6 +124,7 @@ class Orchestra:
         tail: bool = False,
         port: Optional[int] = None,
         processes: int = 1,  # temporary work around for jax in subprocess
+        local_db: bool = False,
     ) -> Optional[NodeHandle]:
         default_port = 8080
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
@@ -143,7 +144,7 @@ class Orchestra:
                     shutdown=stop,
                 )
             else:
-                worker = sy.Worker.named(name, processes=processes, reset=reset)  # type: ignore
+                worker = sy.Worker.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
                 return NodeHandle(
                     node_type=node_type_enum, name=name, python_node=worker
                 )
