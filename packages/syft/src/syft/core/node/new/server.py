@@ -14,6 +14,7 @@ from typing import Tuple
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 import uvicorn
 
 # relative
@@ -30,6 +31,15 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     api_router.include_router(router, prefix="/new", tags=["new"])
 
     app.include_router(api_router, prefix="/api/v1")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     return app
 
 
