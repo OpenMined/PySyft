@@ -327,6 +327,9 @@ class UserCode(SyftObject):
             inner_function = ast.parse(self.raw_code).body[0]
             inner_function.decorator_list = []
             # compile the function
+            # stdlib
+            from ast import unparse
+
             raw_byte_code = compile_byte_code(unparse(inner_function))
             # load it
             exec(raw_byte_code)  # nosec

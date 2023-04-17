@@ -719,6 +719,12 @@ class ActionObject(SyftObject):
     def __divmod__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__divmod__(other))
 
+    def __truediv__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__truediv__(other))
+
+    def __and__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__and__(other))
+
     def __floordiv__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__floordiv__(other))
 
