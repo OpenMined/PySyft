@@ -15,6 +15,7 @@ from typing import Optional
 import gevent
 
 # relative
+from .cli import str_to_bool
 from .grammar import find_available_port
 from .names import random_name
 from .util import shell
@@ -126,6 +127,8 @@ class Orchestra:
         processes: int = 1,  # temporary work around for jax in subprocess
         local_db: bool = False,
     ) -> Optional[NodeHandle]:
+        dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
+
         default_port = 8080
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
         if not node_type_enum:
