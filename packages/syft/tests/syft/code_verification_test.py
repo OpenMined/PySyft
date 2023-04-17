@@ -3,9 +3,9 @@ import numpy as np
 import pytest
 
 # syft absolute
-from syft.core.node.new.action_data_empty import ActionDataEmpty
-from syft.core.node.new.action_object import ActionObject
-from syft.core.node.new.numpy import NumpyArrayObject
+from syft.service.action.action_data_empty import ActionDataEmpty
+from syft.service.action.action_object import ActionObject
+from syft.service.action.numpy import NumpyArrayObject
 
 
 @pytest.fixture

@@ -3,13 +3,13 @@ import numpy as np
 import pytest
 
 # syft absolute
-from syft.core.node.new.dataset import Asset
-from syft.core.node.new.dataset import CreateAsset
-from syft.core.node.new.dataset import Dataset
-from syft.core.node.new.dataset import DatasetUpdate
-from syft.core.node.new.dataset_stash import DatasetStash
-from syft.core.node.new.transforms import TransformContext
-from syft.core.node.new.uid import UID
+from syft.service.dataset.dataset import Asset
+from syft.service.dataset.dataset import CreateAsset
+from syft.service.dataset.dataset import Dataset
+from syft.service.dataset.dataset import DatasetUpdate
+from syft.service.dataset.dataset_stash import DatasetStash
+from syft.types.transforms import TransformContext
+from syft.types.uid import UID
 
 
 def create_asset() -> CreateAsset:

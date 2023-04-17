@@ -7,13 +7,13 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.metadata_service import MetadataService
-from syft.core.node.new.metadata_stash import MetadataStash
-from syft.core.node.new.node_metadata import NodeMetadata
-from syft.core.node.new.node_metadata import NodeMetadataUpdate
-from syft.core.node.new.response import SyftError
+from syft.node.credentials import SyftVerifyKey
+from syft.service.context import AuthedServiceContext
+from syft.service.metadata.metadata_service import MetadataService
+from syft.service.metadata.metadata_stash import MetadataStash
+from syft.service.metadata.node_metadata import NodeMetadata
+from syft.service.metadata.node_metadata import NodeMetadataUpdate
+from syft.service.response import SyftError
 
 
 def test_metadataservice_get_success(

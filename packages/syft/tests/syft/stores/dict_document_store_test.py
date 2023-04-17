@@ -2,8 +2,8 @@
 from threading import Thread
 
 # syft absolute
-from syft.core.node.new.dict_document_store import DictStorePartition
-from syft.core.node.new.document_store import QueryKeys
+from syft.store.dict_document_store import DictStorePartition
+from syft.store.document_store import QueryKeys
 
 # relative
 from .store_mocks_test import MockObjectType

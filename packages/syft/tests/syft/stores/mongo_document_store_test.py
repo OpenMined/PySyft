@@ -9,11 +9,11 @@ from joblib import delayed
 import pytest
 
 # syft absolute
-from syft.core.node.new.document_store import PartitionSettings
-from syft.core.node.new.document_store import QueryKeys
-from syft.core.node.new.mongo_client import MongoStoreClientConfig
-from syft.core.node.new.mongo_document_store import MongoStoreConfig
-from syft.core.node.new.mongo_document_store import MongoStorePartition
+from syft.store.document_store import PartitionSettings
+from syft.store.document_store import QueryKeys
+from syft.store.mongo_client import MongoStoreClientConfig
+from syft.store.mongo_document_store import MongoStoreConfig
+from syft.store.mongo_document_store import MongoStorePartition
 
 # relative
 from .store_constants_test import generate_db_name
