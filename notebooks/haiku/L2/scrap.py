@@ -1,35 +1,36 @@
 # syft absolute
 import syft as sy
-
+from syft.core.node.new.action_types import action_types
+from syft.core.node.new.syft_object import SYFT_OBJECT_VERSION_1
 sy.requires(">=0.8-beta")
 
-# third party
+# syft absolute
+# NOTE: action objects need to be imported even if they are not used directly.
+# Otherwise, they will not be registered in the action_types dict.
+from syft.core.node.new.jax import DeviceArrayObject 
+from syft.core.node.new.numpy import NumpyArrayObject, NumpyBoolObject, NumpyScalarObject
+from syft.core.node.new.action_object import ActionObject
+
+import haiku as hk
 import jax
 import jax.numpy as jnp
 
-# syft absolute
-from syft.core.node.new.jax import DeviceArrayObject
 
-# from syft import jax
+def forward(x):
+    mlp = hk.nets.MLP([300, 100, 10])
+    return mlp(x)
 
-x = jnp.arange(10)
-y = jnp.ones(10)
+forward = hk.transform(forward)
+rng = hk.PRNGSequence(jax.random.PRNGKey(42))
+rng_wrapped = ActionObject.from_obj(rng)
 
-# syft absolute
-from syft.core.node.new.action_object import ActionObject
+x = jnp.ones([8, 28 * 28])
+x_wrapped = ActionObject.from_obj(x)
 
-action_object = ActionObject.from_obj(x)
+# print("*** no wrapper ***")
+# params = forward.init(next(rng), x)
+# logits = forward.apply(params, next(rng), x)
 
-
-def f(x):
-    if len(x) < 4:
-        return x
-    else:
-        return 2 * x
-
-
-f_jit = jax.jit(f)
-# print("No wrapper", f_jit(x))
-print("Wrapper", f_jit(action_object))
-print("No wrapper jnp", jnp.add(x, x))
-print("wrapper jnp", jnp.add(action_object, action_object))
+print("*** wrapper ***")
+params = forward.init(next(rng), x_wrapped)
+# logits = forward.apply(params, next(rng), x_wrapped)
