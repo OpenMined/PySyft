@@ -546,6 +546,13 @@ class Worker(NewNode):
             # self.queue_stash.partition.commit()
 
             # 🟡 TODO:  Integrate ZeroMQ here possibly
+
+            # Publisher system which pushes to a Queue
+
+            # message = [api_call, worker_settings, task_uid]
+
+            # Publisher.send(message)
+
             thread = gevent.spawn(
                 queue_task,
                 api_call,
