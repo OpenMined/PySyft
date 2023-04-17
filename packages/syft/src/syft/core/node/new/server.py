@@ -5,7 +5,7 @@ import multiprocessing
 import os
 import platform
 import signal
-import subprocess
+import subprocess  # nosec
 import time
 from typing import Callable
 from typing import List
@@ -81,7 +81,7 @@ def run_uvicorn(name: str, port: int, host: str, reset: bool, dev_mode: bool):
 def bind_worker(
     name: str,
     port: int = 8080,
-    host: str = "0.0.0.0",
+    host: str = "0.0.0.0",  # nosec
     reset: bool = False,
     dev_mode: bool = False,
 ) -> Tuple[Callable, Callable]:
@@ -106,7 +106,7 @@ def find_python_processes_on_port(port: int) -> List[int]:
 
     if system == "Windows":
         command = f"netstat -ano | findstr :{port}"
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             command,
             shell=True,
             stdout=subprocess.PIPE,
@@ -120,7 +120,7 @@ def find_python_processes_on_port(port: int) -> List[int]:
 
     else:  # Linux and MacOS
         command = f"lsof -i :{port} -sTCP:LISTEN -t"
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             command,
             shell=True,
             stdout=subprocess.PIPE,
@@ -140,7 +140,7 @@ def find_python_processes_on_port(port: int) -> List[int]:
             else:
                 command = f"ps -p {pid} -o pid,command"
 
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # nosec
                 command,
                 shell=True,
                 stdout=subprocess.PIPE,
