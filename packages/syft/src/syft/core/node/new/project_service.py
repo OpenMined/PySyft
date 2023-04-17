@@ -44,7 +44,9 @@ class ProjectService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Submit a Project"""
         try:
-            result = self.stash.set(project.to(Project, context=context))
+            result = self.stash.set(
+                context.credentials, project.to(Project, context=context)
+            )
 
             if result.is_ok():
                 result = result.ok()

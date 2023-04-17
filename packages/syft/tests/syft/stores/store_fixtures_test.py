@@ -86,7 +86,9 @@ def sqlite_workspace() -> Generator:
 
 
 def sqlite_store_partition_fn(
-    sqlite_workspace: Tuple[Path, str], locking_config_name: str = "nop"
+    root_verify_key,
+    sqlite_workspace: Tuple[Path, str],
+    locking_config_name: str = "nop",
 ):
     workspace, db_name = sqlite_workspace
     sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
@@ -98,7 +100,9 @@ def sqlite_store_partition_fn(
 
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    store = SQLiteStorePartition(settings=settings, store_config=store_config)
+    store = SQLiteStorePartition(
+        root_verify_key, settings=settings, store_config=store_config
+    )
 
     res = store.init_store()
     assert res.is_ok()
@@ -107,15 +111,19 @@ def sqlite_store_partition_fn(
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def sqlite_store_partition(sqlite_workspace: Tuple[Path, str], request):
+def sqlite_store_partition(
+    root_verify_key, sqlite_workspace: Tuple[Path, str], request
+):
     locking_config_name = request.param
     return sqlite_store_partition_fn(
-        sqlite_workspace, locking_config_name=locking_config_name
+        root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
 
 
 def sqlite_document_store_fn(
-    sqlite_workspace: Tuple[Path, str], locking_config_name: str = "nop"
+    root_verify_key,
+    sqlite_workspace: Tuple[Path, str],
+    locking_config_name: str = "nop",
 ):
     workspace, db_name = sqlite_workspace
     sqlite_config = SQLiteStoreClientConfig(filename=db_name, path=workspace)
@@ -125,31 +133,33 @@ def sqlite_document_store_fn(
         client_config=sqlite_config, locking_config=locking_config
     )
 
-    return SQLiteDocumentStore(store_config=store_config)
+    return SQLiteDocumentStore(root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def sqlite_document_store(sqlite_workspace: Tuple[Path, str], request):
+def sqlite_document_store(root_verify_key, sqlite_workspace: Tuple[Path, str], request):
     locking_config_name = request.param
     return sqlite_document_store_fn(
-        sqlite_workspace, locking_config_name=locking_config_name
+        root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
 
 
 def sqlite_queue_stash_fn(
-    sqlite_workspace: Tuple[Path, str], locking_config_name: str = "nop"
+    root_verify_key,
+    sqlite_workspace: Tuple[Path, str],
+    locking_config_name: str = "nop",
 ):
     store = sqlite_document_store_fn(
-        sqlite_workspace, locking_config_name=locking_config_name
+        root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
     return QueueStash(store=store)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def sqlite_queue_stash(sqlite_workspace: Tuple[Path, str], request):
+def sqlite_queue_stash(root_verify_key, sqlite_workspace: Tuple[Path, str], request):
     locking_config_name = request.param
     return sqlite_queue_stash_fn(
-        sqlite_workspace, locking_config_name=locking_config_name
+        root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
 
 
@@ -170,7 +180,10 @@ def sqlite_action_store(sqlite_workspace: Tuple[Path, str], request):
 
 
 def mongo_store_partition_fn(
-    mongo_db_name: str = "mongo_db", locking_config_name: str = "nop", **mongo_kwargs
+    root_verify_key,
+    mongo_db_name: str = "mongo_db",
+    locking_config_name: str = "nop",
+    **mongo_kwargs,
 ):
     mongo_client = MongoClient(**mongo_kwargs)
     mongo_config = MongoStoreClientConfig(client=mongo_client)
@@ -182,16 +195,19 @@ def mongo_store_partition_fn(
     )
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    return MongoStorePartition(settings=settings, store_config=store_config)
+    return MongoStorePartition(
+        root_verify_key, settings=settings, store_config=store_config
+    )
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_store_partition(mongo_server_mock, request):
+def mongo_store_partition(root_verify_key, mongo_server_mock, request):
     mongo_db_name = generate_db_name()
     mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
     locking_config_name = request.param
 
     yield mongo_store_partition_fn(
+        root_verify_key,
         mongo_db_name=mongo_db_name,
         locking_config_name=locking_config_name,
         **mongo_kwargs,
@@ -206,10 +222,12 @@ def mongo_store_partition(mongo_server_mock, request):
 
 
 def mongo_document_store_fn(
-    mongo_db_name: str = "mongo_db", locking_config_name: str = "nop", **mongo_kwargs
+    root_verify_key,
+    mongo_db_name: str = "mongo_db",
+    locking_config_name: str = "nop",
+    **mongo_kwargs,
 ):
     locking_config = str_to_locking_config(locking_config_name)
-
     mongo_client = MongoClient(**mongo_kwargs)
     mongo_config = MongoStoreClientConfig(client=mongo_client)
     store_config = MongoStoreConfig(
@@ -218,15 +236,16 @@ def mongo_document_store_fn(
 
     mongo_client.drop_database(mongo_db_name)
 
-    return MongoDocumentStore(store_config=store_config)
+    return MongoDocumentStore(root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_document_store(mongo_server_mock, request):
+def mongo_document_store(root_verify_key, mongo_server_mock, request):
     locking_config_name = request.param
     mongo_db_name = generate_db_name()
     mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
     return mongo_document_store_fn(
+        root_verify_key,
         mongo_db_name=mongo_db_name,
         locking_config_name=locking_config_name,
         **mongo_kwargs,
@@ -238,12 +257,13 @@ def mongo_queue_stash_fn(mongo_document_store):
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_queue_stash(mongo_server_mock, request):
+def mongo_queue_stash(root_verify_key, mongo_server_mock, request):
     mongo_db_name = generate_db_name()
     mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
     locking_config_name = request.param
 
     store = mongo_document_store_fn(
+        root_verify_key,
         mongo_db_name=mongo_db_name,
         locking_config_name=locking_config_name,
         **mongo_kwargs,
@@ -252,19 +272,24 @@ def mongo_queue_stash(mongo_server_mock, request):
 
 
 def dict_store_partition_fn(
+    root_verify_key,
     locking_config_name: str = "nop",
 ):
     locking_config = str_to_locking_config(locking_config_name)
     store_config = DictStoreConfig(locking_config=locking_config)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    return DictStorePartition(settings=settings, store_config=store_config)
+    return DictStorePartition(
+        root_verify_key, settings=settings, store_config=store_config
+    )
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def dict_store_partition(request):
+def dict_store_partition(root_verify_key, request):
     locking_config_name = request.param
-    return dict_store_partition_fn(locking_config_name=locking_config_name)
+    return dict_store_partition_fn(
+        root_verify_key, locking_config_name=locking_config_name
+    )
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
@@ -277,16 +302,18 @@ def dict_action_store(request):
     return DictActionStore(store_config=store_config, root_verify_key=ver_key)
 
 
-def dict_document_store_fn(locking_config_name: str = "nop"):
+def dict_document_store_fn(root_verify_key, locking_config_name: str = "nop"):
     locking_config = str_to_locking_config(locking_config_name)
     store_config = DictStoreConfig(locking_config=locking_config)
-    return DictDocumentStore(store_config=store_config)
+    return DictDocumentStore(root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def dict_document_store(request):
+def dict_document_store(root_verify_key, request):
     locking_config_name = request.param
-    return dict_document_store_fn(locking_config_name=locking_config_name)
+    return dict_document_store_fn(
+        root_verify_key, locking_config_name=locking_config_name
+    )
 
 
 def dict_queue_stash_fn(dict_document_store):

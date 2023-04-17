@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -9,13 +10,16 @@ from result import Result
 
 # relative
 from ....telemetry import instrument
+from .action_permissions import ActionObjectPermission
 from .api import APIRegistry
 from .api import SyftAPICall
+from .credentials import SyftVerifyKey
 from .document_store import BaseStash
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .document_store import UIDPartitionKey
+from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
 from .serializable import serializable
@@ -69,32 +73,54 @@ class QueueStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def set_result(self, item: QueueItem) -> Result[Optional[QueueItem], str]:
+    def set_result(
+        self,
+        credentials: SyftVerifyKey,
+        item: QueueItem,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
+    ) -> Result[Optional[QueueItem], str]:
         if item.resolved:
-            return self.check_type(item, self.object_type).and_then(super().set)
+            valid = self.check_type(item, self.object_type)
+            if valid.is_err():
+                return SyftError(message=valid.err())
+            return super().set(credentials, item, add_permissions)
         return None
 
-    def set_placeholder(self, item: QueueItem) -> Result[QueueItem, str]:
+    def set_placeholder(
+        self,
+        credentials: SyftVerifyKey,
+        item: QueueItem,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
+    ) -> Result[QueueItem, str]:
         # 🟡 TODO 36: Needs distributed lock
         if not item.resolved:
             exists = self.get_by_uid(item.id)
             if exists.is_ok() and exists.ok() is None:
-                return self.check_type(item, self.object_type).and_then(super().set)
+                valid = self.check_type(item, self.object_type)
+                if valid.is_err():
+                    return SyftError(message=valid.err())
+                return super().set(credentials, item, add_permissions)
         return item
 
-    def get_by_uid(self, uid: UID) -> Result[Optional[QueueItem], str]:
+    def get_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Result[Optional[QueueItem], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        item = self.query_one(qks=qks)
+        item = self.query_one(credentials=credentials, qks=qks)
         return item
 
-    def pop(self, uid: UID) -> Result[Optional[QueueItem], str]:
-        item = self.get_by_uid(uid)
-        self.delete_by_uid(uid)
+    def pop(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Result[Optional[QueueItem], str]:
+        item = self.get_by_uid(credentials=credentials, uid=uid)
+        self.delete_by_uid(credentials=credentials, uid=uid)
         return item
 
-    def delete_by_uid(self, uid: UID) -> Result[SyftSuccess, str]:
+    def delete_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(qk=qk)
+        result = super().delete(credentials=credentials, qk=qk)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result

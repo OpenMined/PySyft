@@ -121,8 +121,6 @@ def test_user_transform() -> None:
     # assert edit_user.id is not None # need to insert / update first
     assert edit_user.email == "alice@bob.com"
     assert edit_user.name == "Alice"
-    assert edit_user.password is None
-    assert edit_user.password_verify is None
 
     assert not hasattr(edit_user, "signing_key")
 

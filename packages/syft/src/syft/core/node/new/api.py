@@ -24,6 +24,7 @@ from typeguard import check_type
 # relative
 from ....telemetry import instrument
 from .connection import NodeConnection
+from .context import AuthedServiceContext
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .deserialize import _deserialize
@@ -337,14 +338,15 @@ class SyftAPI(SyftObject):
             endpoints[path] = endpoint
 
         # 🟡 TODO 35: fix root context
-        context = None
+        context = AuthedServiceContext(credentials=user_verify_key)
         method = node.get_method_with_context(UserCodeService.get_all_for_user, context)
         code_items = method()
 
         for code_item in code_items:
-            path = "code.call"
+            api_path = "code.call"
+            unique_path = f"code.call_{code_item.service_func_name}"
             endpoint = APIEndpoint(
-                path=path,
+                path=api_path,
                 name=code_item.service_func_name,
                 description="",
                 doc_string=f"Users custom func {code_item.service_func_name}",
@@ -352,7 +354,7 @@ class SyftAPI(SyftObject):
                 has_self=False,
                 pre_kwargs={"uid": code_item.id},
             )
-            endpoints[path] = endpoint
+            endpoints[unique_path] = endpoint
 
         return SyftAPI(node_name=node.name, node_uid=node.id, endpoints=endpoints)
 
@@ -410,7 +412,7 @@ class SyftAPI(SyftObject):
 
     def generate_endpoints(self) -> None:
         api_module = APIModule(path="")
-        for k, v in self.endpoints.items():
+        for _, v in self.endpoints.items():
             signature = v.signature
             if not v.has_self:
                 signature = signature_remove_self(signature)
