@@ -118,7 +118,7 @@ class Orchestra:
     def launch(
         name: Optional[str] = None,
         node_type: Optional[str] = None,
-        dev_mode: bool = True,
+        dev_mode: bool = False,
         cmd: bool = False,
         reset: bool = False,
         tail: bool = False,
@@ -134,7 +134,7 @@ class Orchestra:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
             if port:
-                start, stop = sy.bind_worker(name=name, port=port, reset=reset)  # type: ignore
+                start, stop = sy.bind_worker(name=name, port=port, reset=reset, dev_mode=dev_mode)  # type: ignore
                 start()
                 return NodeHandle(
                     node_type=node_type_enum,

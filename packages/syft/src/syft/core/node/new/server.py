@@ -1,10 +1,12 @@
 # stdlib
 import asyncio
+import logging
 import multiprocessing
 import os
 import platform
 import signal
 import subprocess
+import time
 from typing import Callable
 from typing import List
 from typing import Tuple
@@ -31,9 +33,11 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     return app
 
 
-def run_uvicorn(name: str, port: int, host: str, reset: bool):
-    async def _run_uvicorn(name: str, port: int, host: str, reset: bool):
-        worker = Worker.named(name, processes=0, reset=reset)
+def run_uvicorn(name: str, port: int, host: str, reset: bool, dev_mode: bool):
+    async def _run_uvicorn(
+        name: str, port: int, host: str, reset: bool, dev_mode: bool
+    ):
+        worker = Worker.named(name, processes=0, local_db=True, reset=reset)
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
 
@@ -43,12 +47,16 @@ def run_uvicorn(name: str, port: int, host: str, reset: bool):
                 for pid in python_pids:
                     print(f"Stopping process on port: {port}")
                     kill_process(pid)
+                    time.sleep(1)
             except Exception:  # nosec
                 print(f"Failed to kill python process on port: {port}")
 
-        # logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
-        # logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-        config = uvicorn.Config(app, host=host, port=port, log_level="info")
+        log_level = "critical"
+        if dev_mode:
+            log_level = "info"
+            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
+        config = uvicorn.Config(app, host=host, port=port, log_level=log_level)
         server = uvicorn.Server(config)
 
         await server.serve()
@@ -56,15 +64,19 @@ def run_uvicorn(name: str, port: int, host: str, reset: bool):
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(_run_uvicorn(name, port, host, reset))
+    loop.run_until_complete(_run_uvicorn(name, port, host, reset, dev_mode))
     loop.close()
 
 
 def bind_worker(
-    name: str, port: int = 8080, host: str = "0.0.0.0", reset: bool = False
+    name: str,
+    port: int = 8080,
+    host: str = "0.0.0.0",
+    reset: bool = False,
+    dev_mode: bool = False,
 ) -> Tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
-        target=run_uvicorn, args=(name, port, host, reset)
+        target=run_uvicorn, args=(name, port, host, reset, dev_mode)
     )
 
     def start():
