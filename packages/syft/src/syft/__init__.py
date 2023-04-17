@@ -1,6 +1,5 @@
 __version__ = "0.8.0-beta.8"
 
-# monkey patch early
 # stdlib
 from pathlib import Path
 import sys
@@ -8,6 +7,7 @@ from typing import Any
 from typing import Callable
 
 # relative
+from . import gevent_patch  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
@@ -48,7 +48,6 @@ from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
-from .util import gevent_patch  # noqa: F401
 from .util import jax_settings  # noqa: F401
 from .util import logger  # noqa: F401
 from .util.telemetry import instrument  # noqa: F401
