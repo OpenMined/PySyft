@@ -124,6 +124,7 @@ class Orchestra:
         reset: bool = False,
         tail: bool = False,
         port: Optional[int] = None,
+        host: Optional[str] = None,
         processes: int = 1,  # temporary work around for jax in subprocess
         local_db: bool = False,
     ) -> Optional[NodeHandle]:
@@ -137,7 +138,14 @@ class Orchestra:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
             if port:
-                start, stop = sy.bind_worker(name=name, port=port, reset=reset, dev_mode=dev_mode)  # type: ignore
+                start, stop = sy.bind_worker(  # type: ignore
+                    name=name,
+                    host=host,
+                    port=port,
+                    reset=reset,
+                    dev_mode=dev_mode,
+                    tail=tail,
+                )
                 start()
                 return NodeHandle(
                     node_type=node_type_enum,
