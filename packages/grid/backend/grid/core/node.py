@@ -1,12 +1,10 @@
-# stdlib
-
 # syft absolute
-from syft.core.node.new.mongo_client import MongoStoreClientConfig
-from syft.core.node.new.mongo_document_store import MongoStoreConfig
-from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
-from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
-from syft.core.node.worker import Worker
-from syft.core.node.worker import create_worker_metadata
+from syft.node.worker import Worker
+from syft.node.worker import create_worker_metadata
+from syft.store.mongo_client import MongoStoreClientConfig
+from syft.store.mongo_document_store import MongoStoreConfig
+from syft.store.sqlite_document_store import SQLiteStoreClientConfig
+from syft.store.sqlite_document_store import SQLiteStoreConfig
 
 # grid absolute
 from grid.core.config import settings

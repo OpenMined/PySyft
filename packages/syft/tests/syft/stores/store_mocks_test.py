@@ -3,13 +3,13 @@ from typing import Any
 from typing import Type
 
 # syft absolute
-from syft.core.node.new.document_store import DocumentStore
-from syft.core.node.new.document_store import PartitionSettings
-from syft.core.node.new.document_store import StoreConfig
-from syft.core.node.new.kv_document_store import KeyValueBackingStore
-from syft.core.node.new.serializable import serializable
-from syft.core.node.new.syft_object import SyftObject
-from syft.core.node.new.uid import UID
+from syft.serde.serializable import serializable
+from syft.store.document_store import DocumentStore
+from syft.store.document_store import PartitionSettings
+from syft.store.document_store import StoreConfig
+from syft.store.kv_document_store import KeyValueBackingStore
+from syft.types.syft_object import SyftObject
+from syft.types.uid import UID
 
 
 @serializable()
@@ -35,9 +35,14 @@ class MockKeyValueBackingStore(dict, KeyValueBackingStore):
         return value
 
     def __getitem__(self, key: Any) -> Any:
-        self._check_if_crashed()
-        value = super().__getitem__(key)
-        return value
+        try:
+            self._check_if_crashed()
+            value = super().__getitem__(key)
+            return value
+        except KeyError as e:
+            if self._ddtype:
+                return self._ddtype()
+            raise e
 
 
 @serializable()
