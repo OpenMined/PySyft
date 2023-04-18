@@ -50,6 +50,13 @@ class ActionGraphNode(SyftObject):
     def __hash__(self):
         return self.action.syft_history_hash
 
+    def __eq__(self, other: Self):
+        if not isinstance(other, ActionGraphNode):
+            raise NotImplementedError(
+                "Comparisions can be made with ActionGraphNode type objects only."
+            )
+        return hash(self) == hash(other)
+
     def __repr__(self):
         return self._repr_debug_()
 
@@ -158,6 +165,7 @@ class ActionGraph:
         self.client = graph_client.init_graph()
 
     def add_action(self, action: Action) -> None:
+        # TODO: Handle Duplication
         node = ActionGraphNode.from_action(action)
         self.client.add_node(node)
         self._search_parents_for(node)
