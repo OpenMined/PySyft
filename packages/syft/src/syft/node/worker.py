@@ -604,8 +604,6 @@ class Worker(NewNode):
 def task_producer(
     pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
 ) -> Any:
-    print("task_producer: Start")
-
     try:
         result = None
         with pipe:
@@ -618,7 +616,6 @@ def task_producer(
                     pass
             pipe.close()
         if blocking:
-            print("task_producer: End")
             return result
     except gipc.gipc.GIPCClosed:
         pass
@@ -632,8 +629,6 @@ def task_runner(
     task_uid: UID,
     blocking: bool,
 ) -> None:
-    print("task_runner: Start")
-
     worker = Worker(
         id=worker_settings.id,
         name=worker_settings.name,
@@ -659,7 +654,6 @@ def task_runner(
     except Exception as e:
         print("Exception in task_runner", e)
         raise e
-    print("task_runner: End")
 
 
 def queue_task(
@@ -668,8 +662,6 @@ def queue_task(
     task_uid: UID,
     blocking: bool,
 ) -> Optional[Any]:
-    print("queue_task: Start")
-
     with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
         cend,
         pend,
@@ -686,9 +678,7 @@ def queue_task(
         process.join()
 
     if blocking:
-        print("queue_task: End")
         return producer.value
-    print("queue_task: End")
     return None
 
 
