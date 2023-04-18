@@ -10,20 +10,20 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.context import NodeServiceContext
-from syft.core.node.new.context import UnauthedServiceContext
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.response import SyftError
-from syft.core.node.new.response import SyftSuccess
-from syft.core.node.new.uid import UID
-from syft.core.node.new.user import User
-from syft.core.node.new.user import UserCreate
-from syft.core.node.new.user import UserPrivateKey
-from syft.core.node.new.user import UserUpdate
-from syft.core.node.new.user import UserView
-from syft.core.node.new.user_roles import ServiceRole
-from syft.core.node.new.user_service import UserService
+from syft.node.credentials import SyftVerifyKey
+from syft.service.context import AuthedServiceContext
+from syft.service.context import NodeServiceContext
+from syft.service.context import UnauthedServiceContext
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
+from syft.service.user.user import User
+from syft.service.user.user import UserCreate
+from syft.service.user.user import UserPrivateKey
+from syft.service.user.user import UserUpdate
+from syft.service.user.user import UserView
+from syft.service.user.user_roles import ServiceRole
+from syft.service.user.user_service import UserService
+from syft.types.uid import UID
 
 
 def test_userservice_create_when_user_exists(

@@ -5,11 +5,11 @@ from typing import List
 import pytest
 
 # syft absolute
-from syft.core.node.new.dataset import Dataset
-from syft.core.node.new.dataset_stash import ActionIDsPartitionKey
-from syft.core.node.new.dataset_stash import NamePartitionKey
-from syft.core.node.new.document_store import QueryKey
-from syft.core.node.new.uid import UID
+from syft.service.dataset.dataset import Dataset
+from syft.service.dataset.dataset_stash import ActionIDsPartitionKey
+from syft.service.dataset.dataset_stash import NamePartitionKey
+from syft.store.document_store import QueryKey
+from syft.types.uid import UID
 
 
 def test_dataset_namepartitionkey() -> None:

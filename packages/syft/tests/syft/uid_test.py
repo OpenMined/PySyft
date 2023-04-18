@@ -17,9 +17,9 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.node.new.serialize import _serialize
-from syft.core.node.new.uid import UID
-from syft.core.node.new.uid import uuid_type
+from syft.serde.serialize import _serialize
+from syft.types.uid import UID
+from syft.types.uid import uuid_type
 
 
 def test_uid_creates_value_if_none_provided() -> None:

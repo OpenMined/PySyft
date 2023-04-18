@@ -2,13 +2,13 @@
 from faker import Faker
 
 # syft absolute
-from syft.core.node.new.credentials import SyftSigningKey
-from syft.core.node.new.response import SyftSuccess
-from syft.core.node.new.uid import UID
-from syft.core.node.new.user import User
-from syft.core.node.new.user import UserUpdate
-from syft.core.node.new.user_roles import ServiceRole
-from syft.core.node.new.user_stash import UserStash
+from syft.node.credentials import SyftSigningKey
+from syft.service.response import SyftSuccess
+from syft.service.user.user import User
+from syft.service.user.user import UserUpdate
+from syft.service.user.user_roles import ServiceRole
+from syft.service.user.user_stash import UserStash
+from syft.types.uid import UID
 
 
 def add_mock_user(root_domain_client, user_stash: UserStash, user: User) -> User:

@@ -8,9 +8,9 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.node.new.response import SyftAttributeError
-from syft.core.node.new.user import UserUpdate
-from syft.core.node.new.user_roles import ServiceRole
+from syft.service.response import SyftAttributeError
+from syft.service.user.user import UserUpdate
+from syft.service.user.user_roles import ServiceRole
 
 
 def test_api_cache_invalidation(worker):
