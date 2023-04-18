@@ -114,6 +114,16 @@
     }
 
     /**
+     * Returns a promise that resolves to an specific Dataset Obj
+     * @returns {Promise<Array<Object>>} A promise that resolves to a dataset
+     */
+    deleteDataset(datasetId) {
+      return (async () => {
+        return await this.send([], { uid: new UUID(datasetId) }, 'dataset.delete_by_id');
+      })();
+    }
+
+    /**
      * Returns a Promise that resolves to an array of all code requests.
      * @returns {Promise} A Promise that resolves to the result of calling the `send()` method with the parameters `[]`, `{ }`, and `'code.get_all'`.
      */

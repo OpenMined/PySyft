@@ -1,8 +1,18 @@
 <script>
   import Modal from '$lib/components/DynamicModal.svelte';
   import Button from '$lib/components/Button.svelte';
+  import { onMount } from 'svelte';
+  import { getClient } from '$lib/store';
 
   export let showModal;
+  export let datasetId;
+
+  let client = '';
+  onMount(async () => {
+    await getClient().then((response) => {
+      client = response;
+    });
+  });
 </script>
 
 <main>
@@ -20,8 +30,13 @@
       </div>
       <div slot="footer" class="flex justify-center pt-6">
         <Button action={() => (showModal = false)} variant="white">Cancel</Button>
-        <Button action={() => console.log('TODO: Implement delete')} variant="delete"
-          >Delete Dataset</Button
+        <Button
+          action={() => {
+            client.deleteDataset(datasetId);
+            showModal = false;
+            location.reload();
+          }}
+          variant="delete">Delete Dataset</Button
         >
       </div>
     </Modal>

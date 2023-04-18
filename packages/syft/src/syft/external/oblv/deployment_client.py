@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from datetime import datetime
-import json
 import os
 from signal import SIGTERM
 import subprocess  # nosec
@@ -24,15 +23,15 @@ from pydantic import validator
 import requests
 
 # relative
-from ...core.node.new.api import SyftAPI
-from ...core.node.new.client import HTTPConnection
-from ...core.node.new.client import Routes
-from ...core.node.new.client import SyftSigningKey
-from ...core.node.new.deserialize import _deserialize as deserialize
-from ...core.node.new.node_metadata import EnclaveMetadata
-from ...core.node.new.serializable import serializable
-from ...core.node.new.uid import UID
-from ...util import bcolors
+from ...client.api import SyftAPI
+from ...client.client import HTTPConnection
+from ...client.client import Routes
+from ...client.client import SyftSigningKey
+from ...serde.deserialize import _deserialize as deserialize
+from ...serde.serializable import serializable
+from ...service.metadata.node_metadata import EnclaveMetadata
+from ...types.uid import UID
+from ...util.util import bcolors
 from .constants import LOCAL_MODE
 from .exceptions import OblvEnclaveError
 from .exceptions import OblvUnAuthorizedError
@@ -40,10 +39,10 @@ from .oblv_proxy import check_oblv_proxy_installation_status
 
 if TYPE_CHECKING:
     # relative
-    from ...core.node.new.user_code import SubmitUserCode
+    from ...service.code.user_code import SubmitUserCode
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class OblvMetadata(EnclaveMetadata, BaseModel):
     """Contains Metadata to connect to Oblivious Enclave"""
 
@@ -76,7 +75,7 @@ class OblvMetadata(EnclaveMetadata, BaseModel):
 
 class DeploymentClient:
     deployment_id: str
-    user_key_name: str
+    key_name: str
     domain_clients: List[Any] = []  # List of domain client objects
     oblv_client: OblvClient = None
     __conn_string: str
@@ -86,9 +85,9 @@ class DeploymentClient:
     def __init__(
         self,
         domain_clients: List[Any],
-        user_key_name: str,
         deployment_id: str,
         oblv_client: Optional[OblvClient] = None,
+        key_name: Optional[str] = None,
         api: Optional[SyftAPI] = None,
     ):
         if not domain_clients:
@@ -96,7 +95,7 @@ class DeploymentClient:
                 "domain_clients should be populated with valid domain nodes"
             )
         self.deployment_id = deployment_id
-        self.user_key_name = user_key_name
+        self.key_name = key_name
         self.oblv_client = oblv_client
         self.domain_clients = domain_clients
         self.__conn_string = ""
@@ -113,7 +112,6 @@ class DeploymentClient:
         data: Optional[Dict] = None,
         json: Optional[Dict] = None,
     ) -> Any:
-        print(data)
         header = {}
         if LOCAL_MODE:
             header["x-oblv-user-name"] = "enclave_test"
@@ -145,14 +143,14 @@ class DeploymentClient:
         public_file_name = os.path.join(
             os.path.expanduser("~"),
             ".ssh",
-            self.user_key_name,
-            self.user_key_name + "_public.der",
+            self.key_name,
+            self.key_name + "_public.der",
         )
         private_file_name = os.path.join(
             os.path.expanduser("~"),
             ".ssh",
-            self.user_key_name,
-            self.user_key_name + "_private.der",
+            self.key_name,
+            self.key_name + "_private.der",
         )
         log_file_name = os.path.join(
             os.path.expanduser("~"),
@@ -267,7 +265,7 @@ class DeploymentClient:
 
     def request_code_execution(self, code: SubmitUserCode) -> Any:
         # relative
-        from ...core.node.new.user_code import SubmitUserCode
+        from ...service.code.user_code import SubmitUserCode
 
         if not isinstance(code, SubmitUserCode):
             raise Exception(
@@ -288,70 +286,6 @@ class DeploymentClient:
         res = self.api.services.code.request_code_execution(code=code)
 
         return res
-
-    def get_uploaded_datasets(self) -> Dict:
-        self.check_connection_string()
-
-        req = self.make_request_to_enclave(
-            requests.get, connection_string=self.__conn_string + "/tensor/dataset/list"
-        )
-        self.sanity_check_oblv_response(req)
-        return req.json()  # This is the publish_request_id
-
-    def publish_action(
-        self, action: str, arguments: List, *args: Any, **kwargs: Any
-    ) -> Dict[str, Any]:
-        self.check_connection_string()
-        file = None
-        if len(arguments) == 2 and arguments[1]["type"] == "tensor":
-            file = arguments[1]["value"]
-            arguments[1]["value"] = "file"
-        body = {
-            "inputs": json.dumps(arguments),
-            "args": json.dumps(args),
-            "kwargs": json.dumps(kwargs),
-        }
-
-        req = self.make_request_to_enclave(
-            requests.post,
-            connection_string=self.__conn_string + f"/tensor/action?op={action}",
-            data=body,
-            files={"file": file},
-        )
-
-        self.sanity_check_oblv_response(req)
-
-        # Status code 200
-        # TODO - Remove this after oblv proxy is resolved
-        data = req.json()
-        if isinstance(data, dict) and data.get("detail") is not None:
-            raise OblvEnclaveError(data["detail"])
-        return data
-
-    def request_publish(self, dataset_id: UID, sigma: float = 0.5) -> Dict[str, Any]:
-        self.check_connection_string()
-
-        req = self.make_request_to_enclave(
-            requests.post,
-            connection_string=self.__conn_string + "/tensor/publish/request",
-            json={"dataset_id": dataset_id, "sigma": sigma},
-        )
-        self.sanity_check_oblv_response(req)
-
-        # Status code 200
-        # TODO - Remove this after oblv proxy is resolved
-
-        data = req.json()
-        if type(data) == dict and data.get("detail") is not None:
-            raise OblvEnclaveError(data["detail"])
-        # Here data is publish_request_id
-        for domain_client in self.domain_clients:
-            domain_client.oblv.publish_budget(
-                deployment_id=self.deployment_id,
-                publish_request_id=data,
-                client=self.oblv_client,
-            )
-        return data
 
     def _get_api(self) -> SyftAPI:
         self.check_connection_string()
@@ -386,47 +320,6 @@ class DeploymentClient:
 
     def refresh(self) -> None:
         self._set_api()
-
-    def check_publish_request_status(self, publish_request_id: UID) -> None:
-        self.check_connection_string()
-
-        req = self.make_request_to_enclave(
-            requests.get,
-            connection_string=self.__conn_string
-            + "/tensor/publish/result_ready?publish_request_id="
-            + str(publish_request_id),
-        )
-
-        self.sanity_check_oblv_response(req)
-
-        result = req.json()
-        if isinstance(result, str):
-            print("Not yet Ready")
-        elif not isinstance(result, dict):
-            for domain_client in self.domain_clients:
-                domain_client.oblv.publish_request_budget_deduction(
-                    deployment_id=self.deployment_id,
-                    publish_request_id=publish_request_id,
-                    client=self.oblv_client,
-                    budget_to_deduct=result,
-                )
-            print("Result is ready")  # This is the publish_request_id
-        else:
-            # TODO - Remove this after oblv proxy is resolved
-            if result.get("detail") is not None:
-                raise OblvEnclaveError(result["detail"])
-
-    def fetch_result(self, publish_request_id: UID) -> Dict[str, Any]:
-        self.check_connection_string()
-
-        req = self.make_request_to_enclave(
-            requests.get,
-            connection_string=self.__conn_string
-            + "/tensor/publish/result?request_id="
-            + str(publish_request_id),
-        )
-        self.sanity_check_oblv_response(req)
-        return req.json()
 
     def close_connection(self) -> Optional[str]:
         if self.check_proxy_running():

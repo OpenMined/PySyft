@@ -37,6 +37,11 @@ def root_domain_client(worker):
 
 
 @pytest.fixture(autouse=True)
+def root_verify_key(worker):
+    return worker.root_client.credentials.verify_key
+
+
+@pytest.fixture(autouse=True)
 def guest_domain_client(root_domain_client):
     return root_domain_client.guest()
 
@@ -72,5 +77,7 @@ pytest_plugins = [
     "tests.syft.users.fixtures",
     "tests.syft.project.fixtures",
     "tests.syft.metadata.fixtures",
-
+    "tests.syft.request.fixtures",
+    "tests.syft.dataset.fixtures",
+    "tests.syft.messages.fixtures",
 ]

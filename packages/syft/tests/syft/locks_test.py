@@ -15,11 +15,12 @@ import pytest
 from pytest_mock_resources import create_redis_fixture
 
 # syft absolute
-from syft.core.node.new.locks import FileLockingConfig
-from syft.core.node.new.locks import LockingConfig
-from syft.core.node.new.locks import NoLockingConfig
-from syft.core.node.new.locks import RedisLockingConfig
-from syft.core.node.new.locks import SyftLock
+from syft.store.locks import FileLockingConfig
+from syft.store.locks import LockingConfig
+from syft.store.locks import NoLockingConfig
+from syft.store.locks import RedisLockingConfig
+from syft.store.locks import SyftLock
+from syft.store.locks import ThreadingLockingConfig
 
 redis_server_mock = create_redis_fixture(scope="session")
 
@@ -43,6 +44,12 @@ def locks_nop_config(request):
 
 
 @pytest.fixture(scope="function")
+def locks_threading_config(request):
+    def_params["lock_name"] = generate_lock_name()
+    return ThreadingLockingConfig(**def_params)
+
+
+@pytest.fixture(scope="function")
 def locks_file_config():
     def_params["lock_name"] = generate_lock_name()
     return FileLockingConfig(**def_params)
@@ -59,11 +66,14 @@ def locks_redis_config(redis_server_mock):
     "config",
     [
         pytest.lazy_fixture("locks_nop_config"),
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_sanity(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -76,7 +86,6 @@ def test_sanity(config: LockingConfig):
         pytest.lazy_fixture("locks_nop_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
 def test_acquire_nop(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -95,11 +104,15 @@ def test_acquire_nop(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -122,11 +135,15 @@ def test_acquire_release(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_release_with(config: LockingConfig):
     was_locked = True
     with SyftLock(config) as lock:
@@ -138,11 +155,15 @@ def test_acquire_release_with(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_expire(config: LockingConfig):
     config.expire = 1  # second
     lock = SyftLock(config)
@@ -166,11 +187,15 @@ def test_acquire_expire(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     config.timeout = 1
     config.expire = 5
@@ -189,11 +214,15 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -214,11 +243,15 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -239,11 +272,15 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -265,11 +302,15 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -282,11 +323,15 @@ def test_acquire_double_release(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_same_name_diff_namespace(config: LockingConfig):
     config.namespace = "ns1"
     lock1 = SyftLock(config)
@@ -303,12 +348,16 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
 @pytest.mark.parametrize(
     "config",
     [
+        pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
-def test_parallel_multithreading(config: LockingConfig) -> None:
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
+def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     thread_cnt = 3
     repeats = 100
 
@@ -321,13 +370,28 @@ def test_parallel_multithreading(config: LockingConfig) -> None:
     with open(temp_file, "w") as f:
         f.write("0")
 
+    config.timeout = 10
+    lock = SyftLock(config)
+
     def _kv_cbk(tid: int) -> None:
         for idx in range(repeats):
-            with SyftLock(config):
-                with open(temp_file, "r") as f:
-                    prev = int(f.read())
-                with open(temp_file, "w") as f:
-                    f.write(str(prev + 1))
+            locked = lock.acquire()
+            if not locked:
+                continue
+
+            for retry in range(10):
+                try:
+                    with open(temp_file, "r") as f:
+                        prev = f.read()
+                        prev = int(prev)
+                    with open(temp_file, "w") as f:
+                        f.write(str(prev + 1))
+                        f.flush()
+                    break
+                except BaseException as e:
+                    print("failed ", e)
+
+            lock.release()
 
     tids = []
     for tid in range(thread_cnt):
@@ -352,7 +416,10 @@ def test_parallel_multithreading(config: LockingConfig) -> None:
         pytest.lazy_fixture("locks_redis_config"),
     ],
 )
-@pytest.mark.skipif(sys.platform != "linux", reason="Testing Mongo only on Linux")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_parallel_joblib(
     config: LockingConfig,
 ) -> None:

@@ -7,8 +7,8 @@ import numpy as np
 
 # syft absolute
 import syft as sy
-from syft.core.node.new.numpy import NumpyArrayObject
-from syft.core.node.new.user_code import SubmitUserCode
+from syft.service.action.numpy import NumpyArrayObject
+from syft.service.code.user_code import SubmitUserCode
 
 LOCAL_ENCLAVE_PORT = os.environ.get("LOCAL_ENCLAVE_PORT", 8010)
 # TODO: Should move to Docker Container tests
@@ -62,7 +62,7 @@ def test_manual_code_submission_enclave() -> None:
         deployment_id="d-2dfedbb1-7904-493b-8793-1a9554badae7",
         oblv_client=None,
         domain_clients=[canada_root, italy_root],
-        user_key_name="first",
+        key_name="first",
     )  # connection_port key can be added to set the port on which oblv_proxy will run
 
     depl.initiate_connection(LOCAL_ENCLAVE_PORT)
