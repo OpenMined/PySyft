@@ -52,9 +52,9 @@ def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
                 f"\nWARNING: private key is based on node name: {name} in dev_mode. "
                 "Don't run this in production."
             )
-            worker = Worker.named(name, processes=0, local_db=True, reset=reset)
+            worker = Worker.named(name=name, processes=0, local_db=True, reset=reset)
         else:
-            worker = Worker(name, processes=0, local_db=True, reset=reset)
+            worker = Worker(name=name, processes=0, local_db=True)
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
 
