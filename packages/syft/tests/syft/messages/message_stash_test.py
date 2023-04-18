@@ -4,17 +4,17 @@ from pytest import MonkeyPatch
 from result import Err
 
 # syft absolute
-from syft.core.node.new.credentials import SyftSigningKey
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.datetime import DateTime
-from syft.core.node.new.message_stash import FromUserVerifyKeyPartitionKey
-from syft.core.node.new.message_stash import MessageStash
-from syft.core.node.new.message_stash import StatusPartitionKey
-from syft.core.node.new.message_stash import ToUserVerifyKeyPartitionKey
-from syft.core.node.new.messages import Message
-from syft.core.node.new.messages import MessageExpiryStatus
-from syft.core.node.new.messages import MessageStatus
-from syft.core.node.new.uid import UID
+from syft.node.credentials import SyftSigningKey
+from syft.node.credentials import SyftVerifyKey
+from syft.service.message.message_stash import FromUserVerifyKeyPartitionKey
+from syft.service.message.message_stash import MessageStash
+from syft.service.message.message_stash import StatusPartitionKey
+from syft.service.message.message_stash import ToUserVerifyKeyPartitionKey
+from syft.service.message.messages import Message
+from syft.service.message.messages import MessageExpiryStatus
+from syft.service.message.messages import MessageStatus
+from syft.types.datetime import DateTime
+from syft.types.uid import UID
 
 test_signing_key_string = (
     "2dc2f0fc70a22d082488d5370a5e222437bd2e4eef6dc9f676f96b2218e7a3d5"

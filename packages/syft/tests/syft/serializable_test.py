@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 # syft absolute
 import syft as sy
-from syft.core.node.new.serializable import serializable
+from syft.serde.serializable import serializable
 
 
 def get_fqn_for_class(cls):

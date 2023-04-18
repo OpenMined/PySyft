@@ -1,6 +1,5 @@
 # stdlib
 import random
-import sys
 from typing import Any
 from typing import Callable
 from typing import Container
@@ -9,28 +8,23 @@ from typing import List
 from typing import Tuple
 from typing import TypeVar
 
-if sys.version_info >= (3, 10):
-    # stdlib
-    from typing import ParamSpec
-else:
-    from typing_extensions import ParamSpec
-
 # third party
 from faker import Faker
 import pytest
+from typing_extensions import ParamSpec
 
 # syft absolute
-from syft.core.node.new.dict_document_store import DictDocumentStore
-from syft.core.node.new.document_store import BaseUIDStoreStash
-from syft.core.node.new.document_store import PartitionKey
-from syft.core.node.new.document_store import PartitionSettings
-from syft.core.node.new.document_store import QueryKey
-from syft.core.node.new.document_store import QueryKeys
-from syft.core.node.new.document_store import UIDPartitionKey
-from syft.core.node.new.response import SyftSuccess
-from syft.core.node.new.serializable import serializable
-from syft.core.node.new.syft_object import SyftObject
-from syft.core.node.new.uid import UID
+from syft.serde.serializable import serializable
+from syft.service.response import SyftSuccess
+from syft.store.dict_document_store import DictDocumentStore
+from syft.store.document_store import BaseUIDStoreStash
+from syft.store.document_store import PartitionKey
+from syft.store.document_store import PartitionSettings
+from syft.store.document_store import QueryKey
+from syft.store.document_store import QueryKeys
+from syft.store.document_store import UIDPartitionKey
+from syft.types.syft_object import SyftObject
+from syft.types.uid import UID
 
 
 @serializable()

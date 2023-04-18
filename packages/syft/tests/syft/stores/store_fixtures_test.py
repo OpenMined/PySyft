@@ -10,26 +10,26 @@ import pytest
 from pytest_mock_resources import create_mongo_fixture
 
 # syft absolute
-from syft.core.node.new.action_store import DictActionStore
-from syft.core.node.new.action_store import SQLiteActionStore
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.dict_document_store import DictDocumentStore
-from syft.core.node.new.dict_document_store import DictStoreConfig
-from syft.core.node.new.dict_document_store import DictStorePartition
-from syft.core.node.new.document_store import PartitionSettings
-from syft.core.node.new.locks import FileLockingConfig
-from syft.core.node.new.locks import LockingConfig
-from syft.core.node.new.locks import NoLockingConfig
-from syft.core.node.new.locks import ThreadingLockingConfig
-from syft.core.node.new.mongo_client import MongoStoreClientConfig
-from syft.core.node.new.mongo_document_store import MongoDocumentStore
-from syft.core.node.new.mongo_document_store import MongoStoreConfig
-from syft.core.node.new.mongo_document_store import MongoStorePartition
-from syft.core.node.new.queue_stash import QueueStash
-from syft.core.node.new.sqlite_document_store import SQLiteDocumentStore
-from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
-from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
-from syft.core.node.new.sqlite_document_store import SQLiteStorePartition
+from syft.node.credentials import SyftVerifyKey
+from syft.service.action.action_store import DictActionStore
+from syft.service.action.action_store import SQLiteActionStore
+from syft.service.queue.queue_stash import QueueStash
+from syft.store.dict_document_store import DictDocumentStore
+from syft.store.dict_document_store import DictStoreConfig
+from syft.store.dict_document_store import DictStorePartition
+from syft.store.document_store import PartitionSettings
+from syft.store.locks import FileLockingConfig
+from syft.store.locks import LockingConfig
+from syft.store.locks import NoLockingConfig
+from syft.store.locks import ThreadingLockingConfig
+from syft.store.mongo_client import MongoStoreClientConfig
+from syft.store.mongo_document_store import MongoDocumentStore
+from syft.store.mongo_document_store import MongoStoreConfig
+from syft.store.mongo_document_store import MongoStorePartition
+from syft.store.sqlite_document_store import SQLiteDocumentStore
+from syft.store.sqlite_document_store import SQLiteStoreClientConfig
+from syft.store.sqlite_document_store import SQLiteStoreConfig
+from syft.store.sqlite_document_store import SQLiteStorePartition
 
 # relative
 from .store_constants_test import generate_db_name

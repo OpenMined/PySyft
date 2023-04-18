@@ -3,12 +3,12 @@ from faker import Faker
 import pytest
 
 # syft absolute
-from syft.core.node.new.api import SyftAPICall
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.user import ServiceRole
-from syft.core.node.new.user import UserCreate
-from syft.core.node.new.user import UserUpdate
-from syft.core.node.new.user import UserView
+from syft.client.api import SyftAPICall
+from syft.service.context import AuthedServiceContext
+from syft.service.user.user import ServiceRole
+from syft.service.user.user import UserCreate
+from syft.service.user.user import UserUpdate
+from syft.service.user.user import UserView
 
 GUEST_ROLES = [ServiceRole.GUEST]
 DS_ROLES = [ServiceRole.GUEST, ServiceRole.DATA_SCIENTIST]

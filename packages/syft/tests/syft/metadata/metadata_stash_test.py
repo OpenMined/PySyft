@@ -1,9 +1,9 @@
 # third party
 
 # syft absolute
-from syft.core.node.new.metadata_stash import MetadataStash
-from syft.core.node.new.node_metadata import NodeMetadata
-from syft.core.node.new.node_metadata import NodeMetadataUpdate
+from syft.service.metadata.metadata_stash import MetadataStash
+from syft.service.metadata.node_metadata import NodeMetadata
+from syft.service.metadata.node_metadata import NodeMetadataUpdate
 
 
 def add_mock_metadata(

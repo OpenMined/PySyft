@@ -8,8 +8,8 @@ from joblib import delayed
 import pytest
 
 # syft absolute
-from syft.core.node.new.document_store import QueryKeys
-from syft.core.node.new.sqlite_document_store import SQLiteStorePartition
+from syft.store.document_store import QueryKeys
+from syft.store.sqlite_document_store import SQLiteStorePartition
 
 # relative
 from .store_fixtures_test import sqlite_store_partition_fn
