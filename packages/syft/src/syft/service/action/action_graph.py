@@ -12,13 +12,13 @@ import pydantic
 from typing_extensions import Self
 
 # relative
+from ...serde.serializable import serializable
+from ...store.document_store import StoreClientConfig
+from ...types.datetime import DateTime
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
+from ...types.uid import UID
 from .action_object import Action
-from .datetime import DateTime
-from .document_store import StoreClientConfig
-from .serializable import serializable
-from .syft_object import SYFT_OBJECT_VERSION_1
-from .syft_object import SyftObject
-from .uid import UID
 
 
 @serializable()
@@ -170,10 +170,7 @@ class ActionGraph:
         input_ids.extend(node.action.args)
         input_ids.extend(node.action.kwargs.values())
         for _node in self.client.nodes:
-            if (
-                _node.action.result_id in input_ids
-                or _node.action.remote_self in input_ids
-            ):
+            if _node.action.result_id in input_ids:
                 parents.add(_node)
 
         for parent in parents:
