@@ -15,7 +15,6 @@ from typing import Type
 from typing import Union
 
 # third party
-import numpy
 from result import Ok
 from result import OkErr
 
@@ -181,19 +180,8 @@ def register_lib_func(path: str, lib_obj: Callable):
     except ValueError:
         signature = None
 
-    # maybe we do want to allow this?
-    # TODO: properly fix
-    # has problems with ipykernel.iostream.OutStream not in TYPE_BANK
-    # and numpy._globals._NoValueType not in TYPE_BANK
-    # it would be much better if we could just check whether we can serialize
-
     if signature is not None:
-        skip = False
-
-        for v in signature.parameters.values():
-            if type(v.default) == numpy._globals._NoValueType or path == "numpy.source":
-                skip = True
-        if not skip:
+        if path != "numpy.source":
             service_config = ServiceConfig(
                 public_path=str(path),
                 private_path=str(path),
@@ -208,6 +196,39 @@ def register_lib_func(path: str, lib_obj: Callable):
             )
 
             ServiceConfigRegistry.register(service_config)
+
+
+def register_lib_class(path: str, lib_obj):
+    # this is for functions
+    func = lib_obj
+    # func_name = func.__name__
+    func_name = path.split(".")[-1]
+    # dont use this, leads to problems with certain classes
+    # like numpy.single -> numpy.float32
+
+    try:
+        signature = get_signature(lib_obj)
+    except Exception:
+        try:
+            signature = get_signature(lib_obj.__init__)
+        except Exception:
+            signature = None
+
+    if signature is not None:
+        service_config = ServiceConfig(
+            public_path=str(path),
+            private_path=str(path),
+            # do we want the "public_" + func_name here?
+            public_name=str(func_name),
+            method_name=str(func_name),
+            doc_string=str(func.__doc__),
+            signature=signature,
+            roles=GUEST_ROLE_LEVEL,
+            permissions=["Guest"],
+            is_from_lib=True,
+        )
+
+        ServiceConfigRegistry.register(service_config)
 
 
 class ServiceConfigRegistry:
@@ -239,8 +260,7 @@ for lib_module in api_registry_libs:
         if inspect.isfunction(lib_obj):
             register_lib_func(path, lib_obj)
         elif inspect.isclass(lib_obj):
-            # todo
-            pass
+            register_lib_class(path, lib_obj)
 
 
 def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
