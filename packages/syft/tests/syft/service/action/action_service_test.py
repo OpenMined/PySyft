@@ -3,8 +3,8 @@
 # third party
 
 # syft absolute
-from syft.core.node.new.action_object import ActionObject
-from syft.core.node.new.context import AuthedServiceContext
+from syft.service.action.action_object import ActionObject
+from syft.service.context import AuthedServiceContext
 
 
 def get_auth_ctx(worker):

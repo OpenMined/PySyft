@@ -23,7 +23,6 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ....logger import debug
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -31,6 +30,7 @@ from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ...util.logger import debug
 from ..response import SyftException
 from .action_data_empty import ActionDataEmpty
 from .action_types import action_type_for_type
