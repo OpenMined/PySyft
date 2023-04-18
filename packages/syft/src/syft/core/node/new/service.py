@@ -21,6 +21,7 @@ from result import OkErr
 # relative
 from .context import AuthedServiceContext
 from .lib_service_registry import api_registry_libs
+from .lib_service_registry import function_signatures_registry
 from .linked_obj import LinkedObject
 from .response import SyftError
 from .serializable import serializable
@@ -101,72 +102,62 @@ class UserServiceConfigRegistry:
         return self.__service_config_registry__
 
 
-# def get_signature_from_docstring(doc: str, callable_name: str) -> str:
-#     if callable_name not in doc:
-#         return None
-#     else:
-#         search_res = re.search(fr"{callable_name}\((.*)\)\n\n", doc)
-#         if search_res:
-#             signature = search_res.group(1)
-#             params = re.findall(r"\[(.*?)\]", signature)
-#             if params:
-#                 for param in params[:-1]:
-#                     signature = signature.replace(f"[{param}]", param)
-#                 signature = signature.replace(
-#                     f"[{params[-1]}]",
-#                     f', {", ".join([f"{param}=None" for param in params[-1].split(", ") if param])}',
-#                 )
-#             signature = re.sub(r"(( ,)|(, )|,)(\/|\*)", "", signature)
-#             return f"{callable_name}({signature})"
-#         else:
-#             return None
+def get_signature_from_docstring(doc: str, callable_name: str) -> str:
+    if not doc or callable_name not in doc:
+        return None
+    else:
+        doc = re.sub(r"\s", "", doc.split("\n\n")[0])
+        search_res = re.search(rf"{callable_name}\((.+)\)", doc)
+        if search_res:
+            signature = search_res.group(1)
+            # decomposing "[]" optional  params
+            params = re.findall(r"\[(.+?)\]", signature)
+            if params:
+                for param in params[:-1]:
+                    signature = signature.replace(f"[{param}]", param)
 
-# def get_signature_from_registry(callable_name: str) -> str:
-#     return function_signatures_registry[callable_name]
+                if re.search(rf"(?<={params[-1]})\],", signature):
+                    signature = signature.replace(f"[{params[-1]}],", params[-1])
+                else:
+                    signature = signature.replace(
+                        f"[{params[-1]}]",
+                        f', {",".join([f"{param}=None" for param in params[-1].split(",") if param])}',
+                    )
 
-# def generate_signature(_callable) -> inspect.Signature:
-#     name = _callable.__name__
-#     doc = _callable.__doc__
-#     # returning predefined signature if in signature registry
-#     name_in_registry = name in function_signatures_registry.keys()
-#     text_signature = get_signature_from_docstring(doc, name) \
-#         if not name_in_registry else get_signature_from_registry(name)
-#     # TODO safe handling if function signature can not be generated
-#     text_signature = "()" if text_signature is None else  text_signature
-#     return _signature_fromstr(inspect.Signature, _callable, text_signature, True)
+            signature = re.sub(r",(\/|\*)", "", signature)
+            signature = re.sub(r"dtype=(\w+),", "dtype=None,", signature)
+            return f"{callable_name}({signature})"
+        else:
+            return None
 
 
-def get_text_signature(doc):
-    s = doc.split(")\n\n")[0] + ")".replace("\n", "")
-    # todo: many np signature contain a "/"  https://numpy.org/doc/stable/reference/generated/numpy.add.html
-    s = s.replace("/,", "")
-    # trailing case
-    s = s.replace(", /)", ")")
-    # todo: some signatures have a * https://numpy.org/doc/stable/reference/generated/numpy.matmul.html
-    s = s.replace(" *,", "")
-    # todo: many np signature contain "[, signature, extobj]" https://numpy.org/doc/stable/reference/generated/numpy.add.html
-    s = s.replace("[, signature, extobj]", "")
-    # todo, fix for matmul
-    s = s.replace("[, signature, extobj, axes, axis]", "")
-    # remove leading whitespace
-    return re.sub(r"^\s+", "", s)
+def get_signature_from_registry(callable_name: str) -> str:
+    return function_signatures_registry[callable_name]
 
 
-def get_signature_from_doc(_callable):
-    doc = _callable.__doc__
-    text_signature = get_text_signature(doc)
+def generate_signature(_callable) -> inspect.Signature:
+    name, doc = _callable.__name__, _callable.__doc__
+    # returning predefined signature if in signature registry
+    name_in_registry = name in function_signatures_registry.keys()
+    text_signature = (
+        get_signature_from_registry(name)
+        if name_in_registry
+        else get_signature_from_docstring(doc, name)
+    )
+    # TODO safe handling if function signature can not be generated
+    text_signature = "()" if text_signature is None else text_signature
     return _signature_fromstr(inspect.Signature, _callable, text_signature, True)
 
 
-def get_signature(_callable):
+def get_signature(_callable) -> inspect.Signature:
     try:
         res = inspect.signature(_callable)
-        if res is None:
+        if res is None or "OutStream" in str(res):
             raise ValueError("")
         else:
             return res
     except Exception:
-        return get_signature_from_doc(_callable)
+        return generate_signature(_callable)
 
 
 def register_lib_func(path: str, lib_obj: Callable):
