@@ -103,7 +103,7 @@ def _settings() -> UserSettings:
 
 @module_property
 def _orchestra() -> Orchestra:
-    return Orchestra()
+    return Orchestra
 
 
 def search(name: str) -> SearchResults:
