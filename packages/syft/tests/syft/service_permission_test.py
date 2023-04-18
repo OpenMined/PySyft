@@ -3,7 +3,7 @@ import pytest
 
 # syft absolute
 from syft import SyftError
-from syft.core.node.new.api import SyftAPICall
+from syft.client.api import SyftAPICall
 
 
 @pytest.fixture

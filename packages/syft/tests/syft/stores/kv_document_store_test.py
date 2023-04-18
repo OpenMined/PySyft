@@ -6,9 +6,9 @@ from threading import Thread
 import pytest
 
 # syft absolute
-from syft.core.node.new.document_store import PartitionSettings
-from syft.core.node.new.document_store import QueryKeys
-from syft.core.node.new.kv_document_store import KeyValueStorePartition
+from syft.store.document_store import PartitionSettings
+from syft.store.document_store import QueryKeys
+from syft.store.kv_document_store import KeyValueStorePartition
 
 # relative
 from .store_mocks_test import MockObjectType
