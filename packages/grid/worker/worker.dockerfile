@@ -6,6 +6,8 @@ FROM python:3.10.10-slim as build
 ENV TZ=Etc/UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+RUN mkdir -p /root/.local
+
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     DEBIAN_FRONTEND=noninteractive \
     apt-get update && \
@@ -44,7 +46,6 @@ WORKDIR /app
 # copy grid
 COPY grid/worker /app/
 COPY grid/backend/grid/bootstrap.py /app/bootstrap.py
-COPY grid/backend/grid/api/new/new_routes.py /app/new_routes.py
 RUN chmod +x /app/start.sh
 
 # copy skeleton to do package install

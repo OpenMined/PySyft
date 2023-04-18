@@ -7,9 +7,9 @@ import os
 from typing import Union
 
 # relative
-from ..core.node.new.response import SyftError
-from ..core.node.new.response import SyftSuccess
-from ..util import str_to_bool
+from ..service.response import SyftError
+from ..service.response import SyftSuccess
+from ..util.util import str_to_bool
 
 # Contains all the external libraries that Syft supports.
 # Used to check if a library is supported
