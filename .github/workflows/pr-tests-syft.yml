@@ -235,6 +235,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          DEV_MODE: "True" # force orchestra --build
         run: |
           tox -e syft.test.notebook
 

@@ -3,16 +3,16 @@ import pytest
 
 # syft absolute
 from syft.__init__ import __version__
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.metadata_service import MetadataService
-from syft.core.node.new.metadata_stash import MetadataStash
-from syft.core.node.new.node_metadata import NodeMetadata
-from syft.core.node.new.node_metadata import NodeMetadataJSON
-from syft.core.node.new.node_metadata import NodeMetadataUpdate
-from syft.core.node.new.syft_object import HIGHEST_SYFT_OBJECT_VERSION
-from syft.core.node.new.syft_object import LOWEST_SYFT_OBJECT_VERSION
-from syft.core.node.new.user import User
-from syft.core.node.worker import Worker
+from syft.node.worker import Worker
+from syft.service.context import AuthedServiceContext
+from syft.service.metadata.metadata_service import MetadataService
+from syft.service.metadata.metadata_stash import MetadataStash
+from syft.service.metadata.node_metadata import NodeMetadata
+from syft.service.metadata.node_metadata import NodeMetadataJSON
+from syft.service.metadata.node_metadata import NodeMetadataUpdate
+from syft.service.user.user import User
+from syft.types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
+from syft.types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 
 
 @pytest.fixture
