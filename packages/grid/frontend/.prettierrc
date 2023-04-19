@@ -3,5 +3,5 @@
   "singleQuote": true,
   "trailingComma": "none",
   "printWidth": 100,
-  "whiteSpace": "ignore"
+  "htmlWhitespaceSensitivity": "ignore"
 }
