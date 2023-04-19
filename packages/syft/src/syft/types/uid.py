@@ -65,11 +65,9 @@ class UID:
         # if value is not set - create a novel and unique ID.
         if isinstance(value, str):
             value = uuid.UUID(value)
-
-        if isinstance(value, bytes):
+        elif isinstance(value, bytes):
             value = uuid.UUID(bytes=value)
-
-        if isinstance(value, UID):
+        elif isinstance(value, UID):
             value = value.value
 
         self.value = uuid.uuid4() if value is None else value
@@ -184,6 +182,10 @@ class UID:
 
         return f"..{str(self.value)[-5:]}"
 
+    @property
+    def id(self) -> "UID":
+        return self
+
     @staticmethod
     def _check_or_convert(value: Union[str, "UID", uuid.UUID]) -> "UID":
         if isinstance(value, uuid.UUID):
@@ -214,10 +216,7 @@ class LineageID(UID):
             syft_history_hash = value.syft_history_hash
             value = value.value
 
-        if isinstance(value, UID):
-            self.value = value.value
-        else:
-            super().__init__(value)
+        super().__init__(value)
 
         if syft_history_hash is None:
             syft_history_hash = hash(self.value)
@@ -236,7 +235,10 @@ class LineageID(UID):
                 self.id == other.id
                 and self.syft_history_hash == other.syft_history_hash
             )
-        return self == other
+        elif isinstance(other, UID):
+            return hash(self) == hash(other)
+        else:
+            raise ValueError(f"Unsupported comparison: LineageID with {type(other)}")
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.no_dash} - {self.syft_history_hash}>"

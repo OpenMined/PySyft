@@ -10,20 +10,21 @@ from typing import Type
 import pytest
 
 # syft absolute
-from syft.core.node.new.action_data_empty import ActionDataEmpty
-from syft.core.node.new.action_object import Action
-from syft.core.node.new.action_object import ActionObject
-from syft.core.node.new.action_object import HOOK_ALWAYS
-from syft.core.node.new.action_object import PreHookContext
-from syft.core.node.new.action_object import make_action_side_effect
-from syft.core.node.new.action_object import propagate_node_uid
-from syft.core.node.new.action_object import send_action_side_effect
-from syft.core.node.new.action_types import action_type_for_type
+from syft.service.action.action_data_empty import ActionDataEmpty
+from syft.service.action.action_object import Action
+from syft.service.action.action_object import ActionObject
+from syft.service.action.action_object import HOOK_ALWAYS
+from syft.service.action.action_object import PreHookContext
+from syft.service.action.action_object import make_action_side_effect
+from syft.service.action.action_object import propagate_node_uid
+from syft.service.action.action_object import send_action_side_effect
+from syft.service.action.action_types import action_type_for_type
 
 
 def helper_make_action_obj(orig_obj: Any):
     obj_id = Action.make_id(None)
     lin_obj_id = Action.make_result_id(obj_id)
+
     return ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
 
 

@@ -3,7 +3,7 @@ from typing import Any
 from typing import Type
 
 # relative
-from ....logger import debug
+from ...util.logger import debug
 from .action_data_empty import ActionDataEmpty
 
 action_types = {}

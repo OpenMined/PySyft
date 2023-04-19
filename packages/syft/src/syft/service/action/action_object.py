@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import inspect
+import traceback
 import types
 from typing import Any
 from typing import Callable
@@ -30,6 +31,7 @@ from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ...util.logger import debug
 from ..response import SyftException
 from .action_data_empty import ActionDataEmpty
 from .action_types import action_type_for_type
@@ -205,8 +207,8 @@ def make_action_side_effect(
             op=context.op_name, args=args, kwargs=kwargs
         )
         context.action = action
-    except Exception as e:
-        return Err(str(e))
+    except Exception:
+        return Err(f"make_action_side_effect failed with {traceback.format_exc()}")
     return Ok((context, args, kwargs))
 
 
@@ -250,8 +252,8 @@ def send_action_side_effect(
         else:
             context.node_uid = action_result.syft_node_uid
             context.result_id = context.action.result_id
-    except Exception as e:
-        return Err(str(e))
+    except Exception:
+        return Err(f"send_action_side_effect failed with {traceback.format_exc()}")
     return Ok((context, args, kwargs))
 
 
@@ -286,8 +288,8 @@ def propagate_node_uid(
                 setattr(result, "syft_node_uid", syft_node_uid)
         else:
             raise RuntimeError("dont propogate node_uid because output isnt wrapped")
-    except Exception as e:
-        return Err(str(e))
+    except Exception:
+        return Err(f"propagate_node_uid failed with {traceback.format_exc()}")
 
     return Ok(result)
 
@@ -387,8 +389,8 @@ class ActionObject(SyftObject):
             raise SyftException("Pointers can't execute without a node_uid.")
 
         # relative
-        from .api import APIRegistry
-        from .api import SyftAPICall
+        from ...client.api import APIRegistry
+        from ...client.api import SyftAPICall
 
         api = APIRegistry.api_for(node_uid=self.syft_node_uid)
 
@@ -623,7 +625,8 @@ class ActionObject(SyftObject):
                 result = hook(context, *result_args, **result_kwargs)
                 if result.is_ok():
                     context, result_args, result_kwargs = result.ok()
-                # TODO : What to do on error?
+                else:
+                    debug(f"Pre-hook failed with {result.err()}")
 
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self._syft_pre_hooks__:
@@ -631,7 +634,8 @@ class ActionObject(SyftObject):
                     result = hook(context, *result_args, **result_kwargs)
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
-                    # TODO : What to do on error?
+                    else:
+                        debug(f"Pre-hook failed with {result.err()}")
 
         return context, result_args, result_kwargs
 
@@ -645,7 +649,8 @@ class ActionObject(SyftObject):
                 result = hook(context, name, new_result)
                 if result.is_ok():
                     new_result = result.ok()
-                # TODO : What to do on error?
+                else:
+                    debug(f"Post hook failed with {result.err()}")
 
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self._syft_post_hooks__:
@@ -653,7 +658,8 @@ class ActionObject(SyftObject):
                     result = hook(context, name, new_result)
                     if result.is_ok():
                         new_result = result.ok()
-                    # TODO : What to do on error?
+                    else:
+                        debug(f"Post hook failed with {result.err()}")
 
         return new_result
 
@@ -820,22 +826,24 @@ class ActionObject(SyftObject):
 
         return wrapper
 
-    def syft_execute_action(
-        self, action: Action, sync: bool = True
-    ) -> ActionObjectPointer:
-        if self.syft_node_uid is None:
-            raise SyftException("Pointers can't execute without a node_uid.")
-        # relative
-        from ...client.api import APIRegistry
-        from ...client.api import SyftAPICall
+    def __getattribute__(self, name: str) -> Any:
+        """Called unconditionally to implement attribute accesses for instances of the class.
+        If the class also defines __getattr__(), the latter will not be called unless __getattribute__()
+        either calls it explicitly or raises an AttributeError.
+        This method should return the (computed) attribute value or raise an AttributeError exception.
+        In order to avoid infinite recursion in this method, its implementation should always:
+         * call the base class method with the same name to access any attributes it needs
+            for example : object.__getattribute__(self, name).
+         * use the syft/_syft prefix for internal methods.
+         * add the method name to the passthrough_attrs.
 
-        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
-
-        kwargs = {"action": action}
-        api_call = SyftAPICall(
-            node_uid=self.syft_node_uid, path="action.execute", args=[], kwargs=kwargs
-        )
-        return api.make_call(api_call)
+        Parameters:
+            name: str
+                The name of the attribute to access.
+        """
+        # bypass certain attrs to prevent recursion issues
+        if name.startswith("_syft") or name.startswith("syft"):
+            return object.__getattribute__(self, name)
 
         if name in self._syft_passthrough_attrs():
             return object.__getattribute__(self, name)
@@ -854,8 +862,6 @@ class ActionObject(SyftObject):
         return self._syft_wrap_attribute_for_methods(name)
 
     def keys(self) -> KeysView[str]:
-        if not isinstance(self.syft_action_data, dict):
-            raise ValueError("`keys` should be used only on dicts")
         return self.syft_action_data.keys()  # type: ignore
 
     ###### __DUNDER_MIFFLIN__
