@@ -65,11 +65,9 @@ class UID:
         # if value is not set - create a novel and unique ID.
         if isinstance(value, str):
             value = uuid.UUID(value)
-
-        if isinstance(value, bytes):
+        elif isinstance(value, bytes):
             value = uuid.UUID(bytes=value)
-
-        if isinstance(value, UID):
+        elif isinstance(value, UID):
             value = value.value
 
         self.value = uuid.uuid4() if value is None else value
