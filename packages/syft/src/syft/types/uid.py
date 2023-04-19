@@ -227,10 +227,6 @@ class LineageID(UID):
         return UID(self.value)
 
     def __hash__(self):
-        """
-        Some objects - like ActionObjects - can be set using UIDs or LineageIDs.
-        The hash needs to be the same from both perspectives.
-        """
         return hash((self.syft_history_hash, self.value))
 
     def __eq__(self, other: Any) -> bool:
