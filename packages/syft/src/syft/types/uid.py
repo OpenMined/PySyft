@@ -182,6 +182,10 @@ class UID:
 
         return f"..{str(self.value)[-5:]}"
 
+    @property
+    def id(self) -> "UID":
+        return self
+
     @staticmethod
     def _check_or_convert(value: Union[str, "UID", uuid.UUID]) -> "UID":
         if isinstance(value, uuid.UUID):
@@ -227,7 +231,7 @@ class LineageID(UID):
         Some objects - like ActionObjects - can be set using UIDs or LineageIDs.
         The hash needs to be the same from both perspectives.
         """
-        return super().__hash__()
+        return hash((self.syft_history_hash, self.value))
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, LineageID):
