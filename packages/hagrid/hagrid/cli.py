@@ -2980,7 +2980,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
 
     # Check if the container name belongs to worker container
-    if "celeryworker" in containers:
+    if "proxy" in containers:
         path = GRID_SRC_PATH
         env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
     else:
