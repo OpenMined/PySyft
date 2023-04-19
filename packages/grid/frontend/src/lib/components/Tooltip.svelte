@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-
   export let active = false;
 
   let variant: 'text' | 'profile' = 'text';
@@ -11,9 +9,7 @@
   let scrollX: number;
   let scrollY: number;
 
-  function handleResize() {
-    console.log('resize');
-  }
+  function handleResize() {}
 
   function handleMouseEnter() {
     active = true;
@@ -27,7 +23,6 @@
     const elLeft = el.getBoundingClientRect().x + scrollX;
     const tooltipLeft = elLeft + el.offsetWidth / 2 - tooltip.offsetWidth / 2;
     const adjustedLeft = adjustXOverflow(tooltipLeft, tooltip.offsetWidth);
-    console.log({ adjustedLeft });
     return `${adjustedLeft}px`;
   }
 
@@ -55,8 +50,6 @@
       }
     }
   });
-
-  $: console.log({ el, tooltip, active });
 </script>
 
 <svelte:window

@@ -1,9 +1,10 @@
 <script context="module">
-  import { JSSerde } from '../jsserde.svelte';
+  import { JSSerde } from '../jsserde';
   import { UUID } from '../objects/uid';
   import { APICall } from '../messages/syftMessage.ts';
   import sodium from 'libsodium-wrappers';
   import { UserCode } from '../objects/userCode';
+  import { API_BASE_URL } from '$lib/constants';
 
   export class JSClient {
     /**

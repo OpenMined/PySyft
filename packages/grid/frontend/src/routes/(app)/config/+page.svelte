@@ -15,7 +15,6 @@
         client = response;
 
         client.metadata.then((responseMetadata) => {
-          console.log(responseMetadata);
           metadata = responseMetadata;
         });
       })
@@ -92,7 +91,7 @@
           style={selectedTab[0]}
           class="flex w-20 justify-center cursor-pointer"
         >
-          <span class={focus[0]}> Domain </span>
+          <span class={focus[0]}>Domain</span>
         </button>
         <!--
         <button
@@ -124,7 +123,7 @@
                 <div id="domain-profile-border">
                   <div id="domain-profile-circle">
                     <h3 style="color:white">
-                      <b> {shortName(prettyName(metadata.name))} </b>
+                      <b>{shortName(prettyName(metadata.name))}</b>
                     </h3>
                   </div>
                 </div>
@@ -132,7 +131,7 @@
             </div>
 
             <div class="border-b col-span-5 space-y-6 py-12">
-              <span class="font-bold"> PROFILE INFORMATION</span>
+              <span class="font-bold">PROFILE INFORMATION</span>
               <div class="flex flex-col space-y-2">
                 <span class="font-bold">Domain Name</span>
                 <span class="font-roboto">{metadata.name}</span>
@@ -141,8 +140,9 @@
                     modalActiveList[0] = !modalActiveList[0];
                   }}
                   style="text-align: left"
-                  ><span class="font-roboto change-link-text ">Change Domain Name</span></button
                 >
+                  <span class="font-roboto change-link-text ">Change Domain Name</span>
+                </button>
               </div>
 
               <div class="flex flex-col space-y-2">
@@ -153,8 +153,9 @@
                     modalActiveList[1] = !modalActiveList[1];
                   }}
                   style="text-align: left"
-                  ><span class="font-roboto change-link-text ">Change Organization</span></button
                 >
+                  <span class="font-roboto change-link-text ">Change Organization</span>
+                </button>
               </div>
 
               <div class="flex flex-col space-y-2">
@@ -165,12 +166,13 @@
                     modalActiveList[2] = !modalActiveList[2];
                   }}
                   style="text-align: left;"
-                  ><span class="font-roboto change-link-text ">Change Description</span></button
                 >
+                  <span class="font-roboto change-link-text ">Change Description</span>
+                </button>
               </div>
             </div>
             <div class="col-start-2 col-span-5">
-              <span class="font-bold"> SYSTEM INFORMATION</span>
+              <span class="font-bold">SYSTEM INFORMATION</span>
               <div class="grid grid-cols-4 py-5">
                 <!--
                 <div class="flex justify-center">
@@ -187,9 +189,12 @@
                 -->
                 <div class="flex flex-col justify-center">
                   <span class="font-bold">
-                    ID # <Badge variant="gray">{metadata.id.value}</Badge></span
-                  >
-                  <span> <b> DEPLOYED ON:</b> {metadata.deployed_on}</span>
+                    ID # <Badge variant="gray">{metadata.id.value}</Badge>
+                  </span>
+                  <span>
+                    <b>DEPLOYED ON:</b>
+                    {metadata.deployed_on}
+                  </span>
                 </div>
               </div>
             </div>
@@ -220,8 +225,10 @@
           pill={true}
           on:click={() => submitDomainChanges(client)}
           color="dark"
-          style="color: white">Confirm</Button
+          style="color: white"
         >
+          Confirm
+        </Button>
       </div>
     </Modal>
     <Modal
@@ -244,8 +251,10 @@
           pill={true}
           on:click={() => submitDomainChanges(client)}
           color="dark"
-          style="color: white">Confirm</Button
+          style="color: white"
         >
+          Confirm
+        </Button>
       </div>
     </Modal>
     <Modal
@@ -274,8 +283,10 @@
           pill={true}
           on:click={() => submitDomainChanges(client)}
           color="dark"
-          style="color: white">Confirm</Button
+          style="color: white"
         >
+          Confirm
+        </Button>
       </div>
     </Modal>
   {/if}
