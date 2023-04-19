@@ -228,9 +228,6 @@ def test_worker_serde() -> None:
     assert de.id == worker.id
 
 
-# stdlib
-
-
 @pytest.mark.parametrize(
     "path, kwargs",
     [

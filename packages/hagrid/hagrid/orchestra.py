@@ -140,7 +140,7 @@ class Orchestra:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
             if port:
-                start, stop = sy.bind_worker(  # type: ignore
+                start, stop = sy.serve_node(  # type: ignore
                     name=name,
                     host=host,
                     port=port,
@@ -157,7 +157,7 @@ class Orchestra:
                     shutdown=stop,
                 )
             else:
-                worker = sy.Worker.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
+                worker = sy.Domain.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
                 return NodeHandle(
                     node_type=node_type_enum, name=name, python_node=worker
                 )
@@ -246,7 +246,7 @@ class Orchestra:
     def reset(name: str, node_type_enum: NodeType) -> None:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
-            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+            _ = sy.Domain.named(name, processes=1, reset=True)  # type: ignore
         else:
             snake_name = to_snake_case(name)
 

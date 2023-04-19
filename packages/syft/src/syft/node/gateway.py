@@ -4,5 +4,5 @@ from .node import Node
 
 
 @serializable()
-class Worker(Node):
+class Gateway(Node):
     pass
