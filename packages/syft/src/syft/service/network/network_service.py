@@ -10,13 +10,13 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import AbstractNode
 from ...client.client import HTTPConnection
 from ...client.client import NodeConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
-from ...node.node import NewNode
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
@@ -85,7 +85,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
     worker_settings: WorkerSettings
 
     @property
-    def node(self) -> Optional[NewNode]:
+    def node(self) -> Optional[AbstractNode]:
         # relative
         from ...node.worker import Worker
 
@@ -100,7 +100,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return node
 
     @staticmethod
-    def with_node(self, node: NewNode) -> Self:
+    def with_node(self, node: AbstractNode) -> Self:
         worker_settings = WorkerSettings.from_node(node)
         return PythonNodeRoute(id=worker_settings.id, worker_settings=worker_settings)
 
