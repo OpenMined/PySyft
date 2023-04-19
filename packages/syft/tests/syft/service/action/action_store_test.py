@@ -13,10 +13,10 @@ from syft.service.action.action_store import ActionObjectWRITE
 from syft.types.uid import UID
 
 # relative
-from .store_constants_test import test_verify_key_string_client
-from .store_constants_test import test_verify_key_string_hacker
-from .store_constants_test import test_verify_key_string_root
-from .store_mocks_test import MockSyftObject
+from ...stores.store_constants_test import test_verify_key_string_client
+from ...stores.store_constants_test import test_verify_key_string_hacker
+from ...stores.store_constants_test import test_verify_key_string_root
+from ...stores.store_mocks_test import MockSyftObject
 
 permissions = [
     ActionObjectOWNER,

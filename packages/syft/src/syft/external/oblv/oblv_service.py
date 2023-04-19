@@ -20,27 +20,27 @@ from result import Ok
 from result import Result
 
 # relative
-from ...core.node.new.api import NodeView
-from ...core.node.new.api import SyftAPI
-from ...core.node.new.client import HTTPConnection
-from ...core.node.new.client import Routes
-from ...core.node.new.context import AuthedServiceContext
-from ...core.node.new.context import ChangeContext
-from ...core.node.new.credentials import SyftSigningKey
-from ...core.node.new.credentials import SyftVerifyKey
-from ...core.node.new.deserialize import _deserialize as deserialize
-from ...core.node.new.document_store import DocumentStore
-from ...core.node.new.response import SyftError
-from ...core.node.new.serializable import serializable
-from ...core.node.new.service import AbstractService
-from ...core.node.new.service import service_method
-from ...core.node.new.syft_object import SYFT_OBJECT_VERSION_1
-from ...core.node.new.syft_object import SyftObject
-from ...core.node.new.uid import UID
-from ...core.node.new.user_code import UserCode
-from ...core.node.new.user_code import UserCodeStatus
-from ...core.node.new.user_roles import GUEST_ROLE_LEVEL
-from ...core.node.new.util import find_available_port
+from ...client.api import NodeView
+from ...client.api import SyftAPI
+from ...client.client import HTTPConnection
+from ...client.client import Routes
+from ...service.context import AuthedServiceContext
+from ...service.context import ChangeContext
+from ...node.credentials import SyftSigningKey
+from ...node.credentials import SyftVerifyKey
+from ...serde.deserialize import _deserialize as deserialize
+from ...store.document_store import DocumentStore
+from ...service.response import SyftError
+from ...serde.serializable import serializable
+from ...service.service import AbstractService
+from ...service.service import service_method
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
+from ...types.uid import UID
+from ...service.code.user_code import UserCode
+from ...service.code.user_code import UserCodeStatus
+from ...service.user.user_roles import GUEST_ROLE_LEVEL
+from ...util.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
 from .deployment_client import OblvMetadata
