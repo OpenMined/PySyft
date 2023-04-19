@@ -11,13 +11,12 @@
      * @returns {Promise} A promise that resolves to an instance of the class.
      */
     constructor() {
-      return (async () => {
-        const url = `${window.location.protocol}//${window.location.host}`;
+      const url = API_BASE_URL;
 
         this.serde = new JSSerde();
         // Set the URL and message URL properties.
         this.url = url;
-        this.msg_url = `${url}/api/v1/new/api_call`;
+      this.msg_url = `${url}/new/api_call`;
 
         try {
           // Get the metadata and extract the node ID value.
@@ -27,9 +26,7 @@
           console.error('Error getting metadata:', error);
         }
 
-        // Return an instance of the class.
-        return this;
-      })();
+      return this;
     }
 
     /**
@@ -41,7 +38,7 @@
      */
     async login(email, password) {
       // Send a POST request to the login API endpoint with the email and password.
-      const response = await fetch(`${this.url}/api/v1/new/login`, {
+      const response = await fetch(`${this.url}/new/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -178,7 +175,7 @@
         const registerPayload = { ...newUser, fqn: 'syft.core.node.new.user.UserCreate' };
 
         // Make a POST request to the server with the register payload.
-        const response = await fetch(`${this.url}/api/v1/new/register`, {
+        const response = await fetch(`${this.url}/new/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/octet-stream' },
           body: this.serde.serialize(registerPayload)
@@ -229,7 +226,7 @@
      */
     get metadata() {
       return (async () => {
-        const response = await fetch(`${this.url}/api/v1/new/metadata_capnp`);
+        const response = await fetch(`${this.url}/new/metadata_capnp`);
         const metadataBuffer = await response.arrayBuffer();
         const metadata = this.serde.deserialize(metadataBuffer);
 
