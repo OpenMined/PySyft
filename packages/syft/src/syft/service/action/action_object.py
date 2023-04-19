@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import inspect
+import traceback
 import types
 from typing import Any
 from typing import Callable
@@ -206,8 +207,8 @@ def make_action_side_effect(
             op=context.op_name, args=args, kwargs=kwargs
         )
         context.action = action
-    except Exception as e:
-        return Err(str(e))
+    except Exception:
+        return Err(f"make_action_side_effect failed with {traceback.format_exc()}")
     return Ok((context, args, kwargs))
 
 
@@ -251,8 +252,8 @@ def send_action_side_effect(
         else:
             context.node_uid = action_result.syft_node_uid
             context.result_id = context.action.result_id
-    except Exception as e:
-        return Err(str(e))
+    except Exception:
+        return Err(f"send_action_side_effect failed with {traceback.format_exc()}")
     return Ok((context, args, kwargs))
 
 
@@ -287,8 +288,8 @@ def propagate_node_uid(
                 setattr(result, "syft_node_uid", syft_node_uid)
         else:
             raise RuntimeError("dont propogate node_uid because output isnt wrapped")
-    except Exception as e:
-        return Err(str(e))
+    except Exception:
+        return Err(f"propagate_node_uid failed with {traceback.format_exc()}")
 
     return Ok(result)
 

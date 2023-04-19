@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import traceback
 from typing import List
 from typing import Optional
 
@@ -66,7 +67,10 @@ class KeyValueActionStore(ActionStore):
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         # if True:
         if self.has_permission(read_permission):
-            syft_object = self.data[uid]
+            try:
+                syft_object = self.data[uid]
+            except BaseException:
+                return Err(f"Actionstore.get failed = {traceback.format_exc()}")
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
 

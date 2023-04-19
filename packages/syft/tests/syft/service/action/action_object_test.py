@@ -24,6 +24,7 @@ from syft.service.action.action_types import action_type_for_type
 def helper_make_action_obj(orig_obj: Any):
     obj_id = Action.make_id(None)
     lin_obj_id = Action.make_result_id(obj_id)
+
     return ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
 
 
@@ -591,7 +592,6 @@ def test_actionobject_syft_get_attr_context():
 )
 def test_actionobject_syft_execute_hooks(worker, testcase):
     client = worker.root_client
-    print(client)
     orig_obj, op, args, kwargs, expected = testcase
 
     obj = helper_make_action_obj(orig_obj)

@@ -214,10 +214,7 @@ class LineageID(UID):
             syft_history_hash = value.syft_history_hash
             value = value.value
 
-        if isinstance(value, UID):
-            self.value = value.value
-        else:
-            super().__init__(value)
+        super().__init__(value)
 
         if syft_history_hash is None:
             syft_history_hash = hash(self.value)
@@ -228,7 +225,11 @@ class LineageID(UID):
         return UID(self.value)
 
     def __hash__(self):
-        return hash((self.syft_history_hash, self.value))
+        """
+        Some objects - like ActionObjects - can be set using UIDs or LineageIDs.
+        The hash needs to be the same from both perspectives.
+        """
+        return super().__hash__()
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, LineageID):
@@ -236,7 +237,10 @@ class LineageID(UID):
                 self.id == other.id
                 and self.syft_history_hash == other.syft_history_hash
             )
-        return self == other
+        elif isinstance(other, UID):
+            return hash(self) == hash(other)
+        else:
+            raise ValueError(f"Unsupported comparison: LineageID with {type(other)}")
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.no_dash} - {self.syft_history_hash}>"
