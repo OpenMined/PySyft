@@ -18,7 +18,6 @@ from typing import Union
 
 # relative
 from .context import AuthedServiceContext
-from .lib_service_registry import api_registry_libs
 from .lib_service_registry import function_signatures_registry
 from .linked_obj import LinkedObject
 from .response import SyftError
@@ -240,16 +239,16 @@ class ServiceConfigRegistry:
 
 
 # hacky, prevent circular imports
-for lib_module in api_registry_libs:
+for lib_module in []:
     parent_path = lib_module.__name__
     for attr in dir(lib_module):
         lib_obj = getattr(lib_module, attr)
-        path = f"{parent_path}.{attr}"
+        child_path = f"{parent_path}.{attr}"
 
         if inspect.isfunction(lib_obj):
-            register_lib_func(path, lib_obj)
+            register_lib_func(child_path, lib_obj)
         elif inspect.isclass(lib_obj):
-            register_lib_class(path, lib_obj)
+            register_lib_class(child_path, lib_obj)
 
 
 def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
