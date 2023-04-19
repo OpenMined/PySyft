@@ -3,7 +3,7 @@
   "version": "0.8.0-beta.8",
   "private": true,
   "scripts": {
-    "dev": "pnpm install && vite dev --host --port 80",
+    "dev": "vite dev --host --port 80",
     "build": "vite build",
     "preview": "vite preview --host --port 80",
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
