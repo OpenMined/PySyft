@@ -1,10 +1,12 @@
 # stdlib
 from enum import Enum
+from pathlib import Path
 from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 import networkx as nx
@@ -83,35 +85,41 @@ class BaseGraphClient:
     def init_graph() -> Self:
         raise NotImplementedError
 
-    def add_node(self, node: ActionGraphNode):
+    def add_node(self, node: ActionGraphNode) -> None:
         raise NotImplementedError
 
-    def remove_node(self, node: ActionGraphNode):
+    def remove_node(self, node: ActionGraphNode) -> None:
         raise NotImplementedError
 
     def find_neighbors(self, node: ActionGraphNode) -> List[ActionGraphNode]:
         raise NotImplementedError
 
-    def update(self, updated_node: ActionGraphNode):
+    def update(self, updated_node: ActionGraphNode) -> None:
         raise NotImplementedError
 
-    def add_edge(self, parent: ActionGraphNode, child: ActionGraphNode):
+    def add_edge(self, parent: ActionGraphNode, child: ActionGraphNode) -> None:
         raise NotImplementedError
 
-    def remove_edge(self, parent: ActionGraphNode, child: ActionGraphNode):
+    def remove_edge(self, parent: ActionGraphNode, child: ActionGraphNode) -> None:
         raise NotImplementedError
 
-    def visualize(self):
+    def visualize(self) -> None:
         raise NotImplementedError
 
-    def save(self):
-        # TODO 🟡: Add functionality to save the graph
-        pass
+    def save(self, path: Union[str, Path], format: str = "gexf") -> None:
+        raise NotImplementedError
+
+    def load(self, path: Union[str, Path], format: str = "gexf") -> None:
+        raise NotImplementedError
+
+    def is_parent(self, parent: ActionGraphNode, child: ActionGraphNode):
+        raise NotImplementedError
 
 
 @serializable()
 class InMemoryGraphClient(BaseGraphClient):
     graph_type: nx.DiGraph = nx.DiGraph
+    graph: graph_type
 
     def __init__(self):
         self.graph = nx.DiGraph()
@@ -120,25 +128,25 @@ class InMemoryGraphClient(BaseGraphClient):
     def init_graph() -> Self:
         return InMemoryGraphClient()
 
-    def add_node(self, node: ActionGraphNode):
+    def add_node(self, node: ActionGraphNode) -> None:
         self.graph.add_node(node)
 
-    def remove_node(self, node: ActionGraphNode):
+    def remove_node(self, node: ActionGraphNode) -> None:
         self.graph.remove_node(node)
 
     def find_neighbors(self, node: ActionGraphNode) -> List[ActionGraphNode]:
         return self.graph.neighbors(node)
 
-    def update(self, updated_node: ActionGraphNode):
+    def update(self, updated_node: ActionGraphNode) -> None:
         self.graph.update(updated_node)
 
-    def add_edge(self, parent: ActionGraphNode, child: ActionGraphNode):
+    def add_edge(self, parent: ActionGraphNode, child: ActionGraphNode) -> None:
         self.graph.add_edge(parent, child)
 
-    def remove_edge(self, parent: ActionGraphNode, child: ActionGraphNode):
+    def remove_edge(self, parent: ActionGraphNode, child: ActionGraphNode) -> None:
         self.graph.remove_edge(parent, child)
 
-    def visualize(self):
+    def visualize(self) -> None:
         return nx.draw_networkx(self.graph, with_labels=True)
 
     @property
@@ -149,9 +157,22 @@ class InMemoryGraphClient(BaseGraphClient):
     def edges(self) -> Iterable:
         return self.graph.edges()
 
-    def save(self):
-        # TODO 🟡: Add functionality to save the graph
-        pass
+    def save(self, path: Union[str, Path], format: str = "gexf") -> None:
+        if format == "gexf":
+            nx.write_gexf(self.graph, path)
+        else:
+            raise NotImplementedError
+
+    def load(self, path: Union[str, Path], format: str = "gexf") -> None:
+        if format == "gexf":
+            self.graph = nx.read_gexf(path)
+            # TODO: the nodes become strings instead of objects, need to fix this
+        else:
+            raise NotImplementedError
+
+    def is_parent(self, parent: ActionGraphNode, child: ActionGraphNode) -> bool:
+        parents = list(self.graph.predecessors(child))
+        return parent in parents
 
 
 # class GraphClientConfig:
@@ -167,8 +188,9 @@ class ActionGraph:
     def add_action(self, action: Action) -> None:
         # TODO: Handle Duplication
         node = ActionGraphNode.from_action(action)
-        self.client.add_node(node)
+        # self.client.add_node(node)
         self._search_parents_for(node)
+        self.client.add_node(node)
 
     def _search_parents_for(self, node: ActionGraphNode) -> None:
         input_ids = []
@@ -177,10 +199,11 @@ class ActionGraph:
             input_ids.append(node.action.remote_self)
         input_ids.extend(node.action.args)
         input_ids.extend(node.action.kwargs.values())
+        # search for parents in the existing nodes
         for _node in self.client.nodes:
             if _node.action.result_id in input_ids:
                 parents.add(_node)
-
+        print(f"{parents = }")
         for parent in parents:
             self.client.add_edge(parent, node)
 
@@ -198,6 +221,17 @@ class ActionGraph:
     @property
     def edges(self):
         return self.client.edges
+
+    def is_parent(self, parent: Action, child: Action) -> bool:
+        parent_node: ActionGraphNode = ActionGraphNode.from_action(parent)
+        child_node: ActionGraphNode = ActionGraphNode.from_action(child)
+        return self.client.is_parent(parent_node, child_node)
+
+    def save(self, path: Union[str, Path], format: str = "gexf") -> None:
+        self.client.save(path, format)
+
+    def load(self, path: Union[str, Path], format: str = "gexf") -> None:
+        self.client.load(path, format)
 
 
 # class ActionGraphVersion2:
