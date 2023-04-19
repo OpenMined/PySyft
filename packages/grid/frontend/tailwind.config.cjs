@@ -1,10 +1,7 @@
 const openminedColors = require('./src/lib/colors/hsl-colors.cjs');
 
 module.exports = {
-  content: [
-    './src/**/*.{html,js,svelte,ts}',
-    './node_modules/flowbite-svelte/**/*.{html,js,svelte,ts}'
-  ],
+  content: ['./src/**/*.{html,js,svelte,ts}'],
   theme: {
     extend: {
       fontFamily: {
@@ -15,7 +12,10 @@ module.exports = {
       },
       colors: {
         ...openminedColors,
-        primary: openminedColors.cyan
+        primary: openminedColors.cyan,
+        white: 'white',
+        black: 'black',
+        pressedGray: 'hsla(255, 15%, 95%, 0.45)'
       },
       spacing: {
         4.5: '1.125rem',
@@ -27,16 +27,22 @@ module.exports = {
       },
       boxShadow: {
         'neutral-1': '-2px 4px 8px rgba(13, 12, 17, 0.25)',
-        'modal-1': '-1px 2px 4px 2px rgba(0, 0, 0, 0.08);'
+        'modal-1': '-1px 2px 4px 2px rgba(0, 0, 0, 0.08)',
+        'tooltip-1': '0px 1px 2px 0px rgba(0, 0, 0, 0.25)',
+        'topbar-1': '0px 3px 16px 0px rgba(0, 0, 0, 0.1)'
       },
       minHeight: {
         screen: '100vh'
       },
       minWidth: {
         screen: '100vw'
+      },
+      screens: {
+        tablet: '700px',
+        desktop: '1280px'
       }
     }
   },
-  plugins: [require('flowbite/plugin')],
+  plugins: [],
   darkMode: 'class'
 };
