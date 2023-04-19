@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing_extensions import Self
 
 # relative
+from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
-from ..node.node import NewNode
 from ..serde.serializable import serializable
 from ..store.document_store import StoreConfig
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
@@ -26,7 +26,7 @@ class WorkerSettings(SyftObject):
     action_store_config: StoreConfig
 
     @staticmethod
-    def from_node(node: NewNode) -> Self:
+    def from_node(node: AbstractNode) -> Self:
         return WorkerSettings(
             id=node.id,
             name=node.name,

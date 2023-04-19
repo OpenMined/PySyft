@@ -12,59 +12,31 @@ Subpackages
 .. toctree::
    :maxdepth: 2
 
-   syft.ast
    syft.capnp
-   syft.core
-   syft.grid
-   syft.lib
+   syft.client
+   syft.external
+   syft.node
+   syft.serde
+   syft.service
+   syft.store
+   syft.types
+   syft.util
 
 Submodules
 ----------
 
-syft.experimental\_flags module
--------------------------------
-
-.. automodule:: syft.experimental_flags
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-syft.filterwarnings module
+syft.abstract\_node module
 --------------------------
 
-.. automodule:: syft.filterwarnings
+.. automodule:: syft.abstract_node
    :members:
    :undoc-members:
    :show-inheritance:
 
-syft.jax\_settings module
+syft.gevent\_patch module
 -------------------------
 
-.. automodule:: syft.jax_settings
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-syft.logger module
-------------------
-
-.. automodule:: syft.logger
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-syft.registry module
---------------------
-
-.. automodule:: syft.registry
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-syft.util module
-----------------
-
-.. automodule:: syft.util
+.. automodule:: syft.gevent_patch
    :members:
    :undoc-members:
    :show-inheritance:

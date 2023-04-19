@@ -17,6 +17,7 @@ from result import Ok
 from result import OkErr
 
 # relative
+from ..abstract_node import AbstractNode
 from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
@@ -33,10 +34,6 @@ from .user.user_roles import ServiceRole
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)
-
-
-class AbstractNode:
-    id: UID
 
 
 class AbstractService:

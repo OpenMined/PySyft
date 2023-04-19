@@ -9,6 +9,7 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ..context import AuthedServiceContext
+from ..context import UnauthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
 from ..service import service_method
@@ -27,9 +28,9 @@ class MetadataService(AbstractService):
         self.stash = MetadataStash(store=store)
 
     @service_method(path="metadata.get", name="get")
-    def get(self, context: AuthedServiceContext) -> Result[Ok, Err]:
+    def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Metadata"""
-        result = self.stash.get_all(context.credentials)
+        result = self.stash.get_all(context.node.signing_key.verify_key)
         if result.is_ok():
             metadata = result.ok()
             # check if the metadata list is empty

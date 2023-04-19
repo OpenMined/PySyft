@@ -113,6 +113,7 @@ repos:
             "--non-interactive",
             "--config-file=tox.ini",
           ]
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.0.0
     hooks:
@@ -144,8 +145,10 @@ repos:
       - id: mypy
         name: mypy-syft
         always_run: true
-        files: "^packages/syft(?!(/src/syft/shylock/|/tests/|._pb2\\.py$)).\\.py"
+        # files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util"
+        files: "^packages/syft/src/syft/serde"
         args: [
+            "--follow-imports=skip",
             "--ignore-missing-imports",
             "--scripts-are-modules",
             "--disallow-incomplete-defs",

@@ -22,9 +22,9 @@ from result import Result
 from typeguard import check_type
 
 # relative
+from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
-from ..node.node import NewNode
 from ..serde.deserialize import _deserialize
 from ..serde.recursive import index_syft_by_module_name
 from ..serde.serializable import serializable
@@ -311,7 +311,7 @@ class SyftAPI(SyftObject):
 
     @staticmethod
     def for_user(
-        node: NewNode, user_verify_key: Optional[SyftVerifyKey] = None
+        node: AbstractNode, user_verify_key: Optional[SyftVerifyKey] = None
     ) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
