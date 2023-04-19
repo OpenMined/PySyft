@@ -13,11 +13,11 @@ syft.node.server
 
    .. autosummary::
    
-      bind_worker
       find_python_processes_on_port
       kill_process
       make_app
       run_uvicorn
+      serve_node
    
    
 

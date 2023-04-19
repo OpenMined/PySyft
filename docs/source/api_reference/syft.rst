@@ -25,6 +25,14 @@ Subpackages
 Submodules
 ----------
 
+syft.abstract\_node module
+--------------------------
+
+.. automodule:: syft.abstract_node
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.gevent\_patch module
 -------------------------
 

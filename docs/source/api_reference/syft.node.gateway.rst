@@ -1,7 +1,7 @@
-syft.node.worker
-================
+syft.node.gateway
+=================
 
-.. automodule:: syft.node.worker
+.. automodule:: syft.node.gateway
 
    
    
@@ -17,7 +17,7 @@ syft.node.worker
 
    .. autosummary::
    
-      Worker
+      Gateway
    
    
 

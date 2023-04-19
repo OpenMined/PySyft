@@ -27,7 +27,6 @@ syft.service.service
 
    .. autosummary::
    
-      AbstractNode
       AbstractService
       ServiceConfig
       ServiceConfigRegistry

@@ -28,6 +28,8 @@
    :recursive:
 
    syft.node.credentials
+   syft.node.domain
+   syft.node.gateway
    syft.node.node
    syft.node.routes
    syft.node.run

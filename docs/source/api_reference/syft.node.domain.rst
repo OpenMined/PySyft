@@ -1,7 +1,7 @@
-syft.node.worker
+syft.node.domain
 ================
 
-.. automodule:: syft.node.worker
+.. automodule:: syft.node.domain
 
    
    
@@ -17,7 +17,7 @@ syft.node.worker
 
    .. autosummary::
    
-      Worker
+      Domain
    
    
 
