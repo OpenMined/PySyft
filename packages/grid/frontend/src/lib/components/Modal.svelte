@@ -1,9 +1,5 @@
-<script lang="ts">
-  export let maxWidth = 'max-w-[1200px]';
-</script>
-
 <div
-  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg {maxWidth} w-full h-fit shadow-modal-1"
+  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg w-full h-fit shadow-modal-1"
   style="background-color: white"
 >
   <!-- header -->
