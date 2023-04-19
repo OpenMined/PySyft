@@ -7,7 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write --plugin-search-dir=. ./**/*.{js,ts,html,css,svelte}"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^1.1.7",
@@ -20,7 +20,7 @@
     "eslint-plugin-svelte3": "^4.0.0",
     "postcss": "^8.4.14",
     "prettier": "^2.8.0",
-    "prettier-plugin-svelte": "^2.8.1",
+    "prettier-plugin-svelte": "^2.9.0",
     "svelte": "^3.54.0",
     "svelte-preprocess": "^4.10.7",
     "svelte-search": "^2.0.1",
