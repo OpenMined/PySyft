@@ -17,6 +17,7 @@ from .metadata_stash import MetadataStash
 from .node_metadata import NodeMetadata
 from .node_metadata import NodeMetadataUpdate
 
+
 @serializable()
 class MetadataService(AbstractService):
     store: DocumentStore
