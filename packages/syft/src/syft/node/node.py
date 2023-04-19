@@ -34,6 +34,7 @@ from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..external import OBLV
+from ..serde import serialize
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
@@ -54,6 +55,9 @@ from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.queue.queue import Publisher
+from ..service.queue.queue import QueueServer
+from ..service.queue.queue import Subscriber
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
 from ..service.request.request_service import RequestService
@@ -227,6 +231,26 @@ class Node(AbstractNode):
         self.node_type = node_type
 
         self.post_init()
+        self.queue_proxy_server = self.init_queue()
+
+    def init_queue(
+        self,
+        pub_addr: str = "tcp://127.0.0.1:6000",
+        sub_addr: str = "tcp://127.0.0.1:6001",
+    ) -> QueueServer:
+        queue_server = QueueServer.create(pub_addr=pub_addr, sub_addr=sub_addr)
+        queue_server.start()
+
+        # Initialize Publisher
+        self.publisher = Publisher(address=pub_addr)
+
+        # Initialize Subscriber
+        self.subscriber = Subscriber(sub_addr)
+        self.subscriber.receive()
+
+        print("Queue is Online 🟢")
+
+        return queue_server
 
     @classmethod
     def named(
@@ -573,6 +597,11 @@ class Node(AbstractNode):
             # 🟡 TODO:  Integrate ZeroMQ here possibly
 
             # Publisher system which pushes to a Queue
+
+            print("Hello...., sending in bytes data")
+
+            message_bytes = serialize._serialize(api_call, to_bytes=True)
+            self.publisher.send(message=message_bytes)
 
             # message = [api_call, worker_settings, task_uid]
 
