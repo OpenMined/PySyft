@@ -3,7 +3,7 @@
   "version": "0.8.0-beta.8",
   "private": true,
   "scripts": {
-    "dev": "vite dev --host --port 80",
+    "dev": "pnpm install && vite dev --host --port 80",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
