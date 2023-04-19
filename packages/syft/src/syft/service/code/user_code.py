@@ -24,9 +24,9 @@ from PIL import Image
 from PIL.PngImagePlugin import PngImageFile  
 
 # relative
+from ...abstract_node import NodeType
 from ...client.api import NodeView
 from ...node.credentials import SyftVerifyKey
-from ...node.node import NodeType
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize

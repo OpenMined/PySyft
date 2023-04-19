@@ -12,8 +12,8 @@ from pydantic import EmailStr
 from typing_extensions import Self
 
 # relative
+from ..abstract_node import AbstractNode
 from ..node.credentials import SyftVerifyKey
-from ..node.node import NewNode
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
 from .grid_url import GridURL
@@ -29,7 +29,7 @@ class NotNone:
 
 class TransformContext(Context):
     output: Optional[Dict[str, Any]]
-    node: Optional[NewNode]
+    node: Optional[AbstractNode]
     credentials: Optional[SyftVerifyKey]
     obj: Optional[Any]
 
