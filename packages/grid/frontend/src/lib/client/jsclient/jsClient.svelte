@@ -13,18 +13,18 @@
     constructor() {
       const url = API_BASE_URL;
 
-        this.serde = new JSSerde();
-        // Set the URL and message URL properties.
-        this.url = url;
+      this.serde = new JSSerde();
+      this.url = url;
       this.msg_url = `${url}/new/api_call`;
+      this.key = window.localStorage.getItem('key');
 
-        try {
-          // Get the metadata and extract the node ID value.
-          const metadata = await this.metadata;
-          this.nodeId = metadata.id.value;
-        } catch (error) {
-          console.error('Error getting metadata:', error);
-        }
+      if (this.key) {
+        this.key = Uint8Array.from(this.key.split(','));
+        this.key = sodium.crypto_sign_seed_keypair(this.key);
+      }
+
+      this.userId = window.localStorage.getItem('id');
+      this.nodeId = window.localStorage.getItem('nodeId');
 
       return this;
     }
