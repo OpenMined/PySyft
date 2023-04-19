@@ -16,6 +16,7 @@ import gevent
 
 # relative
 from .cli import str_to_bool
+from .deps import LATEST_STABLE_SYFT
 from .grammar import find_available_port
 from .names import random_name
 from .util import shell
@@ -124,8 +125,10 @@ class Orchestra:
         reset: bool = False,
         tail: bool = False,
         port: Optional[int] = None,
+        host: Optional[str] = "0.0.0.0",  # nosec
         processes: int = 1,  # temporary work around for jax in subprocess
         local_db: bool = False,
+        tag: Optional[str] = "latest",
     ) -> Optional[NodeHandle]:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
@@ -137,7 +140,14 @@ class Orchestra:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
             if port:
-                start, stop = sy.bind_worker(name=name, port=port, reset=reset, dev_mode=dev_mode)  # type: ignore
+                start, stop = sy.bind_worker(  # type: ignore
+                    name=name,
+                    host=host,
+                    port=port,
+                    reset=reset,
+                    dev_mode=dev_mode,
+                    tail=tail,
+                )
                 start()
                 return NodeHandle(
                     node_type=node_type_enum,
@@ -185,6 +195,13 @@ class Orchestra:
 
         if tail:
             commands.append("--tail")
+
+        if tag:
+            commands.append(f"--tag={tag}")
+            if tag == "beta":
+                commands.append("--build-src=dev")
+            if tag == "latest":
+                commands.append(f"--build-src={LATEST_STABLE_SYFT}")
 
         # needed for building containers
         USER = os.environ.get("USER", getpass.getuser())

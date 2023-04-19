@@ -43,11 +43,18 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     return app
 
 
-def run_uvicorn(name: str, port: int, host: str, reset: bool, dev_mode: bool):
+def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
     async def _run_uvicorn(
-        name: str, port: int, host: str, reset: bool, dev_mode: bool
+        name: str, host: str, port: int, reset: bool, dev_mode: bool
     ):
-        worker = Worker.named(name, processes=0, local_db=True, reset=reset)
+        if dev_mode:
+            print(
+                f"\nWARNING: private key is based on node name: {name} in dev_mode. "
+                "Don't run this in production."
+            )
+            worker = Worker.named(name=name, processes=0, local_db=True, reset=reset)
+        else:
+            worker = Worker(name=name, processes=0, local_db=True)
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
 
@@ -74,29 +81,39 @@ def run_uvicorn(name: str, port: int, host: str, reset: bool, dev_mode: bool):
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(_run_uvicorn(name, port, host, reset, dev_mode))
+    loop.run_until_complete(_run_uvicorn(name, host, port, reset, dev_mode))
     loop.close()
 
 
 def bind_worker(
     name: str,
-    port: int = 8080,
     host: str = "0.0.0.0",  # nosec
+    port: int = 8080,
     reset: bool = False,
     dev_mode: bool = False,
+    tail: bool = False,
 ) -> Tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
-        target=run_uvicorn, args=(name, port, host, reset, dev_mode)
+        target=run_uvicorn, args=(name, host, port, reset, dev_mode)
     )
-
-    def start():
-        print(f"Starting {name} server on {host}:{port}")
-        server_process.start()
 
     def stop():
         print(f"Stopping {name}")
         server_process.terminate()
         server_process.join()
+
+    def start():
+        print(f"Starting {name} server on {host}:{port}")
+        server_process.start()
+        if tail:
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                try:
+                    stop()
+                except SystemExit:
+                    os._exit(130)
 
     return start, stop
 
