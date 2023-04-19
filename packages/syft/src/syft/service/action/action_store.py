@@ -67,7 +67,6 @@ class KeyValueActionStore(ActionStore):
         # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        # if True:
         if self.has_permission(read_permission):
             try:
                 syft_object = self.data[uid]
