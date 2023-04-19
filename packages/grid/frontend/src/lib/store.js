@@ -7,6 +7,9 @@ export const store = writable({
   user_info: {}
 });
 
+export const isLoading = writable(false);
+export const metadata = writable();
+
 export async function getClient() {
   let newStore = '';
   store.subscribe((value) => {
