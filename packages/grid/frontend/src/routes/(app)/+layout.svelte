@@ -1,36 +1,15 @@
 <script>
+  import { page } from '$app/stores';
   import OnBoardModal from '$lib/components/onBoardModal.svelte';
-  import Sidebar from '$lib/components/Sidebar.svelte';
-  import Navbar from '$lib/components/NavBar.svelte';
-  import { getClient } from '$lib/store.js';
+  import TopNav from '$lib/components/Navigation/TopNav.svelte';
+  import SideNav from '$lib/components/Navigation/SideNav.svelte';
+  export let data;
 
-  let client;
-  let activeUrl = '/home';
-
-  let metadata = '';
-  let user_info = '';
-
-  async function loadGlobalInfos() {
-    // Get JSClient
-    client = await getClient();
-
-    // Load metadata from session Storage
-    if (!metadata) {
-      metadata = await client.metadata;
-    }
-
-    // Load current user session info
-    if (!user_info) {
-      user_info = await client.user;
-    }
-  }
+  console.log({ data, p: $page });
 </script>
 
-<main>
-  {#await loadGlobalInfos() then none}
-    <Navbar bind:user_info bind:client />
-    <Sidebar bind:activeUrl bind:metadata bind:user_info />
-    <OnBoardModal {client} bind:user_info bind:metadata />
-  {/await}
+<SideNav />
+<main class="desktop:pl-72 tablet:pl-[76px] h-full w-full">
+  <TopNav />
+  <slot />
 </main>
-<slot />
