@@ -42,7 +42,7 @@
             </span>
           </div>
           <div class="contents" slot="body">
-            <div class="w-full gap-6 flex">
+            <div class="w-full gap-6 flex flex-col tablet:flex-row">
               <Input label="Full name" id="fullName" placeholder="Jane Doe" required />
               <Input
                 label="Company/Institution"
@@ -51,7 +51,7 @@
               />
             </div>
             <Input label="Email" id="email" placeholder="info@openmined.org" required />
-            <div class="w-full gap-6 flex">
+            <div class="w-full gap-6 flex flex-col tablet:flex-row">
               <Input type="password" label="Password" id="password" placeholder="******" required />
               <Input
                 type="password"
@@ -63,7 +63,13 @@
             </div>
             <Input label="Website/Profile" id="website" placeholder="https://openmined.org" />
             <p class="text-center">
-              Already have an account? Sign in <a href="/login">here</a>.
+              Already have an account? Sign in <a
+                class="text-primary-600 underline hover:opacity-50"
+                href="/login"
+              >
+                here
+              </a>
+              .
             </p>
           </div>
           <Button variant="secondary" slot="button-group">Sign up</Button>
