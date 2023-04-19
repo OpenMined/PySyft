@@ -73,14 +73,14 @@ use and development of PySyft!
    :toctree: api_reference
    :recursive:
 
-   client
-   external
-   node
-   serde
-   service
-   store
-   types
-   util
+   syft.client
+   syft.external
+   syft.node
+   syft.serde
+   syft.service
+   syft.store
+   syft.types
+   syft.util
 
 
 .. panels::
