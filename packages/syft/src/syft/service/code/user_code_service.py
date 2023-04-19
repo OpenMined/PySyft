@@ -18,9 +18,7 @@ from ..context import AuthedServiceContext
 from ..policy.policy import OutputHistory
 from ..policy.policy import UserPolicy
 from ..policy.policy import load_policy_code
-from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
-from ..request.request_service import RequestService
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -60,11 +58,13 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
+        # stdlib
+        import sys
+
         # relative
         from ..request.request import SubmitRequest
         from ..request.request_service import RequestService
 
-        import sys
         print(code, file=sys.stderr)
         user_code = code.to(UserCode, context=context)
         result = self.stash.set(context.credentials, user_code)
@@ -156,7 +156,8 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
-        import sys
+        # stdlib
+
         try:
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(context.credentials, uid=uid)

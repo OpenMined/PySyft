@@ -16,7 +16,7 @@ from ...serde.serializable import serializable
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..code.user_code import UserCode
-from ..code.user_code import execute_byte_code
+from ..code.user_code import execute_code_item
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -34,7 +34,6 @@ from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
-from ..code.user_code import execute_code_item
 
 
 @serializable()
