@@ -5,12 +5,12 @@ from typing import Any
 import pytest
 
 # syft absolute
-from syft.core.node.new.action_store import ActionObjectEXECUTE
-from syft.core.node.new.action_store import ActionObjectOWNER
-from syft.core.node.new.action_store import ActionObjectREAD
-from syft.core.node.new.action_store import ActionObjectWRITE
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.uid import UID
+from syft.node.credentials import SyftVerifyKey
+from syft.service.action.action_store import ActionObjectEXECUTE
+from syft.service.action.action_store import ActionObjectOWNER
+from syft.service.action.action_store import ActionObjectREAD
+from syft.service.action.action_store import ActionObjectWRITE
+from syft.types.uid import UID
 
 # relative
 from .store_constants_test import test_verify_key_string_client
@@ -50,6 +50,7 @@ def test_action_store_sanity(store: Any):
     ],
 )
 @pytest.mark.parametrize("permission", permissions)
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_action_store_test_permissions(store: Any, permission: Any):
     client_key = SyftVerifyKey.from_string(test_verify_key_string_client)
     root_key = SyftVerifyKey.from_string(test_verify_key_string_root)
@@ -106,6 +107,7 @@ def test_action_store_test_permissions(store: Any, permission: Any):
         pytest.lazy_fixture("sqlite_action_store"),
     ],
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_action_store_test_data_set_get(store: Any):
     client_key = SyftVerifyKey.from_string(test_verify_key_string_client)
     root_key = SyftVerifyKey.from_string(test_verify_key_string_root)

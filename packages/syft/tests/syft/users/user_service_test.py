@@ -10,20 +10,20 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.context import NodeServiceContext
-from syft.core.node.new.context import UnauthedServiceContext
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.response import SyftError
-from syft.core.node.new.response import SyftSuccess
-from syft.core.node.new.uid import UID
-from syft.core.node.new.user import User
-from syft.core.node.new.user import UserCreate
-from syft.core.node.new.user import UserPrivateKey
-from syft.core.node.new.user import UserUpdate
-from syft.core.node.new.user import UserView
-from syft.core.node.new.user_roles import ServiceRole
-from syft.core.node.new.user_service import UserService
+from syft.node.credentials import SyftVerifyKey
+from syft.service.context import AuthedServiceContext
+from syft.service.context import NodeServiceContext
+from syft.service.context import UnauthedServiceContext
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
+from syft.service.user.user import User
+from syft.service.user.user import UserCreate
+from syft.service.user.user import UserPrivateKey
+from syft.service.user.user import UserUpdate
+from syft.service.user.user import UserView
+from syft.service.user.user_roles import ServiceRole
+from syft.service.user.user_service import UserService
+from syft.types.uid import UID
 
 
 def test_userservice_create_when_user_exists(
@@ -32,7 +32,7 @@ def test_userservice_create_when_user_exists(
     authed_context: AuthedServiceContext,
     guest_create_user: UserCreate,
 ) -> None:
-    def mock_get_by_email(email: str) -> Ok:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(guest_create_user.to(User))
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -50,13 +50,13 @@ def test_userservice_create_error_on_get_by_email(
     authed_context: AuthedServiceContext,
     guest_create_user: UserCreate,
 ) -> None:
-    def mock_get_by_email(email: str) -> Err:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Err:
         return Err(f"No user exists with given email: {email}")
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     response = user_service.create(authed_context, guest_create_user)
     assert isinstance(response, SyftError)
-    expected_error_message = mock_get_by_email(guest_create_user.email).err()
+    expected_error_message = mock_get_by_email(None, guest_create_user.email).err()
     assert response.message == expected_error_message
 
 
@@ -66,13 +66,18 @@ def test_userservice_create_success(
     authed_context: AuthedServiceContext,
     guest_create_user: UserCreate,
 ) -> None:
-    def mock_get_by_email(email: str) -> Ok:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(None)
 
     expected_user = guest_create_user.to(User)
     expected_output = expected_user.to(UserView)
 
-    def mock_set(user: User) -> Ok:
+    def mock_set(
+        credentials: SyftVerifyKey,
+        user: User,
+        has_permission: bool = False,
+        add_permissions=None,
+    ) -> Ok:
         return Ok(expected_user)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -88,12 +93,17 @@ def test_userservice_create_error_on_set(
     authed_context: AuthedServiceContext,
     guest_create_user: UserCreate,
 ) -> None:
-    def mock_get_by_email(email: str) -> Ok:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(None)
 
     expected_error_msg = "Failed to set user."
 
-    def mock_set(user: User) -> Err:
+    def mock_set(
+        credentials: SyftVerifyKey,
+        user: User,
+        has_permission: bool = False,
+        add_permissions=None,
+    ) -> Err:
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -111,7 +121,7 @@ def test_userservice_view_error_on_get_by_uid(
     uid_to_view = UID()
     expected_error_msg = f"Failed to get uid: {uid_to_view}"
 
-    def mock_get_by_uid(uid: UID) -> Err:
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Err:
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
@@ -128,7 +138,7 @@ def test_userservice_view_user_not_exists(
     uid_to_view = UID()
     expected_error_msg = f"No user exists for given: {uid_to_view}"
 
-    def mock_get_by_uid(uid: UID) -> Ok:
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
         return Ok(None)
 
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
@@ -146,7 +156,7 @@ def test_userservice_view_user_success(
     uid_to_view = guest_user.id
     expected_output = guest_user.to(UserView)
 
-    def mock_get_by_uid(uid: UID) -> Ok:
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
         return Ok(guest_user)
 
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
@@ -165,7 +175,7 @@ def test_userservice_get_all_success(
     mock_get_all_output = [guest_user, admin_user]
     expected_output = [x.to(UserView) for x in mock_get_all_output]
 
-    def mock_get_all() -> Ok:
+    def mock_get_all(credentials: SyftVerifyKey) -> Ok:
         return Ok(mock_get_all_output)
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
@@ -182,7 +192,7 @@ def test_userservice_get_all_error(
 ) -> None:
     expected_output_msg = "No users exists"
 
-    def mock_get_all() -> Err:
+    def mock_get_all(credentials: SyftVerifyKey) -> Err:
         return Err("")
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
@@ -197,7 +207,7 @@ def test_userservice_search(
     authed_context: AuthedServiceContext,
     guest_user: User,
 ) -> None:
-    def mock_find_all(**kwargs) -> Union[Ok, Err]:
+    def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> Union[Ok, Err]:
         for key, _ in kwargs.items():
             if hasattr(guest_user, key):
                 return Ok([guest_user])
@@ -259,7 +269,7 @@ def test_userservice_update_get_by_uid_fails(
         f"Failed to find user with UID: {random_uid}. Error: {get_by_uid_err_msg}"
     )
 
-    def mock_get_by_uid(uid: UID) -> Err:
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Err:
         return Err(get_by_uid_err_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
@@ -280,7 +290,7 @@ def test_userservice_update_no_user_exists(
     random_uid = UID()
     expected_error_msg = f"No user exists for given UID: {random_uid}"
 
-    def mock_get_by_uid(uid: UID) -> Ok:
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
         return Ok(None)
 
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
@@ -299,10 +309,10 @@ def test_userservice_update_success(
     guest_user: User,
     update_user: UserUpdate,
 ) -> None:
-    def mock_get_by_uid(uid: UID) -> Ok:
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
         return Ok(guest_user)
 
-    def mock_update(user: User) -> Ok:
+    def mock_update(credentials: SyftVerifyKey, user: User, has_permission: bool) -> Ok:
         guest_user.name = update_user.name
         guest_user.email = update_user.email
         return Ok(guest_user)
@@ -331,10 +341,10 @@ def test_userservice_update_fails(
         f"Failed to update user with UID: {guest_user.id}. Error: {update_error_msg}"
     )
 
-    def mock_get_by_uid(uid: UID) -> Ok:
+    def mock_get_by_uid(credentials: SyftVerifyKey, uid: UID) -> Ok:
         return Ok(guest_user)
 
-    def mock_update(user) -> Err:
+    def mock_update(credentials: SyftVerifyKey, user, has_permission: bool) -> Err:
         return Err(update_error_msg)
 
     authed_context.role = ServiceRole.ADMIN
@@ -357,7 +367,9 @@ def test_userservice_delete_failure(
     id_to_delete = UID()
     expected_error_msg = f"No user exists for given id: {id_to_delete}"
 
-    def mock_delete_by_uid(uid: UID) -> Err:
+    def mock_delete_by_uid(
+        credentials: SyftVerifyKey, uid: UID, has_permission=False
+    ) -> Err:
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "delete_by_uid", mock_delete_by_uid)
@@ -375,10 +387,12 @@ def test_userservice_delete_success(
     id_to_delete = UID()
     expected_output = SyftSuccess(message=f"ID: {id_to_delete} deleted")
 
-    def mock_delete_by_uid(uid: UID) -> Ok:
+    def mock_delete_by_uid(
+        credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+    ) -> Ok:
         return Ok(expected_output)
 
-    def mock_get_target_object(uid):
+    def mock_get_target_object(credentials: SyftVerifyKey, uid):
         return User(email=Faker().email())
 
     monkeypatch.setattr(user_service.stash, "delete_by_uid", mock_delete_by_uid)
@@ -393,7 +407,7 @@ def test_userservice_delete_success(
 def test_userservice_user_verify_key(
     monkeypatch: MonkeyPatch, user_service: UserService, guest_user: User
 ) -> None:
-    def mock_get_by_email(email: str) -> Ok:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(guest_user)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -408,7 +422,7 @@ def test_userservice_user_verify_key_invalid_email(
     email = faker.email()
     expected_output = SyftError(message=f"No user with email: {email}")
 
-    def mock_get_by_email(email: str) -> Err:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Err:
         return Err("No user found")
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -420,12 +434,12 @@ def test_userservice_user_verify_key_invalid_email(
 def test_userservice_admin_verify_key_error(
     monkeypatch: MonkeyPatch, user_service: UserService
 ) -> None:
-    expected_output = "Invalid Role"
+    expected_output = "failed to get admin verify_key"
 
-    def mock_get_by_role(role: ServiceRole) -> Err:
+    def mock_admin_verify_key() -> Err:
         return Err(expected_output)
 
-    monkeypatch.setattr(user_service.stash, "get_by_role", mock_get_by_role)
+    monkeypatch.setattr(user_service.stash, "admin_verify_key", mock_admin_verify_key)
 
     response = user_service.admin_verify_key()
     assert isinstance(response, SyftError)
@@ -433,16 +447,11 @@ def test_userservice_admin_verify_key_error(
 
 
 def test_userservice_admin_verify_key_success(
-    monkeypatch: MonkeyPatch, user_service: UserService, admin_user: User
+    monkeypatch: MonkeyPatch, user_service: UserService, worker
 ) -> None:
-    def mock_get_by_role(role: ServiceRole) -> Ok:
-        return Ok(admin_user)
-
-    monkeypatch.setattr(user_service.stash, "get_by_role", mock_get_by_role)
-
     response = user_service.admin_verify_key()
     assert isinstance(response, SyftVerifyKey)
-    assert response == admin_user.verify_key
+    assert response == worker.root_client.credentials.verify_key
 
 
 def test_userservice_register_user_exists(
@@ -451,7 +460,7 @@ def test_userservice_register_user_exists(
     node_context: NodeServiceContext,
     guest_create_user: UserCreate,
 ) -> None:
-    def mock_get_by_email(email):
+    def mock_get_by_email(credentials: SyftVerifyKey, email):
         return Ok(guest_create_user)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -470,7 +479,7 @@ def test_userservice_register_error_on_get_email(
 ) -> None:
     expected_error_msg = "Failed to get email"
 
-    def mock_get_by_email(email):
+    def mock_get_by_email(credentials: SyftVerifyKey, email):
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -487,10 +496,15 @@ def test_userservice_register_success(
     guest_create_user: UserCreate,
     guest_user: User,
 ) -> None:
-    def mock_get_by_email(email: str) -> Ok:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(None)
 
-    def mock_set(user: str) -> Ok:
+    def mock_set(
+        credentials: SyftVerifyKey,
+        user: str,
+        has_permission: bool = False,
+        add_permissions=None,
+    ) -> Ok:
         return Ok(guest_user)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -516,12 +530,17 @@ def test_userservice_register_set_fail(
     node_context: NodeServiceContext,
     guest_create_user: UserCreate,
 ) -> None:
-    def mock_get_by_email(email: str) -> Ok:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(None)
 
     expected_error_msg = "Failed to connect to server."
 
-    def mock_set(user: User) -> Err:
+    def mock_set(
+        credentials: SyftVerifyKey,
+        user: User,
+        add_permissions=None,
+        has_permission: bool = False,
+    ) -> Err:
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -538,7 +557,7 @@ def test_userservice_exchange_credentials(
     unauthed_context: UnauthedServiceContext,
     guest_user: User,
 ) -> None:
-    def mock_get_by_email(email: str) -> Ok:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(guest_user)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -555,7 +574,7 @@ def test_userservice_exchange_credentials_invalid_user(
     unauthed_context: UnauthedServiceContext,
     guest_user: User,
 ) -> None:
-    def mock_get_by_email(email):
+    def mock_get_by_email(credentials: SyftVerifyKey, email):
         return Ok(None)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -576,7 +595,7 @@ def test_userservice_exchange_credentials_get_email_fails(
 ) -> None:
     get_by_email_error = "Failed to connect to server."
 
-    def mock_get_by_email(email: str) -> Err:
+    def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Err:
         return Err(get_by_email_error)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
