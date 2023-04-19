@@ -7,12 +7,13 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.metadata_service import MetadataService
-from syft.core.node.new.metadata_stash import MetadataStash
-from syft.core.node.new.node_metadata import NodeMetadata
-from syft.core.node.new.node_metadata import NodeMetadataUpdate
-from syft.core.node.new.response import SyftError
+from syft.node.credentials import SyftVerifyKey
+from syft.service.context import AuthedServiceContext
+from syft.service.metadata.metadata_service import MetadataService
+from syft.service.metadata.metadata_stash import MetadataStash
+from syft.service.metadata.node_metadata import NodeMetadata
+from syft.service.metadata.node_metadata import NodeMetadataUpdate
+from syft.service.response import SyftError
 
 
 def test_metadataservice_get_success(
@@ -24,7 +25,7 @@ def test_metadataservice_get_success(
     mock_stash_get_all_output = [metadata, metadata]
     expected_output = Ok(mock_stash_get_all_output[0])
 
-    def mock_stash_get_all() -> Ok:
+    def mock_stash_get_all(credentials) -> Ok:
         return Ok(mock_stash_get_all_output)
 
     monkeypatch.setattr(metadata_service.stash, "get_all", mock_stash_get_all)
@@ -38,7 +39,6 @@ def test_metadataservice_get_success(
 def test_metadataservice_get_stash_fail(
     monkeypatch: MonkeyPatch,
     metadata_service: MetadataService,
-    metadata: NodeMetadata,
     authed_context: AuthedServiceContext,
 ) -> None:
     # case 1: we got an empty list from the stash
@@ -49,7 +49,7 @@ def test_metadataservice_get_stash_fail(
     # case 2: the stash.get_all() function fails
     mock_error_message = "database failure"
 
-    def mock_stash_get_all_error() -> Err:
+    def mock_stash_get_all_error(credentials) -> Err:
         return Err(mock_error_message)
 
     monkeypatch.setattr(metadata_service.stash, "get_all", mock_stash_get_all_error)
@@ -79,7 +79,7 @@ def test_metadataservice_set_fail(
 ) -> None:
     mock_error_message = "database failure"
 
-    def mock_stash_set_error(a) -> Err:
+    def mock_stash_set_error(credentials, a) -> Err:
         return Err(mock_error_message)
 
     monkeypatch.setattr(metadata_service.stash, "set", mock_stash_set_error)
@@ -91,10 +91,12 @@ def test_metadataservice_set_fail(
 
 
 def add_mock_metadata(
-    metadata_stash: MetadataStash, metadata: NodeMetadata
+    root_verify_key: SyftVerifyKey,
+    metadata_stash: MetadataStash,
+    metadata: NodeMetadata,
 ) -> NodeMetadata:
     # create a mock metadata in the stash so that we can update it
-    result = metadata_stash.partition.set(metadata)
+    result = metadata_stash.partition.set(root_verify_key, metadata)
     assert result.is_ok()
 
     created_metadata = result.ok()
@@ -104,6 +106,7 @@ def add_mock_metadata(
 
 
 def test_metadataservice_update_success(
+    root_verify_key,
     monkeypatch: MonkeyPatch,
     metadata_stash: MetadataStash,
     metadata_service: MetadataService,
@@ -112,7 +115,9 @@ def test_metadataservice_update_success(
     authed_context: AuthedServiceContext,
 ) -> None:
     # add a mock metadata to the stash
-    mock_metadata = add_mock_metadata(metadata_stash, metadata)
+    mock_metadata = add_mock_metadata(
+        authed_context.credentials, metadata_stash, metadata
+    )
 
     # get a new metadata according to update_metadata
     new_metadata = deepcopy(metadata)
@@ -126,13 +131,14 @@ def test_metadataservice_update_success(
 
     mock_stash_get_all_output = [mock_metadata, mock_metadata]
 
-    def mock_stash_get_all() -> Ok:
+    def mock_stash_get_all(root_verify_key) -> Ok:
         return Ok(mock_stash_get_all_output)
 
     monkeypatch.setattr(metadata_service.stash, "get_all", mock_stash_get_all)
 
     # update the metadata in the metadata stash using metadata_service
     response = metadata_service.update(authed_context, update_metadata)
+    print(response)
     updated_metadata = response.ok()[0]
     not_updated_metadata = response.ok()[1]
 
@@ -151,7 +157,7 @@ def test_metadataservice_update_stash_get_all_fail(
     # the stash.get_all() function fails
     mock_error_message = "database failure"
 
-    def mock_stash_get_all_error() -> Err:
+    def mock_stash_get_all_error(credentials) -> Err:
         return Err(mock_error_message)
 
     monkeypatch.setattr(metadata_service.stash, "get_all", mock_stash_get_all_error)
@@ -183,14 +189,14 @@ def test_metadataservice_update_fail(
 
     mock_stash_get_all_output = [metadata, metadata]
 
-    def mock_stash_get_all() -> Ok:
+    def mock_stash_get_all(credentials) -> Ok:
         return Ok(mock_stash_get_all_output)
 
     monkeypatch.setattr(metadata_service.stash, "get_all", mock_stash_get_all)
 
     mock_update_error_message = "Failed to update obj NodeMetadata"
 
-    def mock_stash_update_error(update_metadata: NodeMetadata) -> Err:
+    def mock_stash_update_error(credentials, update_metadata: NodeMetadata) -> Err:
         return Err(mock_update_error_message)
 
     monkeypatch.setattr(metadata_service.stash, "update", mock_stash_update_error)

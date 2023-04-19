@@ -7,8 +7,8 @@ import numpy as np
 
 # syft absolute
 import syft as sy
-from syft.core.node.new.numpy import NumpyArrayObject
-from syft.core.node.new.user_code import SubmitUserCode
+from syft.service.action.numpy import NumpyArrayObject
+from syft.service.code.user_code import SubmitUserCode
 
 LOCAL_ENCLAVE_PORT = os.environ.get("LOCAL_ENCLAVE_PORT", 8010)
 # TODO: Should move to Docker Container tests
