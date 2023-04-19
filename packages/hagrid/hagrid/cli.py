@@ -1930,7 +1930,7 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": str(use_blob_storage),
-        "FRONTEND_TARGET": "grid-ui-development",
+        "FRONTEND_TARGET": "grid-ui-production",
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
@@ -2980,7 +2980,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
 
     # Check if the container name belongs to worker container
-    if "celeryworker" in containers:
+    if "proxy" in containers:
         path = GRID_SRC_PATH
         env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
     else:

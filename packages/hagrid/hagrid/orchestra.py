@@ -16,6 +16,7 @@ import gevent
 
 # relative
 from .cli import str_to_bool
+from .deps import LATEST_STABLE_SYFT
 from .grammar import find_available_port
 from .names import random_name
 from .util import shell
@@ -124,9 +125,10 @@ class Orchestra:
         reset: bool = False,
         tail: bool = False,
         port: Optional[int] = None,
-        host: Optional[str] = None,
+        host: Optional[str] = "0.0.0.0",  # nosec
         processes: int = 1,  # temporary work around for jax in subprocess
         local_db: bool = False,
+        tag: Optional[str] = "latest",
     ) -> Optional[NodeHandle]:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
@@ -138,7 +140,7 @@ class Orchestra:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
             if port:
-                start, stop = sy.bind_worker(  # type: ignore
+                start, stop = sy.serve_node(  # type: ignore
                     name=name,
                     host=host,
                     port=port,
@@ -155,7 +157,7 @@ class Orchestra:
                     shutdown=stop,
                 )
             else:
-                worker = sy.Worker.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
+                worker = sy.Domain.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
                 return NodeHandle(
                     node_type=node_type_enum, name=name, python_node=worker
                 )
@@ -193,6 +195,13 @@ class Orchestra:
 
         if tail:
             commands.append("--tail")
+
+        if tag:
+            commands.append(f"--tag={tag}")
+            if tag == "beta":
+                commands.append("--build-src=dev")
+            if tag == "latest":
+                commands.append(f"--build-src={LATEST_STABLE_SYFT}")
 
         # needed for building containers
         USER = os.environ.get("USER", getpass.getuser())
@@ -237,7 +246,7 @@ class Orchestra:
     def reset(name: str, node_type_enum: NodeType) -> None:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
-            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+            _ = sy.Domain.named(name, processes=1, reset=True)  # type: ignore
         else:
             snake_name = to_snake_case(name)
 

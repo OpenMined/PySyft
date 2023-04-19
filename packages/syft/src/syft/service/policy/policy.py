@@ -24,9 +24,9 @@ from RestrictedPython import compile_restricted
 from result import Ok
 
 # relative
+from ...abstract_node import NodeType
 from ...client.api import NodeView
 from ...node.credentials import SyftVerifyKey
-from ...node.node import NodeType
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
