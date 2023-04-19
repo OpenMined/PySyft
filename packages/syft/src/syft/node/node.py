@@ -699,7 +699,7 @@ def create_worker_metadata(
 ) -> Optional[NodeMetadata]:
     try:
         metadata_stash = MetadataStash(store=worker.document_store)
-        metadata_exists = metadata_stash.get_all().ok()
+        metadata_exists = metadata_stash.get_all(worker.signing_key.verify_key).ok()
         if metadata_exists:
             return None
         else:
@@ -712,7 +712,9 @@ def create_worker_metadata(
                 syft_version=__version__,
                 deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
             )
-            result = metadata_stash.set(metadata=new_metadata)
+            result = metadata_stash.set(
+                credentials=worker.signing_key.verify_key, metadata=new_metadata
+            )
             if result.is_ok():
                 return result.ok()
             return None
