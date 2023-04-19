@@ -81,6 +81,13 @@ def listener_thread(pipe):
                 break  # Interrupted
 
 
+def run_mon_queue(queue, *args, **kwargs):
+    try:
+        queue(*args, **kwargs)
+    except Exception as e:
+        raise e
+
+
 class Proxy:
     def __init__(self, address: str, pub_port: int, sub_port: int):
         self.address = address
@@ -96,16 +103,18 @@ class Proxy:
         pipe = zpipe(self.context)
         l_thread = Thread(target=listener_thread, args=(pipe[1],))
         l_thread.start()
+        self.monitored_thread = Thread(
+            target=run_mon_queue,
+            args=(monitored_queue, self.xpub, self.xsub, pipe[0], b"pub", b"sub"),
+            daemon=True,
+        )
         try:
-            # TODO: replace this with ThreadMonitoredQueue to make it non blocking
-            # from zmq.devices import ThreadMonitoredQueue
-            monitored_queue(self.xpub, self.xsub, pipe[0], b"pub", b"sub")
-        except KeyboardInterrupt:
-            pass
+            self.monitored_thread.start()
+        except Exception as e:
+            raise e
 
-        self.destroy()
-
-    def destroy(self):
+    def close(self):
+        # self.monitored_thread.exit()
         self.xpub.close()
         self.xpub.close()
         self.context.destroy()
