@@ -1,6 +1,6 @@
 # syft absolute
-from syft.node.worker import Worker
-from syft.node.worker import create_worker_metadata
+from syft.node.domain import Domain
+from syft.node.node import create_worker_metadata
 from syft.store.mongo_client import MongoStoreClientConfig
 from syft.store.mongo_document_store import MongoStoreConfig
 from syft.store.sqlite_document_store import SQLiteStoreClientConfig
@@ -21,7 +21,7 @@ mongo_store_config = MongoStoreConfig(client_config=mongo_client_config)
 
 client_config = SQLiteStoreClientConfig(path="/storage/")
 sql_store_config = SQLiteStoreConfig(client_config=client_config)
-worker = Worker(
+worker = Domain(
     action_store_config=sql_store_config, document_store_config=mongo_store_config
 )
 create_worker_metadata(worker)
