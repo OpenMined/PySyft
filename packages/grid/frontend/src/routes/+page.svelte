@@ -3,11 +3,12 @@
   import { goto } from '$app/navigation';
 
   async function lazyLoad() {
-    let client = await getClient();
-    if (!client.access_token) {
+    if (typeof window === 'undefined') return;
+
+    if (!window.localStorage.getItem('key')) {
       goto('/login');
     } else {
-      goto('/home');
+      goto('/datasets');
     }
     return client;
   }
