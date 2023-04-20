@@ -1,12 +1,12 @@
 # stdlib
 from enum import Enum
 from pathlib import Path
+import tempfile
 from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Type
-from typing import Union
 
 # third party
 import networkx as nx
@@ -14,7 +14,9 @@ import pydantic
 from typing_extensions import Self
 
 # relative
+from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize
 from ...store.document_store import StoreClientConfig
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -106,10 +108,10 @@ class BaseGraphClient:
     def visualize(self) -> None:
         raise NotImplementedError
 
-    def save(self, path: Union[str, Path], format: str = "gexf") -> None:
+    def save(self) -> None:
         raise NotImplementedError
 
-    def load(self, path: Union[str, Path], format: str = "gexf") -> None:
+    def load(self) -> None:
         raise NotImplementedError
 
     def is_parent(self, parent: ActionGraphNode, child: ActionGraphNode):
@@ -121,12 +123,17 @@ class InMemoryGraphClient(BaseGraphClient):
     graph_type: nx.DiGraph = nx.DiGraph
     graph: graph_type
 
-    def __init__(self):
+    def __init__(self, path: Optional[str] = None):
         self.graph = nx.DiGraph()
+        if path is None:
+            self.path = Path(tempfile.gettempdir()) / "action_graph.bytes"
+            # TODO: repace self.path with a name in the config class like in SQLiteStoreClientConfig
+        else:
+            self.path = path
 
     @staticmethod
-    def init_graph() -> Self:
-        return InMemoryGraphClient()
+    def init_graph(path: Optional[str] = None) -> Self:
+        return InMemoryGraphClient(path)
 
     def add_node(self, node: ActionGraphNode) -> None:
         self.graph.add_node(node)
@@ -157,18 +164,17 @@ class InMemoryGraphClient(BaseGraphClient):
     def edges(self) -> Iterable:
         return self.graph.edges()
 
-    def save(self, path: Union[str, Path], format: str = "gexf") -> None:
-        if format == "gexf":
-            nx.write_gexf(self.graph, path)
-        else:
-            raise NotImplementedError
+    def save(self) -> None:
+        print(self.path)
+        bytes = _serialize(self.graph, to_bytes=True)
+        with open(str(self.path), "wb") as f:
+            f.write(bytes)
 
-    def load(self, path: Union[str, Path], format: str = "gexf") -> None:
-        if format == "gexf":
-            self.graph = nx.read_gexf(path)
-            # TODO: the nodes become strings instead of objects, need to fix this
-        else:
-            raise NotImplementedError
+    def load(self) -> None:
+        print(self.path)
+        with open(str(self.path), "rb") as f:
+            bytes = f.read()
+        self.graph = _deserialize(blob=bytes, from_bytes=True)
 
     def is_parent(self, parent: ActionGraphNode, child: ActionGraphNode) -> bool:
         parents = list(self.graph.predecessors(child))
@@ -203,7 +209,7 @@ class ActionGraph:
         for _node in self.client.nodes:
             if _node.action.result_id in input_ids:
                 parents.add(_node)
-        print(f"{parents = }")
+
         for parent in parents:
             self.client.add_edge(parent, node)
 
@@ -227,11 +233,11 @@ class ActionGraph:
         child_node: ActionGraphNode = ActionGraphNode.from_action(child)
         return self.client.is_parent(parent_node, child_node)
 
-    def save(self, path: Union[str, Path], format: str = "gexf") -> None:
-        self.client.save(path, format)
+    def save(self) -> None:
+        self.client.save()
 
-    def load(self, path: Union[str, Path], format: str = "gexf") -> None:
-        self.client.load(path, format)
+    def load(self) -> None:
+        self.client.load()
 
 
 # class ActionGraphVersion2:
