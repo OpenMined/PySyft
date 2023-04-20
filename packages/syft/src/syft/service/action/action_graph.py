@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+import os
 from pathlib import Path
 import tempfile
 from typing import Any
@@ -14,10 +15,14 @@ import pydantic
 from typing_extensions import Self
 
 # relative
+from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import StoreClientConfig
+from ...store.document_store import StoreConfig
+from ...store.locks import LockingConfig
+from ...store.locks import NoLockingConfig
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -42,14 +47,15 @@ class ActionGraphNode(SyftObject):
     status: ActionStatus = ActionStatus.PROCESSING
     retry: int = 0
     created_at: Optional[DateTime]
+    credentials: SyftVerifyKey
 
     @pydantic.validator("created_at", pre=True, always=True)
     def make_result_id(cls, v: Optional[DateTime]) -> DateTime:
         return DateTime.now() if v is None else v
 
     @staticmethod
-    def from_action(action: Action):
-        return ActionGraphNode(id=action.id, action=action)
+    def from_action(action: Action, credentials: SyftVerifyKey):
+        return ActionGraphNode(id=action.id, action=action, credentials=credentials)
 
     def __hash__(self):
         return self.action.syft_history_hash
@@ -65,44 +71,33 @@ class ActionGraphNode(SyftObject):
         return self._repr_debug_()
 
 
-# class NetworkXClientConfig(StoreClientConfig):
-#     __canonical_name__ = "NetworkXClientConfig"
-#     __version__ = SYFT_OBJECT_VERSION_1
-
-# class Neo4JClientConfig(StoreClientConfig):
-#     __canonical_name__ = "Neo4JClientConfig"
-#     __version__ = SYFT_OBJECT_VERSION_1
-
-#     db_name: str
-#     host: str
-#     port: int
-
-
 @serializable()
-class BaseGraphClient:
+class BaseGraphStore:
     graph_type: Any
     client_config: Optional[StoreClientConfig]
 
-    @staticmethod
-    def init_graph() -> Self:
+    def set(self, node: Any) -> None:
         raise NotImplementedError
 
-    def add_node(self, node: ActionGraphNode) -> None:
+    def delete(self, node: Any) -> None:
         raise NotImplementedError
 
-    def remove_node(self, node: ActionGraphNode) -> None:
+    def find_neighbors(self, node: Any) -> List[Any]:
         raise NotImplementedError
 
-    def find_neighbors(self, node: ActionGraphNode) -> List[ActionGraphNode]:
+    def update(self, node: Any) -> None:
         raise NotImplementedError
 
-    def update(self, updated_node: ActionGraphNode) -> None:
+    def add_edge(self, parent: Any, child: Any) -> None:
         raise NotImplementedError
 
-    def add_edge(self, parent: ActionGraphNode, child: ActionGraphNode) -> None:
+    def remove_edge(self, parent: Any, child: Any) -> None:
         raise NotImplementedError
 
-    def remove_edge(self, parent: ActionGraphNode, child: ActionGraphNode) -> None:
+    def nodes(self) -> Any:
+        raise NotImplementedError
+
+    def edges(self) -> Any:
         raise NotImplementedError
 
     def visualize(self) -> None:
@@ -111,34 +106,36 @@ class BaseGraphClient:
     def save(self) -> None:
         raise NotImplementedError
 
-    def load(self) -> None:
+    def is_parent(self, parent: Any, child: Any):
         raise NotImplementedError
 
-    def is_parent(self, parent: ActionGraphNode, child: ActionGraphNode):
-        raise NotImplementedError
+
+class InMemoryStoreClientConfig(StoreClientConfig):
+    def __init__(self, path: Optional[str]):
+        if path is None:
+            self.file_path = Path(tempfile.gettempdir()) / "action_graph.bytes"
+        else:
+            self.file_path = path
 
 
 @serializable()
-class InMemoryGraphClient(BaseGraphClient):
-    graph_type: nx.DiGraph = nx.DiGraph
-    graph: graph_type
+class NetworkXBackingStore:
+    def __init__(self, store_config: StoreConfig) -> None:
+        self.file_path = store_config.client_config.file_path
 
-    def __init__(self, path: Optional[str] = None):
-        self.graph = nx.DiGraph()
-        if path is None:
-            self.path = Path(tempfile.gettempdir()) / "action_graph.bytes"
-            # TODO: repace self.path with a name in the config class like in SQLiteStoreClientConfig
+        if os.path.exists(self.file_path):
+            self._db = self.load_from_path(self.file_path)
         else:
-            self.path = path
+            self._db = nx.DiGraph()
 
-    @staticmethod
-    def init_graph(path: Optional[str] = None) -> Self:
-        return InMemoryGraphClient(path)
+    @property
+    def db(self) -> nx.Graph:
+        return self._db
 
-    def add_node(self, node: ActionGraphNode) -> None:
-        self.graph.add_node(node)
+    def set(self, node: ActionGraphNode) -> None:
+        self.db.add_node(node)
 
-    def remove_node(self, node: ActionGraphNode) -> None:
+    def delete(self, node: ActionGraphNode) -> None:
         self.graph.remove_node(node)
 
     def find_neighbors(self, node: ActionGraphNode) -> List[ActionGraphNode]:
@@ -156,130 +153,53 @@ class InMemoryGraphClient(BaseGraphClient):
     def visualize(self) -> None:
         return nx.draw_networkx(self.graph, with_labels=True)
 
-    @property
     def nodes(self) -> Iterable:
         return self.graph.nodes()
 
-    @property
     def edges(self) -> Iterable:
         return self.graph.edges()
 
     def save(self) -> None:
-        print(self.path)
         bytes = _serialize(self.graph, to_bytes=True)
         with open(str(self.path), "wb") as f:
             f.write(bytes)
 
-    def load(self) -> None:
-        print(self.path)
-        with open(str(self.path), "rb") as f:
+    def load_from_path(file_path: str) -> None:
+        with open(file_path, "rb") as f:
             bytes = f.read()
-        self.graph = _deserialize(blob=bytes, from_bytes=True)
+        return _deserialize(blob=bytes, from_bytes=True)
 
     def is_parent(self, parent: ActionGraphNode, child: ActionGraphNode) -> bool:
         parents = list(self.graph.predecessors(child))
         return parent in parents
 
 
-# class GraphClientConfig:
-#    pass
+class InMemoryGraphConfig(StoreConfig):
+    store_type: Type[BaseGraphStore] = NetworkXBackingStore
+    client_config: StoreClientConfig = InMemoryStoreClientConfig
+    locking_config: LockingConfig = NoLockingConfig()
 
 
-@serializable()
-class ActionGraph:
-    def __init__(self, node_uid: UID, graph_client: Type[BaseGraphClient]):
-        self.node_uid = node_uid
-        self.client = graph_client.init_graph()
-
-    def add_action(self, action: Action) -> None:
-        # TODO: Handle Duplication
-        node = ActionGraphNode.from_action(action)
-        # self.client.add_node(node)
-        self._search_parents_for(node)
-        self.client.add_node(node)
-
-    def _search_parents_for(self, node: ActionGraphNode) -> None:
-        input_ids = []
-        parents = set()
-        if node.action.remote_self:
-            input_ids.append(node.action.remote_self)
-        input_ids.extend(node.action.args)
-        input_ids.extend(node.action.kwargs.values())
-        # search for parents in the existing nodes
-        for _node in self.client.nodes:
-            if _node.action.result_id in input_ids:
-                parents.add(_node)
-
-        for parent in parents:
-            self.client.add_edge(parent, node)
-
-    def remove_action(self, action: Action):
-        node = ActionGraphNode.from_action(action)
-        self.client.remove_node(node)
-
-    def draw_graph(self):
-        return self.client.visualize()
-
-    @property
-    def nodes(self):
-        return self.client.nodes
-
-    @property
-    def edges(self):
-        return self.client.edges
-
-    def is_parent(self, parent: Action, child: Action) -> bool:
-        parent_node: ActionGraphNode = ActionGraphNode.from_action(parent)
-        child_node: ActionGraphNode = ActionGraphNode.from_action(child)
-        return self.client.is_parent(parent_node, child_node)
-
-    def save(self) -> None:
-        self.client.save()
-
-    def load(self) -> None:
-        self.client.load()
+class ActionGraphStore:
+    pass
 
 
-# class ActionGraphVersion2:
-#     node_uid: UID
+class InMemoryActionGraphStore(ActionGraphStore):
+    def __init__(self, store_config: StoreConfig):
+        self.store_config = store_config
+        self.graph = self.store_config.store_type(self.store_config)
 
-#     def __init__(self, node_uid: UID):
-#         self._graph = nx.DiGraph(name=node_uid)
-#         self.node_uid = node_uid
+    def set(self, action: Action, credentials: SyftVerifyKey):
+        #     node = ActionGraphNode.from_action(action, credentials)
+        #     self._search_parents_for(node)
+        #     self.graph.set(node)
+        pass
 
-#     def add(self, node: ActionGraphObject) -> None:
-#         self._graph.add_node(node.id, data=node)
+    def get(self, action: Action, credentials: SyftVerifyKey):
+        pass
 
-#     def add_relationship(
-#         self, nodeA: ActionGraphObject, nodeB: ActionGraphObject
-#     ) -> None:
-#         self._graph.add_edge(nodeA, nodeB)
+    def delete(self, action: Action, credentials: SyftVerifyKey):
+        pass
 
-#     def remove_node(self, node: ActionGraphObject) -> None:
-#         self._graph.remove_node(node)
-
-#     def remove_edge(self, node: ActionGraphObject) -> None:
-#         self._graph.remove_edge(node)
-
-#     def neighbors_for(self, node: ActionGraphObject) -> List:
-#         return list(self._graph.neighbors(node))
-
-#     def visualize(self, arrows: bool = True) -> Any:
-#         return nx.draw_networkx(self._graph)
-
-#     def remove_all_nodes_from(self, node: ActionGraphObject):
-#         all_adjacent_neighbors: list = []
-
-#         def find_adjacent_neighbors(node: ActionGraphObject, neighbors: set):
-#             if not self._graph.neighbors(node):
-#                 return
-
-#             my_neighbors = self._graph.neighbors(node)
-#             for n in my_neighbors:
-#                 if n not in neighbors:
-#                     neighbors.add(n)
-#                     self.find_adjacent_neighbors(n, neighbors)
-
-#         find_adjacent_neighbors(node, all_adjacent_neighbors)
-
-#         self._graph.remove_nodes_from(all_adjacent_neighbors)
+    def update(self, action: Action, credentials: SyftVerifyKey):
+        pass
