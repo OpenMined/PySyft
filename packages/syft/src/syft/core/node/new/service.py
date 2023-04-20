@@ -3,13 +3,12 @@ from collections import defaultdict
 from copy import deepcopy
 import inspect
 from inspect import Parameter
-from inspect import _signature_fromstr
-import re
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -18,7 +17,13 @@ from typing import Union
 
 # relative
 from .context import AuthedServiceContext
-from .lib_service_registry import function_signatures_registry
+from .credentials import SyftVerifyKey
+from .lib_permissions import CMPCRUDPermission
+from .lib_permissions import CMPPermission
+from .lib_service_registry import CMPBase
+from .lib_service_registry import CMPClass
+from .lib_service_registry import CMPFunction
+from .lib_service_registry import action_execute_registry_libs
 from .linked_obj import LinkedObject
 from .response import SyftError
 from .serializable import serializable
@@ -29,7 +34,6 @@ from .syft_object import SyftBaseObject
 from .syft_object import SyftObject
 from .uid import UID
 from .user_roles import DATA_OWNER_ROLE_LEVEL
-from .user_roles import GUEST_ROLE_LEVEL
 from .user_roles import ServiceRole
 
 TYPE_TO_SERVICE = {}
@@ -58,19 +62,97 @@ class AbstractService:
 
 
 @serializable()
-class ServiceConfig(SyftBaseObject):
+class BaseConfig(SyftBaseObject):
     public_path: str
     private_path: str
     public_name: str
     method_name: str
     doc_string: Optional[str]
     signature: Optional[Signature]
+    is_from_lib: bool = False
+
+
+@serializable()
+class ServiceConfig(BaseConfig):
     permissions: List
     roles: List[ServiceRole]
-    is_from_lib: bool = False
 
     def has_permission(self, user_service_role: ServiceRole):
         return user_service_role in self.roles
+
+
+@serializable()
+class LibConfig(BaseConfig):
+    permissions: Set[CMPPermission]
+
+    def has_permission(self, credentials: SyftVerifyKey):
+        # TODO: implement user level permissions
+        for p in self.permissions:
+            if p.permission_string == CMPCRUDPermission.ALL_EXECUTE.name:
+                return True
+            if p.permission_string == CMPCRUDPermission.NONE_EXECUTE.name:
+                return False
+        return False
+
+
+class ServiceConfigRegistry:
+    __service_config_registry__: Dict[str, ServiceConfig] = {}
+    # __public_to_private_path_map__: Dict[str, str] = {}
+
+    @classmethod
+    def register(cls, config: ServiceConfig) -> None:
+        if not cls.path_exists(config.public_path):
+            cls.__service_config_registry__[config.public_path] = config
+            # cls.__public_to_private_path_map__[config.public_path] = config.private_path
+
+    @classmethod
+    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
+        return cls.__service_config_registry__
+
+    @classmethod
+    def path_exists(cls, path: str):
+        return path in cls.__service_config_registry__
+
+
+class LibConfigRegistry:
+    __service_config_registry__: Dict[str, ServiceConfig] = {}
+
+    @classmethod
+    def register(cls, config: ServiceConfig) -> None:
+        if not cls.path_exists(config.public_path):
+            cls.__service_config_registry__[config.public_path] = config
+
+    @classmethod
+    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
+        return cls.__service_config_registry__
+
+    @classmethod
+    def path_exists(cls, path: str):
+        return path in cls.__service_config_registry__
+
+
+class UserLibConfigRegistry:
+    def __init__(self, service_config_registry: Dict[str, LibConfig]):
+        self.__service_config_registry__: Dict[str, LibConfig] = service_config_registry
+
+    @classmethod
+    def from_user(cls, credentials: SyftVerifyKey):
+        return cls(
+            {
+                k: lib_config
+                for k, lib_config in LibConfigRegistry.get_registered_configs().items()
+                if lib_config.has_permission(credentials)
+            }
+        )
+
+    def __contains__(self, path: str):
+        return path in self.__service_config_registry__
+
+    def private_path_for(self, public_path: str) -> str:
+        return self.__service_config_registry__[public_path].private_path
+
+    def get_registered_configs(self) -> Dict[str, LibConfig]:
+        return self.__service_config_registry__
 
 
 class UserServiceConfigRegistry:
@@ -99,156 +181,35 @@ class UserServiceConfigRegistry:
         return self.__service_config_registry__
 
 
-def get_signature_from_docstring(doc: str, callable_name: str) -> str:
-    if not doc or callable_name not in doc:
-        return None
-    else:
-        doc = re.sub(r"\s", "", doc.split("\n\n")[0])
-        search_res = re.search(rf"{callable_name}\((.+)\)", doc)
-        if search_res:
-            signature = search_res.group(1)
-            # decomposing "[]" optional  params
-            params = re.findall(r"\[(.+?)\]", signature)
-            if params:
-                for param in params[:-1]:
-                    signature = signature.replace(f"[{param}]", param)
-
-                if re.search(rf"(?<={params[-1]})\],", signature):
-                    signature = signature.replace(f"[{params[-1]}],", params[-1])
-                else:
-                    signature = signature.replace(
-                        f"[{params[-1]}]",
-                        f', {",".join([f"{param}=None" for param in params[-1].split(",") if param])}',
-                    )
-
-            signature = re.sub(r",(\/|\*)", "", signature)
-            signature = re.sub(r"dtype=(\w+),", "dtype=None,", signature)
-            return f"{callable_name}({signature})"
-        else:
-            return None
-
-
-def get_signature_from_registry(callable_name: str) -> str:
-    return function_signatures_registry[callable_name]
-
-
-def generate_signature(_callable) -> inspect.Signature:
-    name, doc = _callable.__name__, _callable.__doc__
-    # returning predefined signature if in signature registry
-    name_in_registry = name in function_signatures_registry.keys()
-    text_signature = (
-        get_signature_from_registry(name)
-        if name_in_registry
-        else get_signature_from_docstring(doc, name)
-    )
-    # TODO safe handling if function signature can not be generated
-    text_signature = "()" if text_signature is None else text_signature
-    return _signature_fromstr(inspect.Signature, _callable, text_signature, True)
-
-
-def get_signature(_callable) -> inspect.Signature:
-    try:
-        res = inspect.signature(_callable)
-        if res is None:
-            raise ValueError("")
-        else:
-            return res
-    except Exception:
-        return generate_signature(_callable)
-
-
-def register_lib_func(path: str, lib_obj: Callable):
-    # this is for functions
-    func = lib_obj
-    func_name = func.__name__
-
-    # problems with some numpy functions
-    try:
-        signature = get_signature(func)
-    except ValueError:
-        signature = None
+def register_lib_obj(lib_obj: CMPBase):
+    signature = lib_obj.signature
+    path = lib_obj.absolute_path
+    func_name = lib_obj.name
 
     if signature is not None:
         if path != "numpy.source":
-            service_config = ServiceConfig(
+            lib_config = LibConfig(
                 public_path=str(path),
                 private_path=str(path),
-                # do we want the "public_" + func_name here?
                 public_name=str(func_name),
                 method_name=str(func_name),
-                doc_string=str(func.__doc__),
+                doc_string=str(lib_obj.__doc__),
                 signature=signature,
-                roles=GUEST_ROLE_LEVEL,
-                permissions=["Guest"],
+                permissions=set([lib_obj.permissions]),
                 is_from_lib=True,
             )
 
-            ServiceConfigRegistry.register(service_config)
-
-
-def register_lib_class(path: str, lib_obj):
-    # this is for functions
-    func = lib_obj
-    # func_name = func.__name__
-    func_name = path.split(".")[-1]
-    # dont use this, leads to problems with certain classes
-    # like numpy.single -> numpy.float32
-
-    try:
-        signature = get_signature(lib_obj)
-    except Exception:
-        try:
-            signature = get_signature(lib_obj.__init__)
-        except Exception:
-            signature = None
-
-    if signature is not None:
-        service_config = ServiceConfig(
-            public_path=str(path),
-            private_path=str(path),
-            # do we want the "public_" + func_name here?
-            public_name=str(func_name),
-            method_name=str(func_name),
-            doc_string=str(func.__doc__),
-            signature=signature,
-            roles=GUEST_ROLE_LEVEL,
-            permissions=["Guest"],
-            is_from_lib=True,
-        )
-
-        ServiceConfigRegistry.register(service_config)
-
-
-class ServiceConfigRegistry:
-    __service_config_registry__: Dict[str, ServiceConfig] = {}
-    # __public_to_private_path_map__: Dict[str, str] = {}
-
-    @classmethod
-    def register(cls, config: ServiceConfig) -> None:
-        if not cls.path_exists(config.public_path):
-            cls.__service_config_registry__[config.public_path] = config
-            # cls.__public_to_private_path_map__[config.public_path] = config.private_path
-
-    @classmethod
-    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
-        return cls.__service_config_registry__
-
-    @classmethod
-    def path_exists(cls, path: str):
-        return path in cls.__service_config_registry__
+            LibConfigRegistry.register(lib_config)
 
 
 # hacky, prevent circular imports
-for lib_module in []:
-    parent_path = lib_module.__name__
-    for attr in dir(lib_module):
-        lib_obj = getattr(lib_module, attr)
-        child_path = f"{parent_path}.{attr}"
-
-        if inspect.isfunction(lib_obj):
-            register_lib_func(child_path, lib_obj)
-        elif inspect.isclass(lib_obj):
-            register_lib_class(child_path, lib_obj)
+for lib_obj in action_execute_registry_libs.flatten():
+    # # for functions
+    # func_name = func.__name__
+    # # for classes
+    # func_name = path.split(".")[-1]
+    if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+        register_lib_obj(lib_obj)
 
 
 def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:

@@ -34,6 +34,7 @@ from .response import SyftError
 from .response import SyftSuccess
 from .serializable import serializable
 from .serialize import _serialize
+from .service import UserLibConfigRegistry
 from .service import UserServiceConfigRegistry
 from .signature import Signature
 from .signature import signature_remove_context
@@ -343,6 +344,7 @@ class SyftAPI(SyftObject):
         # TODO: we should probably not allow empty verify keys but instead make user always register
         role = node.get_role_for_credentials(user_verify_key)
         _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
+        _user_lib_config_registry = UserLibConfigRegistry.from_user(user_verify_key)
         endpoints: Dict[str, APIEndpoint] = {}
         lib_endpoints: Dict[str, LibEndpoint] = {}
 
@@ -361,17 +363,21 @@ class SyftAPI(SyftObject):
                     has_self=False,
                 )
                 endpoints[path] = endpoint
-            else:
-                endpoint = LibEndpoint(
-                    service_path="action.execute",
-                    module_path=path,
-                    name=service_config.public_name,
-                    description="",
-                    doc_string=service_config.doc_string,
-                    signature=service_config.signature,
-                    has_self=False,
-                )
-                lib_endpoints[path] = endpoint
+
+        for (
+            path,
+            lib_config,
+        ) in _user_lib_config_registry.get_registered_configs().items():
+            endpoint = LibEndpoint(
+                service_path="action.execute",
+                module_path=path,
+                name=lib_config.public_name,
+                description="",
+                doc_string=lib_config.doc_string,
+                signature=lib_config.signature,
+                has_self=False,
+            )
+            lib_endpoints[path] = endpoint
 
         # 🟡 TODO 35: fix root context
         context = None

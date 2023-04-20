@@ -10,10 +10,13 @@ from typing import Optional
 
 # third party
 import numpy
+from typing_extensions import Self
 
 # relative
-from .lib_permissions import CMPCRUDPermission
+from .lib_permissions import ALL_EXECUTE
 from .lib_permissions import CMPPermission
+from .lib_permissions import NONE_EXECUTE
+from .signature import get_signature
 
 LIB_IGNORE_ATTRIBUTES = set(
     ["os", "__abstractmethods__", "__base__", " __bases__", "__class__"]
@@ -51,7 +54,7 @@ class CMPBase:
         self.obj: Optional[Any] = obj if obj is not None else None
         self.absolute_path = absolute_path
 
-        self.children: Dict[str, CMPModule] = dict()
+        self.children: Dict[str, CMPBase] = dict()
         if isinstance(children, list):
             self.children = {f"{c.path}": c for c in children}
         elif isinstance(children, dict):
@@ -63,12 +66,20 @@ class CMPBase:
 
         if manual_signature is not None:
             self.signature: Signature = manual_signature
+        else:
+            self.signature = None
 
         self.is_built = False
+
+    def set_signature(self):
+        pass
 
     def build(self):
         if self.obj is None:
             self.obj = import_from_path(self.absolute_path)
+
+        if self.signature is None:
+            self.set_signature()
 
         child_paths = set([p for p in self.children.keys()])
 
@@ -81,7 +92,12 @@ class CMPBase:
                         attr = getattr(self.obj, attr_name)
                     except Exception:
                         continue
-                    child = self.init_child(self.obj, f"{self.path}.{attr_name}", attr)
+                    child = self.init_child(
+                        self.obj,
+                        f"{self.path}.{attr_name}",
+                        attr,
+                        f"{self.absolute_path}.{attr_name}",
+                    )
                 if child is not None:
                     child.build()
                     self.children[attr_name] = child
@@ -92,7 +108,7 @@ class CMPBase:
         else:
             raise ValueError(f"property {__name} not defined")
 
-    def init_child(self, parent_obj, child_path: str, child_obj):
+    def init_child(self, parent_obj, child_path: str, child_obj, absolute_path):
         """Get the child of parent as a CMPBase object
 
         Args:
@@ -105,7 +121,12 @@ class CMPBase:
         """
         parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
         if CMPBase.isfunction(child_obj) and parent_is_parent_module:
-            return CMPFunction(child_path, permissions=self.permissions, obj=child_obj)
+            return CMPFunction(
+                child_path,
+                permissions=self.permissions,
+                obj=child_obj,
+                absolute_path=absolute_path,
+            )
         elif inspect.ismodule(child_obj) and CMPBase.is_submodule(
             parent_obj, child_obj
         ):
@@ -113,10 +134,21 @@ class CMPBase:
             # A) as numpy.float32 (what we are doing now)
             # B) as numpy.core.float32 (currently not supported)
             # only allow submodules
-            return CMPModule(child_path, permissions=self.permissions, obj=child_obj)
+
+            return CMPModule(
+                child_path,
+                permissions=self.permissions,
+                obj=child_obj,
+                absolute_path=absolute_path,
+            )
             # register_lib_func(path, lib_obj)
         elif inspect.isclass(child_obj) and parent_is_parent_module:
-            return CMPClass(child_path, permissions=self.permissions, obj=child_obj)
+            return CMPClass(
+                child_path,
+                permissions=self.permissions,
+                obj=child_obj,
+                absolute_path=absolute_path,
+            )
             # register_lib_class(path, lib_obj)
         else:
             return None
@@ -145,6 +177,12 @@ class CMPBase:
                 return child_obj.__class__.__module__ == parent_obj.__name__
         except Exception:
             return False
+
+    def flatten(self) -> List[Self]:
+        res = [self]
+        for c in self.children.values():
+            res += c.flatten()
+        return res
 
     @staticmethod
     def isfunction(obj):
@@ -207,11 +245,38 @@ class CMPModule(CMPBase):
 class CMPFunction(CMPBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.set_signature()
+
+    @property
+    def name(self):
+        return self.obj.__name__
+
+    def set_signature(self):
+        try:
+            self.signature = get_signature(self.obj)
+        except Exception:
+            pass
 
 
 class CMPClass(CMPBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.set_signature()
+
+    @property
+    def name(self):
+        # possibly change to
+        # func_name = path.split(".")[-1]
+        return self.obj.__name__
+
+    def set_signature(self):
+        try:
+            self.signature = get_signature(self.obj)
+        except Exception:
+            try:
+                self.signature = get_signature(self.obj.__init__)
+            except Exception:
+                pass
 
 
 class CMPMethod(CMPBase):
@@ -236,6 +301,12 @@ class CMPTree:
             c.build()
         return self
 
+    def flatten(self) -> List[CMPBase]:
+        res = []
+        for c in self.children.values():
+            res += c.flatten()
+        return res
+
     def __getattr__(self, _name):
         if _name in self.children:
             return self.children[_name]
@@ -246,21 +317,14 @@ class CMPTree:
         return "\n".join([c.__repr__() for c in self.children.values()])
 
 
-api_registry_libs = CMPTree(
+action_execute_registry_libs = CMPTree(
     children=[
         CMPModule(
             "numpy",
-            permissions=CMPCRUDPermission.ALL_EXECUTE,
+            permissions=ALL_EXECUTE,
             children=[
-                CMPModule("testing", permissions=CMPCRUDPermission.NONE_EXECUTE),
+                CMPModule("testing", permissions=NONE_EXECUTE),
             ],
         ),
     ]
 ).build()
-
-function_signatures_registry = {
-    "concatenate": "concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
-    "set_numeric_ops": "set_numeric_ops(op1=func1,op2=func2, *args)",
-    "geterrorobj": "geterrobj()",
-    "source": "source(object, output)",
-}

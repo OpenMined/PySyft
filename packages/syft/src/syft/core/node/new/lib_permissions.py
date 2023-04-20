@@ -21,17 +21,9 @@ class CMPPermission:
     def __repr__(self) -> str:
         return self.permission_string
 
-    @staticmethod
-    def all_execute():
-        return CMPCompoundPermission(CMPCRUDPermission.ALL_EXECUTE)
-
-    @staticmethod
-    def none_execute():
-        return CMPCompoundPermission(CMPCRUDPermission.NONE_EXECUTE)
-
 
 @serializable()
-class CMPUserPermission:
+class CMPUserPermission(CMPPermission):
     def __init__(self, user_id: UID, permission: CMPCRUDPermission):
         self.user_id = user_id
         self.permissions = permission
@@ -45,7 +37,7 @@ class CMPUserPermission:
 
 
 @serializable()
-class CMPCompoundPermission:
+class CMPCompoundPermission(CMPPermission):
     def __init__(self, permission: CMPCRUDPermission):
         self.permissions = permission
 
@@ -55,3 +47,7 @@ class CMPCompoundPermission:
 
     def __repr__(self) -> str:
         return self.permission_string
+
+
+ALL_EXECUTE = CMPCompoundPermission(CMPCRUDPermission.ALL_EXECUTE)
+NONE_EXECUTE = CMPCompoundPermission(CMPCRUDPermission.NONE_EXECUTE)
