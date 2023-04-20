@@ -36,7 +36,7 @@ class ActionGraphService(AbstractService):
         result = self.store.delete(uid=action.id, credentials=context.credentials)
         if result.is_ok():
             return SyftSuccess(
-                f"Succesfully delete action with uid: {action.id} from graph"
+                f"Successfully delete action with uid: {action.id} from graph"
             )
 
         return SyftError(message=result.err())

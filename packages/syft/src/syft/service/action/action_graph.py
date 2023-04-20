@@ -9,6 +9,7 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Type
+from typing import Union
 
 # third party
 import networkx as nx
@@ -120,12 +121,25 @@ class BaseGraphStore:
         raise NotImplementedError
 
 
+@serializable()
 class InMemoryStoreClientConfig(StoreClientConfig):
-    def __init__(self, path: Optional[str]):
-        if path is None:
-            self.file_path = Path(tempfile.gettempdir()) / "action_graph.bytes"
-        else:
-            self.file_path = path
+    filename: Optional[str] = None
+    path: Union[str, Path]
+
+    def __init__(
+        self,
+        filename: Optional[str] = None,
+        path: Optional[Union[str, Path]] = None,
+        *args,
+        **kwargs,
+    ):
+        path_ = tempfile.gettempdir() if path is None else path
+        filename_ = "action_graph.bytes" if filename is None else filename
+        super().__init__(filename=filename_, path=path_, *args, **kwargs)
+
+    @property
+    def file_path(self) -> Optional[Path]:
+        return Path(self.path) / self.filename if self.filename is not None else None
 
 
 @serializable()
@@ -172,10 +186,10 @@ class NetworkXBackingStore(BaseGraphStore):
         self.db.remove_edge(parent, child)
 
     def visualize(self) -> None:
-        return nx.draw_networkx(self.graph, with_labels=True)
+        return nx.draw_networkx(self.db, with_labels=True)
 
     def nodes(self) -> Iterable:
-        return self.db.nodes()
+        return self.db.nodes(data=True)
 
     def edges(self) -> Iterable:
         return self.db.edges()
@@ -198,17 +212,23 @@ class NetworkXBackingStore(BaseGraphStore):
             bytes = f.read()
         return _deserialize(blob=bytes, from_bytes=True)
 
+    def exists(self, uid: Any) -> bool:
+        return uid in self.nodes()
 
+
+@serializable()
 class InMemoryGraphConfig(StoreConfig):
     store_type: Type[BaseGraphStore] = NetworkXBackingStore
-    client_config: StoreClientConfig = InMemoryStoreClientConfig
+    client_config: StoreClientConfig = InMemoryStoreClientConfig()
     locking_config: LockingConfig = NoLockingConfig()
 
 
+@serializable()
 class ActionGraphStore:
     pass
 
 
+@serializable()
 class InMemoryActionGraphStore(ActionGraphStore):
     def __init__(self, store_config: StoreConfig):
         self.store_config: StoreConfig = store_config
@@ -226,12 +246,12 @@ class InMemoryActionGraphStore(ActionGraphStore):
         if self.graph.exists(uid=action.id):
             return Err(f"Action already exists in the graph: {action.id}")
 
-        parents = self._search_parents_for(node)
+        parent_uids = self._search_parents_for(node)
         self.graph.set(uid=node.id, data=node)
-        for parent in parents:
+        for parent_uid in parent_uids:
             result = self.add_edge(
-                parent=parent,
-                child=node,
+                parent=parent_uid,
+                child=node.id,
                 credentials=credentials,
             )
             if result.is_err():
@@ -296,9 +316,14 @@ class InMemoryActionGraphStore(ActionGraphStore):
         input_ids.extend(node.action.kwargs.values())
 
         # search for parents in the existing nodes
-        for _node in self.graph.nodes:
+        for uid, _node_data in self.graph.nodes():
+            print("UID:", uid)
+            _node = _node_data["data"]
+            print("Node:", _node)
+            print("Result Id:", _node.action.result_id)
             if _node.action.result_id in input_ids:
-                parents.add(_node)
+                print(f"Found: {uid}")
+                parents.add(uid)
 
         return parents
 
