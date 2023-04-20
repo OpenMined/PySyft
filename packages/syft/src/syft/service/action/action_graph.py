@@ -119,7 +119,7 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 
 
 @serializable()
-class NetworkXBackingStore:
+class NetworkXBackingStore(BaseGraphStore):
     def __init__(self, store_config: StoreConfig) -> None:
         self.file_path = store_config.client_config.file_path
 
