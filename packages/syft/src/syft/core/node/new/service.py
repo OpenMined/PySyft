@@ -152,7 +152,7 @@ def generate_signature(_callable) -> inspect.Signature:
 def get_signature(_callable) -> inspect.Signature:
     try:
         res = inspect.signature(_callable)
-        if res is None or "OutStream" in str(res):
+        if res is None:
             raise ValueError("")
         else:
             return res
