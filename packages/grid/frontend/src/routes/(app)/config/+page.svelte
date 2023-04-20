@@ -94,6 +94,7 @@
         >
           <span class={focus[0]}> Domain </span>
         </button>
+        <!--
         <button
           on:click={() => {
             updateSelectedBar(1);
@@ -112,6 +113,7 @@
         >
           <span class={focus[2]}> Permissions </span>
         </button>
+        -->
       </div>
 
       <div class="px-6">
@@ -170,6 +172,7 @@
             <div class="col-start-2 col-span-5">
               <span class="font-bold"> SYSTEM INFORMATION</span>
               <div class="grid grid-cols-4 py-5">
+                <!--
                 <div class="flex justify-center">
                   <div id="user-profile-circle" style="height:10vh;width:10vh;">
                     <h3 style="color:white">
@@ -181,6 +184,7 @@
                     <span class="font-roboto">Domain Owner</span>
                   </div>
                 </div>
+                -->
                 <div class="flex flex-col justify-center">
                   <span class="font-bold">
                     ID # <Badge variant="gray">{metadata.id.value}</Badge></span
