@@ -62,6 +62,7 @@ class NodeType(Enum):
     WORKER = "worker"
     ENCLAVE = "enclave"
     PYTHON = "python"
+    VM = "vm"
 
 
 class NodeHandle:
@@ -85,7 +86,7 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(port=self.port)  # type: ignore
+            return sy.login(url=self.url, port=self.port)  # type: ignore
         elif self.node_type == NodeType.PYTHON:
             return self.python_node.guest_client  # type: ignore
 
@@ -101,6 +102,8 @@ class NodeHandle:
         if self.node_type == NodeType.PYTHON:
             if self.shutdown:
                 self.shutdown()
+        elif self.node_type == NodeType.VM:
+            pass
         else:
             Orchestra.land(self.name, node_type=self.node_type.value)
 
@@ -161,6 +164,11 @@ class Orchestra:
                 return NodeHandle(
                     node_type=node_type_enum, name=name, python_node=worker
                 )
+
+        if node_type_enum == NodeType.VM:
+            return NodeHandle(
+                node_type=node_type_enum, name=name, port=80, url="http://10.0.1.2"
+            )
 
         # Currently by default we launch in dev mode
         if reset:

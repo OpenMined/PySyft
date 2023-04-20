@@ -11,76 +11,46 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     ansible.compatibility_mode = "auto"
     ansible.playbook = "./ansible/site.yml"
     ansible.groups = {
-      "network" => [
-        "network1",
-      ],
       "domain" => [
-        "domain1",
-        "domain2",
+        "ubuntu",
       ],
     }
   end
 
-  config.landrush.enabled = true
+  config.vm.define "ubuntu-20-04-arm64" do |node|
+    node.vm.box = "bento/ubuntu-20.04-arm64"
 
-  config.vm.define "network1" do |node|
-    node.vm.box = "ubuntu/focal64"
     node.vm.box_check_update = false
 
-    node.landrush.enabled = true
-    node.landrush.tld = "openmined.grid"
-    node.landrush.host "network1.openmined.grid", "10.0.1.2"
-
-    node.vm.hostname = "network1.openmined.grid"
+    node.vm.hostname = "ubuntu-20-04-arm64.openmined.grid"
     node.vm.network :private_network, ip: "10.0.1.2"
-    node.vm.network "forwarded_port", guest: 8080, host: 8080
 
     node.vm.synced_folder "../../", "/home/om/PySyft",
       mount_options: ["dmode=775,fmode=774"]
-    node.vm.provider "virtualbox" do |vb|
-      vb.memory = "4096"
-      vb.cpus = "2"
-      vb.name = "network1"
+
+    node.vm.provider "parallels" do |vb, override|
+      vb.memory = "8096"
+      vb.cpus = "4"
+      vb.name = "ubuntu-20-04-arm64"
+      override.vm.synced_folder "../../", "/home/om/PySyft", owner: "vagrant", group: "vagrant", create: true, mount_options: [ "share" ]
     end
   end
 
-  config.vm.define "domain1" do |node|
-    node.vm.box = "ubuntu/focal64"
+  config.vm.define "ubuntu-20-04-x86" do |node|
+    node.vm.box = "bento/ubuntu-20.04"
+
     node.vm.box_check_update = false
 
-    node.landrush.enabled = true
-    node.landrush.tld = "openmined.grid"
-    node.landrush.host "domain1.openmined.grid", "10.0.1.3"
-
-    node.vm.hostname = "domain1.openmined.grid"
-    node.vm.network :private_network, ip: "10.0.1.3"
+    node.vm.hostname = "ubuntu-20-04-x86.openmined.grid"
+    node.vm.network :private_network, ip: "10.0.1.2"
 
     node.vm.synced_folder "../../", "/home/om/PySyft",
       mount_options: ["dmode=775,fmode=774"]
+
     node.vm.provider "virtualbox" do |vb|
       vb.memory = "4096"
       vb.cpus = "2"
-      vb.name = "domain1"
-    end
-  end
-
-  config.vm.define "domain2" do |node|
-    node.vm.box = "ubuntu/focal64"
-    node.vm.box_check_update = false
-
-    node.landrush.enabled = true
-    node.landrush.tld = "openmined.grid"
-    node.landrush.host "domain2.openmined.grid", "10.0.1.4"
-
-    node.vm.hostname = "domain2.openmined.grid"
-    node.vm.network :private_network, ip: "10.0.1.4"
-
-    node.vm.synced_folder "../../", "/home/om/PySyft",
-      mount_options: ["dmode=775,fmode=774"]
-    node.vm.provider "virtualbox" do |vb|
-      vb.memory = "4096"
-      vb.cpus = "2"
-      vb.name = "domain2"
+      vb.name = "ubuntu-20-04-x86"
     end
   end
 
