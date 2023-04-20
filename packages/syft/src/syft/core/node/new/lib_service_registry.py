@@ -12,9 +12,8 @@ from typing import Optional
 import numpy
 
 # relative
-from .lib_permissions import ALL_EXECUTE
+from .lib_permissions import CMPCRUDPermission
 from .lib_permissions import CMPPermission
-from .lib_permissions import NONE_EXECUTE
 
 LIB_IGNORE_ATTRIBUTES = set(
     ["os", "__abstractmethods__", "__base__", " __bases__", "__class__"]
@@ -251,10 +250,17 @@ api_registry_libs = CMPTree(
     children=[
         CMPModule(
             "numpy",
-            permissions=ALL_EXECUTE,
+            permissions=CMPCRUDPermission.ALL_EXECUTE,
             children=[
-                CMPModule("testing", permissions=NONE_EXECUTE),
+                CMPModule("testing", permissions=CMPCRUDPermission.NONE_EXECUTE),
             ],
         ),
     ]
 ).build()
+
+function_signatures_registry = {
+    "concatenate": "concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
+    "set_numeric_ops": "set_numeric_ops(op1=func1,op2=func2, *args)",
+    "geterrorobj": "geterrobj()",
+    "source": "source(object, output)",
+}
