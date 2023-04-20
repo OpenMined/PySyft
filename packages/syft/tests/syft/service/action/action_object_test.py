@@ -48,8 +48,7 @@ def helper_make_action_args(*args, **kwargs):
 
 
 def helper_make_action_pointers(worker, obj, *args, **kwargs):
-    ctx = get_auth_ctx(worker)
-    print(ctx)
+    get_auth_ctx(worker)
 
     args_pointers, kwargs_pointers = [], {}
 
