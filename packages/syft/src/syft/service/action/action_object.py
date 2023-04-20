@@ -355,9 +355,11 @@ class ActionObject(SyftObject):
             f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
         )
 
-    def syft_point_to(self, node_uid: UID) -> None:
+    def syft_point_to(self, node_uid: UID) -> "ActionObject":
         """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
+
+        return self
 
     def syft_get_property(self, obj: Any, method: str) -> Any:
         klass_method = getattr(type(obj), method, None)

@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import inspect
 import math
 from typing import Any
@@ -19,6 +20,11 @@ from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_node_uid
 from syft.service.action.action_object import send_action_side_effect
 from syft.service.action.action_types import action_type_for_type
+from syft.service.context import AuthedServiceContext
+
+
+def get_auth_ctx(worker):
+    return AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
 
 
 def helper_make_action_obj(orig_obj: Any):
@@ -42,10 +48,14 @@ def helper_make_action_args(*args, **kwargs):
 
 
 def helper_make_action_pointers(worker, obj, *args, **kwargs):
+    ctx = get_auth_ctx(worker)
+    print(ctx)
+
     args_pointers, kwargs_pointers = [], {}
 
     root_domain_client = worker.root_client
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    root_domain_client.api.services.action.set(obj)
+    obj_pointer = root_domain_client.api.services.action.get_pointer(obj.id)
 
     for arg in args:
         root_domain_client.api.services.action.set(arg)
@@ -698,10 +708,30 @@ def test_actionobject_syft_wrap_attribute_for_methods(orig_obj):
         assert isinstance(method, Callable)
 
 
-def test_actionobject_syft_getattr_str():
+class AttrScenario(Enum):
+    AS_OBJ = 0
+    AS_PTR = 1
+    AS_UID = 2
+    AS_LUID = 3
+
+
+def helper_prepare_obj_for_scenario(scenario: AttrScenario, worker, obj: ActionObject):
+    if scenario == AttrScenario.AS_OBJ:
+        return obj
+    elif scenario == AttrScenario.AS_PTR:
+        obj, _, _ = helper_make_action_pointers(worker, obj, *[], **{})
+        print(obj)
+        return obj
+    else:
+        raise ValueError(scenario)
+
+
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_str(worker, scenario):
     orig_obj = "a bC"
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj != "sdfsfs"
@@ -738,10 +768,12 @@ def test_actionobject_syft_getattr_str_history():
     assert res1.syft_history_hash == res2.syft_history_hash
 
 
-def test_actionobject_syft_getattr_list():
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_list(worker, scenario):
     orig_obj = [3, 2, 1, 4]
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert 1 in obj
     assert obj[0] == 3
@@ -768,10 +800,12 @@ def test_actionobject_syft_getattr_list_history():
     assert res1.syft_history_hash == res2.syft_history_hash
 
 
-def test_actionobject_syft_getattr_dict():
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_dict(worker, scenario):
     orig_obj = {"a": 1, "b": 2}
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj.get("a") == 1
@@ -790,10 +824,12 @@ def test_actionobject_syft_getattr_dict_history():
     assert res1.syft_history_hash == res2.syft_history_hash
 
 
-def test_actionobject_syft_getattr_tuple():
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_tuple(worker, scenario):
     orig_obj = (1, 2, 3, 4, 4)
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj.count(4) == 2
@@ -808,10 +844,12 @@ def test_actionobject_syft_getattr_tuple():
         assert item == obj[idx]
 
 
-def test_actionobject_syft_getattr_set():
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_set(worker, scenario):
     orig_obj = set({1, 2, 3, 4})
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj.add(4) == set({1, 2, 3, 4})
@@ -829,8 +867,10 @@ def test_actionobject_syft_getattr_set_history():
 
 
 @pytest.mark.parametrize("orig_obj", [True, False])
-def test_actionobject_syft_getattr_bool(orig_obj):
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_bool(orig_obj, worker, scenario):
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj.__and__(False) == (orig_obj and False)  # noqa
     assert obj.__or__(False) == (orig_obj or False)  # noqa
@@ -858,8 +898,10 @@ def test_actionobject_syft_getattr_bool_history():
 
 
 @pytest.mark.parametrize("orig_obj", [-5, 0, 5])
-def test_actionobject_syft_getattr_int(orig_obj: int):
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_int(orig_obj: int, worker, scenario):
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj != orig_obj + 1
@@ -921,8 +963,10 @@ def test_actionobject_syft_getattr_int_history(worker):
 
 
 @pytest.mark.parametrize("orig_obj", [-5.5, 0.0, 5.5])
-def test_actionobject_syft_getattr_float(orig_obj: float):
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_float(orig_obj: float, worker, scenario):
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj != orig_obj + 1
