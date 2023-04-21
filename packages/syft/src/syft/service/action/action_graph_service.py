@@ -77,7 +77,10 @@ class ActionGraphService(AbstractService):
         return SyftError(message=result.err())
 
     def update_action_status(
-        self, context: AuthedServiceContext, action_id: UID, status: ActionStatus
+        self,
+        context: AuthedServiceContext,
+        action_id: UID,
+        status: ActionStatus,
     ) -> Union[SyftSuccess, SyftError]:
         try:
             node_data = NodeActionDataUpdate(status=status)

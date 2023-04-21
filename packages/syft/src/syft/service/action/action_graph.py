@@ -165,10 +165,10 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 @serializable()
 class NetworkXBackingStore(BaseGraphStore):
     def __init__(self, store_config: StoreConfig) -> None:
-        self.file_path = store_config.client_config.file_path
+        file_path = store_config.client_config.file_path
 
-        if os.path.exists(self.file_path):
-            self._db = self.load_from_path(str(self.file_path))
+        if os.path.exists(file_path):
+            self._db = self.load_from_path(str(file_path))
         else:
             self._db = nx.DiGraph()
 
@@ -341,12 +341,8 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
         # search for parents in the existing nodes
         for uid, _node_data in self.graph.nodes():
-            print("UID:", uid)
             _node = _node_data["data"]
-            print("Node:", _node)
-            print("Result Id:", _node.action.result_id)
             if _node.action.result_id in input_ids:
-                print(f"Found: {uid}")
                 parents.add(uid)
 
         return parents
