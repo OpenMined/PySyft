@@ -18,7 +18,10 @@ export async function login({ email, password }: Credentials) {
 
     window.localStorage.setItem('key', signing_key);
     window.localStorage.setItem('id', data.id.value);
+
+    return data;
   } catch (error) {
-    console.log(error);
+    // TODO: Log error in debug mode
+    throw error;
   }
 }
