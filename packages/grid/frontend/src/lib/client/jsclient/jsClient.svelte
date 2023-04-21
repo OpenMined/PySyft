@@ -210,7 +210,7 @@
     updateCurrentUser(updatedFields) {
       // Create a new object called 'userUpdate' with updated fields and a new property called 'fqn' with a value.
       const userUpdate = { ...updatedFields, fqn: 'syft.service.user.user.UserUpdate' };
-      
+
       // Create a new object called 'reqFields' with two properties: 'uid', which is set to the value of 'userId', and 'user_update', which is set to 'userUpdate'.
       const reqFields = { uid: this.userId, user_update: userUpdate };
 
