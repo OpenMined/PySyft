@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { metadata as _metadata } from '$lib/store';
+  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { getMetadata } from '$lib/api/metadata';
   import { login } from '$lib/api/login';
@@ -18,8 +18,8 @@
 
   async function handleSubmit() {
     await login({ email, password })
-      .then((res) => console.log(res))
-      .catch((error) => console.log(error));
+      .then(() => goto('/datasets'))
+      .catch((error) => console.error(error));
   }
 
   onMount(async () => {
