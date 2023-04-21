@@ -1,0 +1,15 @@
+# name: Nightlies VM
+
+# on:
+#   schedule:
+#     - cron: "1 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT
+#   workflow_dispatch:
+#     inputs:
+#       none:
+#         description: "Run Nightlies VM Tests Manually"
+#         required: false
+
+# jobs:
+#   call-vm-tests:
+#     if: github.repository == 'OpenMined/PySyft' # don't run on forks
+#     uses: OpenMined/PySyft/.github/workflows/vm-tests.yml@dev
