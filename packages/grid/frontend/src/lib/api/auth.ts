@@ -23,6 +23,7 @@ export async function login({ email, password }: LoginCredentials) {
     });
 
     const data = await deserialize(res);
+
     const signing_key = data.signing_key.signing_key;
 
     window.localStorage.setItem('key', signing_key);

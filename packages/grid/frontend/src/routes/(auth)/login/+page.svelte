@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { metadata } from '$lib/store';
-  import { login } from '$lib/api/login';
+  import { login } from '$lib/api/auth';
   import Button from '$lib/components/Button.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
