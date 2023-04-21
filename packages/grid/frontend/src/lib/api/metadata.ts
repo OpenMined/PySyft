@@ -1,6 +1,6 @@
 import ky from 'ky';
-import { deserialize } from './deserializer';
 import { API_BASE_URL } from '../constants';
+import { deserialize } from './serde';
 
 export async function getMetadata() {
   try {
