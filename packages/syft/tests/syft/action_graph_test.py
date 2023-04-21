@@ -3,8 +3,8 @@ import pytest
 
 # syft absolute
 from syft.service.action.action_graph import ActionGraph
-from syft.service.action.action_graph import ActionGraphNode
 from syft.service.action.action_graph import InMemoryGraphClient
+from syft.service.action.action_graph import NodeActionData
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
 from syft.types.uid import UID
@@ -35,7 +35,7 @@ def test_node_creation(worker, graph_client):
     assert action
     action_graph.add_action(action)
 
-    node = ActionGraphNode.from_action(action)
+    node = NodeActionData.from_action(action)
 
     assert node in action_graph.client.graph.nodes
     assert action_graph.client.graph.number_of_nodes() == 1
@@ -59,7 +59,7 @@ def test_edge_creation(worker, graph_client):
         kwargs={},
     )
     action_graph.add_action(action_a)
-    node = ActionGraphNode.from_action(action_a)
+    node = NodeActionData.from_action(action_a)
     assert node in action_graph.client.graph.nodes
 
     # Second action -> np.array([2, 4, 5])
@@ -72,7 +72,7 @@ def test_edge_creation(worker, graph_client):
     )
     action_graph.add_action(action_b)
 
-    node = ActionGraphNode.from_action(action_b)
+    node = NodeActionData.from_action(action_b)
     assert node in action_graph.client.graph.nodes
 
     # Third action -> action_obj_a + action_obj_b
@@ -85,7 +85,7 @@ def test_edge_creation(worker, graph_client):
         kwargs={},
     )
     action_graph.add_action(action_add)
-    node = ActionGraphNode.from_action(action_add)
+    node = NodeActionData.from_action(action_add)
 
     assert node in action_graph.client.graph.nodes
     assert action_graph.client.graph.number_of_nodes() == 3

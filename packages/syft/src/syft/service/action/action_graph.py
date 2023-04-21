@@ -29,6 +29,7 @@ from ...store.document_store import StoreConfig
 from ...store.locks import LockingConfig
 from ...store.locks import NoLockingConfig
 from ...types.datetime import DateTime
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -43,15 +44,16 @@ class ActionStatus(Enum):
 
 
 @serializable()
-class ActionGraphNode(SyftObject):
-    __canonical_name__ = "ActionGraphNode"
+class NodeActionData(SyftObject):
+    __canonical_name__ = "NodeActionData"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
-    action: Optional[Action]
+    action: Action
     status: ActionStatus = ActionStatus.PROCESSING
     retry: int = 0
     created_at: Optional[DateTime]
+    updated_at: Optional[DateTime]
     credentials: SyftVerifyKey
 
     @pydantic.validator("created_at", pre=True, always=True)
@@ -60,20 +62,38 @@ class ActionGraphNode(SyftObject):
 
     @staticmethod
     def from_action(action: Action, credentials: SyftVerifyKey):
-        return ActionGraphNode(id=action.id, action=action, credentials=credentials)
+        return NodeActionData(id=action.id, action=action, credentials=credentials)
 
     def __hash__(self):
         return self.action.syft_history_hash
 
     def __eq__(self, other: Self):
-        if not isinstance(other, ActionGraphNode):
+        if not isinstance(other, NodeActionData):
             raise NotImplementedError(
-                "Comparisions can be made with ActionGraphNode type objects only."
+                "Comparisions can be made with NodeActionData type objects only."
             )
         return hash(self) == hash(other)
 
     def __repr__(self):
         return self._repr_debug_()
+
+
+class NodeActionDataUpdate(PartialSyftObject):
+    __canonical_name__ = "NodeActionDataUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    action: Action
+    status: ActionStatus
+    retry: int
+    created_at: DateTime
+    updated_at: DateTime
+    credentials: SyftVerifyKey
+
+    @pydantic.validator("updated_at", pre=True, always=True)
+    def make_result_id(cls, v: Optional[DateTime]) -> DateTime:
+        data = DateTime.now() if v is None else v
+        return data
 
 
 @serializable()
@@ -163,7 +183,8 @@ class NetworkXBackingStore(BaseGraphStore):
             self.db.add_node(uid, data=data)
 
     def get(self, uid: UID) -> Any:
-        return self.db.nodes.get(uid)
+        node_data = self.db.nodes.get(uid)
+        return node_data.get("data")
 
     def delete(self, uid: UID) -> None:
         if self.exists(uid=uid):
@@ -240,8 +261,8 @@ class InMemoryActionGraphStore(ActionGraphStore):
         self,
         action: Action,
         credentials: SyftVerifyKey,
-    ) -> Result[ActionGraphNode, str]:
-        node = ActionGraphNode.from_action(action, credentials)
+    ) -> Result[NodeActionData, str]:
+        node = NodeActionData.from_action(action, credentials)
 
         if self.graph.exists(uid=action.id):
             return Err(f"Action already exists in the graph: {action.id}")
@@ -263,7 +284,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
         self,
         uid: UID,
         credentials: SyftVerifyKey,
-    ) -> Result[ActionGraphNode, str]:
+    ) -> Result[NodeActionData, str]:
         # 🟡 TODO: Add permission check
         node_data = self.graph.get(uid=uid)
         return Ok(node_data)
@@ -282,13 +303,16 @@ class InMemoryActionGraphStore(ActionGraphStore):
     def update(
         self,
         uid: UID,
-        data: ActionGraphNode,
+        data: NodeActionDataUpdate,
         credentials: SyftVerifyKey,
-    ) -> Result[ActionGraphNode, str]:
+    ) -> Result[NodeActionData, str]:
         # 🟡 TODO: Add permission checks
-        if self.graph.exists(uid=uid):
-            self.graph.update(uid=uid, data=data)
-            return Ok(data)
+        node_data = self.graph.get(uid=uid)
+        if node_data is not None:
+            for key, val in data.to_dict(exclude_empty=True):
+                setattr(node_data, key, val)
+            self.graph.update(uid=uid, data=node_data)
+            return Ok(node_data)
         return Err(f"Node does not exists for uid: {uid}")
 
     def add_edge(
@@ -307,7 +331,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
         return Ok(True)
 
-    def _search_parents_for(self, node: ActionGraphNode) -> Set:
+    def _search_parents_for(self, node: NodeActionData) -> Set:
         input_ids = []
         parents = set()
         if node.action.remote_self:

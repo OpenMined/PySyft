@@ -477,8 +477,15 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
             if _field.default or _field.allow_none:
                 fields_with_default.add(_field_name)
 
+        # Fields whose values are set via a validator hook
+        fields_set_via_validator = self.__validators__.keys()
+
         # Exclude unset fields
-        unset_fields = set(self.__fields__) - set(self.__fields_set__)
+        unset_fields = (
+            set(self.__fields__)
+            - set(self.__fields_set__)
+            - set(fields_set_via_validator)
+        )
 
         empty_fields = unset_fields - fields_with_default
         for field_name in empty_fields:
