@@ -663,7 +663,17 @@ def execute_byte_code(
         exec(byte_code)  # nosec
 
         evil_string = f"{func_name}(*args, **kwargs)"
-        result = eval(evil_string, None, locals())  # nosec
+        try:
+            result = eval(evil_string, None, locals())  # nosec
+        except Exception as e:
+            # TODO Check if this works
+            return UserCodeExecutionResult(
+                user_code_id=code_id,
+                stdout='',
+                stderr=str(e),
+                result='',
+                serialized_plot=None,
+            )
 
         plot = None
         serialized_plot = None

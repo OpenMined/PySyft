@@ -166,7 +166,7 @@ class ActionService(AbstractService):
                 )
                 exec_result = execute_code_item(code_item, filtered_kwargs)
                 result_action_object = wrap_result(
-                    code_item.id, result_id, exec_result.result
+                    code_item.id, result_id, exec_result
                 )
             else:
                 # twins
@@ -175,13 +175,13 @@ class ActionService(AbstractService):
                 )
                 private_exec_result = execute_code_item(code_item, private_kwargs)
                 result_action_object_private = wrap_result(
-                    code_item.id, result_id, private_exec_result.result
+                    code_item.id, result_id, private_exec_result
                 )
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
                 mock_exec_result = execute_code_item(code_item, mock_kwargs)
                 result_action_object_mock = wrap_result(
-                    code_item.id, result_id, mock_exec_result.result
+                    code_item.id, result_id, mock_exec_result
                 )
 
                 result_action_object = TwinObject(

@@ -195,7 +195,8 @@ class Request(SyftObject):
 
         # TODO 0.9: Replace get_result with a correct interface
         # to have an UserCodeExecutionResult
-        state.apply_output(context=ctx, outputs=action_object.get_result())
+        policy_result = state.apply_output(context=ctx, outputs=action_object)
+        action_object.set_result(policy_result)
         policy_state_mutation = ObjectMutation(
             linked_obj=change.linked_obj,
             attr_name="output_policy",

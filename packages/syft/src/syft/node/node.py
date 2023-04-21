@@ -504,7 +504,16 @@ class Node(AbstractNode):
         # Get the result
         result = self.handle_api_call_with_unsigned_result(api_call)
         # Sign the result
+        # from ..serde.serializable import _
+        from ..service.code.user_code import UserCodeExecutionResult
+        from ..service.action.action_object import AnyActionObject
+        # print("Result",type(result))
+        # if isinstance(result, AnyActionObject):
+        #     if isinstance(result.syft_action_data, UserCodeExecutionResult):
+        #         print("RESULT", result.get_result().get_result())
+        print("HANDLE API", _serialize(SyftAPIData(data=result)))
         signed_result = SyftAPIData(data=result).sign(self.signing_key)
+        print("HANDLE API SIGNED", signed_result)
 
         return signed_result
 

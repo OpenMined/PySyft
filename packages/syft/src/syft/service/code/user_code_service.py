@@ -156,7 +156,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
-        # stdlib
+        import sys
 
         try:
             filtered_kwargs = filter_kwargs(kwargs)
@@ -167,7 +167,7 @@ class UserCodeService(AbstractService):
             # Unroll variables
             code_item = result.ok()
             status = code_item.status
-
+                    
             # Check if we are allowed to execute the code
             if status.for_context(context) != UserCodeStatus.EXECUTE:
                 if status.for_context(context) == UserCodeStatus.SUBMITTED:
@@ -184,28 +184,33 @@ class UserCodeService(AbstractService):
 
             # Check if the OutputPolicy is valid
             is_valid = output_policy.valid
-
+                    
             if not is_valid:
+                print("Policy not valid", file=sys.stderr)
                 if len(output_policy.output_history) > 0:
                     return get_outputs(
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
                 return is_valid
+            print("Policy valid", file=sys.stderr)
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
             result = action_service._user_code_execute(
                 context, code_item, filtered_kwargs
             )
+            print(result, file=sys.stderr)
             if isinstance(result, str):
                 return SyftError(message=result)
 
             # Apply Output Policy to the results and update the OutputPolicyState
             final_results = result.ok()
-            output_policy.apply_output(context=context, outputs=final_results)
+            policy_result = output_policy.apply_output(context=context, outputs=final_results)
+            final_results.set_result(policy_result)
             code_item.output_policy = output_policy
             state_result = self.update_code_state(context=context, code_item=code_item)
+            print(final_results.get_result(), file=sys.stderr)
             if not state_result:
                 return state_result
             if isinstance(final_results, TwinObject):
