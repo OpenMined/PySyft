@@ -57,7 +57,7 @@ class NodeActionData(SyftObject):
     retry: int = 0
     created_at: Optional[DateTime]
     updated_at: Optional[DateTime]
-    credentials: SyftVerifyKey
+    user_verify_key: SyftVerifyKey
 
     @pydantic.validator("created_at", pre=True, always=True)
     def make_result_id(cls, v: Optional[DateTime]) -> DateTime:
@@ -65,7 +65,11 @@ class NodeActionData(SyftObject):
 
     @staticmethod
     def from_action(action: Action, credentials: SyftVerifyKey):
-        return NodeActionData(id=action.id, action=action, credentials=credentials)
+        return NodeActionData(
+            id=action.id,
+            action=action,
+            user_verify_key=credentials,
+        )
 
     def __hash__(self):
         return self.action.syft_history_hash

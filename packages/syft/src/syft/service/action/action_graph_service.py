@@ -6,10 +6,12 @@ from typing import Union
 from pydantic.error_wrappers import ValidationError
 
 # relative
+from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...store.document_store import QueryKeys
 from ...types.uid import UID
+from ..code.user_code import UserVerifyKeyPartitionKey
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -98,11 +100,23 @@ class ActionGraphService(AbstractService):
         return SyftError(message=result.err())
 
     def get_by_action_status(
-        self, context: AuthedServiceContext, action_status: ActionStatus
+        self, context: AuthedServiceContext, status: ActionStatus
     ) -> Union[List[NodeActionData], SyftError]:
         # TODO: Add a Query for Credentials as well,
         # so we filter only particular users
-        qks = QueryKeys(qks=[ActionStatusPartitionKey.with_obj(action_status)])
+        qks = QueryKeys(qks=[ActionStatusPartitionKey.with_obj(status)])
+
+        result = self.store.query(qks=qks, credentials=context.credentials)
+        if result.is_ok():
+            return result.ok()
+
+        return SyftError(message=result.err())
+
+    def get_by_verify_key(
+        self, context: AuthedServiceContext, verify_key: SyftVerifyKey
+    ) -> Union[List[NodeActionData], SyftError]:
+        # TODO: Add a Query for Credentials as well,
+        qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(verify_key)])
 
         result = self.store.query(qks=qks, credentials=context.credentials)
         if result.is_ok():
