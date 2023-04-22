@@ -17,23 +17,18 @@ interface SignUpDetails {
 }
 
 export async function login({ email, password }: LoginCredentials) {
-  try {
-    const res = await ky.post(`${API_BASE_URL}/new/login`, {
-      json: { email, password }
-    });
+  const res = await ky.post(`${API_BASE_URL}/new/login`, {
+    json: { email, password }
+  });
 
-    const data = await deserialize(res);
+  const data = await deserialize(res);
 
-    const signing_key = data.signing_key.signing_key;
+  const signing_key = data.signing_key.signing_key;
 
-    window.localStorage.setItem('key', signing_key);
-    window.localStorage.setItem('id', data.id.value);
+  window.localStorage.setItem('key', signing_key);
+  window.localStorage.setItem('id', data.id.value);
 
-    return data;
-  } catch (error) {
-    // TODO: Log error in debug mode
-    throw error;
-  }
+  return data;
 }
 
 export async function register(newUser: SignUpDetails) {
@@ -43,26 +38,21 @@ export async function register(newUser: SignUpDetails) {
     throw new Error('Missing required fields');
   }
 
-  try {
-    const payload = serialize({
-      ...newUser,
-      fqn: 'syft.service.user.user.UserCreate'
-    });
+  const payload = serialize({
+    ...newUser,
+    fqn: 'syft.service.user.user.UserCreate'
+  });
 
-    const res = await ky.post(`${API_BASE_URL}/new/register`, {
-      headers: { 'content-type': 'application/octet-stream' },
-      body: payload
-    });
+  const res = await ky.post(`${API_BASE_URL}/new/register`, {
+    headers: { 'content-type': 'application/octet-stream' },
+    body: payload
+  });
 
-    const data = await deserialize(res);
+  const data = await deserialize(res);
 
-    if (Array.isArray(data)) {
-      return data;
-    }
-
-    throw new Error('Unexpected response');
-  } catch (error) {
-    // TODO: Log error in debug mode
-    throw error;
+  if (Array.isArray(data)) {
+    return data;
   }
+
+  throw new Error('Unexpected response');
 }
