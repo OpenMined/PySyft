@@ -6,8 +6,12 @@ from typing import Union
 from pydantic.error_wrappers import ValidationError
 
 # relative
+from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...store.document_store import PartitionKey
+from ...store.document_store import QueryKeys
 from ...types.uid import UID
+from ..code.user_code import UserVerifyKeyPartitionKey
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -18,6 +22,8 @@ from .action_graph import ActionStatus
 from .action_graph import NodeActionData
 from .action_graph import NodeActionDataUpdate
 from .action_object import Action
+
+ActionStatusPartitionKey = PartitionKey(key="status", type_=ActionStatus)
 
 
 @serializable()
@@ -77,7 +83,10 @@ class ActionGraphService(AbstractService):
         return SyftError(message=result.err())
 
     def update_action_status(
-        self, context: AuthedServiceContext, action_id: UID, status: ActionStatus
+        self,
+        context: AuthedServiceContext,
+        action_id: UID,
+        status: ActionStatus,
     ) -> Union[SyftSuccess, SyftError]:
         try:
             node_data = NodeActionDataUpdate(status=status)
@@ -88,4 +97,29 @@ class ActionGraphService(AbstractService):
         )
         if result.is_ok():
             return result.ok()
+        return SyftError(message=result.err())
+
+    def get_by_action_status(
+        self, context: AuthedServiceContext, status: ActionStatus
+    ) -> Union[List[NodeActionData], SyftError]:
+        # TODO: Add a Query for Credentials as well,
+        # so we filter only particular users
+        qks = QueryKeys(qks=[ActionStatusPartitionKey.with_obj(status)])
+
+        result = self.store.query(qks=qks, credentials=context.credentials)
+        if result.is_ok():
+            return result.ok()
+
+        return SyftError(message=result.err())
+
+    def get_by_verify_key(
+        self, context: AuthedServiceContext, verify_key: SyftVerifyKey
+    ) -> Union[List[NodeActionData], SyftError]:
+        # TODO: Add a Query for Credentials as well,
+        qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(verify_key)])
+
+        result = self.store.query(qks=qks, credentials=context.credentials)
+        if result.is_ok():
+            return result.ok()
+
         return SyftError(message=result.err())

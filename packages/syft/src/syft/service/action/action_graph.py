@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from functools import partial
 import os
 from pathlib import Path
 import tempfile
@@ -24,6 +25,8 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
+from ...store.document_store import QueryKey
+from ...store.document_store import QueryKeys
 from ...store.document_store import StoreClientConfig
 from ...store.document_store import StoreConfig
 from ...store.locks import LockingConfig
@@ -54,7 +57,7 @@ class NodeActionData(SyftObject):
     retry: int = 0
     created_at: Optional[DateTime]
     updated_at: Optional[DateTime]
-    credentials: SyftVerifyKey
+    user_verify_key: SyftVerifyKey
 
     @pydantic.validator("created_at", pre=True, always=True)
     def make_result_id(cls, v: Optional[DateTime]) -> DateTime:
@@ -62,7 +65,11 @@ class NodeActionData(SyftObject):
 
     @staticmethod
     def from_action(action: Action, credentials: SyftVerifyKey):
-        return NodeActionData(id=action.id, action=action, credentials=credentials)
+        return NodeActionData(
+            id=action.id,
+            action=action,
+            user_verify_key=credentials,
+        )
 
     def __hash__(self):
         return self.action.syft_history_hash
@@ -140,6 +147,12 @@ class BaseGraphStore:
     def exists(self, uid: Any) -> bool:
         raise NotImplementedError
 
+    def subgraph(self, qks: QueryKeys) -> Any:
+        raise NotImplementedError
+
+    def topological_sort(self, subgraph: Any) -> Any:
+        raise NotImplementedError
+
 
 @serializable()
 class InMemoryStoreClientConfig(StoreClientConfig):
@@ -165,10 +178,10 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 @serializable()
 class NetworkXBackingStore(BaseGraphStore):
     def __init__(self, store_config: StoreConfig) -> None:
-        self.file_path = store_config.client_config.file_path
+        file_path = store_config.client_config.file_path
 
-        if os.path.exists(self.file_path):
-            self._db = self._load_from_path(str(self.file_path))
+        if os.path.exists(file_path):
+            self._db = self.load_from_path(str(file_path))
         else:
             self._db = nx.DiGraph()
 
@@ -219,13 +232,28 @@ class NetworkXBackingStore(BaseGraphStore):
         return list(self.db.predecessors(uid))
 
     def is_parent(self, parent: Any, child: Any) -> bool:
-        parents = self.graph.predecessors(child)
+        parents = self.db.predecessors(child)
         return parent in parents
 
     def save(self) -> None:
         bytes = _serialize(self.db, to_bytes=True)
         with open(str(self.path), "wb") as f:
             f.write(bytes)
+
+    def _filter_nodes_by(self, uid: UID, qks: QueryKeys) -> bool:
+        node_data = self.db.nodes[uid]["data"]
+        matches = []
+        for qk in qks.all:
+            matches.append(getattr(node_data, qk.key) == qk.value)
+        # AND matches
+        return all(matches)
+
+    def subgraph(self, qks: QueryKeys) -> Any:
+        filter_func = partial(self._filter_nodes_by, qks=qks)
+        return nx.subgraph_view(self.db, filter_node=filter_func)
+
+    def topological_sort(self, subgraph: Any) -> Any:
+        return list(nx.topological_sort(subgraph))
 
     @staticmethod
     def _load_from_path(file_path: str) -> None:
@@ -341,12 +369,8 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
         # search for parents in the existing nodes
         for uid, _node_data in self.graph.nodes():
-            print("UID:", uid)
             _node = _node_data["data"]
-            print("Node:", _node)
-            print("Result Id:", _node.action.result_id)
             if _node.action.result_id in input_ids:
-                print(f"Found: {uid}")
                 parents.add(uid)
 
         return parents
@@ -357,6 +381,16 @@ class InMemoryActionGraphStore(ActionGraphStore):
             result = parent in parents
             return Ok(result)
         return Err(f"Node doesn't exists for id: {child}")
+
+    def query(
+        self,
+        qks: Union[QueryKey, QueryKeys],
+        credentials: SyftVerifyKey,
+    ) -> Result[List[NodeActionData], str]:
+        if isinstance(qks, QueryKey):
+            qks = QueryKeys(qks=[qks])
+        subgraph = self.graph.subgraph(qks=qks)
+        return Ok(self.graph.topological_sort(subgraph=subgraph))
 
     @property
     def nodes(self) -> Result[List, str]:
