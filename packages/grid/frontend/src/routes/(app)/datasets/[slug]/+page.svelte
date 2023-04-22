@@ -23,7 +23,6 @@
 
   let openCitationsAccordion = false;
   let openContributorsAccordion = false;
-  let deleteAssetSelected = null;
 
   function handleClick() {
     openModalDelete = !openModalDelete;
@@ -33,19 +32,6 @@
     try {
       await deleteDataset(dataset.id.value);
       goto('/datasets');
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  function handleClickAsset(uid) {
-    deleteAssetSelected = uid ? uid : null;
-  }
-
-  async function handleDeleteAsset(asset_uid) {
-    try {
-      await deleteDatasetAsset(asset_uid);
-      goto(`/datasets/${dataset.id.value}`);
     } catch (error) {
       console.error(error);
     }
@@ -207,8 +193,8 @@
               <p>Shape ({asset.shape?.join(' x ')})</p>
             </div>
             <div class="w-full border-t border-gray-100 gap-4 flex pt-6 pb-10">
-              <p class="font-bold">Mock Data</p>
-              <span>{asset.mock_is_real}</span>
+              <p>Asset type</p>
+              <span class="font-bold">{asset.mock_is_real ? 'Mock Data' : 'Asset'}</span>
             </div>
           </div>
         {/each}
@@ -219,13 +205,6 @@
 
 {#if openModalDelete}
   <DatasetModalDelete onClose={handleClick} onDelete={handleDelete} />
-{/if}
-
-{#if deleteAssetSelected}
-  <DatasetModalDeleteAsset
-    onClose={handleClickAsset}
-    onDelete={() => handleDeleteAsset(deleteAssetSelected)}
-  />
 {/if}
 
 <style lang="postcss">
