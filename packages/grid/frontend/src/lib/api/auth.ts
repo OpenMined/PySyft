@@ -46,7 +46,7 @@ export async function register(newUser: SignUpDetails) {
   try {
     const payload = serialize({
       ...newUser,
-      fqn: 'syft.core.node.new.user.UserCreate'
+      fqn: 'syft.service.user.user.UserCreate'
     });
 
     const res = await ky.post(`${API_BASE_URL}/new/register`, {
