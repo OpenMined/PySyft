@@ -79,3 +79,9 @@
     @apply text-5xl leading-[1.1] font-rubik;
   }
 }
+
+@layer components {
+  .dot {
+    @apply text-[8px] text-gray-200;
+  }
+}
