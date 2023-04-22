@@ -13,9 +13,12 @@ from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import ActionStatus
 from syft.service.action.action_graph import NodeActionData
+from syft.service.action.action_graph import NodeActionDataUpdate
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
 from syft.service.context import AuthedServiceContext
+from syft.types.datetime import DateTime
+from syft.types.syft_metaclass import Empty
 
 
 def test_node_action_data() -> None:
@@ -47,12 +50,16 @@ def test_node_action_data() -> None:
     assert node_action_data_duplicate == node_action_data
 
 
-# @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
-# def test_graph_creation(graph_client):
-#     action_graph = ActionGraph(node_uid=UID(), graph_client=graph_client)
-#     assert isinstance(action_graph, ActionGraph)
-#     assert isinstance(action_graph.client, graph_client)
-#     assert isinstance(action_graph.client.graph, graph_client.graph_type)
+def test_node_action_data_update():
+    node_action_data_update = NodeActionDataUpdate()
+
+    assert node_action_data_update.id == Empty
+    assert node_action_data_update.action == Empty
+    assert node_action_data_update.status == Empty
+    assert node_action_data_update.retry == Empty
+    assert node_action_data_update.created_at == Empty
+    assert node_action_data_update.credentials == Empty
+    assert isinstance(node_action_data_update.updated_at, DateTime)
 
 
 # @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
