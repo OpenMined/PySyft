@@ -5,9 +5,9 @@
   import NoDatasetFound from '$lib/components/Datasets/DatasetNoneFound.svelte';
   import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
   import DatasetModalNew from '$lib/components/Datasets/DatasetModalNew.svelte';
-  import { JSClient } from '$lib/client/jsclient/jsClient.svelte';
+  import { getAllDatasets } from '$lib/api/datasets';
 
-  let datasets = [];
+  let datasets = null;
   let openModalNew = false;
 
   function handleClick() {
@@ -15,8 +15,7 @@
   }
 
   onMount(async () => {
-    const client = new JSClient();
-    datasets = await client.datasets();
+    datasets = await getAllDatasets();
   });
 </script>
 
@@ -36,8 +35,10 @@
     </section>
     <!-- List Actions -->
     <!-- Body -->
-    <section class="body">
-      {#if datasets.length === 0}
+    <section class="body pt-10">
+      {#if datasets === null}
+        <h2>Loading</h2>
+      {:else if datasets.length === 0}
         <NoDatasetFound />
       {:else if datasets.length > 0}
         {#each datasets as dataset}

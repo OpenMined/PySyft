@@ -3,42 +3,39 @@
   import TableIcon from '$lib/components/icons/TableIcon.svelte';
   import Tooltip from '$lib/components/Tooltip.svelte';
   import TooltipText from '../TooltipText.svelte';
+  import type { Dataset } from '../../../types/domain/dataset';
 
-  const dataset = {
-    name: 'PNAS - Algorithmic Amplification of Politics On Twitter Dataset',
-    author: 'Jane Doe',
-    date: 'Dec 22, 2022',
-    requests: 5,
-    assets: 4,
-    filesize: '80kb',
-    id: '1823981723891729837'
-  };
+  export let dataset: Dataset;
 </script>
 
-<a href="/datasets/{dataset.id}">
-  <div class="p-4 pb-6 flex gap-4">
+<a href="/datasets/{dataset?.id?.value}">
+  <div class="p-4 pb-6 flex gap-4 hover:bg-primary-50">
     <div class="flex flex-col gap-1 w-full">
       <h2>{dataset.name}</h2>
       <div class="flex items-center gap-3 text-gray-600">
-        <h3>{dataset.author}</h3>
-        <span class="dot">●</span>
-        <p>Updated {dataset.date}</p>
+        {#if dataset?.contributors?.length > 0}
+          <h3>{dataset.contributors?.[0]?.name}</h3>
+          <span class="dot">●</span>
+        {/if}
+        <p>Updated {dataset.updated_at}</p>
       </div>
       <div class="flex items-center gap-3 text-gray-600">
         <div class="h-min">
-          <Tooltip>
-            <div class="flex items-center gap-3">
-              <TableIcon weight="fill" class="w-5 h-5 text-gray-800" />
-              <p>{dataset.assets}</p>
-            </div>
-            <TooltipText slot="tooltip">
-              There are <strong>{dataset.assets} assets</strong>
-              linked to this dataset.
-            </TooltipText>
-          </Tooltip>
+          {#if dataset?.asset_list}
+            <Tooltip>
+              <div class="flex items-center gap-3">
+                <TableIcon weight="fill" class="w-5 h-5 text-gray-800" />
+                <p>{dataset.asset_list.length}</p>
+              </div>
+              <TooltipText slot="tooltip">
+                There are <strong>{dataset.asset_list.length} assets</strong>
+                linked to this dataset.
+              </TooltipText>
+            </Tooltip>
+          {/if}
         </div>
         <span class="dot">●</span>
-        <p>File Size ({dataset.filesize})</p>
+        <p>File Size ({dataset.mb_size} MB)</p>
       </div>
     </div>
     <div class="h-min">
@@ -60,9 +57,5 @@
 <style lang="postcss">
   h2 {
     @apply text-lg font-medium leading-[1.5] text-gray-900;
-  }
-
-  .dot {
-    @apply text-[8px] text-gray-200;
   }
 </style>

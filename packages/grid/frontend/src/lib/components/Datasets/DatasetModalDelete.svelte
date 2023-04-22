@@ -14,7 +14,7 @@
     <div class="desktop:w-[562px]">
       <Modal>
         <div class="flex w-full" slot="header">
-          <div class="flex flex-col justify-center items-center w-full gap-2">
+          <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
             <div class="w-min h-min rounded-full bg-yellow-500 text-gray-800 p-2">
               <WarningIcon class="w-6 h-6" />
             </div>

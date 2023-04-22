@@ -1,5 +1,5 @@
 <div class="pt-10 pb-20 gap-2">
-  <h3>No Datasets Uploaded</h3>
+  <h2>No Datasets Uploaded</h2>
   <p>
     To begin adding datasets to this domain node please click the "+" button and follow
     instructions.
@@ -7,7 +7,7 @@
 </div>
 
 <style lang="postcss">
-  h3 {
+  h2 {
     @apply flex-shrink-0 leading-[1.2] text-gray-400 text-center text-4xl font-medium;
   }
 
