@@ -9,3 +9,7 @@ export async function deserialize(response: KyResponse) {
 export function serialize(data: any) {
   return serde.serialize(data);
 }
+
+export function deserializeSyftResponseObject(data: Uint8Array) {
+  return serde.deserialize(data).data;
+}
