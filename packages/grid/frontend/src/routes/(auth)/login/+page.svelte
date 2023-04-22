@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { metadata as _metadata } from '$lib/store';
-  import { onMount } from 'svelte';
-  import { getMetadata } from '$lib/api/metadata';
-  import { login } from '$lib/api/login';
+  import { goto } from '$app/navigation';
+  import { metadata } from '$lib/store';
+  import { login } from '$lib/api/auth';
   import Button from '$lib/components/Button.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
@@ -14,25 +13,15 @@
   let email = '';
   let password = '';
 
-  let metadata = {};
-
   async function handleSubmit() {
     await login({ email, password })
-      .then((res) => console.log(res))
-      .catch((error) => console.log(error));
+      .then(() => goto('/datasets'))
+      .catch((error) => console.error(error));
   }
-
-  onMount(async () => {
-    metadata = await getMetadata();
-  });
-
-  _metadata.subscribe((value) => {
-    metadata = value;
-  });
 </script>
 
 <div class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12">
-  <DomainMetadataPanel {metadata} />
+  <DomainMetadataPanel metadata={$metadata} />
   <form class="contents" on:submit|preventDefault={handleSubmit}>
     <section class="w-full max-w-[681px]">
       <Modal>

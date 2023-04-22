@@ -1,6 +1,6 @@
 <script>
-  import { getClient } from '../lib/store.js';
   import { goto } from '$app/navigation';
+  import { getClient } from '../lib/store.js';
 
   async function lazyLoad() {
     if (typeof window === 'undefined') return;
