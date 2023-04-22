@@ -6,12 +6,14 @@ Tests for the classes in the syft.service.action.action_graph module:
     - InMemoryActionGraphStore
 """
 
-# third party
+# stdlib
+from pathlib import Path
 
 # syft absolute
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import ActionStatus
+from syft.service.action.action_graph import InMemoryStoreClientConfig
 from syft.service.action.action_graph import NodeActionData
 from syft.service.action.action_graph import NodeActionDataUpdate
 from syft.service.action.action_object import Action
@@ -60,6 +62,21 @@ def test_node_action_data_update():
     assert node_action_data_update.created_at == Empty
     assert node_action_data_update.credentials == Empty
     assert isinstance(node_action_data_update.updated_at, DateTime)
+
+
+def test_in_memory_store_client_config():
+    default_client_conf = InMemoryStoreClientConfig()
+
+    assert default_client_conf.filename == "action_graph.bytes"
+    assert default_client_conf.path == "/tmp"
+    assert default_client_conf.file_path == Path("/tmp") / "action_graph.bytes"
+
+    custom_client_conf = InMemoryStoreClientConfig(
+        filename="custom_action_graph.bytes", path="/custom"
+    )
+    assert custom_client_conf.filename == "custom_action_graph.bytes"
+    assert custom_client_conf.path == "/custom"
+    assert custom_client_conf.file_path == Path("/custom") / "custom_action_graph.bytes"
 
 
 # @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
