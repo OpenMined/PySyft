@@ -181,7 +181,7 @@ class NetworkXBackingStore(BaseGraphStore):
         file_path = store_config.client_config.file_path
 
         if os.path.exists(file_path):
-            self._db = self.load_from_path(str(file_path))
+            self._db = self._load_from_path(str(file_path))
         else:
             self._db = nx.DiGraph()
 
