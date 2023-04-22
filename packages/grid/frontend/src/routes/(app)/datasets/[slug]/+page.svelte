@@ -168,10 +168,6 @@
               >
                 {asset.name}
               </h2>
-
-              <button class="self-start" on:click={handleClickAsset}>
-                <ThreeDotsVertical class="w-6 h-6 desktop:w-8 desktop:h-8 text-gray-800" />
-              </button>
             </div>
             <div class="w-full flex gap-3">
               {#if asset.contributors?.[0]}
@@ -186,14 +182,14 @@
               <p>UID:</p>
               <span>{asset.id.value}</span>
             </div>
-            <div class="w-full flex gap-2 pt-6 pb-4">
+            <div class="w-full flex gap-2 pt-6 pb-4 items-center">
               <UserList class="w-5 h-5" />
               <p>{asset.data_subjects?.length || 0}</p>
               <span class="dot">●</span>
               <p>Shape ({asset.shape?.join(' x ')})</p>
             </div>
             <div class="w-full border-t border-gray-100 gap-4 flex pt-6 pb-10">
-              <p>Asset type</p>
+              <p>Type</p>
               <span class="font-bold">{asset.mock_is_real ? 'Mock Data' : 'Asset'}</span>
             </div>
           </div>
