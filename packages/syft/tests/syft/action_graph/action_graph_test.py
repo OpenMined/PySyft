@@ -13,12 +13,15 @@ from pathlib import Path
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import ActionStatus
+from syft.service.action.action_graph import InMemoryGraphConfig
 from syft.service.action.action_graph import InMemoryStoreClientConfig
+from syft.service.action.action_graph import NetworkXBackingStore
 from syft.service.action.action_graph import NodeActionData
 from syft.service.action.action_graph import NodeActionDataUpdate
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
 from syft.service.context import AuthedServiceContext
+from syft.store.locks import NoLockingConfig
 from syft.types.datetime import DateTime
 from syft.types.syft_metaclass import Empty
 
@@ -77,6 +80,16 @@ def test_in_memory_store_client_config():
     assert custom_client_conf.filename == "custom_action_graph.bytes"
     assert custom_client_conf.path == "/custom"
     assert custom_client_conf.file_path == Path("/custom") / "custom_action_graph.bytes"
+
+
+def test_in_memory_graph_config():
+    store_config = InMemoryGraphConfig()
+    default_client_conf = InMemoryStoreClientConfig()
+    locking_config = NoLockingConfig()
+
+    assert store_config.client_config == default_client_conf
+    assert store_config.store_type == NetworkXBackingStore
+    assert store_config.locking_config == locking_config
 
 
 # @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
