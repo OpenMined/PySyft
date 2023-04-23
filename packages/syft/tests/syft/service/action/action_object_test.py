@@ -20,11 +20,6 @@ from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_node_uid
 from syft.service.action.action_object import send_action_side_effect
 from syft.service.action.action_types import action_type_for_type
-from syft.service.context import AuthedServiceContext
-
-
-def get_auth_ctx(worker):
-    return AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
 
 
 def helper_make_action_obj(orig_obj: Any):
