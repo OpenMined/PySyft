@@ -35,6 +35,8 @@ def helper_make_action_obj(orig_obj: Any):
 
 
 def helper_make_action_args(*args, **kwargs):
+    return args, kwargs
+    #
     act_args = []
     act_kwargs = {}
 
@@ -48,13 +50,13 @@ def helper_make_action_args(*args, **kwargs):
 
 
 def helper_make_action_pointers(worker, obj, *args, **kwargs):
-    get_auth_ctx(worker)
-
     args_pointers, kwargs_pointers = [], {}
 
     root_domain_client = worker.root_client
     root_domain_client.api.services.action.set(obj)
     obj_pointer = root_domain_client.api.services.action.get_pointer(obj.id)
+
+    return obj_pointer, args, kwargs
 
     for arg in args:
         root_domain_client.api.services.action.set(arg)
