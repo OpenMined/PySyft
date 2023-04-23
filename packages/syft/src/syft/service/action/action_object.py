@@ -402,26 +402,36 @@ class ActionObject(SyftObject):
         )
         return api.make_call(api_call)
 
-    def _syft_prepate_obj_uid(self, obj) -> LineageID:
+    def _syft_try_to_save_to_store(self, obj) -> None:
+        if self.syft_node_uid is None:
+            return
+
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+        api.services.action.set(obj)
+
+    def _syft_prepare_obj_uid(self, obj) -> LineageID:
         # We got the UID
         if isinstance(obj, (UID, LineageID)):
             return LineageID(obj.id)
 
-        # We got the ActionObject or the ActionObjectPointer
-        if isinstance(obj, (ActionObjectPointer, ActionObject)):
+        # We got the ActionObjectPointer
+        if isinstance(obj, ActionObjectPointer):
             return obj.syft_lineage_id
 
-        # We have to try to create the ActionObject from scratch
+        # We got the ActionObject. We need to save it in the store.
+        if isinstance(obj, ActionObject):
+            self._syft_try_to_save_to_store(obj)
+            return obj.syft_lineage_id
+
+        # We got a raw object. We need to create the ActionObject from scratch and save it in the store.
         obj_id = Action.make_id(None)
         lin_obj_id = Action.make_result_id(obj_id)
         act_obj = ActionObject.from_obj(obj, id=obj_id, syft_lineage_id=lin_obj_id)
 
-        if self.syft_node_uid is not None:
-            # relative
-            from ...client.api import APIRegistry
-
-            api = APIRegistry.api_for(node_uid=self.syft_node_uid)
-            api.services.action.set(act_obj)
+        self._syft_try_to_save_to_store(act_obj)
 
         return act_obj.syft_lineage_id
 
@@ -461,10 +471,10 @@ class ActionObject(SyftObject):
         kwarg_ids = {}
 
         for obj in args:
-            arg_ids.append(self._syft_prepate_obj_uid(obj))
+            arg_ids.append(self._syft_prepare_obj_uid(obj))
 
         for k, uid in kwargs.items():
-            kwarg_ids[k] = self._syft_prepate_obj_uid(obj)
+            kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
 
         action = Action(
             path=path,
