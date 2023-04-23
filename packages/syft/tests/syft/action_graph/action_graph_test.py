@@ -1,7 +1,7 @@
 """
 Tests for the classes in the syft.service.action.action_graph module:
     - NodeActionData, NodeActionDataUpdate
-    - InMemoryStoreClientConfig
+    - InMemoryStoreClientConfig, InMemoryGraphConfig
     - NetworkXBackingStore
     - InMemoryActionGraphStore
 """
@@ -9,10 +9,15 @@ Tests for the classes in the syft.service.action.action_graph module:
 # stdlib
 from pathlib import Path
 
+# third party
+import networkx as nx
+import numpy as np
+import pytest
+
 # syft absolute
-from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import ActionStatus
+from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
 from syft.service.action.action_graph import InMemoryStoreClientConfig
 from syft.service.action.action_graph import NetworkXBackingStore
@@ -20,19 +25,28 @@ from syft.service.action.action_graph import NodeActionData
 from syft.service.action.action_graph import NodeActionDataUpdate
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
-from syft.service.context import AuthedServiceContext
 from syft.store.locks import NoLockingConfig
 from syft.types.datetime import DateTime
 from syft.types.syft_metaclass import Empty
 
 
-def test_node_action_data() -> None:
-    # credentials needed to create a NodeActionData
-    signing_key = SyftSigningKey.generate()
-    verify_key: SyftVerifyKey = signing_key.verify_key
-    authed_context = AuthedServiceContext(credentials=verify_key)
-    assert authed_context.credentials == verify_key
+def create_node_action_data(verify_key: SyftVerifyKey) -> NodeActionData:
+    """
+    Helper function to create a node in the action graph
+    """
+    random_data = np.random.rand(3)
+    action_obj = ActionObject.from_obj(random_data)
+    action = Action(
+        path="action.execute",
+        op="np.array",
+        args=[action_obj.syft_lineage_id],
+        kwargs={},
+    )
+    node_action_data = NodeActionData.from_action(action=action, credentials=verify_key)
+    return node_action_data
 
+
+def test_node_action_data(verify_key: SyftVerifyKey) -> None:
     # create a NodeActionData from an Action
     action_obj = ActionObject.from_obj([1, 2, 3])
     action = Action(
@@ -55,7 +69,7 @@ def test_node_action_data() -> None:
     assert node_action_data_duplicate == node_action_data
 
 
-def test_node_action_data_update():
+def test_node_action_data_update() -> None:
     node_action_data_update = NodeActionDataUpdate()
 
     assert node_action_data_update.id == Empty
@@ -67,7 +81,7 @@ def test_node_action_data_update():
     assert isinstance(node_action_data_update.updated_at, DateTime)
 
 
-def test_in_memory_store_client_config():
+def test_in_memory_store_client_config() -> None:
     default_client_conf = InMemoryStoreClientConfig()
 
     assert default_client_conf.filename == "action_graph.bytes"
@@ -82,7 +96,7 @@ def test_in_memory_store_client_config():
     assert custom_client_conf.file_path == Path("/custom") / "custom_action_graph.bytes"
 
 
-def test_in_memory_graph_config():
+def test_in_memory_graph_config() -> None:
     store_config = InMemoryGraphConfig()
     default_client_conf = InMemoryStoreClientConfig()
     locking_config = NoLockingConfig()
@@ -92,28 +106,57 @@ def test_in_memory_graph_config():
     assert store_config.locking_config == locking_config
 
 
-# @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
-# def test_node_creation(worker, graph_client):
-#     action_graph = ActionGraph(node_uid=worker.id, graph_client=graph_client)
-#     assert action_graph
+def test_networkx_backing_store_create_set_get(
+    in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVerifyKey
+) -> None:
+    """
+    Test creating a NetworkXBackingStore, its get and set methods
+    """
+    backing_store = NetworkXBackingStore(store_config=in_mem_graph_config)
+    assert isinstance(backing_store.db, nx.DiGraph)
 
-#     action_obj = ActionObject.from_obj([1, 2, 3])
-#     assert action_obj
+    node: NodeActionData = create_node_action_data(verify_key)
+    backing_store.set(uid=node.id, data=node)
+    assert len(backing_store.nodes()) == 1
+    assert backing_store.get(uid=node.id) == node
 
-#     action = Action(
-#         path="action.execute",
-#         op="np.array",
-#         args=[action_obj.syft_lineage_id],
-#         kwargs={},
-#     )
-#     assert action
-#     action_graph.add_action(action)
+    node_2: NodeActionData = create_node_action_data(verify_key)
+    backing_store.set(uid=node_2.id, data=node_2)
+    assert backing_store.get(uid=node_2.id) == node_2
+    assert len(backing_store.nodes()) == 2
+    assert len(backing_store.edges()) == 0
+    assert backing_store.is_parent(parent=node.id, child=node_2.id) is False
 
-#     node = NodeActionData.from_action(action)
 
-#     assert node in action_graph.client.graph.nodes
-#     assert action_graph.client.graph.number_of_nodes() == 1
-#     assert action_graph.client.graph.number_of_edges() == 0
+@pytest.mark.xfail
+def test_networkx_backing_store_node_update(
+    in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVerifyKey
+) -> None:
+    backing_store = NetworkXBackingStore(store_config=in_mem_graph_config)
+    node: NodeActionData = create_node_action_data(verify_key)
+    backing_store.set(uid=node.id, data=node)
+
+    update_node = NodeActionDataUpdate()
+    node_2 = create_node_action_data(verify_key)
+    update_node.action = node_2.action
+    update_node.status = node_2.status
+    update_node.credentials = node_2.user_verify_key
+
+    backing_store.update(uid=node.id, data=update_node)
+
+
+def test_networkx_backing_store_add_remove_edge():
+    """
+    Test adding and removing edges, and also the find_neighbors method of the NetworkXBackingStore
+    """
+    pass
+
+
+def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) -> None:
+    graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config)
+
+    assert graph_store.store_config == in_mem_graph_config
+    assert isinstance(graph_store.graph, NetworkXBackingStore)
 
 
 # @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
