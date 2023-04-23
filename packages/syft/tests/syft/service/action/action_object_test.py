@@ -34,39 +34,13 @@ def helper_make_action_obj(orig_obj: Any):
     return ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
 
 
-def helper_make_action_args(*args, **kwargs):
-    return args, kwargs
-    #
-    act_args = []
-    act_kwargs = {}
-
-    for v in args:
-        act_args.append(helper_make_action_obj(v))
-
-    for v in kwargs:
-        act_kwargs[v] = helper_make_action_obj(kwargs[v])
-
-    return act_args, act_kwargs
-
-
 def helper_make_action_pointers(worker, obj, *args, **kwargs):
-    args_pointers, kwargs_pointers = [], {}
-
     root_domain_client = worker.root_client
     root_domain_client.api.services.action.set(obj)
     obj_pointer = root_domain_client.api.services.action.get_pointer(obj.id)
 
+    # The args and kwargs should automatically be pointerized by obj_pointer
     return obj_pointer, args, kwargs
-
-    for arg in args:
-        root_domain_client.api.services.action.set(arg)
-        args_pointers.append(arg.id)
-
-    for key in kwargs:
-        root_domain_client.api.services.action.set(kwargs[key])
-        kwargs_pointers[key] = kwargs[key].id
-
-    return obj_pointer, args_pointers, kwargs_pointers
 
 
 # Test Action class
@@ -243,8 +217,6 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
     orig_obj, op, args, kwargs = (1, 2, 3), "count", [], {}  # count expect one argument
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
-
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
     )
@@ -272,7 +244,6 @@ def test_actionobject_hooks_send_action_side_effect_ignore_op(orig_obj_op):
     orig_obj, op, args, kwargs = orig_obj_op
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
 
     context = PreHookContext(obj=obj, op_name=op)
     result = send_action_side_effect(context, *args, **kwargs)
@@ -305,7 +276,6 @@ def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
     orig_obj, op, args, kwargs = orig_obj_op
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
@@ -376,7 +346,6 @@ def test_actionobject_syft_execute_ok(worker, testcase):
     orig_obj, op, args, kwargs, expected = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
@@ -414,7 +383,6 @@ def test_actionobject_syft_make_action(worker, testcase):
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
     )
@@ -446,7 +414,6 @@ def test_actionobject_syft_make_method_action(worker, testcase):
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
     )
@@ -477,7 +444,6 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
     )
@@ -606,7 +572,6 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     orig_obj, op, args, kwargs, expected = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
