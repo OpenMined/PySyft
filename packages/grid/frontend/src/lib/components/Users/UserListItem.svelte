@@ -20,7 +20,7 @@
   </div>
   <div class="w-full text-gray-800 flex items-center">
     <div>
-      <h2 class="font-roboto text-lg font-bold">{user.name}</h2>
+      <h2 class="font-roboto text-lg font-bold capitalize">{user.name}</h2>
       <p class="text-gray-600">{user.email}</p>
     </div>
   </div>
