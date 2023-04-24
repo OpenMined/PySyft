@@ -23,7 +23,7 @@ def test_actionobject_method(worker):
     assert res[0] == "A"
 
 
-def test_function_action(worker):
+def test_lib_function_action(worker):
     root_domain_client = worker.root_client
     numpy_client = root_domain_client.api.lib.numpy
     res = numpy_client.zeros_like([1, 2, 3])
@@ -35,7 +35,12 @@ def test_function_action(worker):
     assert len(worker.get_service("actionservice").store.data) > 0
 
 
-def test_class_init_action(worker):
+def test_call_lib_function_action2(worker):
+    root_domain_client = worker.root_client
+    assert root_domain_client.api.lib.numpy.add(1, 2) == 3
+
+
+def test_lib_class_init_action(worker):
     root_domain_client = worker.root_client
     numpy_client = root_domain_client.api.lib.numpy
     res = numpy_client.float32(4.0)
@@ -45,16 +50,6 @@ def test_class_init_action(worker):
     assert isinstance(res, ActionObject)
     assert res == np.float32(4.0)
     assert len(worker.get_service("actionservice").store.data) > 0
-
-
-def test_call_lib_function(worker):
-    root_domain_client = worker.root_client
-    assert root_domain_client.api.lib.numpy.add(1, 2) == 3
-
-
-def test_call_lib_class(worker):
-    root_domain_client = worker.root_client
-    assert root_domain_client.api.lib.numpy.float32(3.0) == 3.0
 
 
 def test_call_lib_wo_permission(worker):
@@ -78,7 +73,7 @@ def test_call_lib_wo_permission(worker):
 
 def test_call_lib_custom_signature(worker):
     root_domain_client = worker.root_client
-    # concatenate has a manually set permission
+    # concatenate has a manually set signature
     assert all(
         root_domain_client.api.lib.numpy.concatenate(
             ([1, 2, 3], [4, 5, 6])
