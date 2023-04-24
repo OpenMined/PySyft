@@ -58,6 +58,7 @@ class NodeActionData(SyftObject):
     created_at: Optional[DateTime]
     updated_at: Optional[DateTime]
     user_verify_key: SyftVerifyKey
+    is_mutated: bool = False
 
     @pydantic.validator("created_at", pre=True, always=True)
     def make_result_id(cls, v: Optional[DateTime]) -> DateTime:
@@ -144,6 +145,9 @@ class BaseGraphStore:
     def get_predecessors(self, uid: UID) -> List:
         raise NotImplementedError
 
+    def get_successors(self, uid: UID) -> List:
+        raise NotImplementedError
+
     def exists(self, uid: Any) -> bool:
         raise NotImplementedError
 
@@ -210,8 +214,7 @@ class NetworkXBackingStore(BaseGraphStore):
 
     def update(self, uid: UID, data: Any) -> None:
         if self.exists(uid=uid):
-            node_data = self.get(uid=uid)
-            node_data["data"] = data
+            self.db.nodes[uid]["data"] = data
 
     def add_edge(self, parent: Any, child: Any) -> None:
         self.db.add_edge(parent, child)
@@ -228,8 +231,11 @@ class NetworkXBackingStore(BaseGraphStore):
     def edges(self) -> Iterable:
         return self.db.edges()
 
-    def get_predecessors(self, uid: UID) -> List:
-        return list(self.db.predecessors(uid))
+    def get_predecessors(self, uid: UID) -> Iterable:
+        return self.db.predecessors(uid)
+
+    def get_successors(self, uid: UID) -> Iterable:
+        return self.db.successors(uid)
 
     def is_parent(self, parent: Any, child: Any) -> bool:
         parents = self.db.predecessors(child)
@@ -343,6 +349,26 @@ class InMemoryActionGraphStore(ActionGraphStore):
             return Ok(node_data)
         return Err(f"Node does not exists for uid: {uid}")
 
+    def _find_mutation_for(self, uid: UID) -> Result[UID, str]:
+        def find_non_mutated_successor(uid: UID) -> Optional[UID]:
+            node_data = self.graph.get(uid=uid)
+            if node_data.is_mutated:
+                successors = self.graph.get_successors(uid=uid)
+                for successor in successors:
+                    uid = find_non_mutated_successor(successor)
+                    if uid is not None:
+                        return uid
+            else:
+                return uid
+
+            return None
+
+        _successor = find_non_mutated_successor(uid=uid)
+        if _successor is None:
+            return Err(f"Failed to find a non mutated successor for node: {uid}")
+
+        return Ok(_successor)
+
     def add_edge(
         self,
         parent: UID,
@@ -355,7 +381,14 @@ class InMemoryActionGraphStore(ActionGraphStore):
         if not self.graph.exists(child):
             return Err(f"Node does not exists for uid: {child}")
 
-        self.graph.add_edge(parent=parent, child=child)
+        result = self._find_mutation_for(parent)
+
+        if result.is_err():
+            return result
+
+        new_parent = result.ok()
+
+        self.graph.add_edge(parent=new_parent, child=child)
 
         return Ok(True)
 
