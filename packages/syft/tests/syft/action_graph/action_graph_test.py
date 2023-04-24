@@ -79,11 +79,13 @@ def test_node_action_data_update() -> None:
     assert node_action_data_update.created_at == Empty
     assert node_action_data_update.credentials == Empty
     assert isinstance(node_action_data_update.updated_at, DateTime)
+    # TODO: set stuff to NodeActionDataUpdate
+    # TODO: test node_action_data_update.to_dict(exclude=True)
+    # TODO: test node_action_data_update.to_dict(exclude=False)
 
 
 def test_in_memory_store_client_config() -> None:
     default_client_conf = InMemoryStoreClientConfig()
-
     assert default_client_conf.filename == "action_graph.bytes"
     assert default_client_conf.path == "/tmp"
     assert default_client_conf.file_path == Path("/tmp") / "action_graph.bytes"
