@@ -8,6 +8,7 @@ from typing import Tuple
 from typing import Type
 
 # third party
+import numpy as np
 import pytest
 
 # syft absolute
@@ -681,7 +682,6 @@ def helper_prepare_obj_for_scenario(scenario: AttrScenario, worker, obj: ActionO
         return obj
     elif scenario == AttrScenario.AS_PTR:
         obj, _, _ = helper_make_action_pointers(worker, obj, *[], **{})
-        print(obj)
         return obj
     else:
         raise ValueError(scenario)
@@ -973,3 +973,18 @@ def test_actionobject_syft_getattr_float_history():
     res2 = obj1 + obj2
 
     assert res1.syft_history_hash == res2.syft_history_hash
+
+
+def test_actionobject_syft_getattr_np(worker):
+    orig_obj = np.array([1, 2, 3])
+
+    obj = ActionObject.from_obj(orig_obj)
+
+    assert obj.dtype == orig_obj.dtype
+
+    for dtype in ["int64", "float64"]:
+        obj.dtype = dtype
+        assert obj.dtype == dtype
+
+    obj.custom = "custom"
+    assert obj.custom == "custom"
