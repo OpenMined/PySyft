@@ -181,7 +181,7 @@ class NetworkXBackingStore(BaseGraphStore):
         file_path = store_config.client_config.file_path
 
         if os.path.exists(file_path):
-            self._db = self.load_from_path(str(file_path))
+            self._db = self._load_from_path(str(file_path))
         else:
             self._db = nx.DiGraph()
 
@@ -337,7 +337,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
         # 🟡 TODO: Add permission checks
         node_data = self.graph.get(uid=uid)
         if node_data is not None:
-            for key, val in data.to_dict(exclude_empty=True):
+            for key, val in data.to_dict(exclude_empty=True).items():
                 setattr(node_data, key, val)
             self.graph.update(uid=uid, data=node_data)
             return Ok(node_data)
