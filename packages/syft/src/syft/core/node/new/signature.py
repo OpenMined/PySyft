@@ -75,50 +75,52 @@ def signature_remove_context(signature: Signature) -> Signature:
     )
 
 
-def get_signature_from_docstring(doc: str, callable_name: str) -> str:
+def get_str_signature_from_docstring(doc: str, callable_name: str) -> str:
     if not doc or callable_name not in doc:
         return None
     else:
+        # gets part of the docstring that contains the signature
         doc = re.sub(r"\s", "", doc.split("\n\n")[0])
-        search_res = re.search(rf"{callable_name}\((.+)\)", doc)
-        if search_res:
-            signature = search_res.group(1)
+        # gets signature
+        signature_search_result = re.search(rf"{callable_name}\((.+)\)", doc)
+        if signature_search_result:
+            signature_str = signature_search_result.group(1)
             # decomposing "[]" optional  params
-            params = re.findall(r"\[(.+?)\]", signature)
-            if params:
-                for param in params[:-1]:
-                    signature = signature.replace(f"[{param}]", param)
+            params = re.findall(r"\[(.+?)\]", signature_str)
 
-                if re.search(rf"(?<={params[-1]})\],", signature):
-                    signature = signature.replace(f"[{params[-1]}],", params[-1])
+            if params:
+                # for instance in:
+                # numpy.matmul(x1, x2, /, out=None, *, casting='same_kind',
+                # order='K', dtype=None, subok=True[, signature, extobj, axes, axis])
+                # we have [, signature, extobj, axes, axis] , which we replace as normal params
+                for param in params[:-1]:
+                    signature_str = signature_str.replace(f"[{param}]", param)
+
+                if re.search(rf"(?<={params[-1]})\],", signature_str):
+                    signature_str = signature_str.replace(
+                        f"[{params[-1]}],", params[-1]
+                    )
                 else:
-                    signature = signature.replace(
+                    signature_str = signature_str.replace(
                         f"[{params[-1]}]",
                         f', {",".join([f"{param}=None" for param in params[-1].split(",") if param])}',
                     )
 
-            signature = re.sub(r",(\/|\*)", "", signature)
-            signature = re.sub(r"dtype=(\w+),", "dtype=None,", signature)
-            return f"{callable_name}({signature})"
+            # removes "/" and "*"
+            signature_str = re.sub(r",(\/|\*)", "", signature_str)
+            # removes dtypes
+            signature_str = re.sub(r"dtype=(\w+),", "dtype=None,", signature_str)
+            return f"{callable_name}({signature_str})"
         else:
             return None
-
-
-def get_signature_from_registry(callable_name: str) -> str:
-    return function_signatures_registry[callable_name]
 
 
 def generate_signature(_callable) -> inspect.Signature:
     name, doc = _callable.__name__, _callable.__doc__
     # returning predefined signature if in signature registry
-    name_in_registry = name in function_signatures_registry.keys()
-    text_signature = (
-        get_signature_from_registry(name)
-        if name_in_registry
-        else get_signature_from_docstring(doc, name)
-    )
+    # name_in_registry = name in function_signatures_registry.keys()
+    text_signature = get_str_signature_from_docstring(doc, name)
     # TODO safe handling if function signature can not be generated
-    text_signature = "()" if text_signature is None else text_signature
     return _signature_fromstr(inspect.Signature, _callable, text_signature, True)
 
 
@@ -131,11 +133,3 @@ def get_signature(_callable) -> inspect.Signature:
             return res
     except Exception:
         return generate_signature(_callable)
-
-
-function_signatures_registry = {
-    "concatenate": "concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
-    "set_numeric_ops": "set_numeric_ops(op1=func1,op2=func2, *args)",
-    "geterrorobj": "geterrobj()",
-    "source": "source(object, output)",
-}
