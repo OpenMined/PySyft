@@ -1,64 +1,82 @@
-<script>
-  import UserListItem from './userListItem.svelte';
-  import UserDetail from './userDetail.svelte';
-  import { getClient } from '$lib/store';
+<script lang="ts">
   import { onMount } from 'svelte';
+  import debounce from 'just-debounce-it';
+  import { getAllUsers, getSelf, searchUsersByName } from '$lib/api/users';
+  import Badge from '$lib/components/Badge.svelte';
+  import Search from '$lib/components/Search.svelte';
+  import UserListItem from '$lib/components/Users/UserListItem.svelte';
+  import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
+  import UserNewModal from '$lib/components/Users/UserNewModal.svelte';
+  import UserCreateModal from '$lib/components/Users/UserCreateModal.svelte';
+  import type { UserListView } from '../../../types/domain/users';
 
-  let client = '';
+  let searchTerm = '';
+  let userList: UserListView[] = [];
+
+  let openModal: string | null = null;
 
   onMount(async () => {
-    await getClient()
-      .then((response) => {
-        client = response;
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    userList = await getAllUsers();
+    console.log(await getSelf());
   });
 
-  let pages = {
-    isList: true,
-    isDetail: false
+  const closeModal = () => {
+    openModal = null;
   };
 
-  const setPage = async (current) => {
-    if (pages[current]) return;
-    else {
-      for (let page in pages) {
-        pages[page] = page === current ? true : false;
-      }
-    }
+  const onCreateGeneralUser = () => {
+    openModal = 'step1';
+  };
+
+  const search = debounce(async () => {
+    if (searchTerm === '') userList = await getAllUsers();
+    else userList = await searchUsersByName(searchTerm);
+  }, 300);
+
+  const handleUpdate = async () => {
+    userList = await getAllUsers();
   };
 </script>
 
-<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
-  <div class="page-container">
-    {#if pages.isList}
-      <UserListItem
-        on:setPage={(event) => {
-          setPage(event.detail);
-        }}
+<div class="pt-8 desktop:pt-2 pl-16 pr-[140px] flex flex-col gap-[46px]">
+  <div class="flex justify-center w-full">
+    <div class="w-[438px] h-[263px]">
+      <img
+        src="images/illustrations/user-main.png"
+        alt="User main alt"
+        class="w-full h-fill object-contain"
       />
-    {/if}
-    {#if pages.isDetail}
-      <UserDetail
-        on:setPage={(event) => {
-          setPage(event.detail);
-        }}
-      />
-    {/if}
+    </div>
   </div>
-</main>
+  <div class="flex items-center justify-between w-full gap-8">
+    <div class="w-full max-w-[378px]">
+      <!-- <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} /> -->
+    </div>
+    <div class="flex-shrink-0">
+      <Badge variant="gray">Total: {userList?.length || 0}</Badge>
+    </div>
+  </div>
+  <div class="divide-y divide-gray-100">
+    {#each userList as user}
+      <a class="block hover:bg-primary-100 cursor-pointer" href={`/users/${user.id.value}`}>
+        <UserListItem {user} />
+      </a>
+    {/each}
+  </div>
+</div>
+<div class="fixed bottom-10 right-12">
+  <button
+    class="bg-black text-white rounded-full w-14 h-14 flex items-center justify-center"
+    on:click={() => (openModal = 'newUser')}
+  >
+    <PlusIcon class="w-6 h-6" />
+  </button>
+</div>
 
-<style>
-  .page-container {
-    width: 85%;
-    padding-top: 12px;
-    padding-left: 100px;
-    padding-right: 100px;
-    position: absolute;
-    height: 93%;
-    top: 7%;
-    left: 15%;
-  }
-</style>
+{#if openModal === 'newUser'}
+  <UserNewModal onClose={closeModal} {onCreateGeneralUser} />
+{/if}
+
+{#if openModal === 'step1'}
+  <UserCreateModal step={openModal} onClose={closeModal} on:userUpdate={handleUpdate} />
+{/if}
