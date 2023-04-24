@@ -14,7 +14,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import networkx as nx
 from networkx import DiGraph
-from networkx import Graph
 import numpy as np
 from pandas import DataFrame
 from pandas import Series
@@ -168,12 +167,12 @@ NOTHING = None
 
 
 # serializing and deserializing networkx Graphs
-def serialize_networkx_graph(graph: Graph) -> bytes:
+def serialize_networkx_graph(graph: DiGraph) -> bytes:
     graph_dict = nx.to_dict_of_dicts(graph)
     return serialize(graph_dict, to_bytes=True)
 
 
-def deserialize_networkx_graph(buf: bytes) -> Graph:
+def deserialize_networkx_graph(buf: bytes) -> DiGraph:
     graph_dict = deserialize(buf, from_bytes=True)
     graph = nx.from_dict_of_dicts(graph_dict)
     return graph

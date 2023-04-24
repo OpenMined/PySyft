@@ -97,6 +97,7 @@ class NodeActionDataUpdate(PartialSyftObject):
     created_at: DateTime
     updated_at: DateTime
     credentials: SyftVerifyKey
+    is_mutated: bool
 
     @pydantic.validator("updated_at", pre=True, always=True)
     def make_result_id(cls, v: Optional[DateTime]) -> DateTime:
@@ -351,13 +352,21 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
     def _find_mutation_for(self, uid: UID) -> Result[UID, str]:
         def find_non_mutated_successor(uid: UID) -> Optional[UID]:
+            # TODO: Look for a more robust traversal/search method
             node_data = self.graph.get(uid=uid)
             if node_data.is_mutated:
-                successors = self.graph.get_successors(uid=uid)
-                for successor in successors:
-                    uid = find_non_mutated_successor(successor)
-                    if uid is not None:
-                        return uid
+                successor_uids = self.graph.get_successors(uid=uid)
+                for successor_uid in successor_uids:
+                    successor_node_data = self.graph.get(uid=successor_uid)
+                    if (
+                        node_data.action.result_id
+                        == successor_node_data.action.result_id
+                    ):
+                        result_uid = find_non_mutated_successor(successor_uid)
+                        if result_uid is not None:
+                            return result_uid
+                    else:
+                        continue
             else:
                 return uid
 
