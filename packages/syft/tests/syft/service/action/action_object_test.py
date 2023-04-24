@@ -2,6 +2,7 @@
 from enum import Enum
 import inspect
 import math
+import sys
 from typing import Any
 from typing import Callable
 from typing import Tuple
@@ -9,6 +10,7 @@ from typing import Type
 
 # third party
 import numpy as np
+import pandas as pd
 import pytest
 
 # syft absolute
@@ -985,6 +987,9 @@ def test_actionobject_syft_getattr_float_history():
     assert res1.syft_history_hash == res2.syft_history_hash
 
 
+@pytest.mark.skipif(
+    sys.platform != "linux",
+)
 def test_actionobject_syft_getattr_np(worker):
     orig_obj = np.array([1, 2, 3])
 
@@ -995,3 +1000,14 @@ def test_actionobject_syft_getattr_np(worker):
     for dtype in ["int64", "float64"]:
         obj.dtype = dtype
         assert obj.dtype == dtype
+
+
+def test_actionobject_syft_getattr_pandas(worker):
+    orig_obj = pd.DataFrame([[1, 2, 3]], columns=["1", "2", "3"])
+
+    obj = ActionObject.from_obj(orig_obj)
+
+    assert obj.columns == orig_obj.columns
+
+    obj.columns = ["a", "b", "c"]
+    assert obj.columns == ["a", "b", "c"]
