@@ -603,10 +603,13 @@ class ActionObject(SyftObject):
     @classmethod
     def add_trace_hook(cls):
         return True
+        # if trace_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
+        #     self._syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
     @classmethod
     def remove_trace_hook(cls):
         return True
+        # self._syft_pre_hooks__[HOOK_ALWAYS].pop(trace_action_side_effct, None)
 
     @staticmethod
     def empty(
