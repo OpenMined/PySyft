@@ -513,7 +513,7 @@ class ActionObject(SyftObject):
         )
 
     def syft_get_path(self) -> str:
-        """Get the type of the underlying object"""
+        """Get the type path of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
             return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
@@ -694,7 +694,7 @@ class ActionObject(SyftObject):
         return passthrough_attrs + getattr(self, "syft_passthrough_attrs", [])
 
     def _syft_dont_wrap_attrs(self) -> List[str]:
-        """The results from these attributes are ignored from ID patching."""
+        """The results from these attributes are ignored from UID patching."""
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
     def _syft_get_attr_context(self, name: str) -> Any:
