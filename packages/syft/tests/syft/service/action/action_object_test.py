@@ -336,6 +336,7 @@ def test_actionobject_syft_point_to():
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
         (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
         (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
 def test_actionobject_syft_execute_ok(worker, testcase):
@@ -404,6 +405,7 @@ def test_actionobject_syft_make_action(worker, testcase):
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
         (set({1, 2, 3, 3}), "add", [5], {}),
         (set({1, 2, 3, 3}), "clear", [], {}),
+        (complex(1, 2), "conjugate", [], {}),
     ],
 )
 def test_actionobject_syft_make_method_action(worker, testcase):
@@ -434,6 +436,7 @@ def test_actionobject_syft_make_method_action(worker, testcase):
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
         (set({1, 2, 3, 3}), "add", [5], {}),
         (set({1, 2, 3, 3}), "clear", [], {}),
+        (complex(1, 2), "conjugate", [], {}),
     ],
 )
 def test_actionobject_syft_make_remote_method_action(worker, testcase):
@@ -462,6 +465,7 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_get_path(testcase):
@@ -483,6 +487,7 @@ def test_actionobject_syft_get_path(testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_send_get(worker, testcase):
@@ -514,6 +519,7 @@ def test_actionobject_syft_send_get(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_passthrough_attrs(testcase):
@@ -561,6 +567,7 @@ def test_actionobject_syft_get_attr_context():
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
         (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
         (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
 def test_actionobject_syft_execute_hooks(worker, testcase):
@@ -598,6 +605,7 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
@@ -618,6 +626,7 @@ def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
@@ -650,6 +659,7 @@ def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_methods(orig_obj):
