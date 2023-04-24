@@ -12,7 +12,6 @@ from pathlib import Path
 # third party
 import networkx as nx
 import numpy as np
-import pytest
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
@@ -69,7 +68,7 @@ def test_node_action_data(verify_key: SyftVerifyKey) -> None:
     assert node_action_data_duplicate == node_action_data
 
 
-def test_node_action_data_update() -> None:
+def test_node_action_data_update(verify_key: SyftVerifyKey) -> None:
     node_action_data_update = NodeActionDataUpdate()
 
     assert node_action_data_update.id == Empty
@@ -79,9 +78,35 @@ def test_node_action_data_update() -> None:
     assert node_action_data_update.created_at == Empty
     assert node_action_data_update.credentials == Empty
     assert isinstance(node_action_data_update.updated_at, DateTime)
-    # TODO: set stuff to NodeActionDataUpdate
-    # TODO: test node_action_data_update.to_dict(exclude=True)
-    # TODO: test node_action_data_update.to_dict(exclude=False)
+    assert len(node_action_data_update.to_dict(exclude_empty=True)) == 1
+    assert len(node_action_data_update.to_dict(exclude_empty=False)) == len(
+        vars(node_action_data_update)
+    )
+    assert node_action_data_update.to_dict(exclude_empty=False) == vars(
+        node_action_data_update
+    )
+
+    # test when we set the attributes of NodeActionDataUpdate
+    node = create_node_action_data(verify_key)
+    node_action_data_update.id = node.id
+    node_action_data_update.action = node.action
+    node_action_data_update.status = node.status
+    node_action_data_update.credentials = node.user_verify_key
+    node_action_data_update.is_mutated = True
+
+    assert node_action_data_update.id == node.id
+    assert node_action_data_update.action == node.action
+    assert node_action_data_update.status == node.status
+    assert node_action_data_update.credentials == node.user_verify_key
+    assert node_action_data_update.is_mutated is True
+    assert len(node_action_data_update.to_dict(exclude_empty=True)) == 6
+    assert len(node_action_data_update.to_dict(exclude_empty=True)) == 6
+    assert len(node_action_data_update.to_dict(exclude_empty=False)) == len(
+        vars(node_action_data_update)
+    )
+    assert node_action_data_update.to_dict(exclude_empty=False) == vars(
+        node_action_data_update
+    )
 
 
 def test_in_memory_store_client_config() -> None:
@@ -130,7 +155,7 @@ def test_networkx_backing_store_create_set_get(
     assert backing_store.is_parent(parent=node.id, child=node_2.id) is False
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 def test_networkx_backing_store_node_update(
     in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVerifyKey
 ) -> None:
@@ -138,13 +163,22 @@ def test_networkx_backing_store_node_update(
     node: NodeActionData = create_node_action_data(verify_key)
     backing_store.set(uid=node.id, data=node)
 
-    update_node = NodeActionDataUpdate()
+    update_node_data = NodeActionDataUpdate()
     node_2 = create_node_action_data(verify_key)
-    update_node.action = node_2.action
-    update_node.status = node_2.status
-    update_node.credentials = node_2.user_verify_key
+    update_node_data.id = node_2.id
+    update_node_data.action = node_2.action
+    update_node_data.status = node_2.status
+    update_node_data.credentials = node_2.user_verify_key
+    update_node_data.is_mutated = True
 
-    backing_store.update(uid=node.id, data=update_node)
+    backing_store.update(uid=node.id, data=update_node_data)
+
+    updated_node = backing_store.get(uid=node.id)
+    assert updated_node.id == node_2.id
+    assert updated_node.action == node_2.action
+    assert update_node_data.status == node_2.status
+    assert update_node_data.credentials == node_2.user_verify_key
+    assert update_node_data.is_mutated is True
 
 
 def test_networkx_backing_store_add_remove_edge():
@@ -159,6 +193,14 @@ def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) 
 
     assert graph_store.store_config == in_mem_graph_config
     assert isinstance(graph_store.graph, NetworkXBackingStore)
+
+
+def test_mutation():
+    """
+    after adding a mutated action on a node,
+    the old node's `is_mutated` should be updated to be True
+    """
+    pass
 
 
 # @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
