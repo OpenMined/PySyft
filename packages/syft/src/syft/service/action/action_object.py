@@ -212,6 +212,23 @@ def make_action_side_effect(
     return Ok((context, args, kwargs))
 
 
+class TraceResult:
+    result = []
+
+    @classmethod
+    def reset(cls):
+        cls.result = []
+
+
+def trace_action_side_effect(
+    context: PreHookContext, *args: Any, **kwargs: Any
+) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
+    action = context.action
+    if action is not None:
+        TraceResult.result += [action]
+    return Ok((context, args, kwargs))
+
+
 def send_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
 ) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
@@ -572,6 +589,14 @@ class ActionObject(SyftObject):
 
         return action_object
 
+    @classmethod
+    def add_trace_hook(cls):
+        return True
+
+    @classmethod
+    def remove_trace_hook(cls):
+        return True
+
     @staticmethod
     def empty(
         syft_internal_type: Any = Any,
@@ -605,6 +630,9 @@ class ActionObject(SyftObject):
 
         if send_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
             self._syft_pre_hooks__[HOOK_ALWAYS].append(send_action_side_effect)
+
+        if trace_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
+            self._syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
         if HOOK_ALWAYS not in self._syft_post_hooks__:
             self._syft_post_hooks__[HOOK_ALWAYS] = []

@@ -60,14 +60,16 @@ class KeyValueActionStore(ActionStore):
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
 
-    def get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
+    def get(
+        self, uid: UID, credentials: SyftVerifyKey, has_permission=False
+    ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         # TODO 🟣 Temporarily added skip permission argument for enclave
         # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        if self.has_permission(read_permission):
+        if has_permission or self.has_permission(read_permission):
             try:
                 syft_object = self.data[uid]
             except BaseException:
@@ -86,8 +88,11 @@ class KeyValueActionStore(ActionStore):
                 obj = self.data[uid]
                 if isinstance(obj, TwinObject):
                     obj = obj.mock
+                    # we patch the real id on it so we can keep using the twin
+                    obj.id = uid
                 obj.syft_point_to(node_uid)
                 return Ok(obj)
+            # third party
             return Err("Permission denied")
         except Exception as e:
             return Err(str(e))

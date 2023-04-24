@@ -312,7 +312,9 @@ class Node(AbstractNode):
             # print(f"> Starting Subprocess {self}")
             pass
         else:
-            print(f"> {self}")
+            pass
+            # why would we do this?
+            # print(f"> {self}")
 
         def reload_user_code() -> None:
             user_code_service.load_user_code(context=context)
