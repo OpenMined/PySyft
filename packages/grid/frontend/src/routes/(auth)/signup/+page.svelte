@@ -80,7 +80,7 @@
           .
         </p>
       </div>
-      <Button variant="secondary" slot="button-group">Sign up</Button>
+      <Button type="submit" variant="secondary" slot="button-group">Sign up</Button>
     </Modal>
   </form>
 </div>

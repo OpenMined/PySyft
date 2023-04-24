@@ -70,7 +70,7 @@
             .
           </p>
         </div>
-        <Button variant="secondary" slot="button-group">Login</Button>
+        <Button type="submit" variant="secondary" slot="button-group">Login</Button>
       </Modal>
     </section>
   </form>
