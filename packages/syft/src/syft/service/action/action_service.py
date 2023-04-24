@@ -101,7 +101,7 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
-    ) -> Result[ActionObject, str]:
+    ) -> Result[Ok[ActionObject], Err[str]]:
         """Get an object from the action store"""
         return self._get(context, uid, twin_mode)
 
@@ -130,7 +130,7 @@ class ActionService(AbstractService):
                     obj.mock.syft_point_to(context.node.id)
                     obj.private.syft_point_to(context.node.id)
             return Ok(obj)
-        return Err(result.err())
+        return result
 
     @service_method(
         path="action.get_pointer", name="get_pointer", roles=GUEST_ROLE_LEVEL
@@ -292,7 +292,7 @@ def execute_object(
     resolved_self: ActionObject,
     action: Action,
     twin_mode: TwinMode = TwinMode.NONE,
-) -> Result[Union[TwinObject, ActionObject], str]:
+) -> Result[Ok[Union[TwinObject, ActionObject]], Err[str]]:
     unboxed_resolved_self = resolved_self.syft_action_data
     args = []
     has_twin_inputs = False
@@ -302,7 +302,7 @@ def execute_object(
                 context=context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if arg_value.is_err():
-                return arg_value.err()
+                return arg_value
             if isinstance(arg_value.ok(), TwinObject):
                 has_twin_inputs = True
             args.append(arg_value.ok())
@@ -314,7 +314,7 @@ def execute_object(
                 context=context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if kwarg_value.is_err():
-                return kwarg_value.err()
+                return kwarg_value
             if isinstance(kwarg_value.ok(), TwinObject):
                 has_twin_inputs = True
             kwargs[key] = kwarg_value.ok()

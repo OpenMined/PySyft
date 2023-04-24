@@ -419,17 +419,50 @@ class ActionObject(SyftObject):
         )
         return api.make_call(api_call)
 
+    def _syft_try_to_save_to_store(self, obj) -> None:
+        if self.syft_node_uid is None:
+            return
+
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+        api.services.action.set(obj)
+
+    def _syft_prepare_obj_uid(self, obj) -> LineageID:
+        # We got the UID
+        if isinstance(obj, (UID, LineageID)):
+            return LineageID(obj.id)
+
+        # We got the ActionObjectPointer
+        if isinstance(obj, ActionObjectPointer):
+            return obj.syft_lineage_id
+
+        # We got the ActionObject. We need to save it in the store.
+        if isinstance(obj, ActionObject):
+            self._syft_try_to_save_to_store(obj)
+            return obj.syft_lineage_id
+
+        # We got a raw object. We need to create the ActionObject from scratch and save it in the store.
+        obj_id = Action.make_id(None)
+        lin_obj_id = Action.make_result_id(obj_id)
+        act_obj = ActionObject.from_obj(obj, id=obj_id, syft_lineage_id=lin_obj_id)
+
+        self._syft_try_to_save_to_store(act_obj)
+
+        return act_obj.syft_lineage_id
+
     def syft_make_action(
         self,
         path: str,
         op: str,
         remote_self: Optional[Union[UID, LineageID]] = None,
         args: Optional[
-            List[Union[UID, LineageID, ActionObjectPointer, ActionObject]]
-        ] = None,
+            List[Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
+        ] = [],
         kwargs: Optional[
-            Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject]]
-        ] = None,
+            Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
+        ] = {},
     ) -> Action:
         """Generate new action from the information
 
@@ -451,36 +484,14 @@ class ActionObject(SyftObject):
             ValueError: For invalid args or kwargs
             PydanticValidationError: For args and kwargs
         """
-        if args is None:
-            args = []
-        if kwargs is None:
-            kwargs = {}
-
         arg_ids = []
         kwarg_ids = {}
 
-        for uid in args:
-            if isinstance(uid, (UID, LineageID)):
-                arg_ids.append(LineageID(uid))
-                continue
-
-            if isinstance(uid, (ActionObjectPointer, ActionObject)):
-                arg_ids.append(uid.syft_lineage_id)
-                continue
-            raise ValueError(
-                f"Invalid args type {type(uid)}. Must be [UID, LineageID or ActionObject, or ActionObjectPointer]"
-            )
+        for obj in args:
+            arg_ids.append(self._syft_prepare_obj_uid(obj))
 
         for k, uid in kwargs.items():
-            if isinstance(uid, (LineageID, UID)):
-                kwarg_ids[k] = LineageID(uid)
-                continue
-            if isinstance(uid, (ActionObjectPointer, ActionObject)):
-                kwarg_ids[k] = uid
-                continue
-            raise ValueError(
-                f"Invalid kwargs type {type(uid)}. Must be [UID, LineageID, ActionObject or ActionObjectPointer]"
-            )
+            kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
 
         action = Action(
             path=path,
