@@ -39,7 +39,7 @@ class ActionGraphService(AbstractService):
     ) -> Union[NodeActionData, SyftError]:
         result = self.store.set(credentials=context.credentials, action=action)
         if result.is_err():
-            SyftError(message=result.err())
+            return SyftError(message=result.err())
         return result.ok()
 
     def remove_action(
