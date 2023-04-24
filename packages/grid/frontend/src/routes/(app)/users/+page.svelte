@@ -17,7 +17,6 @@
 
   onMount(async () => {
     userList = await getAllUsers();
-    console.log(await getSelf());
   });
 
   const closeModal = () => {
