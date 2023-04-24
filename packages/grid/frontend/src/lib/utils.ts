@@ -24,3 +24,15 @@ export function shortName(name) {
 export function getPath() {
   return window.location.pathname;
 }
+
+export function getInitials(name: string) {
+  return name
+    ? name
+        .split(' ')
+        .map((n, index, arr) => {
+          if (index === 0 || index === arr.length - 1) return n[0];
+        })
+        .filter((n) => n)
+        .join('')
+    : '';
+}

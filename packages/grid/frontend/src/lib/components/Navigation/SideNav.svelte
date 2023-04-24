@@ -1,12 +1,13 @@
 <script>
+  import { goto } from '$app/navigation';
+  import { metadata } from '$lib/store';
+  import { getInitials } from '$lib/utils';
   import Avatar from '../Avatar.svelte';
   import CogIcon from '../icons/CogIcon.svelte';
   import SideNavDOHandbook from './SideNavDOHandbook.svelte';
   import SideNavItems from './SideNavItems.svelte';
 
-  let metadata = {
-    name: 'Domain name'
-  };
+  $: initials = getInitials($metadata?.name);
 </script>
 
 <nav
@@ -20,9 +21,9 @@
     </div>
     <div class="flex flex-col items-center justify-center gap-2">
       <div class="w-16">
-        <Avatar initials="L" blackBackground />
+        <Avatar {initials} blackBackground />
       </div>
-      <p class="leading-[1.2] font-bold hidden desktop:inline-block">{metadata.name}</p>
+      <p class="leading-[1.2] font-bold hidden desktop:inline-block">{$metadata?.name ?? ''}</p>
     </div>
     <button class="text-sm text-gray-600 underline w-min">logout</button>
   </section>
