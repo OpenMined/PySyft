@@ -32,6 +32,7 @@
   "type": "module",
   "dependencies": {
     "capnp-ts": "^0.7.0",
+    "just-debounce-it": "^3.2.0",
     "ky": "^0.33.2",
     "libsodium": "^0.7.11",
     "libsodium-wrappers": "^0.7.11",
