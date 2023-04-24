@@ -1,3 +1,5 @@
+import { ServiceRoles } from '../types/domain/users';
+
 export function prettyName(name) {
   let nameList = name.split('_');
   for (var i = 0; i < nameList.length; i++) {
@@ -40,4 +42,8 @@ export function getInitials(name: string) {
 export function logout() {
   window.localStorage.removeItem('id');
   window.localStorage.removeItem('key');
+}
+
+export function getUserRole(value: ServiceRoles) {
+  return ServiceRoles[value];
 }

@@ -17,7 +17,9 @@
     class="relative flex flex-col justify-center items-center pt-6 px-8 pb-[46px] gap-3 flex-shrink-0"
   >
     <div class="absolute top-0.5 right-2 text-primary-500">
-      <CogIcon />
+      <a href="/config" class="inline-block w-5 h-5">
+        <CogIcon />
+      </a>
     </div>
     <div class="flex flex-col items-center justify-center gap-2">
       <div class="w-16">

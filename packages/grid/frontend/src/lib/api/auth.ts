@@ -12,8 +12,9 @@ interface SignUpDetails {
   password: string;
   password_verify: string;
   name: string;
-  organization?: string;
+  institution?: string;
   website?: string;
+  role: number;
 }
 
 export async function login({ email, password }: LoginCredentials) {

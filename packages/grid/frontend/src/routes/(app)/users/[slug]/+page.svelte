@@ -5,6 +5,7 @@
   import Badge from '$lib/components/Badge.svelte';
   import CaretLeft from '$lib/components/icons/CaretLeft.svelte';
   import { syftRoles } from '$lib/constants';
+  import { getInitials, getUserRole } from '$lib/utils';
   import { onMount } from 'svelte';
   import type { UserView } from '../../../../types/domain/users';
 
@@ -16,10 +17,7 @@
     user = await getUser(uid);
   });
 
-  $: initials = user?.name
-    .split(' ')
-    .map((word) => word[0])
-    .join('');
+  $: initials = getInitials(user?.name);
 </script>
 
 <div class="p-6 flex flex-col gap-8">
@@ -37,12 +35,12 @@
               <Avatar {initials} bigText />
             </span>
             <h2>{user.name}</h2>
-            {#if user.organization}
-              <p class="text-lg text-gray-600">{user.organization}</p>
+            {#if user.institution}
+              <p class="text-lg text-gray-600">{user.institution}</p>
             {/if}
             {#if user.role}
               <div class="py-2">
-                <Badge variant="gray">{syftRoles[user.role]}</Badge>
+                <Badge variant="gray">{getUserRole(user.role.value)}</Badge>
               </div>
             {/if}
           </div>

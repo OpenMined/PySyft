@@ -3,12 +3,13 @@
 
   interface $$Props extends HTMLButtonAttributes {
     disabled?: boolean;
-    variant: 'primary' | 'secondary' | 'error';
+    variant?: 'primary' | 'secondary' | 'error';
+    type?: 'button' | 'submit' | 'reset';
   }
 
   export let variant = 'primary';
   export let disabled = false;
-  export let type = 'button';
+  export let type: $$Props['type'] = 'button';
 </script>
 
 <button {type} class={variant} aria-disabled={disabled} on:click {...$$props}>
@@ -38,5 +39,9 @@
   .error {
     @apply bg-gradient-to-l from-magenta-400 to-magenta-400;
     @apply hover:to-yellow-400;
+  }
+
+  .primary-outline {
+    @apply border border-primary-300 text-primary-300;
   }
 </style>

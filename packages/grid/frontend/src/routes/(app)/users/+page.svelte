@@ -73,10 +73,5 @@
   </button>
 </div>
 
-{#if openModal === 'newUser'}
-  <UserNewModal onClose={closeModal} {onCreateGeneralUser} />
-{/if}
-
-{#if openModal === 'step1'}
-  <UserCreateModal step={openModal} onClose={closeModal} on:userUpdate={handleUpdate} />
-{/if}
+<UserNewModal open={openModal === 'newUser'} onClose={closeModal} {onCreateGeneralUser} />
+<UserCreateModal open={openModal === 'step1'} onClose={closeModal} on:userUpdate={handleUpdate} />
