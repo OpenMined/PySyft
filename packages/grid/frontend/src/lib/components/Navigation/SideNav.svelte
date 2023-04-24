@@ -25,7 +25,9 @@
       </div>
       <p class="leading-[1.2] font-bold hidden desktop:inline-block">{$metadata?.name ?? ''}</p>
     </div>
-    <button class="text-sm text-gray-600 underline w-min">logout</button>
+    <button class="text-sm text-gray-600 underline w-min" on:click={() => goto('/logout')}>
+      logout
+    </button>
   </section>
   <hr class="border-gray-100" />
   <section class="grow py-4 flex flex-col gap-6">

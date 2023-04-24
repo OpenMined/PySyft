@@ -36,3 +36,8 @@ export function getInitials(name: string) {
         .join('')
     : '';
 }
+
+export function logout() {
+  window.localStorage.removeItem('id');
+  window.localStorage.removeItem('key');
+}
