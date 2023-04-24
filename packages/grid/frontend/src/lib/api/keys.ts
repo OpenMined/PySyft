@@ -20,3 +20,11 @@ export function getNodeIdFromStorage() {
 
   return key;
 }
+
+export function getUserIdFromStorage() {
+  const key = window.localStorage.getItem('id');
+
+  if (!key) throw new Error('User ID not found');
+
+  return key;
+}
