@@ -2,6 +2,7 @@
 import importlib
 import inspect
 from inspect import Signature
+from inspect import _signature_fromstr
 from types import BuiltinFunctionType
 from typing import Any
 from typing import Dict
@@ -45,9 +46,9 @@ class CMPBase:
         path,
         children=None,
         permissions: Optional[CMPPermission] = None,
-        manual_signature: Optional[Signature] = None,
         obj: Optional[Any] = None,
         absolute_path=None,
+        text_signature=None,
     ):
         self.permissions: Optional[CMPPermission] = permissions
         self.path: str = path
@@ -64,8 +65,10 @@ class CMPBase:
             if c.absolute_path is None:
                 c.absolute_path = f"{path}.{c.path}"
 
-        if manual_signature is not None:
-            self.signature: Signature = manual_signature
+        if text_signature is not None:
+            self.signature: Signature = _signature_fromstr(
+                inspect.Signature, obj, text_signature, True
+            )
         else:
             self.signature = None
 
@@ -323,8 +326,28 @@ action_execute_registry_libs = CMPTree(
             "numpy",
             permissions=ALL_EXECUTE,
             children=[
+                CMPFunction(
+                    "concatenate",
+                    permissions=ALL_EXECUTE,
+                    text_signature="concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
+                ),
+                CMPFunction("source", permissions=NONE_EXECUTE),
+                CMPFunction("fromfile", permissions=NONE_EXECUTE),
+                CMPFunction(
+                    "set_numeric_ops",
+                    permissions=ALL_EXECUTE,
+                    text_signature="set_numeric_ops(op1,op2, *args)",
+                ),
                 CMPModule("testing", permissions=NONE_EXECUTE),
             ],
         ),
     ]
 ).build()
+
+
+# function_signatures_registry = {
+#     "concatenate": "concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
+#     "set_numeric_ops": "set_numeric_ops(op1=func1,op2=func2, *args)",
+#     "geterrorobj": "geterrobj()",
+#     "source": "source(object, output)",
+# }

@@ -2,8 +2,14 @@
 
 # third party
 
+# third party
+import numpy as np
+
 # syft absolute
 from syft import ActionObject
+from syft.core.node.new.action_object import Action
+from syft.core.node.new.api import SyftAPICall
+from syft.core.node.new.uid import LineageID
 
 
 def test_actionobject_method(worker):
@@ -39,6 +45,46 @@ def test_class_init_action(worker):
     assert isinstance(res, ActionObject)
     assert res == np.float32(4.0)
     assert len(worker.get_service("actionservice").store.data) > 0
+
+
+def test_call_lib_function(worker):
+    root_domain_client = worker.root_client
+    assert root_domain_client.api.lib.numpy.add(1, 2) == 3
+
+
+def test_call_lib_class(worker):
+    root_domain_client = worker.root_client
+    assert root_domain_client.api.lib.numpy.float32(3.0) == 3.0
+
+
+def test_call_lib_wo_permission(worker):
+    root_domain_client = worker.root_client
+    fname = ActionObject.from_obj("my_fake_file")
+    obj1_pointer = fname.send(root_domain_client)
+    action = Action(
+        path="numpy",
+        op="fromfile",
+        args=[LineageID(obj1_pointer.id)],
+        kwargs=dict(),
+        result_id=LineageID(),
+    )
+    kwargs = {"action": action}
+    api_call = SyftAPICall(
+        node_uid=worker.id, path="action.execute", args=[], kwargs=kwargs
+    )
+    res = root_domain_client.api.make_call(api_call)
+    assert res == "You have no permission for numpy.fromfile"
+
+
+def test_call_lib_custom_signature(worker):
+    root_domain_client = worker.root_client
+    # concatenate has a manually set permission
+    assert all(
+        root_domain_client.api.lib.numpy.concatenate(
+            ([1, 2, 3], [4, 5, 6])
+        ).syft_action_data
+        == np.array([1, 2, 3, 4, 5, 6])
+    )
 
 
 # def test_pointer_addition():
