@@ -8,9 +8,10 @@
 
   export let variant = 'primary';
   export let disabled = false;
+  export let type = 'button';
 </script>
 
-<button class={variant} aria-disabled={disabled} on:click {...$$props}>
+<button {type} class={variant} aria-disabled={disabled} on:click {...$$props}>
   <slot />
 </button>
 

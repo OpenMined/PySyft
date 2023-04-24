@@ -10,7 +10,15 @@
   const items = [
     {
       title: 'Governance',
-      sections: [{ icon: TrayIcon, iconFill: TrayFillIcon, label: 'Requests', href: '/requests' }]
+      sections: [
+        {
+          icon: TrayIcon,
+          iconFill: TrayFillIcon,
+          label: 'Requests',
+          href: '/requests',
+          disabled: true
+        }
+      ]
     },
     {
       title: 'Assets',
@@ -34,11 +42,11 @@
     >
       {item.title}
     </p>
-    <ul class="flex flex-col gap-6 hover:bg-primary-50 cursor-pointer">
+    <ul class="flex flex-col gap-6">
       {#each item.sections as section}
-        <a href={section.href}>
+        <a href={section.href} aria-disabled={section.disabled}>
           <li
-            class="justify-center desktop:justify-start desktop:px-8 desktop:pl-5 desktop:pr-2 desktop:py-1 py-0.5 flex items-center gap-1 hover:bg-primary-50 cursor-pointer"
+            class="justify-center desktop:justify-start desktop:px-8 desktop:pl-5 desktop:pr-2 desktop:py-1 py-0.5 flex items-center gap-1 hover:bg-primary-50"
             class:bg-primary-50={section.href === currentPathname}
             class:text-primary-600={section.href === currentPathname}
           >
@@ -55,3 +63,9 @@
     </ul>
   </div>
 {/each}
+
+<style lang="postcss">
+  [aria-disabled] {
+    @apply opacity-50 cursor-not-allowed pointer-events-none hover:bg-gray-200;
+  }
+</style>

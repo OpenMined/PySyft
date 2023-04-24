@@ -5,6 +5,7 @@
   export let big = false;
   export let noOutline = false;
   export let smallText = false;
+  export let bigText = false;
 </script>
 
 <div
@@ -31,7 +32,8 @@
         <p
           class="font-bold leading-[1.2] text-white"
           class:text-sm={smallText}
-          class:text-xl={!smallText}
+          class:text-xl={!smallText && !bigText}
+          class:text-3xl={bigText}
         >
           {initials}
         </p>

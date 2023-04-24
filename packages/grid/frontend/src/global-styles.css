@@ -78,6 +78,10 @@
   h2 {
     @apply text-5xl leading-[1.1] font-rubik;
   }
+
+  .all-caps {
+    @apply uppercase font-bold text-xs leading-[1] tracking-[0.75px];
+  }
 }
 
 @layer components {

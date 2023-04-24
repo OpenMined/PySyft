@@ -7,6 +7,7 @@
     required?: boolean;
     error?: string;
     warning?: string;
+    value: HTMLInputAttributes['value'];
   }
 
   export let label: string;
