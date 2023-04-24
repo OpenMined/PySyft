@@ -1,6 +1,5 @@
 <script>
   import { goto } from '$app/navigation';
-  import { getClient } from '../lib/store.js';
 
   async function lazyLoad() {
     if (typeof window === 'undefined') return;
@@ -10,7 +9,6 @@
     } else {
       goto('/datasets');
     }
-    return client;
   }
 </script>
 
