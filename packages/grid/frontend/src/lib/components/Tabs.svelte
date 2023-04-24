@@ -4,9 +4,9 @@
 
   interface Tabs {
     id: string;
-    count: number;
     label: string;
-    icon: SvelteComponent;
+    icon?: SvelteComponent;
+    count?: number;
   }
 
   export let tabs: Tabs[] = [];
