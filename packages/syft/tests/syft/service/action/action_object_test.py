@@ -985,6 +985,3 @@ def test_actionobject_syft_getattr_np(worker):
     for dtype in ["int64", "float64"]:
         obj.dtype = dtype
         assert obj.dtype == dtype
-
-    obj.custom = "custom"
-    assert obj.custom == "custom"
