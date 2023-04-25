@@ -126,14 +126,14 @@ export class JSSerde {
       null,
       {}
     ];
-    this.type_bank['syft.core.node.new.uid.UID'] = [
+    this.type_bank['syft.types.uid.UID'] = [
       false,
       (uuid) => {
         const message = new capnp.Message();
         const rs = message.initRoot(RecursiveSerde);
         const fields = rs.initFieldsName(1);
         const data = rs.initFieldsData(1);
-        rs.setFullyQualifiedName('syft.core.node.new.uid.UID');
+        rs.setFullyQualifiedName('syft.types.uid.UID');
 
         fields.set(0, 'value');
         let serializedObj = this.serialize(uuidParse(uuid.value));
@@ -506,7 +506,7 @@ export class JSSerde {
 
     // Check if the object is not recursive
     if (objSerdeProps) {
-      if (fqn === 'syft.core.node.new.uid.UID') {
+      if (fqn === 'syft.types.uid.UID') {
         return objSerdeProps[1](obj);
       }
 
@@ -607,7 +607,7 @@ export class JSSerde {
           const key = fieldsName.get(i); // Get the name of the current field
           const bytes = fieldsData.get(i); // Get the binary data buffer for the current field
           const obj = this.processObject(bytes); // Recursively deserialize the binary data buffer
-          if (fqn === 'syft.core.node.new.uid.UID') {
+          if (fqn === 'syft.types.uid.UID') {
             const hexuid = uuidStringify(obj);
             kvIterable[key] = hexuid; // Add the deserialized value to the key-value iterable
           } else {

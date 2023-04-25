@@ -1,7 +1,7 @@
 # relative
-from ...core.node.new.deserialize import _deserialize
-from ...core.node.new.serializable import recursive_serde_register
-from ...core.node.new.serialize import _serialize
+from ...serde.deserialize import _deserialize
+from ...serde.serializable import recursive_serde_register
+from ...serde.serialize import _serialize
 from .auth import login  # noqa: F401
 from .deployment import create_deployment  # noqa: F401
 from .oblv_proxy import check_oblv_proxy_installation_status  # noqa: F401

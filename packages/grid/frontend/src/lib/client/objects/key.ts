@@ -14,6 +14,6 @@ export class SyftVerifyKey {
 
   constructor(verify_key) {
     this.verify_key = new VerifyKey(verify_key);
-    this.fqn = 'syft.core.node.new.credentials.SyftVerifyKey';
+    this.fqn = 'syft.node.credentials.SyftVerifyKey';
   }
 }
