@@ -22,23 +22,7 @@ def f(x):
     return 2 * x
 
 f_jit = jax.jit(f)
-# result = f_jit(x)
-# print("No wrapper", result)
-# device = action_object.device()
-# x_device = x._device
-# action_device = action_object._device
-# print("Device", device)
-# with jax.default_device as device:
-#   print(device)
-# print(jax.devices()[0])
-# print(action_object.__jax_array__().device())
-# print(int(x))
-# print(int(action_object))
-# print(int(action_object.__jax_array__().device()))
 device = action_object.device()
 print(device)
 print(type(device))
-# print("TYPE:", type(action_object.__jax_array__().device()))
 print("Wrapper", f_jit(action_object))
-# print("No wrapper jnp", jnp.add(x,x))
-# print("wrapper jnp",jnp.add(action_object,action_object))

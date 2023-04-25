@@ -46,7 +46,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
     syft_passthrough_attrs = []
-    syft_dont_wrap_attrs = ["dtype"]
+    syft_dont_wrap_attrs = ["dtype", "__array__"]
 
     # def __eq__(self, other: Any) -> bool:
     #     # 🟡 TODO 8: move __eq__ to a Data / Serdeable type interface on ActionObject
