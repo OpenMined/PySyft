@@ -28,6 +28,7 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
+from .action_object import ActionType
 from .action_object import AnyActionObject
 from .action_store import ActionStore
 from .action_types import action_type_for_type
@@ -121,6 +122,7 @@ class ActionService(AbstractService):
             obj = result.ok()
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
+                    print("GETTING PRIVATE")
                     obj = obj.private
                     obj.syft_point_to(context.node.id)
                 elif twin_mode == TwinMode.MOCK:
@@ -216,7 +218,6 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
-        print(f"debug: executing action {action.op}")
 
         resolved_self = self._get(
             context=context,
@@ -228,7 +229,25 @@ class ActionService(AbstractService):
             return resolved_self.err()
         resolved_self = resolved_self.ok()
 
-        if isinstance(resolved_self, TwinObject):
+        if action.action_type == ActionType.GETATTRIBUTE:
+            if isinstance(resolved_self, TwinObject):
+                private_result = getattr(
+                    resolved_self.private.syft_action_data, action.op
+                )
+                mock_result = getattr(resolved_self.mock.syft_action_data, action.op)
+                result_action_object = Ok(
+                    TwinObject(
+                        id=action.result_id,
+                        private_obj=ActionObject.from_obj(private_result),
+                        private_obj_id=action.result_id,
+                        mock_obj=ActionObject.from_obj(mock_result),
+                        mock_obj_id=action.result_id,
+                    )
+                )
+            else:
+                val = getattr(resolved_self.syft_action_data, action.op)
+                result_action_object = Ok(wrap_result(action.result_id, val))
+        elif isinstance(resolved_self, TwinObject):
             private_result = execute_object(
                 self, context, resolved_self.private, action, twin_mode=TwinMode.PRIVATE
             )

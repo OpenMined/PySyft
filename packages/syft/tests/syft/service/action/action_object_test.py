@@ -410,7 +410,7 @@ def test_actionobject_syft_make_action(worker, testcase):
         (complex(1, 2), "conjugate", [], {}),
     ],
 )
-def test_actionobject_syft_make_method_action(worker, testcase):
+def test_actionobject_syft_make_action_with_self(worker, testcase):
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
@@ -418,7 +418,9 @@ def test_actionobject_syft_make_method_action(worker, testcase):
         worker, obj, *args, **kwargs
     )
 
-    action = obj.syft_make_method_action(op, args=args_pointers, kwargs=kwargs_pointers)
+    action = obj.syft_make_action_with_self(
+        op, args=args_pointers, kwargs=kwargs_pointers
+    )
 
     assert action.full_path.endswith("." + op)
 

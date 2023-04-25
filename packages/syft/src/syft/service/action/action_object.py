@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from enum import Enum
 import inspect
 import traceback
 import types
@@ -39,6 +40,13 @@ from .action_types import action_types
 
 
 @serializable()
+class ActionType(Enum):
+    GETATTRIBUTE = 1
+    METHOD = 2
+    SETATTRIBUTE = 4
+
+
+@serializable()
 class Action(SyftObject):
     """Serializable Action object.
 
@@ -68,6 +76,7 @@ class Action(SyftObject):
     args: List[LineageID]
     kwargs: Dict[str, LineageID]
     result_id: Optional[LineageID]
+    action_type: Optional[ActionType]
 
     @pydantic.validator("id", pre=True, always=True)
     def make_id(cls, v: Optional[UID]) -> UID:
@@ -184,6 +193,7 @@ class PreHookContext(SyftBaseObject):
     node_uid: Optional[UID]
     result_id: Optional[Union[UID, LineageID]]
     action: Optional[Action]
+    action_type: Optional[ActionType]
 
 
 def make_action_side_effect(
@@ -203,8 +213,11 @@ def make_action_side_effect(
         - Err[str] on failure
     """
     try:
-        action = context.obj.syft_make_method_action(
-            op=context.op_name, args=args, kwargs=kwargs
+        action = context.obj.syft_make_action_with_self(
+            op=context.op_name,
+            args=args,
+            kwargs=kwargs,
+            action_type=context.action_type,
         )
         context.action = action
     except Exception:
@@ -463,6 +476,7 @@ class ActionObject(SyftObject):
         kwargs: Optional[
             Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
         ] = {},
+        action_type: Optional[ActionType] = None,
     ) -> Action:
         """Generate new action from the information
 
@@ -499,14 +513,16 @@ class ActionObject(SyftObject):
             remote_self=LineageID(remote_self),
             args=arg_ids,
             kwargs=kwarg_ids,
+            action_type=action_type,
         )
         return action
 
-    def syft_make_method_action(
+    def syft_make_action_with_self(
         self,
         op: str,
         args: Optional[List[Union[UID, ActionObjectPointer]]] = None,
         kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
+        action_type: Optional[ActionType] = None,
     ) -> Action:
         """Generate new method action from the current object.
 
@@ -526,7 +542,12 @@ class ActionObject(SyftObject):
         """
         path = self.syft_get_path()
         return self.syft_make_action(
-            path=path, op=op, remote_self=self.syft_lineage_id, args=args, kwargs=kwargs
+            path=path,
+            op=op,
+            remote_self=self.syft_lineage_id,
+            args=args,
+            kwargs=kwargs,
+            action_type=action_type,
         )
 
     def syft_get_path(self) -> str:
@@ -553,7 +574,7 @@ class ActionObject(SyftObject):
             *args: Optional[List[Union[UID, ActionObjectPointer]]],
             **kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]],
         ) -> Action:
-            return self.syft_make_method_action(op=op, args=args, kwargs=kwargs)
+            return self.syft_make_action_with_self(op=op, args=args, kwargs=kwargs)
 
         return wrapper
 
@@ -797,7 +818,9 @@ class ActionObject(SyftObject):
             )
         debug(f"[__getattribute__] Handling property {name} ")
 
-        context = PreHookContext(obj=self, op_name=name)
+        context = PreHookContext(
+            obj=self, op_name=name, action_type=ActionType.GETATTRIBUTE
+        )
         context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
         # no input needs to propagate
         result = self._syft_run_post_hooks__(
@@ -825,7 +848,9 @@ class ActionObject(SyftObject):
         debug_original_func(name, original_func)
 
         def _base_wrapper(*args: Any, **kwargs: Any) -> Any:
-            context = PreHookContext(obj=self, op_name=name)
+            context = PreHookContext(
+                obj=self, op_name=name, action_type=ActionType.SETATTRIBUTE
+            )
             context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                 context, name, args, kwargs
             )
