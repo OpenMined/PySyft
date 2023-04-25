@@ -103,9 +103,10 @@ http:
     fire-fail2ban:
       plugin:
         fail2ban:
+          logLevel: "INFO"  # "NONE", "INFO" or "DEBUG"
           blacklist:
-            ip:
-              - 192.168.0.0/24
+            files:
+              - /etc/traefik/blacklist_ip.txt
           rules:
             action: ""
             actionAbuseipdb: ""
@@ -129,7 +130,9 @@ http:
             sender: ""
             urlregexp: ""
             usedns: ""
-          whitelist:
-            ip:
-              - ::1
-              - 127.0.0.1
+          # whitelist:
+          #   files:
+          #     - /etc/traefik/whitelist_ip.txt
+          #   ip:
+          #     - ::1
+          #     - 127.0.0.1
