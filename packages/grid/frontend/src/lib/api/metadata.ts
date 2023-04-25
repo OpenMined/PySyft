@@ -1,8 +1,7 @@
 import ky from 'ky';
 import { deserialize } from './serde';
 import { syftCall } from './syft-api-call';
-// import { API_BASE_URL } from '../constants';
-const API_BASE_URL = "api/v1";
+import { API_BASE_URL } from '../constants';
 
 export async function getMetadata() {
   try {

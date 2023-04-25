@@ -4,8 +4,7 @@
   import { APICall } from '../messages/syftMessage.ts';
   import sodium from 'libsodium-wrappers';
   import { UserCode } from '../objects/userCode';
-  // import { API_BASE_URL } from '$lib/constants';
-  const API_BASE_URL = '/api/v1';
+  import { API_BASE_URL } from '$lib/constants';
 
   export class JSClient {
     /**
