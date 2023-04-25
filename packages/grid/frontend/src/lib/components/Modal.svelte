@@ -1,6 +1,6 @@
 <div
-  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg w-full h-fit shadow-modal-1"
-  style="background-color: white"
+  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg w-full h-fit shadow-modal-1 desktop:w-[662px]"
+  on:click|stopPropagation
 >
   <!-- header -->
   <div class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min">

@@ -1,12 +1,13 @@
 <script>
+  import { goto } from '$app/navigation';
+  import { metadata } from '$lib/store';
+  import { getInitials } from '$lib/utils';
   import Avatar from '../Avatar.svelte';
   import CogIcon from '../icons/CogIcon.svelte';
   import SideNavDOHandbook from './SideNavDOHandbook.svelte';
   import SideNavItems from './SideNavItems.svelte';
 
-  let metadata = {
-    name: 'Domain name'
-  };
+  $: initials = getInitials($metadata?.name);
 </script>
 
 <nav
@@ -16,15 +17,19 @@
     class="relative flex flex-col justify-center items-center pt-6 px-8 pb-[46px] gap-3 flex-shrink-0"
   >
     <div class="absolute top-0.5 right-2 text-primary-500">
-      <CogIcon />
+      <a href="/config" class="inline-block w-5 h-5">
+        <CogIcon />
+      </a>
     </div>
     <div class="flex flex-col items-center justify-center gap-2">
       <div class="w-16">
-        <Avatar initials="L" blackBackground />
+        <Avatar {initials} blackBackground />
       </div>
-      <p class="leading-[1.2] font-bold hidden desktop:inline-block">{metadata.name}</p>
+      <p class="leading-[1.2] font-bold hidden desktop:inline-block">{$metadata?.name ?? ''}</p>
     </div>
-    <button class="text-sm text-gray-600 underline w-min">logout</button>
+    <button class="text-sm text-gray-600 underline w-min" on:click={() => goto('/logout')}>
+      logout
+    </button>
   </section>
   <hr class="border-gray-100" />
   <section class="grow py-4 flex flex-col gap-6">

@@ -29,7 +29,9 @@ module.exports = {
         'neutral-1': '-2px 4px 8px rgba(13, 12, 17, 0.25)',
         'modal-1': '-1px 2px 4px 2px rgba(0, 0, 0, 0.08)',
         'tooltip-1': '0px 1px 2px 0px rgba(0, 0, 0, 0.25)',
-        'topbar-1': '0px 3px 16px 0px rgba(0, 0, 0, 0.1)'
+        'topbar-1': '0px 3px 16px 0px rgba(0, 0, 0, 0.1)',
+        'callout-1': '0px 1px 2px 1px rgba(0, 0, 0, 0.05)',
+        'roles-1': '0px 2px 2px 2px rgba(0, 0, 0, 0.05)'
       },
       minHeight: {
         screen: '100vh'

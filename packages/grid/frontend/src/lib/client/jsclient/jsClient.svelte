@@ -4,7 +4,8 @@
   import { APICall } from '../messages/syftMessage.ts';
   import sodium from 'libsodium-wrappers';
   import { UserCode } from '../objects/userCode';
-  import { API_BASE_URL } from '$lib/constants';
+  // import { API_BASE_URL } from '$lib/constants';
+  const API_BASE_URL = 'api/v1';
 
   export class JSClient {
     /**
@@ -150,7 +151,7 @@
       // Create a new object called 'newMetadata' with updated fields and a new property called 'fqn' with a value.
       const updateMetadata = {
         ...newMetadata,
-        fqn: 'syft.core.node.new.node_metadata.NodeMetadataUpdate'
+        fqn: 'syft.service.metadata.node_metadata.NodeMetadataUpdate'
       };
 
       // Create a new object called 'reqFields' with one property: 'metadata',  which is set to 'updateMetadata'.
@@ -173,7 +174,7 @@
     register(newUser) {
       return (async () => {
         // Create a register payload object by copying the newUser object and adding a fully-qualified name (fqn) property.
-        const registerPayload = { ...newUser, fqn: 'syft.core.node.new.user.UserCreate' };
+        const registerPayload = { ...newUser, fqn: 'syft.service.user.user.UserCreate' };
 
         // Make a POST request to the server with the register payload.
         const response = await fetch(`${this.url}/new/register`, {
@@ -207,7 +208,7 @@
      * */
     updateCurrentUser(updatedFields) {
       // Create a new object called 'userUpdate' with updated fields and a new property called 'fqn' with a value.
-      const userUpdate = { ...updatedFields, fqn: 'syft.core.node.new.user.UserUpdate' };
+      const userUpdate = { ...updatedFields, fqn: 'syft.service.user.user.UserUpdate' };
 
       // Create a new object called 'reqFields' with two properties: 'uid', which is set to the value of 'userId', and 'user_update', which is set to 'userUpdate'.
       const reqFields = { uid: this.userId, user_update: userUpdate };

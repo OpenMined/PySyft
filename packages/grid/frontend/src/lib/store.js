@@ -9,6 +9,7 @@ export const store = writable({
 
 export const isLoading = writable(false);
 export const metadata = writable();
+export const user = writable();
 
 export async function getClient() {
   let newStore = '';

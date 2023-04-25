@@ -1,6 +1,7 @@
 import ky from 'ky';
 import { deserialize, serialize } from './serde';
-import { API_BASE_URL } from '../constants';
+// import { API_BASE_URL } from '../constants';
+const API_BASE_URL = "api/v1";
 
 interface LoginCredentials {
   email: string;
@@ -12,8 +13,9 @@ interface SignUpDetails {
   password: string;
   password_verify: string;
   name: string;
-  organization?: string;
+  institution?: string;
   website?: string;
+  role: number;
 }
 
 export async function login({ email, password }: LoginCredentials) {
