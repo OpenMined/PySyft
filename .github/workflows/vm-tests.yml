@@ -16,7 +16,7 @@ on:
         required: false
 
 jobs:
-  pr-tests-stack:
+  vm-tests-stack:
     strategy:
       max-parallel: 99
       matrix:

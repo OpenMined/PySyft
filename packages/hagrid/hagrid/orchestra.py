@@ -167,7 +167,7 @@ class Orchestra:
 
         if node_type_enum == NodeType.VM:
             return NodeHandle(
-                node_type=node_type_enum, name=name, port=80, url="http://10.0.1.2"
+                node_type=node_type_enum, name=name, port=80, url="http://192.168.56.2"
             )
 
         # Currently by default we launch in dev mode
