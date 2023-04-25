@@ -530,7 +530,7 @@ class ActionObject(SyftObject):
         )
 
     def syft_get_path(self) -> str:
-        """Get the type of the underlying object"""
+        """Get the type path of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
             return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
@@ -725,7 +725,7 @@ class ActionObject(SyftObject):
         return passthrough_attrs + getattr(self, "syft_passthrough_attrs", [])
 
     def _syft_dont_wrap_attrs(self) -> List[str]:
-        """The results from these attributes are ignored from ID patching."""
+        """The results from these attributes are ignored from UID patching."""
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
     def _syft_get_attr_context(self, name: str) -> Any:
@@ -891,7 +891,6 @@ class ActionObject(SyftObject):
 
         if name in self._syft_passthrough_attrs():
             return object.__getattribute__(self, name)
-
         context_self = self._syft_get_attr_context(name)
 
         # Handle bool operator on nonbools
@@ -904,6 +903,19 @@ class ActionObject(SyftObject):
 
         # Handle anything else
         return self._syft_wrap_attribute_for_methods(name)
+
+    def __setattr__(self, name: str, value: Any) -> Any:
+        defined_on_self = name in self.__dict__ or name in self.__private_attributes__
+
+        debug(">> ", name, ", defined_on_self = ", defined_on_self)
+
+        # use the custom defined version
+        if defined_on_self:
+            self.__dict__[name] = value
+            return value
+        else:
+            context_self = self.syft_action_data  # type: ignore
+            return context_self.__setattr__(name, value)
 
     def keys(self) -> KeysView[str]:
         return self.syft_action_data.keys()  # type: ignore

@@ -2,12 +2,15 @@
 from enum import Enum
 import inspect
 import math
+import sys
 from typing import Any
 from typing import Callable
 from typing import Tuple
 from typing import Type
 
 # third party
+import numpy as np
+import pandas as pd
 import pytest
 
 # syft absolute
@@ -335,6 +338,7 @@ def test_actionobject_syft_point_to():
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
         (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
         (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
 def test_actionobject_syft_execute_ok(worker, testcase):
@@ -403,6 +407,7 @@ def test_actionobject_syft_make_action(worker, testcase):
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
         (set({1, 2, 3, 3}), "add", [5], {}),
         (set({1, 2, 3, 3}), "clear", [], {}),
+        (complex(1, 2), "conjugate", [], {}),
     ],
 )
 def test_actionobject_syft_make_method_action(worker, testcase):
@@ -433,6 +438,7 @@ def test_actionobject_syft_make_method_action(worker, testcase):
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
         (set({1, 2, 3, 3}), "add", [5], {}),
         (set({1, 2, 3, 3}), "clear", [], {}),
+        (complex(1, 2), "conjugate", [], {}),
     ],
 )
 def test_actionobject_syft_make_remote_method_action(worker, testcase):
@@ -461,6 +467,7 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_get_path(testcase):
@@ -482,6 +489,7 @@ def test_actionobject_syft_get_path(testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_send_get(worker, testcase):
@@ -513,6 +521,7 @@ def test_actionobject_syft_send_get(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_passthrough_attrs(testcase):
@@ -560,6 +569,7 @@ def test_actionobject_syft_get_attr_context():
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
         (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
         (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
 def test_actionobject_syft_execute_hooks(worker, testcase):
@@ -597,6 +607,7 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
@@ -617,6 +628,7 @@ def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
@@ -649,6 +661,7 @@ def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_methods(orig_obj):
@@ -681,7 +694,6 @@ def helper_prepare_obj_for_scenario(scenario: AttrScenario, worker, obj: ActionO
         return obj
     elif scenario == AttrScenario.AS_PTR:
         obj, _, _ = helper_make_action_pointers(worker, obj, *[], **{})
-        print(obj)
         return obj
     else:
         raise ValueError(scenario)
@@ -973,3 +985,30 @@ def test_actionobject_syft_getattr_float_history():
     res2 = obj1 + obj2
 
     assert res1.syft_history_hash == res2.syft_history_hash
+
+
+@pytest.mark.skipif(
+    sys.platform != "linux",
+    reason="This is a hackish way to test attribute set/get, and it might fail on Windows or OSX",
+)
+def test_actionobject_syft_getattr_np(worker):
+    orig_obj = np.array([1, 2, 3])
+
+    obj = ActionObject.from_obj(orig_obj)
+
+    assert obj.dtype == orig_obj.dtype
+
+    for dtype in ["int64", "float64"]:
+        obj.dtype = dtype
+        assert obj.dtype == dtype
+
+
+def test_actionobject_syft_getattr_pandas(worker):
+    orig_obj = pd.DataFrame([[1, 2, 3]], columns=["1", "2", "3"])
+
+    obj = ActionObject.from_obj(orig_obj)
+
+    assert obj.columns == orig_obj.columns
+
+    obj.columns = ["a", "b", "c"]
+    assert obj.columns == ["a", "b", "c"]
