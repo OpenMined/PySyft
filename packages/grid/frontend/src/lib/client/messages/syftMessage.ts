@@ -13,7 +13,7 @@ export class SignedAPICall {
     this.serialized_message = serialized_msg;
     this.signature = signature;
     this.credentials = new SyftVerifyKey(credentials);
-    this.fqn = 'syft.core.node.new.api.SignedSyftAPICall';
+    this.fqn = 'syft.client.api.SignedSyftAPICall';
   }
 
   get valid() {
@@ -42,7 +42,7 @@ export class APICall {
     this.args = args;
     this.kwargs = new Map(Object.entries(kwargs));
     this.blocking = blocking;
-    this.fqn = 'syft.core.node.new.api.SyftAPICall';
+    this.fqn = 'syft.client.api.SyftAPICall';
   }
 
   sign(key, serde) {
