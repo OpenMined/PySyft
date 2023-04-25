@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { SvelteComponent } from 'svelte';
 
-  export let icon: SvelteComponent;
+  export let icon: SvelteComponent | undefined;
   export let label: string;
   export let active: string;
-  export let count: number;
+  export let count: number | undefined;
   export let id: string;
   export let ariaControls: string;
 

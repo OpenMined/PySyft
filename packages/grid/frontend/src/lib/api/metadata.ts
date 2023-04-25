@@ -1,5 +1,6 @@
 import ky from 'ky';
 import { deserialize } from './serde';
+import { syftCall } from './syft-api-call';
 // import { API_BASE_URL } from '../constants';
 const API_BASE_URL = "api/v1";
 
@@ -17,4 +18,11 @@ export async function getMetadata() {
     // TODO: Log error in debug mode
     throw error;
   }
+}
+
+export async function updateMetadata(newMetadata) {
+  const payload = {
+    metadata: { ...newMetadata, fqn: 'syft.service.metadata.node_metadata.NodeMetadataUpdate' }
+  };
+  return await syftCall({ path: 'metadata.update', payload });
 }

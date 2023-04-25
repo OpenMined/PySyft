@@ -1,340 +1,159 @@
-<script>
-  import { shortName, prettyName } from '$lib/utils.js';
-  import { Modal, Button } from 'flowbite-svelte';
-  import FormControl from '$lib/components/FormControl.svelte';
-  import { getClient } from '$lib/store.js';
+<script lang="ts">
+  import { metadata, user } from '$lib/store';
+  import Avatar from '$lib/components/Avatar.svelte';
+  import Tabs from '$lib/components/Tabs.svelte';
+  import { getInitials } from '$lib/utils';
   import Badge from '$lib/components/Badge.svelte';
-  import { onMount } from 'svelte';
+  import Button from '$lib/components/Button.svelte';
+  import Modal from '$lib/components/Modal.svelte';
+  import XIcon from '$lib/components/icons/XIcon.svelte';
+  import Dialog from '$lib/components/Dialog.svelte';
+  import Input from '$lib/components/Input.svelte';
+  import ButtonGhost from '$lib/components/ButtonGhost.svelte';
+  import TextArea from '$lib/components/TextArea.svelte';
+  import { getMetadata, updateMetadata } from '$lib/api/metadata';
 
-  let client = '';
-  let metadata = '';
+  let tabs = [
+    { label: 'Domain', id: 'tab1' }
+    // { label: 'Connection', id: 'tab2' }
+    // { label: 'Permissions', id: 'tab3' },
+  ];
 
-  onMount(async () => {
-    await getClient()
-      .then((response) => {
-        client = response;
+  let currentTab = tabs[0].id;
 
-        client.metadata.then((responseMetadata) => {
-          metadata = responseMetadata;
-        });
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  });
+  $: profileInformation = [
+    { label: 'Domain name', id: 'domain_name', value: $metadata?.name },
+    { label: 'Organization', id: 'organization', value: $metadata?.organization },
+    { label: 'Description', id: 'description', value: $metadata?.description }
+  ];
 
-  let modalActiveList = [false, false, false];
-  let selectedTab = ['border-bottom: solid rgb(25, 179, 230)', '', ''];
-  let display = ['block', 'none', 'none'];
-  let focus = ['font-bold', 'font-roboto', 'font-roboto'];
+  let openModal: 'name' | 'organization' | 'description' | null = null;
 
-  function updateSelectedBar(index) {
-    selectedTab.map((element, i) => {
-      if (i === index) {
-        selectedTab[i] = 'border-bottom: solid rgb(25, 179, 230)';
-        focus[i] = 'font-bold';
-        display[i] = 'block';
-      } else {
-        selectedTab[i] = '';
-        focus[i] = 'font-roboto';
-        display[i] = 'none';
-      }
-    });
-  }
+  const onClose = () => (openModal = null);
 
-  async function submitDomainChanges(client) {
-    let name = document.getElementById('domain_name')
-      ? document.getElementById('domain_name').value
-      : null;
-    let organization = document.getElementById('organization')
-      ? document.getElementById('organization').value
-      : null;
-    let description = document.getElementById('description')
-      ? document.getElementById('description').value
-      : null;
+  let { name, organization, description } = $metadata ?? {};
 
-    let domainInfo = {
-      name: name,
-      organization: organization,
-      description: description
+  const handleUpdate = async () => {
+    let newMetadata = {
+      name: openModal === 'domain_name' ? name : null,
+      organization: openModal === 'organization' ? organization : null,
+      description: openModal === 'description' ? description : null
     };
 
-    // Filter attributes that doesn't exist
-    Object.keys(domainInfo).forEach((k) => domainInfo[k] == null && delete domainInfo[k]);
+    newMetadata = Object.fromEntries(Object.entries(newMetadata).filter(([_, v]) => v));
 
-    await client.updateMetadata(domainInfo);
-    metadata = await client.metadata;
+    try {
+      await updateMetadata(newMetadata);
+      const updatedMetadata = await getMetadata();
+      metadata.set(updatedMetadata);
+      onClose();
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-    // Cleaning Element Values
-    const elementsList = [
-      [document.getElementById('domain_name'), 0],
-      [document.getElementById('organization'), 1],
-      [document.getElementById('description'), 2]
-    ];
-    elementsList.map((element) => {
-      if (element[0]) {
-        element[0].value = null;
-        modalActiveList[element[1]] = !modalActiveList[element[1]];
-      }
-    });
-  }
+  $: domainInitials = getInitials($metadata?.name);
+  $: userInitials = getInitials($user?.name);
 </script>
 
-<main>
-  {#if metadata}
-    <div class="page-container">
-      <div class="flex space-x-7 px-4" style="height: 30px;">
-        <button
-          on:click={() => {
-            updateSelectedBar(0);
-          }}
-          style={selectedTab[0]}
-          class="flex w-20 justify-center cursor-pointer"
-        >
-          <span class={focus[0]}>Domain</span>
-        </button>
-        <!--
-        <button
-          on:click={() => {
-            updateSelectedBar(1);
-          }}
-          style={selectedTab[1]}
-          class="flex w-20 justify-center cursor-pointer"
-        >
-          <span class={focus[1]}> Connection </span>
-        </button>
-        <button
-          on:click={() => {
-            updateSelectedBar(2);
-          }}
-          style={selectedTab[2]}
-          class="flex w-20 justify-center cursor-pointer"
-        >
-          <span class={focus[2]}> Permissions </span>
-        </button>
-        -->
-      </div>
-
-      <div class="px-6">
-        <div style="display:{display[0]}">
-          <div class="grid grid-cols-6 gap-3">
-            <div class="flex justify-center py-10">
-              <div>
-                <div id="domain-profile-border">
-                  <div id="domain-profile-circle">
-                    <h3 style="color:white">
-                      <b>{shortName(prettyName(metadata.name))}</b>
-                    </h3>
-                  </div>
-                </div>
+<div>
+  <Tabs {tabs} bind:active={currentTab} />
+  <section class="pt-9 pl-[60px] pr-10 pb-20 flex flex-col tablet:flex-row gap-11">
+    {#if !$metadata}
+      Loading...
+    {:else}
+      <span class="block w-32 h-32 p-4">
+        <Avatar blackBackground initials={domainInitials} />
+      </span>
+      <div class="w-full divide-y divide-gray-200">
+        <div class="w-full flex flex-col py-4 gap-3">
+          <h3 class="all-caps">Profile information</h3>
+          {#each profileInformation as { label, id, value }}
+            <div class="flex flex-col gap-2 pt-2 pb-4">
+              <h4 class="text-xl capitalize">{label}</h4>
+              <p data-test-id={id} class:text-gray-600={!value}>{value ?? 'Empty'}</p>
+              <span>
+                <button class="link capitalize" on:click={() => (openModal = id)}>
+                  Change {label}
+                </button>
+              </span>
+            </div>
+          {/each}
+        </div>
+        <div class="w-full flex flex-col py-4 gap-3">
+          <h3 class="all-caps">System information</h3>
+          <div class="flex flex-col desktop:flex-row gap-2 items-center">
+            <div class="flex gap-2 items-center w-full">
+              <span class="block w-16 h-16">
+                <Avatar noOutline initials={userInitials} />
+              </span>
+              <div class="flex flex-col gap-1">
+                <h4 class="text-xl capitalize font-bold">{$user?.name}</h4>
+                <p>{$user?.email}</p>
               </div>
             </div>
-
-            <div class="border-b col-span-5 space-y-6 py-12">
-              <span class="font-bold">PROFILE INFORMATION</span>
-              <div class="flex flex-col space-y-2">
-                <span class="font-bold">Domain Name</span>
-                <span class="font-roboto">{metadata.name}</span>
-                <button
-                  on:click={() => {
-                    modalActiveList[0] = !modalActiveList[0];
-                  }}
-                  style="text-align: left"
-                >
-                  <span class="font-roboto change-link-text ">Change Domain Name</span>
-                </button>
+            <div class="flex flex-col gap-1 pt-2 pb-4 w-full">
+              <div class="flex gap-1 flex-wrap items-center">
+                <h4 class="text-gray-400 all-caps text-sm">ID#:</h4>
+                <Badge variant="gray">{$metadata.id.value}</Badge>
               </div>
-
-              <div class="flex flex-col space-y-2">
-                <span class="font-bold">Organization</span>
-                <span class="font-roboto">{metadata.organization}</span>
-                <button
-                  on:click={() => {
-                    modalActiveList[1] = !modalActiveList[1];
-                  }}
-                  style="text-align: left"
-                >
-                  <span class="font-roboto change-link-text ">Change Organization</span>
-                </button>
-              </div>
-
-              <div class="flex flex-col space-y-2">
-                <span class="font-bold">Description</span>
-                <span class="font-roboto">{metadata.description}</span>
-                <button
-                  on:click={() => {
-                    modalActiveList[2] = !modalActiveList[2];
-                  }}
-                  style="text-align: left;"
-                >
-                  <span class="font-roboto change-link-text ">Change Description</span>
-                </button>
-              </div>
-            </div>
-            <div class="col-start-2 col-span-5">
-              <span class="font-bold">SYSTEM INFORMATION</span>
-              <div class="grid grid-cols-4 py-5">
-                <!--
-                <div class="flex justify-center">
-                  <div id="user-profile-circle" style="height:10vh;width:10vh;">
-                    <h3 style="color:white">
-                      <b> {shortName('None')} </b>
-                    </h3>
-                  </div>
-                  <div style="justify-content:center;display:flex;flex-direction:column">
-                    <span class="font-bold">{'None'}</span>
-                    <span class="font-roboto">Domain Owner</span>
-                  </div>
-                </div>
-                -->
-                <div class="flex flex-col justify-center">
-                  <span class="font-bold">
-                    ID # <Badge variant="gray">{metadata.id.value}</Badge>
-                  </span>
-                  <span>
-                    <b>DEPLOYED ON:</b>
-                    {metadata.deployed_on}
-                  </span>
-                </div>
+              <div class="flex gap-1 items-center">
+                <h4 class="text-gray-400 all-caps text-sm">Deployed on:</h4>
+                <p class="text-gray-800">{$metadata.deployed_on}</p>
               </div>
             </div>
           </div>
         </div>
-        <div style="display:{display[1]}" />
-        <div style="display:{display[2]}" />
+        <!--- For future use
+        <div class="w-full flex flex-col py-4 gap-3">
+          <h3 class="all-caps">Caution</h3>
+          <div
+            class="w-full flex flex-col p-8 border-b border-primary-100 gap-2 bg-gray-50 rounded-[14px]"
+          >
+            <span class="inline-flex gap-3 items-center">
+              <h4 class="text-lg font-bold">Remote Execution</h4>
+              <Badge variant="gray"><span class="capitalize">Turned off</span></Badge>
+            </span>
+            <p>
+              When remote execution is turned on for the domain, it means that you are allowing
+              PySyft to execute code submitted by users as is against the real private data instead
+              of the mock data when a request is approved. If this is a third-party user please
+              review the function and policy code carefully before approving this request. You can
+              turn off "Remote Execution" for your domain by going to your "Domain Settings" or
+              clicking the link below.
+            </p>
+            <span>
+              <Button variant="primary-outline">Turn On</Button>
+            </span>
+          </div>
+        </div>
+        -->
+      </div>
+    {/if}
+  </section>
+</div>
+
+<Dialog bind:open={openModal}>
+  <Modal>
+    <div slot="header" class="w-full text-right">
+      <button on:click={onClose}>
+        <XIcon class="w-6 h-6" />
+      </button>
+    </div>
+    <div slot="body">
+      {#if openModal === 'domain_name'}
+        <Input label="Domain name" required bind:value={name} id="name" />
+      {:else if openModal === 'organization'}
+        <Input label="Organization" bind:value={organization} id="institution" />
+      {:else if openModal === 'description'}
+        <TextArea label="Description" bind:value={description} id="description" />
+      {/if}
+    </div>
+    <div class="flex w-full justify-end" slot="button-group">
+      <div class="w-full justify-end flex px-4 gap-4">
+        <ButtonGhost on:click={onClose}>Cancel</ButtonGhost>
+        <Button type="submit" variant="secondary" on:click={handleUpdate}>Save</Button>
       </div>
     </div>
-
-    <Modal
-      bind:open={modalActiveList[0]}
-      placement="center"
-      size="xs"
-      class="w-full"
-      style="background-color: white"
-    >
-      <FormControl placeholder="USA Domain" label="Domain Name" id="domain_name" required />
-      <div class="space-x-3" style="display:flex;justify-content:right">
-        <button
-          on:click={() => {
-            modalActiveList[0] = !modalActiveList[0];
-          }}
-        >
-          Cancel
-        </button>
-        <Button
-          pill={true}
-          on:click={() => submitDomainChanges(client)}
-          color="dark"
-          style="color: white"
-        >
-          Confirm
-        </Button>
-      </div>
-    </Modal>
-    <Modal
-      bind:open={modalActiveList[1]}
-      placement="center"
-      size="xs"
-      class="w-full"
-      style="background-color: white"
-    >
-      <FormControl placeholder="UCSF University" label="Organization" id="organization" required />
-      <div class="space-x-3" style="display:flex;justify-content:right">
-        <button
-          on:click={() => {
-            modalActiveList[0] = !modalActiveList[0];
-          }}
-        >
-          Cancel
-        </button>
-        <Button
-          pill={true}
-          on:click={() => submitDomainChanges(client)}
-          color="dark"
-          style="color: white"
-        >
-          Confirm
-        </Button>
-      </div>
-    </Modal>
-    <Modal
-      bind:open={modalActiveList[2]}
-      placement="center"
-      size="xs"
-      class="w-full"
-      style="background-color: white"
-    >
-      <FormControl
-        placeholder="This domain was created for research purposes"
-        label="Description"
-        id="description"
-        type="textarea"
-        required
-      />
-      <div class="space-x-3" style="display:flex;justify-content:right">
-        <button
-          on:click={() => {
-            modalActiveList[0] = !modalActiveList[0];
-          }}
-        >
-          Cancel
-        </button>
-        <Button
-          pill={true}
-          on:click={() => submitDomainChanges(client)}
-          color="dark"
-          style="color: white"
-        >
-          Confirm
-        </Button>
-      </div>
-    </Modal>
-  {/if}
-</main>
-
-<style>
-  .page-container {
-    width: 85%;
-    position: absolute;
-    height: 93%;
-    top: 7%;
-    left: 15%;
-  }
-
-  #domain-profile-circle {
-    height: 15vh;
-    width: 15vh;
-    border-width: 2px;
-    border-color: whitesmoke;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #222222;
-  }
-
-  #domain-profile-border {
-    padding: 1rem;
-    position: relative;
-    background: linear-gradient(to bottom, rgb(37, 169, 246), red);
-    padding: 3px;
-    border-radius: 50%;
-  }
-
-  .change-link-text {
-    color: rgb(25, 179, 230);
-    cursor: pointer;
-  }
-
-  #user-profile-circle {
-    height: 5vh;
-    cursor: pointer;
-    width: 5vh;
-    border-radius: 50%;
-    margin-right: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgb(25, 179, 230);
-  }
-</style>
+  </Modal>
+</Dialog>
