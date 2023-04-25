@@ -1,7 +1,7 @@
 import ky from 'ky';
 import { deserialize, serialize } from './serde';
 // import { API_BASE_URL } from '../constants';
-const API_BASE_URL = "api/v1";
+const API_BASE_URL = "/api/v1";
 
 interface LoginCredentials {
   email: string;

@@ -5,7 +5,7 @@
   import sodium from 'libsodium-wrappers';
   import { UserCode } from '../objects/userCode';
   // import { API_BASE_URL } from '$lib/constants';
-  const API_BASE_URL = 'api/v1';
+  const API_BASE_URL = '/api/v1';
 
   export class JSClient {
     /**

@@ -3,7 +3,7 @@ import sodium from 'libsodium-wrappers';
 import { getKeyFromStorage, getNodeIdFromStorage } from './keys';
 import { deserialize, deserializeSyftResponseObject, serialize } from './serde';
 // import { API_BASE_URL } from '../constants';
-const API_BASE_URL = "api/v1";
+const API_BASE_URL = "/api/v1";
 
 const SYFT_MSG_URL = `${API_BASE_URL}/new/api_call`;
 
