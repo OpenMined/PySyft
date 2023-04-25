@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { metadata } from '$lib/store';
+  import { metadata, user } from '$lib/store';
   import { login } from '$lib/api/auth';
   import Button from '$lib/components/Button.svelte';
   import Modal from '$lib/components/Modal.svelte';
@@ -8,15 +8,24 @@
   import Input from '$lib/components/Input.svelte';
   import DomainOnlineIndicator from '$lib/components/DomainOnlineIndicator.svelte';
   import type { DomainOnlineStatus } from '../../../types/domain/onlineIndicator';
+  import { getUserIdFromStorage } from '$lib/api/keys';
+  import { getSelf } from '$lib/api/users';
 
   let status: DomainOnlineStatus = 'online';
   let email = '';
   let password = '';
 
   async function handleSubmit() {
-    await login({ email, password })
-      .then(() => goto('/datasets'))
-      .catch((error) => console.error(error));
+    try {
+      await login({ email, password });
+      if (getUserIdFromStorage()) {
+        const updatedUser = await getSelf();
+        user.set(updatedUser);
+      }
+      goto('/datasets');
+    } catch (error) {
+      console.error(error);
+    }
   }
 </script>
 
