@@ -16,7 +16,7 @@ from ...serde.serializable import serializable
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..code.user_code import UserCode
-from ..code.user_code import execute_byte_code
+from ..code.user_code import execute_code_item
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -158,31 +158,30 @@ class ActionService(AbstractService):
             real_kwargs[key] = kwarg_value
 
         result_id = UID()
-
         try:
             if not has_twin_inputs:
                 # no twins
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
-                exec_result = execute_byte_code(code_item, filtered_kwargs)
+                exec_result = execute_code_item(code_item, filtered_kwargs)
                 result_action_object = wrap_result(
-                    code_item.id, result_id, exec_result.result
+                    code_item.id, result_id, exec_result
                 )
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.PRIVATE
                 )
-                private_exec_result = execute_byte_code(code_item, private_kwargs)
+                private_exec_result = execute_code_item(code_item, private_kwargs)
                 result_action_object_private = wrap_result(
-                    code_item.id, result_id, private_exec_result.result
+                    code_item.id, result_id, private_exec_result
                 )
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
-                mock_exec_result = execute_byte_code(code_item, mock_kwargs)
+                mock_exec_result = execute_code_item(code_item, mock_kwargs)
                 result_action_object_mock = wrap_result(
-                    code_item.id, result_id, mock_exec_result.result
+                    code_item.id, result_id, mock_exec_result
                 )
 
                 result_action_object = TwinObject(
@@ -192,7 +191,6 @@ class ActionService(AbstractService):
                 )
         except Exception as e:
             return Err(f"_user_code_execute failed. {e}")
-
         set_result = self.store.set(
             uid=result_id,
             credentials=context.credentials,
@@ -219,12 +217,12 @@ class ActionService(AbstractService):
                 self, context, resolved_self.private, action, twin_mode=TwinMode.PRIVATE
             )
             if private_result.is_err():
-                return private_result.err()
+                return private_result
             mock_result = execute_object(
                 self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
             )
             if mock_result.is_err():
-                return mock_result.err()
+                return mock_result
 
             private_result = private_result.ok()
             mock_result = mock_result.ok()
@@ -315,9 +313,7 @@ def execute_object(
                 filtered_args = filter_twin_args(args, twin_mode=twin_mode)
                 filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 result = target_method(*filtered_args, **filtered_kwargs)
-                result_action_object = wrap_result(
-                    action.parent_id, action.result_id, result
-                )
+                result_action_object = wrap_result(action.id, action.result_id, result)
             elif twin_mode == TwinMode.NONE and has_twin_inputs:
                 # self isn't a twin but one of the inputs is
                 private_args = filter_twin_args(args, twin_mode=twin_mode)
@@ -360,10 +356,12 @@ def execute_object(
                 raise Exception(
                     f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
                 )
+        else:
+            raise Exception("Missing target method")
 
     except Exception as e:
-        print("what is this exception", e)
         return Err(e)
+
     return Ok(result_action_object)
 
 

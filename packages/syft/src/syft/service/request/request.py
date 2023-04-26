@@ -174,8 +174,16 @@ class Request(SyftObject):
 
         action_object = ActionObject.from_obj(result)
         result = api.services.action.save(action_object)
+        print(result)
+        # relative
+        from ...service.action.action_service import TwinMode
+
         if not result:
             return result
+        result = api.services.action.get(
+            uid=action_object.id, twin_mode=TwinMode.PRIVATE
+        )
+        print(result)
 
         permission_request = self.approve()
         if not permission_request:
@@ -185,7 +193,10 @@ class Request(SyftObject):
         state = code.output_policy
         ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
-        state.apply_output(context=ctx, outputs=action_object)
+        # TODO 0.9: Replace get_result with a correct interface
+        # to have an UserCodeExecutionResult
+        policy_result = state.apply_output(context=ctx, outputs=action_object)
+        action_object.set_result(policy_result)
         policy_state_mutation = ObjectMutation(
             linked_obj=change.linked_obj,
             attr_name="output_policy",

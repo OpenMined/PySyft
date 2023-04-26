@@ -6,6 +6,7 @@ import ast
 from enum import Enum
 import hashlib
 import inspect
+from io import BytesIO
 from io import StringIO
 import sys
 from typing import Any
@@ -17,6 +18,7 @@ from typing import Type
 from typing import Union
 
 # third party
+from PIL import Image
 from result import Err
 from result import Ok
 from result import Result
@@ -329,11 +331,14 @@ class UserCode(SyftObject):
             # compile the function
             raw_byte_code = compile_byte_code(unparse(inner_function))
             # load it
-            exec(raw_byte_code)  # nosec
+            # exec(raw_byte_code)  # nosec
             # execute it
-            evil_string = f"{self.service_func_name}(*args, **kwargs)"
-            result = eval(evil_string, None, locals())  # nosec
+            # evil_string = f"{self.service_func_name}(*args, **kwargs)"
+            # result = eval(evil_string, None, locals())  # nosec
             # return the results
+            result = execute_byte_code(
+                raw_byte_code, self.service_func_name, self.id, args, kwargs
+            )
             return result
 
         return wrapper
@@ -567,7 +572,10 @@ def add_custom_status(context: TransformContext) -> TransformContext:
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
-            raise NotImplementedError
+            # TODO: Teo this was raise NotImplemented, figure out why
+            context.output["status"] = UserCodeStatusContext(
+                base_dict={node_view: UserCodeStatus.SUBMITTED}
+            )
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
@@ -602,9 +610,43 @@ class UserCodeExecutionResult(SyftObject):
     stdout: str
     stderr: str
     result: Any
+    serialized_plot: Optional[bytes] = None
+    syft_dont_wrap_attrs = ["get_plot"]
+    syft_passthrough_attrs = ["get_plot"]
+
+    def get_plot(self) -> Image:
+        # TODO: add caching to optimize memory
+        if self.serialized_plot is not None:
+            return Image.open(BytesIO(self.serialized_plot), "r")
+        else:
+            return None
+
+    def get_result(self) -> Any:
+        return self.result
+
+    def get_stdout(self) -> str:
+        return self.stdout
+
+    def get_stderr(self) -> str:
+        return self.stderr
+
+    def set_result(self, new_result) -> None:
+        self.result = new_result
 
 
-def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+    return execute_byte_code(
+        code_item.byte_code,
+        code_item.unique_func_name,
+        code_item.id,
+        args=[],
+        kwargs=kwargs,
+    )
+
+
+def execute_byte_code(
+    byte_code, func_name, code_id, args, kwargs: Dict[str, Any]
+) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
@@ -618,20 +660,45 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         # statisfy lint checker
         result = None
 
-        exec(code_item.byte_code)  # nosec
+        exec(byte_code)  # nosec
 
-        evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, None, locals())  # nosec
+        evil_string = f"{func_name}(*args, **kwargs)"
+        try:
+            result = eval(evil_string, None, locals())  # nosec
+        except Exception as e:
+            # TODO Check if this works
+            return UserCodeExecutionResult(
+                user_code_id=code_id,
+                stdout='',
+                stderr=str(e),
+                result='',
+                serialized_plot=None,
+            )
+
+        plot = None
+        serialized_plot = None
+        # third party
+        import matplotlib.pyplot as plt
+
+        plot = plt.gcf()
+
+        if plot.get_axes():
+            buf = BytesIO()
+            plot.savefig(buf, format="png")
+            serialized_plot = buf.getvalue()
 
         # restore stdout and stderr
         sys.stdout = stdout_
         sys.stderr = stderr_
 
+        print("execute_byte_code", file=sys.stderr)
+
         return UserCodeExecutionResult(
-            user_code_id=code_item.id,
+            user_code_id=code_id,
             stdout=str(stdout.getvalue()),
             stderr=str(stderr.getvalue()),
             result=result,
+            serialized_plot=serialized_plot,
         )
 
     except Exception as e:
