@@ -13,6 +13,7 @@ from pymongo.errors import DuplicateKeyError
 from result import Err
 from result import Ok
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ..node.credentials import SyftVerifyKey
@@ -22,6 +23,7 @@ from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.response import SyftSuccess
 from ..types.syft_object import StorableObjectType
+from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import SyftObjectRegistry
 from ..types.transforms import TransformContext
@@ -36,6 +38,23 @@ from .locks import LockingConfig
 from .locks import NoLockingConfig
 from .mongo_client import MongoClient
 from .mongo_client import MongoStoreClientConfig
+
+
+@serializable()
+class MongoDict(SyftBaseObject):
+    keys: List[Any]
+    values: List[Any]
+
+    @property
+    def dict(self) -> Dict[Any, Any]:
+        return dict(zip(self.keys, self.values))
+
+    @staticmethod
+    def from_dict(input: Dict[Any, Any]) -> Self:
+        return MongoDict(keys=list(input.keys()), values=list(input.values()))
+
+    def __repr__(self):
+        return self.dict.__repr__()
 
 
 class MongoBsonObject(StorableObjectType, dict):
@@ -66,7 +85,8 @@ def to_mongo(context: TransformContext) -> TransformContext:
         output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
-    output["__obj__"] = context.obj.to_dict()
+    mongo_dict = MongoDict.from_dict(context.obj.to_dict())
+    output["__obj__"] = mongo_dict
     output["__arepr__"] = _repr_debug_(context.obj)  # a comes first in alphabet
     context.output = output
     return context
@@ -88,7 +108,8 @@ def from_mongo(
         raise ValueError(
             "Versioned class should not be None for initialization of SyftObject."
         )
-    output = storage_obj["__obj__"]
+    mongo_dict = storage_obj["__obj__"]
+    output = mongo_dict.dict
     for attr, funcs in constructor.__serde_overrides__.items():
         if attr in output:
             output[attr] = funcs[1](output[attr])
