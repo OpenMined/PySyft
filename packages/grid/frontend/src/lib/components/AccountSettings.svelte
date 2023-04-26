@@ -1,6 +1,6 @@
 <script>
   import { Modal, Button } from 'flowbite-svelte';
-  import { shortName } from '$lib/utils.js';
+  import { shortName } from '$lib/utils.ts';
   import FormControl from '$lib/components/FormControl.svelte';
   import YellowWarn from '$lib/components/icons/YellowWarn.svelte';
   export let user_info;

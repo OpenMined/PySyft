@@ -150,6 +150,9 @@ class UserView(SyftObject):
 
     email: EmailStr
     name: str
+    role: ServiceRole  # make sure role cant be set without uid
+    institution: Optional[str]
+    website: Optional[str]
 
     __attr_repr_cols__ = ["name", "email"]
 

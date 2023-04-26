@@ -33,39 +33,66 @@ def get_operator(version_string: str) -> Tuple[str, Callable, str]:
     return version_string, op, op_char
 
 
+def check_rule(version_string: str, LATEST_STABLE_SYFT: str, __version__: str) -> bool:
+    version_string, op, op_char = get_operator(version_string)
+    syft_version = version.parse(__version__)
+    stable_version = version.parse(LATEST_STABLE_SYFT)
+    required = version.parse(version_string)
+    result = op(syft_version, required)
+
+    requirements = []
+    messages = []
+
+    if result:
+        requirements.append(f"the requirement {op_char}{required}")
+    else:
+        requirements.append(f"the requirement {op_char}{required}")
+        pre = ""
+        if required.minor > stable_version.minor:
+            pre = " --pre"
+        msg = f"Alternatively you could try to match {op_char}{required} with:\n"
+        if required > syft_version:
+            upgrade = f"pip install -U{pre} syft or "
+        else:
+            upgrade = ""
+        msg += f"{upgrade}pip install syft=={required}"
+        messages.append(msg)
+    return result, requirements, messages
+
+
 def make_requires(LATEST_STABLE_SYFT: str, __version__: str) -> Callable:
     def requires(version_string: str, silent: bool = False) -> Optional[bool]:
-        version_string, op, op_char = get_operator(version_string)
         syft_version = version.parse(__version__)
-        stable_version = version.parse(LATEST_STABLE_SYFT)
-        required = version.parse(version_string)
-        result = op(syft_version, required)
+        parts = version_string.split(",")
+        result = True
+        all_requirements = []
+        all_messages = []
+        for part in parts:
+            part_result, requirements, messages = check_rule(
+                version_string=part,
+                LATEST_STABLE_SYFT=LATEST_STABLE_SYFT,
+                __version__=__version__,
+            )
+            all_requirements += requirements
+            all_messages += messages
+            if not part_result:
+                result = False
+
         if silent:
             return result
 
+        msg_requirements = " and ".join(all_requirements)
         if result:
             print(
-                f"✅ The installed version of syft=={syft_version} matches "
-                f"the requirement {op_char}{required}"
+                f"✅ The installed version of syft=={syft_version} matches {msg_requirements}"
             )
         else:
             print(
-                f"❌ The installed version of syft=={syft_version} doesn't match "
-                f"the requirement {op_char}{required}."
+                f"❌ The installed version of syft=={syft_version} doesn't match {msg_requirements}"
             )
-            pre = ""
-            if required.minor > stable_version.minor:
-                pre = " --pre"
-            print(
-                f"This code or notebook may have issues if APIs have changed.\n"
-                f"Alternatively you could try to match {op_char}{required} it with:\n"
-            )
-            if required > syft_version:
-                upgrade = f"pip install -U{pre} syft or "
-            else:
-                upgrade = ""
-            msg = f"{upgrade}pip install syft=={required}"
-            print(msg)
+        if len(all_messages):
+            print("This code or notebook may have issues if APIs have changed\n")
+            print("\n\n".join(all_messages))
         return None
 
     return requires
