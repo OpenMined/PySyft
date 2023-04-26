@@ -1,5 +1,5 @@
 <script>
-  import { getPath } from '../../../lib/utils.js';
+  import { getPath } from '$lib/utils.ts';
   import { browser } from '$app/environment';
   let path = '';
   if (browser) {
