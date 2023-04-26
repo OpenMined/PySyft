@@ -25,6 +25,12 @@
   ignore_errors: yes
   when: docker_volume_destroy is defined
 
+- name: Restart Docker Service
+  service:
+    name: docker
+    state: restarted
+    daemon_reload: yes
+
 - name: Start Docker Containers
   shell:
     cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }}'
