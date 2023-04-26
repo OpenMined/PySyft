@@ -79,6 +79,7 @@ from .telemetry import instrument  # noqa: F401
 from .user_settings import UserSettings  # noqa: F401
 from .user_settings import settings  # noqa: F401
 from .version_compare import make_requires
+from .core.node.new.jax import jax,jnp
 
 LATEST_STABLE_SYFT = "0.7"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
