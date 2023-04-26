@@ -1,26 +1,4 @@
 .DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# vercel
-.vercel
-
-tailwind.output.css
-
-.env*.local
-
-/cache
-
 node_modules
 /build
 /.svelte-kit
@@ -28,5 +6,5 @@ node_modules
 .env
 .env.*
 !.env.example
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+.next/
+.pnpm-store

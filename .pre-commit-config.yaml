@@ -16,7 +16,7 @@ repos:
         exclude: ^(packages/grid/frontend/)
       - id: check-added-large-files
         always_run: true
-        exclude: ^(packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan|notebooks/Experimental)
+        exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
       - id: check-yaml
         always_run: true
         exclude: ^(packages/grid/k8s/rendered/)
@@ -31,7 +31,7 @@ repos:
         exclude: ^(packages/grid/ansible/)
       - id: name-tests-test
         always_run: true
-        exclude: ^(packages/grid/backend/grid/tests/utils/)
+        exclude: ^(packages/grid/backend/grid/tests/utils/)|^(.*fixtures.py)
       - id: requirements-txt-fixer
         always_run: true
       - id: mixed-line-ending
@@ -113,6 +113,7 @@ repos:
             "--non-interactive",
             "--config-file=tox.ini",
           ]
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.0.0
     hooks:
@@ -144,8 +145,10 @@ repos:
       - id: mypy
         name: mypy-syft
         always_run: true
-        files: "^packages/syft(?!(/src/syft/shylock/|/tests/|._pb2\\.py$)).\\.py"
+        # files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util"
+        files: "^packages/syft/src/syft/serde"
         args: [
+            "--follow-imports=skip",
             "--ignore-missing-imports",
             "--scripts-are-modules",
             "--disallow-incomplete-defs",
@@ -162,8 +165,15 @@ repos:
             "--non-interactive",
             "--config-file=tox.ini",
           ]
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.6.1
+    hooks:
+      - id: nbstripout
+        files: "notebooks/api/0.8/*"
+
   # - repo: meta
   #   hooks:
   #     - id: identity
   #       always_run: true
-  #       files: "^packages/syft(?!(/tests/|.*_pb2\\.py$)).*\\.py"
+  #       files: "notebooks/api/*"

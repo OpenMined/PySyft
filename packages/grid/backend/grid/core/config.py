@@ -70,11 +70,11 @@ class Settings(BaseSettings):
             and values.get("EMAILS_FROM_EMAIL")
         )
 
-    FIRST_SUPERUSER: EmailStr = EmailStr("info@openmined.org")
-    FIRST_SUPERUSER_PASSWORD: str = "changethis"
+    DEFAULT_ROOT_EMAIL: EmailStr = EmailStr("info@openmined.org")
+    DEFAULT_ROOT_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
-    DOMAIN_NAME: str = "default_node_name"
+    NODE_NAME: str = "default_node_name"
     STREAM_QUEUE: bool = False
     NODE_TYPE: str = "Domain"
 
@@ -111,13 +111,6 @@ class Settings(BaseSettings):
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
     ASSOCIATION_TIMEOUT: int = 10
-
-    # Oblv
-    OBLV_KEY_NAME: str = str(os.getenv("OBLV_KEY_NAME", "oblv_key"))
-    OBLV_KEY_PATH: str = str(os.getenv("OBLV_KEY_NAME", "/app/content"))
-    INSTALL_OBLV_CLI: bool = (
-        True if os.getenv("INSTALL_OBLV_CLI", "false").lower() == "true" else False
-    )
 
     class Config:
         case_sensitive = True

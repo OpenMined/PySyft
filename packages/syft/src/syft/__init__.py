@@ -1,118 +1,61 @@
-"""
-Welcome to the syft package! This package is the primary package for PySyft.
-This package has two kinds of attributes: submodules and convenience functions.
-Submodules are configured in the standard way, but the convenience
-functions exist to allow for a convenient `import syft as sy` to then expose
-the most-used functionalities directly on syft. Note that this way of importing
-PySyft is the strict convention in this codebase. (Do no simply call
-`import syft` and then directly use `syft.<method>`.)
-The syft module is split into two distinct groups of functionality which we casually refer to
-as syft "core" and syft "python". "core" functionality is functionality which is designed
-to be universal across all Syft languages (javascript, kotlin, swift, etc.).
-Syft "python" includes all functionality which by its very nature cannot be
-truly polyglot. Syft "core" functionality includes the following modules:
-* :py:mod:`syft.core.node` - APIs for interacting with remote machines you do not directly control.
-* :py:mod:`syft.core.message` - APIs for serializing messages sent between Client and Node classes.
-* :py:mod:`syft.core.pointer` - Client side API for referring to objects on a Node
-* :py:mod:`syft.core.store` - Server side API for referring to object storage on a node (things pointers point to)
-Syft "python" functionality includes the following modules:
-* :py:mod:`syft.ast` - code generates external library common syntax tree using an allowlist list of methods
-* :py:mod:`syft.typecheck` - automatically checks and enforces Python type hints and the exclusive use of kwargs.
-* :py:mod:`syft.lib` - uses the ast library to dynamically create remote execution APIs for supported Python libs.
-    IMPORTANT: syft.core should be very careful when importing functionality from outside of syft
-    core!!! Since we plan to drop syft core down to a language (such as C++ or Rust)
-    this can create future complications with lower level languages calling
-    higher level ones.
-To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
-"""
-
-__version__ = "0.8.0-beta.0"
+__version__ = "0.8.0-beta.10"
 
 # stdlib
 from pathlib import Path
 import sys
 from typing import Any
-
-# third party
-from pkg_resources import DistributionNotFound  # noqa: F401
-from pkg_resources import get_distribution  # noqa: F401
+from typing import Callable
 
 # relative
-# Package Imports
-from . import filterwarnings  # noqa: F401
 from . import gevent_patch  # noqa: F401
-from . import jax_settings  # noqa: F401
-from . import lib  # noqa: F401
-from . import logger  # noqa: F401
-
-# ASTRACT OBJECT IMPORTS
-from .core import common  # noqa: F401
-from .core.adp.data_subject_list import DataSubjectArray  # noqa: F401
-from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
-
-# Convenience Methods
-from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
-from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
-from .core.common.uid import UID  # noqa: F401
-
-# TFF
-from .core.node.common.node_service import tff  # noqa: F401
-from .core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
-    ReprMessage,
-)
-from .core.node.device import Device  # noqa: F401
-from .core.node.device_client import DeviceClient  # noqa: F401
-from .core.node.domain import Domain  # noqa: F401
-from .core.node.domain import DomainClient  # noqa: F401
-from .core.node.network import Network  # noqa: F401
-from .core.node.network_client import NetworkClient  # noqa: F401
-from .core.node.new.client import login  # noqa: F401
-from .core.node.new.client import login as new_login  # noqa: F401
-from .core.node.new.credentials import SyftSigningKey  # noqa: F401
-from .core.node.new.data_subject import DataSubject  # noqa: F401
-from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
-from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
-from .core.node.new.roles import Roles as roles  # noqa: F401
-from .core.node.new.user_code import ExactMatch  # noqa: F401
-from .core.node.new.user_code import SingleExecutionExactOutput  # noqa: F401
-from .core.node.new.user_code import syft_function  # noqa: F401
-from .core.node.new.user_service import UserService  # noqa: F401
-
-# Convenience Constructors
-from .core.node.vm import VirtualMachine  # noqa: F401
-from .core.node.vm_client import VirtualMachineClient  # noqa: F401
-
-# new code
-from .core.node.worker import Worker  # noqa: F401
-
-# Convenience Objects
-from .core.tensor import autodp  # noqa: F401
-from .core.tensor import nn  # noqa: F401
-from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401
-from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
-from .core.tensor.lazy_repeat_array import lazyrepeatarray  # noqa: F401
-from .core.tensor.tensor import Tensor  # noqa: F401
-from .experimental_flags import flags  # noqa: F401
-from .grid.client.client import connect  # noqa: F401
-from .grid.client.client import login as old_login  # noqa: F401
-from .grid.client.client import register  # noqa: F401
-
-# Convenience Objects
-from .lib import lib_ast  # noqa: F401
-from .lib import load  # noqa: F401
-from .lib import load_lib  # noqa: F401
-from .oblv import OblvEnclavePointer  # noqa: F401
-from .oblv import check_oblv_proxy_installation_status  # noqa: F401
-from .oblv import create_deployment  # noqa: F401
-from .oblv import create_oblv_key_pair  # noqa: F401
-from .oblv import get_oblv_public_key  # noqa: F401
-from .oblv import install_oblv_proxy  # noqa: F401
-from .oblv import login as oblv_login  # noqa: F401
-from .registry import NetworkRegistry  # noqa: F401
-from .telemetry import instrument  # noqa: F401
-from .user_settings import UserSettings  # noqa: F401
-from .user_settings import settings  # noqa: F401
-from .version_compare import make_requires
+from .client.client import connect  # noqa: F401
+from .client.client import login  # noqa: F401
+from .client.deploy import Orchestra  # noqa: F401
+from .client.registry import DomainRegistry  # noqa: F401
+from .client.registry import NetworkRegistry  # noqa: F401
+from .client.search import Search  # noqa: F401
+from .client.search import SearchResults  # noqa: F401
+from .client.user_settings import UserSettings  # noqa: F401
+from .client.user_settings import settings  # noqa: F401
+from .external import OBLV  # noqa: F401
+from .external import enable_external_lib  # noqa: F401
+from .node.credentials import SyftSigningKey  # noqa: F401
+from .node.domain import Domain  # noqa: F401
+from .node.gateway import Gateway  # noqa: F401
+from .node.server import serve_node  # noqa: F401
+from .node.server import serve_node as bind_worker  # noqa: F401
+from .node.worker import Worker  # noqa: F401
+from .serde import NOTHING  # noqa: F401
+from .serde.deserialize import _deserialize as deserialize  # noqa: F401
+from .serde.serializable import serializable  # noqa: F401
+from .serde.serialize import _serialize as serialize  # noqa: F401
+from .service.action.action_object import ActionObject  # noqa: F401
+from .service.code.user_code import UserCodeStatus  # noqa: F401
+from .service.code.user_code import syft_function  # noqa: F401
+from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
+from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
+from .service.dataset.dataset import CreateDataset as Dataset  # noqa: F401
+from .service.message.messages import MessageStatus  # noqa: F401
+from .service.policy.policy import CustomInputPolicy  # noqa: F401
+from .service.policy.policy import CustomOutputPolicy  # noqa: F401
+from .service.policy.policy import ExactMatch  # noqa: F401
+from .service.policy.policy import SingleExecutionExactOutput  # noqa: F401
+from .service.policy.policy import UserInputPolicy  # noqa: F401
+from .service.policy.policy import UserOutputPolicy  # noqa: F401
+from .service.project.project import ProjectSubmit as Project  # noqa: F401
+from .service.request.request import SubmitRequest as Request  # noqa: F401
+from .service.response import SyftError  # noqa: F401
+from .service.response import SyftNotReady  # noqa: F401
+from .service.response import SyftSuccess  # noqa: F401
+from .service.user.roles import Roles as roles  # noqa: F401
+from .service.user.user_service import UserService  # noqa: F401
+from .types.uid import UID  # noqa: F401
+from .util import filterwarnings  # noqa: F401
+from .util import jax_settings  # noqa: F401
+from .util import logger  # noqa: F401
+from .util.telemetry import instrument  # noqa: F401
+from .util.util import autocache  # noqa: F401
+from .util.version_compare import make_requires
 
 LATEST_STABLE_SYFT = "0.7"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
@@ -121,8 +64,12 @@ sys.path.append(str(Path(__file__)))
 
 logger.start()
 
+# For server-side, to enable by environment variable
+if OBLV:
+    enable_external_lib("oblv")
 
-def module_property(func: Any) -> None:
+
+def module_property(func: Any) -> Callable:
     """Decorator to turn module functions into properties.
     Function names must be prefixed with an underscore."""
     module = sys.modules[func.__module__]
@@ -143,10 +90,24 @@ def module_property(func: Any) -> None:
 
 
 @module_property
-def _networks() -> NetworkRegistry:
+def _gateways() -> NetworkRegistry:
     return NetworkRegistry()
+
+
+@module_property
+def _domains() -> DomainRegistry:
+    return DomainRegistry()
 
 
 @module_property
 def _settings() -> UserSettings:
     return settings
+
+
+@module_property
+def _orchestra() -> Orchestra:
+    return Orchestra
+
+
+def search(name: str) -> SearchResults:
+    return Search(_domains()).search(name=name)
