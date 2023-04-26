@@ -327,6 +327,18 @@ class InMemoryActionGraphStore(ActionGraphStore):
             if result.is_err():
                 return result
 
+        try:
+            if node.is_mutated:
+                # Mutation happens. Update all parents to reflect this.
+                for parent_uid in parent_uids:
+                    self.update(
+                        uid=parent_uid,
+                        data=NodeActionDataUpdate(is_mutated=True),
+                        credentials=credentials,
+                    )
+        except Exception:
+            pass
+
         return Ok(node)
 
     def get(
@@ -366,6 +378,9 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
     def _find_mutation_for(self, uid: UID) -> Result[UID, str]:
         def find_non_mutated_successor(uid: UID) -> Optional[UID]:
+            """
+            Find the leaf node of a mutated chain. This is the node that is not mutated.
+            """
             # TODO: Look for a more robust traversal/search method
             node_data = self.graph.get(uid=uid)
             if node_data.is_mutated:

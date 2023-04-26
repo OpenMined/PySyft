@@ -12,6 +12,7 @@ from pathlib import Path
 # third party
 import networkx as nx
 import numpy as np
+import pytest
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
@@ -155,7 +156,6 @@ def test_networkx_backing_store_create_set_get(
     assert backing_store.is_parent(parent=node.id, child=node_2.id) is False
 
 
-# @pytest.mark.xfail
 def test_networkx_backing_store_node_update(
     in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVerifyKey
 ) -> None:
@@ -181,77 +181,116 @@ def test_networkx_backing_store_node_update(
     assert update_node_data.is_mutated is True
 
 
-def test_networkx_backing_store_add_remove_edge():
-    """
-    Test adding and removing edges, and also the find_neighbors method of the NetworkXBackingStore
-    """
-    pass
-
-
 def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) -> None:
     graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config)
 
     assert graph_store.store_config == in_mem_graph_config
     assert isinstance(graph_store.graph, NetworkXBackingStore)
+    assert isinstance(graph_store.graph.db, nx.DiGraph)
 
 
-def test_mutation():
+def test_mutation(in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVerifyKey):
     """
-    after adding a mutated action on a node,
-    the old node's `is_mutated` should be updated to be True
+    Scenario:
+        action1 -> initialization of variable a
+        action2 -> a.astype('int32') = b
+        action3 -> b.astype('float64') = c
+        action4 -> b.astype('complex128') = d
+    """
+    graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config)
+
+    action_obj_a = ActionObject.from_obj([1, 2, 3])
+    action1 = Action(
+        path="action.execute",
+        op="np.array",
+        remote_self=None,
+        args=[action_obj_a.syft_lineage_id],
+        kwargs={},
+    )
+    graph_store.set(credentials=verify_key, action=action1)
+
+    as_type_action_obj = ActionObject.from_obj("np.int32")
+    action2 = Action(
+        path="action.execute",
+        op="astype",
+        remote_self=action1.result_id,
+        args=[as_type_action_obj.syft_lineage_id],
+        kwargs={},
+        result_id=action1.result_id,
+    )
+    graph_store.set(credentials=verify_key, action=action2)
+
+    as_type_action_obj = ActionObject.from_obj("np.float64")
+    action3 = Action(
+        path="action.execute",
+        op="astype",
+        remote_self=action2.result_id,
+        args=[as_type_action_obj.syft_lineage_id],
+        kwargs={},
+        result_id=action2.result_id,
+    )
+    graph_store.set(credentials=verify_key, action=action3)
+
+    as_type_action_obj = ActionObject.from_obj("np.complex128")
+    action4 = Action(
+        path="action.execute",
+        op="astype",
+        remote_self=action1.result_id,
+        args=[as_type_action_obj.syft_lineage_id],
+        kwargs={},
+        result_id=action1.result_id,
+    )
+    graph_store.set(credentials=verify_key, action=action4)
+
+    node_action_data_1: NodeActionData = graph_store.get(
+        uid=action1.id, credentials=verify_key
+    ).ok()
+    node_action_data_2: NodeActionData = graph_store.get(
+        uid=action2.id, credentials=verify_key
+    ).ok()
+    node_action_data_3: NodeActionData = graph_store.get(
+        uid=action3.id, credentials=verify_key
+    ).ok()
+    node_action_data_4: NodeActionData = graph_store.get(
+        uid=action4.id, credentials=verify_key
+    ).ok()
+
+    assert node_action_data_1.is_mutated is True
+    assert node_action_data_2.is_mutated is True
+    assert node_action_data_3.is_mutated is True
+    assert node_action_data_4.is_mutated is False
+
+    assert (
+        graph_store.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_2.id
+        ).ok()
+        is True
+    )
+    assert (
+        graph_store.is_parent(
+            parent=node_action_data_2.id, child=node_action_data_3.id
+        ).ok()
+        is True
+    )
+    assert (
+        graph_store.is_parent(
+            parent=node_action_data_3.id, child=node_action_data_4.id
+        ).ok()
+        is True
+    )
+
+
+@pytest.mark.skip
+def test_complicated_graph():
+    """
+    Test a complicated graph with multiple parents and children
     """
     pass
 
 
-# @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
-# def test_edge_creation(worker, graph_client):
-#     action_graph = ActionGraph(node_uid=worker.id, graph_client=graph_client)
-#     assert action_graph
-
-#     action_obj_a = ActionObject.from_obj([1, 2, 3])
-#     action_obj_b = ActionObject.from_obj([2, 4, 5])
-
-#     # First action -> np.array([1, 2, 3])
-#     # Create a numpy array from action_obj_a
-#     action_a = Action(
-#         path="action.execute",
-#         op="np.array",
-#         args=[action_obj_a.syft_lineage_id],
-#         kwargs={},
-#     )
-#     action_graph.add_action(action_a)
-#     node = NodeActionData.from_action(action_a)
-#     assert node in action_graph.client.graph.nodes
-
-#     # Second action -> np.array([2, 4, 5])
-#     # Create a numpy array from action_obj_b
-#     action_b = Action(
-#         path="action.execute",
-#         op="np.array",
-#         args=[action_obj_b.syft_lineage_id],
-#         kwargs={},
-#     )
-#     action_graph.add_action(action_b)
-
-#     node = NodeActionData.from_action(action_b)
-#     assert node in action_graph.client.graph.nodes
-
-#     # Third action -> action_obj_a + action_obj_b
-#     # Add two arrays
-#     action_add = Action(
-#         path="action.execute",
-#         op="__add__",
-#         remote_self=action_a.result_id,
-#         args=[action_b.result_id],
-#         kwargs={},
-#     )
-#     action_graph.add_action(action_add)
-#     node = NodeActionData.from_action(action_add)
-
-#     assert node in action_graph.client.graph.nodes
-#     assert action_graph.client.graph.number_of_nodes() == 3
-#     assert action_graph.client.graph.number_of_edges() == 2
-
-
-# def test_node_removal(worker, graph_client):
-#     pass
+@pytest.mark.skip
+def test_networkx_backing_store_add_remove_edge():
+    """
+    Test adding and removing edges, and also the find_neighbors method of the NetworkXBackingStore
+    """
+    pass
