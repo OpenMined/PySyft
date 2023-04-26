@@ -293,9 +293,9 @@ def clean(location: str) -> None:
     help="Disable tailscale vpn container",
 )
 @click.option(
-    "--silent",
+    "--verbose",
     is_flag=True,
-    help="Suppress extra launch outputs",
+    help="Show verbose output",
 )
 @click.option(
     "--trace",
@@ -358,7 +358,10 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
 
     try:
         tail = bool(kwargs["tail"])
-        silent = not tail
+        verbose = bool(kwargs["verbose"])
+        silent = not verbose
+        if tail:
+            silent = False
 
         from_rendered_dir = bool(kwargs["from_template"]) and EDITABLE_MODE
 
@@ -1128,7 +1131,7 @@ def create_launch_cmd(
     parsed_kwargs["test"] = bool(kwargs["test"])
     parsed_kwargs["dev"] = bool(kwargs["dev"])
 
-    parsed_kwargs["silent"] = bool(kwargs["silent"])
+    parsed_kwargs["silent"] = not bool(kwargs["verbose"])
     parsed_kwargs["from_template"] = bool(kwargs["from_template"])
 
     parsed_kwargs["trace"] = False
