@@ -68,6 +68,8 @@ jobs:
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
+        env:
+          DOCKER_BUILDKIT: 1
         run: |
           cd packages && docker build -f grid/backend/backend.dockerfile . -t backend
 
@@ -121,5 +123,7 @@ jobs:
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
+        env:
+          DOCKER_BUILDKIT: 1
         run: |
           cd packages/grid/frontend && docker build -f frontend.dockerfile . -t frontend
