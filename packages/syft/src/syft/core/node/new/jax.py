@@ -82,7 +82,16 @@ class DeviceArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     syft_internal_type: ClassVar[Type[Any]] = DeviceArray
     syft_pointer_type = DeviceArrayObjectPointer
     syft_passthrough_attrs = ["__jax_array__"]
-    syft_dont_wrap_attrs = ["__jax_array__", "device", "devices", "_device", "dtype", "shape", "__array__"]
+    syft_dont_wrap_attrs = [
+        "__jax_array__", 
+        "device", 
+        "devices", 
+        "_device", 
+        "dtype", 
+        "shape", 
+        "__array__",
+        '__format__'
+    ]
 
     def __jax_array__(self) -> DeviceArray:
         # TODO: test this for gpus (probably we should check jax default config)
@@ -106,7 +115,14 @@ class DeviceArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
             return DeviceArrayObject(syft_action_data=result)
 
     def __iter__(self) -> Any:
-        return self.syft_action_data.__iter__()
+        def wrapper_generator():
+            generator = self.syft_action_data.__iter__()
+            for elem in generator:
+                yield wrap_result(elem)
+        return wrapper_generator()
+    
+    def __format__(self, format_spec) -> str:
+        return self.syft_action_data.__format__(format_spec)
 
 action_types[DeviceArray] = DeviceArrayObject
     
