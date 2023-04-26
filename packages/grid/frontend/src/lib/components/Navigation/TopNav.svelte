@@ -30,10 +30,10 @@
         </a>
       </li>
     {/each}
-    <li class="w-[52px] h-[52px]">
+    <!-- <li class="w-[52px] h-[52px]">
       <a href="/account" class="cursor-pointer hover:opacity-90">
         <Avatar smallText noOutline initials={userInitials} />
       </a>
-    </li>
+    </li> -->
   </ul>
 </div>
