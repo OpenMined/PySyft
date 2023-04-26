@@ -26,6 +26,21 @@
     - docker-ce-cli
     - containerd.io
 
+- name: Get the system architecture
+  ansible.builtin.setup:
+    gather_subset: hardware
+  register: system_info
+
+- name: Set docker compose arm64 binary URL
+  set_fact:
+    docker_compose_binary_url: "{{ docker_compose_url_arm64 }}"
+  when: "'aarch64' in system_info['ansible_facts']['ansible_architecture']"
+
+- name: Set docker compose x86 binary URL
+  set_fact:
+    docker_compose_binary_url: "{{ docker_compose_url_x86 }}"
+  when: "'x86' in system_info['ansible_facts']['ansible_architecture']"
+
 - name: Install Docker Compose
   stat:
     path: "{{ om_homedir }}/{{ docker_compose_plugin_dir }}"
@@ -54,13 +69,13 @@
 
 - name: Download Docker CLI
   get_url:
-    url: "{{ docker_compose_url }}"
+    url: "{{ docker_compose_binary_url }}"
     dest: "{{ om_homedir }}/{{ docker_compose_plugin_dir }}/docker-compose"
   when: docker_cli_dir_present.stat.exists == False
 
 - name: Download Docker CLI root
   get_url:
-    url: "{{ docker_compose_url }}"
+    url: "{{ docker_compose_binary_url }}"
     dest: "{{ root_homedir }}/{{ docker_compose_plugin_dir }}/docker-compose"
   become: yes
   when: docker_cli_dir_present.stat.exists == False
