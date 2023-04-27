@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from pydantic.networks import EmailStr
 
 
 def _serialize(
@@ -9,6 +10,9 @@ def _serialize(
 ) -> Any:
     # relative
     from .recursive import rs_object2proto
+
+    if isinstance(obj, EmailStr):
+        obj = str(obj)
 
     proto = rs_object2proto(obj)
 
