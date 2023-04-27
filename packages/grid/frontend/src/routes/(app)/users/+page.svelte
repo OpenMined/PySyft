@@ -43,7 +43,7 @@
       <img
         src="images/illustrations/user-main.png"
         alt="User main alt"
-        class="w-full h-fill object-contain"
+        class="w-full h-full object-contain"
       />
     </div>
   </div>

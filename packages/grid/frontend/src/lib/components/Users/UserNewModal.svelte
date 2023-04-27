@@ -23,7 +23,7 @@
         <img
           src="images/illustrations/create-general-user.png"
           alt="Create general user alt"
-          class="object-none object-center"
+          class="w-full h-full object-cover object-center"
           slot="image"
         />
         <span slot="title">Create general user</span>
