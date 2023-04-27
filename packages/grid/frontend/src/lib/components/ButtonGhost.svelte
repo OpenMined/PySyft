@@ -3,7 +3,7 @@
 
   interface $$Props extends HTMLButtonAttributes {
     disabled?: boolean;
-    variant: 'gray';
+    variant?: 'gray';
   }
 
   export let variant = 'gray';

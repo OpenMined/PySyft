@@ -21,13 +21,19 @@
 
   let currentTab = tabs[0].id;
 
-  $: profileInformation = [
+  interface ProfileInformation {
+    label: 'Domain name' | 'Organization' | 'Description';
+    id: 'domain_name' | 'organization' | 'description';
+    value: string;
+  }
+
+  const profileInformation: ProfileInformation[] = [
     { label: 'Domain name', id: 'domain_name', value: $metadata?.name },
     { label: 'Organization', id: 'organization', value: $metadata?.organization },
     { label: 'Description', id: 'description', value: $metadata?.description }
   ];
 
-  let openModal: 'name' | 'organization' | 'description' | null = null;
+  let openModal: ProfileInformation['id'] | null = null;
 
   const onClose = () => (openModal = null);
 
