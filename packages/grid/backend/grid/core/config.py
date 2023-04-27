@@ -12,7 +12,6 @@ from pydantic import AnyHttpUrl
 from pydantic import BaseSettings
 from pydantic import EmailStr
 from pydantic import HttpUrl
-from pydantic import PostgresDsn
 from pydantic import validator
 
 
@@ -45,24 +44,6 @@ class Settings(BaseSettings):
             return None
         return v
 
-    POSTGRES_SERVER: str = "localhost"
-    POSTGRES_USER: str = "user"
-    POSTGRES_PASSWORD: Optional[str] = None
-    POSTGRES_DB: str = "db"
-    SQLALCHEMY_DATABASE_URI: Optional[Union[PostgresDsn, str]] = None
-
-    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
-    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
-        if isinstance(v, str):
-            return v
-        return PostgresDsn.build(
-            scheme="postgresql",
-            user=values.get("POSTGRES_USER"),
-            password=values.get("POSTGRES_PASSWORD"),
-            host=values.get("POSTGRES_SERVER"),
-            path=f"/{values.get('POSTGRES_DB') or ''}",
-        )
-
     SMTP_TLS: bool = True
     SMTP_PORT: Optional[int] = None
     SMTP_HOST: Optional[str] = None
@@ -89,11 +70,11 @@ class Settings(BaseSettings):
             and values.get("EMAILS_FROM_EMAIL")
         )
 
-    FIRST_SUPERUSER: EmailStr = EmailStr("info@openmined.org")
-    FIRST_SUPERUSER_PASSWORD: str = "changethis"
+    DEFAULT_ROOT_EMAIL: EmailStr = EmailStr("info@openmined.org")
+    DEFAULT_ROOT_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
-    DOMAIN_NAME: str = "default_node_name"
+    NODE_NAME: str = "default_node_name"
     STREAM_QUEUE: bool = False
     NODE_TYPE: str = "Domain"
 
@@ -121,6 +102,11 @@ class Settings(BaseSettings):
     NETWORK_CHECK_INTERVAL: int = int(os.getenv("NETWORK_CHECK_INTERVAL", 60))
     DOMAIN_CHECK_INTERVAL: int = int(os.getenv("DOMAIN_CHECK_INTERVAL", 60))
     CONTAINER_HOST: str = str(os.getenv("CONTAINER_HOST", "docker"))
+    MONGO_HOST: str = str(os.getenv("MONGO_HOST", ""))
+    MONGO_PORT: int = int(os.getenv("MONGO_PORT", 0))
+    MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
+    MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
+
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )

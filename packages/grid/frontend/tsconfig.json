@@ -1,25 +1,13 @@
 {
+  "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": false,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
+    "allowJs": false,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "baseUrl": "./src",
-    "types": ["cypress", "@testing-library/cypress"],
-    "paths": {
-      "@/*": ["./*"]
-    },
-    "incremental": true
-  },
-  "exclude": ["node_modules", ".next", "out"],
-  "include": ["next-env.d.ts", "./src/**/*.ts", "./src/**/*.tsx"]
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "types": ["vitest/globals"]
+  }
 }

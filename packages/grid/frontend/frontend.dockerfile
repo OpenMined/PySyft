@@ -1,33 +1,37 @@
-FROM node:16-alpine as grid-ui-development
-ENV NEXT_PUBLIC_ENVIRONMENT development
-ENV NEXT_PUBLIC_API_URL /api/v1
+FROM node:18-alpine as base
+
+ARG VITE_PUBLIC_API_BASE_URL
+ENV VITE_PUBLIC_API_BASE_URL ${VITE_PUBLIC_API_BASE_URL}
 ENV NODE_TYPE domain
-ENV NEXT_TELEMETRY_DISABLED 1
 
 WORKDIR /app
-COPY package.json yarn.lock /app/
-# cant use the cache for multi architecture builds in CI because it fails
-# https://github.com/docker/buildx/issues/549
-# RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn install --frozen-lockfile
-RUN yarn install --frozen-lockfile
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY .npmrc ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+
+FROM base AS dependencies
+
+RUN pnpm i --frozen-lockfile
+
+FROM dependencies as grid-ui-development
+
+ENV NODE_ENV=development
+
 COPY . .
-CMD ["sh", "/app/scripts/run.sh"]
+CMD pnpm dev
 
-FROM grid-ui-development as build-stage
-RUN yarn build
-RUN yarn export
+FROM dependencies AS builder
 
-FROM nginx:stable-alpine as grid-ui-production
-ENV NEXT_PUBLIC_ENVIRONMENT production
-ENV NEXT_PUBLIC_API_URL /api/v1
-ENV NODE_TYPE $NODE_TYPE
-ENV NEXT_TELEMETRY_DISABLED 1
+COPY . .
+RUN pnpm build
 
-# copy generated html
-COPY --from=build-stage /app/out /usr/share/nginx/html
+FROM base AS grid-ui-production
 
-# copy nginx config
-COPY --from=build-stage /app/docker/default.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=build-stage /app/docker/domain.conf /etc/nginx/conf.d/nodes/domain.conf
-COPY --from=build-stage /app/docker/network.conf /etc/nginx/conf.d/nodes/network.conf
-COPY --from=build-stage /app/docker/nginx-backend-not-found.conf /etc/nginx/extra-conf.d/backend-not-found
+ENV NODE_ENV=production
+
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=builder /app ./
+CMD pnpm preview

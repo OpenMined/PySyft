@@ -8,6 +8,7 @@
 .python-version
 .vscode/
 .tox/*
+.creds
 
 # python stuff
 *__pycache__*
@@ -35,6 +36,7 @@ packages/hagrid/grid
 
 # venv
 venv
+.venv
 
 # docs
 docs/build
@@ -47,6 +49,7 @@ helm-charts/**/*.lock
 
 # docker cache
 .docker-cache/
+.docker
 
 # notebook data
 notebooks/medical-federated-learning-program/data-owners/MedNIST.pkl
@@ -58,10 +61,11 @@ k3d-registry
 .envfile
 packages/hagrid/.envfile
 
-# temporarily ignore sveltekit
-packages/grid/svelte
 
 # rendered template dir
 packages/grid/rendered
 
-js/node_modules
+js/node_modules/*
+
+#nohup
+nohup.out

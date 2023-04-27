@@ -3018,7 +3018,7 @@ spec:
             - "/start.sh"
           args:
           env:
-            - name: DOMAIN_NAME
+            - name: NODE_NAME
               value: node
             - name: POSTGRES_SERVER
               value: db
@@ -3192,7 +3192,7 @@ spec:
           command:
             - /start.sh
           env:
-            - name: DOMAIN_NAME
+            - name: NODE_NAME
               value: node
             - name: POSTGRES_SERVER
               value: db
@@ -3344,7 +3344,7 @@ spec:
           command:
             - /worker-start.sh
           env:
-            - name: DOMAIN_NAME
+            - name: NODE_NAME
               value: node
             - name: POSTGRES_SERVER
               value: db
@@ -3518,7 +3518,7 @@ spec:
               value: 7c7332c307fe3121d6cc0e46c4242975d384ccc1
             - name: NODE_TYPE
               value: domain
-            - name: NEXT_PUBLIC_API_URL
+            - name: VITE_PUBLIC_API_BASE_URL
               value: /api/v1
           envFrom:
             null
