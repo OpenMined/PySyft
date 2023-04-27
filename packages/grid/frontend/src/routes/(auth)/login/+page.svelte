@@ -11,7 +11,7 @@
   import { getUserIdFromStorage } from '$lib/api/keys';
   import { getSelf } from '$lib/api/users';
 
-  let status: DomainOnlineStatus = 'online';
+  let status: DomainOnlineStatus;
   let email = '';
   let password = '';
 
@@ -44,7 +44,7 @@
         </div>
         <div class="contents" slot="body">
           <div class="flex justify-center items-center gap-2">
-            <DomainOnlineIndicator />
+            <DomainOnlineIndicator bind:status />
             <p class="text-600">
               {#if status === 'pending'}
                 Checking connection

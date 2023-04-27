@@ -47,3 +47,11 @@ export function logout() {
 export function getUserRole(value: ServiceRoles) {
   return ServiceRoles[value];
 }
+
+export function onInterval(callback: () => void, ms: number) {
+  const interval = setInterval(callback, ms);
+
+  onDestroy(() => {
+    clearInterval(interval);
+  });
+}
