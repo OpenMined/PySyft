@@ -8,14 +8,17 @@
     "preview": "vite preview --host --port 80",
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
     "format": "prettier --write --plugin-search-dir=. ./**/*.{js,ts,html,css,svelte}",
-    "prepare": "svelte-kit sync"
+    "prepare": "svelte-kit sync",
+    "test": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.33.0",
     "@sveltejs/adapter-node": "^1.1.7",
     "@sveltejs/kit": "^1.15.2",
     "@typescript-eslint/eslint-plugin": "^5.52.0",
     "@typescript-eslint/parser": "^5.52.0",
     "autoprefixer": "^10.4.7",
+    "dotenv": "^16.0.3",
     "eslint": "^8.34.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-svelte3": "^4.0.0",

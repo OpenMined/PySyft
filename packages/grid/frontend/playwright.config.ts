@@ -1,10 +1,22 @@
-import type { PlaywrightTestConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
 
-const config: PlaywrightTestConfig = {
-  webServer: {
-    command: 'pnpm run build && pnpm run preview',
-    port: 4173
-  }
-};
+dotenv.config();
 
-export default config;
+export default defineConfig({
+  testDir: 'tests/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'dot',
+  use: {
+    baseURL: 'http://localhost:8081' // temporary
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] }
+    }
+  ]
+});

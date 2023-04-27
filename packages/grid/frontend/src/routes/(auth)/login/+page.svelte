@@ -60,6 +60,7 @@
             placeholder="info@openmined.org"
             bind:value={email}
             required
+            data-testid="email"
           />
           <Input
             label="Password"
@@ -68,6 +69,7 @@
             placeholder="******"
             bind:value={password}
             required
+            data-testid="password"
           />
           <p class="text-center">
             Don't have an account yet? Apply for an account <a
