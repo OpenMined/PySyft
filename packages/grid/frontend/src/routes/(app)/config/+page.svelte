@@ -1,17 +1,17 @@
 <script lang="ts">
   import { metadata, user } from '$lib/store';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Tabs from '$lib/components/Tabs.svelte';
+  import { getMetadata, updateMetadata } from '$lib/api/metadata';
   import { getInitials } from '$lib/utils';
+  import Avatar from '$lib/components/Avatar.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import XIcon from '$lib/components/icons/XIcon.svelte';
+  import ButtonGhost from '$lib/components/ButtonGhost.svelte';
   import Dialog from '$lib/components/Dialog.svelte';
   import Input from '$lib/components/Input.svelte';
-  import ButtonGhost from '$lib/components/ButtonGhost.svelte';
+  import Modal from '$lib/components/Modal.svelte';
+  import Tabs from '$lib/components/Tabs.svelte';
   import TextArea from '$lib/components/TextArea.svelte';
-  import { getMetadata, updateMetadata } from '$lib/api/metadata';
+  import XIcon from '$lib/components/icons/XIcon.svelte';
 
   let tabs = [
     { label: 'Domain', id: 'tab1' }
@@ -60,6 +60,7 @@
 
   $: domainInitials = getInitials($metadata?.name);
   $: userInitials = getInitials($user?.name);
+  $: shouldOpen = openModal !== null;
 </script>
 
 <div>
@@ -139,27 +140,29 @@
   </section>
 </div>
 
-<Dialog bind:open={openModal}>
-  <Modal>
-    <div slot="header" class="w-full text-right">
-      <button on:click={onClose}>
-        <XIcon class="w-6 h-6" />
-      </button>
-    </div>
-    <div slot="body">
-      {#if openModal === 'domain_name'}
-        <Input label="Domain name" required bind:value={name} id="name" />
-      {:else if openModal === 'organization'}
-        <Input label="Organization" bind:value={organization} id="institution" />
-      {:else if openModal === 'description'}
-        <TextArea label="Description" bind:value={description} id="description" />
-      {/if}
-    </div>
-    <div class="flex w-full justify-end" slot="button-group">
-      <div class="w-full justify-end flex px-4 gap-4">
-        <ButtonGhost on:click={onClose}>Cancel</ButtonGhost>
-        <Button type="submit" variant="secondary" on:click={handleUpdate}>Save</Button>
+<Dialog bind:open={shouldOpen}>
+  <form on:submit|preventDefault={handleUpdate}>
+    <Modal>
+      <div slot="header" class="w-full text-right">
+        <button on:click={onClose}>
+          <XIcon class="w-6 h-6" />
+        </button>
       </div>
-    </div>
-  </Modal>
+      <div slot="body">
+        {#if openModal === 'domain_name'}
+          <Input label="Domain name" required bind:value={name} id="name" />
+        {:else if openModal === 'organization'}
+          <Input label="Organization" bind:value={organization} id="institution" />
+        {:else if openModal === 'description'}
+          <TextArea label="Description" bind:value={description} id="description" />
+        {/if}
+      </div>
+      <div class="flex w-full justify-end" slot="button-group">
+        <div class="w-full justify-end flex px-4 gap-4">
+          <ButtonGhost on:click={onClose}>Cancel</ButtonGhost>
+          <Button type="submit" variant="secondary">Save</Button>
+        </div>
+      </div>
+    </Modal>
+  </form>
 </Dialog>
