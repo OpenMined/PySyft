@@ -2994,7 +2994,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     cmd += "docker compose"
     cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
-    cmd += " down"
+    cmd += " down --remove-orphans"
 
     cmd = "cd " + path + env_var + cmd
     return cmd
