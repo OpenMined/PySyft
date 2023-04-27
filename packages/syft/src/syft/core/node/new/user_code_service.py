@@ -188,7 +188,7 @@ class UserCodeService(AbstractService):
             # Check if the OutputPolicy is valid
             is_valid = output_policy.valid
                     
-                    print(is_valid, file=sys.stderr)
+            print(is_valid, file=sys.stderr)
 
             if not is_valid:
                 if len(output_policy.output_history) > 0:
@@ -200,12 +200,12 @@ class UserCodeService(AbstractService):
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
-                        print(action_service, file=sys.stderr)
+            print(action_service, file=sys.stderr)
             result = action_service._user_code_execute(
                 context, code_item, filtered_kwargs
             )
                         
-                        print(result, file=sys.stderr)
+            print(result, file=sys.stderr)
             if isinstance(result, str):
                 return SyftError(message=result)
 
