@@ -167,6 +167,7 @@ NOTHING = None
 
 
 # serializing and deserializing networkx Graphs
+# TODO: debug `created_at` and `updated_at` fields causing issues when deserializing
 def serialize_networkx_graph(graph: DiGraph) -> bytes:
     graph_dict = nx.to_dict_of_dicts(graph)
     return serialize(graph_dict, to_bytes=True)

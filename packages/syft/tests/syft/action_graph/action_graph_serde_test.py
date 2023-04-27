@@ -3,6 +3,7 @@
 # third party
 
 # syft absolute
+import syft as sy
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
@@ -19,6 +20,12 @@ def test_in_memory_action_graph_store_serde(
     Create an InMemoryActionGraphStore, add some nodes and edges to it
     serialize it, deserialize it, then check if the deserialized
     InMemoryActionGraphStore object is equal to the original one.
+    Scenario:
+        action1 -> a + b = c
+        action2 -> initialization of variable d
+        action3 -> c * d
+        action4 -> d.astype('int32')
+        action5 -> d + 48
     """
     graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config)
     # create some actions and add them to the graph store
@@ -70,4 +77,22 @@ def test_in_memory_action_graph_store_serde(
     ).ok()
     assert node_action_data_2.is_mutated is True
 
+    # action5 -> d + 48
+    arg_action_obj = ActionObject.from_obj(48)
+    action5 = Action(
+        path="action.execute",
+        op="__add__",
+        remote_self=action4.result_id,
+        args=[arg_action_obj.syft_lineage_id],
+        kwargs={},
+    )
+    graph_store.set(credentials=verify_key, action=action5)
+
     # serializing and deserializing the graph store
+    serialized_graph: bytes = sy.serialize(graph_store, to_bytes=True)
+    deserialized_graph_store = sy.deserialize(serialized_graph, from_bytes=True)
+
+    assert isinstance(deserialized_graph_store.graph, type(graph_store.graph))
+    assert isinstance(deserialized_graph_store.graph.db, type(graph_store.graph.db))
+    assert deserialized_graph_store.edges == graph_store.edges
+    assert deserialized_graph_store.nodes == graph_store.nodes

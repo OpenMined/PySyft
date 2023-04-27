@@ -281,16 +281,9 @@ def test_mutation(in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVeri
 
 
 @pytest.mark.skip
-def test_complicated_graph():
-    """
-    Test a complicated graph with multiple parents and children
-    """
-    pass
-
-
-@pytest.mark.skip
 def test_networkx_backing_store_add_remove_edge():
     """
-    Test adding and removing edges, and also the find_neighbors method of the NetworkXBackingStore
+    Test adding and removing edges, and also the
+    find_neighbors method of the NetworkXBackingStore
     """
     pass
