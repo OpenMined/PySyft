@@ -137,7 +137,11 @@ def publish(
         [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
     ).reshape(original_output.shape)
 
-    return original_output + noise
+    # relative
+    from ..tensor.autodp.gamma_tensor import jax2numpy
+
+    res = original_output + noise
+    return jax2numpy(res, res.dtype)
 
 
 # TODO(0.8): this function should be vectorized for jax
@@ -208,7 +212,11 @@ def compute_epsilon(
     new_state = {
         phi_tensor_id: phi_tensor.child
         if filtered[phi_tensor_id]
-        else jnp.zeros_like(phi_tensors[phi_tensor_id].child)
+        else jnp.zeros_like(
+            phi_tensors[phi_tensor_id].child.decode()
+            if isinstance(phi_tensors[phi_tensor_id].child, FixedPrecisionTensor)
+            else phi_tensors[phi_tensor_id].child
+        )
         for phi_tensor_id, phi_tensor in phi_tensors.items()
     }
 
@@ -217,4 +225,7 @@ def compute_epsilon(
         original_output = tensor.reconstruct(new_state)
     else:
         original_output = tensor.child
+    if isinstance(original_output, FixedPrecisionTensor):
+        original_output = original_output.decode()
+
     return original_output, epsilon_spend, rdp_constants

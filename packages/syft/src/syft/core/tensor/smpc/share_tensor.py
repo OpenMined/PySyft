@@ -215,6 +215,9 @@ class ShareTensor(PassthroughTensor):
             clients=self.clients,
         )
 
+    def getitem(self, item: Union[str, int, slice]) -> ShareTensor:
+        return self.__getitem__(item)
+
     def copy_tensor(self) -> ShareTensor:
         return ShareTensor(
             value=self.child,
