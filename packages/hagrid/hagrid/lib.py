@@ -113,7 +113,6 @@ class ProcessStatus(Enum):
 
 
 def docker_desktop_memory() -> int:
-
     path = str(Path.home()) + "/Library/Group Containers/group.com.docker/settings.json"
 
     try:
@@ -179,6 +178,7 @@ def get_git_repo() -> git.Repo:
 
     is_git = check_is_git(path=repo_src_path())
     console = rich.get_console()
+
     if not EDITABLE_MODE and not is_git:
         github_repo = "OpenMined/PySyft.git"
         git_url = f"https://github.com/{github_repo}"
@@ -212,7 +212,6 @@ def update_repo(repo: git.Repo, branch: str) -> None:
     console = rich.get_console()
     if not EDITABLE_MODE:
         with console.status("Updating hagrid") as console_status:
-
             console_status.update(f"[bold blue]Updating HAGrid from branch: {branch}")
             try:
                 if repo.is_dirty():
@@ -277,6 +276,7 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
                     port += 1
                 else:
                     break
+            sock.close()
 
         except Exception as e:
             print(f"Failed to check port {port}. {e}")
@@ -336,7 +336,7 @@ def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
 # Check api metadata
 def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
-        url = f"http://{ip}/api/v1/syft/metadata"
+        url = f"http://{ip}/api/v1/new/metadata"
         response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
@@ -464,6 +464,6 @@ def check_jupyter_server(
         return False
 
 
-GIT_REPO = get_git_repo()
+GIT_REPO = get_git_repo
 GRID_SRC_VERSION = get_version_module()
 GRID_SRC_PATH = grid_src_path()

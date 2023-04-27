@@ -1,0 +1,296 @@
+name: PR Tests - Syft
+
+on:
+  workflow_call:
+
+  pull_request:
+    branches:
+      - dev
+      - main
+      - "0.8"
+
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Tests Manually"
+        required: false
+
+jobs:
+  pr-tests-syft-unit:
+    strategy:
+      max-parallel: 4
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: ["3.10"]
+        include:
+          - python-version: "3.8"
+            os: "ubuntu-latest"
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          pip install --upgrade tox packaging wheel --default-timeout=60
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Docker on MacOS
+        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
+        uses: crazy-max/ghaction-setup-docker@v1.1.0
+
+      - name: Run unit tests
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          tox -e syft.test.unit
+
+  pr-tests-syft-notebook-python:
+    strategy:
+      max-parallel: 4
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: ["3.10"]
+        node-type: ["python"]
+        include:
+          - python-version: "3.8"
+            os: "ubuntu-latest"
+            node-type: "python"
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          pip install --upgrade tox packaging wheel --default-timeout=60
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Run notebook tests
+        if: steps.changes.outputs.syft == 'true'
+        env:
+          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+        run: |
+          tox -e syft.test.notebook
+
+  pr-tests-syft-notebook-container:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+        node-type: ["enclave"]
+      fail-fast: false
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade tox packaging wheel --default-timeout=60
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Docker Compose on Linux
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.16.0
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          docker compose version
+
+      - name: Docker on MacOS
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        uses: crazy-max/ghaction-setup-docker@v1.1.0
+
+      - name: Docker Compose on MacOS
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          brew install docker-compose
+          mkdir -p ~/.docker/cli-plugins
+          ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose || true
+          docker compose version
+
+      - name: Docker on Windows
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Start-BitsTransfer -Source "https://download.docker.com/win/static/stable/x86_64/docker-23.0.1.zip"
+          Expand-Archive docker-23.0.1.zip -DestinationPath $Env:ProgramFiles
+          &$Env:ProgramFiles\Docker\dockerd --register-service
+          Start-Service docker
+          docker version
+          docker compose version
+
+      - name: Run unit tests
+        if: steps.changes.outputs.stack == 'true'
+        env:
+          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          DEV_MODE: "True" # force orchestra --build
+        run: |
+          tox -e syft.test.notebook
+
+  pr-tests-syft-security:
+    strategy:
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.syft == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          pip install --upgrade tox packaging wheel --default-timeout=60
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Scan for security issues
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          tox -e syft.test.security

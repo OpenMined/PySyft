@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message Set {
-  repeated bytes data = 1;
-}

@@ -23,7 +23,6 @@ HAGRID_TEMPLATE_PATH = str(manifest_template_path())
 
 
 def read_yml_file(filename: str) -> Optional[Dict]:
-
     template = None
 
     with open(filename) as fp:
@@ -61,7 +60,6 @@ def setup_from_manifest_template(host_type: str) -> Dict:
     files_to_download = []
 
     for package_name in all_template_files:
-
         # Get all files w.r.t that package e.g. grid, syft, hagrid
         template_files = all_template_files[package_name]
         package_path = template_files["path"]
@@ -101,13 +99,11 @@ def download_files(
     git_base_url: str,
     target_dir: str,
 ) -> None:
-
     if EDITABLE_MODE:
         print("Skipping copying files when running in editable mode.")
         return
 
     for src_file_path in tqdm(files_to_download, desc="Copying files... "):
-
         # For now target file path is same as source file path
         trg_file_path = src_file_path
         local_destination = get_local_abs_path(target_dir, trg_file_path)
@@ -164,7 +160,6 @@ class JinjaTemplate(object):
     def substitute_vars(
         self, template_path: str, vars_to_substitute: dict, target_path: str
     ) -> None:
-
         template = self.read_template_from_path(template_path)
         rendered_template = template.render(vars_to_substitute)
         self.save_to(rendered_template, target_path)
@@ -182,13 +177,12 @@ class JinjaTemplate(object):
 
 
 def download_file(link_to_file: str, local_destination: str) -> None:
-
     file_dir = os.path.dirname(local_destination)
     os.makedirs(file_dir, exist_ok=True)
 
     try:
         # download file
-        response = requests.get(link_to_file)
+        response = requests.get(link_to_file)  # nosec
         if response.status_code != 200:
             raise Exception(f"Failed to download: {link_to_file}")
 

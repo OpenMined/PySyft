@@ -3,8 +3,6 @@ version: v1beta11
 vars:
   - name: CONTAINER_REGISTRY
     value: ""
-  - name: DOCKER_IMAGE_DB
-    value: postgres:12
   - name: DOCKER_IMAGE_QUEUE
     value: rabbitmq:3
   - name: SERVICE_NAME_DB
@@ -27,6 +25,8 @@ vars:
     value: tailscale
   - name: SERVICE_NAME_REDIS
     value: redis
+  - name: SERVICE_NAME_MONGO
+    value: mongo
   - name: SERVICE_NAME_PROXY
     value: proxy
   - name: SERVICE_NAME_SEAWEEDFS
@@ -59,7 +59,7 @@ vars:
     value: "6379"
   - name: JAX_ENABLE_X64
     value: "True"
-  - name: NEXT_PUBLIC_API_URL
+  - name: VITE_PUBLIC_API_BASE_URL
     value: "/api/v1"
   - name: USE_NEW_SERVICE
     value: "True"
@@ -81,7 +81,7 @@ vars:
     value: "1024"
   - name: USE_BLOB_STORAGE
     value: "True"
-  - name: DOMAIN_NAME
+  - name: NODE_NAME
     value: node
   - name: TRAEFIK_CONFIG_FILE
     value: traefik-domain.yaml
@@ -93,6 +93,14 @@ vars:
     value: "10"
   - name: TEST_MODE
     value: "0"
+  - name: MONGO_USERNAME
+    value: root
+  - name: MONGO_PORT
+    value: "27017"
+  - name: MONGO_HOST
+    value: mongo
+  - name: MONGO_PASSWORD
+    value: example
 
 images:
   backend:
@@ -101,7 +109,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.62"
+      - "0.8.0"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -113,7 +121,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.62"
+      - "0.8.0"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -129,7 +137,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.62"
+      - "0.8.0"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -141,7 +149,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.62"
+      - "0.8.0"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -153,7 +161,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.62"
+      - "0.8.0"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -209,7 +217,7 @@ deployments:
               privileged: true
             env:
               - name: HOSTNAME
-                value: ${DOMAIN_NAME}
+                value: ${NODE_NAME}
               - name: STACK_API_KEY
                 value: ${STACK_API_KEY}
             volumeMounts:
@@ -327,41 +335,48 @@ deployments:
           ports:
             - port: 8333
 
-  - name: db
+  - name: mongo
     helm:
       componentChart: true
       values:
         containers:
-          - image: ${DOCKER_IMAGE_DB}
+          - image: mongo:latest
             env:
-              - name: POSTGRES_DB
-                value: ${POSTGRES_DB}
-              - name: POSTGRES_USER
-                value: ${POSTGRES_USER}
-              - name: POSTGRES_PASSWORD
-                value: ${POSTGRES_PASSWORD}
+              - name: MONGO_INITDB_ROOT_USERNAME
+                value: ${MONGO_USERNAME}
+              - name: MONGO_INITDB_ROOT_PASSWORD
+                value: ${MONGO_PASSWORD}
             volumeMounts:
-              - containerPath: /var/lib/postgresql/data
+              - containerPath: /data/db
                 volume:
-                  name: app-db-data
-                  subPath: /pgdata
+                  name: mongo-data
+                  subPath: /
                   readOnly: false
         volumes:
-          - name: app-db-data
+          - name: mongo-data
             size: "5Gi"
         service:
-          name: ${SERVICE_NAME_DB}
+          name: ${SERVICE_NAME_MONGO}
           ports:
-            - port: 5432
+            - port: 27017
 
   - name: backend
     helm:
       componentChart: true
       values:
+        volumes:
+          - name: credentials-data
+            secret:
+              secretName: backend-credentials
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - /start.sh
+              - /app/grid/start.sh
+            volumeMounts:
+              - containerPath: /storage
+                volume:
+                  name: credentials-data
+                  readOnly: true
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -383,16 +398,8 @@ deployments:
               successThreshold: 1
               failureThreshold: 3
             env:
-              - name: DOMAIN_NAME
-                value: ${DOMAIN_NAME}
-              - name: POSTGRES_SERVER
-                value: ${SERVICE_NAME_DB}
-              - name: POSTGRES_DB
-                value: ${POSTGRES_DB}
-              - name: POSTGRES_USER
-                value: ${POSTGRES_USER}
-              - name: POSTGRES_PASSWORD
-                value: ${POSTGRES_PASSWORD}
+              - name: NODE_NAME
+                value: ${NODE_NAME}
               - name: VERSION
                 value: ${VERSION}
               - name: VERSION_HASH
@@ -439,9 +446,16 @@ deployments:
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
                 value: $!{TEST_MODE}
+              - name: MONGO_USERNAME
+                value: ${MONGO_USERNAME}
+              - name: MONGO_PASSWORD
+                value: ${MONGO_PASSWORD}
+              - name: MONGO_HOST
+                value: ${MONGO_HOST}
+              - name: MONGO_PORT
+                value: ${MONGO_PORT}
               - name: ASSOCIATION_TIMEOUT
                 value: $!{ASSOCIATION_TIMEOUT}
-
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -451,10 +465,19 @@ deployments:
     helm:
       componentChart: true
       values:
+        volumes:
+          - name: credentials-data
+            secret:
+              secretName: backend-credentials
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - /start.sh
+              - /app/grid/start.sh
+            volumeMounts:
+              - containerPath: /storage
+                volume:
+                  name: credentials-data
+                  readOnly: true
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -476,18 +499,10 @@ deployments:
               successThreshold: 1
               failureThreshold: 3
             env:
-              - name: DOMAIN_NAME
-                value: ${DOMAIN_NAME}
-              - name: POSTGRES_SERVER
-                value: ${SERVICE_NAME_DB}
-              - name: POSTGRES_DB
-                value: ${POSTGRES_DB}
+              - name: NODE_NAME
+                value: ${NODE_NAME}
               - name: SERVICE_NAME
                 value: ${SERVICE_NAME_BACKEND_STREAM}
-              - name: POSTGRES_USER
-                value: ${POSTGRES_USER}
-              - name: POSTGRES_PASSWORD
-                value: ${POSTGRES_PASSWORD}
               - name: VERSION
                 value: ${VERSION}
               - name: VERSION_HASH
@@ -534,6 +549,14 @@ deployments:
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
                 value: $!{TEST_MODE}
+              - name: MONGO_USERNAME
+                value: ${MONGO_USERNAME}
+              - name: MONGO_PASSWORD
+                value: ${MONGO_PASSWORD}
+              - name: MONGO_HOST
+                value: ${MONGO_HOST}
+              - name: MONGO_PORT
+                value: ${MONGO_PORT}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -543,25 +566,26 @@ deployments:
     helm:
       componentChart: true
       values:
+        volumes:
+          - name: credentials-data
+            secret:
+              secretName: backend-credentials
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - /worker-start.sh
+              - /app/grid/worker-start.sh
+            volumeMounts:
+              - containerPath: /storage
+                volume:
+                  name: credentials-data
+                  readOnly: true
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
               privileged: true
             env:
-              - name: DOMAIN_NAME
-                value: ${DOMAIN_NAME}
-              - name: POSTGRES_SERVER
-                value: ${SERVICE_NAME_DB}
-              - name: POSTGRES_DB
-                value: ${POSTGRES_DB}
-              - name: POSTGRES_USER
-                value: ${POSTGRES_USER}
-              - name: POSTGRES_PASSWORD
-                value: ${POSTGRES_PASSWORD}
+              - name: NODE_NAME
+                value: ${NODE_NAME}
               - name: VERSION
                 value: ${VERSION}
               - name: VERSION_HASH
@@ -614,6 +638,14 @@ deployments:
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
                 value: $!{TEST_MODE}
+              - name: MONGO_USERNAME
+                value: ${MONGO_USERNAME}
+              - name: MONGO_PASSWORD
+                value: ${MONGO_PASSWORD}
+              - name: MONGO_HOST
+                value: ${MONGO_HOST}
+              - name: MONGO_PORT
+                value: ${MONGO_PORT}
 
   - name: frontend
     helm:
@@ -628,8 +660,8 @@ deployments:
                 value: ${VERSION_HASH}
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
-              - name: NEXT_PUBLIC_API_URL
-                value: ${NEXT_PUBLIC_API_URL}
+              - name: VITE_PUBLIC_API_BASE_URL
+                value: ${VITE_PUBLIC_API_BASE_URL}
         service:
           name: ${SERVICE_NAME_FRONTEND}
           ports:

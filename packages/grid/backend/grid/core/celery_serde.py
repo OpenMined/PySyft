@@ -11,7 +11,7 @@ from syft.logger import error
 
 def loads(data: bytes) -> Any:
     # original payload might have nested bytes in the args
-    org_payload = sy.deserialize(data, from_bytes=True).upcast()
+    org_payload = sy.deserialize(data, from_bytes=True)
     # original payload is found at org_payload[0][0]
     if (
         len(org_payload) > 0

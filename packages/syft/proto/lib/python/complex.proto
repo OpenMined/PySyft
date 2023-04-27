@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message Complex {
-  double real = 1;
-  double imag = 2;
-}

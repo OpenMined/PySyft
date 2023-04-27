@@ -6,8 +6,8 @@
 pip install -U -e packages/syft
 
 # get domain name
-DOMAIN_NAME="$(sudo docker ps --format '{{.Names}}' | grep "celery" |rev | cut -c 16- | rev)"
-echo "Domain Name: ${DOMAIN_NAME}"
+NODE_NAME="$(sudo docker ps --format '{{.Names}}' | grep "celery" |rev | cut -c 16- | rev)"
+echo "Domain Name: ${NODE_NAME}"
 echo "Nuking  Domain ..  >:)";
 
 # destroy current domain
@@ -15,7 +15,7 @@ hagrid land all
 echo "Launching Domain .. hahaha >:)";
 
 # re-launch domain
-hagrid launch ${DOMAIN_NAME} to docker:80 --dev --build-src="model_training_tests"
+hagrid launch ${NODE_NAME} to docker:80 --dev --build-src="model_training_tests"
 
 # wait for domain to be up
 hagrid check --timeout=120
