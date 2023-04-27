@@ -13,7 +13,7 @@
 
 <style lang="postcss">
   dialog {
-    @apply bg-transparent border-none;
+    @apply bg-transparent border-none p-0;
   }
 
   dialog::backdrop {
