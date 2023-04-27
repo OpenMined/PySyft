@@ -231,7 +231,8 @@ class Node(AbstractNode):
         self.node_type = node_type
 
         self.post_init()
-        self.queue_proxy_server = self.init_queue()
+        if not (self.is_subprocess or self.processes == 0):
+            self.queue_proxy_server = self.init_queue()
 
     def init_queue(
         self,
@@ -245,8 +246,15 @@ class Node(AbstractNode):
         self.publisher = Publisher(address=pub_addr)
 
         # Initialize Subscriber
-        self.subscriber = Subscriber(sub_addr)
-        self.subscriber.receive()
+        worker_settings = WorkerSettings(
+            id=self.id,
+            name=self.name,
+            signing_key=self.signing_key,
+            document_store_config=self.document_store_config,
+            action_store_config=self.action_store_config,
+        )
+        self.subscriber = Subscriber(worker_settings, sub_addr)
+        self.subscriber.run()
 
         print("Queue is Online 🟢")
 
@@ -580,7 +588,7 @@ class Node(AbstractNode):
             except Exception as e:
                 result = SyftError(message=f"Exception calling {api_call.path}. {e}")
         else:
-            worker_settings = WorkerSettings(
+            WorkerSettings(
                 id=self.id,
                 name=self.name,
                 signing_key=self.signing_key,
@@ -600,30 +608,10 @@ class Node(AbstractNode):
 
             print("Hello...., sending in bytes data")
 
-            message_bytes = serialize._serialize(api_call, to_bytes=True)
+            message_bytes = serialize._serialize([task_uid, api_call], to_bytes=True)
             self.publisher.send(message=message_bytes)
 
-            # message = [api_call, worker_settings, task_uid]
-
-            # Publisher.send(message)
-
-            thread = gevent.spawn(
-                queue_task,
-                api_call,
-                worker_settings,
-                task_uid,
-                api_call.message.blocking,
-            )
-            if api_call.message.blocking:
-                gevent.joinall([thread])
-                signed_result = thread.value
-
-                if not signed_result.is_valid:
-                    return SyftError(message="The result signature is invalid")  # type: ignore
-
-                result = signed_result.message.data
-            else:
-                result = item
+            return item
         return result
 
     def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
