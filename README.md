@@ -13,7 +13,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
 
-## Install syft on Python 3.10 (<3.10 will not work)
+## Install syft on Python 3.9 - 3.10
 
 ```bash
 $ pip install -U syft -f https://whls.blob.core.windows.net/unstable/index.html
