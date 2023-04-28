@@ -1,4 +1,4 @@
-__version__ = "0.8.0-beta.8"
+__version__ = "0.8.0.post2"
 
 # stdlib
 from pathlib import Path
@@ -57,7 +57,7 @@ from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.version_compare import make_requires
 
-LATEST_STABLE_SYFT = "0.7"
+LATEST_STABLE_SYFT = "0.8"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 sys.path.append(str(Path(__file__)))

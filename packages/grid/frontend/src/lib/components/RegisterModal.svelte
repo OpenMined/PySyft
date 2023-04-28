@@ -23,10 +23,13 @@
         });
     }
 
+    // this doesnt exist anymore
+    //'syft.core.node.common.node_service.user_manager.new_user_messages.CreateUserMessage'
+
     let msg = new SyftMessageWithoutReply(
       nodeId,
       { email: email, password: password, name: name, role: 'Data Scientist', institution: 'DPUK' },
-      'syft.core.node.common.node_service.user_manager.new_user_messages.CreateUserMessage'
+      'syft.service.user.user.CreateUser'
     );
 
     let client_bytes = client.serde.serialize(msg);
@@ -79,9 +82,9 @@
     </Label>
     <div class="flex items-start">
       <Checkbox>Remember me</Checkbox>
-      <a href="/" class="ml-auto text-sm text-blue-700 hover:underline dark:text-blue-500"
-        >Lost password?</a
-      >
+      <a href="/" class="ml-auto text-sm text-blue-700 hover:underline dark:text-blue-500">
+        Lost password?
+      </a>
     </div>
     <Button type="submit" on:click={() => createUser()} class="w-full1">Register</Button>
   </form>
