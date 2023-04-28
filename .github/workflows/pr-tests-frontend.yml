@@ -1,4 +1,4 @@
-name: PR Tests - HAGrid
+name: PR Tests - Frontend
 
 on:
   workflow_call:
@@ -58,9 +58,7 @@ jobs:
       - name: Install Tox
         run: |
           pip install --upgrade tox
-          pip install -e .
 
-      # 42923 is ansible 7.4.0 (latest 2023.04.14)
       - name: Run JS Serde unit tests
         run: |
           tox -e frontend.unit.tests
