@@ -465,5 +465,5 @@ def check_jupyter_server(
 
 
 GIT_REPO = get_git_repo
-GRID_SRC_VERSION = get_version_module()
-GRID_SRC_PATH = grid_src_path()
+GRID_SRC_VERSION = get_version_module
+GRID_SRC_PATH = grid_src_path
