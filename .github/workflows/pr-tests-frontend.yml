@@ -77,7 +77,7 @@ jobs:
           docker rm $(docker ps -aq) --force || true
           docker volume prune -f || true
           docker buildx use default || true
-      
+
       - name: Run JS Serde unit tests
         if: steps.changes.outputs.stack == 'true'
         run: |

@@ -170,7 +170,7 @@ it('Test  Update Metadata APICall serialization/deserialization', () => {
     description: "New Description",
     fqn: "syft.service.metadata.node_metadata.NodeMetadataUpdate"
   };
-  
+
   const apiCall = new APICall(uuid, "metadata.update", [], newMetadata)
 
   const serializedApiCall = serde.serialize(apiCall)
@@ -195,7 +195,7 @@ it('Test  Update User APICall serialization/deserialization', () => {
       fqn: 'syft.service.user.user.UserUpdate'
     },
   };
-  
+
   const apiCall = new APICall(uuid, "user.update", [], userUpdate)
 
   const serializedApiCall = serde.serialize(apiCall)
@@ -217,7 +217,7 @@ it('Test  UserCreate APICall serialization/deserialization', () => {
       password_verify:  'pwd123',
       fqn: 'syft.service.user.user.UserCreate'
   };
-  
+
   const apiCall = new APICall(uuid, "user.create", [], userCreate)
 
   const serializedApiCall = serde.serialize(apiCall)
@@ -231,7 +231,7 @@ it('Test  UserCreate APICall serialization/deserialization', () => {
 it('Test Dataset Get All APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
-  
+
   const apiCall = new APICall(uuid, "dataset.get_all", [], {})
 
   const serializedApiCall = serde.serialize(apiCall)
