@@ -342,7 +342,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         return
 
     try:
-        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+        update_repo(repo=GIT_REPO(), branch=str(kwargs["build_src"]))
     except Exception as e:
         print(f"Failed to update repo. {e}")
     try:
@@ -3044,7 +3044,7 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
         return
 
     try:
-        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+        update_repo(repo=GIT_REPO(), branch=str(kwargs["build_src"]))
     except Exception as e:
         print(f"Failed to update repo. {e}")
 
