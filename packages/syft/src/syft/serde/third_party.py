@@ -166,17 +166,15 @@ recursive_serde_register(
 NOTHING = None
 
 
-# serializing and deserializing networkx Graphs
-# TODO: debug `created_at` and `updated_at` fields causing issues when deserializing
+# TODO: debug serializing after updating a node
 def serialize_networkx_graph(graph: DiGraph) -> bytes:
-    graph_dict = nx.to_dict_of_dicts(graph)
+    graph_dict: dict = nx.node_link_data(graph)
     return serialize(graph_dict, to_bytes=True)
 
 
 def deserialize_networkx_graph(buf: bytes) -> DiGraph:
-    graph_dict = deserialize(buf, from_bytes=True)
-    graph = nx.from_dict_of_dicts(graph_dict)
-    return graph
+    graph_dict: dict = deserialize(buf, from_bytes=True)
+    return nx.node_link_graph(graph_dict)
 
 
 recursive_serde_register(

@@ -68,7 +68,11 @@ class NodeActionData(SyftObject):
     is_mutated: bool = False
 
     @pydantic.validator("created_at", pre=True, always=True)
-    def make_result_id(cls, v: Optional[DateTime]) -> DateTime:
+    def make_created_at(cls, v: Optional[str]) -> DateTime:
+        return DateTime.now() if v is None else v
+
+    @pydantic.validator("updated_at", pre=True, always=True)
+    def make_updated_at(cls, v: Optional[str]) -> DateTime:
         return DateTime.now() if v is None else v
 
     @staticmethod
@@ -101,6 +105,7 @@ class NodeActionData(SyftObject):
         return self._repr_debug_()
 
 
+@serializable()
 class NodeActionDataUpdate(PartialSyftObject):
     __canonical_name__ = "NodeActionDataUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -110,14 +115,13 @@ class NodeActionDataUpdate(PartialSyftObject):
     status: ExecutionStatus
     retry: int
     created_at: DateTime
-    updated_at: DateTime
+    updated_at: Optional[DateTime]
     credentials: SyftVerifyKey
     is_mutated: bool
 
     @pydantic.validator("updated_at", pre=True, always=True)
-    def make_result_id(cls, v: Optional[DateTime]) -> DateTime:
-        data = DateTime.now() if v is None else v
-        return data
+    def make_updated_at(cls, v: Optional[str]) -> DateTime:
+        return DateTime.now() if v is None else v
 
 
 @serializable()
