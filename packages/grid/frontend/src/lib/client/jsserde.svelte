@@ -592,6 +592,7 @@
           Object.assign(objInstance, kvIterable);
           return objInstance;
         } else {
+          kvIterable['fqn'] = fqn
           return kvIterable;
         }
       }
