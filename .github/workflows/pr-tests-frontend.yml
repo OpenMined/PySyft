@@ -14,7 +14,7 @@ defaults:
     working-directory: ./packages/grid/frontend
 
 jobs:
-  pr-tests-hagrid:
+  pr-tests-frontend:
     strategy:
       max-parallel: 3
       matrix:
