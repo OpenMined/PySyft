@@ -163,6 +163,7 @@ def test_networkx_backing_store_node_update(
     node: NodeActionData = create_node_action_data(verify_key)
     backing_store.set(uid=node.id, data=node)
 
+    # create a new node and update the old node according to it
     update_node_data = NodeActionDataUpdate()
     node_2 = create_node_action_data(verify_key)
     update_node_data.id = node_2.id
@@ -174,11 +175,16 @@ def test_networkx_backing_store_node_update(
     backing_store.update(uid=node.id, data=update_node_data)
 
     updated_node = backing_store.get(uid=node.id)
-    assert updated_node.id == node_2.id
-    assert updated_node.action == node_2.action
-    assert update_node_data.status == node_2.status
-    assert update_node_data.credentials == node_2.user_verify_key
-    assert update_node_data.is_mutated is True
+    assert updated_node.id == update_node_data.id == node_2.id
+    assert updated_node.action == update_node_data.action == node_2.action
+    assert updated_node.status == update_node_data.status == node_2.status
+    assert (
+        updated_node.credentials
+        == update_node_data.credentials
+        == node_2.user_verify_key
+    )
+    assert updated_node.is_mutated is True
+    assert updated_node.updated_at == update_node_data.updated_at
 
 
 def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) -> None:
@@ -189,71 +195,57 @@ def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) 
     assert isinstance(graph_store.graph.db, nx.DiGraph)
 
 
-def test_mutation(in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVerifyKey):
+def test_simple_in_memory_action_graph(
+    simple_in_memory_action_graph: InMemoryActionGraphStore,
+) -> None:
     """
-    Scenario:
-        action1 -> initialization of variable a
-        action2 -> a.astype('int32') = b
-        action3 -> b.astype('float64') = c
-        action4 -> b.astype('complex128') = d
+    action1 -> a + b = c
+    action2 -> initialization of variable d
+    action3 -> c * d
     """
-    graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config)
+    assert len(simple_in_memory_action_graph.edges.ok()) == 2
+    assert len(simple_in_memory_action_graph.nodes.ok()) == 3
 
-    action_obj_a = ActionObject.from_obj([1, 2, 3])
-    action1 = Action(
-        path="action.execute",
-        op="np.array",
-        remote_self=None,
-        args=[action_obj_a.syft_lineage_id],
-        kwargs={},
+    nodes = list(simple_in_memory_action_graph.nodes.ok())
+    node_action_data_1: NodeActionData = nodes[0][1]["data"]
+    node_action_data_2: NodeActionData = nodes[1][1]["data"]
+    node_action_data_3: NodeActionData = nodes[2][1]["data"]
+
+    assert (
+        simple_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_3.id
+        ).ok()
+        is True
     )
-    graph_store.set(credentials=verify_key, action=action1)
-
-    as_type_action_obj = ActionObject.from_obj("np.int32")
-    action2 = Action(
-        path="action.execute",
-        op="astype",
-        remote_self=action1.result_id,
-        args=[as_type_action_obj.syft_lineage_id],
-        kwargs={},
-        result_id=action1.result_id,
+    assert (
+        simple_in_memory_action_graph.is_parent(
+            parent=node_action_data_2.id, child=node_action_data_3.id
+        ).ok()
+        is True
     )
-    graph_store.set(credentials=verify_key, action=action2)
-
-    as_type_action_obj = ActionObject.from_obj("np.float64")
-    action3 = Action(
-        path="action.execute",
-        op="astype",
-        remote_self=action2.result_id,
-        args=[as_type_action_obj.syft_lineage_id],
-        kwargs={},
-        result_id=action2.result_id,
+    assert (
+        simple_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_2.id
+        ).ok()
+        is False
     )
-    graph_store.set(credentials=verify_key, action=action3)
 
-    as_type_action_obj = ActionObject.from_obj("np.complex128")
-    action4 = Action(
-        path="action.execute",
-        op="astype",
-        remote_self=action1.result_id,
-        args=[as_type_action_obj.syft_lineage_id],
-        kwargs={},
-        result_id=action1.result_id,
-    )
-    graph_store.set(credentials=verify_key, action=action4)
 
-    node_action_data_1: NodeActionData = graph_store.get(
-        uid=action1.id, credentials=verify_key
-    ).ok()
-    node_action_data_2: NodeActionData = graph_store.get(
-        uid=action2.id, credentials=verify_key
-    ).ok()
-    node_action_data_3: NodeActionData = graph_store.get(
-        uid=action3.id, credentials=verify_key
-    ).ok()
-    node_action_data_4: NodeActionData = graph_store.get(
-        uid=action4.id, credentials=verify_key
-    ).ok()
+def test_mutated_in_memory_action_graph(
+    mutated_in_memory_action_graph: InMemoryActionGraphStore,
+) -> None:
+    """
+    action1 -> initialization of variable a
+    action2 -> a.astype('int32') = b
+    action3 -> b.astype('float64') = c
+    action4 -> a.astype('complex128') = d
+    """
+    assert len(mutated_in_memory_action_graph.edges.ok()) == 3
+    nodes = list(mutated_in_memory_action_graph.nodes.ok())
+    node_action_data_1: NodeActionData = nodes[0][1]["data"]
+    node_action_data_2: NodeActionData = nodes[1][1]["data"]
+    node_action_data_3: NodeActionData = nodes[2][1]["data"]
+    node_action_data_4: NodeActionData = nodes[3][1]["data"]
 
     assert node_action_data_1.is_mutated is True
     assert node_action_data_2.is_mutated is True
@@ -261,22 +253,75 @@ def test_mutation(in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVeri
     assert node_action_data_4.is_mutated is False
 
     assert (
-        graph_store.is_parent(
+        mutated_in_memory_action_graph.is_parent(
             parent=node_action_data_1.id, child=node_action_data_2.id
         ).ok()
         is True
     )
     assert (
-        graph_store.is_parent(
+        mutated_in_memory_action_graph.is_parent(
             parent=node_action_data_2.id, child=node_action_data_3.id
         ).ok()
         is True
     )
     assert (
-        graph_store.is_parent(
+        mutated_in_memory_action_graph.is_parent(
             parent=node_action_data_3.id, child=node_action_data_4.id
         ).ok()
         is True
+    )
+
+
+def test_complicated_in_memory_action_graph(
+    complicated_in_memory_action_graph: InMemoryActionGraphStore,
+) -> None:
+    """
+    action1 -> a + b = c
+    action2 -> initialization of variable d
+    action3 -> c * d
+    action4 -> d.astype('int32')
+    action5 -> d + 48
+    """
+    assert len(complicated_in_memory_action_graph.edges.ok()) == 4
+    assert len(complicated_in_memory_action_graph.nodes.ok()) == 5
+
+    nodes = list(complicated_in_memory_action_graph.nodes.ok())
+    node_action_data_1: NodeActionData = nodes[0][1]["data"]
+    node_action_data_2: NodeActionData = nodes[1][1]["data"]
+    node_action_data_3: NodeActionData = nodes[2][1]["data"]
+    node_action_data_4: NodeActionData = nodes[3][1]["data"]
+    node_action_data_5: NodeActionData = nodes[4][1]["data"]
+
+    assert node_action_data_2.is_mutated is True
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_2.id
+        ).ok()
+        is False
+    )
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_3.id
+        ).ok()
+        is True
+    )
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_2.id, child=node_action_data_4.id
+        ).ok()
+        is True
+    )
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_4.id, child=node_action_data_5.id
+        ).ok()
+        is True
+    )
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_5.id
+        ).ok()
+        is False
     )
 
 

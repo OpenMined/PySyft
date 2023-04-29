@@ -68,11 +68,7 @@ class NodeActionData(SyftObject):
     is_mutated: bool = False
 
     @pydantic.validator("created_at", pre=True, always=True)
-    def make_created_at(cls, v: Optional[str]) -> DateTime:
-        return DateTime.now() if v is None else v
-
-    @pydantic.validator("updated_at", pre=True, always=True)
-    def make_updated_at(cls, v: Optional[str]) -> DateTime:
+    def make_created_at(cls, v: Optional[DateTime]) -> DateTime:
         return DateTime.now() if v is None else v
 
     @staticmethod
@@ -115,12 +111,12 @@ class NodeActionDataUpdate(PartialSyftObject):
     status: ExecutionStatus
     retry: int
     created_at: DateTime
-    updated_at: Optional[DateTime]
+    updated_at: DateTime
     credentials: SyftVerifyKey
     is_mutated: bool
 
     @pydantic.validator("updated_at", pre=True, always=True)
-    def make_updated_at(cls, v: Optional[str]) -> DateTime:
+    def make_updated_at(cls, v: DateTime | None) -> DateTime:
         return DateTime.now() if v is None else v
 
 
