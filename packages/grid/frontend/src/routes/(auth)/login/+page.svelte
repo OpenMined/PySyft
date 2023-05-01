@@ -24,7 +24,7 @@
       }
       goto('/datasets');
     } catch (error) {
-      loginError = error.message
+      loginError = error.message;
     }
   }
 </script>
@@ -71,7 +71,7 @@
             bind:error={loginError}
             required
           />
-          <p class='text-center text-rose-500' hidden={!loginError}> {loginError}</p>
+          <p class="text-center text-rose-500" hidden={!loginError}>{loginError}</p>
           <p class="text-center">
             Don't have an account yet? Apply for an account <a
               href="/signup"
