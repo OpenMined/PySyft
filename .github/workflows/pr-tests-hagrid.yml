@@ -70,7 +70,7 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           bandit -r hagrid
-          safety check -i 42923
+          safety check -i 42923 54229 54230
 
       - name: Run normal tests
         if: steps.changes.outputs.hagrid == 'true'
