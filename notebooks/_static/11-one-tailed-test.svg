@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="202.7068mm"
+   height="129.55409mm"
+   viewBox="0 0 202.7068 129.55409"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="one-tailed-test.svg"
+   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     fit-margin-top="5"
+     fit-margin-left="5"
+     fit-margin-right="5"
+     fit-margin-bottom="5"
+     inkscape:zoom="1.4467452"
+     inkscape:cx="378.43568"
+     inkscape:cy="265.07778"
+     inkscape:window-width="1920"
+     inkscape:window-height="1001"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showguides="true"
+     inkscape:guide-bbox="true">
+    <sodipodi:guide
+       position="215.09217,163.62859"
+       orientation="0,-1"
+       id="guide2112" />
+    <sodipodi:guide
+       position="220.21285,-61.315988"
+       orientation="0,-1"
+       id="guide2116" />
+    <sodipodi:guide
+       position="197.6952,35.369979"
+       orientation="1,0"
+       id="guide6685" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <rect
+       x="69.39792"
+       y="435.91051"
+       width="539.5552"
+       height="47.934191"
+       id="rect5168" />
+    <rect
+       x="17.280166"
+       y="18.662581"
+       width="729.91429"
+       height="51.149296"
+       id="rect93869" />
+    <rect
+       x="142.38858"
+       y="165.1984"
+       width="464.4909"
+       height="48.384469"
+       id="rect59513" />
+    <rect
+       x="87.092045"
+       y="360.8099"
+       width="35.251542"
+       height="248.83441"
+       id="rect54051" />
+    <rect
+       x="142.38858"
+       y="111.28428"
+       width="465.18211"
+       height="57.370155"
+       id="rect37863" />
+    <rect
+       x="123.03479"
+       y="64.97343"
+       width="500.43365"
+       height="147.91823"
+       id="rect31423" />
+    <rect
+       x="142.38858"
+       y="111.28428"
+       width="464.4909"
+       height="43.546021"
+       id="rect20461" />
+    <rect
+       x="142.38858"
+       y="111.28428"
+       width="465.1821"
+       height="57.370155"
+       id="rect37863-0" />
+    <rect
+       x="142.38858"
+       y="111.28428"
+       width="465.1821"
+       height="57.370155"
+       id="rect37863-3" />
+    <rect
+       x="142.38858"
+       y="111.28428"
+       width="465.1821"
+       height="57.370155"
+       id="rect37863-3-0" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-15.338867,-83.818344)">
+    <path
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.248"
+       d="m 33.7004,199.153 c 1.4399,-0.592 2.8798,-1.244 4.3196,-1.961 1.4399,-0.717 2.8798,-1.5 4.3197,-2.351 1.4398,-0.852 2.8797,-1.773 4.3196,-2.763 1.4399,-0.991 2.8797,-2.051 4.3196,-3.179 1.4399,-1.128 2.8797,-2.323 4.3196,-3.579 1.4399,-1.255 2.8798,-2.571 4.3196,-3.937 1.4399,-1.365 2.8798,-2.78 4.3197,-4.229 1.4398,-1.448 2.8797,-2.93 4.3196,-4.425 1.4399,-1.495 2.8797,-3.004 4.3196,-4.502 1.4399,-1.498 2.8797,-2.986 4.3196,-4.437 1.4399,-1.452 2.8798,-2.866 4.3196,-4.217 1.4399,-1.351 2.8798,-2.638 4.3197,-3.835 1.4398,-1.197 2.8797,-2.303 4.3196,-3.295 1.4398,-0.992 2.8797,-1.869 4.3196,-2.612 1.4399,-0.743 2.8797,-1.352 4.3196,-1.812 1.4399,-0.461 2.8793,-0.772 4.3193,-0.928 1.44,-0.156 2.88,-0.156 4.32,0 1.44,0.156 2.88,0.468 4.32,0.928 1.439,0.46 2.879,1.069 4.319,1.812 1.44,0.743 2.88,1.62 4.32,2.612 1.44,0.992 2.88,2.099 4.319,3.295 1.44,1.197 2.88,2.484 4.32,3.835 1.44,1.351 2.88,2.766 4.32,4.217 1.44,1.451 2.879,2.939 4.319,4.437 1.44,1.498 2.88,3.007 4.32,4.502 1.44,1.495 2.88,2.977 4.32,4.425 1.439,1.449 2.879,2.864 4.319,4.229 1.44,1.366 2.88,2.682 4.32,3.937 1.44,1.256 2.879,2.451 4.319,3.579 1.44,1.128 2.88,2.188 4.32,3.179 1.44,0.99 2.88,1.911 4.32,2.763 1.439,0.851 2.879,1.634 4.319,2.351 1.44,0.718 2.88,1.369 4.32,1.961"
+       title="t (1 / sqrt(2*pi)) * exp(-pow(t,2) / 2)"
+       id="path1481"
+       sodipodi:nodetypes="ccccscccssccccscsscsscsssscccscccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 20.093793,199.03386 H 213.03407"
+       id="path6720" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 20.093793,199.03386 19.910911,88.756152"
+       id="path7122" />
+    <path
+       style="fill:none;stroke:#808080;stroke-width:0.284591px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 58.88793,198.88724 -0.0232,-85.62493"
+       id="path7370" />
+    <path
+       style="fill:none;stroke:#808080;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 176.248,199.153 -0.15606,-85.89069"
+       id="path7518" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,15.338867,83.818344)"
+       id="text20459"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.9999px;line-height:1.25;font-family:Georgia;-inkscape-font-specification:Georgia;white-space:pre;shape-inside:url(#rect20461)"><tspan
+         x="142.38867"
+         y="147.37388"
+         id="tspan10376"> </tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,15.338867,83.818344)"
+       id="text31421"
+       style="line-height:1.25;font-family:Arial;font-style:italic;font-size:39.99987411px;-inkscape-font-specification:'Arial, Italic Condensed';font-stretch:condensed;white-space:pre;shape-inside:url(#rect31423)" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,15.338867,85.281398)"
+       id="text37861"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3333px;line-height:1.25;font-family:Georgia;-inkscape-font-specification:Georgia;text-align:center;white-space:pre;shape-inside:url(#rect37863)"
+       x="0"
+       y="0"><tspan
+         x="291.71473"
+         y="123.31473"
+         id="tspan10378">Fail to reject null hypothesis </tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0,-0.26458333,0.26458333,0,25.523951,252.78859)"
+       id="text37861-6"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3333px;line-height:1.25;font-family:Georgia;-inkscape-font-specification:Georgia;text-align:center;white-space:pre;shape-inside:url(#rect37863-3)"
+       x="0"
+       y="0"><tspan
+         x="336.22308"
+         y="123.31473"
+         id="tspan10380">Critical value </tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,-59.471989,85.265387)"
+       id="text37861-2"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3333px;line-height:1.25;font-family:Georgia;-inkscape-font-specification:Georgia;text-align:center;white-space:pre;shape-inside:url(#rect37863-0)"
+       x="0"
+       y="0"><tspan
+         x="310.09359"
+         y="123.31473"
+         id="tspan10382">Reject null hypothesis </tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,15.338867,83.818344)"
+       id="text54049"
+       style="line-height:1.25;font-family:Arial;font-style:italic;font-size:39.99987411px;-inkscape-font-specification:'Arial, Italic Condensed';font-stretch:condensed;white-space:pre;shape-inside:url(#rect54051)" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,15.338867,83.818344)"
+       id="text59511"
+       style="line-height:1.25;font-family:Arial;font-style:italic;font-size:39.99987411px;-inkscape-font-specification:'Arial, Italic Condensed';font-stretch:condensed;white-space:pre;shape-inside:url(#rect59513)" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0,-0.26458333,0.26458333,0,142.75805,252.59392)"
+       id="text37861-6-5"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3333px;line-height:1.25;font-family:Georgia;-inkscape-font-specification:Georgia;text-align:center;white-space:pre;shape-inside:url(#rect37863-3-0)"
+       x="0"
+       y="0"><tspan
+         x="336.22308"
+         y="123.31473"
+         id="tspan10384">Critical value </tspan></text>
+    <path
+       style="fill:#000000;stroke:#808080;stroke-width:0.647884"
+       d="m 85.018424,429.71603 c 16.953386,-8.47475 28.945776,-15.92841 45.274036,-28.13931 8.74534,-6.5401 27.33697,-22.17331 30.70638,-25.8202 0.92165,-0.99753 1.93254,-1.81369 2.24643,-1.81369 0.31389,0 0.57072,13.68589 0.57072,30.41309 v 30.4131 l -44.41003,-0.0215 -44.410033,-0.0214 z"
+       id="path88460"
+       transform="matrix(0.26458333,0,0,0.26458333,15.338867,83.818344)" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,15.338867,83.818344)"
+       id="text93867"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20px;line-height:1.25;font-family:Georgia;-inkscape-font-specification:Georgia;text-align:center;white-space:pre;shape-inside:url(#rect93869)"><tspan
+         x="264.07324"
+         y="36.706515"
+         id="tspan10386">One-tailed test (left-tailed)</tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,15.704631,87.47598)"
+       id="text5166"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20px;line-height:1.25;font-family:Georgia;-inkscape-font-specification:Georgia;text-align:center;white-space:pre;shape-inside:url(#rect5168)"><tspan
+         x="217.65234"
+         y="453.95456"
+         id="tspan10388">Normal distribution of data</tspan></text>
+  </g>
+</svg>
