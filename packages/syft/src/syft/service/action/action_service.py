@@ -484,7 +484,7 @@ def execute_object(
                     f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
                 )
         else:
-            raise Exception("Missing target method")
+            return Err("Missing target method")
 
     except Exception as e:
         return Err(e)
