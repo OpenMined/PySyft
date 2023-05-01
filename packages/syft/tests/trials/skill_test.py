@@ -43,6 +43,7 @@ def get_padawans(cohort: str) -> Dict[str, str]:
         },
         "R4Q2": {
             "skywalker": "PASSED",
+            "Madhav": "PASSED",
         },
     }
     return data[cohort]
