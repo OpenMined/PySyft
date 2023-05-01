@@ -2,7 +2,7 @@
 CLEAN="src/syft/proto"
 PYTHON_OUT="src/syft"
 PROTO_IN="proto"
-
+echo "building proto"
 command -v protoc &> /dev/null
 if [ $? -ne 0 ]; then
     echo -ne "Install protobuf\n"
