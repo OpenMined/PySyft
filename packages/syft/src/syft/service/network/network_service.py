@@ -62,6 +62,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     private: bool = False
     protocol: str = "http"
     port: int = 80
+    vpn_key: str
 
     def __hash__(self) -> int:
         return (
@@ -417,7 +418,7 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             peers = result.ok()
             return peers
