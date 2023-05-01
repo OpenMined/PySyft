@@ -8,15 +8,15 @@ from result import Ok
 from result import Result
 
 # relative
-from ...core.node.new.credentials import SyftVerifyKey
-from ...core.node.new.document_store import BaseStash
-from ...core.node.new.document_store import DocumentStore
-from ...core.node.new.document_store import PartitionSettings
-from ...core.node.new.document_store import QueryKeys
-from ...core.node.new.document_store import UIDPartitionKey
-from ...core.node.new.response import SyftError
-from ...core.node.new.serializable import serializable
-from ...core.node.new.uid import UID
+from ...node.credentials import SyftVerifyKey
+from ...serde.serializable import serializable
+from ...service.response import SyftError
+from ...store.document_store import BaseStash
+from ...store.document_store import DocumentStore
+from ...store.document_store import PartitionSettings
+from ...store.document_store import QueryKeys
+from ...store.document_store import UIDPartitionKey
+from ...types.uid import UID
 from .oblv_keys import OblvKeys
 
 

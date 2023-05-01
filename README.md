@@ -8,18 +8,14 @@
 
 Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
-<div align="left">
-<img alt="Syft Logo" src="docs/img/header.png" alt="Syft Overview" width="100%" />
-</div>
-
 # Quickstart
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
 
-## Install syft on Python 3.8 - 3.10
+## Install syft on Python 3.9 - 3.10
 
 ```bash
-$ pip install --pre syft -f https://whls.blob.core.windows.net/unstable/index.html
+$ pip install -U syft -f https://whls.blob.core.windows.net/unstable/index.html
 ```
 
 ## Launch a python dev Domain
@@ -27,7 +23,7 @@ $ pip install --pre syft -f https://whls.blob.core.windows.net/unstable/index.ht
 ```python
 # from Jupyter / Python
 import syft as sy
-sy.requires(">=0.8-beta")
+sy.requires(">=0.8,<0.8.1")
 node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
 ```
 
@@ -42,7 +38,7 @@ Starting syft-node server on 0.0.0.0:8080
 
 ```python
 import syft as sy
-sy.requires(">=0.8-beta")
+sy.requires(">=0.8,<0.8.1")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
 ```
 
@@ -63,6 +59,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
 ## Docs and Support
 
+- 📝 <a href="/notebooks/api">API Example Notebooks</a>
 - 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
 - `#support` on <a href="https://slack.openmined.org/">Slack</a>
 
@@ -71,18 +68,19 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 - HAGrid 0.3 Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft 0.8 Requires: 🐍 `python 3.8 - 3.10` - Run: `pip install -U syft`  
+- PySyft 0.8 Requires: 🐍 `python 3.9 - 3.10` - Run: `pip install -U syft`  
   \*`macOS` Apple Silicon users might need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions
 
-`0.8.0` (Beta) - `dev` branch 👈🏽  
-`0.7.0` (Stable) - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>
+`0.8.1` (Beta) - `dev` branch 👈🏽 <a href="/notebooks/api/0.8">API</a>  
+`0.8.0` (Stable) - <a href="/notebooks/api/0.8">API</a>
 
 Deprecated:
 
+- `0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>
 - `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>
 - `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix
 - `0.2.0` - `0.5.0`

@@ -340,7 +340,18 @@ recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
 
 if sys.version_info >= (3, 9):
-    recursive_serde_register_type(_UnionGenericAlias)
+    recursive_serde_register_type(
+        _UnionGenericAlias,
+        serialize_attrs=[
+            "__parameters__",
+            "__slots__",
+            "_inst",
+            "_name",
+            "__args__",
+            "__module__",
+            "__origin__",
+        ],
+    )
     recursive_serde_register_type(_SpecialGenericAlias)
 
 recursive_serde_register_type(EnumMeta)
