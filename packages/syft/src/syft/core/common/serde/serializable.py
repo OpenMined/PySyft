@@ -103,7 +103,8 @@ def serializable(
         if not hasattr(cls, "__attr_allowlist__"):
             warnings.warn(
                 f"__attr_allowlist__ not defined for type {cls.__name__},"
-                " even if it uses recursive serde, defaulting on the empty list."
+                " even if it uses recursive serde, defaulting on the empty list.",
+                stacklevel=2,
             )
             cls.__attr_allowlist__ = []
 

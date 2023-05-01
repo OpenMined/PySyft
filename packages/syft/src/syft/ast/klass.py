@@ -688,7 +688,7 @@ class Class(Callable):
             if searchable is not None:
                 msg = "`searchable` is deprecated please use `pointable` in future"
                 warning(msg, print=True)
-                warnings.warn(msg, DeprecationWarning)
+                warnings.warn(msg, DeprecationWarning, stacklevel=2)
                 pointable = searchable
 
             chunk_size = chunk_size if chunk_size is not None else 536870912  # 500 MB

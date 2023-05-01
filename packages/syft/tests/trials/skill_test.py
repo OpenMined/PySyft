@@ -41,6 +41,10 @@ def get_padawans(cohort: str) -> Dict[str, str]:
             "Vani": "PASSED",
             "Hithem": "PASSED",
         },
+        "R4Q2": {
+            "skywalker": "PASSED",
+            "Neelaksh": "PASSED",
+        },
     }
     return data[cohort]
 
@@ -82,3 +86,8 @@ def test_trial_of_skill() -> None:
     assert get_padawans("R3Q1")["Hithem"] == "PASSED"
 
     assert len(get_padawans("R3Q1")) > 1
+
+    assert get_padawans("R4Q2")["skywalker"] == "PASSED"
+    assert get_padawans("R4Q2")["Neelaksh"] == "PASSED"
+
+    assert len(get_padawans("R4Q2")) > 1

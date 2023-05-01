@@ -707,6 +707,7 @@ class Pointer(AbstractPointer):
         warnings.warn(
             msg,
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._pointable
 
@@ -717,6 +718,7 @@ class Pointer(AbstractPointer):
         warnings.warn(
             msg,
             DeprecationWarning,
+            stacklevel=2,
         )
         self.pointable = value
 
@@ -752,6 +754,7 @@ class Pointer(AbstractPointer):
             warnings.warn(
                 warn_msg,
                 DeprecationWarning,
+                stacklevel=2,
             )
             pointable = searchable
 

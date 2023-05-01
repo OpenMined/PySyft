@@ -183,7 +183,7 @@ def load(
     if not ignore_warning:
         msg = "sy.load() is deprecated and not needed anymore"
         warning(msg, print=True)
-        warnings.warn(msg, DeprecationWarning)
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
 
     if "lib" in kwargs.keys():
         libs += tuple(kwargs["lib"])
@@ -222,7 +222,7 @@ def load_lib(lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None
     options = options if options is not None else {}
     msg = "sy._load_lib() is deprecated and not needed anymore"
     warning(msg, print=True)
-    warnings.warn(msg, DeprecationWarning)
+    warnings.warn(msg, DeprecationWarning, stacklevel=2)
     load(lib=lib, options=options)
 
 
