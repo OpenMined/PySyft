@@ -37,7 +37,7 @@
       await register(newUser); // This will return a success message and the new user info
       goto('/login');
     } catch (e) {
-      signUpError = e.message
+      signUpError = e.message;
     }
   }
 </script>
@@ -71,7 +71,7 @@
           />
         </div>
         <Input label="Website/Profile" id="website" placeholder="https://openmined.org" />
-        <p class='text-center text-rose-500' hidden={!signUpError}>{signUpError}</p>
+        <p class="text-center text-rose-500" hidden={!signUpError}>{signUpError}</p>
         <p class="text-center">
           Already have an account? Sign in <a
             class="text-primary-600 underline hover:opacity-50"
