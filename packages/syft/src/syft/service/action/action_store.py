@@ -61,6 +61,8 @@ class KeyValueActionStore(ActionStore):
         self.root_verify_key = root_verify_key
 
     def get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         # TODO 🟣 Temporarily added skip permission argument for enclave
         # until permissions are fully integrated
         # if you get something you need READ permission
@@ -78,6 +80,8 @@ class KeyValueActionStore(ActionStore):
     def get_pointer(
         self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
     ) -> Result[SyftObject, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         try:
             # 🟡 TODO 34: do we want pointer read permissions?
             if uid in self.data:
@@ -91,11 +95,15 @@ class KeyValueActionStore(ActionStore):
             return Err(str(e))
 
     def exists(self, uid: UID) -> bool:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         return uid in self.data
 
     def set(
         self, uid: UID, credentials: SyftVerifyKey, syft_object: SyftObject
     ) -> Result[SyftSuccess, Err]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         # if you set something you need WRITE permission
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
         can_write = self.has_permission(write_permission)
@@ -120,6 +128,8 @@ class KeyValueActionStore(ActionStore):
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         # first person using this UID can claim ownership
         if uid not in self.permissions and uid not in self.data:
             self.add_permissions(
@@ -134,6 +144,8 @@ class KeyValueActionStore(ActionStore):
         return Err(f"UID: {uid} already owned.")
 
     def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         # if you delete something you need OWNER permission
         # is it bad to evict a key and have someone else reuse it?
         # perhaps we should keep permissions but no data?

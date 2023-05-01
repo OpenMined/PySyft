@@ -173,6 +173,7 @@ class Request(SyftObject):
             raise Exception(f"Login to {self.node_uid} first.")
 
         action_object = ActionObject.from_obj(result)
+
         result = api.services.action.save(action_object)
         if not result:
             return result
