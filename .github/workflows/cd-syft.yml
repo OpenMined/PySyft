@@ -58,13 +58,13 @@ jobs:
       #     add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml']"
       #     pull_strategy: NO-PULL
 
-      - name: Build and publish
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.SYFT_PYPI_TOKEN }}
-        run: |
-          tox -e syft.publish
-          twine upload packages/syft/dist/*
+      # - name: Build and publish
+      #   env:
+      #     TWINE_USERNAME: __token__
+      #     TWINE_PASSWORD: ${{ secrets.SYFT_PYPI_TOKEN }}
+      #   run: |
+      #     tox -e syft.publish
+      #     twine upload packages/syft/dist/*
 
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
@@ -89,7 +89,7 @@ jobs:
           images: openmined/grid-backend
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=0.8.0
 
       - name: Build and push `grid-backend` image to DockerHub
         uses: docker/build-push-action@v3
@@ -108,7 +108,7 @@ jobs:
           images: openmined/grid-enclave
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=0.8.0
 
       - name: Build and push `grid-enclave` image to DockerHub
         uses: docker/build-push-action@v3
@@ -127,7 +127,7 @@ jobs:
           images: openmined/grid-frontend
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=0.8.0
 
       - name: Build and push `grid-frontend` image to DockerHub
         uses: docker/build-push-action@v3
@@ -146,7 +146,7 @@ jobs:
           images: openmined/grid-vpn-headscale
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=0.8.0
 
       - name: Build and push `grid-headscale` image to DockerHub
         uses: docker/build-push-action@v3
@@ -164,7 +164,7 @@ jobs:
           images: openmined/grid-vpn-tailscale
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=0.8.0
 
       - name: Build and push `grid-tailscale` image to DockerHub
         uses: docker/build-push-action@v3
@@ -182,7 +182,7 @@ jobs:
           images: openmined/grid-vpn-iptables
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=0.8.0
 
       - name: Build and push `grid-vpn-iptables` image to DockerHub
         uses: docker/build-push-action@v2

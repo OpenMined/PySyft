@@ -13,7 +13,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
 
-## Install syft on Python 3.10 (<3.10 will not work)
+## Install syft on Python 3.9 - 3.10
 
 ```bash
 $ pip install -U syft -f https://whls.blob.core.windows.net/unstable/index.html
@@ -69,7 +69,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 - HAGrid 0.3 Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft 0.8 Requires: 🐍 `python 3.10` - Run: `pip install -U syft`  
+- PySyft 0.8 Requires: 🐍 `python 3.9 - 3.10` - Run: `pip install -U syft`  
   \*`macOS` Apple Silicon users might need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
