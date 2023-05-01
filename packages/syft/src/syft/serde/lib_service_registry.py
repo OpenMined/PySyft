@@ -9,6 +9,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Union
 
 # third party
@@ -37,7 +38,7 @@ def import_from_path(path: str) -> type:
     path_parts = [x for x in attr_path.split(".") if x != ""]
     for attr in path_parts:
         res = getattr(res, attr)
-    return res
+    return res  # type: ignore
 
 
 class CMPBase:
@@ -96,7 +97,7 @@ class CMPBase:
                         attr = getattr(self.obj, attr_name)
                     except Exception:
                         continue
-                    child = self.init_child(
+                    child = self.init_child(  # type: ignore
                         self.obj,
                         f"{self.path}.{attr_name}",
                         attr,
@@ -118,7 +119,7 @@ class CMPBase:
         child_path: str,
         child_obj: Union[type, object],
         absolute_path: str,
-    ):
+    ) -> Optional[Self]:
         """Get the child of parent as a CMPBase object
 
         Args:
@@ -136,7 +137,7 @@ class CMPBase:
                 permissions=self.permissions,
                 obj=child_obj,
                 absolute_path=absolute_path,
-            )
+            )  # type: ignore
         elif inspect.ismodule(child_obj) and CMPBase.is_submodule(
             parent_obj, child_obj
         ):
@@ -150,16 +151,14 @@ class CMPBase:
                 permissions=self.permissions,
                 obj=child_obj,
                 absolute_path=absolute_path,
-            )
-            # register_lib_func(path, lib_obj)
+            )  # type: ignore
         elif inspect.isclass(child_obj) and parent_is_parent_module:
             return CMPClass(
                 child_path,
                 permissions=self.permissions,
                 obj=child_obj,
                 absolute_path=absolute_path,
-            )
-            # register_lib_class(path, lib_obj)
+            )  # type: ignore
         else:
             return None
 
@@ -179,7 +178,7 @@ class CMPBase:
         return False
 
     @staticmethod
-    def parent_is_parent_module(parent_obj, child_obj) -> Optional[str]:
+    def parent_is_parent_module(parent_obj: Any, child_obj: Any) -> Optional[str]:
         try:
             if hasattr(child_obj, "__module__"):
                 return child_obj.__module__ == parent_obj.__name__
@@ -233,13 +232,13 @@ class CMPBase:
         last_idx, c_indent = len(self.children) - 1, indent + 1
         children_string = "".join(
             [
-                c.__repr__(c_indent, is_last=i == last_idx, parent_path=self.path)
+                c.__repr__(c_indent, is_last=i == last_idx, parent_path=self.path)  # type: ignore
                 for i, c in enumerate(
                     sorted(
                         self.children.values(),
-                        key=lambda x: x.permissions.permission_string,
-                    )
-                )
+                        key=lambda x: x.permissions.permission_string,  # type: ignore
+                    )  # type: ignore
+                )  # type: ignore
             ]
         )
         tree_prefix = "└───" if is_last else "├───"
@@ -263,7 +262,7 @@ class CMPFunction(CMPBase):
 
     @property
     def name(self) -> str:
-        return self.obj.__name__
+        return self.obj.__name__  # type: ignore
 
     def set_signature(self) -> None:
         try:
@@ -281,14 +280,14 @@ class CMPClass(CMPBase):
     def name(self) -> str:
         # possibly change to
         # func_name = path.split(".")[-1]
-        return self.obj.__name__
+        return self.obj.__name__  # type: ignore
 
     def set_signature(self) -> None:
         try:
             self.signature = get_signature(self.obj)
         except Exception:
             try:
-                self.signature = get_signature(self.obj.__init__)
+                self.signature = get_signature(self.obj.__init__)  # type: ignore
             except Exception:
                 pass
 
@@ -315,7 +314,7 @@ class CMPTree:
             c.build()
         return self
 
-    def flatten(self) -> List[CMPBase]:
+    def flatten(self) -> Sequence[CMPBase]:
         res = []
         for c in self.children.values():
             res += c.flatten()
