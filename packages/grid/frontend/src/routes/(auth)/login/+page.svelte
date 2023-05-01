@@ -14,7 +14,7 @@
   let status: DomainOnlineStatus = 'online';
   let email = '';
   let password = '';
-
+  $: loginError = '';
   async function handleSubmit() {
     try {
       await login({ email, password });
@@ -24,7 +24,7 @@
       }
       goto('/datasets');
     } catch (error) {
-      console.error(error);
+      loginError = error.message
     }
   }
 </script>
@@ -58,6 +58,7 @@
             type="email"
             id="email"
             placeholder="info@openmined.org"
+            bind:error={loginError}
             bind:value={email}
             required
           />
@@ -67,8 +68,10 @@
             id="password"
             placeholder="******"
             bind:value={password}
+            bind:error={loginError}
             required
           />
+          <p class='text-center text-rose-500' hidden={!loginError}> {loginError}</p>
           <p class="text-center">
             Don't have an account yet? Apply for an account <a
               href="/signup"
