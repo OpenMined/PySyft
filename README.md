@@ -76,7 +76,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
 # Versions
 
-`0.9.0` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/blob/dev/notebooks/api/0.9">API</a>  
+`0.8.1` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/blob/dev/notebooks/api/0.8">API</a>  
 `0.8.0` (Stable) - <a href="https://github.com/OpenMined/PySyft/blob/0.8/notebooks/api/0.8">API</a>
 
 Deprecated:
