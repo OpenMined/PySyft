@@ -20,11 +20,72 @@ class PandasDataFrameObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[Type[Any]] = DataFrame
-    syft_passthrough_attrs = []
+    syft_passthrough_attrs = [
+        "_typ",
+        "shape",
+        "ndim",
+        "_get_axis",
+        "axis",
+        "axes",
+        "_get_axis_number",
+        "_get_block_manager_axis",
+        "_mgr",
+        "_constructor",
+        "attrs",
+    ]
+    # this is added for instance checks for dataframes
+    _typ = "dataframe"
     # syft_dont_wrap_attrs = ["shape"]
 
     def __dataframe__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__dataframe__(*args, **kwargs)
+
+    def _get_axis(self, axis):
+        if isinstance(axis, ActionObject):
+            axis = axis.syft_action_data
+        return self.syft_action_data._get_axis(axis)
+
+    def _get_block_manager_axis(self, axis):
+        if isinstance(axis, ActionObject):
+            axis = axis.syft_action_data
+        return self.syft_action_data._get_block_manager_axis(axis)
+
+    def _get_axis_number(self, axis):
+        if isinstance(axis, ActionObject):
+            axis = axis.syft_action_data
+        return self.syft_action_data._get_axis_number(axis)
+
+    @property
+    def attrs(self):
+        return self.syft_action_data.attrs
+
+    @property
+    def _constructor(self):
+        def wrapper(*args, **kwargs):
+            obj = self.syft_action_data._constructor(*args, **kwargs)
+            return ActionObject.from_obj(obj)
+
+        return wrapper
+
+    @property
+    def _mgr(self):
+        return self.syft_action_data._mgr
+
+    @property
+    def axis(self):
+        return self.syft_action_data.axis
+
+    @property
+    def axes(self):
+        return self.syft_action_data.axes
+
+    @property
+    def shape(self):
+        return self.syft_action_data.shape
+
+    @property
+    def ndim(self):
+        return self.syft_action_data.ndim
 
     def __getattribute__(self, name: str) -> Any:
         return super().__getattribute__(name)

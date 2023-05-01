@@ -302,6 +302,7 @@ class ActionObject(SyftObject):
             v, (cls.syft_internal_type, ActionDataEmpty)
         ):
             return v
+        # third party
         raise SyftException(
             f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
         )
@@ -738,6 +739,9 @@ class ActionObject(SyftObject):
 
     def __rsub__(self, other: Any) -> Any:
         return self.__rsub__(other)
+
+    def __hash__(self) -> Any:
+        return self.__hash__().syft_action_data
 
     def __rmatmul__(self, other: Any) -> Any:
         return self.__rmatmul__(other)
