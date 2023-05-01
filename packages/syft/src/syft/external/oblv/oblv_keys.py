@@ -1,7 +1,7 @@
 # relative
-from ...core.node.new.serializable import serializable
-from ...core.node.new.syft_object import SYFT_OBJECT_VERSION_1
-from ...core.node.new.syft_object import SyftObject
+from ...serde.serializable import serializable
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
 
 
 @serializable()

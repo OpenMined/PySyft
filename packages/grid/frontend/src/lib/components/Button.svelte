@@ -3,77 +3,45 @@
 
   interface $$Props extends HTMLButtonAttributes {
     disabled?: boolean;
-    variant: 'secondary' | 'delete' | 'black' | 'white' | 'blue-back';
-    position?: 'left' | 'right' | 'none';
-    action: Function;
-    icon: any;
+    variant?: 'primary' | 'secondary' | 'error';
+    type?: 'button' | 'submit' | 'reset';
   }
 
-  export let variant = 'secondary';
+  export let variant = 'primary';
   export let disabled = false;
-  export let position = 'none';
-  export let action: Function;
-  export let icon: any;
+  export let type: $$Props['type'] = 'button';
 </script>
 
-<button
-  class="capitalize font-roboto flex flex-no-wrap justify-center items-center px-4 py-3 rounded-[20px] text-sm font-regular disabled:opacity-50 {variant} {position}"
-  aria-disabled={disabled}
-  on:click={action()}
-  ><i class="fa fa-home" />
+<button {type} class={variant} aria-disabled={disabled} on:click {...$$props}>
   <slot />
 </button>
 
 <style lang="postcss">
+  button {
+    @apply capitalize font-roboto flex flex-nowrap justify-center items-center px-4 py-2 rounded-full font-normal;
+    @apply transition-all duration-500;
+  }
+
+  [aria-disabled='true'] {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .primary {
+    @apply bg-gradient-to-r from-gray-800 to-gray-800 text-white;
+    @apply hover:to-gray-500;
+  }
+
   .secondary {
-    @apply transition-all duration-500 bg-gradient-to-l from-primary-300 to-primary-300;
+    @apply bg-gradient-to-l from-primary-300 to-primary-300;
+    @apply hover:to-marigold-400;
   }
 
-  .secondary:hover {
-    @apply to-marigold-400;
+  .error {
+    @apply bg-gradient-to-l from-magenta-400 to-magenta-400;
+    @apply hover:to-yellow-400;
   }
 
-  .delete {
-    @apply transition-all duration-500 bg-gradient-to-l from-magenta-300 to-magenta-300;
-  }
-
-  .delete:hover {
-    @apply to-marigold-400;
-  }
-
-  .black {
-    @apply transition-all duration-500 bg-gradient-to-l from-black-900 to-black-900 text-white-50 rounded-3xl h-8;
-  }
-
-  .black:hover {
-    @apply to-marigold-400;
-  }
-
-  .white {
-    @apply transition-all duration-500 bg-gradient-to-l from-white-50 to-white-50 shadow h-8;
-  }
-
-  .white:hover {
-    @apply to-marigold-400;
-  }
-
-  .blue-back {
-    @apply transition-all duration-500 bg-gradient-to-l from-white-50 to-white-50 h-8 text-primary-500;
-  }
-
-  .blue-back:hover {
-    @apply to-marigold-400;
-  }
-
-  .left {
-    @apply float-left;
-  }
-
-  .right {
-    @apply float-right;
-  }
-
-  .none {
-    @apply float-none;
+  .primary-outline {
+    @apply border border-primary-300 text-primary-300;
   }
 </style>

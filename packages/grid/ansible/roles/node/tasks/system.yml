@@ -56,6 +56,16 @@
     append: yes
   when: vagrant is defined
 
+- name: Add vagrant user to docker
+  user:
+    name: "vagrant"
+    groups:
+      - vagrant
+      - docker
+      - om
+    append: yes
+  when: vagrant is defined
+
 - name: Install System Packages
   package:
     name: "{{ item }}"
@@ -86,10 +96,20 @@
     path: /usr/local/bin/ctop
   register: ctop_exists
 
-- name: Install ctop Docker CLI Utility
+- name: Get the system architecture
+  ansible.builtin.setup:
+    gather_subset: hardware
+  register: system_info
+
+- name: Install ctop Docker CLI Utility - arm64
+  shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-arm64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
+  become: yes
+  when: "not ctop_exists.stat.exists and 'aarch64' in system_info['ansible_facts']['ansible_architecture']"
+
+- name: Install ctop Docker CLI Utility - x86
   shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-amd64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
   become: yes
-  when: not ctop_exists.stat.exists
+  when: "not ctop_exists.stat.exists and 'x86' in system_info['ansible_facts']['ansible_architecture']"
 
 - name: Ensuring ufw service is always running
   systemd:
