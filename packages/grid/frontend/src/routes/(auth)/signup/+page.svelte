@@ -36,8 +36,10 @@
     try {
       let response = await register(newUser); // This will return a success message and the new user info
       signUpSuccess = response[0].message;
-      console.log(signUpSuccess)
-      setTimeout(() => {goto('/login')}, 2000);
+      console.log(signUpSuccess);
+      setTimeout(() => {
+        goto('/login');
+      }, 2000);
     } catch (e) {
       signUpError = e.message;
     }
@@ -74,7 +76,7 @@
         </div>
         <Input label="Website/Profile" id="website" placeholder="https://openmined.org" />
 
-        <p class="text-center text-green-500" hidden={!signUpSuccess}>{signUpSuccess}</p>        
+        <p class="text-center text-green-500" hidden={!signUpSuccess}>{signUpSuccess}</p>
         <p class="text-center text-rose-500" hidden={!signUpError}>{signUpError}</p>
         <p class="text-center">
           Already have an account? Sign in <a
