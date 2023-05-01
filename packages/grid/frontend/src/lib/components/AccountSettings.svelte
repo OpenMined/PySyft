@@ -1,6 +1,6 @@
 <script>
   import { Modal, Button } from 'flowbite-svelte';
-  import { shortName } from '$lib/utils.js';
+  import { shortName } from '$lib/utils.ts';
   import FormControl from '$lib/components/FormControl.svelte';
   import YellowWarn from '$lib/components/icons/YellowWarn.svelte';
   export let user_info;
@@ -136,7 +136,7 @@
               >
             </div>
           </div>
-
+          <!--
           <span class="font-bold"> CAUTION ZONE </span>
           <div class="space-y-2" style="display:flex;flex-direction:column">
             <span class="font-bold small">Account</span>
@@ -147,6 +147,7 @@
               }}><span style="color: red;">Delete Account</span></button
             >
           </div>
+          -->
         </form>
       </div>
     </div>

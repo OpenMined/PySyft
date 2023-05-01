@@ -3,12 +3,12 @@
 import pytest
 
 # syft absolute
-from syft.core.node.new.client import SyftClient
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.document_store import DocumentStore
-from syft.core.node.new.request_stash import RequestStash
-from syft.core.node.worker import Worker
+from syft.client.client import SyftClient
+from syft.node.credentials import SyftVerifyKey
+from syft.node.worker import Worker
+from syft.service.context import AuthedServiceContext
+from syft.service.request.request_stash import RequestStash
+from syft.store.document_store import DocumentStore
 
 
 @pytest.fixture

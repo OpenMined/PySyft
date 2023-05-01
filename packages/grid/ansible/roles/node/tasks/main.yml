@@ -2,7 +2,7 @@
 - name: Display all variables/facts known for a host
   ansible.builtin.debug:
     var: hostvars[inventory_hostname]
-    verbosity: 1
+    verbosity: 0
 
 - name: Stop existing cronjobs if provisioning from outside
   shell: (crontab -r  || true) && sudo kill -9 $(pgrep cron)

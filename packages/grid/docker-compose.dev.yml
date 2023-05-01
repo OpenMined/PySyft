@@ -17,7 +17,11 @@ services:
 
   frontend:
     volumes:
-      - ${RELATIVE_PATH}./frontend/:/app
+      - ${RELATIVE_PATH}./frontend/src:/app/src
+      - ${RELATIVE_PATH}./frontend/static:/app/static
+      - ${RELATIVE_PATH}./frontend/svelte.config.js:/app/svelte.config.js
+      - ${RELATIVE_PATH}./frontend/tsconfig.json:/app/tsconfig.json
+      - ${RELATIVE_PATH}./frontend/vite.config.ts:/app/vite.config.ts
     environment:
       - FRONTEND_TARGET=grid-ui-development
 

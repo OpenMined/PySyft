@@ -6,6 +6,8 @@ FROM python:3.10.10-slim as build
 ENV TZ=Etc/UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+RUN mkdir -p /root/.local
+
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
   DEBIAN_FRONTEND=noninteractive \
   apt-get update && \

@@ -1,15 +1,11 @@
-# stdlib
-
-# third party
-
 # third party
 import numpy as np
 
 # syft absolute
 from syft import ActionObject
-from syft.core.node.new.action_object import Action
-from syft.core.node.new.api import SyftAPICall
-from syft.core.node.new.uid import LineageID
+from syft.client.api import SyftAPICall
+from syft.service.action.action_object import Action
+from syft.types.uid import LineageID
 
 
 def test_actionobject_method(worker):
@@ -27,8 +23,6 @@ def test_lib_function_action(worker):
     root_domain_client = worker.root_client
     numpy_client = root_domain_client.api.lib.numpy
     res = numpy_client.zeros_like([1, 2, 3])
-    # third party
-    import numpy as np
 
     assert isinstance(res, ActionObject)
     assert all(res == np.array([0, 0, 0]))
@@ -44,8 +38,6 @@ def test_lib_class_init_action(worker):
     root_domain_client = worker.root_client
     numpy_client = root_domain_client.api.lib.numpy
     res = numpy_client.float32(4.0)
-    # third party
-    import numpy as np
 
     assert isinstance(res, ActionObject)
     assert res == np.float32(4.0)
