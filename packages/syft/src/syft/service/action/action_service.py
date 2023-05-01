@@ -122,7 +122,6 @@ class ActionService(AbstractService):
             obj = result.ok()
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
-                    print("GETTING PRIVATE")
                     obj = obj.private
                     obj.syft_point_to(context.node.id)
                 elif twin_mode == TwinMode.MOCK:
@@ -218,6 +217,8 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
+        # relative
+        from .plan import Plan
 
         resolved_self = self._get(
             context=context,
@@ -229,7 +230,71 @@ class ActionService(AbstractService):
             return resolved_self.err()
         resolved_self = resolved_self.ok()
 
-        if action.action_type == ActionType.GETATTRIBUTE:
+        if isinstance(resolved_self.syft_action_data, Plan) and action.op == "__call__":
+            plan = resolved_self.syft_action_data
+            id2inpkey = {v.id: k for k, v in plan.inputs.items()}
+
+            for plan_action in plan.actions:
+                if plan_action.remote_self.id in id2inpkey:
+                    plan_action.remote_self = action.kwargs[
+                        id2inpkey[plan_action.remote_self.id]
+                    ]
+                for i, arg in enumerate(plan_action.args):
+                    if arg in id2inpkey:
+                        plan_action.args[i] = action.kwargs[id2inpkey[arg]]
+
+                for k, arg in enumerate(plan_action.kwargs):
+                    if arg in id2inpkey:
+                        plan_action.kwargs[k] = action.kwargs[id2inpkey[arg]]
+
+            for plan_action in plan.actions:
+                action_res = self.execute(context, plan_action)
+                if action_res.is_err():
+                    return action_res
+            result_id = plan.outputs[0].id
+            result_action_object = self._get(context, result_id, TwinMode.MOCK)
+
+        elif action.action_type == ActionType.SETATTRIBUTE:
+            args, _ = resolve_action_args(action, context, self)
+            if not isinstance(args[0], ActionObject):
+                raise ValueError(
+                    "setattribute requires a non-twin string as first argument"
+                )
+            name = args[0].syft_action_data
+            # dont do the whole filtering dance with the name
+            args = [args[1]]
+
+            if isinstance(resolved_self, TwinObject):
+                # todo, create copy?
+                private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE)
+                private_val = private_args[0]
+                setattr(resolved_self.private.syft_action_data, name, private_val)
+                # todo: what do we use as data for the mock here?
+                # depending on permisisons?
+                public_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
+                public_val = public_args[0]
+                setattr(resolved_self.mock.syft_action_data, name, public_val)
+                result_action_object = Ok(
+                    TwinObject(
+                        id=action.result_id,
+                        private_obj=ActionObject.from_obj(
+                            resolved_self.private.syft_action_data
+                        ),
+                        private_obj_id=action.result_id,
+                        mock_obj=ActionObject.from_obj(
+                            resolved_self.mock.syft_action_data
+                        ),
+                        mock_obj_id=action.result_id,
+                    )
+                )
+            else:
+                # todo: permissions
+                raise NotImplementedError("")
+                # setattr(resolved_self.syft_action_data, name, val)
+                # val = resolved_self.syft_action_data
+                # result_action_object = Ok(wrap_result(action.result_id, val))
+
+        elif action.action_type == ActionType.GETATTRIBUTE:
             if isinstance(resolved_self, TwinObject):
                 private_result = getattr(
                     resolved_self.private.syft_action_data, action.op
@@ -306,6 +371,36 @@ class ActionService(AbstractService):
             return SyftError(message=f"Object: {obj_id} does not exist")
 
 
+def resolve_action_args(
+    action: Action, context: AuthedServiceContext, service: ActionService
+):
+    has_twin_inputs = False
+    args = []
+    for arg_id in action.args:
+        arg_value = service.get(context=context, uid=arg_id, twin_mode=TwinMode.NONE)
+        if arg_value.is_err():
+            return arg_value
+        if isinstance(arg_value.ok(), TwinObject):
+            has_twin_inputs = True
+        args.append(arg_value.ok())
+    return args, has_twin_inputs
+
+
+def resolve_action_kwargs(
+    action: Action, context: AuthedServiceContext, service: ActionService
+):
+    has_twin_inputs = False
+    kwargs = {}
+    for key, arg_id in action.kwargs.items():
+        kwarg_value = service.get(context=context, uid=arg_id, twin_mode=TwinMode.NONE)
+        if kwarg_value.is_err():
+            return kwarg_value
+        if isinstance(kwarg_value.ok(), TwinObject):
+            has_twin_inputs = True
+        kwargs[key] = kwarg_value.ok()
+    return kwargs, has_twin_inputs
+
+
 def execute_object(
     service: ActionService,
     context: AuthedServiceContext,
@@ -314,30 +409,9 @@ def execute_object(
     twin_mode: TwinMode = TwinMode.NONE,
 ) -> Result[Ok[Union[TwinObject, ActionObject]], Err[str]]:
     unboxed_resolved_self = resolved_self.syft_action_data
-    args = []
-    has_twin_inputs = False
-    if action.args:
-        for arg_id in action.args:
-            arg_value = service.get(
-                context=context, uid=arg_id, twin_mode=TwinMode.NONE
-            )
-            if arg_value.is_err():
-                return arg_value
-            if isinstance(arg_value.ok(), TwinObject):
-                has_twin_inputs = True
-            args.append(arg_value.ok())
-
-    kwargs = {}
-    if action.kwargs:
-        for key, arg_id in action.kwargs.items():
-            kwarg_value = service.get(
-                context=context, uid=arg_id, twin_mode=TwinMode.NONE
-            )
-            if kwarg_value.is_err():
-                return kwarg_value
-            if isinstance(kwarg_value.ok(), TwinObject):
-                has_twin_inputs = True
-            kwargs[key] = kwarg_value.ok()
+    args, has_arg_twins = resolve_action_args(action, context, service)
+    kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service)
+    has_twin_inputs = has_arg_twins or has_kwargs_twins
 
     # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
     # is not bound to the original object or mutated

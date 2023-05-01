@@ -35,6 +35,7 @@ from ...types.uid import UID
 from ...util.logger import debug
 from ..response import SyftException
 from .action_data_empty import ActionDataEmpty
+from .action_types import action_type_for_object
 from .action_types import action_type_for_type
 from .action_types import action_types
 
@@ -282,8 +283,10 @@ def send_action_side_effect(
         else:
             context.node_uid = action_result.syft_node_uid
             context.result_id = context.action.result_id
-    except Exception:
-        return Err(f"send_action_side_effect failed with {traceback.format_exc()}")
+    except Exception as e:
+        return Err(
+            f"send_action_side_effect failed with {e}\n {traceback.format_exc()}"
+        )
     return Ok((context, args, kwargs))
 
 
@@ -504,7 +507,7 @@ class ActionObject(SyftObject):
         for obj in args:
             arg_ids.append(self._syft_prepare_obj_uid(obj))
 
-        for k, uid in kwargs.items():
+        for k, obj in kwargs.items():
             kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
 
         action = Action(
@@ -607,7 +610,7 @@ class ActionObject(SyftObject):
         if id and syft_lineage_id and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
-        action_type = action_type_for_type(syft_action_data)
+        action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data=syft_action_data)
 
         if id:
@@ -692,7 +695,6 @@ class ActionObject(SyftObject):
                     context, result_args, result_kwargs = result.ok()
                 else:
                     debug(f"Pre-hook failed with {result.err()}")
-
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self._syft_pre_hooks__:
                 for hook in self._syft_pre_hooks__[HOOK_ALWAYS]:
@@ -700,7 +702,7 @@ class ActionObject(SyftObject):
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
                     else:
-                        debug(f"Pre-hook failed with {result.err()}")
+                        print(f"Pre-hook failed with {result.err()}")
 
         return context, result_args, result_kwargs
 
@@ -849,7 +851,7 @@ class ActionObject(SyftObject):
 
         def _base_wrapper(*args: Any, **kwargs: Any) -> Any:
             context = PreHookContext(
-                obj=self, op_name=name, action_type=ActionType.SETATTRIBUTE
+                obj=self, op_name=name, action_type=ActionType.METHOD
             )
             context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                 context, name, args, kwargs
@@ -895,6 +897,37 @@ class ActionObject(SyftObject):
 
         return wrapper
 
+    def _syft_setattr(self, name, value):
+        args = (name, value)
+        kwargs = dict()
+        op_name = "__setattr__"
+
+        def fake_func(*args: Any, **kwargs: Any) -> Any:
+            return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
+        if isinstance(self.syft_action_data, ActionDataEmpty) or has_action_data_empty(
+            args=args, kwargs=kwargs
+        ):
+            local_func = fake_func
+        else:
+            local_func = getattr(self.syft_action_data, op_name)
+
+        context = PreHookContext(
+            obj=self, op_name=op_name, action_type=ActionType.SETATTRIBUTE
+        )
+        context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
+            context, "__setattr__", args, kwargs
+        )
+
+        original_args, _ = debox_args_and_kwargs(pre_hook_args, pre_hook_kwargs)
+        val = original_args[1]
+        local_func(name, val)
+        local_result = self
+
+        post_result = self._syft_run_post_hooks__(context, op_name, local_result)
+        post_result = self._syft_attr_propagate_ids(context, op_name, post_result)
+        return post_result
+
     def __getattribute__(self, name: str) -> Any:
         """Called unconditionally to implement attribute accesses for instances of the class.
         If the class also defines __getattr__(), the latter will not be called unless __getattribute__()
@@ -914,6 +947,7 @@ class ActionObject(SyftObject):
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)
 
+        # third party
         if name in self._syft_passthrough_attrs():
             return object.__getattribute__(self, name)
         context_self = self._syft_get_attr_context(name)
@@ -939,6 +973,7 @@ class ActionObject(SyftObject):
             self.__dict__[name] = value
             return value
         else:
+            self._syft_setattr(name, value)
             context_self = self.syft_action_data  # type: ignore
             return context_self.__setattr__(name, value)
 
@@ -952,7 +987,11 @@ class ActionObject(SyftObject):
     # unless there is a super special reason we should write no code in these functions
 
     def __repr__(self) -> str:
-        return self.__repr__()
+        return str(self.syft_action_data)
+        # return self.__repr__()
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        return self.__call__(*args, **kwds)
 
     def __str__(self) -> str:
         return self.__str__()

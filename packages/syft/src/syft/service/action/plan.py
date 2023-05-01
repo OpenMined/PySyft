@@ -3,28 +3,29 @@ import inspect
 from typing import Callable
 from typing import Dict
 from typing import List
+from typing import Optional
 
 # relative
 from ... import ActionObject
 from ... import Worker
 from ...client.client import SyftClient
+from ...serde.recursive import recursive_serde_register
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
 from .action_object import Action
 from .action_object import TraceResult
 
 
-class Plan:
-    def __init__(
-        self,
-        inputs: Dict[str, ActionObject],
-        outputs: List[ActionObject],
-        actions: List[Action],
-        code: str,
-    ):
-        self.inputs = inputs
-        self.outputs = outputs
-        self.actions = actions
-        self.code = code
-        self.client = None
+class Plan(SyftObject):
+    __canonical_name__ = "Plan"
+    __version__ = SYFT_OBJECT_VERSION_1
+    syft_passthrough_attrs = ["inputs", "outputs", "code", "actions", "client"]
+
+    inputs: Dict[str, ActionObject]
+    outputs: List[ActionObject]
+    actions: List[Action]
+    code: str
+    client: Optional[SyftClient] = None
 
     def __repr__(self) -> str:
         obj_str = "Plan"
@@ -48,29 +49,37 @@ class Plan:
         pass
 
     def __call__(self, *args, **kwargs):
-        # todo, fix
-        if self.client is None:
-            raise ValueError("first set client")
-        if args != ():
-            raise ValueError(
-                f"Only kwargs are allowed for plan execution, found {args}"
-            )
-
-        for k, v_action in kwargs.items():
-            if not isinstance(v_action, ActionObject):
-                v_action = ActionObject.from_obj(v_action)
-            v_action.id = self.inputs[k].id
-            self.client.api.services.action.set(v_action)
-
-        for a in self.actions:
-            self.client.api.services.action.execute(a)
-        outputs = [
-            self.client.api.services.action.get_pointer(x.id) for x in self.outputs
-        ]
-        if len(outputs) == 1:
-            return outputs[0]
+        if len(self.outputs) == 1:
+            return self.outputs[0]
         else:
-            return outputs[1]
+            return self.outputs
+
+        # return self.outputs
+
+    # def __call__(self, *args, **kwargs):
+    #     # todo, fix
+    #     if self.client is None:
+    #         raise ValueError("first set client")
+    #     if args != ():
+    #         raise ValueError(
+    #             f"Only kwargs are allowed for plan execution, found {args}"
+    #         )
+
+    #     for k, v_action in kwargs.items():
+    #         if not isinstance(v_action, ActionObject):
+    #             v_action = ActionObject.from_obj(v_action)
+    #         v_action.id = self.inputs[k].id
+    #         self.client.api.services.action.set(v_action)
+
+    #     for a in self.actions:
+    #         self.client.api.services.action.execute(a)
+    #     outputs = [
+    #         self.client.api.services.action.get_pointer(x.id) for x in self.outputs
+    #     ]
+    #     if len(outputs) == 1:
+    #         return outputs[0]
+    #     else:
+    #         return outputs[1]
 
 
 def planify(func):
@@ -106,3 +115,6 @@ def build_plan_inputs(
                 f"arg {k} has no placeholder as default value (required for @make_plan functions)"
             )
     return res
+
+
+recursive_serde_register(Plan)
