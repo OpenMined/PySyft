@@ -497,6 +497,7 @@ class ActionObject(SyftObject):
 
         if show_print:
             debug_original_func(name, original_func)
+
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
             if show_print:
                 print("Running method: ", name)

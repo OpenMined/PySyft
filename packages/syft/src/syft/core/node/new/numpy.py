@@ -45,7 +45,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
-    syft_passthrough_attrs = []
+    syft_passthrough_attrs = ["shape"]
     syft_dont_wrap_attrs = ["dtype"]
 
     # def __eq__(self, other: Any) -> bool:
@@ -59,6 +59,10 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
     def __bool__(self) -> bool:
         return bool(self.all())
+
+    @property
+    def shape(self):
+        return self.syft_action_data.shape
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         inputs = tuple(
