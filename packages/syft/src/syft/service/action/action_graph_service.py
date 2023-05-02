@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -18,12 +19,14 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from .action_graph import ActionGraphStore
-from .action_graph import ActionStatus
+from .action_graph import ExecutionStatus
 from .action_graph import NodeActionData
 from .action_graph import NodeActionDataUpdate
+from .action_graph import NodeType
 from .action_object import Action
+from .action_object import ActionObject
 
-ActionStatusPartitionKey = PartitionKey(key="status", type_=ActionStatus)
+ExecutionStatusPartitionKey = PartitionKey(key="status", type_=ExecutionStatus)
 
 
 @serializable()
@@ -33,38 +36,100 @@ class ActionGraphService(AbstractService):
     def __init__(self, store: ActionGraphStore):
         self.store = store
 
-    @service_method(path="graph.add", name="add")
+    @service_method(path="graph.add_action", name="add_action")
     def add_action(
         self, context: AuthedServiceContext, action: Action
     ) -> Union[NodeActionData, SyftError]:
-        result = self.store.set(credentials=context.credentials, action=action)
+        # Create a node for the action
+        input_uids, output_uid = self._extract_input_and_output_from_action(
+            action=action
+        )
+        node = NodeActionData.from_action(
+            action=action, credentials=context.credentials
+        )
+        result = self.store.set(
+            credentials=context.credentials, node=node, parent_uids=input_uids
+        )
         if result.is_err():
             return SyftError(message=result.err())
+
+        action_node = result.ok()
+
+        # Create a node for the result object
+        node = NodeActionData(
+            id=output_uid,
+            user_verify_key=context.credentials,
+            type=NodeType.ACTION_OBJECT,
+        )
+
+        result = self.store.set(
+            credentials=context.credentials,
+            node=node,
+            parent_uids=[action.id],
+        )
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        result_node = result.ok()
+
+        return action_node, result_node
+
+    @service_method(path="graph.add_action_obj", name="add_action_obj")
+    def add_action_obj(
+        self, context: AuthedServiceContext, action_obj: ActionObject
+    ) -> Union[NodeActionData, SyftError]:
+        node = NodeActionData.from_action_obj(
+            action_obj=action_obj, credentials=context.credentials
+        )
+        result = self.store.set(
+            credentials=context.credentials,
+            node=node,
+        )
+        if result.is_err():
+            return SyftError(message=result.err())
+
         return result.ok()
 
-    def remove_action(
-        self, context: AuthedServiceContext, action: Action
+    def _extract_input_and_output_from_action(self, action: Action) -> Tuple[UID]:
+        input_uids = set()
+
+        if action.remote_self is not None:
+            input_uids.add(action.remote_self.id)
+
+        for arg in action.args:
+            input_uids.add(arg.id)
+
+        for _, kwarg in action.kwargs.items():
+            input_uids.add(kwarg.id)
+
+        output_uid = action.result_id.id
+
+        return input_uids, output_uid
+
+    def remove_node(
+        self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         result = self.store.delete(
-            uid=action.id,
+            uid=uid,
             credentials=context.credentials,
         )
         if result.is_ok():
             return SyftSuccess(
-                f"Successfully delete action with uid: {action.id} from graph"
+                f"Successfully deleted node with uid: {uid} from the graph."
             )
 
         return SyftError(message=result.err())
 
     def get_all_nodes(self, context: AuthedServiceContext) -> Union[List, SyftError]:
-        result = self.store.nodes
+        result = self.store.nodes(context.credentials)
         if result.is_ok():
             return result.ok()
 
         return SyftError(message="Failed to fetch nodes from the graph")
 
     def get_all_edges(self, context: AuthedServiceContext) -> Union[List, SyftError]:
-        result = self.store.edges
+        result = self.store.edges(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message="Failed to fetch nodes from the graph")
@@ -72,11 +137,11 @@ class ActionGraphService(AbstractService):
     def update(
         self,
         context: AuthedServiceContext,
-        action_id: UID,
+        uid: UID,
         node_data: NodeActionDataUpdate,
     ) -> Union[NodeActionData, SyftError]:
         result = self.store.update(
-            uid=action_id, data=node_data, credentials=context.credentials
+            uid=uid, data=node_data, credentials=context.credentials
         )
         if result.is_ok():
             return result.ok()
@@ -86,7 +151,7 @@ class ActionGraphService(AbstractService):
         self,
         context: AuthedServiceContext,
         action_id: UID,
-        status: ActionStatus,
+        status: ExecutionStatus,
     ) -> Union[SyftSuccess, SyftError]:
         try:
             node_data = NodeActionDataUpdate(status=status)
@@ -100,11 +165,9 @@ class ActionGraphService(AbstractService):
         return SyftError(message=result.err())
 
     def get_by_action_status(
-        self, context: AuthedServiceContext, status: ActionStatus
+        self, context: AuthedServiceContext, status: ExecutionStatus
     ) -> Union[List[NodeActionData], SyftError]:
-        # TODO: Add a Query for Credentials as well,
-        # so we filter only particular users
-        qks = QueryKeys(qks=[ActionStatusPartitionKey.with_obj(status)])
+        qks = QueryKeys(qks=[ExecutionStatusPartitionKey.with_obj(status)])
 
         result = self.store.query(qks=qks, credentials=context.credentials)
         if result.is_ok():

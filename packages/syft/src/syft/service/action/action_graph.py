@@ -37,13 +37,20 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from .action_object import Action
+from .action_object import ActionObject
 
 
 @serializable()
-class ActionStatus(Enum):
+class ExecutionStatus(Enum):
     PROCESSING = 0
     DONE = 1
     FAILED = 2
+
+
+@serializable()
+class NodeType(Enum):
+    ACTION = Action
+    ACTION_OBJECT = ActionObject
 
 
 @serializable()
@@ -52,8 +59,8 @@ class NodeActionData(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
-    action: Action
-    status: ActionStatus = ActionStatus.PROCESSING
+    type: NodeType
+    status: ExecutionStatus = ExecutionStatus.PROCESSING
     retry: int = 0
     created_at: Optional[DateTime]
     updated_at: Optional[DateTime]
@@ -68,12 +75,20 @@ class NodeActionData(SyftObject):
     def from_action(action: Action, credentials: SyftVerifyKey):
         return NodeActionData(
             id=action.id,
-            action=action,
+            type=NodeType.ACTION,
+            user_verify_key=credentials,
+        )
+
+    @staticmethod
+    def from_action_obj(action_obj: ActionObject, credentials: SyftVerifyKey):
+        return NodeActionData(
+            id=action_obj.id,
+            type=NodeType.ACTION_OBJECT,
             user_verify_key=credentials,
         )
 
     def __hash__(self):
-        return self.action.syft_history_hash
+        return hash(self.id)
 
     def __eq__(self, other: Self):
         if not isinstance(other, NodeActionData):
@@ -90,9 +105,9 @@ class NodeActionDataUpdate(PartialSyftObject):
     __canonical_name__ = "NodeActionDataUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID
-    action: Action
-    status: ActionStatus
+    id: Optional[UID]
+    type: NodeType
+    status: ExecutionStatus
     retry: int
     created_at: DateTime
     updated_at: DateTime
@@ -294,15 +309,14 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
     def set(
         self,
-        action: Action,
+        node: NodeActionData,
         credentials: SyftVerifyKey,
+        parent_uids: List[UID] = [],
     ) -> Result[NodeActionData, str]:
-        node = NodeActionData.from_action(action, credentials)
+        if self.graph.exists(uid=node.id):
+            return Err(f"Node already exists in the graph: {node}")
 
-        if self.graph.exists(uid=action.id):
-            return Err(f"Action already exists in the graph: {action.id}")
-
-        parent_uids = self._search_parents_for(node)
+        # parent_uids = self._search_parents_for(node)
         self.graph.set(uid=node.id, data=node)
         for parent_uid in parent_uids:
             result = self.add_edge(
@@ -357,14 +371,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
             if node_data.is_mutated:
                 successor_uids = self.graph.get_successors(uid=uid)
                 for successor_uid in successor_uids:
-                    successor_node_data = self.graph.get(uid=successor_uid)
-                    if (
-                        node_data.action.result_id
-                        == successor_node_data.action.result_id
-                    ):
-                        result_uid = find_non_mutated_successor(successor_uid)
-                        if result_uid is not None:
-                            return result_uid
+                    # successor_node_data = self.graph.get(uid=successor_uid)
+                    result_uid = find_non_mutated_successor(successor_uid)
+                    if result_uid is not None:
+                        return result_uid
                     else:
                         continue
             else:
@@ -434,10 +444,8 @@ class InMemoryActionGraphStore(ActionGraphStore):
         subgraph = self.graph.subgraph(qks=qks)
         return Ok(self.graph.topological_sort(subgraph=subgraph))
 
-    @property
-    def nodes(self) -> Result[List, str]:
+    def nodes(self, credentials: SyftVerifyKey) -> Result[List, str]:
         return Ok(self.graph.nodes())
 
-    @property
-    def edges(self) -> Result[List, str]:
+    def edges(self, credentials: SyftVerifyKey) -> Result[List, str]:
         return Ok(self.graph.edges())

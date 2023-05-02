@@ -16,7 +16,7 @@ import pytest
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
-from syft.service.action.action_graph import ActionStatus
+from syft.service.action.action_graph import ExecutionStatus
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
 from syft.service.action.action_graph import InMemoryStoreClientConfig
@@ -60,7 +60,7 @@ def test_node_action_data(verify_key: SyftVerifyKey) -> None:
     assert node_action_data.id == action.id
     assert node_action_data.action == action
     assert node_action_data.user_verify_key == verify_key
-    assert node_action_data.status == ActionStatus.PROCESSING
+    assert node_action_data.status == ExecutionStatus.PROCESSING
     assert node_action_data.__hash__() == node_action_data.action.syft_history_hash
 
     node_action_data_duplicate = NodeActionData.from_action(
