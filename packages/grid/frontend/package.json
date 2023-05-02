@@ -7,10 +7,10 @@
     "build": "vite build",
     "preview": "vite preview --host --port 80",
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
+    "test:e2e": "playwright test",
     "test:unit": "vitest run",
     "format": "prettier --write --plugin-search-dir=. ./**/*.{js,ts,html,css,svelte}",
-    "prepare": "svelte-kit sync",
-    "test": "playwright test"
+    "prepare": "svelte-kit sync"
   },
   "devDependencies": {
     "@playwright/test": "^1.33.0",
