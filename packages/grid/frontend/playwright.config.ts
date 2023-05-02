@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'dot',
   use: {
-    baseURL: 'http://localhost:8081' // temporary
+    baseURL: process.env.TEST_API_URL
   },
   projects: [
     {
