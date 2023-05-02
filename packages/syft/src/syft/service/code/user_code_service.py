@@ -65,12 +65,10 @@ class UserCodeService(AbstractService):
         from ..request.request import SubmitRequest
         from ..request.request_service import RequestService
 
-        print(code, file=sys.stderr)
         user_code = code.to(UserCode, context=context)
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        print(result, file=sys.stderr)
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
@@ -186,21 +184,18 @@ class UserCodeService(AbstractService):
             is_valid = output_policy.valid
                     
             if not is_valid:
-                print("Policy not valid", file=sys.stderr)
                 if len(output_policy.output_history) > 0:
                     return get_outputs(
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
                 return is_valid
-            print("Policy valid", file=sys.stderr)
-
+            
             # Execute the code item
             action_service = context.node.get_service("actionservice")
             result = action_service._user_code_execute(
                 context, code_item, filtered_kwargs
             )
-            print(result, file=sys.stderr)
             if isinstance(result, str):
                 return SyftError(message=result)
 
@@ -210,7 +205,6 @@ class UserCodeService(AbstractService):
             final_results.set_result(policy_result)
             code_item.output_policy = output_policy
             state_result = self.update_code_state(context=context, code_item=code_item)
-            print(final_results.get_result(), file=sys.stderr)
             if not state_result:
                 return state_result
             if isinstance(final_results, TwinObject):
@@ -230,11 +224,9 @@ def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) ->
         outputs = []
         for output_id in output_history.outputs:
             action_service = context.node.get_service("actionservice")
-            print(action_service)
             result = action_service.get(
                 context, uid=output_id, twin_mode=TwinMode.PRIVATE
             )
-            print(result)
             if isinstance(result, OkErr):
                 result = result.value
             outputs.append(result)

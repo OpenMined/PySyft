@@ -691,8 +691,6 @@ def execute_byte_code(
         sys.stdout = stdout_
         sys.stderr = stderr_
 
-        print("execute_byte_code", file=sys.stderr)
-
         return UserCodeExecutionResult(
             user_code_id=code_id,
             stdout=str(stdout.getvalue()),

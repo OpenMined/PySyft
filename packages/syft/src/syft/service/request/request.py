@@ -174,7 +174,6 @@ class Request(SyftObject):
 
         action_object = ActionObject.from_obj(result)
         result = api.services.action.save(action_object)
-        print(result)
         # relative
         from ...service.action.action_service import TwinMode
 
@@ -183,7 +182,6 @@ class Request(SyftObject):
         result = api.services.action.get(
             uid=action_object.id, twin_mode=TwinMode.PRIVATE
         )
-        print(result)
 
         permission_request = self.approve()
         if not permission_request:
