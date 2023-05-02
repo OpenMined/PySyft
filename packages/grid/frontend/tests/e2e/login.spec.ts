@@ -8,7 +8,7 @@ test('has title', async ({ page }) => {
 test('can login', async ({ page }) => {
   await page.goto('/login');
 
-  await expect(page.getByTestId('deployed-on')).toContainText('Deployed on');
+  await expect(page.getByTestId('deployed-on')).toContainText(/deployed on/i);
 
   await page.getByTestId('email').fill('info@openmined.org');
   await page.getByTestId('password').fill('changethis');
