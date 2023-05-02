@@ -351,5 +351,9 @@ action_execute_registry_libs = CMPTree(
                 CMPModule("testing", permissions=NONE_EXECUTE),
             ],
         ),
+        CMPModule(
+            "jax",
+            permissions=ALL_EXECUTE,
+        ),
     ]
 ).build()
