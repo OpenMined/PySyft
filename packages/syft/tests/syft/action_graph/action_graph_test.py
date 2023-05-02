@@ -69,7 +69,7 @@ def test_node_action_data(verify_key: SyftVerifyKey) -> None:
     assert node_action_data_duplicate == node_action_data
 
 
-def test_node_action_data_update() -> None:
+def test_node_action_data_update(verify_key: SyftVerifyKey) -> None:
     node_action_data_update = NodeActionDataUpdate()
 
     assert node_action_data_update.id == Empty
@@ -79,9 +79,35 @@ def test_node_action_data_update() -> None:
     assert node_action_data_update.created_at == Empty
     assert node_action_data_update.credentials == Empty
     assert isinstance(node_action_data_update.updated_at, DateTime)
-    # TODO: set stuff to NodeActionDataUpdate
-    # TODO: test node_action_data_update.to_dict(exclude=True)
-    # TODO: test node_action_data_update.to_dict(exclude=False)
+    assert len(node_action_data_update.to_dict(exclude_empty=True)) == 1
+    assert len(node_action_data_update.to_dict(exclude_empty=False)) == len(
+        vars(node_action_data_update)
+    )
+    assert node_action_data_update.to_dict(exclude_empty=False) == vars(
+        node_action_data_update
+    )
+
+    # test when we set the attributes of NodeActionDataUpdate
+    node = create_node_action_data(verify_key)
+    node_action_data_update.id = node.id
+    node_action_data_update.action = node.action
+    node_action_data_update.status = node.status
+    node_action_data_update.credentials = node.user_verify_key
+    node_action_data_update.is_mutated = True
+
+    assert node_action_data_update.id == node.id
+    assert node_action_data_update.action == node.action
+    assert node_action_data_update.status == node.status
+    assert node_action_data_update.credentials == node.user_verify_key
+    assert node_action_data_update.is_mutated is True
+    assert len(node_action_data_update.to_dict(exclude_empty=True)) == 6
+    assert len(node_action_data_update.to_dict(exclude_empty=True)) == 6
+    assert len(node_action_data_update.to_dict(exclude_empty=False)) == len(
+        vars(node_action_data_update)
+    )
+    assert node_action_data_update.to_dict(exclude_empty=False) == vars(
+        node_action_data_update
+    )
 
 
 def test_in_memory_store_client_config() -> None:
@@ -130,7 +156,6 @@ def test_networkx_backing_store_create_set_get(
     assert backing_store.is_parent(parent=node.id, child=node_2.id) is False
 
 
-@pytest.mark.xfail
 def test_networkx_backing_store_node_update(
     in_mem_graph_config: InMemoryGraphConfig, verify_key: SyftVerifyKey
 ) -> None:
@@ -138,20 +163,28 @@ def test_networkx_backing_store_node_update(
     node: NodeActionData = create_node_action_data(verify_key)
     backing_store.set(uid=node.id, data=node)
 
-    update_node = NodeActionDataUpdate()
+    # create a new node and update the old node according to it
+    update_node_data = NodeActionDataUpdate()
     node_2 = create_node_action_data(verify_key)
-    update_node.action = node_2.action
-    update_node.status = node_2.status
-    update_node.credentials = node_2.user_verify_key
+    update_node_data.id = node_2.id
+    update_node_data.action = node_2.action
+    update_node_data.status = node_2.status
+    update_node_data.credentials = node_2.user_verify_key
+    update_node_data.is_mutated = True
 
-    backing_store.update(uid=node.id, data=update_node)
+    backing_store.update(uid=node.id, data=update_node_data)
 
-
-def test_networkx_backing_store_add_remove_edge():
-    """
-    Test adding and removing edges, and also the find_neighbors method of the NetworkXBackingStore
-    """
-    pass
+    updated_node = backing_store.get(uid=node.id)
+    assert updated_node.id == update_node_data.id == node_2.id
+    assert updated_node.action == update_node_data.action == node_2.action
+    assert updated_node.status == update_node_data.status == node_2.status
+    assert (
+        updated_node.credentials
+        == update_node_data.credentials
+        == node_2.user_verify_key
+    )
+    assert updated_node.is_mutated is True
+    assert updated_node.updated_at == update_node_data.updated_at
 
 
 def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) -> None:
@@ -159,57 +192,143 @@ def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) 
 
     assert graph_store.store_config == in_mem_graph_config
     assert isinstance(graph_store.graph, NetworkXBackingStore)
+    assert isinstance(graph_store.graph.db, nx.DiGraph)
 
 
-# @pytest.mark.parametrize("graph_client", [InMemoryGraphClient])
-# def test_edge_creation(worker, graph_client):
-#     action_graph = ActionGraph(node_uid=worker.id, graph_client=graph_client)
-#     assert action_graph
+def test_simple_in_memory_action_graph(
+    simple_in_memory_action_graph: InMemoryActionGraphStore,
+) -> None:
+    """
+    action1 -> a + b = c
+    action2 -> initialization of variable d
+    action3 -> c * d
+    """
+    assert len(simple_in_memory_action_graph.edges.ok()) == 2
+    assert len(simple_in_memory_action_graph.nodes.ok()) == 3
 
-#     action_obj_a = ActionObject.from_obj([1, 2, 3])
-#     action_obj_b = ActionObject.from_obj([2, 4, 5])
+    nodes = list(simple_in_memory_action_graph.nodes.ok())
+    node_action_data_1: NodeActionData = nodes[0][1]["data"]
+    node_action_data_2: NodeActionData = nodes[1][1]["data"]
+    node_action_data_3: NodeActionData = nodes[2][1]["data"]
 
-#     # First action -> np.array([1, 2, 3])
-#     # Create a numpy array from action_obj_a
-#     action_a = Action(
-#         path="action.execute",
-#         op="np.array",
-#         args=[action_obj_a.syft_lineage_id],
-#         kwargs={},
-#     )
-#     action_graph.add_action(action_a)
-#     node = NodeActionData.from_action(action_a)
-#     assert node in action_graph.client.graph.nodes
-
-#     # Second action -> np.array([2, 4, 5])
-#     # Create a numpy array from action_obj_b
-#     action_b = Action(
-#         path="action.execute",
-#         op="np.array",
-#         args=[action_obj_b.syft_lineage_id],
-#         kwargs={},
-#     )
-#     action_graph.add_action(action_b)
-
-#     node = NodeActionData.from_action(action_b)
-#     assert node in action_graph.client.graph.nodes
-
-#     # Third action -> action_obj_a + action_obj_b
-#     # Add two arrays
-#     action_add = Action(
-#         path="action.execute",
-#         op="__add__",
-#         remote_self=action_a.result_id,
-#         args=[action_b.result_id],
-#         kwargs={},
-#     )
-#     action_graph.add_action(action_add)
-#     node = NodeActionData.from_action(action_add)
-
-#     assert node in action_graph.client.graph.nodes
-#     assert action_graph.client.graph.number_of_nodes() == 3
-#     assert action_graph.client.graph.number_of_edges() == 2
+    assert (
+        simple_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_3.id
+        ).ok()
+        is True
+    )
+    assert (
+        simple_in_memory_action_graph.is_parent(
+            parent=node_action_data_2.id, child=node_action_data_3.id
+        ).ok()
+        is True
+    )
+    assert (
+        simple_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_2.id
+        ).ok()
+        is False
+    )
 
 
-# def test_node_removal(worker, graph_client):
-#     pass
+def test_mutated_in_memory_action_graph(
+    mutated_in_memory_action_graph: InMemoryActionGraphStore,
+) -> None:
+    """
+    action1 -> initialization of variable a
+    action2 -> a.astype('int32') = b
+    action3 -> b.astype('float64') = c
+    action4 -> a.astype('complex128') = d
+    """
+    assert len(mutated_in_memory_action_graph.edges.ok()) == 3
+    nodes = list(mutated_in_memory_action_graph.nodes.ok())
+    node_action_data_1: NodeActionData = nodes[0][1]["data"]
+    node_action_data_2: NodeActionData = nodes[1][1]["data"]
+    node_action_data_3: NodeActionData = nodes[2][1]["data"]
+    node_action_data_4: NodeActionData = nodes[3][1]["data"]
+
+    assert node_action_data_1.is_mutated is True
+    assert node_action_data_2.is_mutated is True
+    assert node_action_data_3.is_mutated is True
+    assert node_action_data_4.is_mutated is False
+
+    assert (
+        mutated_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_2.id
+        ).ok()
+        is True
+    )
+    assert (
+        mutated_in_memory_action_graph.is_parent(
+            parent=node_action_data_2.id, child=node_action_data_3.id
+        ).ok()
+        is True
+    )
+    assert (
+        mutated_in_memory_action_graph.is_parent(
+            parent=node_action_data_3.id, child=node_action_data_4.id
+        ).ok()
+        is True
+    )
+
+
+def test_complicated_in_memory_action_graph(
+    complicated_in_memory_action_graph: InMemoryActionGraphStore,
+) -> None:
+    """
+    action1 -> a + b = c
+    action2 -> initialization of variable d
+    action3 -> c * d
+    action4 -> d.astype('int32')
+    action5 -> d + 48
+    """
+    assert len(complicated_in_memory_action_graph.edges.ok()) == 4
+    assert len(complicated_in_memory_action_graph.nodes.ok()) == 5
+
+    nodes = list(complicated_in_memory_action_graph.nodes.ok())
+    node_action_data_1: NodeActionData = nodes[0][1]["data"]
+    node_action_data_2: NodeActionData = nodes[1][1]["data"]
+    node_action_data_3: NodeActionData = nodes[2][1]["data"]
+    node_action_data_4: NodeActionData = nodes[3][1]["data"]
+    node_action_data_5: NodeActionData = nodes[4][1]["data"]
+
+    assert node_action_data_2.is_mutated is True
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_2.id
+        ).ok()
+        is False
+    )
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_3.id
+        ).ok()
+        is True
+    )
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_2.id, child=node_action_data_4.id
+        ).ok()
+        is True
+    )
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_4.id, child=node_action_data_5.id
+        ).ok()
+        is True
+    )
+    assert (
+        complicated_in_memory_action_graph.is_parent(
+            parent=node_action_data_1.id, child=node_action_data_5.id
+        ).ok()
+        is False
+    )
+
+
+@pytest.mark.skip
+def test_networkx_backing_store_add_remove_edge():
+    """
+    Test adding and removing edges, and also the
+    find_neighbors method of the NetworkXBackingStore
+    """
+    pass
