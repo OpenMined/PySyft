@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-import traceback
 from typing import List
 from typing import Optional
 
@@ -20,6 +19,7 @@ from ...store.document_store import BasePartitionSettings
 from ...store.document_store import StoreConfig
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
+from ...types.uid import LineageID
 from ...types.uid import UID
 from ..response import SyftSuccess
 from .action_permissions import ActionObjectEXECUTE
@@ -68,10 +68,12 @@ class KeyValueActionStore(ActionStore):
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         if self.has_permission(read_permission):
-            try:
+            if isinstance(uid, LineageID):
+                syft_object = self.data[uid.id]
+            elif isinstance(uid, UID):
                 syft_object = self.data[uid]
-            except BaseException:
-                return Err(f"Actionstore.get failed = {traceback.format_exc()}")
+            else:
+                raise Exception(f"Unrecognized UID type: {type(uid)}")
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
 
