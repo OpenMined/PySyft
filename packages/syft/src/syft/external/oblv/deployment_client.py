@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
-from oblv import OblvClient
+from oblv_ctl import OblvClient
 from pydantic import BaseModel
 from pydantic import validator
 import requests

@@ -13,7 +13,7 @@ from typing import Union
 from typing import cast
 
 # third party
-from oblv import OblvClient
+from oblv_ctl import OblvClient
 import requests
 from result import Err
 from result import Ok
