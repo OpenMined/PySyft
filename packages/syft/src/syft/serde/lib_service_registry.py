@@ -95,7 +95,7 @@ class CMPBase:
                 else:
                     try:
                         attr = getattr(self.obj, attr_name)
-                    except Exception:
+                    except Exception:  # nosec
                         continue
                     child = self.init_child(  # type: ignore
                         self.obj,
@@ -267,7 +267,7 @@ class CMPFunction(CMPBase):
     def set_signature(self) -> None:
         try:
             self.signature = get_signature(self.obj)
-        except Exception:
+        except Exception:  # nosec
             pass
 
 
@@ -285,10 +285,10 @@ class CMPClass(CMPBase):
     def set_signature(self) -> None:
         try:
             self.signature = get_signature(self.obj)
-        except Exception:
+        except Exception:  # nosec
             try:
                 self.signature = get_signature(self.obj.__init__)  # type: ignore
-            except Exception:
+            except Exception:  # nosec
                 pass
 
 
