@@ -189,9 +189,8 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_register(data, worker)
 
-    @router.get('/ping', name='ping', status_code=200)
+    @router.get("/ping", name="ping", status_code=200)
     def ping():
         return {"ping": "pong"}
 
     return router
-
