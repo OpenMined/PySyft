@@ -11,6 +11,7 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Union
+from jaxlib.xla_extension import CompiledFunction
 
 # third party
 import numpy
@@ -89,6 +90,9 @@ class CMPBase:
         child_paths = set([p for p in self.children.keys()])
 
         for attr_name in getattr(self.obj, "__dict__", dict()).keys():
+            # if self.path == "numpy" and attr_name == "add":
+            #     print(attr_name, self.absolute_path)
+            # print(attr_name, self.absolute_path, self.path)
             if attr_name not in LIB_IGNORE_ATTRIBUTES:
                 if attr_name in child_paths:
                     child = self.children[attr_name]
@@ -131,6 +135,11 @@ class CMPBase:
             _type_: _description_
         """
         parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
+        if child_path == "jax.numpy.add":
+            debug = True
+            print(parent_obj.__name__)
+            print(CMPBase.isfunction(child_obj), inspect.isclass(child_obj), parent_is_parent_module)
+
         if CMPBase.isfunction(child_obj) and parent_is_parent_module:
             return CMPFunction(
                 child_path,
@@ -201,6 +210,7 @@ class CMPBase:
             inspect.isfunction(obj)
             or type(obj) == numpy.ufunc
             or isinstance(obj, BuiltinFunctionType)
+            or isinstance(obj, CompiledFunction)
         )
 
     def __repr__(
