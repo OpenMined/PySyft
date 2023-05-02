@@ -16,6 +16,13 @@ FROM base AS dependencies
 
 RUN pnpm i --frozen-lockfile
 
+FROM dependencies as grid-ui-tests
+COPY vite.config.ts ./
+COPY ./tests ./tests
+COPY ./src/ ./src
+
+CMD pnpm test:unit
+
 FROM dependencies as grid-ui-development
 
 ENV NODE_ENV=development
