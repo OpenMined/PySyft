@@ -15,6 +15,8 @@ from jaxlib.xla_extension import CompiledFunction
 
 # third party
 import numpy
+import jax
+import jax.numpy as jnp
 from typing_extensions import Self
 
 # relative
@@ -135,10 +137,7 @@ class CMPBase:
             _type_: _description_
         """
         parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
-        if child_path == "jax.numpy.add":
-            debug = True
-            print(parent_obj.__name__)
-            print(CMPBase.isfunction(child_obj), inspect.isclass(child_obj), parent_is_parent_module)
+    
 
         if CMPBase.isfunction(child_obj) and parent_is_parent_module:
             return CMPFunction(
@@ -211,6 +210,9 @@ class CMPBase:
             or type(obj) == numpy.ufunc
             or isinstance(obj, BuiltinFunctionType)
             or isinstance(obj, CompiledFunction)
+            or isinstance(obj, jax.core.AbstractValue)
+            # or getattr(obj, "__module__", "").startswith("jax.")
+            # or getattr(obj, "__module__", "").startswith("jaxlib.")
         )
 
     def __repr__(
@@ -364,6 +366,28 @@ action_execute_registry_libs = CMPTree(
         CMPModule(
             "jax",
             permissions=ALL_EXECUTE,
+            children=[
+                CMPModule(
+                    "numpy",
+                    permissions=ALL_EXECUTE,
+                    obj=jax._src.numpy #.ufuncs #lax_numpy, #jax.numpy,
+                ),
+        #         CMPModule(
+        #             "random",
+        #             permissions=ALL_EXECUTE,
+        #             obj=jax.random,
+        #         ),
+        #         CMPFunction(
+        #             "jit",
+        #             permissions=ALL_EXECUTE,
+        #             obj=jax.jit,
+        #         ),
+                CMPFunction(
+                    "grad",
+                    permissions=ALL_EXECUTE,
+                    obj=jax.grad,
+                ),
+            ],
         ),
     ]
 ).build()
