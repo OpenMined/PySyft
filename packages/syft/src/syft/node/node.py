@@ -276,7 +276,7 @@ class Node(AbstractNode):
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
-        return credentials == self.signing_key.verify_key
+        return credentials == self.verify_key
 
     @property
     def root_client(self):
@@ -307,9 +307,7 @@ class Node(AbstractNode):
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}{service_string}"
 
     def post_init(self) -> None:
-        context = AuthedServiceContext(
-            node=self, credentials=self.signing_key.verify_key
-        )
+        context = AuthedServiceContext(node=self, credentials=self.verify_key)
 
         if UserCodeService in self.services:
             user_code_service = self.get_service(UserCodeService)
@@ -350,7 +348,7 @@ class Node(AbstractNode):
         self.document_store_config = document_store_config
 
         self.document_store = document_store(
-            root_verify_key=self.signing_key.verify_key,
+            root_verify_key=self.verify_key,
             store_config=document_store_config,
         )
         if action_store_config is None:
@@ -369,12 +367,10 @@ class Node(AbstractNode):
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store = SQLiteActionStore(
                 store_config=action_store_config,
-                root_verify_key=self.signing_key.verify_key,
+                root_verify_key=self.verify_key,
             )
         else:
-            self.action_store = DictActionStore(
-                root_verify_key=self.signing_key.verify_key
-            )
+            self.action_store = DictActionStore(root_verify_key=self.verify_key)
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
@@ -441,7 +437,7 @@ class Node(AbstractNode):
         return NodeMetadata(
             name=self.name,
             id=self.id,
-            verify_key=self.signing_key.verify_key,
+            verify_key=self.verify_key,
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
@@ -450,6 +446,10 @@ class Node(AbstractNode):
     @property
     def icon(self) -> str:
         return "🦾"
+
+    @property
+    def verify_key(self) -> SyftVerifyKey:
+        return self.signing_key.verify_key
 
     def __hash__(self) -> int:
         return hash(self.id)

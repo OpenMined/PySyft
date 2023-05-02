@@ -33,6 +33,7 @@ from ...types.transforms import transform
 from ...types.transforms import transform_method
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ...util.util import recursive_hash
 from ..context import AuthedServiceContext
 from ..context import NodeServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -148,6 +149,14 @@ class NodePeer(SyftObject):
     __attr_searchable__ = ["name"]
     __attr_unique__ = ["verify_key"]
     __attr_repr_cols__ = ["name"]
+
+    def __hash__(self) -> int:
+        hashes = 0
+        hashes += recursive_hash(self.id)
+        hashes += recursive_hash(self.name)
+        hashes += recursive_hash(self.verify_key)
+        hashes += recursive_hash(self.node_routes)
+        return hashes
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []

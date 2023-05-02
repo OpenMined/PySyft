@@ -827,3 +827,18 @@ def get_interpreter_module() -> str:
         return shell
     except NameError:
         return "StandardInterpreter"  # not sure
+
+
+def recursive_hash(obj: Any) -> int:
+    hashes = 0
+    if isinstance(obj, (list, dict, set)):
+        if isinstance(obj, (list, set)):
+            for item in obj:
+                hashes += recursive_hash(item)
+        elif isinstance(obj, dict):
+            for item_key, item in obj:
+                hashes += recursive_hash(item_key)
+                hashes += recursive_hash(item)
+    else:
+        hashes += hash(obj)
+    return hashes

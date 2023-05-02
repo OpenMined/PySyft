@@ -41,6 +41,7 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
+from ..util.autoreload import autoreload_enabled
 from ..util.telemetry import instrument
 from .connection import NodeConnection
 
@@ -230,8 +231,17 @@ def generate_remote_function(
                         else:
                             check_type(param_key, arg, t)  # raises Exception
                 except TypeError:
-                    _type_str = getattr(t, "__name__", str(t))
-                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
+                    t_arg = type(arg)
+                    if (
+                        autoreload_enabled()
+                        and t.__module__ == t_arg.__module__
+                        and t.__name__ == t_arg.__name__
+                    ):
+                        # ignore error when autoreload_enabled()
+                        pass
+                    else:
+                        _type_str = getattr(t, "__name__", str(t))
+                        msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
                 if msg:
                     return SyftError(message=msg)
 
