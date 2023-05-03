@@ -132,9 +132,3 @@ http:
             sender: ""
             urlregexp: ""
             usedns: ""
-          # whitelist:
-          #   files:
-          #     - /etc/traefik/whitelist_ip.txt
-          #   ip:
-          #     - ::1
-          #     - 127.0.0.1
