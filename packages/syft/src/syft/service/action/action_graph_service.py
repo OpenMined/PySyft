@@ -106,11 +106,11 @@ class ActionGraphService(AbstractService):
         output_uid = action.result_id.id
 
         return input_uids, output_uid
-    
+
     def get(
-        self, action_id: UID, context: AuthedServiceContext
+        self, uid: UID, context: AuthedServiceContext
     ) -> Union[NodeActionData, SyftError]:
-        result = self.store.get(uid=action_id, credentials=context.credentials)
+        result = self.store.get(uid=uid, credentials=context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
         return result.ok()
