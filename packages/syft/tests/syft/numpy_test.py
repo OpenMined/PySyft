@@ -123,3 +123,64 @@ def exception8_inplace_modifications_kill_kernel(mock_object: ActionObject) -> N
     np.multiply(mock_object, mock_object, out=mock_object)
     np.divide(mock_object, mock_object, out=mock_object)
     mock_object[mock_object > 0.5] *= 2
+
+
+def exception9_untriggered_memory_errors() -> None:
+    """
+    If you run something like `np.random.rand(156816, 36, 53806)` you will be given a `MemoryError:
+    Unable to allocate 2.21 TiB for an array with shape (156816, 36, 53806) and data type float64`
+
+    but other places where NumPy doesn't check for preallocation or something won't trigger MemoryErrors
+    and instead will just kill your kernel.
+    """
+
+    np.sum(range(int(1e20)))
+
+
+def exception10_numpy_flags_and_settings(mock_object: ActionObject) -> None:
+    """
+    Currently we don't have the ability to modify any of the flags on a NumPyActionObject, though we can see them
+    """
+
+    assert mock_object.flags is not None
+    mock_object.flags.writeable = False
+
+
+def exception11_numpy_domain_node_permissions() -> None:
+    """
+    Giving the user the ability to import numpy from the domain node directly might be dangerous.
+    """
+    # syft absolute
+    import syft as sy
+
+    worker = sy.Worker()
+    # syft absolute
+    from syft.core.node.new.client import SyftClient
+
+    client = SyftClient.from_node(worker).login(
+        email="info@openmined.org", password="changethis"
+    )
+
+    np = client.numpy
+
+    # this might be dangerous- may be other similar things
+    np.errstate(all="ignore")
+
+
+def exception12_custom_classes(mock_object) -> None:
+    """
+    NumPy subclasses are probably tricky to work with and will have a ton of edge cases
+    """
+
+    # this won't raise an Error, but instead will give the user a warning
+    np.random.shuffle(mock_object)
+
+
+def exception13_record_arrays() -> None:
+    """
+    Record Arrays don't seem to work well with ActionObjects
+    """
+
+    Z_data = np.array([("Hello", 2.5, 3), ("World", 3.6, 2)])
+    Z = ActionObject.from_obj(Z_data)
+    np.core.records.fromarrays(Z.T, names="col1, col2, col3", formats="S8, f8, i8")
