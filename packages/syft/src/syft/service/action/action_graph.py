@@ -73,10 +73,14 @@ class NodeActionData(SyftObject):
 
     @staticmethod
     def from_action(action: Action, credentials: SyftVerifyKey):
+        is_mutated = action.remote_self is not None and (
+            action.remote_self == action.result_id
+        )
         return NodeActionData(
             id=action.id,
             type=NodeType.ACTION,
             user_verify_key=credentials,
+            is_mutated=is_mutated,
         )
 
     @staticmethod
@@ -116,7 +120,7 @@ class NodeActionDataUpdate(PartialSyftObject):
     is_mutated: bool
 
     @pydantic.validator("updated_at", pre=True, always=True)
-    def make_updated_at(cls, v: DateTime | None) -> DateTime:
+    def make_updated_at(cls, v: Optional[DateTime]) -> DateTime:
         return DateTime.now() if v is None else v
 
 

@@ -55,18 +55,30 @@ class ActionGraphService(AbstractService):
 
         action_node = result.ok()
 
-        # Create a node for the result object
-        node = NodeActionData(
-            id=output_uid,
-            user_verify_key=context.credentials,
-            type=NodeType.ACTION_OBJECT,
-        )
+        if node.is_mutated:
+            # Create a node for the result object
+            result = self.store.update(
+                credentials=context.credentials,
+                uid=action.remote_self.id,
+                data=NodeActionDataUpdate(is_mutated=True),
+            )
 
-        result = self.store.set(
-            credentials=context.credentials,
-            node=node,
-            parent_uids=[action.id],
-        )
+            if result.is_err():
+                return SyftError(message=result.err())
+
+        else:
+            # Create a node for the result object
+            node = NodeActionData(
+                id=output_uid,
+                user_verify_key=context.credentials,
+                type=NodeType.ACTION_OBJECT,
+            )
+
+            result = self.store.set(
+                credentials=context.credentials,
+                node=node,
+                parent_uids=[action.id],
+            )
 
         if result.is_err():
             return SyftError(message=result.err())
