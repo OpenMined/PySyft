@@ -11,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'dot',
   use: {
-    baseURL: process.env.TEST_API_URL || 'http://localhost:8081'
+    baseURL: process.env.TEST_API_URL || 'http://localhost:9081'
   },
   projects: [
     {

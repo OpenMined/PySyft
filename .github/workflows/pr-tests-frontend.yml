@@ -14,12 +14,82 @@ defaults:
     working-directory: ./packages/grid/frontend
 
 jobs:
-  pr-tests-frontend:
+  pr-tests-frontend-unit:
     strategy:
       max-parallel: 3
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: ["3.8", "3.10"]
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.frontend == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.frontend == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Docker on MacOS
+        if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
+        uses: crazy-max/ghaction-setup-docker@v1.1.0
+
+      - name: Install Tox
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          pip install --upgrade tox
+
+      - name: Remove existing containers
+        if: steps.changes.outputs.frontend == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker rm $(docker ps -aq) --force || true
+          docker volume prune -f || true
+          docker buildx use default || true
+
+      - name: Run Frontend Unit Tests
+        if: steps.changes.outputs.frontend == 'true'
+        env:
+          DOCKER: true
+        run: |
+          tox -e frontend.test.unit
+
+  pr-tests-frontend-e2e:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -76,8 +146,16 @@ jobs:
           docker rm $(docker ps -aq) --force || true
           docker volume prune -f || true
           docker buildx use default || true
+      - uses: pnpm/action-setup@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
 
-      - name: Run JS Serde unit tests
+      - name: Run Frontend Playwright e2e Tests
         if: steps.changes.outputs.stack == 'true'
+        env:
+          DOCKER: true
         run: |
-          tox -e frontend.unit.tests
+          tox -e frontend.test.e2e
