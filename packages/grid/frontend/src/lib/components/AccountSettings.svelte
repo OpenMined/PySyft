@@ -76,13 +76,13 @@
     <div style="display: flex; flex-direction:row">
       <div style="width:30%;display:flex;justify-content:center;">
         <div id="user-profile-circle" style="height:10vh;width:10vh;">
-          <h3 style="color:white"><b> {shortName(user_info.name)} </b></h3>
+          <h3 style="color:white"><b>{shortName(user_info.name)}</b></h3>
         </div>
       </div>
       <div style="width:70%">
         <form class="space-y-3 px-3" style="padding-bottom: 10%;">
           <div class="space-y-3" style="padding-bottom: 5%;">
-            <span class="font-bold"> PROFILE INFORMATION</span>
+            <span class="font-bold">PROFILE INFORMATION</span>
             <div class="space-y-1" style="display:flex;flex-direction:column">
               <span class="font-bold small">Name</span>
               <span class="font-roboto small">{user_info.name}</span>
@@ -90,8 +90,10 @@
                 style="text-align: left"
                 on:click={() => {
                   modalActiveList[0] = !modalActiveList[0];
-                }}><span class="font-roboto small change-link-text">Change name</span></button
+                }}
               >
+                <span class="font-roboto small change-link-text">Change name</span>
+              </button>
             </div>
             <div class="space-y-1" style="display:flex;flex-direction:column">
               <span class="font-bold small">Team</span>
@@ -100,8 +102,10 @@
                 style="text-align: left"
                 on:click={() => {
                   modalActiveList[1] = !modalActiveList[1];
-                }}><span class="font-roboto small change-link-text">Change Team</span></button
+                }}
               >
+                <span class="font-roboto small change-link-text">Change Team</span>
+              </button>
             </div>
             <div class="space-y-1" style="display:flex;flex-direction:column">
               <span class="font-bold small">Website</span>
@@ -110,12 +114,14 @@
                 style="text-align: left"
                 on:click={() => {
                   modalActiveList[2] = !modalActiveList[2];
-                }}><span class="font-roboto small change-link-text">Change website</span></button
+                }}
               >
+                <span class="font-roboto small change-link-text">Change website</span>
+              </button>
             </div>
           </div>
           <div class="space-y-3" style="padding-bottom: 5%;">
-            <span class="font-bold "> AUTHENTICATION </span>
+            <span class="font-bold ">AUTHENTICATION</span>
             <div class="space-y-1" style="display:flex;flex-direction:column">
               <span class="font-bold small">Email</span>
               <span class="font-roboto small">{user_info.email}</span>
@@ -123,8 +129,10 @@
                 style="text-align: left"
                 on:click={() => {
                   modalActiveList[3] = !modalActiveList[3];
-                }}><span class="font-roboto small change-link-text">Change Email</span></button
+                }}
               >
+                <span class="font-roboto small change-link-text">Change Email</span>
+              </button>
             </div>
             <div class="space-y-1" style="display:flex;flex-direction:column">
               <span class="font-bold small">Password</span>
@@ -132,8 +140,10 @@
                 style="text-align: left"
                 on:click={() => {
                   modalActiveList[4] = !modalActiveList[4];
-                }}><span class="font-roboto small change-link-text">Change Password</span></button
+                }}
               >
+                <span class="font-roboto small change-link-text">Change Password</span>
+              </button>
             </div>
           </div>
           <!--
@@ -169,9 +179,9 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
-        >Confirm</Button
-      >
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white">
+        Confirm
+      </Button>
     </div>
   </Modal>
 
@@ -191,9 +201,9 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
-        >Confirm</Button
-      >
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white">
+        Confirm
+      </Button>
     </div>
   </Modal>
 
@@ -213,9 +223,9 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
-        >Confirm</Button
-      >
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white">
+        Confirm
+      </Button>
     </div>
   </Modal>
 
@@ -235,9 +245,9 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
-        >Confirm</Button
-      >
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white">
+        Confirm
+      </Button>
     </div>
   </Modal>
   <Modal
@@ -264,9 +274,9 @@
       >
         Cancel
       </button>
-      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white"
-        >Confirm</Button
-      >
+      <Button pill={true} on:click={() => submitUserChanges()} color="dark" style="color: white">
+        Confirm
+      </Button>
     </div>
   </Modal>
 

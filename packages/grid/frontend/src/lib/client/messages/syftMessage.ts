@@ -40,7 +40,11 @@ export class APICall {
     this.node_uid = new UUID(id);
     this.path = path;
     this.args = args;
-    this.kwargs = new Map(Object.entries(kwargs));
+    if (kwargs) {
+      this.kwargs = new Map(Object.entries(kwargs));
+    } else {
+      this.kwargs = new Map();
+    }
     this.blocking = blocking;
     this.fqn = 'syft.client.api.SyftAPICall';
   }

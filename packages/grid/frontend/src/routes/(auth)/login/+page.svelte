@@ -61,6 +61,7 @@
             bind:error={loginError}
             bind:value={email}
             required
+            data-testid="email"
           />
           <Input
             label="Password"
@@ -70,6 +71,7 @@
             bind:value={password}
             bind:error={loginError}
             required
+            data-testid="password"
           />
           <p class="text-center text-rose-500" hidden={!loginError}>{loginError}</p>
           <p class="text-center">
