@@ -20,6 +20,11 @@ objects, functions and methods.
 .. toctree::
    :maxdepth: 2
 
-   syft.ast
-   syft.core
-   syft.grid
+   syft.client
+   syft.external
+   syft.node
+   syft.serde
+   syft.service
+   syft.store
+   syft.types
+   syft.util

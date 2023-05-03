@@ -37,89 +37,94 @@ recursive_serde_register(
     np.ndarray, serialize=numpy_serialize, deserialize=numpy_deserialize
 )
 
+recursive_serde_register(
+    np._globals._NoValueType,
+)
+#  serialize=numpy_serialize, deserialize=numpy_deserialize
+
 
 recursive_serde_register(
     np.bool_,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.bool_),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.bool_)[0],
 )
 
 recursive_serde_register(
     np.int8,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int8),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int8)[0],
 )
 
 recursive_serde_register(
     np.int16,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int16),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int16)[0],
 )
 
 recursive_serde_register(
     np.int32,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int32),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int32)[0],
 )
 
 recursive_serde_register(
     np.int64,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int64),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int64)[0],
 )
 
 recursive_serde_register(
     np.uint8,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint8),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint8)[0],
 )
 
 recursive_serde_register(
     np.uint16,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint16),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint16)[0],
 )
 
 recursive_serde_register(
     np.uint32,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint32),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint32)[0],
 )
 
 recursive_serde_register(
     np.uint64,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint64),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.uint64)[0],
 )
 
 recursive_serde_register(
     np.single,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.single),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.single)[0],
 )
 
 recursive_serde_register(
     np.double,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.double),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.double)[0],
 )
 
 recursive_serde_register(
     np.float16,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.float16),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.float16)[0],
 )
 
 recursive_serde_register(
     np.float32,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.float32),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.float32)[0],
 )
 
 recursive_serde_register(
     np.float64,
     serialize=lambda x: x.tobytes(),
-    deserialize=lambda buffer: frombuffer(buffer, dtype=np.float64),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.float64)[0],
 )
 
 # TODO: There is an incorrect mapping in looping,which makes it not work.

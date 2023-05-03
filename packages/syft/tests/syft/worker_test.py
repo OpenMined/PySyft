@@ -6,6 +6,7 @@ from typing import Dict
 from nacl.exceptions import BadSignatureError
 import numpy as np
 import pytest
+from result import Ok
 
 # syft absolute
 import syft as sy
@@ -200,11 +201,11 @@ def test_action_object_hooks() -> None:
         # double it
         new_value = args[0]
         new_value.syft_action_data = new_value.syft_action_data * 2
-        return context, (new_value,), kwargs
+        return Ok((context, (new_value,), kwargs))
 
     def post_add(context: Any, name: str, new_result: Any) -> Any:
         # change return type to sum
-        return sum(new_result)
+        return Ok(sum(new_result))
 
     action_object._syft_pre_hooks__["__add__"] = [pre_add]
     action_object._syft_post_hooks__["__add__"] = [post_add]
@@ -226,9 +227,6 @@ def test_worker_serde() -> None:
 
     assert de.signing_key == worker.signing_key
     assert de.id == worker.id
-
-
-# stdlib
 
 
 @pytest.mark.parametrize(

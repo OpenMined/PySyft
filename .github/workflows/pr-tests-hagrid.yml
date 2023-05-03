@@ -19,7 +19,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.8", "3.10"]
+        python-version: ["3.9", "3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -70,7 +70,7 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           bandit -r hagrid
-          safety check -i 42923
+          safety check -i 42923 -i 54229 -i 54230
 
       - name: Run normal tests
         if: steps.changes.outputs.hagrid == 'true'

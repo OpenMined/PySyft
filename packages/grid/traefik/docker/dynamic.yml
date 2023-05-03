@@ -103,7 +103,7 @@ http:
     fire-fail2ban:
       plugin:
         fail2ban:
-          logLevel: "INFO"  # "NONE", "INFO" or "DEBUG"
+          logLevel: "INFO" # "NONE", "INFO" or "DEBUG"
           blacklist:
             ip:
               - "192.168.0.0/24"

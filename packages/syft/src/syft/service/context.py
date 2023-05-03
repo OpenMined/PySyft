@@ -6,9 +6,9 @@ from typing import Optional
 from typing_extensions import Self
 
 # relative
+from ..abstract_node import AbstractNode
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
-from ..node.node import NewNode
 from ..types.syft_object import Context
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
@@ -23,7 +23,7 @@ class NodeServiceContext(Context, SyftObject):
     __canonical_name__ = "NodeServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
     id: Optional[UID]
-    node: Optional[NewNode]
+    node: Optional[AbstractNode]
 
 
 class AuthedServiceContext(NodeServiceContext):
@@ -42,12 +42,12 @@ class UnauthedServiceContext(NodeServiceContext):
     __version__ = SYFT_OBJECT_VERSION_1
 
     login_credentials: UserLoginCredentials
-    node: Optional[NewNode]
+    node: Optional[AbstractNode]
     role: ServiceRole = ServiceRole.NONE
 
 
 class ChangeContext(SyftBaseObject):
-    node: Optional[NewNode] = None
+    node: Optional[AbstractNode] = None
     approving_user_credentials: Optional[SyftVerifyKey]
     requesting_user_credentials: Optional[SyftVerifyKey]
 

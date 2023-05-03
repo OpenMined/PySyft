@@ -1,4 +1,4 @@
-__version__ = "0.8.0-beta.8"
+__version__ = "0.8.1-beta.0"
 
 # stdlib
 from pathlib import Path
@@ -20,7 +20,10 @@ from .client.user_settings import settings  # noqa: F401
 from .external import OBLV  # noqa: F401
 from .external import enable_external_lib  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
-from .node.server import bind_worker  # noqa: F401
+from .node.domain import Domain  # noqa: F401
+from .node.gateway import Gateway  # noqa: F401
+from .node.server import serve_node  # noqa: F401
+from .node.server import serve_node as bind_worker  # noqa: F401
 from .node.worker import Worker  # noqa: F401
 from .serde import NOTHING  # noqa: F401
 from .serde.deserialize import _deserialize as deserialize  # noqa: F401
@@ -54,7 +57,7 @@ from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.version_compare import make_requires
 
-LATEST_STABLE_SYFT = "0.7"
+LATEST_STABLE_SYFT = "0.8"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 sys.path.append(str(Path(__file__)))
@@ -103,7 +106,7 @@ def _settings() -> UserSettings:
 
 @module_property
 def _orchestra() -> Orchestra:
-    return Orchestra()
+    return Orchestra
 
 
 def search(name: str) -> SearchResults:
