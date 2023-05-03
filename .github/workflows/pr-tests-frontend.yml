@@ -151,6 +151,7 @@ jobs:
         with:
           version: 8
           run_install: false
+          dest: ~/setup-pnpm
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
