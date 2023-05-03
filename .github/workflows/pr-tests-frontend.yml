@@ -157,6 +157,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "pnpm"
+          cache-dependency-path: packages/grid/frontend/pnpm-lock.yaml
 
       - name: Run Frontend Playwright e2e Tests
         if: steps.changes.outputs.stack == 'true'
