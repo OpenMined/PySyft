@@ -66,6 +66,9 @@ class NodeActionData(SyftObject):
     updated_at: Optional[DateTime]
     user_verify_key: SyftVerifyKey
     is_mutated: bool = False
+    is_mutagen: bool = False
+    next_mutagen_node: Optional[UID]  # next neighboring mutagen node
+    last_nm_mutagen_node: Optional[UID]  # last non mutated mutagen node
 
     @pydantic.validator("created_at", pre=True, always=True)
     def make_created_at(cls, v: Optional[DateTime]) -> DateTime:
@@ -73,14 +76,14 @@ class NodeActionData(SyftObject):
 
     @staticmethod
     def from_action(action: Action, credentials: SyftVerifyKey):
-        is_mutated = action.remote_self is not None and (
+        is_mutagen = action.remote_self is not None and (
             action.remote_self == action.result_id
         )
         return NodeActionData(
             id=action.id,
             type=NodeType.ACTION,
             user_verify_key=credentials,
-            is_mutated=is_mutated,
+            is_mutagen=is_mutagen,
         )
 
     @staticmethod
@@ -118,6 +121,9 @@ class NodeActionDataUpdate(PartialSyftObject):
     updated_at: DateTime
     credentials: SyftVerifyKey
     is_mutated: bool
+    is_mutagen: bool
+    next_mutagen_node: UID  # next neighboring mutagen node
+    last_nm_mutagen_node: UID  # last non mutated mutagen node
 
     @pydantic.validator("updated_at", pre=True, always=True)
     def make_updated_at(cls, v: Optional[DateTime]) -> DateTime:
@@ -227,7 +233,7 @@ class NetworkXBackingStore(BaseGraphStore):
         if self.exists(uid=uid):
             self.db.remove_node(uid)
 
-    def find_neighbors(self, uid: UID) -> Optional[List]:
+    def find_neighbors(self, uid: UID) -> Optional[Iterable]:
         if self.exists(uid=uid):
             neighbors = self.graph.neighbors(uid)
             return neighbors
@@ -320,7 +326,6 @@ class InMemoryActionGraphStore(ActionGraphStore):
         if self.graph.exists(uid=node.id):
             return Err(f"Node already exists in the graph: {node}")
 
-        # parent_uids = self._search_parents_for(node)
         self.graph.set(uid=node.id, data=node)
         for parent_uid in parent_uids:
             result = self.add_edge(
@@ -330,18 +335,6 @@ class InMemoryActionGraphStore(ActionGraphStore):
             )
             if result.is_err():
                 return result
-
-        try:
-            if node.is_mutated:
-                # Mutation happens. Update all parents to reflect this.
-                for parent_uid in parent_uids:
-                    self.update(
-                        uid=parent_uid,
-                        data=NodeActionDataUpdate(is_mutated=True),
-                        credentials=credentials,
-                    )
-        except Exception:
-            pass
 
         return Ok(node)
 
@@ -380,32 +373,62 @@ class InMemoryActionGraphStore(ActionGraphStore):
             return Ok(node_data)
         return Err(f"Node does not exists for uid: {uid}")
 
-    def _find_mutation_for(self, uid: UID) -> Result[UID, str]:
-        def find_non_mutated_successor(uid: UID) -> Optional[UID]:
-            """
-            Find the leaf node of a mutated chain. This is the node that is not mutated.
-            """
-            # TODO: Look for a more robust traversal/search method
-            node_data = self.graph.get(uid=uid)
-            if node_data.is_mutated:
-                successor_uids = self.graph.get_successors(uid=uid)
-                for successor_uid in successor_uids:
-                    # successor_node_data = self.graph.get(uid=successor_uid)
-                    result_uid = find_non_mutated_successor(successor_uid)
-                    if result_uid is not None:
-                        return result_uid
-                    else:
-                        continue
-            else:
-                return uid
+    def update_non_mutated_successor(
+        self,
+        node_id: UID,
+        nm_successor_id: UID,
+        credentials: SyftVerifyKey,
+    ) -> Result[NodeActionData, str]:
+        node_data = self.graph.get(uid=node_id)
 
-            return None
+        data = NodeActionDataUpdate(
+            next_mutagen_node=nm_successor_id,
+            last_nm_mutagen_node=nm_successor_id,
+            is_mutated=True,
+        )
 
-        _successor = find_non_mutated_successor(uid=uid)
-        if _successor is None:
-            return Err(f"Failed to find a non mutated successor for node: {uid}")
+        if not node_data.is_mutated:
+            # If current node is not mutated, then mark it as mutated
+            return self.update(uid=node_id, data=data, credentials=credentials)
+        else:
+            # loop through successive mutagen nodes and
+            # update their last_nm_mutagen_node id
+            while node_id != nm_successor_id:
+                node_data = self.graph.get(uid=node_id)
 
-        return Ok(_successor)
+                # If node is the last added mutagen node,
+                # then in that case its `next_mutagen_node` will be None
+                # Therefore update its values to nm_successor_id
+                next_mutagen_node = (
+                    nm_successor_id
+                    if node_data.next_mutagen_node is None
+                    else node_data.next_mutagen_node
+                )
+
+                data = NodeActionDataUpdate(
+                    last_nm_mutagen_node=nm_successor_id,
+                    is_mutated=True,
+                    next_mutagen_node=next_mutagen_node,
+                )
+
+                # Update each successive mutagen node
+                result = self.update(
+                    uid=node_id,
+                    data=data,
+                    credentials=credentials,
+                )
+                node_id = node_data.next_mutagen_node
+
+            return result
+
+    def _get_last_non_mutated_mutagen(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Result[UID, str]:
+        node_data = self.graph.get(uid=uid)
+        if node_data.is_mutated:
+            return Ok(node_data.last_nm_mutagen_node)
+
+        return Ok(uid)
 
     def add_edge(
         self,
@@ -419,7 +442,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
         if not self.graph.exists(child):
             return Err(f"Node does not exists for uid: {child}")
 
-        result = self._find_mutation_for(parent)
+        result = self._get_last_non_mutated_mutagen(
+            uid=parent,
+            credentials=credentials,
+        )
 
         if result.is_err():
             return result
