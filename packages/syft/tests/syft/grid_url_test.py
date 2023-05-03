@@ -2,7 +2,7 @@
 import pytest
 
 # syft absolute
-from syft.core.node.new.grid_url import GridURL
+from syft.types.grid_url import GridURL
 
 test_suite = [
     ("http://0.0.0.0", 8081, "http://0.0.0.0:8081"),

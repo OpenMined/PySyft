@@ -15,12 +15,12 @@ import pytest
 from pytest_mock_resources import create_redis_fixture
 
 # syft absolute
-from syft.core.node.new.locks import FileLockingConfig
-from syft.core.node.new.locks import LockingConfig
-from syft.core.node.new.locks import NoLockingConfig
-from syft.core.node.new.locks import RedisLockingConfig
-from syft.core.node.new.locks import SyftLock
-from syft.core.node.new.locks import ThreadingLockingConfig
+from syft.store.locks import FileLockingConfig
+from syft.store.locks import LockingConfig
+from syft.store.locks import NoLockingConfig
+from syft.store.locks import RedisLockingConfig
+from syft.store.locks import SyftLock
+from syft.store.locks import ThreadingLockingConfig
 
 redis_server_mock = create_redis_fixture(scope="session")
 

@@ -1,9 +1,10 @@
 <script context="module">
-  import { JSSerde } from '../jsserde.svelte';
+  import { JSSerde } from '../jsserde';
   import { UUID } from '../objects/uid';
   import { APICall } from '../messages/syftMessage.ts';
   import sodium from 'libsodium-wrappers';
   import { UserCode } from '../objects/userCode';
+  import { API_BASE_URL } from '$lib/constants';
 
   export class JSClient {
     /**
@@ -11,25 +12,22 @@
      * @returns {Promise} A promise that resolves to an instance of the class.
      */
     constructor() {
-      return (async () => {
-        const url = `${window.location.protocol}//${window.location.host}`;
+      const url = API_BASE_URL;
 
-        this.serde = new JSSerde();
-        // Set the URL and message URL properties.
-        this.url = url;
-        this.msg_url = `${url}/api/v1/new/api_call`;
+      this.serde = new JSSerde();
+      this.url = url;
+      this.msg_url = `${url}/new/api_call`;
+      this.key = window.localStorage.getItem('key');
 
-        try {
-          // Get the metadata and extract the node ID value.
-          const metadata = await this.metadata;
-          this.nodeId = metadata.id.value;
-        } catch (error) {
-          console.error('Error getting metadata:', error);
-        }
+      if (this.key) {
+        this.key = Uint8Array.from(this.key.split(','));
+        this.key = sodium.crypto_sign_seed_keypair(this.key);
+      }
 
-        // Return an instance of the class.
-        return this;
-      })();
+      this.userId = window.localStorage.getItem('id');
+      this.nodeId = window.localStorage.getItem('nodeId');
+
+      return this;
     }
 
     /**
@@ -41,7 +39,7 @@
      */
     async login(email, password) {
       // Send a POST request to the login API endpoint with the email and password.
-      const response = await fetch(`${this.url}/api/v1/new/login`, {
+      const response = await fetch(`${this.url}/new/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -152,7 +150,7 @@
       // Create a new object called 'newMetadata' with updated fields and a new property called 'fqn' with a value.
       const updateMetadata = {
         ...newMetadata,
-        fqn: 'syft.core.node.new.node_metadata.NodeMetadataUpdate'
+        fqn: 'syft.service.metadata.node_metadata.NodeMetadataUpdate'
       };
 
       // Create a new object called 'reqFields' with one property: 'metadata',  which is set to 'updateMetadata'.
@@ -175,10 +173,10 @@
     register(newUser) {
       return (async () => {
         // Create a register payload object by copying the newUser object and adding a fully-qualified name (fqn) property.
-        const registerPayload = { ...newUser, fqn: 'syft.core.node.new.user.UserCreate' };
+        const registerPayload = { ...newUser, fqn: 'syft.service.user.user.UserCreate' };
 
         // Make a POST request to the server with the register payload.
-        const response = await fetch(`${this.url}/api/v1/new/register`, {
+        const response = await fetch(`${this.url}/new/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/octet-stream' },
           body: this.serde.serialize(registerPayload)
@@ -209,7 +207,7 @@
      * */
     updateCurrentUser(updatedFields) {
       // Create a new object called 'userUpdate' with updated fields and a new property called 'fqn' with a value.
-      const userUpdate = { ...updatedFields, fqn: 'syft.core.node.new.user.UserUpdate' };
+      const userUpdate = { ...updatedFields, fqn: 'syft.service.user.user.UserUpdate' };
 
       // Create a new object called 'reqFields' with two properties: 'uid', which is set to the value of 'userId', and 'user_update', which is set to 'userUpdate'.
       const reqFields = { uid: this.userId, user_update: userUpdate };
@@ -229,7 +227,7 @@
      */
     get metadata() {
       return (async () => {
-        const response = await fetch(`${this.url}/api/v1/new/metadata_capnp`);
+        const response = await fetch(`${this.url}/new/metadata_capnp`);
         const metadataBuffer = await response.arrayBuffer();
         const metadata = this.serde.deserialize(metadataBuffer);
 
