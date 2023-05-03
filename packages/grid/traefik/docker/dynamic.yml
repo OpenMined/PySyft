@@ -105,6 +105,8 @@ http:
         fail2ban:
           logLevel: "INFO"  # "NONE", "INFO" or "DEBUG"
           blacklist:
+            ip:
+              - "192.168.0.0/24"
             files:
               - /etc/traefik/blacklist_ip.txt
           rules:
