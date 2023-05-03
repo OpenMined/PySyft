@@ -18,7 +18,7 @@ def mock_object(reference_data: np.ndarray) -> ActionObject:
     return ActionObject.from_obj(reference_data)
 
 
-def exception1_conversion_deletes_action_object(mock_object: ActionObject) -> None:
+def test_exception1_conversion_deletes_action_object(mock_object: ActionObject) -> None:
     """
     Upon calling a conversion like np.asarray() or pd.DataFrame(array) the action object is destroyed.
     We lose the ability to track history hashes, lineage IDs, etc.
@@ -40,7 +40,7 @@ def exception1_conversion_deletes_action_object(mock_object: ActionObject) -> No
     ), "The Mock Object is no longer an action object"
 
 
-def exception2_numpy_methods_that_return_tuples(mock_object: ActionObject) -> None:
+def test_exception2_numpy_methods_that_return_tuples(mock_object: ActionObject) -> None:
     """
     When working with a NumPy method that returns a tuple, the resultant tuple is an ActionObject, as
     opposed to each element in the result being an ActionObject.
@@ -61,7 +61,9 @@ def exception2_numpy_methods_that_return_tuples(mock_object: ActionObject) -> No
     assert result[0].syft_lineage_id == result[1].syft_lineage_id
 
 
-def exception3_numpy_methods_returning_new_arrays(mock_object: ActionObject) -> None:
+def test_exception3_numpy_methods_returning_new_arrays(
+    mock_object: ActionObject,
+) -> None:
     """
     NumPy methods such as `np.pad()` that take an array and return a new array will not return an ActionObject
     even if the inputs are ActionObjects.
@@ -76,7 +78,7 @@ def exception3_numpy_methods_returning_new_arrays(mock_object: ActionObject) -> 
     assert isinstance(result2, ActionObject), "The Result is no longer an action object"
 
 
-def exception4_nan_behaviour(mock_object: ActionObject) -> None:
+def test_exception4_nan_behaviour(mock_object: ActionObject) -> None:
     """
     NaNs have strange behaviour and our mock objects don't work as intended with them for some reason
     """
@@ -85,7 +87,7 @@ def exception4_nan_behaviour(mock_object: ActionObject) -> None:
     assert np.nan in array, "The array is full of NaNs but a NaN was not detected"
 
 
-def exception5_metadata_is_action_object(mock_object: ActionObject) -> None:
+def test_exception5_metadata_is_action_object(mock_object: ActionObject) -> None:
     """
     Perhaps things like `.shape` shouldn't return ActionObjects at all?
     """
@@ -93,14 +95,14 @@ def exception5_metadata_is_action_object(mock_object: ActionObject) -> None:
     assert isinstance(mock_object.shape, tuple)
 
 
-def exception6_action_object_integers(mock_object: ActionObject) -> None:
+def test_exception6_action_object_integers(mock_object: ActionObject) -> None:
     """
     In certain places it seems that ActionObjects aren't a perfect replacement for integers and such
     """
     _ = np.unravel_index(12, mock_object.shape)
 
 
-def exception7_chaining_operations(mock_object: ActionObject) -> None:
+def test_exception7_chaining_operations(mock_object: ActionObject) -> None:
     """
     In examples such as the one below, each of the operations works individually but when done
     all at once, we are rewarded with an error :):
@@ -112,7 +114,9 @@ def exception7_chaining_operations(mock_object: ActionObject) -> None:
     (mock_object - mock_object.mean()) / mock_object.std()
 
 
-def exception8_inplace_modifications_kill_kernel(mock_object: ActionObject) -> None:
+def test_exception8_inplace_modifications_kill_kernel(
+    mock_object: ActionObject,
+) -> None:
     """
     All of the expressions below will indeed kill your kernel
     """
@@ -125,7 +129,7 @@ def exception8_inplace_modifications_kill_kernel(mock_object: ActionObject) -> N
     mock_object[mock_object > 0.5] *= 2
 
 
-def exception9_untriggered_memory_errors() -> None:
+def test_exception9_untriggered_memory_errors() -> None:
     """
     If you run something like `np.random.rand(156816, 36, 53806)` you will be given a `MemoryError:
     Unable to allocate 2.21 TiB for an array with shape (156816, 36, 53806) and data type float64`
@@ -137,7 +141,7 @@ def exception9_untriggered_memory_errors() -> None:
     np.sum(range(int(1e20)))
 
 
-def exception10_numpy_flags_and_settings(mock_object: ActionObject) -> None:
+def test_exception10_numpy_flags_and_settings(mock_object: ActionObject) -> None:
     """
     Currently we don't have the ability to modify any of the flags on a NumPyActionObject, though we can see them
     """
@@ -146,7 +150,7 @@ def exception10_numpy_flags_and_settings(mock_object: ActionObject) -> None:
     mock_object.flags.writeable = False
 
 
-def exception11_numpy_domain_node_permissions() -> None:
+def test_exception11_numpy_domain_node_permissions() -> None:
     """
     Giving the user the ability to import numpy from the domain node directly might be dangerous.
     """
@@ -167,16 +171,17 @@ def exception11_numpy_domain_node_permissions() -> None:
     np.errstate(all="ignore")
 
 
-def exception12_custom_classes(mock_object) -> None:
+def test_exception12_custom_classes(mock_object) -> None:
     """
     NumPy subclasses are probably tricky to work with and will have a ton of edge cases
     """
 
-    # this won't raise an Error, but instead will give the user a warning
+    # this won't raise an Error, but instead will give the user a warning and incorrect results
     np.random.shuffle(mock_object)
+    assert False
 
 
-def exception13_record_arrays() -> None:
+def test_exception13_record_arrays() -> None:
     """
     Record Arrays don't seem to work well with ActionObjects
     """
