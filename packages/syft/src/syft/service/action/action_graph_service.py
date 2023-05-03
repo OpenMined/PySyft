@@ -47,26 +47,37 @@ class ActionGraphService(AbstractService):
         node = NodeActionData.from_action(
             action=action, credentials=context.credentials
         )
+
         result = self.store.set(
             credentials=context.credentials, node=node, parent_uids=input_uids
         )
+
         if result.is_err():
             return SyftError(message=result.err())
 
         action_node = result.ok()
 
-        # Create a node for the result object
-        node = NodeActionData(
-            id=output_uid,
-            user_verify_key=context.credentials,
-            type=NodeType.ACTION_OBJECT,
-        )
+        if action_node.is_mutagen:
+            # updated non-mutated successor for all nodes between
+            # node_id and mn_successor_id
+            result = self.store.update_non_mutated_successor(
+                node_id=action.remote_self.id,
+                nm_successor_id=action_node.id,
+                credentials=context.credentials,
+            )
+        else:
+            # Create a node for the result object
+            node = NodeActionData(
+                id=output_uid,
+                user_verify_key=context.credentials,
+                type=NodeType.ACTION_OBJECT,
+            )
 
-        result = self.store.set(
-            credentials=context.credentials,
-            node=node,
-            parent_uids=[action.id],
-        )
+            result = self.store.set(
+                credentials=context.credentials,
+                node=node,
+                parent_uids=[action.id],
+            )
 
         if result.is_err():
             return SyftError(message=result.err())
