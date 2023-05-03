@@ -529,7 +529,7 @@ class SyftClient:
         APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
 
-    def block_ip(ip: Union[str, List[str]]):
+    def block_ip(ip: Union[str, List[str]], debug: bool = False):
         """
         Add IP address (single or multiple) to the Traefik reverse proxy's firewall in real time
         to be blocked using the fail2ban plugin.
@@ -539,6 +539,8 @@ class SyftClient:
         ip: str, List[str]
             a single IP address or a list of IP Addresses to block via the firewall.
 
+        debug: bool
+            print IPs blocked before calling this method, and IPs blocked after adding the user provided IPs.
         """
 
         fname = (
@@ -549,13 +551,14 @@ class SyftClient:
         with open(fname, "r") as f:
             yaml_file = yaml.load(f, Loader=yaml.BaseLoader)
 
-            # Avoid duplicate IP addresses- check if this causes issues with subnet masks
-            print("Ip addresses currently blocked: ")
-            print(
-                yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
-                    "blacklist"
-                ]["ip"]
-            )
+            if debug:
+                # Avoid duplicate IP addresses- check if this causes issues with subnet masks
+                print("Ip addresses currently blocked: ")
+                print(
+                    yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"][
+                        "fail2ban"
+                    ]["blacklist"]["ip"]
+                )
 
             blocked_ips = set(
                 yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
@@ -575,12 +578,13 @@ class SyftClient:
                 "blacklist"
             ]["ip"] = list(blocked_ips)
 
-            print("Ip addresses blocked after appending ips: ")
-            print(
-                yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
-                    "blacklist"
-                ]["ip"]
-            )
+            if debug:
+                print("Ip addresses blocked after appending ips: ")
+                print(
+                    yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"][
+                        "fail2ban"
+                    ]["blacklist"]["ip"]
+                )
 
         with open(fname, "w") as fout:
             yaml.dump(yaml_file, fout)
