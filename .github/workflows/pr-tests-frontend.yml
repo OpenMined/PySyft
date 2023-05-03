@@ -146,7 +146,13 @@ jobs:
           docker rm $(docker ps -aq) --force || true
           docker volume prune -f || true
           docker buildx use default || true
+
       - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          dest: ~/setup-pnpm
+          run_install: null
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
