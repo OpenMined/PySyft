@@ -1,5 +1,4 @@
 # stdlib
-from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
@@ -30,18 +29,13 @@ from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_object import ActionType
 from .action_object import AnyActionObject
+from .action_object import TwinMode
+from .action_permissions import ActionObjectREAD
 from .action_store import ActionStore
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
-
-
-@serializable()
-class TwinMode(Enum):
-    NONE = 0
-    PRIVATE = 1
-    MOCK = 2
 
 
 @serializable()
@@ -116,7 +110,7 @@ class ActionService(AbstractService):
         # TODO 🟣 Temporarily added skip permission arguments for enclave
         # until permissions are fully integrated
         result = self.store.get(
-            uid=uid, credentials=context.credentials, has_permission=True
+            uid=uid, credentials=context.credentials, has_permission=has_permission
         )
         if result.is_ok():
             obj = result.ok()
@@ -131,7 +125,8 @@ class ActionService(AbstractService):
                     obj.mock.syft_point_to(context.node.id)
                     obj.private.syft_point_to(context.node.id)
             return Ok(obj)
-        return result
+        else:
+            return result
 
     @service_method(
         path="action.get_pointer", name="get_pointer", roles=GUEST_ROLE_LEVEL
@@ -212,10 +207,35 @@ class ActionService(AbstractService):
             return set_result.err()
         return Ok(result_action_object)
 
+    def execute_plan(
+        self, plan, context: AuthedServiceContext, plan_kwargs: Dict[str, ActionObject]
+    ):
+        id2inpkey = {v.id: k for k, v in plan.inputs.items()}
+
+        for plan_action in plan.actions:
+            if plan_action.remote_self.id in id2inpkey:
+                plan_action.remote_self = plan_kwargs[
+                    id2inpkey[plan_action.remote_self.id]
+                ]
+            for i, arg in enumerate(plan_action.args):
+                if arg in id2inpkey:
+                    plan_action.args[i] = plan_kwargs[id2inpkey[arg]]
+
+            for k, arg in enumerate(plan_action.kwargs):
+                if arg in id2inpkey:
+                    plan_action.kwargs[k] = plan_kwargs[id2inpkey[arg]]
+
+        for plan_action in plan.actions:
+            action_res = self.execute(context, plan_action)
+            if action_res.is_err():
+                return action_res
+        result_id = plan.outputs[0].id
+        return self._get(context, result_id, TwinMode.MOCK, has_permission=True)
+
     @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(
         self, context: AuthedServiceContext, action: Action
-    ) -> Result[ActionObjectPointer, Err]:
+    ) -> Result[ActionObject, Err]:
         """Execute an operation on objects in the action store"""
         # relative
         from .plan import Plan
@@ -230,29 +250,13 @@ class ActionService(AbstractService):
             return resolved_self.err()
         resolved_self = resolved_self.ok()
 
-        if isinstance(resolved_self.syft_action_data, Plan) and action.op == "__call__":
-            plan = resolved_self.syft_action_data
-            id2inpkey = {v.id: k for k, v in plan.inputs.items()}
-
-            for plan_action in plan.actions:
-                if plan_action.remote_self.id in id2inpkey:
-                    plan_action.remote_self = action.kwargs[
-                        id2inpkey[plan_action.remote_self.id]
-                    ]
-                for i, arg in enumerate(plan_action.args):
-                    if arg in id2inpkey:
-                        plan_action.args[i] = action.kwargs[id2inpkey[arg]]
-
-                for k, arg in enumerate(plan_action.kwargs):
-                    if arg in id2inpkey:
-                        plan_action.kwargs[k] = action.kwargs[id2inpkey[arg]]
-
-            for plan_action in plan.actions:
-                action_res = self.execute(context, plan_action)
-                if action_res.is_err():
-                    return action_res
-            result_id = plan.outputs[0].id
-            result_action_object = self._get(context, result_id, TwinMode.MOCK)
+        if action.op == "__call__" and isinstance(resolved_self.syft_action_data, Plan):
+            result_action_object = self.execute_plan(
+                plan=resolved_self.syft_action_data,
+                context=context,
+                plan_kwargs=action.kwargs,
+            )
+            return result_action_object
 
         elif action.action_type == ActionType.SETATTRIBUTE:
             args, _ = resolve_action_args(action, context, self)
@@ -313,6 +317,7 @@ class ActionService(AbstractService):
                 val = getattr(resolved_self.syft_action_data, action.op)
                 result_action_object = Ok(wrap_result(action.result_id, val))
         elif isinstance(resolved_self, TwinObject):
+            # method
             private_result = execute_object(
                 self, context, resolved_self.private, action, twin_mode=TwinMode.PRIVATE
             )
@@ -344,10 +349,16 @@ class ActionService(AbstractService):
         else:
             result_action_object = result_action_object.ok()
 
+        # check if we have read permissions on the result
+        has_result_read_permission = self.has_read_permission_for_action_result(
+            context, action
+        )
+
         set_result = self.store.set(
             uid=action.result_id,
             credentials=context.credentials,
             syft_object=result_action_object,
+            has_result_read_permission=has_result_read_permission,
         )
         if set_result.is_err():
             return set_result.err()
@@ -359,6 +370,18 @@ class ActionService(AbstractService):
         result_action_object.syft_point_to(context.node.id)
 
         return Ok(result_action_object)
+
+    def has_read_permission_for_action_result(
+        self, context: AuthedServiceContext, action: Action
+    ) -> bool:
+        action_obj_ids = (
+            action.args + list(action.kwargs.values()) + [action.remote_self]
+        )
+        permissions = [
+            ActionObjectREAD(uid=_id, credentials=context.credentials)
+            for _id in action_obj_ids
+        ]
+        return self.store.has_permissions(permissions)
 
     @service_method(path="action.exists", name="exists", roles=GUEST_ROLE_LEVEL)
     def exists(
