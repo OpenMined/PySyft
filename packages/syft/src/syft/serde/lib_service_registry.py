@@ -12,6 +12,7 @@ from typing import Optional
 # third party
 import numpy
 from typing_extensions import Self
+import jax
 
 # relative
 from .lib_permissions import ALL_EXECUTE
@@ -164,6 +165,8 @@ class CMPBase:
             else:
                 child_parent_module = child.__package__.rsplit(".", 1)[0]
                 if parent.__package__ == child_parent_module:
+                    return True
+                elif parent.__name__ == child.__name__.rsplit(".", 1)[0]:
                     return True
                 else:
                     return False
@@ -345,6 +348,9 @@ action_execute_registry_libs = CMPTree(
         CMPModule(
             "jax",
             permissions=ALL_EXECUTE,
+            children=[
+                CMPModule("numpy", permissions=ALL_EXECUTE, obj=jax._src.numpy)
+            ]
         ),
     ]
 ).build()

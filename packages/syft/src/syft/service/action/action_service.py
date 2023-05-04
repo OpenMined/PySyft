@@ -342,7 +342,11 @@ def execute_callable(
         res = getattr(res, op)
         return res
 
+    # try:    
     target_callable = _get_target_callable(action.path, action.op)
+    # except Exception:
+    #     target_callable =     
+    
 
     result = None
     try:

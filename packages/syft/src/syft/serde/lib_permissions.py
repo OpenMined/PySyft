@@ -3,7 +3,7 @@ from enum import Enum
 
 # relative
 from .serializable import serializable
-from .uid import UID
+from ..types.uid import UID
 
 
 @serializable()
