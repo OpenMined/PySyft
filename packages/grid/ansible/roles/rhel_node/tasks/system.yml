@@ -1,3 +1,11 @@
+- name: Allow sudo without password
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: "^%sudo"
+    line: "%sudo ALL=(ALL) NOPASSWD: ALL"
+    validate: "visudo -cf %s"
+
 - name: Install required packages
   dnf:
     name:
@@ -66,3 +74,21 @@
         owner: "{{ om_user }}"
         group: "{{ om_user }}"
         mode: "0644"
+
+    - name: Add user to vagrant group
+      user:
+        name: "{{ om_user }}"
+        groups:
+          - vagrant
+        append: yes
+      when: vagrant is defined
+
+    - name: Add vagrant user to podman group
+      user:
+        name: "vagrant"
+        groups:
+          - podman
+          - vagrant
+          - om
+        append: yes
+      when: vagrant is defined
