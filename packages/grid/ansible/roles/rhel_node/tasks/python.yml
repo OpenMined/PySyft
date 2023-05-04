@@ -1,20 +1,24 @@
 - name: Install required packages for building Python
-    dnf:
-      name:
-        - gcc
-        - openssl-devel
-        - bzip2-devel
-        - libffi-devel
-        - zlib-devel
-        - make
-        - wget
-      state: present
+  ansible.builtin.shell: sudo dnf install -y gcc openssl-devel bzip2-devel libffi-devel zlib-devel make wget epel-release openssl11 openssl11-devel
+sqlite-devel
+  args:
+    executable: /bin/bash
+
+- name: Install required packages for building Python (Development Tools)
+  ansible.builtin.shell: sudo dnf groupinstall -y "Development Tools"
+  args:
+    executable: /bin/bash
+
+- name: Export CFLAGS and LDFLAGS environment variables
+  ansible.builtin.shell: export CFLAGS="$CFLAGS $(pkg-config --cflags openssl11)" LDFLAGS="$LDFLAGS $(pkg-config --libs openssl11)"
+  args:
+    executable: /bin/bash
 
 - name: Download Python 3.10.11 source code
-      get_url:
-        url: https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz
-        dest: /tmp/Python-3.10.11.tgz
-        mode: '0644'
+  get_url:
+    url: https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz
+    dest: /tmp/Python-3.10.11.tgz
+    mode: '0644'
 
 - name: Extract Python 3.10.11 source code
   unarchive:
@@ -23,7 +27,7 @@
     remote_src: yes
 
 - name: Configure Python 3.10.11 build
-  command: ./configure --enable-optimizations --prefix=/usr/local
+  command: ./configure --enable-loadable-sqlite-extension
   args:
     chdir: /tmp/Python-3.10.11/
 
