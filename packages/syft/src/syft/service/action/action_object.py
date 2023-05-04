@@ -517,6 +517,8 @@ class ActionObject(SyftObject):
     def _syft_try_to_save_to_store(self, obj) -> None:
         if self.syft_node_uid is None:
             return
+        elif obj.syft_node_uid is not None:
+            return
         else:
             # TODO fix: the APIRegistry often gets the wrong client
             # if you have 2 clients in memory
