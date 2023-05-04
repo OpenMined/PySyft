@@ -1,7 +1,7 @@
 #Ansible process for podman setup
 
 - name: Enable container-tools module
-  shell: dnf module enable -y container-tools:rhel8
+  shell: dnf module enable -y container-tools:rhel9
   tags: podman
 
 - name: Install podman

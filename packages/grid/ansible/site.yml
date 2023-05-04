@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: ubuntu
   gather_facts: False
   environment:
     LC_ALL: en_US.UTF-8
@@ -10,3 +10,13 @@
     - containers
     - update
     - aa_demo
+
+
+- hosts: rhel
+  gather_facts: False
+  environment:
+    LC_ALL: en_US.UTF-8
+  become: yes
+  roles:
+    - rhel_node
+
