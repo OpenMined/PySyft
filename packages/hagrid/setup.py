@@ -20,7 +20,7 @@ packages = [
     "paramiko",
     "pyOpenSSL>=22.0.0",
     "requests",
-    "rich==13.3.4",
+    "rich",
     "setuptools",
     "virtualenv-api",
     "virtualenv",
