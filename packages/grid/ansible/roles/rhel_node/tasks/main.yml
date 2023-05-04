@@ -14,6 +14,10 @@
   become: yes
   when: inventory_hostname != "localhost"
 
+- name: Install Python
+  import_tasks: python.yml
+  when: deploy_only is not defined and install == "true"
+  
 - name: Apply system changes
   import_tasks: system.yml
   when: deploy_only is not defined and install == "true"
