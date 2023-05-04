@@ -6,26 +6,27 @@ from typing import Dict
 from nacl.exceptions import BadSignatureError
 import numpy as np
 import pytest
+from result import Ok
 
 # syft absolute
 import syft as sy
-from syft.core.node.new.action_object import ActionObject
-from syft.core.node.new.action_store import DictActionStore
-from syft.core.node.new.api import SignedSyftAPICall
-from syft.core.node.new.api import SyftAPICall
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.credentials import SIGNING_KEY_FOR
-from syft.core.node.new.credentials import SyftSigningKey
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.queue_stash import QueueItem
-from syft.core.node.new.response import SyftAttributeError
-from syft.core.node.new.response import SyftError
-from syft.core.node.new.uid import UID
-from syft.core.node.new.user import User
-from syft.core.node.new.user import UserCreate
-from syft.core.node.new.user import UserView
-from syft.core.node.new.user_service import UserService
-from syft.core.node.worker import Worker
+from syft.client.api import SignedSyftAPICall
+from syft.client.api import SyftAPICall
+from syft.node.credentials import SIGNING_KEY_FOR
+from syft.node.credentials import SyftSigningKey
+from syft.node.credentials import SyftVerifyKey
+from syft.node.worker import Worker
+from syft.service.action.action_object import ActionObject
+from syft.service.action.action_store import DictActionStore
+from syft.service.context import AuthedServiceContext
+from syft.service.queue.queue_stash import QueueItem
+from syft.service.response import SyftAttributeError
+from syft.service.response import SyftError
+from syft.service.user.user import User
+from syft.service.user.user import UserCreate
+from syft.service.user.user import UserView
+from syft.service.user.user_service import UserService
+from syft.types.uid import UID
 
 test_signing_key_string = (
     "b7803e90a6f3f4330afbd943cef3451c716b338b17a9cf40a0a309bc38bc366d"
@@ -121,8 +122,6 @@ def test_user_transform() -> None:
     # assert edit_user.id is not None # need to insert / update first
     assert edit_user.email == "alice@bob.com"
     assert edit_user.name == "Alice"
-    assert edit_user.password is None
-    assert edit_user.password_verify is None
 
     assert not hasattr(edit_user, "signing_key")
 
@@ -202,11 +201,11 @@ def test_action_object_hooks() -> None:
         # double it
         new_value = args[0]
         new_value.syft_action_data = new_value.syft_action_data * 2
-        return context, (new_value,), kwargs
+        return Ok((context, (new_value,), kwargs))
 
     def post_add(context: Any, name: str, new_result: Any) -> Any:
         # change return type to sum
-        return sum(new_result)
+        return Ok(sum(new_result))
 
     action_object._syft_pre_hooks__["__add__"] = [pre_add]
     action_object._syft_post_hooks__["__add__"] = [post_add]
@@ -228,9 +227,6 @@ def test_worker_serde() -> None:
 
     assert de.signing_key == worker.signing_key
     assert de.id == worker.id
-
-
-# stdlib
 
 
 @pytest.mark.parametrize(

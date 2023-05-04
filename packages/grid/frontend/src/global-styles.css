@@ -79,3 +79,17 @@
     @apply text-5xl leading-[1.1] font-rubik;
   }
 }
+
+@layer components {
+  .dot {
+    @apply text-[8px] text-gray-200;
+  }
+
+  .link {
+    @apply transition-colors duration-300 text-primary-500 hover:text-primary-600 no-underline;
+  }
+
+  .all-caps {
+    @apply uppercase font-bold text-xs leading-[1] tracking-[0.75px];
+  }
+}

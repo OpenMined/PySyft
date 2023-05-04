@@ -15,9 +15,9 @@
   <label for={id} class="flex gap-x-1">
     <span class="label">{label}</span>
     {#if required}
-      <span class="required"> *</span>
+      <span class="required">*</span>
     {:else if optional}
-      <span class="optional"> (optional)</span>
+      <span class="optional">(optional)</span>
     {/if}
   </label>
   {#if hint}

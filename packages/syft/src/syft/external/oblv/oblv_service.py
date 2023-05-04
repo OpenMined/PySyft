@@ -20,25 +20,27 @@ from result import Ok
 from result import Result
 
 # relative
-from ...core.node.new.api import NodeView
-from ...core.node.new.api import SyftAPI
-from ...core.node.new.client import HTTPConnection
-from ...core.node.new.client import Routes
-from ...core.node.new.context import AuthedServiceContext
-from ...core.node.new.context import ChangeContext
-from ...core.node.new.credentials import SyftSigningKey
-from ...core.node.new.deserialize import _deserialize as deserialize
-from ...core.node.new.document_store import DocumentStore
-from ...core.node.new.serializable import serializable
-from ...core.node.new.service import AbstractService
-from ...core.node.new.service import service_method
-from ...core.node.new.syft_object import SYFT_OBJECT_VERSION_1
-from ...core.node.new.syft_object import SyftObject
-from ...core.node.new.uid import UID
-from ...core.node.new.user_code import UserCode
-from ...core.node.new.user_code import UserCodeStatus
-from ...core.node.new.user_roles import GUEST_ROLE_LEVEL
-from ...core.node.new.util import find_available_port
+from ...client.api import NodeView
+from ...client.api import SyftAPI
+from ...client.client import HTTPConnection
+from ...client.client import Routes
+from ...node.credentials import SyftSigningKey
+from ...node.credentials import SyftVerifyKey
+from ...serde.deserialize import _deserialize as deserialize
+from ...serde.serializable import serializable
+from ...service.code.user_code import UserCode
+from ...service.code.user_code import UserCodeStatus
+from ...service.context import AuthedServiceContext
+from ...service.context import ChangeContext
+from ...service.response import SyftError
+from ...service.service import AbstractService
+from ...service.service import service_method
+from ...service.user.user_roles import GUEST_ROLE_LEVEL
+from ...store.document_store import DocumentStore
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
+from ...types.uid import UID
+from ...util.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
 from .deployment_client import OblvMetadata
@@ -71,6 +73,7 @@ class DictObject(SyftObject):
 
 def connect_to_enclave(
     oblv_keys_stash: OblvKeysStash,
+    verify_key: SyftVerifyKey,
     oblv_client: OblvClient,
     deployment_id: str,
     connection_port: int,
@@ -85,7 +88,11 @@ def connect_to_enclave(
         del OBLV_PROCESS_CACHE[deployment_id]
 
     # Always create key file each time, which ensures consistency when there is key change in database
-    create_keys_from_db(oblv_keys_stash=oblv_keys_stash, oblv_key_name=oblv_key_name)
+    create_keys_from_db(
+        oblv_keys_stash=oblv_keys_stash,
+        verify_key=verify_key,
+        oblv_key_name=oblv_key_name,
+    )
     oblv_key_path = os.path.expanduser(os.getenv("OBLV_KEY_PATH", "~/.oblv"))
 
     public_file_name = oblv_key_path + "/" + oblv_key_name + "_public.der"
@@ -162,6 +169,7 @@ def connect_to_enclave(
 
 def make_request_to_enclave(
     oblv_keys_stash: OblvKeysStash,
+    verify_key: SyftVerifyKey,
     deployment_id: str,
     oblv_client: OblvClient,
     request_method: Callable,
@@ -176,6 +184,7 @@ def make_request_to_enclave(
     if not LOCAL_MODE:
         _ = connect_to_enclave(
             oblv_keys_stash=oblv_keys_stash,
+            verify_key=verify_key,
             oblv_client=oblv_client,
             deployment_id=deployment_id,
             connection_port=connection_port,
@@ -203,13 +212,15 @@ def make_request_to_enclave(
         )
 
 
-def create_keys_from_db(oblv_keys_stash: OblvKeysStash, oblv_key_name: str):
+def create_keys_from_db(
+    oblv_keys_stash: OblvKeysStash, verify_key: SyftVerifyKey, oblv_key_name: str
+):
     oblv_key_path = os.path.expanduser(os.getenv("OBLV_KEY_PATH", "~/.oblv"))
 
     os.makedirs(oblv_key_path, exist_ok=True)
     # Temporary new key name for the new service
 
-    keys = oblv_keys_stash.get_all()
+    keys = oblv_keys_stash.get_all(verify_key)
     if keys.is_ok():
         keys = keys.ok()[0]
     else:
@@ -278,7 +289,7 @@ class OblvService(AbstractService):
             self.oblv_keys_stash.clear()
         oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
 
-        res = self.oblv_keys_stash.set(oblv_keys)
+        res = self.oblv_keys_stash.set(context.credentials, oblv_keys)
 
         if res.is_ok():
             return Ok(
@@ -296,7 +307,7 @@ class OblvService(AbstractService):
         "Retrieves the public key present on the Domain Node."
 
         if len(self.oblv_keys_stash):
-            oblv_keys = self.oblv_keys_stash.get_all()
+            oblv_keys = self.oblv_keys_stash.get_all(context.credentials)
             if oblv_keys.is_ok():
                 oblv_keys = oblv_keys.ok()[0]
             else:
@@ -348,6 +359,7 @@ class OblvService(AbstractService):
             deployment_id=deployment_id,
             oblv_client=oblv_client,
             oblv_keys_stash=self.oblv_keys_stash,
+            verify_key=signing_key.verify_key,
             request_method=requests.get,
             connection_port=port,
             oblv_key_name=worker_name,
@@ -378,7 +390,14 @@ class OblvService(AbstractService):
 
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
-        user_code = user_code_service.get_by_uid(context, uid=user_code_id)
+        user_code = user_code_service.stash.get_by_uid(
+            context.node.signing_key.verify_key, uid=user_code_id
+        )
+        if user_code.is_err():
+            return SyftError(
+                message=f"Unable to find {user_code_id} in {type(user_code_service)}"
+            )
+        user_code = user_code.ok()
 
         res = user_code.status.mutate(
             value=UserCodeStatus.EXECUTE,

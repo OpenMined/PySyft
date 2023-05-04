@@ -23,15 +23,15 @@ from pydantic import validator
 import requests
 
 # relative
-from ...core.node.new.api import SyftAPI
-from ...core.node.new.client import HTTPConnection
-from ...core.node.new.client import Routes
-from ...core.node.new.client import SyftSigningKey
-from ...core.node.new.deserialize import _deserialize as deserialize
-from ...core.node.new.node_metadata import EnclaveMetadata
-from ...core.node.new.serializable import serializable
-from ...core.node.new.uid import UID
-from ...util import bcolors
+from ...client.api import SyftAPI
+from ...client.client import HTTPConnection
+from ...client.client import Routes
+from ...client.client import SyftSigningKey
+from ...serde.deserialize import _deserialize as deserialize
+from ...serde.serializable import serializable
+from ...service.metadata.node_metadata import EnclaveMetadata
+from ...types.uid import UID
+from ...util.util import bcolors
 from .constants import LOCAL_MODE
 from .exceptions import OblvEnclaveError
 from .exceptions import OblvUnAuthorizedError
@@ -39,7 +39,7 @@ from .oblv_proxy import check_oblv_proxy_installation_status
 
 if TYPE_CHECKING:
     # relative
-    from ...core.node.new.user_code import SubmitUserCode
+    from ...service.code.user_code import SubmitUserCode
 
 
 @serializable()
@@ -265,7 +265,7 @@ class DeploymentClient:
 
     def request_code_execution(self, code: SubmitUserCode) -> Any:
         # relative
-        from ...core.node.new.user_code import SubmitUserCode
+        from ...service.code.user_code import SubmitUserCode
 
         if not isinstance(code, SubmitUserCode):
             raise Exception(

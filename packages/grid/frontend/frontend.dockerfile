@@ -1,28 +1,44 @@
-FROM node:18-alpine as grid-ui-development
+FROM node:18-alpine as base
+
+ARG VITE_PUBLIC_API_BASE_URL
+ENV VITE_PUBLIC_API_BASE_URL ${VITE_PUBLIC_API_BASE_URL}
 ENV NODE_TYPE domain
 
 WORKDIR /app
-COPY .npmrc package.json pnpm-lock.yaml ./
 
-# cant use the cache for multi architecture builds in CI because it fails
-# https://github.com/docker/buildx/issues/549
-# RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn install --frozen-lockfile
-RUN npm i -g pnpm
-# RUN pnpm install --frozen-lockfile
-RUN pnpm install
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY .npmrc ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+
+FROM base AS dependencies
+
+RUN pnpm i --frozen-lockfile
+
+FROM dependencies as grid-ui-tests
+COPY vite.config.ts ./
+COPY ./tests ./tests
+COPY ./src/ ./src
+
+CMD pnpm test:unit
+
+FROM dependencies as grid-ui-development
+
+ENV NODE_ENV=development
+
 COPY . .
-CMD ["pnpm", "dev"]
+CMD pnpm dev
 
-FROM grid-ui-development as build-stage
+FROM dependencies AS builder
+
+COPY . .
 RUN pnpm build
 
-# FROM node:18-alpine as grid-ui-production
-# ENV NODE_TYPE $NODE_TYPE
-# RUN npm i -g pnpm
+FROM base AS grid-ui-production
 
-# WORKDIR /app
-# RUN rm -rf ./*
-# COPY --from=build-stage /app/package.json .
-# COPY --from=build-stage /app/build .
-# RUN pnpm build
-# CMD ["node", "index.js"]
+ENV NODE_ENV=production
+
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=builder /app ./
+CMD pnpm preview
