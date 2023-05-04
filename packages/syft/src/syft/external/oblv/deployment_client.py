@@ -321,9 +321,6 @@ class DeploymentClient:
 
         return self.__enclave_client.api
 
-    def refresh(self) -> None:
-        self._set_api()
-
     def close_connection(self) -> Optional[str]:
         if self.check_proxy_running():
             os.kill(self.__process.pid, SIGTERM)

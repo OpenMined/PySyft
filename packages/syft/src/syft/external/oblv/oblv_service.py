@@ -386,7 +386,6 @@ class OblvService(AbstractService):
     ) -> Result[Ok, Err]:
         if not context.node or not context.node.signing_key:
             return Err(f"{type(context)} has no node")
-        signing_key = context.node.signing_key
 
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
@@ -414,20 +413,20 @@ class OblvService(AbstractService):
             dict_object.base_dict[str(context.credentials)] = inputs
             action_service.store.set(
                 uid=user_code_id,
-                credentials=signing_key.verify_key,
+                credentials=user_code.user_verify_key,
                 syft_object=dict_object,
             )
 
         else:
             res = action_service.store.get(
-                uid=user_code_id, credentials=signing_key.verify_key
+                uid=user_code_id, credentials=user_code.user_verify_key
             )
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object.base_dict[str(context.credentials)] = inputs
                 action_service.store.set(
                     uid=user_code_id,
-                    credentials=signing_key.verify_key,
+                    credentials=user_code.user_verify_key,
                     syft_object=dict_object,
                 )
             else:
