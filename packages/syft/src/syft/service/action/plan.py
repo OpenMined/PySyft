@@ -96,7 +96,7 @@ def planify(func):
     TraceResult.reset()
     code = inspect.getsource(func)
     plan = Plan(inputs=plan_kwargs, actions=actions, outputs=outputs, code=code)
-    return plan
+    return ActionObject.from_obj(plan)
 
 
 def build_plan_inputs(

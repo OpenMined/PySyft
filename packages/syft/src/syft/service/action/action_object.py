@@ -517,6 +517,15 @@ class ActionObject(SyftObject):
     def _syft_try_to_save_to_store(self, obj) -> None:
         if self.syft_node_uid is None:
             return
+        else:
+            # TODO fix: the APIRegistry often gets the wrong client
+            # if you have 2 clients in memory
+            # therefore the following happens if you call a method
+            # with a pointer to a twin (mock version)
+            # 1) it gets the wrong credentials
+            # 2) it uses the mock version to overwrite the real version
+            # 3) it shouldnt send in the first place as it already exists
+            pass
 
         # relative
         from ...client.api import APIRegistry
