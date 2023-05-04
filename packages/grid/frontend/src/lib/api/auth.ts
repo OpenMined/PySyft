@@ -50,6 +50,9 @@ export async function register(newUser: SignUpDetails) {
   });
 
   const data = await deserialize(res);
+  if (data.Error) {
+    throw new Error(data.Error);
+  }
 
   if (Array.isArray(data)) {
     return data;
