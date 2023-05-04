@@ -1,18 +1,20 @@
-# third party
+# stdlib
 import os
 from plistlib import UID
 from typing import Optional
 
+# third party
 from result import Ok
-from ..network.network_service import NetworkStash
-from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from sympy import Union
 
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
+from ..network.network_service import NetworkStash
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
