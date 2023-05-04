@@ -33,4 +33,3 @@ volumes:
 
 networks:
   worker-public:
-
