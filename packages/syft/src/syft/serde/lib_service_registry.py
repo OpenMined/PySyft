@@ -95,6 +95,7 @@ class CMPBase:
                     try:
                         attr = getattr(self.obj, attr_name)
                     except Exception:
+                        print("Get attr failed for:", attr_name, self.obj.__name__)
                         continue
                     child = self.init_child(
                         self.obj,
@@ -124,6 +125,8 @@ class CMPBase:
             _type_: _description_
         """
         parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
+        if not parent_is_parent_module:
+            print("False for:", parent_obj.__name__, child_path)
         if CMPBase.isfunction(child_obj) and parent_is_parent_module:
             return CMPFunction(
                 child_path,
@@ -349,7 +352,7 @@ action_execute_registry_libs = CMPTree(
             "jax",
             permissions=ALL_EXECUTE,
             children=[
-                CMPModule("numpy", permissions=ALL_EXECUTE, obj=jax._src.numpy)
+                CMPModule("numpy", permissions=ALL_EXECUTE, obj=jax.numpy)
             ]
         ),
     ]
