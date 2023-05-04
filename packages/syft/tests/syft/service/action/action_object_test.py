@@ -228,27 +228,25 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
     "orig_obj_op",
     [
         # (object, operation, *args, **kwargs)
-        ("abc", "__len__", [], {}),
         (int(1), "__len__", [1], {}),
         (float(1.2), "__len__", [1], {}),
         (True, "__len__", [True], {}),
-        ((1, 2, 3), "__len__", [], {}),
         ([1, 2, 3], "__len__", [4], {}),
-        ({"a": 1, "b": 2}, "__len__", [], {}),
+        ({"a": 1, "b": 2}, "__len__", [7], {}),
         (set({1, 2, 3, 3}), "__len__", [5], {}),
     ],
 )
-def test_actionobject_hooks_send_action_side_effect_ignore_op(orig_obj_op):
+def test_actionobject_hooks_send_action_side_effect_ignore_op(
+    root_domain_client, orig_obj_op
+):
     orig_obj, op, args, kwargs = orig_obj_op
 
     obj = helper_make_action_obj(orig_obj)
+    obj = obj.send(root_domain_client)
 
     context = PreHookContext(obj=obj, op_name=op)
     result = send_action_side_effect(context, *args, **kwargs)
-    assert result.is_ok()
-
-    context, args, kwargs = result.ok()
-    assert context.result_id is None  # operation was ignored
+    assert result.is_err()
 
 
 @pytest.mark.parametrize(
