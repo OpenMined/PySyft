@@ -16,7 +16,7 @@ ping:
 
 providers:
   file:
-    filename: /etc/traefik/conf/dynamic.yml
+    directory: /etc/traefik/conf
     watch: true
 
 experimental:

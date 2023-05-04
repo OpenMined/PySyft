@@ -529,6 +529,7 @@ class SyftClient:
         APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
 
+    @staticmethod
     def block_ip(ip: Union[str, List[str]], debug: bool = False):
         """
         Add IP address (single or multiple) to the Traefik reverse proxy's firewall in real time
@@ -545,7 +546,7 @@ class SyftClient:
 
         fname = (
             Path(__file__).parent.parent.parent.parent.parent
-            / "grid/traefik/docker/dynamic.yml"
+            / "grid/traefik/docker/conf/dynamic.yml"
         )
 
         with open(fname, "r") as f:
@@ -565,25 +566,140 @@ class SyftClient:
                     "blacklist"
                 ]["ip"]
             )
+
+            allowed_ips = set(
+                yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
+                    "whitelist"
+                ]["ip"]
+            )
+
+            filtered = set()
+            for blocked_ip in blocked_ips:
+                if len(blocked_ip) > 0:
+                    filtered.add(blocked_ip)
+            blocked_ips = filtered
+
+            print("allowed_ips", allowed_ips)
+            filtered = set()
+            for allowed_ip in allowed_ips:
+                if len(allowed_ip) > 0 and allowed_ip != ip:
+                    filtered.add(allowed_ip)
+            allowed_ips = filtered
+
             if isinstance(ip, list):
                 blocked_ips = blocked_ips.union(ip)
             elif isinstance(ip, str):
-                blocked_ips = blocked_ips.add(ip)
+                blocked_ips.add(ip)
             else:
                 raise NotImplementedError(
                     f"Cannot add IP address of type {type(ip)} to firewall."
                 )
 
+            print("blocked ips", ip, blocked_ips)
+
             yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
                 "blacklist"
             ]["ip"] = list(blocked_ips)
 
+            yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
+                "whitelist"
+            ]["ip"] = list(allowed_ips)
+
             if debug:
-                print("Ip addresses blocked after appending ips: ")
+                print(f"Ip addresses blocked after running block: {ip}")
+                print(
+                    "blacklist",
+                    yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"][
+                        "fail2ban"
+                    ]["blacklist"]["ip"],
+                )
+                print(
+                    "whitelist",
+                    yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"][
+                        "fail2ban"
+                    ]["whitelist"]["ip"],
+                )
+
+        with open(fname, "w") as fout:
+            yaml.dump(yaml_file, fout)
+        print("Modified YML file!")
+
+    @staticmethod
+    def unblock_ip(ip: Union[str, List[str]], debug: bool = False):
+        """
+        Add IP address (single or multiple) to the Traefik reverse proxy's firewall in real time
+        to be blocked using the fail2ban plugin.
+
+        Arguments:
+        ----------
+        ip: str, List[str]
+            a single IP address or a list of IP Addresses to block via the firewall.
+
+        debug: bool
+            print IPs blocked before calling this method, and IPs blocked after adding the user provided IPs.
+        """
+
+        fname = (
+            Path(__file__).parent.parent.parent.parent.parent
+            / "grid/traefik/docker/conf/dynamic.yml"
+        )
+
+        with open(fname, "r") as f:
+            yaml_file = yaml.load(f, Loader=yaml.BaseLoader)
+
+            if debug:
+                # Avoid duplicate IP addresses- check if this causes issues with subnet masks
+                print("Ip addresses currently blocked: ")
                 print(
                     yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"][
                         "fail2ban"
                     ]["blacklist"]["ip"]
+                )
+
+            blocked_ips = set(
+                yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
+                    "blacklist"
+                ]["ip"]
+            )
+
+            allowed_ips = set(
+                yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
+                    "whitelist"
+                ]["ip"]
+            )
+
+            filtered = set()
+            for blocked_ip in blocked_ips:
+                print("got blocked ip", blocked_ip)
+                if len(blocked_ip) > 0 and blocked_ip != ip:
+                    filtered.add(blocked_ip)
+                    print("dfasdfas", filtered)
+
+            print("filtered", filtered)
+            allowed_ips.add(ip)
+
+            yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
+                "blacklist"
+            ]["ip"] = list(filtered)
+
+            yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"]["fail2ban"][
+                "whitelist"
+            ]["ip"] = list(allowed_ips)
+
+            if debug:
+                print(f"Ip addresses blocked after appending running unblock: {ip}")
+                print(
+                    "blacklist",
+                    yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"][
+                        "fail2ban"
+                    ]["blacklist"]["ip"],
+                )
+
+                print(
+                    "whitelist",
+                    yaml_file["http"]["middlewares"]["fire-fail2ban"]["plugin"][
+                        "fail2ban"
+                    ]["whitelist"]["ip"],
                 )
 
         with open(fname, "w") as fout:

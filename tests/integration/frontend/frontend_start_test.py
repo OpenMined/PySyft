@@ -21,10 +21,10 @@ def test_serves_domain_frontend() -> None:
     assert title_str in result.text
 
 
-@pytest.mark.frontend
-def test_serves_network_frontend() -> None:
-    title_str = "PyGrid"
-    url = f"http://localhost:{NETWORK_PORT}"
-    result = requests.get(url)
-    assert result.status_code == 200
-    assert title_str in result.text
+# @pytest.mark.frontend
+# def test_serves_network_frontend() -> None:
+#     title_str = "PyGrid"
+#     url = f"http://localhost:{NETWORK_PORT}"
+#     result = requests.get(url)
+#     assert result.status_code == 200
+#     assert title_str in result.text

@@ -1,0 +1,141 @@
+http:
+  middlewares:
+    blob-storage-host:
+      headers:
+        customrequestheaders:
+          Host: seaweedfs:8333
+    blob-storage-url:
+      stripprefix:
+        forceslash: "true"
+        prefixes: /blob
+    fire-fail2ban:
+      plugin:
+        fail2ban:
+          blacklist:
+            files:
+              - /etc/traefik/conf/ip_denylist.txt
+            ip: []
+          logLevel: DEBUG
+          rules:
+            action: ""
+            actionAbuseipdb: ""
+            backend: ""
+            banaction: ""
+            banactionAllports: ""
+            bantime: 3h
+            chain: ""
+            destemail: ""
+            enabled: "true"
+            fail2banAgent: ""
+            filter: ""
+            findtime: 10m
+            ignorecommand: ""
+            logencoding: UTF-8
+            maxretry: "4"
+            mode: ""
+            mta: ""
+            ports: 0:8000
+            protocol: ""
+            sender: ""
+            urlregexp: ""
+            usedns: ""
+          whitelist:
+            files:
+              - /etc/traefik/conf/ip_allowlist.txt
+            ip: []
+    fire-ratelimit:
+      rateLimit:
+        average: "1"
+    vpn-url:
+      stripprefix:
+        forceslash: "true"
+        prefixes: /vpn
+  routers:
+    backend:
+      entryPoints:
+        - web
+        - vpn
+      middlewares:
+        - fire-fail2ban
+      rule: PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)
+      service: backend
+    backend-stream:
+      entryPoints:
+        - web
+        - vpn
+      middlewares:
+        - fire-fail2ban
+      rule: PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)
+      service: backend-stream
+    blob-storage:
+      entryPoints:
+        - web
+        - vpn
+      middlewares:
+        - fire-fail2ban
+        - blob-storage-url
+        - blob-storage-host
+      rule: PathPrefix(`/blob`)
+      service: seaweedfs
+    frontend:
+      entryPoints:
+        - web
+        - vpn
+      middlewares:
+        - fire-fail2ban
+      rule: PathPrefix(`/`)
+      service: frontend
+    ping:
+      entryPoints:
+        - web
+        - vpn
+      middlewares:
+        - fire-fail2ban
+      rule: PathPrefix(`/ping`)
+      service: ping@internal
+    ping_fail2ban:
+      entryPoints:
+        - web
+        - vpn
+      middlewares:
+        - fire-fail2ban
+      rule: Path(`/fail2ban`)
+      service: ping@internal
+    ping_ratelimit:
+      entryPoints:
+        - web
+        - vpn
+      middlewares:
+        - fire-ratelimit
+      rule: Path(`/rate_limit`)
+      service: ping@internal
+    vpn:
+      entryPoints:
+        - web
+        - vpn
+      middlewares:
+        - fire-fail2ban
+        - vpn-url
+      rule: PathPrefix(`/vpn`)
+      service: headscale
+  services:
+    backend:
+      loadBalancer:
+        servers:
+          - url: http://proxy:8001
+    backend-stream:
+      loadBalancer:
+        servers:
+          - url: http://proxy:8011
+    frontend:
+      loadBalancer:
+        servers:
+          - url: http://frontend:80
+    headscale:
+      loadBalancer:
+        servers:
+          - url: http://headscale:8080
+    seaweedfs:
+      loadBalancer:
+        servers:
+          - url: http://seaweedfs:8333
