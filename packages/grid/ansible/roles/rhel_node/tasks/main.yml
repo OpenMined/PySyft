@@ -144,7 +144,7 @@
 
 - name: Start Docker Containers (root)
   shell:
-    cmd: /usr/local/bin/hagrid launch node domain to docker:80 --tag=beta --no-health-checks --verbose
+    cmd: /usr/local/bin/hagrid launch node domain to docker:80 --dev --no-health-checks --verbose --build-kit=0
   become: yes
   when: tls == "false" and install == "true"
 

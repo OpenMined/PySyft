@@ -89,12 +89,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.synced_folder "../../", "/home/om/PySyft",
       mount_options: ["dmode=775,fmode=774"]
 
-    node.vm.provider "parallels" do |vb, override|
+    node.vm.provider "virtualbox" do |vb, override|
       vb.update_guest_tools = true
-      vb.memory = "8096"
-      vb.cpus = "4"
+      vb.memory = "4096"
+      vb.cpus = "2"
       vb.name = "rhel-9-20-04-x86"
-      override.vm.synced_folder "../../", "/home/om/PySyft", owner: "vagrant", group: "vagrant", create: true, mount_options: [ "share" ]
     end
   end
 end

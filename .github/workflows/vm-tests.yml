@@ -3,11 +3,11 @@ name: VM Tests - Stack
 on:
   workflow_call:
 
-  # pull_request:
-  #   branches:
-  #     - dev
-  #     - main
-  #     - "0.8"
+  pull_request:
+    branches:
+      - dev
+      - main
+      - "0.8"
 
   workflow_dispatch:
     inputs:
@@ -23,6 +23,7 @@ jobs:
         os: [macos-12]
         python-version: ["3.10"]
         node-type: ["vm"]
+        linux-distro: ["ubuntu-20-04", "rhel-9"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -73,5 +74,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          LINUX_DISTRO: "${{ matrix.linux-distro }}"
         run: |
           tox -e stack.test.vm

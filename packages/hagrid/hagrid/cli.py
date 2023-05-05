@@ -332,6 +332,13 @@ def clean(location: str) -> None:
     type=str,
     help="Set root password of node",
 )
+@click.option(
+    "--build-kit",
+    default=1,
+    required=False,
+    type=click.IntRange(0, 1),
+    help="Toggle DOCKER_BUILDKIT",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1188,6 +1195,10 @@ def create_launch_cmd(
         kwargs["set_root_email"] if "set_root_email" in kwargs else None
     )
 
+    parsed_kwargs["build_kit"] = (
+        int(kwargs["build_kit"]) if "build_kit" in kwargs else 1
+    )
+
     if parsed_kwargs["from_template"] and host is not None:
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(host_type=host)
@@ -1899,6 +1910,7 @@ def create_launch_docker_cmd(
         docker_platform = kwargs["platform"]
 
     enable_oblv = bool(kwargs["oblv"])
+    build_kit = kwargs["build_kit"]
     print("  - NAME: " + str(snake_name))
     print("  - RELEASE: " + kwargs["release"])
     print("  - ARCH: " + docker_platform)
@@ -1911,6 +1923,7 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
+    print(f"  - DOCKER BUILDKIT: {build_kit}")
     if enable_oblv:
         print("  - OBLV: ", enable_oblv)
 
@@ -1923,7 +1936,7 @@ def create_launch_docker_cmd(
     envs = {
         "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
-        "DOCKER_BUILDKIT": 1,
+        "DOCKER_BUILDKIT": build_kit,
         "HTTP_PORT": int(host_term.free_port),
         "HTTPS_PORT": int(host_term.free_port_tls),
         "TRAEFIK_TAG": str(tag),
