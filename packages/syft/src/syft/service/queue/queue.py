@@ -35,7 +35,7 @@ class ZMQPublisher(QueuePublisher):
         try:
             queue_name_bytes = queue_name.encode()
             message = [queue_name_bytes, message]
-            self._publisher.send(message)
+            self._publisher.send_multipart(message)
             print("Message Send: ", message)
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
@@ -59,6 +59,7 @@ class ZMQSubscriber(QueueSubscriber):
         self._subscriber = ctx.socket(zmq.SUB)
         self.address = address
         self._subscriber.connect(address)
+
         self._subscriber.setsockopt_string(zmq.SUBSCRIBE, queue_name)
         self.message_handler = message_handler
 
@@ -83,11 +84,11 @@ class ZMQSubscriber(QueueSubscriber):
             else:
                 raise e
 
-        self.message_handler(message=message)
+        self.message_handler(message=message, worker=self.worker)
 
     def _run(self):
         while True:
-            self._receive()
+            self.receive()
 
     def run(self):
         self.recv_thread = gevent.spawn(self._run)
@@ -106,6 +107,7 @@ class APICallMessageHandler(AbstractMessageHandler):
     def message_handler(cls, message: bytes, worker: Any):
         task_uid, api_call = deserialize(message[0], from_bytes=True, from_proto=False)
         result = worker.handle_api_call(api_call)
+        print("Result", result)
         item = QueueItem(node_uid=worker.id, id=task_uid, result=result, resolved=True)
         worker.queue_stash.set_result(api_call.credentials, item)
         worker.queue_stash.partition.close()
@@ -253,9 +255,10 @@ class QueueRouter(BaseQueueRouter):
             message_handler=message_handler.message_handler,
             address=self.pub_addr,
             worker_settings=worker_settings,
-            queue_name=message_handler.queue_name,
+            queue_name=message_handler.queue,
         )
         self.subscribers[message_handler.queue].append(subscriber)
+        return subscriber
 
     @property
     def publisher(self):

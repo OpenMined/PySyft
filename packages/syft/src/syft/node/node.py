@@ -59,6 +59,7 @@ from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueConfig
 from ..service.queue.queue import QueueRouter
+from ..service.queue.queue import ZMQQueueConfig
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
 from ..service.request.request_service import RequestService
@@ -158,6 +159,7 @@ class Node(AbstractNode):
         node_type: NodeType = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
+        queue_config: QueueConfig = ZMQQueueConfig,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -233,7 +235,7 @@ class Node(AbstractNode):
 
         self.post_init()
         if not (self.is_subprocess or self.processes == 0):
-            self.init_queue_router()
+            self.init_queue_router(queue_config=queue_config)
 
     def init_queue_router(self, queue_config: QueueConfig):
         worker_settings = WorkerSettings(
@@ -484,8 +486,10 @@ class Node(AbstractNode):
 
         return True
 
-    def resolve_future(self, uid: UID) -> Union[Optional[QueueItem], SyftError]:
-        result = self.queue_stash.pop(uid)
+    def resolve_future(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Union[Optional[QueueItem], SyftError]:
+        result = self.queue_stash.pop(credentials, uid)
         if result.is_ok():
             return result.ok()
         return result.err()
@@ -551,7 +555,9 @@ class Node(AbstractNode):
             return self.forward_message(api_call=api_call)
 
         if api_call.message.path == "queue":
-            return self.resolve_future(uid=api_call.message.kwargs["uid"])
+            return self.resolve_future(
+                credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]
+            )
 
         if api_call.message.path == "metadata":
             return self.metadata
@@ -607,7 +613,7 @@ class Node(AbstractNode):
             print("Hello...., sending in bytes data")
 
             message_bytes = serialize._serialize([task_uid, api_call], to_bytes=True)
-            self.publisher.send(message=message_bytes)
+            self.publisher.send(message=message_bytes, queue_name="api_call")
 
             return item
         return result

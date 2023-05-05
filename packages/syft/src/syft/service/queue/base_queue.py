@@ -2,8 +2,8 @@
 from typing import Any
 from typing import Callable
 from typing import ClassVar
+from typing import Mapping
 from typing import Optional
-from typing import Sequence
 from typing import Type
 
 # relative
@@ -70,6 +70,7 @@ class QueueConfig:
 @serializable()
 class BaseQueueRouter:
     config: QueueConfig
+    subscribers: Mapping[str, list[QueueSubscriber]]
 
     def __init__(self, config: QueueConfig):
         self.config = config
@@ -86,10 +87,6 @@ class BaseQueueRouter:
         return self
 
     def close(self) -> None:
-        raise NotImplementedError
-
-    @property
-    def subscribers(self) -> Sequence[QueueSubscriber]:
         raise NotImplementedError
 
     def create_subscriber(
