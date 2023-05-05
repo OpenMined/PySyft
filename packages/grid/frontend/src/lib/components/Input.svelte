@@ -8,7 +8,6 @@
   export let error = '';
   export const warning = '';
   $: borderColor = !error ? 'border-gray-300/10' : 'border-rose-500/100';
-
 </script>
 
 <div class="flex flex-col gap-4 w-full">
