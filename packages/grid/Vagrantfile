@@ -11,8 +11,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     ansible.compatibility_mode = "auto"
     ansible.playbook = "./ansible/site.yml"
     ansible.groups = {
-      "domain" => [
-        "ubuntu",
+      "ubuntu" => [
+        "ubuntu-20-04-arm64",
+        "ubuntu-20-04-x86",
+      ],
+      "rhel" => [
+        "rhel-9-arm64",
+        "rhel-9-x86",
       ],
     }
   end
@@ -55,20 +60,40 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define "rhel-9-arm64" do |node|
-    node.vm.box = "jhu-wsep/rhel9-arm"
+    node.vm.box = "xandradx/generic-rhel9-vmware-aarch64"
 
     node.vm.box_check_update = false
 
     node.vm.hostname = "rhel-9-arm64.openmined.grid"
+    node.vm.network :private_network
+    node.vm.synced_folder "../../", "/home/om/PySyft",
+      owner: "om",
+      group: "om"
+
+    node.vm.provider "vmware_desktop" do |vb|
+      vb.gui = true
+      vb.vmx["ethernet0.virtualDev"] = "e1000e"
+      vb.memory = "8096"
+      vb.cpus = "4"
+    end
+  end
+
+  config.vm.define "rhel-9-x86" do |node|
+    node.vm.box = "generic/rhel9"
+
+    node.vm.box_check_update = false
+
+    node.vm.hostname = "rhel-9-x86.openmined.grid"
     node.vm.network :private_network, ip: "192.168.56.2"
 
     node.vm.synced_folder "../../", "/home/om/PySyft",
       mount_options: ["dmode=775,fmode=774"]
 
     node.vm.provider "parallels" do |vb, override|
+      vb.update_guest_tools = true
       vb.memory = "8096"
       vb.cpus = "4"
-      vb.name = "ubuntu-20-04-arm64"
+      vb.name = "rhel-9-20-04-x86"
       override.vm.synced_folder "../../", "/home/om/PySyft", owner: "vagrant", group: "vagrant", create: true, mount_options: [ "share" ]
     end
   end

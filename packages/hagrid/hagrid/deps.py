@@ -151,6 +151,7 @@ class DependencyGridGit(Dependency):
 
 
 MINIMUM_DOCKER_VERSION = "20.0.0"
+MINIMUM_PODMAN_VERSION = "4.2.0"
 
 
 @dataclass
@@ -166,8 +167,16 @@ class DependencyGridDocker(Dependency):
         ):
             self.display = "✅ Docker " + str(binary_info.version)
         else:
-            self.issues.append(docker_install())
-            self.display = "❌ Docker not installed"
+            binary_info = BinaryInfo(
+                binary="podman", version_cmd="podman --version"
+            ).get_binary_info()
+            if binary_info.path and binary_info.version >= version.parse(
+                MINIMUM_PODMAN_VERSION
+            ):
+                self.display = "✅ Podman " + str(binary_info.version)
+            else:
+                self.issues.append(docker_install())
+                self.display = "❌ Docker not installed"
 
 
 MINIMUM_DOCKER_COMPOSE_VERSION = "2.0.0"
@@ -179,7 +188,7 @@ class DependencyGridDockerCompose(Dependency):
 
     def check(self) -> None:
         binary_info = BinaryInfo(
-            binary="docker", version_cmd="docker compose version"
+            binary="docker", version_cmd="docker-compose version"
         ).get_binary_info()
 
         if (
@@ -486,7 +495,7 @@ def wsl_linux_info() -> str:
 def check_docker_version() -> Optional[str]:
     if is_windows():
         return "N/A"  # todo fix to work with windows
-    result = os.popen("docker compose version", "r").read()  # nosec
+    result = os.popen("docker-compose version", "r").read()  # nosec
     version = None
     if "version" in result:
         version = result.split()[-1]

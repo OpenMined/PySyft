@@ -1,10 +1,10 @@
 version: "3.8"
 services:
-  docker-host:
-    image: qoomon/docker-host
-    cap_add:
-      - net_admin
-      - net_raw
+  # docker-host:
+  #   image: qoomon/docker-host
+  #   cap_add:
+  #     - net_admin
+  #     - net_raw
 
   proxy:
     restart: always
@@ -24,8 +24,8 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
     ports:
       - "${HTTP_PORT}:81"
-    depends_on:
-      - "docker-host"
+    # depends_on:
+    #   - "docker-host"
 
   # tailscale:
   #   profiles:

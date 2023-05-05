@@ -4,41 +4,178 @@
     var: hostvars[inventory_hostname]
     verbosity: 0
 
-- name: Stop existing cronjobs if provisioning from outside
-  shell: (crontab -r  || true) && sudo kill -9 $(pgrep cron)
-  become: yes
-  when: inventory_hostname != "localhost"
+- name: Register VM
+  import_tasks: subscription.yml
 
-- name: Stop existing ansible provisioning running against localhost
-  shell: pgrep ansible | xargs -I {} bash -c "ps -o cmd fp {} | grep 'connection=local' | kill {}"
-  become: yes
-  when: inventory_hostname != "localhost"
+# - name: Install Python
+#   import_tasks: python.yml
+  # when: deploy_only is not defined and install == "true"
 
-- name: Install Python
-  import_tasks: python.yml
-  when: deploy_only is not defined and install == "true"
-  
-- name: Apply system changes
+# - name: Update all packages
+#   ansible.builtin.dnf:
+#     name: '*'
+#     state: latest
+#   become: true
+
+
+- name: Configure System
   import_tasks: system.yml
-  when: deploy_only is not defined and install == "true"
 
-- name: Apply security updates
-  import_tasks: security.yml
-  when: deploy_only is not defined and install == "true"
+- name: Install System Packages
+  ansible.builtin.dnf:
+    name:
+      - python3
+      - python3-pip
+      - git
+      - podman
+      - podman-docker
+      - firewalld
+    state: present
+  become: true
 
-- name: Install podman
-  import_tasks: podman.yml
-  when: deploy_only is not defined and install == "true"
+- name: Ensure firewalld is enabled and running
+  ansible.builtin.systemd:
+    name: firewalld
+    state: started
+    enabled: yes
 
-- name: Archive Logs
-  ansible.builtin.cron:
-    disabled: "{{ not install | bool }}"
-    minute: "0"
-    hour: "0"
-    name: "Archive Logs"
-    job: "{{ syft_dir }}/packages/grid/scripts/rotate_logs.sh 2>&1 | logger -t cron"
+- name: Add HTTP port (80/tcp) to public zone
+  ansible.posix.firewalld:
+    zone: public
+    port: 80/tcp
+    state: enabled
+    permanent: yes
+    immediate: yes
+
+- name: Upgrade pip and some packages
+  pip:
+    name: pip
+    extra_args: --upgrade
+
+- name: Check ctop exists
+  stat:
+    path: /usr/local/bin/ctop
+  register: ctop_exists
+
+- name: Get the system architecture
+  ansible.builtin.setup:
+    gather_subset: hardware
+  register: system_info
+
+- name: Install ctop Docker CLI Utility - arm64
+  shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-arm64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
   become: yes
-  when: vagrant is not defined
+  when: "not ctop_exists.stat.exists and 'aarch64' in system_info['ansible_facts']['ansible_architecture']"
+
+- name: Install ctop Docker CLI Utility - x86
+  shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-amd64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
+  become: yes
+  when: "not ctop_exists.stat.exists and 'x86' in system_info['ansible_facts']['ansible_architecture']"
+
+- name: Get the system architecture
+  ansible.builtin.setup:
+    gather_subset: hardware
+  register: system_info
+
+- name: Set docker compose arm64 binary URL
+  set_fact:
+    docker_compose_binary_url: "{{ docker_compose_url_arm64 }}"
+  when: "'aarch64' in system_info['ansible_facts']['ansible_architecture']"
+
+- name: Set docker compose x86 binary URL
+  set_fact:
+    docker_compose_binary_url: "{{ docker_compose_url_x86 }}"
+  when: "'x86' in system_info['ansible_facts']['ansible_architecture']"
+
+- name: Download Docker CLI
+  get_url:
+    url: "{{ docker_compose_binary_url }}"
+    dest: "/usr/local/bin/docker-compose"
+
+- name: Add execute permissions to docker-compose
+  become: yes
+  ansible.builtin.file:
+    path: /usr/local/bin/docker-compose
+    mode: u+x,g+x,o+x
+
+- name: Create /etc/containers/nodocker file
+  become: yes
+  ansible.builtin.file:
+    path: /etc/containers/nodocker
+    state: touch
+
+- name: Add unprivileged port start configuration
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    line: 'net.ipv4.ip_unprivileged_port_start=80'
+    state: present
+  register: sysctl_config
+
+- name: Restart sysctl
+  become: yes
+  ansible.builtin.command:
+    cmd: sysctl -p
+  when: sysctl_config.changed
+
+- name: Enable and start podman.socket
+  become: yes
+  ansible.builtin.systemd:
+    name: podman.socket
+    enabled: yes
+    state: started
+
+# - name: Update /etc/subuid with user range
+#   become: yes
+#   ansible.builtin.lineinfile:
+#     path: /etc/subuid
+#     line: "{{ om_user }}:100000:65536"
+#     state: present
+
+# - name: Update /etc/subgid with user range
+#   become: yes
+#   ansible.builtin.lineinfile:
+#     path: /etc/subgid
+#     line: "{{ om_user }}:100000:65536"
+#     state: present
+
+- name: Install HAGrid
+  import_tasks: hagrid.yml
+
+- name: Start Docker Containers (root)
+  shell:
+    cmd: /usr/local/bin/hagrid launch node domain to docker:80 --tag=beta --no-health-checks --verbose
+  become: yes
+  when: tls == "false" and install == "true"
+
+# - name: Stop existing cronjobs if provisioning from outside
+#   shell: (crontab -r  || true) && sudo kill -9 $(pgrep cron)
+#   become: yes
+#   when: inventory_hostname != "localhost"
+
+# - name: Stop existing ansible provisioning running against localhost
+#   shell: pgrep ansible | xargs -I {} bash -c "ps -o cmd fp {} | grep 'connection=local' | kill {}"
+#   become: yes
+#   when: inventory_hostname != "localhost"
+
+
+# - name: Apply security updates
+#   import_tasks: security.yml
+#   when: deploy_only is not defined and install == "true"
+
+# - name: Install podman
+#   import_tasks: podman.yml
+#   when: deploy_only is not defined and install == "true"
+
+# - name: Archive Logs
+#   ansible.builtin.cron:
+#     disabled: "{{ not install | bool }}"
+#     minute: "0"
+#     hour: "0"
+#     name: "Archive Logs"
+#     job: "{{ syft_dir }}/packages/grid/scripts/rotate_logs.sh 2>&1 | logger -t cron"
+#   become: yes
+#   when: vagrant is not defined
 
 - name: Clone PySyft Repo
   git:
