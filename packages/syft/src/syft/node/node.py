@@ -8,6 +8,7 @@ from functools import partial
 import hashlib
 import os
 import threading
+import traceback
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -553,8 +554,10 @@ class Node(AbstractNode):
             method = self.get_service_method(_private_api_path)
             try:
                 result = method(context, *api_call.args, **api_call.kwargs)
-            except Exception as e:
-                result = SyftError(message=f"Exception calling {api_call.path}. {e}")
+            except Exception:
+                result = SyftError(
+                    message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
+                )
         else:
             worker_settings = WorkerSettings(
                 id=self.id,

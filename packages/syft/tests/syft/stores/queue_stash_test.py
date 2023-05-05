@@ -25,7 +25,8 @@ REPEATS = 20
     ],
 )
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux",
+    reason="pytest_mock_resources + docker issues on Windows and OSX",
 )
 def test_queue_stash_sanity(queue: Any) -> None:
     assert len(queue) == 0
@@ -42,7 +43,8 @@ def test_queue_stash_sanity(queue: Any) -> None:
     ],
 )
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux",
+    reason="pytest_mock_resources + docker issues on Windows and OSX",
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
@@ -86,7 +88,8 @@ def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
     ],
 )
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux",
+    reason="pytest_mock_resources + docker issues on Windows or OSX",
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_stash_update(root_verify_key, queue: Any) -> None:
@@ -119,7 +122,8 @@ def test_queue_stash_update(root_verify_key, queue: Any) -> None:
     ],
 )
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux",
+    reason="pytest_mock_resources + docker issues on Windows or OSX",
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 @pytest.mark.xfail
@@ -166,7 +170,8 @@ def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None
     ],
 )
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux",
+    reason="pytest_mock_resources + docker issues on Windows or OSX",
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> None:
@@ -213,7 +218,8 @@ def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> N
     ],
 )
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux",
+    reason="pytest_mock_resources + docker issues on Windows or OSX",
 )
 @pytest.mark.flaky(reruns=10, reruns_delay=2)
 def test_queue_set_delete_existing_queue_threading(
