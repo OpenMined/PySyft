@@ -1,56 +1,61 @@
 # stdlib
+from typing import Any
+from typing import Callable
+from typing import ClassVar
 from typing import Optional
+from typing import Sequence
 from typing import Type
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftBaseObject
 
 
 @serializable
-class QueueClientConfig():
-    name: str
+class QueueClientConfig:
+    pass
+
+
+class AbstractMessageHandler:
+    queue: ClassVar[str]
+
+    def message_handler(self):
+        raise NotImplementedError
 
 
 @serializable
-class QueueRouter():
-    config: QueueClientConfig
+class QueueSubscriber:
+    message_handler: Callable
+    queue_name: str
 
-    def start()
+    def receive(self):
+        raise NotImplementedError
 
-    def close(self)
+    def run(self) -> None:
+        raise NotImplementedError
 
-    def subscriber() -> QueueSubscriber[T]:
-        pass
-
-    def publisher() -> QueuePublisher[T]:
-        pass
+    def close(self) -> None:
+        raise NotImplementedError
 
 
 @serializable
-class QueueSubscriber():
-    def connect():
+class QueuePublisher:
+    def send(self, queue_name: str, message: Any):
         raise NotImplementedError
 
-    def receive(self, message):
+    def close(self) -> None:
         raise NotImplementedError
 
-    def run(self):
-        raise NotImplementedError
 
-    def close(self):
-        raise
+class ZMQPublisher(QueuePublisher):
+    pass
 
 
-@serializable
-class QueuePublisher():
-    def send(self, message):
-        raise NotImplementedError
+class QueueClient:
+    pass
 
 
 @serializable()
-class QueueConfig(SyftBaseObject):
+class QueueConfig:
     """Base Store configuration
 
     Parameters:
@@ -60,14 +65,42 @@ class QueueConfig(SyftBaseObject):
             Backend-specific config
     """
 
-    __canonical_name__ = "QueueConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    queue_type: Type[QueueClient]
+    subscriber: Type[QueueSubscriber]
+    publisher: Type[QueuePublisher]
     client_config: Optional[QueueClientConfig]
+    client_type: Type[QueueClient]
 
 
 @serializable
-class Queue():
-    """handle syft related stuff"""
+class BaseQueueRouter:
     config: QueueConfig
+
+    def __init__(self, config: QueueConfig):
+        self.config = config
+        self.post_init()
+
+    def post_init(self) -> None:
+        pass
+
+    def start(self) -> None:
+        raise NotImplementedError
+
+    def __enter__(self) -> "BaseQueueRouter":
+        self.start()
+        return self
+
+    def close(self) -> None:
+        raise NotImplementedError
+
+    @property
+    def subscribers(self) -> Sequence[QueueSubscriber]:
+        raise NotImplementedError
+
+    def create_subscriber(
+        self, message_handler: AbstractMessageHandler
+    ) -> QueueSubscriber:
+        raise NotImplementedError
+
+    @property
+    def publisher(self) -> QueuePublisher:
+        raise NotImplementedError

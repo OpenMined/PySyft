@@ -56,9 +56,9 @@ from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
-from ..service.queue.queue import Publisher
-from ..service.queue.queue import QueueServer
-from ..service.queue.queue import Subscriber
+from ..service.queue.queue import APICallMessageHandler
+from ..service.queue.queue import QueueConfig
+from ..service.queue.queue import QueueRouter
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
 from ..service.request.request_service import RequestService
@@ -233,20 +233,9 @@ class Node(AbstractNode):
 
         self.post_init()
         if not (self.is_subprocess or self.processes == 0):
-            self.queue_proxy_server = self.init_queue()
+            self.init_queue_router()
 
-    def init_queue(
-        self,
-        pub_addr: str = "tcp://127.0.0.1:6000",
-        sub_addr: str = "tcp://127.0.0.1:6001",
-    ) -> QueueServer:
-        queue_server = QueueServer.create(pub_addr=pub_addr, sub_addr=sub_addr)
-        queue_server.start()
-
-        # Initialize Publisher
-        self.publisher = Publisher(address=pub_addr)
-
-        # Initialize Subscriber
+    def init_queue_router(self, queue_config: QueueConfig):
         worker_settings = WorkerSettings(
             id=self.id,
             name=self.name,
@@ -254,12 +243,18 @@ class Node(AbstractNode):
             document_store_config=self.document_store_config,
             action_store_config=self.action_store_config,
         )
-        self.subscriber = Subscriber(worker_settings, sub_addr)
-        self.subscriber.run()
+
+        MessageHandlers = [APICallMessageHandler]
+
+        self.queue_router = QueueRouter(queue_config)
+        self.publisher = self.queue_router.publisher
+        for subscriber_type in MessageHandlers:
+            subscriber = self.queue_router.create_subscriber(
+                subscriber_type, worker_settings
+            )
+            subscriber.run()
 
         print("Queue is Online 🟢")
-
-        return queue_server
 
     @classmethod
     def named(

@@ -1,7 +1,9 @@
 # stdlib
 import binascii
+from collections import defaultdict
 import os
 from typing import Any
+from typing import Callable
 from typing import Optional
 
 # third party
@@ -12,22 +14,26 @@ import zmq.green as zmq
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
+from .base_queue import AbstractMessageHandler
+from .base_queue import BaseQueueRouter
+from .base_queue import QueueClient
+from .base_queue import QueueClientConfig
+from .base_queue import QueueConfig
+from .base_queue import QueuePublisher
+from .base_queue import QueueSubscriber
 from .queue_stash import QueueItem
 
-PUBLISHER_PORT = 6000
-SUBSCRIBER_PORT = 6001
 
-
-class Publisher:
+class ZMQPublisher(QueuePublisher):
     def __init__(self, address: str) -> None:
         ctx = zmq.Context.instance()
         self.address = address
         self._publisher = ctx.socket(zmq.PUB)
         self._publisher.bind(address)
 
-    def send(self, message: bytes):
+    def send(self, message: bytes, queue_name: str):
         try:
-            # message = [QUEUE_NAME, message_bytes]
+            message = [queue_name, message]
             self._publisher.send(message)
             print("Message Send: ", message)
         except zmq.ZMQError as e:
@@ -40,13 +46,20 @@ class Publisher:
         self._publisher.close()
 
 
-class Subscriber:
-    def __init__(self, worker_settings: Any, address: str, prefix: str = "") -> None:
+class ZMQSubscriber(QueueSubscriber):
+    def __init__(
+        self,
+        worker_settings: Any,
+        message_handler: Callable,
+        address: str,
+        queue_name: str,
+    ) -> None:
         ctx = zmq.Context.instance()
         self._subscriber = ctx.socket(zmq.SUB)
         self.address = address
         self._subscriber.connect(address)
-        self._subscriber.setsockopt_string(zmq.SUBSCRIBE, prefix)
+        self._subscriber.setsockopt_string(zmq.SUBSCRIBE, queue_name)
+        self.message_handler = message_handler
 
         # relative
         from ...node.node import Node
@@ -60,37 +73,24 @@ class Subscriber:
             is_subprocess=True,
         )
 
-    @staticmethod
-    def _receive(subscriber: Socket):
+    def receive(self):
         try:
-            return subscriber.recv_multipart()
+            message = self._subscriber.recv_multipart()
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
                 print("Subscriber connection Terminated")
             else:
                 raise e
 
-    def _handle_message(self):
+        self.message_handler(message=message)
+
+    def _run(self):
         while True:
-            message = self._receive(self._subscriber)
-            self.process_syft_message(message)
+            self._receive()
 
-    def run(self, blocking: bool = False):
-        # TODO: make this non blocking by running it in a thread
-        if blocking:
-            return self._handle_message()
-
-        self.recv_thread = gevent.spawn(self._handle_message)
+    def run(self):
+        self.recv_thread = gevent.spawn(self._run)
         self.recv_thread.start()
-
-    def process_syft_message(self, message: bytes):
-        task_uid, api_call = deserialize(message[0], from_bytes=True, from_proto=False)
-        result = self.worker.handle_api_call(api_call)
-        item = QueueItem(
-            node_uid=self.worker.id, id=task_uid, result=result, resolved=True
-        )
-        self.worker.queue_stash.set_result(api_call.credentials, item)
-        self.worker.queue_stash.partition.close()
 
     def close(self):
         gevent.sleep(0)
@@ -98,10 +98,27 @@ class Subscriber:
         self._subscriber.close()
 
 
-class QueueServer:
-    def __init__(self, pub_addr: str, sub_addr: str):
-        self.pub_addr = pub_addr
-        self.sub_addr = sub_addr
+class APICallMessageHandler(AbstractMessageHandler):
+    queue = "api_call"
+
+    @classmethod
+    def message_handler(cls, message: bytes, worker: Any):
+        task_uid, api_call = deserialize(message[0], from_bytes=True, from_proto=False)
+        result = worker.handle_api_call(api_call)
+        item = QueueItem(node_uid=worker.id, id=task_uid, result=result, resolved=True)
+        worker.queue_stash.set_result(api_call.credentials, item)
+        worker.queue_stash.partition.close()
+
+
+class ZMQQueueClientConfig(QueueClientConfig):
+    pub_addr: str = "tcp://127.0.0.1:6000"
+    sub_addr: str = "tcp://127.0.0.1:6001"
+
+
+class ZMQClient(QueueClient):
+    def __init__(self, config: QueueClientConfig):
+        self.pub_addr = config.pub_addr
+        self.sub_addr = config.sub_addr
         self.context = zmq.Context.instance()
         self.logger_thread = None
         self.thread = None
@@ -180,10 +197,6 @@ class QueueServer:
         self.logger_thread.start()
         self.thread.start()
 
-    @staticmethod
-    def create(pub_addr: str, sub_addr: str):
-        return QueueServer(pub_addr=pub_addr, sub_addr=sub_addr)
-
     def check_logs(self, timeout: Optional[int]):
         try:
             if self.logger_thread:
@@ -201,3 +214,50 @@ class QueueServer:
         self.mon_pub.close()
         self.mon_sub.close()
         self.context.destroy()
+
+
+class ZMQQueueConfig(QueueConfig):
+    subscriber = ZMQSubscriber
+    publisher = ZMQPublisher
+    client_config = ZMQQueueClientConfig()
+    client_type = ZMQClient
+
+
+class QueueRouter(BaseQueueRouter):
+    config: QueueConfig
+
+    def post_init(self):
+        self._publisher = None
+        self.subscribers = defaultdict(list)
+        self.__client = self.config.client_type(self.config.client_config)
+
+    def start(self):
+        self.__client.start()
+
+    def close(self):
+        self.__client.close()
+
+    @property
+    def pub_addr(self):
+        return self.config.client_config.pub_addr
+
+    @property
+    def sub_addr(self):
+        return self.config.client_config.sub_addr
+
+    def create_subscriber(
+        self, message_handler: AbstractMessageHandler, worker_settings: Any
+    ):
+        subscriber = self.config.subscriber(
+            message_handler=message_handler.message_handler,
+            address=self.pub_addr,
+            worker_settings=worker_settings,
+            queue_name=message_handler.queue_name,
+        )
+        self.subscribers[message_handler.queue].append(subscriber)
+
+    @property
+    def publisher(self):
+        if self._publisher is None:
+            self._publisher = ZMQPublisher(self.pub_addr)
+        return self._publisher
