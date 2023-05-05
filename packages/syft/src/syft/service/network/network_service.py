@@ -62,7 +62,6 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     private: bool = False
     protocol: str = "http"
     port: int = 80
-    vpn_key: str
 
     def __hash__(self) -> int:
         return (
