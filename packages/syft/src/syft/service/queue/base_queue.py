@@ -22,7 +22,7 @@ class AbstractMessageHandler:
         raise NotImplementedError
 
 
-@serializable
+@serializable()
 class QueueSubscriber:
     message_handler: Callable
     queue_name: str
@@ -37,17 +37,13 @@ class QueueSubscriber:
         raise NotImplementedError
 
 
-@serializable
+@serializable()
 class QueuePublisher:
     def send(self, queue_name: str, message: Any):
         raise NotImplementedError
 
     def close(self) -> None:
         raise NotImplementedError
-
-
-class ZMQPublisher(QueuePublisher):
-    pass
 
 
 class QueueClient:
@@ -71,7 +67,7 @@ class QueueConfig:
     client_type: Type[QueueClient]
 
 
-@serializable
+@serializable()
 class BaseQueueRouter:
     config: QueueConfig
 

@@ -33,7 +33,8 @@ class ZMQPublisher(QueuePublisher):
 
     def send(self, message: bytes, queue_name: str):
         try:
-            message = [queue_name, message]
+            queue_name_bytes = queue_name.encode()
+            message = [queue_name_bytes, message]
             self._publisher.send(message)
             print("Message Send: ", message)
         except zmq.ZMQError as e:
