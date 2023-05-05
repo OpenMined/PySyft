@@ -27,6 +27,9 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...util.util import verify_tls
 from ..response import SyftError
+from ..response import SyftSuccess
+
+DEFAULT_TIMEOUT = 5  # in seconds
 
 
 class VPNRoutes(Enum):
@@ -154,12 +157,18 @@ class VPNClientConnection(NodeConnection):
 
         return response.content
 
-    def send_command(self, path: str, api_key: str) -> Result[CommandReport, str]:
-        data = {"timeout": 5, "force_unique_key": True}
+    def send_command(
+        self,
+        path: str,
+        api_key: str,
+        command_args: dict = {},
+        timeout: int = DEFAULT_TIMEOUT,
+    ) -> Result[CommandReport, str]:
+        command_args.update({"timeout": timeout, "force_unique_key": True})
         headers = {"X-STACK-API-KEY": api_key}
         result = self.connection._make_post(
             path=path,
-            json=data,
+            json=command_args,
             headers=headers,
         )
         json_result = json.loads(result)
@@ -330,8 +339,73 @@ class TailScaleClient:
 
         return self._extract_host_and_peer(status_dict=status_dict)
 
-    def server_up(self):
-        pass
+    def connect(
+        self, headscale_host: str, headscale_auth_token: str
+    ) -> Union[SyftSuccess, SyftError]:
+        CONNECT_TIMEOUT = 60
 
-    def server_down(self):
-        pass
+        command_args = {
+            "args": [
+                "-login-server",
+                f"{headscale_host}",
+                "--reset",
+                "--force-reauth",
+                "--authkey",
+                f"{headscale_auth_token}",
+                "--accept-dns=false",
+            ],
+        }
+
+        result = self.connection.send_command(
+            path=self.route.SERVER_UP.value,
+            api_key=self.api_key,
+            timeout=CONNECT_TIMEOUT,
+            command_args=command_args,
+        )
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        command_report = result.ok()
+
+        result = self.connection.resolve_report(
+            api_key=self.api_key, report=command_report
+        )
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        command_result = result.ok()
+
+        if command_result.error:
+            return SyftError(message=result.error)
+
+        return SyftSuccess(message="Connection Successful !")
+
+    def disconnect(self):
+        DISCONNECT_TIMEOUT = 60
+
+        result = self.connection.send_command(
+            path=self.route.SERVER_DOWN.value,
+            api_key=self.api_key,
+            timeout=DISCONNECT_TIMEOUT,
+        )
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        command_report = result.ok()
+
+        result = self.connection.resolve_report(
+            api_key=self.api_key, report=command_report
+        )
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        command_result = result.ok()
+
+        if command_result.error:
+            return SyftError(message=result.error)
+
+        return SyftSuccess(message="Disconnected Successfully !")
