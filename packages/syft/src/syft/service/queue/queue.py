@@ -34,9 +34,9 @@ class ZMQPublisher(QueuePublisher):
     def send(self, message: bytes, queue_name: str):
         try:
             queue_name_bytes = queue_name.encode()
-            message = [queue_name_bytes, message]
-            self._publisher.send_multipart(message)
-            print("Message Send: ", message)
+            message_list = [queue_name_bytes, message]
+            self._publisher.send_multipart(message_list)
+            print("Message Queued Successfully !")
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
                 print("Connection Interupted....")
@@ -77,7 +77,9 @@ class ZMQSubscriber(QueueSubscriber):
 
     def receive(self):
         try:
-            message = self._subscriber.recv_multipart()
+            message_list = self._subscriber.recv_multipart()
+            message = message_list[1]
+            print("Message Received Successfully !")
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
                 print("Subscriber connection Terminated")
@@ -105,7 +107,7 @@ class APICallMessageHandler(AbstractMessageHandler):
 
     @classmethod
     def message_handler(cls, message: bytes, worker: Any):
-        task_uid, api_call = deserialize(message[0], from_bytes=True, from_proto=False)
+        task_uid, api_call = deserialize(message, from_bytes=True)
         result = worker.handle_api_call(api_call)
         print("Result", result)
         item = QueueItem(node_uid=worker.id, id=task_uid, result=result, resolved=True)
