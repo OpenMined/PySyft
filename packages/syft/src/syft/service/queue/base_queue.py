@@ -10,7 +10,7 @@ from typing import Type
 from ...serde.serializable import serializable
 
 
-@serializable
+@serializable()
 class QueueClientConfig:
     pass
 
