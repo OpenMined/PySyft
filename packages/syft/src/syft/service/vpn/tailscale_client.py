@@ -1,12 +1,18 @@
 # stdlib
 from enum import Enum
 import json
+import os
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+
+# third party
+from result import Err
+from result import Ok
+from result import Result
 
 # relative
 from ...client.connection import NodeConnection
@@ -15,8 +21,10 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ..response import SyftError
 from ..response import SyftSuccess
-from .headscale_client import BaseVPNClient
-from .headscale_client import VPNRoutes
+from .headscale_client import HeadScaleClient
+from .vpn import BaseVPNClient
+from .vpn import VPNClientConnection
+from .vpn import VPNRoutes
 
 
 class TailscaleRoutes(VPNRoutes):
@@ -64,10 +72,10 @@ class TailscaleStatus(SyftObject):
 
 @serializable()
 class TailScaleClient(BaseVPNClient):
-    connection: Type[NodeConnection]
+    connection: NodeConnection
     api_key: str
 
-    def __init__(self, connection: Type[NodeConnection], api_key: str) -> None:
+    def __init__(self, connection: NodeConnection, api_key: str) -> None:
         self.connection = connection
         self.api_key = api_key
 
@@ -204,3 +212,25 @@ class TailScaleClient(BaseVPNClient):
             return SyftError(message=result.error)
 
         return SyftSuccess(message="Disconnected Successfully !")
+
+
+def get_vpn_client(
+    client_type: Type[BaseVPNClient],
+) -> Result[BaseVPNClient, str]:
+    api_key = os.getenv("STACK_API_KEY")
+
+    url = None
+
+    if isinstance(client_type, HeadScaleClient):
+        url = os.getenv("TAILSCALE_URL", "http://proxy:4000")
+    elif isinstance(client_type, TailScaleClient):
+        url = os.getenv("HEADSCALE_URL", "http://headscale:4000")
+
+    if api_key is not None and url is not None:
+        client = client_type(
+            connection=VPNClientConnection(url=url),
+            api_key=api_key,
+        )
+        return Ok(client)
+
+    return Err(f"Failed to create client for: {client_type.__name__}")
