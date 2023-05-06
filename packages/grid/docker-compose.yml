@@ -34,7 +34,7 @@ services:
     environment:
       - SERVICE_NAME=tailscale
       - RELEASE=${RELEASE:-production}
-      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - HOSTNAME=${NODE_NAME?Variable not set}
       - STACK_API_KEY=$STACK_API_KEY
     volumes:
       - tailscale-data:/var/lib/tailscale
@@ -251,8 +251,8 @@ services:
 
 volumes:
   credentials-data:
-  # tailscale-data:
-  # headscale-data:
+  tailscale-data:
+  headscale-data:
   # app-redis-data:
   # seaweedfs-data:
   mongo-data:
