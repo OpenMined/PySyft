@@ -48,7 +48,7 @@ from ..vpn.headscale_client import HeadScaleAuthToken
 from ..vpn.headscale_client import HeadScaleClient
 from ..vpn.tailscale_client import TailScaleClient
 from ..vpn.tailscale_client import TailscaleStatus
-from ..vpn.vpn import get_vpn_client
+from ..vpn.tailscale_client import get_vpn_client
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
@@ -445,7 +445,7 @@ class NetworkService(AbstractService):
         else:
             remote_peer = peer
         if remote_peer is None:
-            return SyftError("exchange_credentials_with requires peer or client")
+            return SyftError("join_vpn requires peer or client")
 
         # tell the remote peer our details
         if not context.node:
@@ -513,7 +513,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.register_to_vpn",
         name="register_to_vpn",
-        roles=[GUEST_ROLE_LEVEL],
+        roles=GUEST_ROLE_LEVEL,
     )
     def register_to_vpn(
         self,

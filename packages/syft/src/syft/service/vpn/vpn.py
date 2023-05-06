@@ -41,6 +41,9 @@ class CommandStatus(Enum):
 
 
 class CommandReport(SyftObject):
+    __canonical_name__ = "CommandReport"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     key: str
     result_url: str
     status: CommandStatus
@@ -56,6 +59,9 @@ class CommandReport(SyftObject):
 
 
 class CommandResult(PartialSyftObject):
+    __canonical_name__ = "CommandResult"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     report: str
     key: str
     start_time: float
