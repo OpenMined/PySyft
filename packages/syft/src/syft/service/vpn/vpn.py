@@ -13,12 +13,14 @@ import requests
 from requests import Session
 from requests.adapters import HTTPAdapter
 from result import Err
+from result import Ok
 from result import Result
 from urllib3 import Retry
 
 # relative
 from ...client.client import upgrade_tls
 from ...client.connection import NodeConnection
+from ...serde.serializable import serializable
 from ...types.grid_url import GridURL
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -28,36 +30,41 @@ from ...util.util import verify_tls
 DEFAULT_TIMEOUT = 5  # in seconds
 
 
+@serializable()
 class VPNRoutes(Enum):
     pass
 
 
+@serializable()
 class BaseVPNClient:
     pass
 
 
+@serializable()
 class CommandStatus(Enum):
     RUNNING = "running"
 
 
+@serializable()
 class CommandReport(SyftObject):
     __canonical_name__ = "CommandReport"
     __version__ = SYFT_OBJECT_VERSION_1
 
     key: str
-    result_url: str
+    path: str
     status: CommandStatus
 
     @validator("status", pre=True)
     def validate_status(cls, v: Union[str, CommandStatus]) -> CommandStatus:
         if type(v) is not CommandStatus:
-            value = CommandStatus[str(v)]
+            value = CommandStatus[str(v).upper()]
         else:
             value = v
 
         return value
 
 
+@serializable()
 class CommandResult(PartialSyftObject):
     __canonical_name__ = "CommandResult"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -71,6 +78,7 @@ class CommandResult(PartialSyftObject):
     error: Optional[str]
 
 
+@serializable()
 class VPNClientConnection(NodeConnection):
     __canonical_name__ = "VPNClientConnection"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -79,9 +87,9 @@ class VPNClientConnection(NodeConnection):
     session_cache: Optional[Session]
     routes: Type[VPNRoutes]
 
-    def __init__(self, url: Union[GridURL, str]) -> None:
+    def __init__(self, url: Union[GridURL, str], *args, **kwargs) -> None:
         url = GridURL.from_url(url)
-        super().__init__(url=url)
+        super().__init__(url=url, *args, **kwargs)
 
     @property
     def session(self) -> Session:
@@ -134,7 +142,7 @@ class VPNClientConnection(NodeConnection):
             data=data,
             headers=headers,
         )
-        if response.status_code != 200:
+        if response.status_code not in [200, 201, 202]:
             raise requests.ConnectionError(
                 f"Failed to fetch {url}. Response returned with code {response.status_code}"
             )
@@ -153,13 +161,17 @@ class VPNClientConnection(NodeConnection):
     ) -> Result[CommandReport, str]:
         command_args.update({"timeout": timeout, "force_unique_key": True})
         headers = {"X-STACK-API-KEY": api_key}
-        result = self.connection._make_post(
+        result = self._make_post(
             path=path,
             json=command_args,
             headers=headers,
         )
         json_result = json.loads(result)
-        return CommandReport(**json_result)
+
+        json_result["path"] = path
+
+        CommandReport(**json_result)
+        return Ok(CommandReport(**json_result))
 
     def resolve_report(
         self, api_key: str, report: CommandReport
@@ -168,6 +180,20 @@ class VPNClientConnection(NodeConnection):
         if report.status is not CommandStatus.RUNNING:
             return Err(f"Task in not running. Current status: {report.status}")
 
-        result = self._make_get(path=report.result_url, headers=headers)
-        result_json = json.loads(result)
-        return CommandResult(**result_json)
+        # make get request
+        result = self._make_get(
+            path=report.path,
+            headers=headers,
+            params={"key": report.key, "wait": "true"},
+        )
+
+        try:
+            result_json = json.loads(result.decode())
+        except Exception as e:
+            return Err(
+                f"Failed making get request. Path: {report.path}. Error: {e}",
+            )
+
+        command_result = CommandResult(**result_json)
+
+        return Ok(command_result)

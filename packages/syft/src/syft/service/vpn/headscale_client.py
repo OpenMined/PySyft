@@ -1,6 +1,5 @@
 # stdlib
 import json
-from typing import Any
 from typing import Optional
 from typing import Union
 
@@ -9,6 +8,7 @@ from ...client.connection import NodeConnection
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.uid import UID
 from ..response import SyftError
 from .vpn import BaseVPNClient
 from .vpn import VPNRoutes
@@ -18,6 +18,7 @@ class HeadScaleAuthToken(SyftObject):
     __canonical_name__ = "HeadScaleAuthToken"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    id: Optional[UID]
     namespace: str
     key: str
 
@@ -31,21 +32,16 @@ class HeadScaleRoutes(VPNRoutes):
 class HeadScaleClient(BaseVPNClient):
     connection: NodeConnection
     api_key: str
-    _token: Optional[str]
 
     def __init__(self, connection: NodeConnection, api_key: str) -> None:
         self.connection = connection
         self.api_key = api_key
 
-    @property
-    def route(self) -> Any:
-        return self.connection.route
-
     def generate_token(
         self,
     ) -> Union[HeadScaleAuthToken, SyftError]:
         result = self.connection.send_command(
-            path=self.route.GENERATE_KEY.value,
+            path=self.connection.routes.GENERATE_KEY.value,
             api_key=self.api_key,
         )
 
@@ -68,4 +64,7 @@ class HeadScaleClient(BaseVPNClient):
 
         result = json.loads(command_result.report)
 
-        return HeadScaleAuthToken(**result)
+        return HeadScaleAuthToken(
+            key=result["key"],
+            namespace=result["namespace"],
+        )

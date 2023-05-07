@@ -47,6 +47,7 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..vpn.headscale_client import HeadScaleAuthToken
 from ..vpn.headscale_client import HeadScaleClient
 from ..vpn.tailscale_client import TailScaleClient
+from ..vpn.tailscale_client import TailScaleState
 from ..vpn.tailscale_client import TailscaleStatus
 from ..vpn.tailscale_client import get_vpn_client
 
@@ -531,6 +532,44 @@ class NetworkService(AbstractService):
         token = headscale_client.generate_token()
 
         return token
+
+    def connect_self(
+        self, context: AuthedServiceContext
+    ) -> Union[SyftSuccess, SyftError]:
+        tailscale_status = self.get_vpn_status(context=context)
+
+        if isinstance(tailscale_status, SyftError):
+            return tailscale_status
+
+        if tailscale_status.state is TailScaleState.RUNNING.value:
+            return SyftSuccess(message="Connection already established !!")
+
+        auth_token = self.register_to_vpn(context=context)
+
+        if isinstance(auth_token, SyftError):
+            return auth_token
+
+        result = get_vpn_client(TailScaleClient)
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        tailscale_client = result.ok()
+
+        result = tailscale_client.disconnect()
+
+        if isinstance(result, SyftError):
+            return result
+
+        result = tailscale_client.connect(
+            headscale_host="http://headscale:8080",
+            headscale_auth_token=auth_token.key,
+        )
+
+        if isinstance(result, SyftError):
+            return result
+
+        return SyftSuccess(message="Successfully joined VPN !!!")
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService

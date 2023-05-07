@@ -320,6 +320,8 @@ class Node(AbstractNode):
 
         CODE_RELOADER[thread_ident()] = reload_user_code
         # super().post_init()
+        print("Connecting to VPN...")
+        connect_to_vpn_self(self)
 
     def init_stores(
         self,
@@ -782,3 +784,11 @@ def create_oblv_key_pair(
             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
     except Exception as e:
         print("Unable to create Oblv Keys.", e)
+
+
+def connect_to_vpn_self(node: Node):
+    # node.service_config
+    network_service = node.get_service(NetworkService)
+    context = AuthedServiceContext(node=node, credentials=node.signing_key.verify_key)
+    result = network_service.connect_self(context=context)
+    print("Message: ", result.message)
