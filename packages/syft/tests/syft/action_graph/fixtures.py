@@ -6,6 +6,7 @@ from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
+from syft.service.action.action_graph import NetworkXBackingStore
 from syft.service.action.action_graph import NodeActionData
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
@@ -21,6 +22,11 @@ def verify_key() -> SyftVerifyKey:
 @pytest.fixture
 def in_mem_graph_config() -> InMemoryGraphConfig:
     return InMemoryGraphConfig()
+
+
+@pytest.fixture
+def networkx_store(in_mem_graph_config: InMemoryGraphConfig) -> NetworkXBackingStore:
+    return NetworkXBackingStore(store_config=in_mem_graph_config)
 
 
 @pytest.fixture
