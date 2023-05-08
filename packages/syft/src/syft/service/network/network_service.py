@@ -33,6 +33,7 @@ from ...types.transforms import transform
 from ...types.transforms import transform_method
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ...util.util import recursive_hash
 from ..context import AuthedServiceContext
 from ..context import NodeServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -43,6 +44,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import GUEST_ROLE_LEVEL
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
@@ -147,6 +149,14 @@ class NodePeer(SyftObject):
     __attr_searchable__ = ["name"]
     __attr_unique__ = ["verify_key"]
     __attr_repr_cols__ = ["name"]
+
+    def __hash__(self) -> int:
+        hashes = 0
+        hashes += recursive_hash(self.id)
+        hashes += recursive_hash(self.name)
+        hashes += recursive_hash(self.verify_key)
+        hashes += recursive_hash(self.node_routes)
+        return hashes
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []
@@ -269,20 +279,20 @@ class NetworkStash(BaseUIDStoreStash):
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
-        existing = self.get_by_uid(peer.id)
+        existing = self.get_by_uid(credentials, peer.id)
         if existing.is_ok() and existing.ok():
             existing = existing.ok()
             existing.update_routes(peer.node_routes)
-            result = self.update(existing)
+            result = self.update(credentials, existing)
             return result
         else:
             result = self.set(credentials, peer)
             return result
 
     def get_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+        self, credentials: SyftVerifyKey
     ) -> Result[NodePeer, SyftError]:
-        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
+        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(credentials)])
         return self.query_one(credentials, qks)
 
 
@@ -333,7 +343,7 @@ class NetworkService(AbstractService):
             )
 
         # save the remote peer for later
-        result = self.stash.update_peer(remote_peer)
+        result = self.stash.update_peer(context.credentials, remote_peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -341,7 +351,7 @@ class NetworkService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Credentials Exchanged")
 
-    @service_method(path="network.add_peer", name="add_peer")
+    @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
     def add_peer(
         self, context: AuthedServiceContext, peer: NodePeer
     ) -> Union[NodeMetadata, SyftError]:
@@ -355,7 +365,7 @@ class NetworkService(AbstractService):
                 )
             )
 
-        result = self.stash.update_peer(peer)
+        result = self.stash.update_peer(context.credentials, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
         # this way they can match up who we are with who they think we are
@@ -386,7 +396,9 @@ class NetworkService(AbstractService):
             return result
         return SyftSuccess(message="Route Verified")
 
-    @service_method(path="network.verify_route", name="verify_route")
+    @service_method(
+        path="network.verify_route", name="verify_route", roles=GUEST_ROLE_LEVEL
+    )
     def verify_route(
         self, context: AuthedServiceContext, route: NodeRoute
     ) -> Union[SyftSuccess, SyftError]:
@@ -407,7 +419,7 @@ class NetworkService(AbstractService):
                 )
             )
         peer.update_routes([route])
-        result = self.stash.update_peer(peer)
+        result = self.stash.update_peer(context.credentials, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Network Route Verified")
@@ -417,7 +429,7 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
-        result = self.stash.get_all()
+        result = self.stash.get_all(context.credentials)
         if result.is_ok():
             peers = result.ok()
             return peers
