@@ -10,11 +10,14 @@ from typing import Set
 from typing import Type
 
 # third party
+from pydantic import validator
 from result import OkErr
 
 # relative
+from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -66,10 +69,24 @@ class NewProjectSubmit(SyftObject):
     __canonical_name__ = "NewProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    @validator("shareholders", pre=True)
+    def get_metadata(cls, objs: List[SyftClient]) -> List[NodeMetadata]:
+        shareholders = []
+        for obj in objs:
+            if isinstance(obj, NodeMetadata):
+                shareholders.append(obj)
+            elif isinstance(obj, SyftClient):
+                shareholders.append(obj.metadata.to(NodeMetadata))
+            else:
+                raise Exception(
+                    f"Shareholders should be either SyftClient or NodeMetadata received: {type(obj)}"
+                )
+        return shareholders
+
     id: Optional[UID]
     name: str
     description: Optional[str]
-    shareholders: List[SyftVerifyKey]
+    shareholders: List[NodeMetadata]
     project_permissions: Set[str] = set()
     state_sync_leader: Optional[NodePeer]
     consensus_model: ConsensusModel
@@ -85,7 +102,7 @@ class NewProject(SyftObject):
     id: Optional[UID]
     name: str
     description: Optional[str]
-    shareholders: List[SyftVerifyKey]
+    shareholders: List[NodeMetadata]
     project_permissions: Set[str]
     state_sync_leader: NodePeer
     consensus_model: ConsensusModel
@@ -136,7 +153,7 @@ class NewProject(SyftObject):
 def add_shareholders_as_owners(shareholders: List[SyftVerifyKey]) -> Set[str]:
     keys = set()
     for shareholder in shareholders:
-        owner_key = f"OWNER_{shareholder}"
+        owner_key = f"OWNER_{shareholder.verify_key}"
         keys.add(owner_key)
     return keys
 
@@ -147,10 +164,13 @@ def elect_leader(context: TransformContext) -> TransformContext:
 
     leader_key: Optional[SyftVerifyKey] = None
 
-    if context.node.verify_key in context.output["shareholders"]:
+    shareholders_verify_key = [
+        shareholder.verify_key for shareholder in context.output["shareholders"]
+    ]
+    if context.node.verify_key in shareholders_verify_key:
         leader_key = context.node.verify_key
     else:
-        leader_key = context.output["shareholders"][0]
+        leader_key = shareholders_verify_key[0]
 
     if context.node.verify_key == leader_key:
         # get NodePeer for self
