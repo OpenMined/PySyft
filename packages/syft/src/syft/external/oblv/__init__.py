@@ -11,7 +11,7 @@ from .oblv_proxy import install_oblv_proxy  # noqa: F401
 
 try:
     # third party
-    from oblv.oblv_client import OblvClient
+    from oblv_ctl.oblv_client import OblvClient
 
     # Oblivious Client serde
     recursive_serde_register(
