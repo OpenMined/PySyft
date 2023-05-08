@@ -39,6 +39,7 @@ from ..response import SyftSuccess
 from ..service import TYPE_TO_SERVICE
 
 
+@serializable()
 class EventTypes(Enum):
     REQUEST = "REQUEST"
     USER_CODE = "USER_CODE"
@@ -49,7 +50,6 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
     timestamp: str = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     event_type: EventTypes
     event_data: Any
@@ -131,7 +131,7 @@ class NewProject(SyftObject):
             return SyftError(
                 message=f"You must login to {self.state_sync_leader.name}-{self.state_sync_leader.id}"
             )
-        return api.services.project.broadcast_event(project_event)
+        return api.services.newproject.broadcast_event(project_event)
 
     def add_request(self, obj: Request) -> Union[SyftSuccess, SyftError]:
         event = ProjectEvent(
@@ -191,7 +191,7 @@ class NewProjectSubmit(SyftObject):
                 projects.append(result)
 
         # as we currently assume that the first shareholder is the leader.
-        return projects
+        return projects[0]
 
     __attr_repr_cols__ = ["name"]
 

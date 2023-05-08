@@ -124,7 +124,9 @@ class NewProjectService(AbstractService):
             raise e
 
     @service_method(
-        path="newproject.broadcast", name="broadcast", roles=GUEST_ROLE_LEVEL
+        path="newproject.broadcast_event",
+        name="broadcast_event",
+        roles=GUEST_ROLE_LEVEL,
     )
     def broadcast_event(
         self, context: AuthedServiceContext, project_event: ProjectEvent
@@ -133,6 +135,26 @@ class NewProjectService(AbstractService):
         # Only the leader of the project could add events to the projects
         # Any Event to be added to the project should be sent to the leader of the project
         # The leader broadcasts the event to all the members of the project
+        project_obj = self.stash.get_by_uid(
+            context.credentials, uid=project_event.project_id
+        )
+
+        if project_obj.is_ok():
+            project: NewProject = project_obj.ok()
+            if project.state_sync_leader.verify_key != context.node.verify_key:
+                return SyftError(
+                    message="Only the leader of the project can broadcast events"
+                )
+
+            project.events.append(project_event)
+            result = self.stash.update(context.credentials, project)
+
+            if result.is_err():
+                return SyftError(message=str(result.err()))
+            return result.ok()
+
+        if project_obj.is_err():
+            return SyftError(message=str(project_obj.err()))
 
     @service_method(path="newproject.get_all", name="get_all")
     def get_all(
