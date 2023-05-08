@@ -448,9 +448,21 @@ class NetworkService(AbstractService):
         if remote_peer is None:
             return SyftError("join_vpn requires peer or client")
 
+        result = self.stash.get_by_uid(
+            credentials=context.node.verify_key, uid=remote_peer.id
+        )
+
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        if result.ok() is not None:
+            return SyftError(
+                message=f"Already connected to VPN Peer: {remote_peer.name}"
+            )
+
         # tell the remote peer our details
         if not context.node:
-            return SyftError(f"{type(context)} has no node")
+            return SyftError(message=f"{type(context)} has no node")
 
         # switch to the nodes signing key
         client = remote_peer.client_with_context(context=context)
