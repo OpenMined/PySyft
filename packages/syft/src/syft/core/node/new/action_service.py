@@ -29,7 +29,6 @@ from .serializable import serializable
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
-from .service import UserLibConfigRegistry
 from .service import service_method
 from .twin_object import TwinObject
 from .uid import UID
@@ -213,17 +212,11 @@ class ActionService(AbstractService):
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
 
+        # TODO: permission evalutation
         if action.remote_self is None:
-            _user_lib_config_registry = UserLibConfigRegistry.from_user(
-                context.credentials
-            )
-            absolute_path = f"{action.path}.{action.op}"
-            if absolute_path in _user_lib_config_registry:
-                # TODO: implement properly
-                # Now we are assuming its a function/class
-                result_action_object = execute_callable(self, context, action)
-            else:
-                return Err(f"You have no permission for {absolute_path}")
+            # TODO: implement properly
+            # Now we are assuming its a function
+            result_action_object = execute_callable(self, context, action)
         else:
             resolved_self = self.get(
                 context=context, uid=action.remote_self, twin_mode=TwinMode.NONE
@@ -329,7 +322,6 @@ def execute_callable(
     # is not bound to the original object or mutated
     # stdlib
 
-    # TODO: get from CMPTree is probably safer
     def _get_target_callable(path: str, op: str):
         path_elements = path.split(".")
         res = importlib.import_module(path_elements[0])
