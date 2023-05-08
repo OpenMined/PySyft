@@ -125,8 +125,6 @@ services:
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
     command: "/app/grid/start.sh"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     network_mode: service:proxy
     volumes:
       - credentials-data:/storage
