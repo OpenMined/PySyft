@@ -150,7 +150,7 @@ class NodePeer(SyftObject):
     name: str
     verify_key: SyftVerifyKey
     is_vpn: bool = False
-    vpn_auth_key: Optional[str]
+    vpn_auth_key: Optional[str] = None
     node_routes: List[NodeRoute] = []
 
     __attr_searchable__ = ["name"]
@@ -278,11 +278,11 @@ class NetworkStash(BaseUIDStoreStash):
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
-        existing = self.get_by_uid(peer.id)
+        existing = self.get_by_uid(credentials=credentials, uid=peer.id)
         if existing.is_ok() and existing.ok():
             existing = existing.ok()
             existing.update_routes(peer.node_routes)
-            result = self.update(existing)
+            result = self.update(credentials, existing)
             return result
         else:
             result = self.set(credentials, peer)
@@ -484,11 +484,13 @@ class NetworkService(AbstractService):
             return result
 
         # save vpn token information to peer
-        remote_peer.vpn_auth_key = auth_token
+        remote_peer.vpn_auth_key = auth_token.key
         remote_peer.is_vpn = True
 
         # save the remote peer for later
-        result = self.stash.update(context.node.verify_key, remote_peer)
+        result = self.stash.update_peer(
+            credentials=context.node.verify_key, peer=remote_peer
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
 

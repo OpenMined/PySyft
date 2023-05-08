@@ -91,9 +91,7 @@ class TailscaleClient(BaseVPNClient):
             info = dict()
             info["hostname"] = peer["HostName"]
             info["os"] = peer["OS"]
-            info["ip"] = (
-                peer["TailscaleIPs"][0] if peer["TailscaleIPs"] is not None else ""
-            )
+            info["ip"] = peer["TailscaleIPs"][0] if peer["TailscaleIPs"] else ""
             info["is_online"] = peer["Online"]
             info["connection_status"] = (
                 ConnectionStatus.ACTIVE.value
@@ -113,8 +111,8 @@ class TailscaleClient(BaseVPNClient):
         state = status_dict["BackendState"]
         peers = []
         if status_dict["Peer"] is not None:
-            for peer in status_dict["Peer"]:
-                peer_info = extract_peer_info(peer=peer)
+            for _peer in status_dict["Peer"].values():
+                peer_info = extract_peer_info(peer=_peer)
                 peers.append(peer_info)
 
         result = {"state": state, "host": host_info, "peers": peers}
