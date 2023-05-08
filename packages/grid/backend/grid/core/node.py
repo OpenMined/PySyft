@@ -26,7 +26,7 @@ sql_store_config = SQLiteStoreConfig(client_config=client_config)
 
 node_type = get_node_type()
 
-if node_type == "gateway":
+if node_type == "gateway" or node_type == "network":
     worker = Gateway(
         action_store_config=sql_store_config, document_store_config=mongo_store_config
     )

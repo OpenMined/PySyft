@@ -342,7 +342,7 @@ class NetworkService(AbstractService):
             )
 
         # save the remote peer for later
-        result = self.stash.update_peer(remote_peer)
+        result = self.stash.update_peer(context.node.verify_key, remote_peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -416,7 +416,7 @@ class NetworkService(AbstractService):
                 )
             )
         peer.update_routes([route])
-        result = self.stash.update_peer(peer)
+        result = self.stash.update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Network Route Verified")
@@ -472,8 +472,11 @@ class NetworkService(AbstractService):
         if isinstance(result, SyftError):
             return result
 
+        # TODO: move this url information /vpn stuff to the client
+        vpn_url = GridURL.from_url(client.connection.url).with_path(path="/vpn")
+
         result = tailscale_client.connect(
-            headscale_host=client.connection.url,
+            headscale_host=vpn_url,
             headscale_auth_token=auth_token.key,
         )
 
@@ -485,7 +488,7 @@ class NetworkService(AbstractService):
         remote_peer.is_vpn = True
 
         # save the remote peer for later
-        result = self.stash.update(remote_peer)
+        result = self.stash.update(context.node.verify_key, remote_peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 

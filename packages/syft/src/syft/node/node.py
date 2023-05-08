@@ -449,6 +449,10 @@ class Node(AbstractNode):
     def icon(self) -> str:
         return "🦾"
 
+    @property
+    def verify_key(self) -> SyftVerifyKey:
+        return self.signing_key.verify_key
+
     def __hash__(self) -> int:
         return hash(self.id)
 

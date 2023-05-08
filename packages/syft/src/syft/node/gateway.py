@@ -10,7 +10,7 @@ class Gateway(Node):
     def post_init(self) -> None:
         super().post_init()
         print("Connecting to VPN...")
-        self.connect_to_vpn_self(self)
+        self.connect_to_vpn_self()
 
     def connect_to_vpn_self(self) -> None:
         network_service = self.get_service(NetworkService)

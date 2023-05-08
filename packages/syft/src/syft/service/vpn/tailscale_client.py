@@ -16,7 +16,6 @@ from result import Result
 # relative
 from ...client.connection import NodeConnection
 from ...serde.serializable import serializable
-from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ..response import SyftError
@@ -161,14 +160,10 @@ class TailscaleClient(BaseVPNClient):
     ) -> Union[SyftSuccess, SyftError]:
         CONNECT_TIMEOUT = 60
 
-        print(">>> connect to", headscale_host)
-        vpn_url = GridURL.from_url(headscale_host).with_path(path="/vpn")
-        print(">>> connect to vpn_url", vpn_url)
-
         command_args = {
             "args": [
                 "-login-server",
-                f"{vpn_url}",
+                f"{headscale_host}",
                 "--reset",
                 "--force-reauth",
                 "--authkey",
