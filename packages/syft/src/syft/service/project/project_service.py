@@ -23,6 +23,8 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
+from .project import NewProject
+from .project import NewProjectSubmit
 from .project import Project
 from .project import ProjectSubmit
 from .project_stash import ProjectStash
@@ -73,6 +75,24 @@ class ProjectService(AbstractService):
             if result.is_err():
                 return SyftError(message=str(result.err()))
             return result.ok()
+        except Exception as e:
+            print("Failed to submit Project", e)
+            raise e
+
+    @service_method(path="project.start", name="start", roles=GUEST_ROLE_LEVEL)
+    def start(
+        self, context: AuthedServiceContext, project: NewProjectSubmit
+    ) -> Union[SyftSuccess, SyftError]:
+        """Start a Project"""
+        try:
+            return project.to(NewProject, context=context)
+            # TODO enable multiple objects in the same stash
+            # result = self.stash.set(
+            #     context.credentials, project.to(NewProject, context=context)
+            # )
+            # if result.is_err():
+            #     return SyftError(message=str(result.err()))
+            # return result.ok()
         except Exception as e:
             print("Failed to submit Project", e)
             raise e
