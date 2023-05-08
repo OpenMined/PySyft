@@ -26,6 +26,7 @@ from ..node.credentials import SyftVerifyKey
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..util.autoreload import autoreload_enabled
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
@@ -62,7 +63,11 @@ class SyftObjectRegistry:
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
             mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
-            if mapping_string in cls.__object_version_registry__:
+
+            if (
+                mapping_string in cls.__object_version_registry__
+                and not autoreload_enabled()
+            ):
                 current_cls = cls.__object_version_registry__[mapping_string]
                 if cls == current_cls:
                     # same class so noop
