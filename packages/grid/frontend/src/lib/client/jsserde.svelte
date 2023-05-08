@@ -7,6 +7,8 @@
   import { DataBox } from './capnp/databox.capnp.js';
   import { stringify as uuidStringify } from 'uuid';
   import { parse as uuidParse } from 'uuid';
+  import { VerifyKey } from '$lib/client/objects/key.ts';
+  import { classMapping } from './jsPyClassMap.js';
 
   export class JSSerde {
     constructor() {
@@ -27,9 +29,7 @@
             buffer = buffer_array.buffer;
           }
           return capnp.Int64.fromArrayBuffer(buffer).toNumber(false);
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['builtins.float'] = [
         true,
@@ -79,9 +79,7 @@
             aggr += parseInt(hex_dec_n[i], 16) / 16.0 ** (i + 1);
           }
           return aggr * 2 ** parseInt(exp, 10) * signal;
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['builtins.str'] = [
         true,
@@ -90,9 +88,7 @@
         },
         function (buffer) {
           return new TextDecoder().decode(buffer);
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['builtins.type'] = [
         true,
@@ -101,9 +97,7 @@
         },
         function (buffer) {
           return new TextDecoder().decode(buffer);
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['typing._SpecialForm'] = [
         true,
@@ -112,9 +106,7 @@
         },
         function (buffer) {
           return new TextDecoder().decode(buffer);
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['builtins.bytes'] = [
         true,
@@ -123,18 +115,16 @@
         },
         function (buffer) {
           return new Uint8Array(buffer);
-        },
-        null,
-        {}
+        }
       ];
-      this.type_bank['syft.core.node.new.uid.UID'] = [
+      this.type_bank['syft.types.uid.UID'] = [
         false,
         (uuid) => {
           const message = new capnp.Message();
           const rs = message.initRoot(RecursiveSerde);
           const fields = rs.initFieldsName(1);
           const data = rs.initFieldsData(1);
-          rs.setFullyQualifiedName('syft.core.node.new.uid.UID');
+          rs.setFullyQualifiedName('syft.types.uid.UID');
 
           fields.set(0, 'value');
           let serializedObj = this.serialize(uuidParse(uuid.value));
@@ -146,9 +136,7 @@
           dataList.set(0, dataStruct);
           data.set(0, dataList);
           return message.toArrayBuffer();
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['builtins.bool'] = [
         true,
@@ -157,9 +145,7 @@
         },
         function (buffer) {
           return new Uint8Array(buffer)[0] == 49 ? true : false;
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['builtins.list'] = [
         true,
@@ -189,9 +175,7 @@
             iter.push(obj);
           }
           return iter;
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['builtins.NoneType'] = [
         true,
@@ -202,9 +186,7 @@
         // eslint-disable-next-line
         function (buffer) {
           return undefined;
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['nacl.signing.SigningKey'] = [
         true,
@@ -213,9 +195,7 @@
         },
         (buffer) => {
           return new Uint8Array(buffer);
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['nacl.signing.VerifyKey'] = [
         true,
@@ -223,17 +203,13 @@
           return key.key.buffer;
         },
         (buffer) => {
-          return new Uint8Array(buffer);
-        },
-        null,
-        {}
+          return new VerifyKey(new Uint8Array(buffer));
+        }
       ];
       this.type_bank['builtins.tuple'] = [
         true,
         this.type_bank['builtins.list'][1],
-        this.type_bank['builtins.list'][2],
-        null,
-        {}
+        this.type_bank['builtins.list'][2]
       ];
       this.type_bank['pydantic.main.ModelMetaclass'] = [
         true,
@@ -242,9 +218,7 @@
         },
         function (buffer) {
           return new TextDecoder().decode(buffer);
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['builtins.dict'] = [
         true,
@@ -304,9 +278,7 @@
             kv_iter[keyObj] = obj;
           }
           return kv_iter;
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['inspect.Signature'] = [
         true,
@@ -323,9 +295,7 @@
             const totalChunk = this.processChunks(blob);
             return this.type_bank['builtins.dict'][2](totalChunk.buffer);
           }
-        },
-        null,
-        {}
+        }
       ];
       this.type_bank['typing._GenericAlias'] = [
         true,
@@ -507,7 +477,7 @@
 
       // Check if the object is not recursive
       if (objSerdeProps) {
-        if (fqn === 'syft.core.node.new.uid.UID') {
+        if (fqn === 'syft.types.uid.UID') {
           return objSerdeProps[1](obj);
         }
 
@@ -608,16 +578,23 @@
             const key = fieldsName.get(i); // Get the name of the current field
             const bytes = fieldsData.get(i); // Get the binary data buffer for the current field
             const obj = this.processObject(bytes); // Recursively deserialize the binary data buffer
-            if (fqn === 'syft.core.node.new.uid.UID') {
+            if (fqn === 'syft.types.uid.UID') {
               const hexuid = uuidStringify(obj);
-              kvIterable[key] = hexuid; // Add the deserialized value to the key-value iterable
+              kvIterable[key] = hexuid;
             } else {
               kvIterable[key] = obj; // Add the deserialized value to the key-value iterable
             }
           }
         }
 
-        return kvIterable;
+        if (classMapping[fqn]) {
+          const objInstance = new classMapping[fqn]();
+          Object.assign(objInstance, kvIterable);
+          return objInstance;
+        } else {
+          kvIterable['fqn'] = fqn;
+          return kvIterable;
+        }
       }
     }
   }

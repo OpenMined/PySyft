@@ -41,7 +41,7 @@ from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
 
-LATEST_STABLE_SYFT = "0.7"
+LATEST_STABLE_SYFT = "0.8"
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.

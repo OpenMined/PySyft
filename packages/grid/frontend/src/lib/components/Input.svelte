@@ -1,19 +1,13 @@
 <script lang="ts">
-  import type { HTMLInputAttributes } from 'svelte/elements';
-
-  interface $$Props extends HTMLInputAttributes {
-    label: string;
-    id: string;
-    required?: boolean;
-    error?: string;
-    warning?: string;
-  }
+  import type { HTMLInputElement } from 'svelte/elements';
 
   export let label: string;
   export let id: string;
   export let required = false;
-  export const error = '';
+  export let value: HTMLInputElement['value'];
+  export let error = '';
   export const warning = '';
+  $: borderColor = !error ? 'border-gray-300/10' : 'border-rose-500/100';
 </script>
 
 <div class="flex flex-col gap-4 w-full">
@@ -24,8 +18,10 @@
     {/if}
   </label>
   <input
-    {...$$props}
-    class="w-full pt-3 bg-gray-50 border border-gray-300/10 placeholder:text-gray-400 text-gray-800 p-3 font-base focus:border-primary-500 caret-gray-200 disabled:opacity-50 truncate rounded-lg"
+    {...$$restProps}
+    {required}
     {id}
+    bind:value
+    class="w-full pt-3 bg-gray-50 border {borderColor} placeholder:text-gray-400 text-gray-800 p-3 font-base focus:border-primary-500 caret-gray-200 disabled:opacity-50 truncate rounded-lg"
   />
 </div>

@@ -10,19 +10,19 @@ from pydantic import EmailStr
 import pytest
 
 # syft absolute
-from syft.core.node.new.transforms import NotNone
-from syft.core.node.new.transforms import TransformContext
-from syft.core.node.new.transforms import add_credentials_for_key
-from syft.core.node.new.transforms import add_node_uid_for_key
-from syft.core.node.new.transforms import drop
-from syft.core.node.new.transforms import generate_id
-from syft.core.node.new.transforms import geteitherattr
-from syft.core.node.new.transforms import keep
-from syft.core.node.new.transforms import make_set_default
-from syft.core.node.new.transforms import rename
-from syft.core.node.new.transforms import validate_email
-from syft.core.node.new.transforms import validate_url
-from syft.core.node.new.uid import UID
+from syft.types.transforms import NotNone
+from syft.types.transforms import TransformContext
+from syft.types.transforms import add_credentials_for_key
+from syft.types.transforms import add_node_uid_for_key
+from syft.types.transforms import drop
+from syft.types.transforms import generate_id
+from syft.types.transforms import geteitherattr
+from syft.types.transforms import keep
+from syft.types.transforms import make_set_default
+from syft.types.transforms import rename
+from syft.types.transforms import validate_email
+from syft.types.transforms import validate_url
+from syft.types.uid import UID
 
 
 @pytest.mark.parametrize(

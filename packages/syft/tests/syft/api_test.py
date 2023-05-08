@@ -8,9 +8,9 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.node.new.response import SyftAttributeError
-from syft.core.node.new.user import UserUpdate
-from syft.core.node.new.user_roles import ServiceRole
+from syft.service.response import SyftAttributeError
+from syft.service.user.user import UserUpdate
+from syft.service.user.user_roles import ServiceRole
 
 
 def test_api_cache_invalidation(worker):
@@ -43,13 +43,13 @@ def test_api_cache_invalidation(worker):
     assert isinstance(root_domain_client.api.services.code.my_func, Callable)
 
 
-def test_api_cache_invalidation_login(worker):
+def test_api_cache_invalidation_login(root_verify_key, worker):
     guest_client = worker.guest_client
     assert guest_client.register(name="q", email="a@b.org", password="aaa")
-    user_id = worker.document_store.partitions["User"].all().value[-1].id
+    user_id = worker.document_store.partitions["User"].all(root_verify_key).value[-1].id
 
     def get_role(verify_key):
-        users = worker.get_service("UserService").stash.get_all().ok()
+        users = worker.get_service("UserService").stash.get_all(root_verify_key).ok()
         user = [u for u in users if u.verify_key == verify_key][0]
         return user.role
 
@@ -64,11 +64,6 @@ def test_api_cache_invalidation_login(worker):
     assert guest_client.api.services.user.update(
         user_id, UserUpdate(user_id=user_id, name="abcdef")
     )
-
-    def get_role(verify_key):
-        users = worker.get_service("UserService").stash.get_all().ok()
-        user = [u for u in users if u.verify_key == verify_key][0]
-        return user.role
 
     assert worker.root_client.api.services.user.update(
         user_id, UserUpdate(user_id=user_id, role=ServiceRole.DATA_OWNER)

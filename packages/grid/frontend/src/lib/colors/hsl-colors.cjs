@@ -1,9 +1,3 @@
-/**
- * @param {string} colorName
- * @param {number} hue
- * @param {number} saturation
- * @param {number} baseLightness
- */
 function buildColor(colorName, hue, saturation, baseLightness) {
   const MIN_L = 3;
   const MAX_L = 95;
@@ -35,7 +29,7 @@ function buildColor(colorName, hue, saturation, baseLightness) {
 
 module.exports = {
   ...buildColor('blue', 225, 70, 50),
-  ...buildColor('cyan', 195, 75, 50),
+  ...buildColor('cyan', 195, 80, 50),
   ...buildColor('gray', 252, 15, 50),
   ...buildColor('lime', 120, 54, 43),
   ...buildColor('magenta', 330, 75, 50),
