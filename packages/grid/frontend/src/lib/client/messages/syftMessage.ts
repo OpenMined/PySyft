@@ -40,9 +40,9 @@ export class APICall {
     this.node_uid = new UUID(id);
     this.path = path;
     this.args = args;
-    if (kwargs){
+    if (kwargs) {
       this.kwargs = new Map(Object.entries(kwargs));
-    } else{
+    } else {
       this.kwargs = new Map();
     }
     this.blocking = blocking;

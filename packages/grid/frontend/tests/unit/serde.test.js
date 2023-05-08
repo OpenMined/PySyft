@@ -150,35 +150,34 @@ it('Test  SyftVerifyKey Object serialization/deserialization', () => {
 it('Test Get Specific User ID APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
-  const apiCall = new APICall(uuid, 'user.view', [], { uid: new UUID(uuidv4()) })
+  const apiCall = new APICall(uuid, 'user.view', [], { uid: new UUID(uuidv4()) });
 
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });
-
 
 it('Test  Update Metadata APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
   let newMetadata = {
-    name:  "New Node",
-    organization: "New Organization",
-    description: "New Description",
-    fqn: "syft.service.metadata.node_metadata.NodeMetadataUpdate"
+    name: 'New Node',
+    organization: 'New Organization',
+    description: 'New Description',
+    fqn: 'syft.service.metadata.node_metadata.NodeMetadataUpdate'
   };
 
-  const apiCall = new APICall(uuid, "metadata.update", [], newMetadata)
+  const apiCall = new APICall(uuid, 'metadata.update', [], newMetadata);
 
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });
 
 it('Test  Update User APICall serialization/deserialization', () => {
@@ -193,103 +192,102 @@ it('Test  Update User APICall serialization/deserialization', () => {
       institution: 'Test Test',
       website: 'http://test.com',
       fqn: 'syft.service.user.user.UserUpdate'
-    },
+    }
   };
 
-  const apiCall = new APICall(uuid, "user.update", [], userUpdate)
+  const apiCall = new APICall(uuid, 'user.update', [], userUpdate);
 
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });
 
 it('Test  UserCreate APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
   const userCreate = {
-      email: 'test@email.com',
-      password: 'pwd123',
-      institution: 'Test Test',
-      website: 'http://test.com',
-      password_verify:  'pwd123',
-      fqn: 'syft.service.user.user.UserCreate'
+    email: 'test@email.com',
+    password: 'pwd123',
+    institution: 'Test Test',
+    website: 'http://test.com',
+    password_verify: 'pwd123',
+    fqn: 'syft.service.user.user.UserCreate'
   };
 
-  const apiCall = new APICall(uuid, "user.create", [], userCreate)
+  const apiCall = new APICall(uuid, 'user.create', [], userCreate);
 
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });
 
 it('Test Dataset Get All APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
+  const apiCall = new APICall(uuid, 'dataset.get_all', [], {});
 
-  const apiCall = new APICall(uuid, "dataset.get_all", [], {})
-
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });
 
 it('Test Dataset Get Specific Dataset APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
-  const apiCall = new APICall(uuid, 'dataset.get_by_id', [], { uid: new UUID(uuidv4()) })
+  const apiCall = new APICall(uuid, 'dataset.get_by_id', [], { uid: new UUID(uuidv4()) });
 
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });
 
 it('Test Delete Specific Dataset APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
-  const apiCall = new APICall(uuid, 'dataset.delete_by_id', [], { uid: new UUID(uuidv4()) })
+  const apiCall = new APICall(uuid, 'dataset.delete_by_id', [], { uid: new UUID(uuidv4()) });
 
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });
 
 it('Test Get All Code APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
-  const apiCall = new APICall(uuid, 'code.get_all', [], {})
+  const apiCall = new APICall(uuid, 'code.get_all', [], {});
 
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });
 
 it('Test Get Code Specific ID APICall serialization/deserialization', () => {
   const uuid = uuidv4();
 
-  const apiCall = new APICall(uuid, 'code.get_by_id', [], { uid: new UUID(uuidv4()) })
+  const apiCall = new APICall(uuid, 'code.get_by_id', [], { uid: new UUID(uuidv4()) });
 
-  const serializedApiCall = serde.serialize(apiCall)
+  const serializedApiCall = serde.serialize(apiCall);
 
   expectTypeOf(serializedApiCall).toMatchTypeOf(Uint8Array);
 
   let deserializedapiCall = serde.deserialize(serializedApiCall);
-  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs))
+  expect(deserializedapiCall.kwargs).toStrictEqual(Object.fromEntries(apiCall.kwargs));
 });

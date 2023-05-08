@@ -24,6 +24,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -212,32 +213,49 @@ def make_action_side_effect(
     return Ok((context, args, kwargs))
 
 
-def send_action_side_effect(
-    context: PreHookContext, *args: Any, **kwargs: Any
-) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
-    """Create a new action from the context.op_name, and execute it on the remote node.
+def convert_to_pointers(
+    api: SyftAPI,
+    node_uid: Optional[UID] = None,
+    args: Optional[List] = None,
+    kwargs: Optional[Dict] = None,
+) -> Tuple[List, Dict]:
+    arg_list = []
+    kwarg_dict = {}
+    if args is not None:
+        for arg in args:
+            if not isinstance(arg, ActionObject):
+                arg = ActionObject.from_obj(arg)
+                arg.syft_node_uid = node_uid
+                arg = api.services.action.set(arg)
+                # arg = action_obj.send(
+                #     client
+                # )  # make sure this doesn't break things later on in send_method_action
+            arg_list.append(arg)
 
-    Parameters:
-        context: PreHookContext
-            PreHookContext object
-        *args:
-            Operation *args
-        **kwargs
-            Operation *kwargs
-    Returns:
-        - Ok[[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]] on success
-        - Err[str] on failure
-    """
-    if context.op_name in dont_make_side_effects or not hasattr(
-        context.obj, "syft_node_uid"
-    ):
-        return Ok((context, args, kwargs))
+    if kwargs is not None:
+        for k, arg in kwargs.items():
+            if not isinstance(arg, ActionObject):
+                arg = ActionObject.from_obj(arg)
+                arg.syft_node_uid = node_uid
+                arg = api.services.action.set(arg)
+                # arg = action_obj.send(client)
 
+            kwarg_dict[k] = arg
+
+    return arg_list, kwarg_dict
+
+
+def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
     try:
-        if not getattr(context.obj, "syft_node_uid", None):
-            raise RuntimeError(
-                "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
-            )
+        if context.op_name not in dont_make_side_effects and hasattr(
+            context.obj, "syft_node_uid"
+        ):
+            if getattr(context.obj, "syft_node_uid", None):
+                if context.action is not None:
+                    action = context.obj.syft_make_method_action(
+                        op=context.op_name, args=args, kwargs=kwargs
+                    )
+                    context.action = action
 
         result = make_action_side_effect(context, *args, **kwargs)
         if result.is_err():
@@ -611,17 +629,16 @@ class ActionObject(SyftObject):
             self._syft_pre_hooks__[HOOK_ALWAYS] = []
 
         # this should be a list as orders matters
-        if make_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
-            self._syft_pre_hooks__[HOOK_ALWAYS].append(make_action_side_effect)
-
-        if send_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
-            self._syft_pre_hooks__[HOOK_ALWAYS].append(send_action_side_effect)
+        for side_effect in [make_action_side_effect, send_action_side_effect]:
+            if side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
+                self._syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
 
         if HOOK_ALWAYS not in self._syft_post_hooks__:
             self._syft_post_hooks__[HOOK_ALWAYS] = []
 
-        if propagate_node_uid not in self._syft_post_hooks__[HOOK_ALWAYS]:
-            self._syft_post_hooks__[HOOK_ALWAYS].append(propagate_node_uid)
+        for side_effect in [propagate_node_uid]:
+            if side_effect not in self._syft_post_hooks__[HOOK_ALWAYS]:
+                self._syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
 
         if isinstance(self.syft_action_data, ActionObject):
             raise Exception("Nested ActionObjects", self.syft_action_data)
