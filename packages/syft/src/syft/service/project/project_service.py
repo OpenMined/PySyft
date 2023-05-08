@@ -124,8 +124,8 @@ class NewProjectService(AbstractService):
             raise e
 
     @service_method(
-        path="newproject.broadcast_event",
-        name="broadcast_event",
+        path="newproject.add_event",
+        name="add_event",
         roles=GUEST_ROLE_LEVEL,
     )
     def add_event(
@@ -134,8 +134,9 @@ class NewProjectService(AbstractService):
         """To add events to a projects"""
         # Event object should be received from the leader of the project
 
+        # retrieve the project object by node verify key
         project_obj = self.stash.get_by_uid(
-            context.credentials, uid=project_event.project_id
+            context.node.verify_key, uid=project_event.project_id
         )
 
         if project_obj.is_ok():
@@ -150,11 +151,14 @@ class NewProjectService(AbstractService):
                 )
 
             project.events.append(project_event)
-            result = self.stash.update(context.credentials, project)
+            # updating the project object using root verify key of node
+            result = self.stash.update(context.node.verify_key, project)
 
             if result.is_err():
                 return SyftError(message=str(result.err()))
-            return SyftSuccess(f"Project event {project_event.id} added successfully ")
+            return SyftSuccess(
+                message=f"Project event {project_event.id} added successfully "
+            )
 
         if project_obj.is_err():
             return SyftError(message=str(project_obj.err()))
@@ -183,6 +187,30 @@ class NewProjectService(AbstractService):
                 )
 
             project.events.append(project_event)
+
+            # Broadcast the event to all the members of the project
+            network_service = context.node.get_service("networkservice")
+            for sharedholder in project.shareholders:
+                if sharedholder.verify_key != context.node.verify_key:
+                    # Retrieving the NodePeer Object to communicate with the node
+                    peer = network_service.stash.get_for_verify_key(
+                        credentials=context.node.verify_key,
+                        verify_key=sharedholder.verify_key,
+                    )
+
+                    if peer.is_err():
+                        return SyftError(
+                            message=f"Leader node does not have peer {sharedholder.name}-{sharedholder.id}"
+                            + " Kindly exchange routes with the peer"
+                        )
+                    peer = peer.ok()
+                    client = peer.client_with_context(context)
+                    event_result = client.api.services.newproject.add_event(
+                        project_event
+                    )
+                    if isinstance(event_result, SyftError):
+                        return event_result
+
             result = self.stash.update(context.credentials, project)
 
             if result.is_err():
