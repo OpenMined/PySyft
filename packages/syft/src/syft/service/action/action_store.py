@@ -80,7 +80,7 @@ class KeyValueActionStore(ActionStore):
                     raise Exception(f"Unrecognized UID type: {type(uid)}")
                 return Ok(syft_object)
             except Exception as e:
-                return Err(e)
+                return Err(f"Could not find item with uid {uid}, {e}")
         return Err(f"Permission: {read_permission} denied")
 
     def get_pointer(

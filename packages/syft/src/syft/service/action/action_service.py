@@ -215,7 +215,10 @@ class ActionService(AbstractService):
         id2inpkey = {v.id: k for k, v in plan.inputs.items()}
 
         for plan_action in plan.actions:
-            if plan_action.remote_self.id in id2inpkey:
+            if (
+                hasattr(plan_action.remote_self, "id")
+                and plan_action.remote_self.id in id2inpkey
+            ):
                 plan_action.remote_self = plan_kwargs[
                     id2inpkey[plan_action.remote_self.id]
                 ]
@@ -240,7 +243,10 @@ class ActionService(AbstractService):
     ) -> Result[ActionObject, Err]:
         """Execute an operation on objects in the action store"""
 
-        if action.remote_self is None:
+        if action.action_type == ActionType.CREATEOBJECT:
+            result_action_object = Ok(action.create_object)
+
+        elif action.remote_self is None:
             # run function/class init
             _user_lib_config_registry = UserLibConfigRegistry.from_user(
                 context.credentials
@@ -251,7 +257,9 @@ class ActionService(AbstractService):
                 # Now we are assuming its a function/class
                 result_action_object = execute_callable(self, context, action)
             else:
-                return Err(f"You have no permission for {absolute_path}")
+                return Err(
+                    f"Failed executing {action}. You have no permission for {absolute_path}"
+                )
         else:
             # relative
             from .plan import Plan
@@ -263,7 +271,9 @@ class ActionService(AbstractService):
                 has_permission=True,
             )
             if resolved_self.is_err():
-                return resolved_self.err()
+                return Err(
+                    f"Failed executing action {action}, could not resolve self: {resolved_self.err()}"
+                )
             resolved_self = resolved_self.ok()
 
             if action.op == "__call__" and isinstance(
@@ -278,9 +288,15 @@ class ActionService(AbstractService):
 
             elif action.action_type == ActionType.SETATTRIBUTE:
                 args, _ = resolve_action_args(action, context, self)
+                if args.is_err():
+                    return Err(
+                        f"Failed executing action {action}, could not resolve args: {args.err()}"
+                    )
+                else:
+                    args = args.ok()
                 if not isinstance(args[0], ActionObject):
-                    raise ValueError(
-                        "setattribute requires a non-twin string as first argument"
+                    return Err(
+                        f"Failed executing action {action} setattribute requires a non-twin string as first argument"
                     )
                 name = args[0].syft_action_data
                 # dont do the whole filtering dance with the name
@@ -310,8 +326,14 @@ class ActionService(AbstractService):
                         )
                     )
                 else:
+                    # TODO: Implement for twinobject args
+                    args = filter_twin_args(args, twin_mode=TwinMode.NONE)
+                    val = args[0]
+                    setattr(resolved_self.syft_action_data, name, val)
+                    result_action_object = Ok(
+                        ActionObject.from_obj(resolved_self.syft_action_data),
+                    )
                     # todo: permissions
-                    raise NotImplementedError("")
                     # setattr(resolved_self.syft_action_data, name, val)
                     # val = resolved_self.syft_action_data
                     # result_action_object = Ok(wrap_result(action.result_id, val))
@@ -346,12 +368,16 @@ class ActionService(AbstractService):
                     twin_mode=TwinMode.PRIVATE,
                 )
                 if private_result.is_err():
-                    return private_result
+                    return Err(
+                        f"Failed executing action {action}, result is an error: {private_result.err()}"
+                    )
                 mock_result = execute_object(
                     self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
                 )
                 if mock_result.is_err():
-                    return mock_result
+                    return Err(
+                        f"Failed executing action {action}, result is an error: {mock_result.err()}"
+                    )
 
                 private_result = private_result.ok()
                 mock_result = mock_result.ok()
@@ -371,7 +397,9 @@ class ActionService(AbstractService):
                 )
 
         if result_action_object.is_err():
-            return result_action_object.err()
+            return Err(
+                f"Failed executing action {action}, result is an error: {result_action_object.err()}"
+            )
         else:
             result_action_object = result_action_object.ok()
 
@@ -387,7 +415,9 @@ class ActionService(AbstractService):
             has_result_read_permission=has_result_read_permission,
         )
         if set_result.is_err():
-            return set_result.err()
+            return Err(
+                f"Failed executing action {action}, set result is an error: {set_result.err()}"
+            )
 
         if isinstance(result_action_object, TwinObject):
             result_action_object = result_action_object.mock
@@ -430,11 +460,11 @@ def resolve_action_args(
             context=context, uid=arg_id, twin_mode=TwinMode.NONE, has_permission=True
         )
         if arg_value.is_err():
-            return arg_value
+            return arg_value, False
         if isinstance(arg_value.ok(), TwinObject):
             has_twin_inputs = True
         args.append(arg_value.ok())
-    return args, has_twin_inputs
+    return Ok(args), has_twin_inputs
 
 
 def resolve_action_kwargs(
@@ -447,11 +477,11 @@ def resolve_action_kwargs(
             context=context, uid=arg_id, twin_mode=TwinMode.NONE, has_permission=True
         )
         if kwarg_value.is_err():
-            return kwarg_value
+            return kwarg_value, False
         if isinstance(kwarg_value.ok(), TwinObject):
             has_twin_inputs = True
         kwargs[key] = kwarg_value.ok()
-    return kwargs, has_twin_inputs
+    return Ok(kwargs), has_twin_inputs
 
 
 def execute_callable(
@@ -461,6 +491,15 @@ def execute_callable(
 ) -> Result[ActionObject, str]:
     args, has_arg_twins = resolve_action_args(action, context, service)
     kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service)
+    has_twin_inputs = has_arg_twins or has_kwargs_twins
+    if args.is_err():
+        return args
+    else:
+        args = args.ok()
+    if kwargs.is_err():
+        return kwargs
+    else:
+        kwargs = kwargs.ok()
 
     # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
     # is not bound to the original object or mutated
@@ -480,57 +519,44 @@ def execute_callable(
     result = None
     try:
         if target_callable:
-            # if twin_mode == TwinMode.NONE and not has_twin_inputs:
-            twin_mode = TwinMode.NONE
-            # no twins
-            filtered_args = filter_twin_args(args, twin_mode=twin_mode)
-            filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
-            result = target_callable(*filtered_args, **filtered_kwargs)
-            result_action_object = wrap_result(action.id, action.result_id, result)
+            if not has_twin_inputs:
+                # if twin_mode == TwinMode.NONE and not has_twin_inputs:
+                twin_mode = TwinMode.NONE
+                # no twins
+                filtered_args = filter_twin_args(args, twin_mode=twin_mode)
+                filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                result = target_callable(*filtered_args, **filtered_kwargs)
+                result_action_object = wrap_result(action.result_id, result)
+            else:
+                # filtered_args = filter_twin_args(args, twin_mode=twin_mode)
+                # filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                # private_result = target_callable(*filtered_args, **filtered_kwargs)
+                # private_result_action_object = wrap_result(action.result_id, result)
 
-            # TODO: Implement all twin types
-            # elif twin_mode == TwinMode.NONE and has_twin_inputs:
-            #     # self isn't a twin but one of the inputs is
-            #     private_args = filter_twin_args(args, twin_mode=twin_mode)
-            #     private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
-            #     private_result = target_method(*private_args, **private_kwargs)
-            #     result_action_object_private = wrap_result(
-            #         action.parent_id, action.result_id, private_result
-            #     )
+                # twin_mode = TwinMode.MOCK
+                # filtered_args = filter_twin_args(args, twin_mode=twin_mode)
+                # filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                # mock_result = target_callable(*filtered_args, **filtered_kwargs)
+                # mock_result_action_object = wrap_result(action.result_id, result)
+                twin_mode = TwinMode.PRIVATE
+                private_args = filter_twin_args(args, twin_mode=twin_mode)
+                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                private_result = target_callable(*private_args, **private_kwargs)
+                result_action_object_private = wrap_result(
+                    action.result_id, private_result
+                )
 
-            #     mock_args = filter_twin_args(args, twin_mode=twin_mode)
-            #     mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
-            #     mock_result = target_method(*mock_args, **mock_kwargs)
-            #     result_action_object_mock = wrap_result(
-            #         action.parent_id, action.result_id, mock_result
-            #     )
+                twin_mode = TwinMode.MOCK
+                mock_args = filter_twin_args(args, twin_mode=twin_mode)
+                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                mock_result = target_callable(*mock_args, **mock_kwargs)
+                result_action_object_mock = wrap_result(action.result_id, mock_result)
 
-            #     result_action_object = TwinObject(
-            #         id=action.result_id,
-            #         private_obj=result_action_object_private,
-            #         mock_obj=result_action_object_mock,
-            #     )
-            # elif twin_mode == twin_mode.PRIVATE:  # type: ignore
-            #     # twin private path
-            #     private_args = filter_twin_args(args, twin_mode=twin_mode)
-            #     private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
-            #     result = target_method(*private_args, **private_kwargs)
-            #     result_action_object = wrap_result(
-            #         action.parent_id, action.result_id, result
-            #     )
-            # elif twin_mode == twin_mode.MOCK:  # type: ignore
-            #     # twin mock path
-            #     mock_args = filter_twin_args(args, twin_mode=twin_mode)
-            #     mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
-            #     target_method = getattr(unboxed_resolved_self, action.op, None)
-            #     result = target_method(*mock_args, **mock_kwargs)
-            #     result_action_object = wrap_result(
-            #         action.parent_id, action.result_id, result
-            #     )
-            # else:
-            #     raise Exception(
-            #         f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
-            #     )
+                result_action_object = TwinObject(
+                    id=action.result_id,
+                    private_obj=result_action_object_private,
+                    mock_obj=result_action_object_mock,
+                )
 
     except Exception as e:
         print("what is this exception", e)
@@ -548,6 +574,14 @@ def execute_object(
     unboxed_resolved_self = resolved_self.syft_action_data
     args, has_arg_twins = resolve_action_args(action, context, service)
     kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service)
+    if args.is_err():
+        return args
+    else:
+        args = args.ok()
+    if kwargs.is_err():
+        return kwargs
+    else:
+        kwargs = kwargs.ok()
     has_twin_inputs = has_arg_twins or has_kwargs_twins
 
     # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function

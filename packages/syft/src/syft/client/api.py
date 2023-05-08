@@ -225,6 +225,12 @@ def generate_remote_lib_function(
         )
 
     def wrapper(*args, **kwargs):
+        # relative
+        from ..service.action.action_object import TraceResult
+
+        if TraceResult._client is not None:
+            make_call = TraceResult._client.api.make_call
+            node_uid = TraceResult._client.api.node_uid
         blocking = True
         if "blocking" in kwargs:
             blocking = bool(kwargs["blocking"])
@@ -249,17 +255,18 @@ def generate_remote_lib_function(
 
         # e.g. numpy.array -> numpy, array
         module, op = module_path.rsplit(".", 1)
-        service_args = [
-            Action(
-                path=module,
-                op=op,
-                remote_self=None,
-                args=[x.syft_lineage_id for x in action_args],
-                kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
-                # TODO: fix
-                result_id=LineageID(UID(), 1),
-            )
-        ]
+        action = Action(
+            path=module,
+            op=op,
+            remote_self=None,
+            args=[x.syft_lineage_id for x in action_args],
+            kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
+            # TODO: fix
+            result_id=LineageID(UID(), 1),
+        )
+        service_args = [action]
+        # TODO: implement properly
+        TraceResult.result += [action]
 
         api_call = SyftAPICall(
             node_uid=node_uid,
@@ -268,6 +275,7 @@ def generate_remote_lib_function(
             kwargs=dict(),
             blocking=blocking,
         )
+
         result = make_call(api_call=api_call)
         return result
 

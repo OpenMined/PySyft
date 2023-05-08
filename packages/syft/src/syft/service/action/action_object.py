@@ -55,6 +55,7 @@ class ActionType(Enum):
     GETATTRIBUTE = 1
     METHOD = 2
     SETATTRIBUTE = 4
+    CREATEOBJECT = 8
 
 
 @serializable()
@@ -88,6 +89,7 @@ class Action(SyftObject):
     kwargs: Dict[str, LineageID]
     result_id: Optional[LineageID]
     action_type: Optional[ActionType]
+    create_object: Optional[SyftObject] = None
 
     @pydantic.validator("id", pre=True, always=True)
     def make_id(cls, v: Optional[UID]) -> UID:
@@ -122,6 +124,21 @@ class Action(SyftObject):
             hashes += hash(k)
             hashes += hash(arg.syft_history_hash)
         return hashes
+
+    def __repr__(self):
+        def repr_uid(_id):
+            return f"{str(_id)[:3]}..{str(_id)[-1]}"
+
+        arg_repr = ", ".join([repr_uid(x) for x in self.args])
+        kwargs_repr = ", ".join(
+            [f"{key}={repr_uid(value)}" for key, value in self.kwargs.items()]
+        )
+        self_repr = (
+            f"[{repr_uid(self.remote_self)}]" if self.remote_self is not None else ""
+        )
+        return (
+            f"ActionObject {self.path}{self_repr}.{self.op}({arg_repr},{kwargs_repr})"
+        )
 
 
 class ActionObjectPointer:
@@ -244,10 +261,12 @@ def make_action_side_effect(
 
 class TraceResult:
     result = []
+    _client = None
 
     @classmethod
     def reset(cls):
         cls.result = []
+        cls._client = None
 
 
 def trace_action_side_effect(
@@ -530,8 +549,24 @@ class ActionObject(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
-        api.services.action.set(obj)
+        action = Action(
+            path="",
+            op="",
+            remote_self=None,
+            result_id=obj.id,
+            args=[],
+            kwargs=dict(),
+            action_type=ActionType.CREATEOBJECT,
+            create_object=obj,
+        )
+
+        if TraceResult._client is not None:
+            api = TraceResult._client.api
+            TraceResult.result += [action]
+        else:
+            api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+
+        api.services.action.execute(action)
 
     def _syft_prepare_obj_uid(self, obj) -> LineageID:
         # We got the UID
@@ -676,8 +711,11 @@ class ActionObject(SyftObject):
 
     def get_from(self, client: SyftClient) -> Any:
         """Get the object from a Syft Client"""
-
-        return client.api.services.action.get(self.id).syft_action_data
+        res = client.api.services.action.get(self.id)
+        if not isinstance(res, ActionObject):
+            return Err(res)
+        else:
+            return res.syft_action_data
 
     @staticmethod
     def from_obj(
@@ -789,7 +827,8 @@ class ActionObject(SyftObject):
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
                     else:
-                        print(f"Pre-hook failed with {result.err()}")
+                        msg = result.err().replace("\\n", "\n")
+                        print(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
 

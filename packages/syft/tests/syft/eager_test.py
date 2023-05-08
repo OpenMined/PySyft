@@ -70,6 +70,50 @@ def test_plan(worker, guest_client):
     assert res_ptr.get_from(guest_client) == 729
 
 
+def test_plan_with_function_call(worker, guest_client):
+    root_domain_client = worker.root_client
+    guest_client = worker.guest_client
+
+    @planify
+    def my_plan(x=np.array([[2, 2, 2], [2, 2, 2]])):
+        y = x.flatten()
+        w = guest_client.api.lib.numpy.sum(y)
+        return w
+
+    plan_ptr = my_plan.send(guest_client)
+    input_obj = TwinObject(
+        private_obj=np.array([[3, 3, 3], [3, 3, 3]]),
+        mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
+    )
+
+    input_obj = root_domain_client.api.services.action.set(input_obj)
+    pointer = guest_client.api.services.action.get_pointer(input_obj.id)
+    res_ptr = plan_ptr(x=pointer)
+
+    assert res_ptr.get_from(root_domain_client) == 18
+
+
+def test_plan_with_object_instantiation(worker, guest_client):
+    @planify
+    def my_plan(x=np.array([1, 2, 3, 4, 5, 6])):
+        return x + 1
+
+    root_domain_client = worker.root_client
+
+    plan_ptr = my_plan.send(guest_client)
+
+    input_obj = TwinObject(
+        private_obj=np.array([1, 2, 3, 4, 5, 6]), mock_obj=np.array([1, 1, 1, 1, 1, 1])
+    )
+
+    _id = root_domain_client.api.services.action.set(input_obj).id
+    pointer = guest_client.api.services.action.get_pointer(_id)
+
+    res_ptr = plan_ptr(x=pointer)
+
+    assert all(res_ptr.get_from(root_domain_client) == np.array([2, 3, 4, 5, 6, 7]))
+
+
 def test_setattribute(worker, guest_client):
     root_domain_client = worker.root_client
 
@@ -122,7 +166,7 @@ def test_getattribute(worker, guest_client):
     assert size_pointer.get_from(root_domain_client) == 6
 
 
-def test_method(worker, guest_client):
+def test_eager_method(worker, guest_client):
     root_domain_client = worker.root_client
 
     obj = TwinObject(
@@ -140,3 +184,21 @@ def test_method(worker, guest_client):
     assert all(
         flat_pointer.get_from(root_domain_client) == np.array([1, 2, 3, 4, 5, 6])
     )
+
+
+def test_eager_dunder_method(worker, guest_client):
+    root_domain_client = worker.root_client
+
+    obj = TwinObject(
+        private_obj=np.array([[1, 2, 3], [4, 5, 6]]),
+        mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
+    )
+
+    obj_pointer = root_domain_client.api.services.action.set(obj)
+    obj_pointer = guest_client.api.services.action.get_pointer(obj_pointer.id)
+
+    first_row_pointer = obj_pointer[0]
+
+    assert first_row_pointer.id.id in worker.action_store.data
+    # check result
+    assert all(first_row_pointer.get_from(root_domain_client) == np.array([1, 2, 3]))
