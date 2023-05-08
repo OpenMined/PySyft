@@ -65,35 +65,13 @@ class ConsensusModel:
 class DemocraticConsensusModel(ConsensusModel):
     threshold: float = 50
 
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, DemocraticConsensusModel):
+            return False
+        return self.threshold == value.threshold
 
-@serializable()
-class NewProjectSubmit(SyftObject):
-    __canonical_name__ = "NewProjectSubmit"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    @validator("shareholders", pre=True)
-    def get_metadata(cls, objs: List[SyftClient]) -> List[NodeMetadata]:
-        shareholders = []
-        for obj in objs:
-            if isinstance(obj, NodeMetadata):
-                shareholders.append(obj)
-            elif isinstance(obj, SyftClient):
-                shareholders.append(obj.metadata.to(NodeMetadata))
-            else:
-                raise Exception(
-                    f"Shareholders should be either SyftClient or NodeMetadata received: {type(obj)}"
-                )
-        return shareholders
-
-    id: Optional[UID]
-    name: str
-    description: Optional[str]
-    shareholders: List[NodeMetadata]
-    project_permissions: Set[str] = set()
-    state_sync_leader: Optional[NodePeer]
-    consensus_model: ConsensusModel
-
-    __attr_repr_cols__ = ["name"]
+    def __hash__(self) -> int:
+        return hash(self.threshold)
 
 
 @serializable()
@@ -166,6 +144,58 @@ class NewProject(SyftObject):
         return self._broadcast_event(event)
 
 
+@serializable()
+class NewProjectSubmit(SyftObject):
+    __canonical_name__ = "NewProjectSubmit"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    @validator("shareholders", pre=True)
+    def get_metadata(cls, objs: List[SyftClient]) -> List[NodeMetadata]:
+        shareholders = []
+        for obj in objs:
+            if isinstance(obj, NodeMetadata):
+                shareholders.append(obj)
+            elif isinstance(obj, SyftClient):
+                shareholders.append(obj.metadata.to(NodeMetadata))
+            else:
+                raise Exception(
+                    f"Shareholders should be either SyftClient or NodeMetadata received: {type(obj)}"
+                )
+        return shareholders
+
+    id: Optional[UID]
+    name: str
+    description: Optional[str]
+    shareholders: List[NodeMetadata]
+    project_permissions: Set[str] = set()
+    state_sync_leader: Optional[NodePeer]
+    consensus_model: ConsensusModel
+
+    def start(self) -> NewProject:
+        # Creating a new unique UID to be used by all shareholders
+        project_id = UID()
+        projects = []
+        for shareholder in self.shareholders:
+            # relative
+            from ...client.api import APIRegistry
+
+            api = APIRegistry.api_for(shareholder.id)
+            if api is None:
+                raise Exception(f"You must login to {shareholder.id}")
+            result = api.services.newproject.create_project(
+                project=self, project_id=project_id
+            )
+            if isinstance(result, SyftError):
+                return result
+            else:
+                projects.append(result)
+
+        # as we currently assume that the first shareholder is the leader.
+        return projects
+
+    __attr_repr_cols__ = ["name"]
+
+
 def add_shareholders_as_owners(shareholders: List[SyftVerifyKey]) -> Set[str]:
     keys = set()
     for shareholder in shareholders:
@@ -178,26 +208,29 @@ def elect_leader(context: TransformContext) -> TransformContext:
     if len(context.output["shareholders"]) == 0:
         raise Exception("Project's require at least one shareholder")
 
-    leader_key: Optional[SyftVerifyKey] = None
+    # leader_key: Optional[SyftVerifyKey] = None
 
-    shareholders_verify_key = [
-        shareholder.verify_key for shareholder in context.output["shareholders"]
-    ]
-    if context.node.verify_key in shareholders_verify_key:
-        leader_key = context.node.verify_key
-    else:
-        leader_key = shareholders_verify_key[0]
+    # shareholders_verify_key = [
+    #     shareholder.verify_key for shareholder in context.output["shareholders"]
+    # ]
 
-    if context.node.verify_key == leader_key:
-        # get NodePeer for self
-        peer = context.node.metadata.to(NodePeer)
-    else:
-        peer = context.node.get_service("network").stash.get_for_verify_key(leader_key)
-        if peer.is_err():
-            raise Exception(f"Leader is unknown peer. {leader_key}")
-        peer = peer.ok()
+    # TODO: implement consensus model for selecting a leader
+    # Assume by default that the first shareholder is the leader
+    # leader_key = shareholders_verify_key[0]
 
-    context.output["state_sync_leader"] = peer
+    # if context.node.verify_key == leader_key:
+    #     # get NodePeer for self
+    #     peer = context.node.metadata.to(NodePeer)
+    # else:
+    #     peer = context.node.get_service("networkservice").stash.get_for_verify_key(leader_key)
+    #     if peer.is_err():
+    #         raise Exception(f"Leader is unknown peer. {leader_key}")
+    #     peer = peer.ok()
+
+    # TODO: implement consensus model for selecting a leader
+    # Assume by default that the first shareholder is the leader
+    context.output["state_sync_leader"] = context.output["shareholders"][0]
+
     return context
 
 
@@ -218,7 +251,7 @@ def check_permissions(context: TransformContext) -> TransformContext:
 
 
 def calculate_final_hash(context: TransformContext) -> TransformContext:
-    context.output["id"] = UID()
+    context.output["id"] = None
     context.output["store"] = {}
     context.output["permissions"] = {}
     context.output["events"] = []

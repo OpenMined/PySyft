@@ -10,6 +10,7 @@ from result import Ok
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..message.message_service import CreateMessage
@@ -100,20 +101,24 @@ class NewProjectService(AbstractService):
         self.store = store
         self.stash = NewProjectStash(store=store)
 
-    @service_method(path="newproject.start", name="start", roles=GUEST_ROLE_LEVEL)
-    def start(
-        self, context: AuthedServiceContext, project: NewProjectSubmit
+    @service_method(
+        path="newproject.create_project", name="create_project", roles=GUEST_ROLE_LEVEL
+    )
+    def create_project(
+        self,
+        context: AuthedServiceContext,
+        project: NewProjectSubmit,
+        project_id: UID,
     ) -> Union[SyftSuccess, SyftError]:
         """Start a Project"""
         try:
-            return project.to(NewProject, context=context)
-            # TODO enable multiple objects in the same stash
-            # result = self.stash.set(
-            #     context.credentials, project.to(NewProject, context=context)
-            # )
-            # if result.is_err():
-            #     return SyftError(message=str(result.err()))
-            # return result.ok()
+            project_obj = project.to(NewProject, context=context)
+            project_obj.id = project_id
+
+            result = self.stash.set(context.credentials, project_obj)
+            if result.is_err():
+                return SyftError(message=str(result.err()))
+            return result.ok()
         except Exception as e:
             print("Failed to submit Project", e)
             raise e
