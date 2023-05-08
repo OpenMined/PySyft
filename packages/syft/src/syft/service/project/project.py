@@ -8,6 +8,7 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Type
+from typing import Union
 
 # third party
 from pydantic import validator
@@ -34,6 +35,7 @@ from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
+from ..response import SyftSuccess
 from ..service import TYPE_TO_SERVICE
 
 
@@ -140,7 +142,20 @@ class NewProject(SyftObject):
     def __hash__(self) -> int:
         return type(self).calculate_hash(self, self.__hash_keys__)
 
-    def add_request(self, obj: Request) -> None:
+    def _broadcast_event(
+        self, project_event: ProjectEvent
+    ) -> Union[SyftSuccess, SyftError]:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(self.state_sync_leader.id)
+        if api is None:
+            return SyftError(
+                message=f"You must login to {self.state_sync_leader.name}-{self.state_sync_leader.id}"
+            )
+        return api.services.project.broadcast_event(project_event)
+
+    def add_request(self, obj: Request) -> Union[SyftSuccess, SyftError]:
         event = ProjectEvent(
             event_type=EventTypes.REQUEST,
             event_data=obj,
@@ -148,6 +163,7 @@ class NewProject(SyftObject):
             project_id=self.id,
         )
         self.events.append(event)
+        return self._broadcast_event(event)
 
 
 def add_shareholders_as_owners(shareholders: List[SyftVerifyKey]) -> Set[str]:

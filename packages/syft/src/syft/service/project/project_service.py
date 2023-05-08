@@ -26,7 +26,9 @@ from ..user.user_service import UserService
 from .project import NewProject
 from .project import NewProjectSubmit
 from .project import Project
+from .project import ProjectEvent
 from .project import ProjectSubmit
+from .project_stash import NewProjectStash
 from .project_stash import ProjectStash
 
 
@@ -79,7 +81,26 @@ class ProjectService(AbstractService):
             print("Failed to submit Project", e)
             raise e
 
-    @service_method(path="project.start", name="start", roles=GUEST_ROLE_LEVEL)
+    @service_method(path="project.get_all", name="get_all")
+    def get_all(self, context: AuthedServiceContext) -> Union[List[Project], SyftError]:
+        result = self.stash.get_all_for_verify_key(verify_key=context.credentials)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        projects = result.ok()
+        return projects
+
+
+@instrument
+@serializable()
+class NewProjectService(AbstractService):
+    store: DocumentStore
+    stash: NewProjectStash
+
+    def __init__(self, store: DocumentStore) -> None:
+        self.store = store
+        self.stash = NewProjectStash(store=store)
+
+    @service_method(path="newproject.start", name="start", roles=GUEST_ROLE_LEVEL)
     def start(
         self, context: AuthedServiceContext, project: NewProjectSubmit
     ) -> Union[SyftSuccess, SyftError]:
@@ -97,8 +118,21 @@ class ProjectService(AbstractService):
             print("Failed to submit Project", e)
             raise e
 
-    @service_method(path="project.get_all", name="get_all")
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Project], SyftError]:
+    @service_method(
+        path="newproject.broadcast", name="broadcast", roles=GUEST_ROLE_LEVEL
+    )
+    def broadcast_event(
+        self, context: AuthedServiceContext, project_event: ProjectEvent
+    ) -> Union[SyftSuccess, SyftError]:
+        """To add events to a projects"""
+        # Only the leader of the project could add events to the projects
+        # Any Event to be added to the project should be sent to the leader of the project
+        # The leader broadcasts the event to all the members of the project
+
+    @service_method(path="newproject.get_all", name="get_all")
+    def get_all(
+        self, context: AuthedServiceContext
+    ) -> Union[List[NewProject], SyftError]:
         result = self.stash.get_all_for_verify_key(verify_key=context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -107,4 +141,6 @@ class ProjectService(AbstractService):
 
 
 TYPE_TO_SERVICE[Project] = ProjectService
+TYPE_TO_SERVICE[NewProject] = NewProjectService
 SERVICE_TO_TYPES[ProjectService].update({Project})
+SERVICE_TO_TYPES[NewProjectService].update({NewProject})
