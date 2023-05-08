@@ -14,8 +14,9 @@ from .vpn import BaseVPNClient
 from .vpn import VPNRoutes
 
 
-class HeadScaleAuthToken(SyftObject):
-    __canonical_name__ = "HeadScaleAuthToken"
+@serializable()
+class HeadscaleAuthToken(SyftObject):
+    __canonical_name__ = "HeadscaleAuthToken"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
@@ -23,13 +24,13 @@ class HeadScaleAuthToken(SyftObject):
     key: str
 
 
-class HeadScaleRoutes(VPNRoutes):
+class HeadscaleRoutes(VPNRoutes):
     GENERATE_KEY = "/commands/generate_key"
     LIST_NODES = "/commands/list_nodes"
 
 
 @serializable()
-class HeadScaleClient(BaseVPNClient):
+class HeadscaleClient(BaseVPNClient):
     connection: NodeConnection
     api_key: str
 
@@ -39,7 +40,7 @@ class HeadScaleClient(BaseVPNClient):
 
     def generate_token(
         self,
-    ) -> Union[HeadScaleAuthToken, SyftError]:
+    ) -> Union[HeadscaleAuthToken, SyftError]:
         result = self.connection.send_command(
             path=self.connection.routes.GENERATE_KEY.value,
             api_key=self.api_key,
@@ -63,8 +64,7 @@ class HeadScaleClient(BaseVPNClient):
             return SyftError(message=result.error)
 
         result = json.loads(command_result.report)
-
-        return HeadScaleAuthToken(
+        return HeadscaleAuthToken(
             key=result["key"],
             namespace=result["namespace"],
         )

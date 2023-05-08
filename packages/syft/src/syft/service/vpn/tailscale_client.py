@@ -16,12 +16,13 @@ from result import Result
 # relative
 from ...client.connection import NodeConnection
 from ...serde.serializable import serializable
+from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ..response import SyftError
 from ..response import SyftSuccess
-from .headscale_client import HeadScaleClient
-from .headscale_client import HeadScaleRoutes
+from .headscale_client import HeadscaleClient
+from .headscale_client import HeadscaleRoutes
 from .vpn import BaseVPNClient
 from .vpn import VPNClientConnection
 from .vpn import VPNRoutes
@@ -47,7 +48,7 @@ class ConnectionStatus(Enum):
 
 
 @serializable()
-class TailScaleState(Enum):
+class TailscaleState(Enum):
     RUNNING = "Running"
     STOPPED = "Stopped"
 
@@ -77,7 +78,7 @@ class TailscaleStatus(SyftObject):
 
 
 @serializable()
-class TailScaleClient(BaseVPNClient):
+class TailscaleClient(BaseVPNClient):
     connection: NodeConnection
     api_key: str
 
@@ -160,10 +161,14 @@ class TailScaleClient(BaseVPNClient):
     ) -> Union[SyftSuccess, SyftError]:
         CONNECT_TIMEOUT = 60
 
+        print(">>> connect to", headscale_host)
+        vpn_url = GridURL.from_url(headscale_host).with_path(path="/vpn")
+        print(">>> connect to vpn_url", vpn_url)
+
         command_args = {
             "args": [
                 "-login-server",
-                f"{headscale_host}",
+                f"{vpn_url}",
                 "--reset",
                 "--force-reauth",
                 "--authkey",
@@ -234,12 +239,12 @@ def get_vpn_client(
 
     url = None
 
-    if client_type is TailScaleClient:
+    if client_type is TailscaleClient:
         url = os.getenv("TAILSCALE_URL", "http://proxy:4000")
         routes = TailscaleRoutes
-    elif client_type is HeadScaleClient:
+    elif client_type is HeadscaleClient:
         url = os.getenv("HEADSCALE_URL", "http://headscale:4000")
-        routes = HeadScaleRoutes
+        routes = HeadscaleRoutes
 
     if api_key is not None and url is not None:
         client = client_type(

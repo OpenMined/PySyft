@@ -44,10 +44,10 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..vpn.headscale_client import HeadScaleAuthToken
-from ..vpn.headscale_client import HeadScaleClient
-from ..vpn.tailscale_client import TailScaleClient
-from ..vpn.tailscale_client import TailScaleState
+from ..vpn.headscale_client import HeadscaleAuthToken
+from ..vpn.headscale_client import HeadscaleClient
+from ..vpn.tailscale_client import TailscaleClient
+from ..vpn.tailscale_client import TailscaleState
 from ..vpn.tailscale_client import TailscaleStatus
 from ..vpn.tailscale_client import get_vpn_client
 
@@ -460,7 +460,7 @@ class NetworkService(AbstractService):
         if isinstance(auth_token, SyftError):
             return auth_token
 
-        result = get_vpn_client(TailScaleClient)
+        result = get_vpn_client(TailscaleClient)
 
         if result.is_err():
             return SyftError(message=result.err())
@@ -502,7 +502,7 @@ class NetworkService(AbstractService):
         context: AuthedServiceContext,
     ) -> Union[TailscaleStatus, SyftError]:
         """Join a VPN Service"""
-        result = get_vpn_client(TailScaleClient)
+        result = get_vpn_client(TailscaleClient)
 
         if result.is_err():
             return SyftError(message=result.err())
@@ -519,10 +519,10 @@ class NetworkService(AbstractService):
     def register_to_vpn(
         self,
         context: AuthedServiceContext,
-    ) -> Union[HeadScaleAuthToken, SyftError]:
+    ) -> Union[HeadscaleAuthToken, SyftError]:
         """Register node to the VPN."""
 
-        result = get_vpn_client(HeadScaleClient)
+        result = get_vpn_client(HeadscaleClient)
 
         if result.is_err():
             return SyftError(message=result.err())
@@ -541,7 +541,7 @@ class NetworkService(AbstractService):
         if isinstance(tailscale_status, SyftError):
             return tailscale_status
 
-        if tailscale_status.state is TailScaleState.RUNNING.value:
+        if tailscale_status.state is TailscaleState.RUNNING.value:
             return SyftSuccess(message="Connection already established !!")
 
         auth_token = self.register_to_vpn(context=context)
@@ -549,7 +549,7 @@ class NetworkService(AbstractService):
         if isinstance(auth_token, SyftError):
             return auth_token
 
-        result = get_vpn_client(TailScaleClient)
+        result = get_vpn_client(TailscaleClient)
 
         if result.is_err():
             return SyftError(message=result.err())

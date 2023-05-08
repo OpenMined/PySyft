@@ -1917,6 +1917,17 @@ def create_launch_docker_cmd(
         False if str(node_type.input) == "network" else bool(kwargs["use_blob_storage"])
     )
 
+    # use a docker volume
+    backend_storage = "credentials-data"
+
+    # in development use a folder mount
+    if kwargs.get("release", "") == "development":
+        RELATIVE_PATH = ""
+        # if EDITABLE_MODE:
+        #     RELATIVE_PATH = "../"
+        # we might need to change this for the hagrid template mode
+        backend_storage = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
+
     envs = {
         "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
@@ -1935,6 +1946,7 @@ def create_launch_docker_cmd(
             generate_sec_random_password(length=48, special_chars=False)
         ),
         "ENABLE_OBLV": str(enable_oblv).lower(),
+        "BACKEND_STORAGE_PATH": backend_storage,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:

@@ -119,10 +119,11 @@ services:
       - ENABLE_OBLV=${ENABLE_OBLV}
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
+      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
     command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
-      - credentials-data:/storage
+      - ${BACKEND_STORAGE_PATH}:/storage
 
   # backend_stream:
   #   restart: always
