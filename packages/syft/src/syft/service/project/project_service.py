@@ -84,7 +84,7 @@ class ProjectService(AbstractService):
 
     @service_method(path="project.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Project], SyftError]:
-        result = self.stash.get_all_for_verify_key(verify_key=context.credentials)
+        result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
         projects = result.ok()
@@ -196,7 +196,7 @@ class NewProjectService(AbstractService):
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[List[NewProject], SyftError]:
-        result = self.stash.get_all_for_verify_key(verify_key=context.credentials)
+        result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
         projects = result.ok()
