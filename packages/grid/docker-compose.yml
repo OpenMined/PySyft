@@ -1,10 +1,10 @@
 version: "3.8"
 services:
-  docker-host:
-    image: qoomon/docker-host
-    cap_add:
-      - net_admin
-      - net_raw
+  # docker-host:
+  #   image: qoomon/docker-host
+  #   cap_add:
+  #     - net_admin
+  #     - net_raw
 
   proxy:
     restart: always
@@ -24,8 +24,11 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
     ports:
       - "${HTTP_PORT}:81"
-    depends_on:
-      - "docker-host"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # depends_on:
+    #   - "docker-host"
 
   # tailscale:
   #   profiles:
@@ -67,6 +70,8 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
       - VITE_PUBLIC_API_BASE_URL=${VITE_PUBLIC_API_BASE_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # redis:
   #   restart: always
@@ -120,6 +125,8 @@ services:
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
     command: "/app/grid/start.sh"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     network_mode: service:proxy
     volumes:
       - credentials-data:/storage
@@ -237,6 +244,8 @@ services:
     environment:
       - COLLECTOR_ZIPKIN_HOST_PORT=9411
       - COLLECTOR_OTLP_ENABLED=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${JAEGER_PORT}:14268" # http collector
       - "16686" # ui
