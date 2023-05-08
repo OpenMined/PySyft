@@ -128,6 +128,42 @@ class NewProjectService(AbstractService):
         name="broadcast_event",
         roles=GUEST_ROLE_LEVEL,
     )
+    def add_event(
+        self, context: AuthedServiceContext, project_event: ProjectEvent
+    ) -> Union[SyftSuccess, SyftError]:
+        """To add events to a projects"""
+        # Event object should be received from the leader of the project
+
+        project_obj = self.stash.get_by_uid(
+            context.credentials, uid=project_event.project_id
+        )
+
+        if project_obj.is_ok():
+            project: NewProject = project_obj.ok()
+            if project.state_sync_leader.verify_key == context.node.verify_key:
+                return SyftError(
+                    message="Project Events should be passed to leader by broadcast endpoint"
+                )
+            if context.credentials != project.state_sync_leader.verify_key:
+                return SyftError(
+                    message="Only the leader of the project can add events"
+                )
+
+            project.events.append(project_event)
+            result = self.stash.update(context.credentials, project)
+
+            if result.is_err():
+                return SyftError(message=str(result.err()))
+            return SyftSuccess(f"Project event {project_event.id} added successfully ")
+
+        if project_obj.is_err():
+            return SyftError(message=str(project_obj.err()))
+
+    @service_method(
+        path="newproject.broadcast_event",
+        name="broadcast_event",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def broadcast_event(
         self, context: AuthedServiceContext, project_event: ProjectEvent
     ) -> Union[SyftSuccess, SyftError]:
