@@ -1,4 +1,5 @@
 # stdlib
+import datetime
 from enum import Enum
 from typing import Any
 from typing import Callable
@@ -33,9 +34,22 @@ from ..response import SyftError
 from ..service import TYPE_TO_SERVICE
 
 
+class EventTypes(Enum):
+    REQUEST = "REQUEST"
+    USER_CODE = "USER_CODE"
+
+
 @serializable()
-class ProjectEvent:
-    pass
+class ProjectEvent(SyftObject):
+    __canonical_name__ = "ProjectEvent"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    timestamp: str = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    event_type: EventTypes
+    event_data: Any
+    user_verify_key: SyftVerifyKey
+    project_id: UID
 
 
 class ConsensusModel:
@@ -108,6 +122,15 @@ class NewProject(SyftObject):
 
     def __hash__(self) -> int:
         return type(self).calculate_hash(self, self.__hash_keys__)
+
+    def add_request(self, obj: Request) -> None:
+        event = ProjectEvent(
+            event_type=EventTypes.REQUEST,
+            event_data=obj,
+            user_verify_key=obj.requesting_user_verify_key,
+            project_id=self.id,
+        )
+        self.events.append(event)
 
 
 def add_shareholders_as_owners(shareholders: List[SyftVerifyKey]) -> Set[str]:
