@@ -28,7 +28,6 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.util import recursive_hash
 from ..code.user_code import UserCode
-from ..network.network_service import NodePeer
 from ..request.request import EnumMutation
 from ..request.request import Request
 from ..request.request import SubmitRequest
@@ -84,7 +83,7 @@ class NewProject(SyftObject):
     description: Optional[str]
     shareholders: List[NodeMetadata]
     project_permissions: Set[str]
-    state_sync_leader: NodePeer
+    state_sync_leader: NodeMetadata
     consensus_model: ConsensusModel
     store: Dict[UID, Dict[UID, SyftObject]] = {}
     permissions: Dict[UID, Dict[UID, Set[str]]] = {}
@@ -168,7 +167,7 @@ class NewProjectSubmit(SyftObject):
     description: Optional[str]
     shareholders: List[NodeMetadata]
     project_permissions: Set[str] = set()
-    state_sync_leader: Optional[NodePeer]
+    state_sync_leader: Optional[NodeMetadata]
     consensus_model: ConsensusModel
 
     def start(self) -> NewProject:
