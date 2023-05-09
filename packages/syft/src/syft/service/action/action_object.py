@@ -314,16 +314,6 @@ def send_action_side_effect(
 ) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
     """Create a new action from the context.op_name, and execute it on the remote node."""
     try:
-        # if context.op_name not in dont_make_side_effects and hasattr(
-        #     context.obj, "syft_node_uid"
-        # ):
-        #     if getattr(context.obj, "syft_node_uid", None):
-        #         if context.action is not None:
-        #             action = context.obj.syft_make_method_action(
-        #                 op=context.op_name, args=args, kwargs=kwargs
-        #             )
-        #             context.action = action
-
         result = make_action_side_effect(context, *args, **kwargs)
         if result.is_err():
             raise RuntimeError(result.err())
