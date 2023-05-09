@@ -14,6 +14,7 @@ from typing import Union
 
 # third party
 import numpy
+import jax
 from typing_extensions import Self
 
 # relative
@@ -129,65 +130,74 @@ class CMPBase:
 
         Returns:
             _type_: _description_
-        """
-        parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
-        if CMPBase.isfunction(child_obj) and parent_is_parent_module:
-            return CMPFunction(
-                child_path,
-                permissions=self.permissions,
-                obj=child_obj,
-                absolute_path=absolute_path,
-            )  # type: ignore
-        elif inspect.ismodule(child_obj) and CMPBase.is_submodule(
-            parent_obj, child_obj
-        ):
+        """# If the child is not a module, then
+        is_child_valid = CMPBase.check_package_membership(parent_obj, child_obj)    
+        if not is_child_valid:
+            return None
+        
+        if inspect.ismodule(child_obj):
             ## TODO, we could register modules and functions in 2 ways:
             # A) as numpy.float32 (what we are doing now)
             # B) as numpy.core.float32 (currently not supported)
             # only allow submodules
-
             return CMPModule(
                 child_path,
                 permissions=self.permissions,
                 obj=child_obj,
                 absolute_path=absolute_path,
             )  # type: ignore
-        elif inspect.isclass(child_obj) and parent_is_parent_module:
+        
+        # Here we have our own isfunction as there are multiple callable objects worth considering 
+        if CMPBase.isfunction(child_obj):
+            return CMPFunction(
+                child_path,
+                permissions=self.permissions,
+                obj=child_obj,
+                absolute_path=absolute_path,
+            )  # type: ignore
+        
+        if inspect.isclass(child_obj):
             return CMPClass(
                 child_path,
                 permissions=self.permissions,
                 obj=child_obj,
                 absolute_path=absolute_path,
             )  # type: ignore
-        else:
-            return None
+        
+        # default case if we didnt cover it
+        # currently used for objects
+        return CMPBase(
+            child_path,
+            permissions=self.permissions,
+            obj=child_obj,
+            absolute_path=absolute_path,
+        )
 
     @staticmethod
-    def is_submodule(parent: type, child: type) -> bool:
+    def check_package_membership(parent_obj: Any, child_obj: Any) -> Optional[str]:
+        # we are wrapping this as some objects might not have some of the dunder methods
+        # TODO: check if that is truly necessary
         try:
-            if "." not in child.__package__:
+            # if we find the same name we should avoid a circular import (probably obsolete)
+            if child_obj.__name__ == parent_obj.__name__:
                 return False
+            
+            # if the name of the parent can be found at the start of the name of the child we are good 
+            if child_obj.__name__.startswith(parent_obj.__name__):
+                return True
+            
+            # if the child has a module, then we should just make sure it has the same start
+            # as the parent, but not the entire name, as there might be relative imports
+            # in other parts of the codebase
+            if hasattr(child_obj, "__module__"):
+                return child_obj.__module__.startswith(parent_obj.__name__.split('.')[0])
             else:
-                child_parent_module = child.__package__.rsplit(".", 1)[0]
-                if parent.__package__ == child_parent_module:
-                    return True
-                else:
-                    return False
+                # same idea as the with the child name
+                # TODO: this is a fix for for instance numpy ufuncs
+                return child_obj.__class__.__module__.startswith(parent_obj.__name__)
         except Exception:  # nosec
             pass
         return False
-
-    @staticmethod
-    def parent_is_parent_module(parent_obj: Any, child_obj: Any) -> Optional[str]:
-        try:
-            if hasattr(child_obj, "__module__"):
-                return child_obj.__module__ == parent_obj.__name__
-            else:
-                # TODO: this is a fix for for instance numpy ufuncs
-                return child_obj.__class__.__module__ == parent_obj.__name__
-        except Exception:  # nosec
-            pass
-        return None
 
     def flatten(self) -> List[Self]:
         res = [self]
@@ -351,5 +361,9 @@ action_execute_registry_libs = CMPTree(
                 CMPModule("testing", permissions=NONE_EXECUTE),
             ],
         ),
+        CMPModule(
+            "jax",
+            permissions=ALL_EXECUTE,
+        )
     ]
 ).build()
