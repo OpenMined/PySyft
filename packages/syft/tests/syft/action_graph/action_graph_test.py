@@ -8,6 +8,7 @@ Tests for the classes in the syft.service.action.action_graph module:
 
 # stdlib
 from pathlib import Path
+from threading import Thread
 
 # third party
 import networkx as nx
@@ -332,3 +333,55 @@ def test_networkx_backing_store_add_remove_edge():
     find_neighbors method of the NetworkXBackingStore
     """
     pass
+
+
+def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -> None:
+    # TODO need to reset the saved file before doing this test
+    thread_cnt = 5
+    repeats = 3
+
+    execution_err = None
+    store_config = InMemoryGraphConfig()
+    graph_store = InMemoryActionGraphStore(store_config=store_config)
+
+    def _cbk(tid: int) -> None:
+        nonlocal execution_err
+        for idx in range(repeats):
+            action_obj_a = ActionObject.from_obj([2, 4, 6])
+            node_data_a = NodeActionData.from_action_obj(
+                action_obj_a, credentials=verify_key
+            )
+            res1 = graph_store.set(node_data_a, credentials=verify_key)
+            if res1.is_err():
+                execution_err = res1.err()
+
+            action_obj_b = ActionObject.from_obj([3, 4, 6])
+            node_data_b = NodeActionData.from_action_obj(
+                action_obj_b, credentials=verify_key
+            )
+            res2 = graph_store.set(node_data_b, credentials=verify_key)
+            if res2.is_err():
+                execution_err = res2.err()
+
+            res3 = graph_store.add_edge(
+                node_data_a.id, node_data_b.id, credentials=verify_key
+            )
+            if res3.is_err():
+                execution_err = res3.err()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_cbk, args=(tid,))
+        thread.start()
+
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    reqd_num_nodes = thread_cnt * repeats * 2
+    reqd_num_edges = thread_cnt * repeats * 1
+
+    assert execution_err is None
+    assert len(graph_store.nodes(None).ok()) == reqd_num_nodes
+    assert len(graph_store.edges(None).ok()) == reqd_num_edges

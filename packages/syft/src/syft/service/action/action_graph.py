@@ -30,9 +30,9 @@ from ...store.document_store import QueryKey
 from ...store.document_store import QueryKeys
 from ...store.document_store import StoreClientConfig
 from ...store.document_store import StoreConfig
-from ...store.locks import FileLockingConfig
 from ...store.locks import LockingConfig
 from ...store.locks import SyftLock
+from ...store.locks import ThreadingLockingConfig
 from ...types.datetime import DateTime
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -338,7 +338,7 @@ class NetworkXBackingStore(BaseGraphStore):
 class InMemoryGraphConfig(StoreConfig):
     store_type: Type[BaseGraphStore] = NetworkXBackingStore
     client_config: StoreClientConfig = InMemoryStoreClientConfig()
-    locking_config: LockingConfig = FileLockingConfig()
+    locking_config: LockingConfig = ThreadingLockingConfig()
 
 
 @serializable()
