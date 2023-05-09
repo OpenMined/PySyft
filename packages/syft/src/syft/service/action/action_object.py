@@ -24,6 +24,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -212,32 +213,49 @@ def make_action_side_effect(
     return Ok((context, args, kwargs))
 
 
-def send_action_side_effect(
-    context: PreHookContext, *args: Any, **kwargs: Any
-) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
-    """Create a new action from the context.op_name, and execute it on the remote node.
+def convert_to_pointers(
+    api: SyftAPI,
+    node_uid: Optional[UID] = None,
+    args: Optional[List] = None,
+    kwargs: Optional[Dict] = None,
+) -> Tuple[List, Dict]:
+    arg_list = []
+    kwarg_dict = {}
+    if args is not None:
+        for arg in args:
+            if not isinstance(arg, ActionObject):
+                arg = ActionObject.from_obj(arg)
+                arg.syft_node_uid = node_uid
+                arg = api.services.action.set(arg)
+                # arg = action_obj.send(
+                #     client
+                # )  # make sure this doesn't break things later on in send_method_action
+            arg_list.append(arg)
 
-    Parameters:
-        context: PreHookContext
-            PreHookContext object
-        *args:
-            Operation *args
-        **kwargs
-            Operation *kwargs
-    Returns:
-        - Ok[[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]] on success
-        - Err[str] on failure
-    """
-    if context.op_name in dont_make_side_effects or not hasattr(
-        context.obj, "syft_node_uid"
-    ):
-        return Ok((context, args, kwargs))
+    if kwargs is not None:
+        for k, arg in kwargs.items():
+            if not isinstance(arg, ActionObject):
+                arg = ActionObject.from_obj(arg)
+                arg.syft_node_uid = node_uid
+                arg = api.services.action.set(arg)
+                # arg = action_obj.send(client)
 
+            kwarg_dict[k] = arg
+
+    return arg_list, kwarg_dict
+
+
+def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
     try:
-        if not getattr(context.obj, "syft_node_uid", None):
-            raise RuntimeError(
-                "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
-            )
+        if context.op_name not in dont_make_side_effects and hasattr(
+            context.obj, "syft_node_uid"
+        ):
+            if getattr(context.obj, "syft_node_uid", None):
+                if context.action is not None:
+                    action = context.obj.syft_make_method_action(
+                        op=context.op_name, args=args, kwargs=kwargs
+                    )
+                    context.action = action
 
         result = make_action_side_effect(context, *args, **kwargs)
         if result.is_err():
@@ -355,9 +373,11 @@ class ActionObject(SyftObject):
             f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
         )
 
-    def syft_point_to(self, node_uid: UID) -> None:
+    def syft_point_to(self, node_uid: UID) -> "ActionObject":
         """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
+
+        return self
 
     def syft_get_property(self, obj: Any, method: str) -> Any:
         klass_method = getattr(type(obj), method, None)
@@ -400,17 +420,50 @@ class ActionObject(SyftObject):
         )
         return api.make_call(api_call)
 
+    def _syft_try_to_save_to_store(self, obj) -> None:
+        if self.syft_node_uid is None:
+            return
+
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+        api.services.action.set(obj)
+
+    def _syft_prepare_obj_uid(self, obj) -> LineageID:
+        # We got the UID
+        if isinstance(obj, (UID, LineageID)):
+            return LineageID(obj.id)
+
+        # We got the ActionObjectPointer
+        if isinstance(obj, ActionObjectPointer):
+            return obj.syft_lineage_id
+
+        # We got the ActionObject. We need to save it in the store.
+        if isinstance(obj, ActionObject):
+            self._syft_try_to_save_to_store(obj)
+            return obj.syft_lineage_id
+
+        # We got a raw object. We need to create the ActionObject from scratch and save it in the store.
+        obj_id = Action.make_id(None)
+        lin_obj_id = Action.make_result_id(obj_id)
+        act_obj = ActionObject.from_obj(obj, id=obj_id, syft_lineage_id=lin_obj_id)
+
+        self._syft_try_to_save_to_store(act_obj)
+
+        return act_obj.syft_lineage_id
+
     def syft_make_action(
         self,
         path: str,
         op: str,
         remote_self: Optional[Union[UID, LineageID]] = None,
         args: Optional[
-            List[Union[UID, LineageID, ActionObjectPointer, ActionObject]]
-        ] = None,
+            List[Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
+        ] = [],
         kwargs: Optional[
-            Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject]]
-        ] = None,
+            Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
+        ] = {},
     ) -> Action:
         """Generate new action from the information
 
@@ -432,36 +485,14 @@ class ActionObject(SyftObject):
             ValueError: For invalid args or kwargs
             PydanticValidationError: For args and kwargs
         """
-        if args is None:
-            args = []
-        if kwargs is None:
-            kwargs = {}
-
         arg_ids = []
         kwarg_ids = {}
 
-        for uid in args:
-            if isinstance(uid, (UID, LineageID)):
-                arg_ids.append(LineageID(uid))
-                continue
-
-            if isinstance(uid, (ActionObjectPointer, ActionObject)):
-                arg_ids.append(uid.syft_lineage_id)
-                continue
-            raise ValueError(
-                f"Invalid args type {type(uid)}. Must be [UID, LineageID or ActionObject, or ActionObjectPointer]"
-            )
+        for obj in args:
+            arg_ids.append(self._syft_prepare_obj_uid(obj))
 
         for k, uid in kwargs.items():
-            if isinstance(uid, (LineageID, UID)):
-                kwarg_ids[k] = LineageID(uid)
-                continue
-            if isinstance(uid, (ActionObjectPointer, ActionObject)):
-                kwarg_ids[k] = uid
-                continue
-            raise ValueError(
-                f"Invalid kwargs type {type(uid)}. Must be [UID, LineageID, ActionObject or ActionObjectPointer]"
-            )
+            kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
 
         action = Action(
             path=path,
@@ -500,7 +531,7 @@ class ActionObject(SyftObject):
         )
 
     def syft_get_path(self) -> str:
-        """Get the type of the underlying object"""
+        """Get the type path of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
             return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
@@ -598,17 +629,16 @@ class ActionObject(SyftObject):
             self._syft_pre_hooks__[HOOK_ALWAYS] = []
 
         # this should be a list as orders matters
-        if make_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
-            self._syft_pre_hooks__[HOOK_ALWAYS].append(make_action_side_effect)
-
-        if send_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
-            self._syft_pre_hooks__[HOOK_ALWAYS].append(send_action_side_effect)
+        for side_effect in [make_action_side_effect, send_action_side_effect]:
+            if side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
+                self._syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
 
         if HOOK_ALWAYS not in self._syft_post_hooks__:
             self._syft_post_hooks__[HOOK_ALWAYS] = []
 
-        if propagate_node_uid not in self._syft_post_hooks__[HOOK_ALWAYS]:
-            self._syft_post_hooks__[HOOK_ALWAYS].append(propagate_node_uid)
+        for side_effect in [propagate_node_uid]:
+            if side_effect not in self._syft_post_hooks__[HOOK_ALWAYS]:
+                self._syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
 
         if isinstance(self.syft_action_data, ActionObject):
             raise Exception("Nested ActionObjects", self.syft_action_data)
@@ -681,7 +711,7 @@ class ActionObject(SyftObject):
         return passthrough_attrs + getattr(self, "syft_passthrough_attrs", [])
 
     def _syft_dont_wrap_attrs(self) -> List[str]:
-        """The results from these attributes are ignored from ID patching."""
+        """The results from these attributes are ignored from UID patching."""
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
     def _syft_get_attr_context(self, name: str) -> Any:
@@ -847,7 +877,6 @@ class ActionObject(SyftObject):
 
         if name in self._syft_passthrough_attrs():
             return object.__getattribute__(self, name)
-
         context_self = self._syft_get_attr_context(name)
 
         # Handle bool operator on nonbools
@@ -860,6 +889,19 @@ class ActionObject(SyftObject):
 
         # Handle anything else
         return self._syft_wrap_attribute_for_methods(name)
+
+    def __setattr__(self, name: str, value: Any) -> Any:
+        defined_on_self = name in self.__dict__ or name in self.__private_attributes__
+
+        debug(">> ", name, ", defined_on_self = ", defined_on_self)
+
+        # use the custom defined version
+        if defined_on_self:
+            self.__dict__[name] = value
+            return value
+        else:
+            context_self = self.syft_action_data  # type: ignore
+            return context_self.__setattr__(name, value)
 
     def keys(self) -> KeysView[str]:
         return self.syft_action_data.keys()  # type: ignore

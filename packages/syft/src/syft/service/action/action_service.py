@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+import importlib
 from typing import Any
 from typing import Dict
 from typing import List
@@ -23,6 +24,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
+from ..service import UserLibConfigRegistry
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .action_object import Action
@@ -101,7 +103,7 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
-    ) -> Result[ActionObject, str]:
+    ) -> Result[Ok[ActionObject], Err[str]]:
         """Get an object from the action store"""
         # TODO 🟣 Temporarily added skip permission arguments for enclave
         # until permissions are fully integrated
@@ -119,7 +121,7 @@ class ActionService(AbstractService):
                     obj.mock.syft_point_to(context.node.id)
                     obj.private.syft_point_to(context.node.id)
             return Ok(obj)
-        return Err(result.err())
+        return result
 
     @service_method(
         path="action.get_pointer", name="get_pointer", roles=GUEST_ROLE_LEVEL
@@ -205,39 +207,58 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
-        resolved_self = self.get(
-            context=context, uid=action.remote_self, twin_mode=TwinMode.NONE
-        )
-        if resolved_self.is_err():
-            return resolved_self.err()
-        resolved_self = resolved_self.ok()
 
-        if isinstance(resolved_self, TwinObject):
-            private_result = execute_object(
-                self, context, resolved_self.private, action, twin_mode=TwinMode.PRIVATE
+        if action.remote_self is None:
+            _user_lib_config_registry = UserLibConfigRegistry.from_user(
+                context.credentials
             )
-            if private_result.is_err():
-                return private_result
-            mock_result = execute_object(
-                self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
-            )
-            if mock_result.is_err():
-                return mock_result
-
-            private_result = private_result.ok()
-            mock_result = mock_result.ok()
-
-            result_action_object = Ok(
-                TwinObject(
-                    id=action.result_id,
-                    private_obj=private_result,
-                    private_obj_id=action.result_id,
-                    mock_obj=mock_result,
-                    mock_obj_id=action.result_id,
-                )
-            )
+            absolute_path = f"{action.path}.{action.op}"
+            if absolute_path in _user_lib_config_registry:
+                # TODO: implement properly
+                # Now we are assuming its a function/class
+                result_action_object = execute_callable(self, context, action)
+            else:
+                return Err(f"You have no permission for {absolute_path}")
         else:
-            result_action_object = execute_object(self, context, resolved_self, action)
+            resolved_self = self.get(
+                context=context, uid=action.remote_self, twin_mode=TwinMode.NONE
+            )
+            if resolved_self.is_err():
+                return resolved_self.err()
+            resolved_self = resolved_self.ok()
+
+            if isinstance(resolved_self, TwinObject):
+                private_result = execute_object(
+                    self,
+                    context,
+                    resolved_self.private,
+                    action,
+                    twin_mode=TwinMode.PRIVATE,
+                )
+                if private_result.is_err():
+                    return private_result.err()
+                mock_result = execute_object(
+                    self, context, resolved_self.mock, action, twin_mode=TwinMode.MOCK
+                )
+                if mock_result.is_err():
+                    return mock_result.err()
+
+                private_result = private_result.ok()
+                mock_result = mock_result.ok()
+
+                result_action_object = Ok(
+                    TwinObject(
+                        id=action.result_id,
+                        private_obj=private_result,
+                        private_obj_id=action.result_id,
+                        mock_obj=mock_result,
+                        mock_obj_id=action.result_id,
+                    )
+                )
+            else:
+                result_action_object = execute_object(
+                    self, context, resolved_self, action
+                )
 
         if result_action_object.is_err():
             return result_action_object.err()
@@ -269,13 +290,117 @@ class ActionService(AbstractService):
             return SyftError(message=f"Object: {obj_id} does not exist")
 
 
+def execute_callable(
+    service: ActionService,
+    context: AuthedServiceContext,
+    action: Action,
+) -> Result[ActionObject, str]:
+    args = []
+
+    if action.args:
+        for arg_id in action.args:
+            arg_value = service.get(
+                context=context, uid=arg_id, twin_mode=TwinMode.NONE
+            )
+            if arg_value.is_err():
+                return arg_value.err()
+            if isinstance(arg_value.ok(), TwinObject):
+                pass
+            args.append(arg_value.ok())
+
+    kwargs = {}
+    if action.kwargs:
+        for key, arg_id in action.kwargs.items():
+            kwarg_value = service.get(
+                context=context, uid=arg_id, twin_mode=TwinMode.NONE
+            )
+            if kwarg_value.is_err():
+                return kwarg_value.err()
+            if isinstance(kwarg_value.ok(), TwinObject):
+                pass
+            kwargs[key] = kwarg_value.ok()
+
+    # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
+    # is not bound to the original object or mutated
+    # stdlib
+
+    # TODO: get from CMPTree is probably safer
+    def _get_target_callable(path: str, op: str):
+        path_elements = path.split(".")
+        res = importlib.import_module(path_elements[0])
+        for p in path_elements[1:]:
+            res = getattr(res, p)
+        res = getattr(res, op)
+        return res
+
+    target_callable = _get_target_callable(action.path, action.op)
+
+    result = None
+    try:
+        if target_callable:
+            # if twin_mode == TwinMode.NONE and not has_twin_inputs:
+            twin_mode = TwinMode.NONE
+            # no twins
+            filtered_args = filter_twin_args(args, twin_mode=twin_mode)
+            filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+            result = target_callable(*filtered_args, **filtered_kwargs)
+            result_action_object = wrap_result(action.id, action.result_id, result)
+            # elif twin_mode == TwinMode.NONE and has_twin_inputs:
+            #     # self isn't a twin but one of the inputs is
+            #     private_args = filter_twin_args(args, twin_mode=twin_mode)
+            #     private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+            #     private_result = target_method(*private_args, **private_kwargs)
+            #     result_action_object_private = wrap_result(
+            #         action.parent_id, action.result_id, private_result
+            #     )
+
+            #     mock_args = filter_twin_args(args, twin_mode=twin_mode)
+            #     mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+            #     mock_result = target_method(*mock_args, **mock_kwargs)
+            #     result_action_object_mock = wrap_result(
+            #         action.parent_id, action.result_id, mock_result
+            #     )
+
+            #     result_action_object = TwinObject(
+            #         id=action.result_id,
+            #         private_obj=result_action_object_private,
+            #         mock_obj=result_action_object_mock,
+            #     )
+            # elif twin_mode == twin_mode.PRIVATE:  # type: ignore
+            #     # twin private path
+            #     private_args = filter_twin_args(args, twin_mode=twin_mode)
+            #     private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+            #     result = target_method(*private_args, **private_kwargs)
+            #     result_action_object = wrap_result(
+            #         action.parent_id, action.result_id, result
+            #     )
+            # elif twin_mode == twin_mode.MOCK:  # type: ignore
+            #     # twin mock path
+            #     mock_args = filter_twin_args(args, twin_mode=twin_mode)
+            #     mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+            #     target_method = getattr(unboxed_resolved_self, action.op, None)
+            #     result = target_method(*mock_args, **mock_kwargs)
+            #     result_action_object = wrap_result(
+            #         action.parent_id, action.result_id, result
+            #     )
+            # else:
+            #     raise Exception(
+            #         f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
+            #     )
+
+    except Exception as e:
+        print("what is this exception", e)
+        return Err(e)
+    return Ok(result_action_object)
+
+
 def execute_object(
     service: ActionService,
     context: AuthedServiceContext,
     resolved_self: ActionObject,
     action: Action,
     twin_mode: TwinMode = TwinMode.NONE,
-) -> Result[Union[TwinObject, ActionObject], str]:
+) -> Result[Ok[Union[TwinObject, ActionObject]], Err[str]]:
     unboxed_resolved_self = resolved_self.syft_action_data
     args = []
     has_twin_inputs = False
@@ -285,7 +410,7 @@ def execute_object(
                 context=context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if arg_value.is_err():
-                return arg_value.err()
+                return arg_value
             if isinstance(arg_value.ok(), TwinObject):
                 has_twin_inputs = True
             args.append(arg_value.ok())
@@ -297,7 +422,7 @@ def execute_object(
                 context=context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if kwarg_value.is_err():
-                return kwarg_value.err()
+                return kwarg_value
             if isinstance(kwarg_value.ok(), TwinObject):
                 has_twin_inputs = True
             kwargs[key] = kwarg_value.ok()
@@ -357,7 +482,7 @@ def execute_object(
                     f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
                 )
         else:
-            raise Exception("Missing target method")
+            return Err("Missing target method")
 
     except Exception as e:
         return Err(e)

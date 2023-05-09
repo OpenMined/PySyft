@@ -293,9 +293,9 @@ def clean(location: str) -> None:
     help="Disable tailscale vpn container",
 )
 @click.option(
-    "--silent",
+    "--verbose",
     is_flag=True,
-    help="Suppress extra launch outputs",
+    help="Show verbose output",
 )
 @click.option(
     "--trace",
@@ -342,7 +342,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         return
 
     try:
-        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+        update_repo(repo=GIT_REPO(), branch=str(kwargs["build_src"]))
     except Exception as e:
         print(f"Failed to update repo. {e}")
     try:
@@ -358,7 +358,10 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
 
     try:
         tail = bool(kwargs["tail"])
-        silent = not tail
+        verbose = bool(kwargs["verbose"])
+        silent = not verbose
+        if tail:
+            silent = False
 
         from_rendered_dir = bool(kwargs["from_template"]) and EDITABLE_MODE
 
@@ -551,15 +554,11 @@ def process_cmd(
     cmd_name: str = "",
 ) -> None:
     process_list: TypeList = []
-
+    grid_path = GRID_SRC_PATH()
     if node_type == "enclave":
-        cwd = GRID_SRC_PATH + "/worker"
+        cwd = grid_path + "/worker"
     else:
-        cwd = (
-            os.path.join(GRID_SRC_PATH, RENDERED_DIR)
-            if from_rendered_dir
-            else GRID_SRC_PATH
-        )
+        cwd = os.path.join(grid_path, RENDERED_DIR) if from_rendered_dir else grid_path
 
     username, password = (
         extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
@@ -1128,7 +1127,7 @@ def create_launch_cmd(
     parsed_kwargs["test"] = bool(kwargs["test"])
     parsed_kwargs["dev"] = bool(kwargs["dev"])
 
-    parsed_kwargs["silent"] = bool(kwargs["silent"])
+    parsed_kwargs["silent"] = not bool(kwargs["verbose"])
     parsed_kwargs["from_template"] = bool(kwargs["from_template"])
 
     parsed_kwargs["trace"] = False
@@ -1865,13 +1864,14 @@ def create_launch_docker_cmd(
 
     # if in development mode, generate a version_string which is either
     # the one you inputed concatenated with -dev or the contents of the VERSION file
+    version = GRID_SRC_VERSION()
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
         # during development we can use the latest beta version
         if version_string is None:
-            version_string = GRID_SRC_VERSION[0]
+            version_string = version[0]
         version_string += "-dev"
-        version_hash = GRID_SRC_VERSION[1]
+        version_hash = version[1]
         build = True
     else:
         # whereas if in production mode and tag == "local" use the local VERSION file
@@ -1881,8 +1881,8 @@ def create_launch_docker_cmd(
         # during production the default would be stable
         if version_string == "local":
             # this can be used in VMs in production to auto update from src
-            version_string = GRID_SRC_VERSION[0]
-            version_hash = GRID_SRC_VERSION[1]
+            version_string = version[0]
+            version_hash = version[1]
             build = True
         elif version_string is None:
             version_string = "latest"
@@ -1939,7 +1939,7 @@ def create_launch_docker_cmd(
 
     if "trace" in kwargs and kwargs["trace"] is True:
         envs["TRACE"] = "True"
-        envs["JAEGER_HOST"] = "docker-host"
+        envs["JAEGER_HOST"] = "host.docker.internal"
         envs["JAEGER_PORT"] = int(
             find_available_port(host="localhost", port=14268, search=True)
         )
@@ -1996,7 +1996,8 @@ def create_launch_docker_cmd(
 
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
-    default_env = f"{GRID_SRC_PATH}/.env"
+    grid_path = GRID_SRC_PATH()
+    default_env = f"{grid_path}/.env"
     default_envs = {}
     with open(default_env, "r") as f:
         for line in f.readlines():
@@ -2010,7 +2011,7 @@ def create_launch_docker_cmd(
     default_envs.update(envs)
 
     # env file path
-    env_file_path = os.path.join(GRID_SRC_PATH, ".envfile")
+    env_file_path = os.path.join(grid_path, ".envfile")
 
     # Render templates if creating stack from the manifest_template.yml
     if from_template and host_term.host is not None:
@@ -2023,7 +2024,7 @@ def create_launch_docker_cmd(
             host_type=host_term.host,
         )
 
-        env_file_path = os.path.join(GRID_SRC_PATH, RENDERED_DIR, ".envfile")
+        env_file_path = os.path.join(grid_path, RENDERED_DIR, ".envfile")
 
     try:
         env_file = ""
@@ -2128,7 +2129,7 @@ def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
     cmd += f"-e 'node_type={node_type.input}'"
     cmd += '" '
     cmd += "vagrant up --provision"
-    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    cmd = "cd " + GRID_SRC_PATH() + ";" + cmd
     return cmd
 
 
@@ -2732,8 +2733,9 @@ def create_ansible_land_cmd(
         print("  - PORT: " + str(host_term.port))
         print("\n")
 
-        playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
-        ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+        grid_path = GRID_SRC_PATH()
+        playbook_path = grid_path + "/ansible/site.yml"
+        ansible_cfg_path = grid_path + "/ansible.cfg"
         auth = cast(AuthCredentials, auth)
 
         if not os.path.exists(playbook_path):
@@ -2765,7 +2767,7 @@ def create_ansible_land_cmd(
         for k, v in ANSIBLE_ARGS.items():
             cmd += f" -e \"{k}='{v}'\""
 
-        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+        cmd = "cd " + grid_path + ";" + cmd
         return cmd
     except Exception as e:
         print(f"Failed to construct custom deployment cmd: {cmd}. {e}")
@@ -2799,8 +2801,9 @@ def create_launch_custom_cmd(
         print("  - PORT: " + str(host_term.port))
         print("\n")
 
-        playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
-        ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+        grid_path = GRID_SRC_PATH()
+        playbook_path = grid_path + "/ansible/site.yml"
+        ansible_cfg_path = grid_path + "/ansible.cfg"
         auth = cast(AuthCredentials, auth)
 
         if not os.path.exists(playbook_path):
@@ -2878,7 +2881,7 @@ def create_launch_custom_cmd(
         for k, v in ANSIBLE_ARGS.items():
             cmd += f" -e \"{k}='{v}'\""
 
-        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+        cmd = "cd " + grid_path + ";" + cmd
         return cmd
     except Exception as e:
         print(f"Failed to construct custom deployment cmd: {cmd}. {e}")
@@ -2980,18 +2983,19 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
 
     # Check if the container name belongs to worker container
+    grid_path = GRID_SRC_PATH()
     if "proxy" in containers:
-        path = GRID_SRC_PATH
+        path = grid_path
         env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
     else:
-        path = GRID_SRC_PATH + "/worker"
+        path = grid_path + "/worker"
         env_var = ";export $(cat ../.env | sed 's/#.*//g' | xargs);"
 
     cmd = ""
     cmd += "docker compose"
     cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
-    cmd += " down"
+    cmd += " down --remove-orphans"
 
     cmd = "cd " + path + env_var + cmd
     return cmd
@@ -3041,7 +3045,7 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
         return
 
     try:
-        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+        update_repo(repo=GIT_REPO(), branch=str(kwargs["build_src"]))
     except Exception as e:
         print(f"Failed to update repo. {e}")
 
@@ -3063,6 +3067,8 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
             kwargs={},
         )
 
+    grid_path = GRID_SRC_PATH()
+
     if force or _land_domain == "y":
         if not bool(kwargs["cmd"]):
             if not silent:
@@ -3073,14 +3079,14 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
                         cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        cwd=GRID_SRC_PATH,
+                        cwd=grid_path,
                         shell=True,
                     )
                     process.communicate()
 
                     print(f"HAGrid land {target} complete!")
                 else:
-                    subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+                    subprocess.call(cmd, shell=True, cwd=grid_path)  # nosec
             except Exception as e:
                 print(f"Failed to run cmd: {cmd}. {e}")
     else:

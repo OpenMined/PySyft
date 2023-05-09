@@ -1,12 +1,16 @@
 # stdlib
+from enum import Enum
 import inspect
 import math
+import sys
 from typing import Any
 from typing import Callable
 from typing import Tuple
 from typing import Type
 
 # third party
+import numpy as np
+import pandas as pd
 import pytest
 
 # syft absolute
@@ -28,34 +32,13 @@ def helper_make_action_obj(orig_obj: Any):
     return ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
 
 
-def helper_make_action_args(*args, **kwargs):
-    act_args = []
-    act_kwargs = {}
-
-    for v in args:
-        act_args.append(helper_make_action_obj(v))
-
-    for v in kwargs:
-        act_kwargs[v] = helper_make_action_obj(kwargs[v])
-
-    return act_args, act_kwargs
-
-
 def helper_make_action_pointers(worker, obj, *args, **kwargs):
-    args_pointers, kwargs_pointers = [], {}
-
     root_domain_client = worker.root_client
-    obj_pointer = root_domain_client.api.services.action.set(obj)
+    root_domain_client.api.services.action.set(obj)
+    obj_pointer = root_domain_client.api.services.action.get_pointer(obj.id)
 
-    for arg in args:
-        root_domain_client.api.services.action.set(arg)
-        args_pointers.append(arg.id)
-
-    for key in kwargs:
-        root_domain_client.api.services.action.set(kwargs[key])
-        kwargs_pointers[key] = kwargs[key].id
-
-    return obj_pointer, args_pointers, kwargs_pointers
+    # The args and kwargs should automatically be pointerized by obj_pointer
+    return obj_pointer, args, kwargs
 
 
 # Test Action class
@@ -232,8 +215,6 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
     orig_obj, op, args, kwargs = (1, 2, 3), "count", [], {}  # count expect one argument
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
-
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
     )
@@ -247,28 +228,25 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
     "orig_obj_op",
     [
         # (object, operation, *args, **kwargs)
-        ("abc", "__len__", [], {}),
         (int(1), "__len__", [1], {}),
         (float(1.2), "__len__", [1], {}),
         (True, "__len__", [True], {}),
-        ((1, 2, 3), "__len__", [], {}),
         ([1, 2, 3], "__len__", [4], {}),
-        ({"a": 1, "b": 2}, "__len__", [], {}),
+        ({"a": 1, "b": 2}, "__len__", [7], {}),
         (set({1, 2, 3, 3}), "__len__", [5], {}),
     ],
 )
-def test_actionobject_hooks_send_action_side_effect_ignore_op(orig_obj_op):
+def test_actionobject_hooks_send_action_side_effect_ignore_op(
+    root_domain_client, orig_obj_op
+):
     orig_obj, op, args, kwargs = orig_obj_op
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
+    obj = obj.send(root_domain_client)
 
     context = PreHookContext(obj=obj, op_name=op)
     result = send_action_side_effect(context, *args, **kwargs)
-    assert result.is_ok()
-
-    context, args, kwargs = result.ok()
-    assert context.result_id is None  # operation was ignored
+    assert result.is_err()
 
 
 @pytest.mark.parametrize(
@@ -294,7 +272,6 @@ def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
     orig_obj, op, args, kwargs = orig_obj_op
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
@@ -359,13 +336,13 @@ def test_actionobject_syft_point_to():
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
         (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
         (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
 def test_actionobject_syft_execute_ok(worker, testcase):
     orig_obj, op, args, kwargs, expected = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
@@ -403,7 +380,6 @@ def test_actionobject_syft_make_action(worker, testcase):
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
     )
@@ -429,13 +405,13 @@ def test_actionobject_syft_make_action(worker, testcase):
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
         (set({1, 2, 3, 3}), "add", [5], {}),
         (set({1, 2, 3, 3}), "clear", [], {}),
+        (complex(1, 2), "conjugate", [], {}),
     ],
 )
 def test_actionobject_syft_make_method_action(worker, testcase):
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
     )
@@ -460,13 +436,13 @@ def test_actionobject_syft_make_method_action(worker, testcase):
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
         (set({1, 2, 3, 3}), "add", [5], {}),
         (set({1, 2, 3, 3}), "clear", [], {}),
+        (complex(1, 2), "conjugate", [], {}),
     ],
 )
 def test_actionobject_syft_make_remote_method_action(worker, testcase):
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
     )
@@ -489,6 +465,7 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_get_path(testcase):
@@ -510,6 +487,7 @@ def test_actionobject_syft_get_path(testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_send_get(worker, testcase):
@@ -541,6 +519,7 @@ def test_actionobject_syft_send_get(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_passthrough_attrs(testcase):
@@ -588,6 +567,7 @@ def test_actionobject_syft_get_attr_context():
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
         (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
         (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
 def test_actionobject_syft_execute_hooks(worker, testcase):
@@ -595,7 +575,6 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     orig_obj, op, args, kwargs, expected = testcase
 
     obj = helper_make_action_obj(orig_obj)
-    args, kwargs = helper_make_action_args(*args, **kwargs)
 
     obj_pointer, args_pointers, kwargs_pointers = helper_make_action_pointers(
         worker, obj, *args, **kwargs
@@ -626,6 +605,7 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
@@ -646,6 +626,7 @@ def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
@@ -678,6 +659,7 @@ def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
         [1, 2, 1],
         {"a": 1, "b": 2},
         set({1, 2, 3, 3}),
+        complex(1, 2),
     ],
 )
 def test_actionobject_syft_wrap_attribute_for_methods(orig_obj):
@@ -698,10 +680,29 @@ def test_actionobject_syft_wrap_attribute_for_methods(orig_obj):
         assert isinstance(method, Callable)
 
 
-def test_actionobject_syft_getattr_str():
+class AttrScenario(Enum):
+    AS_OBJ = 0
+    AS_PTR = 1
+    AS_UID = 2
+    AS_LUID = 3
+
+
+def helper_prepare_obj_for_scenario(scenario: AttrScenario, worker, obj: ActionObject):
+    if scenario == AttrScenario.AS_OBJ:
+        return obj
+    elif scenario == AttrScenario.AS_PTR:
+        obj, _, _ = helper_make_action_pointers(worker, obj, *[], **{})
+        return obj
+    else:
+        raise ValueError(scenario)
+
+
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_str(worker, scenario):
     orig_obj = "a bC"
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj != "sdfsfs"
@@ -738,10 +739,12 @@ def test_actionobject_syft_getattr_str_history():
     assert res1.syft_history_hash == res2.syft_history_hash
 
 
-def test_actionobject_syft_getattr_list():
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_list(worker, scenario):
     orig_obj = [3, 2, 1, 4]
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert 1 in obj
     assert obj[0] == 3
@@ -768,10 +771,12 @@ def test_actionobject_syft_getattr_list_history():
     assert res1.syft_history_hash == res2.syft_history_hash
 
 
-def test_actionobject_syft_getattr_dict():
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_dict(worker, scenario):
     orig_obj = {"a": 1, "b": 2}
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj.get("a") == 1
@@ -790,10 +795,12 @@ def test_actionobject_syft_getattr_dict_history():
     assert res1.syft_history_hash == res2.syft_history_hash
 
 
-def test_actionobject_syft_getattr_tuple():
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_tuple(worker, scenario):
     orig_obj = (1, 2, 3, 4, 4)
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj.count(4) == 2
@@ -808,10 +815,12 @@ def test_actionobject_syft_getattr_tuple():
         assert item == obj[idx]
 
 
-def test_actionobject_syft_getattr_set():
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_set(worker, scenario):
     orig_obj = set({1, 2, 3, 4})
 
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj.add(4) == set({1, 2, 3, 4})
@@ -829,8 +838,10 @@ def test_actionobject_syft_getattr_set_history():
 
 
 @pytest.mark.parametrize("orig_obj", [True, False])
-def test_actionobject_syft_getattr_bool(orig_obj):
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_bool(orig_obj, worker, scenario):
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj.__and__(False) == (orig_obj and False)  # noqa
     assert obj.__or__(False) == (orig_obj or False)  # noqa
@@ -858,8 +869,10 @@ def test_actionobject_syft_getattr_bool_history():
 
 
 @pytest.mark.parametrize("orig_obj", [-5, 0, 5])
-def test_actionobject_syft_getattr_int(orig_obj: int):
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_int(orig_obj: int, worker, scenario):
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj != orig_obj + 1
@@ -921,8 +934,10 @@ def test_actionobject_syft_getattr_int_history(worker):
 
 
 @pytest.mark.parametrize("orig_obj", [-5.5, 0.0, 5.5])
-def test_actionobject_syft_getattr_float(orig_obj: float):
+@pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
+def test_actionobject_syft_getattr_float(orig_obj: float, worker, scenario):
     obj = ActionObject.from_obj(orig_obj)
+    obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
     assert obj != orig_obj + 1
@@ -968,3 +983,30 @@ def test_actionobject_syft_getattr_float_history():
     res2 = obj1 + obj2
 
     assert res1.syft_history_hash == res2.syft_history_hash
+
+
+@pytest.mark.skipif(
+    sys.platform != "linux",
+    reason="This is a hackish way to test attribute set/get, and it might fail on Windows or OSX",
+)
+def test_actionobject_syft_getattr_np(worker):
+    orig_obj = np.array([1, 2, 3])
+
+    obj = ActionObject.from_obj(orig_obj)
+
+    assert obj.dtype == orig_obj.dtype
+
+    for dtype in ["int64", "float64"]:
+        obj.dtype = dtype
+        assert obj.dtype == dtype
+
+
+def test_actionobject_syft_getattr_pandas(worker):
+    orig_obj = pd.DataFrame([[1, 2, 3]], columns=["1", "2", "3"])
+
+    obj = ActionObject.from_obj(orig_obj)
+
+    assert obj.columns == orig_obj.columns
+
+    obj.columns = ["a", "b", "c"]
+    assert obj.columns == ["a", "b", "c"]
