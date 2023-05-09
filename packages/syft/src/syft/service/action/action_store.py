@@ -143,10 +143,6 @@ class KeyValueActionStore(ActionStore):
                     # create default permissions
                     self.permissions[uid] = set()
                 self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
-                # permission = f"{credentials.verify}_READ"
-                # permissions = self.permissions[uid]
-                # permissions.add(permission)
-                # self.permissions[uid] = permissions
             else:
                 self.add_permissions(
                     [

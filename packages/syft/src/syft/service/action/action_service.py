@@ -542,16 +542,6 @@ def execute_callable(
                 result = target_callable(*filtered_args, **filtered_kwargs)
                 result_action_object = wrap_result(action.result_id, result)
             else:
-                # filtered_args = filter_twin_args(args, twin_mode=twin_mode)
-                # filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
-                # private_result = target_callable(*filtered_args, **filtered_kwargs)
-                # private_result_action_object = wrap_result(action.result_id, result)
-
-                # twin_mode = TwinMode.MOCK
-                # filtered_args = filter_twin_args(args, twin_mode=twin_mode)
-                # filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
-                # mock_result = target_callable(*filtered_args, **filtered_kwargs)
-                # mock_result_action_object = wrap_result(action.result_id, result)
                 twin_mode = TwinMode.PRIVATE
                 private_args = filter_twin_args(args, twin_mode=twin_mode)
                 private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)

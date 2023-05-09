@@ -54,33 +54,6 @@ class Plan(SyftObject):
         else:
             return self.outputs
 
-        # return self.outputs
-
-    # def __call__(self, *args, **kwargs):
-    #     # todo, fix
-    #     if self.client is None:
-    #         raise ValueError("first set client")
-    #     if args != ():
-    #         raise ValueError(
-    #             f"Only kwargs are allowed for plan execution, found {args}"
-    #         )
-
-    #     for k, v_action in kwargs.items():
-    #         if not isinstance(v_action, ActionObject):
-    #             v_action = ActionObject.from_obj(v_action)
-    #         v_action.id = self.inputs[k].id
-    #         self.client.api.services.action.set(v_action)
-
-    #     for a in self.actions:
-    #         self.client.api.services.action.execute(a)
-    #     outputs = [
-    #         self.client.api.services.action.get_pointer(x.id) for x in self.outputs
-    #     ]
-    #     if len(outputs) == 1:
-    #         return outputs[0]
-    #     else:
-    #         return outputs[1]
-
 
 def planify(func):
     TraceResult.reset()
