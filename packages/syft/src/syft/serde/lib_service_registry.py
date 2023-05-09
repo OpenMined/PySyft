@@ -16,6 +16,7 @@ from typing import Union
 import numpy
 import jax
 from typing_extensions import Self
+from jaxlib.xla_extension import CompiledFunction
 
 # relative
 from .lib_permissions import ALL_EXECUTE
@@ -211,6 +212,8 @@ class CMPBase:
             inspect.isfunction(obj)
             or type(obj) == numpy.ufunc
             or isinstance(obj, BuiltinFunctionType)
+            or isinstance(obj, CompiledFunction)
+            or isinstance(obj, jax.core.AbstractValue)
         )
 
     def __repr__(
