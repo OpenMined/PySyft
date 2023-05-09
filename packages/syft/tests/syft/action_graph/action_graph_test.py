@@ -12,8 +12,8 @@ from pathlib import Path
 
 # third party
 import networkx as nx
-import numpy as np
 import pytest
+from result import Err
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
@@ -25,11 +25,17 @@ from syft.service.action.action_graph import NetworkXBackingStore
 from syft.service.action.action_graph import NodeActionData
 from syft.service.action.action_graph import NodeActionDataUpdate
 from syft.service.action.action_graph import NodeType
+from syft.service.action.action_graph_service import ExecutionStatusPartitionKey
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
+from syft.store.document_store import QueryKeys
 from syft.store.locks import NoLockingConfig
 from syft.types.datetime import DateTime
 from syft.types.syft_metaclass import Empty
+
+# relative
+from .fixtures import create_action_node
+from .fixtures import create_action_obj_node
 
 
 def test_node_action_data_from_action_obj(verify_key: SyftVerifyKey) -> None:
@@ -118,17 +124,18 @@ def test_node_action_data_from_action_mutagen(verify_key: SyftVerifyKey) -> None
     assert node_action_data2.last_nm_mutagen_node is None
 
 
-def test_node_action_data_update(verify_key: SyftVerifyKey) -> None:
+def test_node_action_data_update() -> None:
     node_action_data_update = NodeActionDataUpdate()
 
-    assert node_action_data_update.id is None
+    assert node_action_data_update.id == Empty
     assert node_action_data_update.type == Empty
     assert node_action_data_update.status == Empty
     assert node_action_data_update.retry == Empty
     assert node_action_data_update.created_at == Empty
     assert node_action_data_update.credentials == Empty
+    # only updated_at is not empty
     assert isinstance(node_action_data_update.updated_at, DateTime)
-    assert len(node_action_data_update.to_dict(exclude_empty=True)) == 2
+    assert len(node_action_data_update.to_dict(exclude_empty=True)) == 1
     assert node_action_data_update.to_dict(exclude_empty=False) == vars(
         node_action_data_update
     )
@@ -158,36 +165,6 @@ def test_in_memory_graph_config() -> None:
     assert store_config.locking_config == locking_config
 
 
-def create_action_obj_node(verify_key: SyftVerifyKey) -> NodeActionData:
-    """
-    Helper function to create an action object node of a random
-    array of 3 float numbers
-    """
-    random_data = np.random.rand(3)
-    action_obj = ActionObject.from_obj(random_data)
-    action_obj_node = NodeActionData.from_action_obj(
-        action_obj=action_obj, credentials=verify_key
-    )
-    assert action_obj_node.type == NodeType.ACTION_OBJECT
-
-    return action_obj_node
-
-
-def create_action_node(verify_key: SyftVerifyKey) -> NodeActionData:
-    random_data = np.random.rand(3)
-    action_obj = ActionObject.from_obj(random_data)
-    action = Action(
-        path="action.execute",
-        op="np.array",
-        remote_self=None,
-        args=[action_obj.syft_lineage_id],
-        kwargs={},
-    )
-    action_node = NodeActionData.from_action(action=action, credentials=verify_key)
-    assert action_node.type == NodeType.ACTION
-    return action_node
-
-
 def test_networkx_backing_store_node_related_methods(
     networkx_store: NetworkXBackingStore, verify_key: SyftVerifyKey
 ) -> None:
@@ -215,9 +192,8 @@ def test_networkx_backing_store_node_related_methods(
     )
 
     # update the action node
-    # TODO: if not do `id=action_node.id`, action_node's id will become None
     update_node = NodeActionDataUpdate(
-        id=action_node.id, status=ExecutionStatus.DONE, is_mutagen=True, is_mutated=True
+        status=ExecutionStatus.DONE, is_mutagen=True, is_mutated=True
     )
     for key, val in update_node.to_dict(exclude_empty=True).items():
         setattr(action_node, key, val)
@@ -282,25 +258,18 @@ def test_networkx_backing_store_edge_related_methods(
 
 
 def test_networkx_backing_store_save_load_default(
-    networkx_store: NetworkXBackingStore, verify_key: SyftVerifyKey
+    networkx_store_with_nodes: NetworkXBackingStore, verify_key: SyftVerifyKey
 ) -> None:
     """
     Test the save and load methods of NetworkXBackingStore to a default location.
     These functions rely on the serialization and deserialization methods of the store.
     """
-    # create some nodes and add them to the store
-    action_obj_node: NodeActionData = create_action_obj_node(verify_key)
-    action_node: NodeActionData = create_action_node(verify_key)
-    action_node_2: NodeActionData = create_action_node(verify_key)
-    networkx_store.set(uid=action_obj_node.id, data=action_obj_node)
-    networkx_store.set(uid=action_node.id, data=action_node)
-    networkx_store.set(uid=action_node_2.id, data=action_node_2)
     # save the store to and from the default location
-    networkx_store.save()
+    networkx_store_with_nodes.save()
     default_in_mem_graph_config = InMemoryGraphConfig()
     networkx_store_2 = NetworkXBackingStore(default_in_mem_graph_config)
-    assert networkx_store_2.nodes() == networkx_store.nodes()
-    assert networkx_store_2.edges() == networkx_store.edges()
+    assert networkx_store_2.nodes() == networkx_store_with_nodes.nodes()
+    assert networkx_store_2.edges() == networkx_store_with_nodes.edges()
     # remove the saved file
     os.remove(default_in_mem_graph_config.client_config.file_path)
 
@@ -328,8 +297,28 @@ def test_networkx_backing_store_save_load_custom(verify_key: SyftVerifyKey) -> N
     os.remove(custom_in_mem_graph_config.client_config.file_path)
 
 
-@pytest.mark.skip
-def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) -> None:
+def test_networkx_backing_store_subgraph(
+    networkx_store_with_nodes: NetworkXBackingStore, verify_key: SyftVerifyKey
+):
+    processing_status = ExecutionStatus.PROCESSING
+    qks = QueryKeys(qks=[ExecutionStatusPartitionKey.with_obj(processing_status)])
+    subgraph = networkx_store_with_nodes.subgraph(qks)
+    assert len(subgraph.nodes()) == 3
+    assert len(subgraph.edges()) == 0
+    # add a node with a status DONE
+    action_node: NodeActionData = create_action_node(verify_key)
+    action_node.status = ExecutionStatus.DONE
+    networkx_store_with_nodes.set(uid=action_node.id, data=action_node)
+    done_status = ExecutionStatus.DONE
+    qks2 = QueryKeys(qks=[ExecutionStatusPartitionKey.with_obj(done_status)])
+    subgraph2 = networkx_store_with_nodes.subgraph(qks2)
+    assert len(subgraph2.nodes()) == 1
+    assert len(subgraph2.edges()) == 0
+
+
+def test_in_memory_action_graph_store_init(
+    in_mem_graph_config: InMemoryGraphConfig,
+) -> None:
     graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config)
 
     assert graph_store.store_config == in_mem_graph_config
@@ -337,41 +326,109 @@ def test_in_memory_action_graph_store(in_mem_graph_config: InMemoryGraphConfig) 
     assert isinstance(graph_store.graph.db, nx.DiGraph)
 
 
-@pytest.mark.skip
-def test_simple_in_memory_action_graph(
-    simple_in_memory_action_graph: InMemoryActionGraphStore,
+def test_in_memory_action_graph_store_set_get_delete(
+    in_mem_graph_store: InMemoryActionGraphStore,
+    verify_key: SyftVerifyKey,
 ) -> None:
     """
-    action1 -> a + b = c
-    action2 -> initialization of variable d
-    action3 -> c * d
+    Test these methods of InMemoryActionGraphStore: set, get, delete, nodes, edges, is_parent
     """
-    assert len(simple_in_memory_action_graph.edges.ok()) == 2
-    assert len(simple_in_memory_action_graph.nodes.ok()) == 3
-
-    nodes = list(simple_in_memory_action_graph.nodes.ok())
-    node_action_data_1: NodeActionData = nodes[0][1]["data"]
-    node_action_data_2: NodeActionData = nodes[1][1]["data"]
-    node_action_data_3: NodeActionData = nodes[2][1]["data"]
-
+    # add the first node
+    action_obj_node: NodeActionData = create_action_obj_node(verify_key)
+    result = in_mem_graph_store.set(action_obj_node, credentials=verify_key)
+    assert result.ok() == action_obj_node
+    assert len(in_mem_graph_store.nodes(verify_key).ok()) == 1
+    assert len(in_mem_graph_store.edges(verify_key).ok()) == 0
     assert (
-        simple_in_memory_action_graph.is_parent(
-            parent=node_action_data_1.id, child=node_action_data_3.id
+        in_mem_graph_store.get(action_obj_node.id, verify_key).ok() == action_obj_node
+    )
+
+    # add the second node which is the child of the first node
+    action_node: NodeActionData = create_action_node(verify_key)
+    result2 = in_mem_graph_store.set(
+        action_node, credentials=verify_key, parent_uids=[action_obj_node.id]
+    )
+    assert result2.ok() == action_node
+    assert len(in_mem_graph_store.nodes(verify_key).ok()) == 2
+    assert len(in_mem_graph_store.edges(verify_key).ok()) == 1
+    assert in_mem_graph_store.get(action_node.id, verify_key).ok() == action_node
+    assert (
+        in_mem_graph_store.is_parent(
+            parent=action_obj_node.id, child=action_node.id
+        ).ok()
+        is True
+    )
+
+    # add the third node which is the child of the first and second node
+    action_node_2: NodeActionData = create_action_node(verify_key)
+    result3 = in_mem_graph_store.set(
+        action_node_2,
+        credentials=verify_key,
+        parent_uids=[action_obj_node.id, action_node.id],
+    )
+    assert result3.ok() == action_node_2
+    assert len(in_mem_graph_store.nodes(verify_key).ok()) == 3
+    assert len(in_mem_graph_store.edges(verify_key).ok()) == 3
+    assert in_mem_graph_store.get(action_node_2.id, verify_key).ok() == action_node_2
+    assert (
+        in_mem_graph_store.is_parent(
+            parent=action_obj_node.id, child=action_node_2.id
         ).ok()
         is True
     )
     assert (
-        simple_in_memory_action_graph.is_parent(
-            parent=node_action_data_2.id, child=node_action_data_3.id
-        ).ok()
+        in_mem_graph_store.is_parent(parent=action_node.id, child=action_node_2.id).ok()
         is True
     )
     assert (
-        simple_in_memory_action_graph.is_parent(
-            parent=node_action_data_1.id, child=node_action_data_2.id
-        ).ok()
+        in_mem_graph_store.is_parent(parent=action_node_2.id, child=action_node.id).ok()
         is False
     )
+
+    # delete the first node
+    result4 = in_mem_graph_store.delete(action_obj_node.id, verify_key)
+    assert result4.ok() is True
+    assert len(in_mem_graph_store.nodes(verify_key).ok()) == 2
+    assert len(in_mem_graph_store.edges(verify_key).ok()) == 1
+    assert (
+        in_mem_graph_store.is_parent(parent=action_node.id, child=action_node_2.id).ok()
+        is True
+    )
+    # trying to get the deleted note should result in an Err
+    assert isinstance(in_mem_graph_store.get(action_obj_node.id, verify_key), Err)
+
+
+def test_in_memory_action_graph_store_update(
+    in_mem_graph_store: InMemoryActionGraphStore,
+    verify_key: SyftVerifyKey,
+) -> None:
+    action_obj_node: NodeActionData = create_action_obj_node(verify_key)
+    result = in_mem_graph_store.set(action_obj_node, credentials=verify_key).ok()
+    update_node = NodeActionDataUpdate(
+        status=ExecutionStatus.DONE, is_mutagen=True, is_mutated=True
+    )
+    result2 = in_mem_graph_store.update(
+        uid=result.id, data=update_node, credentials=verify_key
+    ).ok()
+    assert result2.id == result.id
+    assert in_mem_graph_store.get(result.id, verify_key).ok() == result2
+    assert result2.status == ExecutionStatus.DONE
+    assert result2.is_mutagen is True
+    assert result2.is_mutated is True
+    assert isinstance(result2.updated_at, DateTime)
+
+
+def test_simple_in_memory_action_graph(
+    simple_in_memory_action_graph: InMemoryActionGraphStore,
+    verify_key: SyftVerifyKey,
+) -> None:
+    """
+    action_obj_node_a
+    action_obj_node_b
+    action -> a + b = c
+    """
+    assert len(simple_in_memory_action_graph.edges(verify_key).ok()) == 2
+    assert len(simple_in_memory_action_graph.nodes(verify_key).ok()) == 3
 
 
 @pytest.mark.skip
@@ -468,12 +525,3 @@ def test_complicated_in_memory_action_graph(
         ).ok()
         is False
     )
-
-
-@pytest.mark.skip
-def test_networkx_backing_store_add_remove_edge():
-    """
-    Test adding and removing edges, and also the
-    find_neighbors method of the NetworkXBackingStore
-    """
-    pass

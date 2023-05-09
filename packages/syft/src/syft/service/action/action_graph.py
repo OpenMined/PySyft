@@ -114,7 +114,7 @@ class NodeActionDataUpdate(PartialSyftObject):
     __canonical_name__ = "NodeActionDataUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: UID
     type: NodeType
     status: ExecutionStatus
     retry: int
@@ -347,8 +347,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
         credentials: SyftVerifyKey,
     ) -> Result[NodeActionData, str]:
         # 🟡 TODO: Add permission check
-        node_data = self.graph.get(uid=uid)
-        return Ok(node_data)
+        if self.graph.exists(uid=uid):
+            node_data = self.graph.get(uid=uid)
+            return Ok(node_data)
+        return Err(f"Node does not exists with id: {uid}")
 
     def delete(
         self,
