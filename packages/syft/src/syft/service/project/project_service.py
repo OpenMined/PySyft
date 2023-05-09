@@ -112,8 +112,9 @@ class NewProjectService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Start a Project"""
         try:
+            project.id = project_id
             project_obj = project.to(NewProject, context=context)
-            project_obj.id = project_id
+            # project_obj.id = project_id
 
             result = self.stash.set(context.credentials, project_obj)
             if result.is_err():
