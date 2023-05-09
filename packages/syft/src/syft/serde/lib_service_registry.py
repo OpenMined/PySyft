@@ -262,6 +262,16 @@ class CMPBase:
             path = self.path
         return f"{indent_str}{path} ({self.permissions})\n{children_string}"
 
+    def get_path(self, path:str) -> Any:
+        segments = path.split('.')
+        root = segments[0]
+        if root in self.children:
+            if len(segments) == 1:
+                return self.children[root]
+            else:
+                return self.children[root].get_path('.'.join(segments[1:]))
+        else:
+            raise ValueError(f"property {path} does not exist")
 
 class CMPModule(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -342,6 +352,16 @@ class CMPTree:
     def __repr__(self) -> str:
         return "\n".join([c.__repr__() for c in self.children.values()])
 
+    def get_path(self, path:str) -> Any:
+        segments = path.split('.')
+        root = segments[0]
+        if root in self.children:
+            if len(segments) == 1:
+                return self.children[root]
+            else:
+                return self.children[root].get_path('.'.join(segments[1:]))
+        else:
+            raise ValueError(f"property {path} does not exist")
 
 action_execute_registry_libs = CMPTree(
     children=[
