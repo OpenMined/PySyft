@@ -8,9 +8,9 @@ import jax.numpy as hidden_jnp
 import jax as hidden_jax
 import jaxlib as hidden_jaxlib
 
-from .serializable import serializable
+from ...serde.serializable import serializable
 from .action_object import ActionObject
-from .syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from .action_types import action_types
 from .numpy import NumpyArrayObject
 import sys

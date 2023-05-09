@@ -34,6 +34,7 @@ from .action_object import AnyActionObject
 from .action_store import ActionStore
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
+from .jax import DeviceArrayObject # noqa: F401
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 
