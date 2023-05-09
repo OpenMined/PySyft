@@ -109,7 +109,6 @@ class APICallMessageHandler(AbstractMessageHandler):
     def message_handler(cls, message: bytes, worker: Any):
         task_uid, api_call = deserialize(message, from_bytes=True)
         result = worker.handle_api_call(api_call)
-        print("Result", result)
         item = QueueItem(node_uid=worker.id, id=task_uid, result=result, resolved=True)
         worker.queue_stash.set_result(api_call.credentials, item)
         worker.queue_stash.partition.close()
@@ -187,7 +186,7 @@ class ZMQClient(QueueClient):
                 in_socket.send_multipart(message)
                 mon_socket.send_multipart([out_prefix] + message)
 
-    def start(self, in_prefix: bytes = b"pub", out_prefix: bytes = b"sub"):
+    def start(self, in_prefix: bytes = b"", out_prefix: bytes = b""):
         self._setup_connections()
         self.logger_thread = gevent.spawn(self._start_logger, self.mon_sub)
         self.thread = gevent.spawn(
@@ -234,13 +233,13 @@ class QueueRouter(BaseQueueRouter):
     def post_init(self):
         self._publisher = None
         self.subscribers = defaultdict(list)
-        self.__client = self.config.client_type(self.config.client_config)
+        self._client = self.config.client_type(self.config.client_config)
 
     def start(self):
-        self.__client.start()
+        self._client.start()
 
     def close(self):
-        self.__client.close()
+        self._client.close()
 
     @property
     def pub_addr(self):
@@ -255,7 +254,7 @@ class QueueRouter(BaseQueueRouter):
     ):
         subscriber = self.config.subscriber(
             message_handler=message_handler.message_handler,
-            address=self.pub_addr,
+            address=self.sub_addr,
             worker_settings=worker_settings,
             queue_name=message_handler.queue,
         )

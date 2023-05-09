@@ -251,6 +251,7 @@ class Node(AbstractNode):
         MessageHandlers = [APICallMessageHandler]
 
         self.queue_router = QueueRouter(queue_config)
+        self.queue_router.start()
         self.publisher = self.queue_router.publisher
         for subscriber_type in MessageHandlers:
             subscriber = self.queue_router.create_subscriber(
@@ -615,8 +616,6 @@ class Node(AbstractNode):
             # 🟡 TODO:  Integrate ZeroMQ here possibly
 
             # Publisher system which pushes to a Queue
-
-            print("Hello...., sending in bytes data")
 
             message_bytes = serialize._serialize([task_uid, api_call], to_bytes=True)
             self.publisher.send(message=message_bytes, queue_name="api_call")
