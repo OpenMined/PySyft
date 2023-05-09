@@ -780,9 +780,11 @@ class ActionObject(SyftObject):
         """
 
         empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
-        return ActionObject.from_obj(
+        res = ActionObject.from_obj(
             syft_action_data=empty, id=id, syft_lineage_id=syft_lineage_id
         )
+        res.__dict__["syft_internal_type"] = syft_internal_type
+        return res
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""

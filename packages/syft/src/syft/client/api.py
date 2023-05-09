@@ -228,9 +228,16 @@ def generate_remote_lib_function(
         # relative
         from ..service.action.action_object import TraceResult
 
+        print(node_uid)
+        # node_uid = node_uid
+
         if TraceResult._client is not None:
-            make_call = TraceResult._client.api.make_call
-            node_uid = TraceResult._client.api.node_uid
+            wrapper_make_call = TraceResult._client.api.make_call
+            wrapper_node_uid = TraceResult._client.api.node_uid
+        else:
+            # somehow this is necessary to prevent shadowing problems
+            wrapper_make_call = make_call
+            wrapper_node_uid = node_uid
         blocking = True
         if "blocking" in kwargs:
             blocking = bool(kwargs["blocking"])
@@ -251,7 +258,7 @@ def generate_remote_lib_function(
         from ..service.action.action_object import convert_to_pointers
 
         action_args, action_kwargs = convert_to_pointers(
-            api, node_uid, _valid_args, _valid_kwargs
+            api, wrapper_node_uid, _valid_args, _valid_kwargs
         )
 
         # e.g. numpy.array -> numpy, array
@@ -271,14 +278,14 @@ def generate_remote_lib_function(
         TraceResult.result += [action]
 
         api_call = SyftAPICall(
-            node_uid=node_uid,
+            node_uid=wrapper_node_uid,
             path=path,
             args=service_args,
             kwargs=dict(),
             blocking=blocking,
         )
 
-        result = make_call(api_call=api_call)
+        result = wrapper_make_call(api_call=api_call)
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature
