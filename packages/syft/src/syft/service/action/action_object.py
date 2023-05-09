@@ -55,7 +55,8 @@ class ActionType(Enum):
     GETATTRIBUTE = 1
     METHOD = 2
     SETATTRIBUTE = 4
-    CREATEOBJECT = 8
+    FUNCTION = 8
+    CREATEOBJECT = 16
 
 
 @serializable()

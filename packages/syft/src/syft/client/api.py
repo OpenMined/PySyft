@@ -247,6 +247,7 @@ def generate_remote_lib_function(
 
         # relative
         from ..service.action.action_object import Action
+        from ..service.action.action_object import ActionType
         from ..service.action.action_object import convert_to_pointers
 
         action_args, action_kwargs = convert_to_pointers(
@@ -261,6 +262,7 @@ def generate_remote_lib_function(
             remote_self=None,
             args=[x.syft_lineage_id for x in action_args],
             kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
+            action_type=ActionType.FUNCTION,
             # TODO: fix
             result_id=LineageID(UID(), 1),
         )
