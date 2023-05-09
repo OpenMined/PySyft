@@ -93,7 +93,8 @@ class HTTPConnection(NodeConnection):
     def __init__(
         self, url: Union[GridURL, str], proxy_target_uid: Optional[UID] = None
     ) -> None:
-        url = GridURL.from_url(url)
+        url = GridURL.from_url(url).as_container_host()
+
         proxy_target_uid = proxy_target_uid
         super().__init__(url=url, proxy_target_uid=proxy_target_uid)
 
