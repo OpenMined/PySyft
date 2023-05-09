@@ -81,9 +81,12 @@ class CMPBase:
     def set_signature(self) -> None:
         pass
 
-    def build(self) -> None:
+    def build(self, stack, root = None) -> None:
         if self.obj is None:
             self.obj = import_from_path(self.absolute_path)
+
+        if root is None:
+            root = self
 
         if self.signature is None:
             self.set_signature()
@@ -100,13 +103,13 @@ class CMPBase:
                     except Exception:  # nosec
                         continue
                     child = self.init_child(  # type: ignore
-                        self.obj,
+                        root.obj,
                         f"{self.path}.{attr_name}",
                         attr,
                         f"{self.absolute_path}.{attr_name}",
                     )
                 if child is not None:
-                    child.build()
+                    stack.append(child)
                     self.children[attr_name] = child
 
     def __getattr__(self, __name: str) -> Any:
@@ -332,9 +335,13 @@ class CMPTree:
         self.children = {c.path: c for c in children}
 
     def build(self) -> Self:
+        self.stack = []
         for c in self.children.values():
             c.absolute_path = c.path
-            c.build()
+            self.stack.append(c)
+        while len(self.stack) > 0:
+            c = self.stack.pop(0)
+            c.build(stack=self.stack, root=c)
         return self
 
     def flatten(self) -> Sequence[CMPBase]:
