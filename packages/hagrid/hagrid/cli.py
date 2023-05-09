@@ -1939,7 +1939,7 @@ def create_launch_docker_cmd(
 
     if "trace" in kwargs and kwargs["trace"] is True:
         envs["TRACE"] = "True"
-        envs["JAEGER_HOST"] = "docker-host"
+        envs["JAEGER_HOST"] = "host.docker.internal"
         envs["JAEGER_PORT"] = int(
             find_available_port(host="localhost", port=14268, search=True)
         )
@@ -2995,7 +2995,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     cmd += "docker compose"
     cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
-    cmd += " down"
+    cmd += " down --remove-orphans"
 
     cmd = "cd " + path + env_var + cmd
     return cmd
