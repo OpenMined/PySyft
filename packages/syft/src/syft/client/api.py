@@ -229,9 +229,6 @@ def generate_remote_lib_function(
         # relative
         from ..service.action.action_object import TraceResult
 
-        print(node_uid)
-        # node_uid = node_uid
-
         if TraceResult._client is not None:
             wrapper_make_call = TraceResult._client.api.make_call
             wrapper_node_uid = TraceResult._client.api.node_uid
