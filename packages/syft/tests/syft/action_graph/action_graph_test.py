@@ -336,13 +336,12 @@ def test_networkx_backing_store_add_remove_edge():
 
 
 def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -> None:
-    # TODO need to reset the saved file before doing this test
     thread_cnt = 5
     repeats = 3
 
     execution_err = None
     store_config = InMemoryGraphConfig()
-    graph_store = InMemoryActionGraphStore(store_config=store_config)
+    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
 
     def _cbk(tid: int) -> None:
         nonlocal execution_err
@@ -385,3 +384,48 @@ def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -
     assert execution_err is None
     assert len(graph_store.nodes(None).ok()) == reqd_num_nodes
     assert len(graph_store.edges(None).ok()) == reqd_num_edges
+
+
+def test_multithreaded_graph_store_delete_node(verify_key: SyftVerifyKey) -> None:
+    thread_cnt = 5
+    repeats = 3
+
+    execution_err = None
+    store_config = InMemoryGraphConfig()
+    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
+
+    thread_id_node_map = {}
+    for tid in range(thread_cnt):
+        thread_id_node_map[tid] = []
+        for rp in range(repeats):
+            action_obj = ActionObject.from_obj([2, 4, 6])
+            node_data = NodeActionData.from_action_obj(
+                action_obj, credentials=verify_key
+            )
+            res = graph_store.set(node_data, credentials=verify_key)
+            if res.is_err():
+                print(f"Failed to add node, error: {res.err()}")
+                assert 0 == 1  # TODO how else to make the test fail?
+            thread_id_node_map[tid].append(node_data.id)
+
+    assert len(graph_store.nodes(None).ok()) == thread_cnt * repeats
+
+    def _cbk(tid: int) -> None:
+        nonlocal execution_err
+        for idx in range(repeats):
+            cur_node_id = thread_id_node_map[tid][idx]
+            res = graph_store.delete(cur_node_id, credentials=verify_key)
+            if res.is_err():
+                execution_err = res.err()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_cbk, args=(tid,))
+        thread.start()
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_err is None
+    assert len(graph_store.nodes(None).ok()) == 0

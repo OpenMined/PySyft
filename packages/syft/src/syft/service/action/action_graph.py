@@ -209,10 +209,10 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 
 @serializable()
 class NetworkXBackingStore(BaseGraphStore):
-    def __init__(self, store_config: StoreConfig) -> None:
+    def __init__(self, store_config: StoreConfig, reset: bool = False) -> None:
         self.path_str = store_config.client_config.file_path.as_posix()
 
-        if os.path.exists(self.path_str):
+        if not reset and os.path.exists(self.path_str):
             self._db = self._load_from_path(self.path_str)
         else:
             self._db = nx.DiGraph()
@@ -348,10 +348,10 @@ class ActionGraphStore:
 
 @serializable()
 class InMemoryActionGraphStore(ActionGraphStore):
-    def __init__(self, store_config: StoreConfig):
+    def __init__(self, store_config: StoreConfig, reset: bool = False):
         self.store_config: StoreConfig = store_config
         self.graph: Type[BaseGraphStore] = self.store_config.store_type(
-            self.store_config
+            self.store_config, reset
         )
 
     def set(
