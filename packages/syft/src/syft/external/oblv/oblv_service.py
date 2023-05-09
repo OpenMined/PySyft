@@ -415,6 +415,7 @@ class OblvService(AbstractService):
                 uid=user_code_id,
                 credentials=user_code.user_verify_key,
                 syft_object=dict_object,
+                has_result_read_permission=True,
             )
 
         else:
