@@ -252,8 +252,6 @@ def make_action_side_effect(
             action_type=context.action_type,
         )
         context.action = action
-        # if isinstance(context.obj.syft_action_data, Plan) and action.op == "__call__":
-        #     action.result_id = context.obj.syft_action_data.outputs[0].id
     except Exception:
         print(f"make_action_side_effect failed with {traceback.format_exc()}")
         return Err(f"make_action_side_effect failed with {traceback.format_exc()}")
