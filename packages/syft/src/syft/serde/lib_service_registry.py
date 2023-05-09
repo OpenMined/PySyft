@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import importlib
 import inspect
@@ -13,10 +16,10 @@ from typing import Sequence
 from typing import Union
 
 # third party
-import numpy
 import jax
-from typing_extensions import Self
 from jaxlib.xla_extension import CompiledFunction
+import numpy
+from typing_extensions import Self
 
 # relative
 from .lib_permissions import ALL_EXECUTE
@@ -81,7 +84,7 @@ class CMPBase:
     def set_signature(self) -> None:
         pass
 
-    def build(self, stack, root = None) -> None:
+    def build(self, stack: List, root: Optional[CMPBase] = None) -> None:
         if self.obj is None:
             self.obj = import_from_path(self.absolute_path)
 
@@ -124,7 +127,7 @@ class CMPBase:
         child_path: str,
         child_obj: Union[type, object],
         absolute_path: str,
-    ) -> Optional[Self]:
+    ) -> Optional[CMPBase]:
         """Get the child of parent as a CMPBase object
 
         Args:
@@ -134,11 +137,11 @@ class CMPBase:
 
         Returns:
             _type_: _description_
-        """# If the child is not a module, then
-        is_child_valid = CMPBase.check_package_membership(parent_obj, child_obj)    
+        """  # If the child is not a module, then
+        is_child_valid = CMPBase.check_package_membership(parent_obj, child_obj)
         if not is_child_valid:
             return None
-        
+
         if inspect.ismodule(child_obj):
             ## TODO, we could register modules and functions in 2 ways:
             # A) as numpy.float32 (what we are doing now)
@@ -150,8 +153,8 @@ class CMPBase:
                 obj=child_obj,
                 absolute_path=absolute_path,
             )  # type: ignore
-        
-        # Here we have our own isfunction as there are multiple callable objects worth considering 
+
+        # Here we have our own isfunction as there are multiple callable objects worth considering
         if CMPBase.isfunction(child_obj):
             return CMPFunction(
                 child_path,
@@ -159,7 +162,7 @@ class CMPBase:
                 obj=child_obj,
                 absolute_path=absolute_path,
             )  # type: ignore
-        
+
         if inspect.isclass(child_obj):
             return CMPClass(
                 child_path,
@@ -167,7 +170,7 @@ class CMPBase:
                 obj=child_obj,
                 absolute_path=absolute_path,
             )  # type: ignore
-        
+
         # default case if we didnt cover it
         # currently used for objects
         return CMPBase(
@@ -178,23 +181,25 @@ class CMPBase:
         )
 
     @staticmethod
-    def check_package_membership(parent_obj: Any, child_obj: Any) -> Optional[str]:
+    def check_package_membership(parent_obj: Any, child_obj: Any) -> bool:
         # we are wrapping this as some objects might not have some of the dunder methods
         # TODO: check if that is truly necessary
         try:
             # if we find the same name we should avoid a circular import (probably obsolete)
             if child_obj.__name__ == parent_obj.__name__:
                 return False
-            
-            # if the name of the parent can be found at the start of the name of the child we are good 
+
+            # if the name of the parent can be found at the start of the name of the child we are good
             if child_obj.__name__.startswith(parent_obj.__name__):
                 return True
-            
+
             # if the child has a module, then we should just make sure it has the same start
             # as the parent, but not the entire name, as there might be relative imports
             # in other parts of the codebase
             if hasattr(child_obj, "__module__"):
-                return child_obj.__module__.startswith(parent_obj.__name__.split('.')[0])
+                return child_obj.__module__.startswith(
+                    parent_obj.__name__.split(".")[0]
+                )
             else:
                 # same idea as the with the child name
                 # TODO: this is a fix for for instance numpy ufuncs
@@ -265,16 +270,17 @@ class CMPBase:
             path = self.path
         return f"{indent_str}{path} ({self.permissions})\n{children_string}"
 
-    def get_path(self, path:str) -> Any:
-        segments = path.split('.')
+    def get_path(self, path: str) -> Any:
+        segments = path.split(".")
         root = segments[0]
         if root in self.children:
             if len(segments) == 1:
                 return self.children[root]
             else:
-                return self.children[root].get_path('.'.join(segments[1:]))
+                return self.children[root].get_path(".".join(segments[1:]))
         else:
             raise ValueError(f"property {path} does not exist")
+
 
 class CMPModule(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -359,16 +365,17 @@ class CMPTree:
     def __repr__(self) -> str:
         return "\n".join([c.__repr__() for c in self.children.values()])
 
-    def get_path(self, path:str) -> Any:
-        segments = path.split('.')
+    def get_path(self, path: str) -> Any:
+        segments = path.split(".")
         root = segments[0]
         if root in self.children:
             if len(segments) == 1:
                 return self.children[root]
             else:
-                return self.children[root].get_path('.'.join(segments[1:]))
+                return self.children[root].get_path(".".join(segments[1:]))
         else:
             raise ValueError(f"property {path} does not exist")
+
 
 action_execute_registry_libs = CMPTree(
     children=[
@@ -394,6 +401,6 @@ action_execute_registry_libs = CMPTree(
         CMPModule(
             "jax",
             permissions=ALL_EXECUTE,
-        )
+        ),
     ]
 ).build()
