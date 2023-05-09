@@ -167,9 +167,7 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
                 exec_result = execute_code_item(code_item, filtered_kwargs)
-                result_action_object = wrap_result(
-                    code_item.id, result_id, exec_result
-                )
+                result_action_object = wrap_result(code_item.id, result_id, exec_result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(

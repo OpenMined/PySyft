@@ -669,9 +669,9 @@ def execute_byte_code(
             # TODO Check if this works
             return UserCodeExecutionResult(
                 user_code_id=code_id,
-                stdout='',
+                stdout="",
                 stderr=str(e),
-                result='',
+                result="",
                 serialized_plot=None,
             )
 
