@@ -398,6 +398,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "__repr__",
     "_repr_markdown_",
     "syft_twin_type",
+    "_repr_debug_",
 ]
 
 
