@@ -551,7 +551,7 @@ class SyftClient:
         )
 
         with open(fname, "r") as f:
-            yaml_file = yaml.load(f, Loader=yaml.BaseLoader)
+            yaml_file = yaml.load(f, Loader=yaml.BaseLoader)  # nosec
 
             if debug:
                 # Avoid duplicate IP addresses- check if this causes issues with subnet masks
@@ -646,7 +646,7 @@ class SyftClient:
         )
 
         with open(fname, "r") as f:
-            yaml_file = yaml.load(f, Loader=yaml.BaseLoader)
+            yaml_file = yaml.load(f, Loader=yaml.BaseLoader)  # nosec
 
             if debug:
                 # Avoid duplicate IP addresses- check if this causes issues with subnet masks
