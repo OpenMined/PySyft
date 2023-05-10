@@ -9,4 +9,4 @@ export interface LineageID {
   value: UUID;
   syft_history_hash: number;
 }
-export interface UUID {}
+import type { UUID } from './UUID';

@@ -8,4 +8,4 @@
 export interface UID {
   value: UUID;
 }
-export interface UUID {}
+import type { UUID } from './UUID';
