@@ -1914,7 +1914,9 @@ def create_launch_docker_cmd(
     print("\n")
 
     use_blob_storage = (
-        False if str(node_type.input) == "network" else bool(kwargs["use_blob_storage"])
+        False
+        if str(node_type.input) in ["network", "gateway"]
+        else bool(kwargs["use_blob_storage"])
     )
 
     # use a docker volume
@@ -1977,7 +1979,9 @@ def create_launch_docker_cmd(
         envs["RABBITMQ_MANAGEMENT"] = "-management"
 
     # currently we only have a domain frontend for dev mode
-    if kwargs.get("release", "") == "development" and str(node_type.input) != "network":
+    if kwargs.get("release", "") == "development" and (
+        str(node_type.input) not in ["network", "gateway"]
+    ):
         envs["FRONTEND_TARGET"] = "grid-ui-development"
 
     if "set_root_password" in kwargs and kwargs["set_root_password"] is not None:
@@ -2056,7 +2060,7 @@ def create_launch_docker_cmd(
     if bool(kwargs["vpn"]):
         cmd += " --profile vpn"
 
-    if str(node_type.input) == "network":
+    if str(node_type.input) in ["network", "gateway"]:
         cmd += " --profile network"
 
     if use_blob_storage:
