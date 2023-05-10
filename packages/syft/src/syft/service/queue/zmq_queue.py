@@ -56,6 +56,7 @@ class ZMQSubscriber(QueueSubscriber):
         ctx = zmq.Context.instance()
         self._subscriber = ctx.socket(zmq.SUB)
         self.address = address
+        self.recv_thread = None
         self._subscriber.connect(address)
 
         self._subscriber.setsockopt_string(zmq.SUBSCRIBE, queue_name)
@@ -95,8 +96,8 @@ class ZMQSubscriber(QueueSubscriber):
         self.recv_thread.start()
 
     def close(self):
-        gevent.sleep(0)
-        self.recv_thread.kill()
+        if self.recv_thread is not None:
+            self.recv_thread.kill()
         self._subscriber.close()
 
 
@@ -107,7 +108,12 @@ class APICallMessageHandler(AbstractMessageHandler):
     def message_handler(cls, message: bytes, worker: Any):
         task_uid, api_call = deserialize(message, from_bytes=True)
         result = worker.handle_api_call(api_call)
-        item = QueueItem(node_uid=worker.id, id=task_uid, result=result, resolved=True)
+        item = QueueItem(
+            node_uid=worker.id,
+            id=task_uid,
+            result=result,
+            resolved=True,
+        )
         worker.queue_stash.set_result(api_call.credentials, item)
         worker.queue_stash.partition.close()
 
@@ -207,15 +213,13 @@ class ZMQClient(QueueClient):
             pass
 
     def close(self):
-        # self.monitored_thread.exit()
-        gevent.sleep(0)
-        self.thread.kill()
-        self.logger_thread.kill()
+        self.context.destroy()
         self.xpub.close()
         self.xpub.close()
         self.mon_pub.close()
         self.mon_sub.close()
-        self.context.destroy()
+        self.thread.kill()
+        self.logger_thread.kill()
 
 
 class ZMQQueueConfig(QueueConfig):

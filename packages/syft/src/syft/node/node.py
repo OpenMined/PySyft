@@ -242,13 +242,7 @@ class Node(AbstractNode):
             self.init_queue_router(queue_config=queue_config)
 
     def init_queue_router(self, queue_config: QueueConfig):
-        worker_settings = WorkerSettings(
-            id=self.id,
-            name=self.name,
-            signing_key=self.signing_key,
-            document_store_config=self.document_store_config,
-            action_store_config=self.action_store_config,
-        )
+        worker_settings = WorkerSettings.from_node(self)
 
         MessageHandlers = [APICallMessageHandler]
 
@@ -602,14 +596,6 @@ class Node(AbstractNode):
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
                 )
         else:
-            WorkerSettings(
-                id=self.id,
-                name=self.name,
-                signing_key=self.signing_key,
-                document_store_config=self.document_store_config,
-                action_store_config=self.action_store_config,
-            )
-
             task_uid = UID()
             item = QueueItem(id=task_uid, node_uid=self.id)
             # 🟡 TODO 36: Needs distributed lock
