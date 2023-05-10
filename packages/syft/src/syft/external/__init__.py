@@ -20,8 +20,8 @@ OBLV = str_to_bool(os.getenv("ENABLE_OBLV", "false"))
 
 EXTERNAL_LIBS = {
     "oblv": {
-        "pip_package_name": "pyoblv",
-        "module_name": "oblv",
+        "pip_package_name": "oblv-ctl",
+        "module_name": "oblv_ctl",
     }
 }
 
