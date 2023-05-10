@@ -24,3 +24,6 @@ class DateTime(SyftObject):
     def __str__(self) -> str:
         utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
         return utc_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+    def __hash__(self) -> int:
+        return hash(self.utc_timestamp)
