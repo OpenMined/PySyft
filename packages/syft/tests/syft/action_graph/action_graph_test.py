@@ -12,7 +12,6 @@ from pathlib import Path
 
 # third party
 import networkx as nx
-import pytest
 from result import Err
 
 # syft absolute
@@ -326,12 +325,13 @@ def test_in_memory_action_graph_store_init(
     assert isinstance(graph_store.graph.db, nx.DiGraph)
 
 
-def test_in_memory_action_graph_store_set_get_delete(
+def test_in_memory_action_graph_store_set_get_delete_no_mutations(
     in_mem_graph_store: InMemoryActionGraphStore,
     verify_key: SyftVerifyKey,
 ) -> None:
     """
     Test these methods of InMemoryActionGraphStore: set, get, delete, nodes, edges, is_parent
+    when there is no mutations.
     """
     # add the first node
     action_obj_node: NodeActionData = create_action_obj_node(verify_key)
@@ -423,105 +423,26 @@ def test_simple_in_memory_action_graph(
     verify_key: SyftVerifyKey,
 ) -> None:
     """
-    action_obj_node_a
-    action_obj_node_b
-    action -> a + b = c
+    node_1: action_obj_node_a
+    node_2: action_obj_node_b
+    node_3: action -> a + b = c
     """
     assert len(simple_in_memory_action_graph.edges(verify_key).ok()) == 2
     assert len(simple_in_memory_action_graph.nodes(verify_key).ok()) == 3
-
-
-@pytest.mark.skip
-def test_mutated_in_memory_action_graph(
-    mutated_in_memory_action_graph: InMemoryActionGraphStore,
-) -> None:
-    """
-    action1 -> initialization of variable a
-    action2 -> a.astype('int32') = b
-    action3 -> b.astype('float64') = c
-    action4 -> a.astype('complex128') = d
-    """
-    assert len(mutated_in_memory_action_graph.edges.ok()) == 3
-    nodes = list(mutated_in_memory_action_graph.nodes.ok())
-    node_action_data_1: NodeActionData = nodes[0][1]["data"]
-    node_action_data_2: NodeActionData = nodes[1][1]["data"]
-    node_action_data_3: NodeActionData = nodes[2][1]["data"]
-    node_action_data_4: NodeActionData = nodes[3][1]["data"]
-
-    assert node_action_data_1.is_mutated is True
-    assert node_action_data_2.is_mutated is True
-    assert node_action_data_3.is_mutated is True
-    assert node_action_data_4.is_mutated is False
-
+    # the nodes should be in the order of how they were added
+    nodes = list(simple_in_memory_action_graph.nodes(verify_key).ok())
+    node_1: NodeActionData = nodes[0][1]["data"]
+    node_2: NodeActionData = nodes[1][1]["data"]
+    node_3: NodeActionData = nodes[2][1]["data"]
     assert (
-        mutated_in_memory_action_graph.is_parent(
-            parent=node_action_data_1.id, child=node_action_data_2.id
-        ).ok()
+        simple_in_memory_action_graph.is_parent(parent=node_1.id, child=node_3.id).ok()
         is True
     )
     assert (
-        mutated_in_memory_action_graph.is_parent(
-            parent=node_action_data_2.id, child=node_action_data_3.id
-        ).ok()
+        simple_in_memory_action_graph.is_parent(parent=node_2.id, child=node_3.id).ok()
         is True
     )
     assert (
-        mutated_in_memory_action_graph.is_parent(
-            parent=node_action_data_3.id, child=node_action_data_4.id
-        ).ok()
-        is True
-    )
-
-
-@pytest.mark.skip
-def test_complicated_in_memory_action_graph(
-    complicated_in_memory_action_graph: InMemoryActionGraphStore,
-) -> None:
-    """
-    action1 -> a + b = c
-    action2 -> initialization of variable d
-    action3 -> c * d
-    action4 -> d.astype('int32')
-    action5 -> d + 48
-    """
-    assert len(complicated_in_memory_action_graph.edges.ok()) == 4
-    assert len(complicated_in_memory_action_graph.nodes.ok()) == 5
-
-    nodes = list(complicated_in_memory_action_graph.nodes.ok())
-    node_action_data_1: NodeActionData = nodes[0][1]["data"]
-    node_action_data_2: NodeActionData = nodes[1][1]["data"]
-    node_action_data_3: NodeActionData = nodes[2][1]["data"]
-    node_action_data_4: NodeActionData = nodes[3][1]["data"]
-    node_action_data_5: NodeActionData = nodes[4][1]["data"]
-
-    assert node_action_data_2.is_mutated is True
-    assert (
-        complicated_in_memory_action_graph.is_parent(
-            parent=node_action_data_1.id, child=node_action_data_2.id
-        ).ok()
-        is False
-    )
-    assert (
-        complicated_in_memory_action_graph.is_parent(
-            parent=node_action_data_1.id, child=node_action_data_3.id
-        ).ok()
-        is True
-    )
-    assert (
-        complicated_in_memory_action_graph.is_parent(
-            parent=node_action_data_2.id, child=node_action_data_4.id
-        ).ok()
-        is True
-    )
-    assert (
-        complicated_in_memory_action_graph.is_parent(
-            parent=node_action_data_4.id, child=node_action_data_5.id
-        ).ok()
-        is True
-    )
-    assert (
-        complicated_in_memory_action_graph.is_parent(
-            parent=node_action_data_1.id, child=node_action_data_5.id
-        ).ok()
+        simple_in_memory_action_graph.is_parent(parent=node_3.id, child=node_1.id).ok()
         is False
     )

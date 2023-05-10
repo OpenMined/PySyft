@@ -8,7 +8,6 @@ from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Type
 from typing import Union
 
@@ -209,7 +208,7 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 @serializable()
 class NetworkXBackingStore(BaseGraphStore):
     def __init__(self, store_config: StoreConfig) -> None:
-        self.file_path = store_config.client_config.file_path
+        self.file_path = str(store_config.client_config.file_path)
 
         if os.path.exists(self.file_path):
             self._db = self._load_from_path(str(self.file_path))
@@ -384,6 +383,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
         nm_successor_id: UID,
         credentials: SyftVerifyKey,
     ) -> Result[NodeActionData, str]:
+        """
+        Used when a node is a mutagen and to update non-mutated
+        successor for all nodes between node_id and nm_successor_id
+        """
         node_data = self.graph.get(uid=node_id)
 
         data = NodeActionDataUpdate(
@@ -460,22 +463,6 @@ class InMemoryActionGraphStore(ActionGraphStore):
         self.graph.add_edge(parent=new_parent, child=child)
 
         return Ok(True)
-
-    def _search_parents_for(self, node: NodeActionData) -> Set:
-        input_ids = []
-        parents = set()
-        if node.action.remote_self:
-            input_ids.append(node.action.remote_self)
-        input_ids.extend(node.action.args)
-        input_ids.extend(node.action.kwargs.values())
-
-        # search for parents in the existing nodes
-        for uid, _node_data in self.graph.nodes():
-            _node = _node_data["data"]
-            if _node.action.result_id in input_ids:
-                parents.add(uid)
-
-        return parents
 
     def is_parent(self, parent: UID, child: UID) -> Result[bool, str]:
         if self.graph.exists(child):

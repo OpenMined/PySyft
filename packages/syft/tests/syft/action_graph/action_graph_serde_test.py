@@ -23,16 +23,15 @@ def test_node_action_data_serde(verify_key: SyftVerifyKey) -> None:
     assert deserialized_node_action_data == action_node
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "obj",
     [
         "simple_in_memory_action_graph",
-        "complicated_in_memory_action_graph",
-        "mutated_in_memory_action_graph",
     ],
 )
-def test_in_memory_action_graph_serde(obj: Any, request: FixtureRequest) -> None:
+def test_in_memory_action_graph_serde(
+    obj: Any, request: FixtureRequest, verify_key: SyftVerifyKey
+) -> None:
     in_memory_graph: InMemoryActionGraphStore = request.getfixturevalue(obj)
     serialized_graph: bytes = sy.serialize(in_memory_graph, to_bytes=True)
     deserialized_graph = sy.deserialize(serialized_graph, from_bytes=True)
@@ -40,5 +39,5 @@ def test_in_memory_action_graph_serde(obj: Any, request: FixtureRequest) -> None
     assert isinstance(deserialized_graph, type(in_memory_graph))
     assert isinstance(deserialized_graph.graph, type(in_memory_graph.graph))
     assert isinstance(deserialized_graph.graph.db, type(in_memory_graph.graph.db))
-    assert deserialized_graph.edges == in_memory_graph.edges
-    assert deserialized_graph.nodes == in_memory_graph.nodes
+    assert deserialized_graph.edges(verify_key) == in_memory_graph.edges(verify_key)
+    assert deserialized_graph.nodes(verify_key) == in_memory_graph.nodes(verify_key)
