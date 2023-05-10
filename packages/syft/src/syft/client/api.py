@@ -43,6 +43,7 @@ from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import LineageID
 from ..types.uid import UID
+from ..util.autoreload import autoreload_enabled
 from ..util.telemetry import instrument
 from .connection import NodeConnection
 
@@ -225,6 +226,16 @@ def generate_remote_lib_function(
         )
 
     def wrapper(*args, **kwargs):
+        # relative
+        from ..service.action.action_object import TraceResult
+
+        if TraceResult._client is not None:
+            wrapper_make_call = TraceResult._client.api.make_call
+            wrapper_node_uid = TraceResult._client.api.node_uid
+        else:
+            # somehow this is necessary to prevent shadowing problems
+            wrapper_make_call = make_call
+            wrapper_node_uid = node_uid
         blocking = True
         if "blocking" in kwargs:
             blocking = bool(kwargs["blocking"])
@@ -241,34 +252,38 @@ def generate_remote_lib_function(
 
         # relative
         from ..service.action.action_object import Action
+        from ..service.action.action_object import ActionType
         from ..service.action.action_object import convert_to_pointers
 
         action_args, action_kwargs = convert_to_pointers(
-            api, node_uid, _valid_args, _valid_kwargs
+            api, wrapper_node_uid, _valid_args, _valid_kwargs
         )
 
         # e.g. numpy.array -> numpy, array
         module, op = module_path.rsplit(".", 1)
-        service_args = [
-            Action(
-                path=module,
-                op=op,
-                remote_self=None,
-                args=[x.syft_lineage_id for x in action_args],
-                kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
-                # TODO: fix
-                result_id=LineageID(UID(), 1),
-            )
-        ]
+        action = Action(
+            path=module,
+            op=op,
+            remote_self=None,
+            args=[x.syft_lineage_id for x in action_args],
+            kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
+            action_type=ActionType.FUNCTION,
+            # TODO: fix
+            result_id=LineageID(UID(), 1),
+        )
+        service_args = [action]
+        # TODO: implement properly
+        TraceResult.result += [action]
 
         api_call = SyftAPICall(
-            node_uid=node_uid,
+            node_uid=wrapper_node_uid,
             path=path,
             args=service_args,
             kwargs=dict(),
             blocking=blocking,
         )
-        result = make_call(api_call=api_call)
+
+        result = wrapper_make_call(api_call=api_call)
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature
@@ -686,8 +701,18 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
                     else:
                         check_type(param_key, arg, t)  # raises Exception
             except TypeError:
-                _type_str = getattr(t, "__name__", str(t))
-                msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
+                t_arg = type(arg)
+                if (
+                    autoreload_enabled()
+                    and t.__module__ == t_arg.__module__
+                    and t.__name__ == t_arg.__name__
+                ):
+                    # ignore error when autoreload_enabled()
+                    pass
+                else:
+                    _type_str = getattr(t, "__name__", str(t))
+                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
+
             if msg:
                 return SyftError(message=msg)
 
