@@ -126,7 +126,7 @@ def test_action_store_test_data_set_get(store: Any):
     data_uid = UID()
     obj = MockSyftObject(data=1)
 
-    res = store.set(data_uid, client_key, obj)
+    res = store.set(data_uid, client_key, obj, has_result_read_permission=True)
     assert res.is_ok()
     res = store.get(data_uid, client_key)
     assert res.is_ok()
