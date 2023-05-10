@@ -290,9 +290,9 @@ class NetworkStash(BaseUIDStoreStash):
             return result
 
     def get_for_verify_key(
-        self, credentials: SyftVerifyKey
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[NodePeer, SyftError]:
-        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(credentials)])
+        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_one(credentials, qks)
 
 
@@ -404,7 +404,9 @@ class NetworkService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Add a Network Node Route"""
         # get the peer asking for route verification from its verify_key
-        peer = self.stash.get_for_verify_key(context.credentials)
+        peer = self.stash.get_for_verify_key(
+            context.node.verify_key, context.credentials
+        )
         if peer.is_err():
             return SyftError(message=peer.err())
         peer = peer.ok()
