@@ -5,6 +5,7 @@ import numpy as np
 from syft import ActionObject
 from syft.client.api import SyftAPICall
 from syft.service.action.action_object import Action
+from syft.service.response import SyftError
 from syft.types.uid import LineageID
 
 
@@ -60,7 +61,7 @@ def test_call_lib_wo_permission(worker):
         node_uid=worker.id, path="action.execute", args=[], kwargs=kwargs
     )
     res = root_domain_client.api.make_call(api_call)
-    assert res == "You have no permission for numpy.fromfile"
+    assert isinstance(res, SyftError)
 
 
 def test_call_lib_custom_signature(worker):

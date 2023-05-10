@@ -10,6 +10,7 @@ import numpy as np
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from .action_object import ActionObject
+from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
 # @serializable(attrs=["id", "node_uid", "parent_id"])
@@ -45,7 +46,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
-    syft_passthrough_attrs = []
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs = ["dtype"]
 
     # def __eq__(self, other: Any) -> bool:
@@ -87,7 +88,7 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type = np.number
-    syft_passthrough_attrs = []
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs = ["dtype"]
 
     def __float__(self) -> float:

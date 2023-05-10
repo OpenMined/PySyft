@@ -415,6 +415,7 @@ class OblvService(AbstractService):
                 uid=user_code_id,
                 credentials=user_code.user_verify_key,
                 syft_object=dict_object,
+                has_result_read_permission=True,
             )
 
         else:
@@ -470,7 +471,6 @@ def check_enclave_transfer(
         res = api.services.oblv.send_user_code_inputs_to_enclave(
             user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
         )
-
         return res
     else:
         return Ok()
