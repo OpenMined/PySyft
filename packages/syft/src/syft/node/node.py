@@ -55,6 +55,7 @@ from ..service.metadata.metadata_stash import MetadataStash
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
+from ..service.project.project_service import NewProjectService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
@@ -201,6 +202,7 @@ class Node(AbstractNode):
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
+                NewProjectService,
             ]
             if services is None
             else services
@@ -398,6 +400,7 @@ class Node(AbstractNode):
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
+                NewProjectService,
             ]
 
             if OBLV:
