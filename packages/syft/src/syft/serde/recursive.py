@@ -32,6 +32,26 @@ def thread_ident() -> int:
     return int(threading.current_thread().ident)
 
 
+def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type]]:
+    if keys is None:
+        return None
+    types = []
+    for key in keys:
+        _type = None
+        if key in cls.__annotations__:
+            _type = cls.__annotations__[key]
+        else:
+            for parent_cls in cls.mro():
+                annotations = getattr(parent_cls, "__annotations__", None)
+                if annotations and key in annotations:
+                    _type = annotations[key]
+        if _type is None:
+            print(f"Failed to find type for key: {key} in {cls}")
+            return None
+        types.append(_type)
+    return types
+
+
 def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
@@ -84,6 +104,7 @@ def recursive_serde_register(
         setattr(cls, "__syft_serializable__", attribute_list)
 
     attributes = set(list(attribute_list)) if attribute_list else None
+    attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     # without fqn duplicate class names overwrite
@@ -94,6 +115,7 @@ def recursive_serde_register(
         attributes,
         serde_overrides,
         cls,
+        attribute_types,
     )
 
 
@@ -138,6 +160,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         attribute_list,
         serde_overrides,
         cls,
+        attribute_types,
     ) = TYPE_BANK[fqn]
 
     if nonrecursive or is_type:
@@ -227,6 +250,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         attribute_list,
         serde_overrides,
         cls,
+        attribute_types,
     ) = TYPE_BANK[proto.fullyQualifiedName]
 
     if class_type == type(None):
