@@ -6,5 +6,5 @@ export const classMapping = {
   'syft.node.credentials.SyftVerifyKey': SyftVerifyKey,
   'nacl.signing.VerifyKey': VerifyKey,
   'syft.types.uid.UID': UUID,
-  'syft.client.api.SyftAPICall': APICall,
+  'syft.client.api.SyftAPICall': APICall
 };
