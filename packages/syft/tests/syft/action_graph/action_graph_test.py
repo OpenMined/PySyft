@@ -446,3 +446,31 @@ def test_simple_in_memory_action_graph(
         simple_in_memory_action_graph.is_parent(parent=node_3.id, child=node_1.id).ok()
         is False
     )
+
+
+def test_simple_in_memory_action_graph_query(
+    simple_in_memory_action_graph: InMemoryActionGraphStore,
+    verify_key: SyftVerifyKey,
+) -> None:
+    qks = QueryKeys(
+        qks=[ExecutionStatusPartitionKey.with_obj(ExecutionStatus.PROCESSING)]
+    )
+    result = simple_in_memory_action_graph.query(qks, verify_key).ok()
+    # the nodes should be in the order of how they were added
+    nodes = list(simple_in_memory_action_graph.nodes(verify_key).ok())
+    node_1: NodeActionData = nodes[0][1]["data"]
+    node_2: NodeActionData = nodes[1][1]["data"]
+    node_3: NodeActionData = nodes[2][1]["data"]
+    assert result[0] == node_1.id
+    assert result[1] == node_2.id
+    assert result[2] == node_3.id
+    # change the status of a node and do the query again
+    node_1.status = ExecutionStatus.DONE
+    done_qks = QueryKeys(
+        qks=[ExecutionStatusPartitionKey.with_obj(ExecutionStatus.DONE)]
+    )
+    done_result = simple_in_memory_action_graph.query(done_qks, verify_key).ok()
+    processing_result = simple_in_memory_action_graph.query(qks, verify_key).ok()
+    assert done_result[0] == node_1.id
+    assert processing_result[0] == node_2.id
+    assert processing_result[1] == node_3.id
