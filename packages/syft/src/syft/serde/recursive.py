@@ -38,13 +38,14 @@ def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type
     types = []
     for key in keys:
         _type = None
-        if key in cls.__annotations__:
-            _type = cls.__annotations__[key]
+        annotations = getattr(cls, "__annotations__", None)
+        if annotations and key in annotations:
+            _type = annotations[key]
         else:
             for parent_cls in cls.mro():
-                annotations = getattr(parent_cls, "__annotations__", None)
-                if annotations and key in annotations:
-                    _type = annotations[key]
+                sub_annotations = getattr(parent_cls, "__annotations__", None)
+                if sub_annotations and key in sub_annotations:
+                    _type = sub_annotations[key]
         if _type is None:
             print(f"Failed to find type for key: {key} in {cls}")
             return None

@@ -40,7 +40,6 @@ def make_fake_type(_type_str: str):
 def get_type_mapping(_type) -> str:
     if _type in primitive_mapping:
         return primitive_mapping[_type]
-    print("type not in primitives", _type)
     return _type.__name__
 
 
@@ -69,14 +68,10 @@ def convert_attribute_types(cls, attribute_list, attribute_types):
     jsonschema["properties"] = {}
     jsonschema["additionalProperties"] = False
     for attribute, _type in dict(zip(attribute_list, attribute_types)).items():
-        # camelName = to_lower_camel_case(attribute)
         attribute_dict = {}
-        # attribute_dict["title"] = camelName
         attribute_dict["type"] = get_type_mapping(_type)
         jsonschema["properties"][attribute] = attribute_dict
-    # jsonschema["required"] = [to_lower_camel_case(name) for name in attribute_list]
     jsonschema["required"] = list(attribute_list)
-    print("made jsonschema", jsonschema)
     return jsonschema
 
 
