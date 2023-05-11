@@ -101,7 +101,7 @@ def get_azure_image(short_name: str) -> str:
     prebuild_070 = (
         "madhavajay1632269232059:openmined_mj_grid_domain_ubuntu_1:domain_070:latest"
     )
-    fresh_ubuntu = "Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest"
+    fresh_ubuntu = "Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest"
     if short_name == "default":
         return fresh_ubuntu
     elif short_name == "domain_0.7.0":
@@ -1939,7 +1939,7 @@ def create_launch_docker_cmd(
 
     if "trace" in kwargs and kwargs["trace"] is True:
         envs["TRACE"] = "True"
-        envs["JAEGER_HOST"] = "docker-host"
+        envs["JAEGER_HOST"] = "host.docker.internal"
         envs["JAEGER_PORT"] = int(
             find_available_port(host="localhost", port=14268, search=True)
         )
@@ -2584,7 +2584,7 @@ def make_gcp_vm(
         "https://www.googleapis.com/auth/trace.append",
     ]
     tags = "http-server,https-server"
-    disk_image = "projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20220308"
+    disk_image = "projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-v20230429"
     disk = (
         f"auto-delete=yes,boot=yes,device-name={vm_name},image={disk_image},"
         + f"mode=rw,size={disk_size_gb},type=pd-ssd"
@@ -2995,7 +2995,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     cmd += "docker compose"
     cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
-    cmd += " down"
+    cmd += " down --remove-orphans"
 
     cmd = "cd " + path + env_var + cmd
     return cmd

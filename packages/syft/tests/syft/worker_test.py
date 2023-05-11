@@ -84,7 +84,10 @@ def test_action_store() -> None:
     test_object = ActionObject.from_obj(raw_data)
 
     set_result = action_store.set(
-        uid=uid, credentials=test_signing_key, syft_object=test_object
+        uid=uid,
+        credentials=test_signing_key,
+        syft_object=test_object,
+        has_result_read_permission=True,
     )
     assert set_result.is_ok()
     test_object_result = action_store.get(uid=uid, credentials=test_signing_key)
