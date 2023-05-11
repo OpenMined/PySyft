@@ -8,6 +8,7 @@ from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueRouter
 from .base_queue import QueueConfig
 from .queue_stash import QueueItem
+from .queue_stash import Status
 
 
 class QueueRouter(BaseQueueRouter):
@@ -61,12 +62,31 @@ class APICallMessageHandler(AbstractMessageHandler):
     @classmethod
     def message_handler(cls, message: bytes, worker: Any):
         task_uid, api_call = deserialize(message, from_bytes=True)
-        result = worker.handle_api_call(api_call)
+
         item = QueueItem(
             node_uid=worker.id,
             id=task_uid,
-            result=result,
-            resolved=True,
+            status=Status.PROCESSING,
         )
+        worker.queue_stash.set_result(api_call.credentials, item)
+
+        try:
+            result = worker.handle_api_call(api_call)
+            item = QueueItem(
+                node_uid=worker.id,
+                id=task_uid,
+                result=result,
+                resolved=True,
+                status=Status.COMPLETED,
+            )
+        except:  # nosec
+            item = QueueItem(
+                node_uid=worker.id,
+                id=task_uid,
+                result=None,
+                resolved=True,
+                status=Status.ERRORED,
+            )
+
         worker.queue_stash.set_result(api_call.credentials, item)
         worker.queue_stash.partition.close()
