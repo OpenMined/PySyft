@@ -22,6 +22,10 @@ class QueueRouter(BaseQueueRouter):
         self._client.start()
 
     def close(self):
+        for _, subscribers in self.subscribers.items():
+            for subscriber in subscribers:
+                subscriber.close()
+        self.publisher.close()
         self._client.close()
 
     @property

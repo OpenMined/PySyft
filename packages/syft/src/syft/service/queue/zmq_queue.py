@@ -218,13 +218,13 @@ class ZMQClient(QueueClient):
             pass
 
     def close(self):
+        self.thread.kill()
+        self.logger_thread.kill()
         self.context.destroy()
         self.xpub.close()
         self.xpub.close()
         self.mon_pub.close()
         self.mon_sub.close()
-        self.thread.kill()
-        self.logger_thread.kill()
 
 
 class ZMQQueueConfig(QueueConfig):
