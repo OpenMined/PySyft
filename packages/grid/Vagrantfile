@@ -17,12 +17,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     }
   end
 
-  config.vm.define "ubuntu-20-04-arm64" do |node|
-    node.vm.box = "bento/ubuntu-20.04-arm64"
+  config.vm.define "ubuntu-22-04-arm64" do |node|
+    node.vm.box = "bento/ubuntu-22.04-arm64"
 
     node.vm.box_check_update = false
 
-    node.vm.hostname = "ubuntu-20-04-arm64.openmined.grid"
+    node.vm.hostname = "ubuntu-22-04-arm64.openmined.grid"
     node.vm.network :private_network, ip: "192.168.56.2"
 
     node.vm.synced_folder "../../", "/home/om/PySyft",
@@ -31,17 +31,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.provider "parallels" do |vb, override|
       vb.memory = "8096"
       vb.cpus = "4"
-      vb.name = "ubuntu-20-04-arm64"
+      vb.name = "ubuntu-22-04-arm64"
       override.vm.synced_folder "../../", "/home/om/PySyft", owner: "vagrant", group: "vagrant", create: true, mount_options: [ "share" ]
     end
   end
 
-  config.vm.define "ubuntu-20-04-x86" do |node|
-    node.vm.box = "bento/ubuntu-20.04"
+  config.vm.define "ubuntu-22-04-x86" do |node|
+    node.vm.box = "bento/ubuntu-22.04"
 
     node.vm.box_check_update = false
 
-    node.vm.hostname = "ubuntu-20-04-x86.openmined.grid"
+    node.vm.hostname = "ubuntu-22-04-x86.openmined.grid"
     node.vm.network :private_network, ip: "192.168.56.2"
 
     node.vm.synced_folder "../../", "/home/om/PySyft",
@@ -50,7 +50,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.provider "virtualbox" do |vb|
       vb.memory = "4096"
       vb.cpus = "2"
-      vb.name = "ubuntu-20-04-x86"
+      vb.name = "ubuntu-22-04-x86"
     end
   end
 
