@@ -1,4 +1,4 @@
-__version__ = "0.8.1-beta.0"
+__version__ = "0.8.1-beta.1"
 
 # stdlib
 from pathlib import Path
@@ -53,6 +53,8 @@ from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
 from .util import jax_settings  # noqa: F401
 from .util import logger  # noqa: F401
+from .util.autoreload import disable_autoreload  # noqa: F401
+from .util.autoreload import enable_autoreload  # noqa: F401
 from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.version_compare import make_requires
