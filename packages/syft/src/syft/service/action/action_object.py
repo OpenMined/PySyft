@@ -394,6 +394,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "is_mock",
     "is_real",
     "is_twin",
+    "is_pointer",
     "request",
     "__repr__",
     "_repr_markdown_",
@@ -425,6 +426,10 @@ class ActionObject(SyftObject):
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     # syft_dont_wrap_attrs = ["shape"]
+
+    @property
+    def is_pointer(self) -> bool:
+        return self.syft_node_uid is not None
 
     @property
     def syft_lineage_id(self) -> LineageID:
@@ -804,49 +809,54 @@ class ActionObject(SyftObject):
         self, context: PreHookContext, name: str, args: Any, kwargs: Any
     ) -> Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]:
         """Hooks executed before the actual call"""
-        result_args, result_kwargs = args, kwargs
-        if name in self._syft_pre_hooks__:
-            for hook in self._syft_pre_hooks__[name]:
-                result = hook(context, *result_args, **result_kwargs)
-                if result.is_ok():
-                    context, result_args, result_kwargs = result.ok()
-                else:
-                    debug(f"Pre-hook failed with {result.err()}")
-        if name not in self._syft_dont_wrap_attrs():
-            if HOOK_ALWAYS in self._syft_pre_hooks__:
-                for hook in self._syft_pre_hooks__[HOOK_ALWAYS]:
+        if self.is_pointer:
+            result_args, result_kwargs = args, kwargs
+            if name in self._syft_pre_hooks__:
+                for hook in self._syft_pre_hooks__[name]:
                     result = hook(context, *result_args, **result_kwargs)
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
                     else:
-                        msg = result.err().replace("\\n", "\n")
-                        print(f"Pre-hook failed with {msg}")
+                        debug(f"Pre-hook failed with {result.err()}")
+            if name not in self._syft_dont_wrap_attrs():
+                if HOOK_ALWAYS in self._syft_pre_hooks__:
+                    for hook in self._syft_pre_hooks__[HOOK_ALWAYS]:
+                        result = hook(context, *result_args, **result_kwargs)
+                        if result.is_ok():
+                            context, result_args, result_kwargs = result.ok()
+                        else:
+                            msg = result.err().replace("\\n", "\n")
+                            print(f"Pre-hook failed with {msg}")
 
-        return context, result_args, result_kwargs
+            return context, result_args, result_kwargs
+        else:
+            return context, args, kwargs
 
     def _syft_run_post_hooks__(
         self, context: PreHookContext, name: str, result: Any
     ) -> Any:
         """Hooks executed after the actual call"""
-        new_result = result
-        if name in self._syft_post_hooks__:
-            for hook in self._syft_post_hooks__[name]:
-                result = hook(context, name, new_result)
-                if result.is_ok():
-                    new_result = result.ok()
-                else:
-                    debug(f"Post hook failed with {result.err()}")
-
-        if name not in self._syft_dont_wrap_attrs():
-            if HOOK_ALWAYS in self._syft_post_hooks__:
-                for hook in self._syft_post_hooks__[HOOK_ALWAYS]:
+        if self.is_pointer:
+            new_result = result
+            if name in self._syft_post_hooks__:
+                for hook in self._syft_post_hooks__[name]:
                     result = hook(context, name, new_result)
                     if result.is_ok():
                         new_result = result.ok()
                     else:
                         debug(f"Post hook failed with {result.err()}")
 
-        return new_result
+            if name not in self._syft_dont_wrap_attrs():
+                if HOOK_ALWAYS in self._syft_post_hooks__:
+                    for hook in self._syft_post_hooks__[HOOK_ALWAYS]:
+                        result = hook(context, name, new_result)
+                        if result.is_ok():
+                            new_result = result.ok()
+                        else:
+                            debug(f"Post hook failed with {result.err()}")
+
+            return new_result
+        return result
 
     def _syft_output_action_object(
         self, result: Any, context: Optional[PreHookContext] = None
