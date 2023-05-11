@@ -79,7 +79,7 @@ class APICallMessageHandler(AbstractMessageHandler):
                 resolved=True,
                 status=Status.COMPLETED,
             )
-        except:  # nosec
+        except Exception:  # nosec
             item = QueueItem(
                 node_uid=worker.id,
                 id=task_uid,
