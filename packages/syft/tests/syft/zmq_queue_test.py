@@ -13,8 +13,8 @@ from syft.node.worker_settings import WorkerSettings
 from syft.service.queue.queue import QueueRouter
 from syft.service.queue.zmq_queue import AbstractMessageHandler
 from syft.service.queue.zmq_queue import ZMQClient
+from syft.service.queue.zmq_queue import ZMQClientConfig
 from syft.service.queue.zmq_queue import ZMQPublisher
-from syft.service.queue.zmq_queue import ZMQQueueClientConfig
 from syft.service.queue.zmq_queue import ZMQQueueConfig
 from syft.service.queue.zmq_queue import ZMQSubscriber
 
@@ -26,9 +26,7 @@ def test_zmq_client():
     pub_addr = f"tcp://127.0.0.1:{pub_port}"
     sub_addr = f"tcp://127.0.0.1:{sub_port}"
 
-    config = ZMQQueueClientConfig()
-    config.pub_addr = pub_addr
-    config.sub_addr = sub_addr
+    config = ZMQClientConfig(pub_addr=pub_addr, sub_addr=sub_addr)
 
     client = ZMQClient(config=config)
 
@@ -139,15 +137,15 @@ def test_zmq_queue_router(worker: Node) -> None:
     pub_port = random.randint(6001, 10004)
     sub_port = random.randint(6001, 10004)
 
+    pub_addr = f"tcp://127.0.0.1:{pub_port}"
+    sub_addr = f"tcp://127.0.0.1:{sub_port}"
+
     config = ZMQQueueConfig()
 
-    assert isinstance(config.client_config, ZMQQueueClientConfig)
+    assert isinstance(config.client_config, ZMQClientConfig)
     assert config.client_type == ZMQClient
     assert config.publisher == ZMQPublisher
     assert config.subscriber == ZMQSubscriber
-
-    pub_addr = f"tcp://127.0.0.1:{pub_port}"
-    sub_addr = f"tcp://127.0.0.1:{sub_port}"
 
     config.client_config.pub_addr = pub_addr
     config.client_config.sub_addr = sub_addr

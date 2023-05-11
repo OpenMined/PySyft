@@ -1,18 +1,23 @@
 # stdlib
 import binascii
 import os
+import random
 from typing import Any
 from typing import Callable
 from typing import Optional
 
 # third party
 import gevent
+from pydantic import validator
 from zmq import Context
 from zmq import Socket
 import zmq.green as zmq
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
+from ...types.uid import UID
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
@@ -118,9 +123,29 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.queue_stash.partition.close()
 
 
-class ZMQQueueClientConfig(QueueClientConfig):
-    pub_addr: str = "tcp://127.0.0.1:6000"
-    sub_addr: str = "tcp://127.0.0.1:6001"
+class ZMQClientConfig(SyftObject, QueueClientConfig):
+    __canonical_name__ = "ZMQClientConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    pub_addr: Optional[str]
+    sub_addr: Optional[str]
+
+    @staticmethod
+    def _get_random_port():
+        min_port = 49152
+        max_port = 65536
+        port = random.randrange(min_port, max_port)
+        addr = f"tcp://127.0.0.1:{port}"
+        return addr
+
+    @validator("pub_addr", pre=True, always=True)
+    def make_pub_addr(cls, v: Optional[str]) -> str:
+        return cls._get_random_port() if v is None else v
+
+    @validator("sub_addr", pre=True, always=True)
+    def make_sub_addr(cls, v: Optional[str]) -> str:
+        return cls._get_random_port() if v is None else v
 
 
 class ZMQClient(QueueClient):
@@ -225,5 +250,5 @@ class ZMQClient(QueueClient):
 class ZMQQueueConfig(QueueConfig):
     subscriber = ZMQSubscriber
     publisher = ZMQPublisher
-    client_config = ZMQQueueClientConfig()
+    client_config = ZMQClientConfig()
     client_type = ZMQClient
