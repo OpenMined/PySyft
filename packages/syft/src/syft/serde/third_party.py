@@ -3,6 +3,7 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 from io import BytesIO
+import weakref
 
 # third party
 from dateutil import parser
@@ -23,7 +24,7 @@ from pymongo.collection import Collection
 from result import Err
 from result import Ok
 from result import Result
-from zmq.green.core import _Socket as GreenSocket
+import zmq.green as zmq
 
 # relative
 from .deserialize import _deserialize as deserialize
@@ -164,6 +165,17 @@ recursive_serde_register(
 # unsure why we have to register the object not the type but this works
 recursive_serde_register(np.core._ufunc_config._unspecified())
 
-recursive_serde_register(GreenSocket)
+recursive_serde_register(
+    zmq._Socket,
+    serialize_attrs=[
+        "_shadow",
+        "_monitor_socket",
+        "_type_name",
+    ],
+)
+# recursive_serde_register(AsyncResult)
+recursive_serde_register(zmq._Context)
+recursive_serde_register(weakref.WeakSet)
+
 # how else do you import a relative file to execute it?
 NOTHING = None

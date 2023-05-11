@@ -1,6 +1,6 @@
 # stdlib
 from collections import defaultdict
-from typing import Any
+from typing import Type
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -40,13 +40,10 @@ class QueueRouter(BaseQueueRouter):
     def sub_addr(self):
         return self.client_config.sub_addr
 
-    def create_subscriber(
-        self, message_handler: AbstractMessageHandler, worker_settings: Any
-    ):
+    def create_subscriber(self, message_handler: Type[AbstractMessageHandler]):
         subscriber = self.config.subscriber(
             message_handler=message_handler.message_handler,
             address=self.sub_addr,
-            worker_settings=worker_settings,
             queue_name=message_handler.queue,
         )
         self.subscribers[message_handler.queue].append(subscriber)
@@ -64,8 +61,20 @@ class APICallMessageHandler(AbstractMessageHandler):
     queue = "api_call"
 
     @classmethod
-    def message_handler(cls, message: bytes, worker: Any):
-        task_uid, api_call = deserialize(message, from_bytes=True)
+    def message_handler(cls, message: bytes):
+        # relative
+        from ...node.node import Node
+
+        task_uid, api_call, worker_settings = deserialize(message, from_bytes=True)
+
+        worker = Node(
+            id=worker_settings.id,
+            name=worker_settings.name,
+            signing_key=worker_settings.signing_key,
+            document_store_config=worker_settings.document_store_config,
+            action_store_config=worker_settings.action_store_config,
+            is_subprocess=True,
+        )
 
         item = QueueItem(
             node_uid=worker.id,

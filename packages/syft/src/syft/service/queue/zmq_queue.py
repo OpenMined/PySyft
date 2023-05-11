@@ -2,7 +2,6 @@
 import binascii
 import os
 import socketserver
-from typing import Any
 from typing import Callable
 from typing import Optional
 
@@ -53,31 +52,23 @@ class ZMQPublisher(QueuePublisher):
 class ZMQSubscriber(QueueSubscriber):
     def __init__(
         self,
-        worker_settings: Any,
         message_handler: Callable,
         address: str,
         queue_name: str,
     ) -> None:
+        self.address = address
+        self.message_handler = message_handler
+        self.queue_name = queue_name
+        self.post_init()
+
+    def post_init(self):
         ctx = zmq.Context.instance()
         self._subscriber = ctx.socket(zmq.SUB)
-        self.address = address
+
         self.recv_thread = None
-        self._subscriber.connect(address)
+        self._subscriber.connect(self.address)
 
-        self._subscriber.setsockopt_string(zmq.SUBSCRIBE, queue_name)
-        self.message_handler = message_handler
-
-        # relative
-        from ...node.node import Node
-
-        self.worker = Node(
-            id=worker_settings.id,
-            name=worker_settings.name,
-            signing_key=worker_settings.signing_key,
-            document_store_config=worker_settings.document_store_config,
-            action_store_config=worker_settings.action_store_config,
-            is_subprocess=True,
-        )
+        self._subscriber.setsockopt_string(zmq.SUBSCRIBE, self.queue_name)
 
     def receive(self):
         try:
@@ -90,7 +81,7 @@ class ZMQSubscriber(QueueSubscriber):
             else:
                 raise e
 
-        self.message_handler(message=message, worker=self.worker)
+        self.message_handler(message=message)
 
     def _run(self):
         while True:

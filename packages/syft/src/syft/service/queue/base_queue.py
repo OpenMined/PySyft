@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Callable
 from typing import ClassVar
 from typing import Mapping
 from typing import Optional
@@ -18,14 +19,15 @@ class QueueClientConfig:
 class AbstractMessageHandler:
     queue: ClassVar[str]
 
-    def message_handler(self, message: bytes, worker: Any):
+    def message_handler(self, message: bytes):
         raise NotImplementedError
 
 
 @serializable()
 class QueueSubscriber:
-    message_handler: AbstractMessageHandler
+    message_handler: Callable
     queue_name: str
+    address: str
 
     def receive(self):
         raise NotImplementedError
@@ -39,6 +41,8 @@ class QueueSubscriber:
 
 @serializable()
 class QueuePublisher:
+    address: str
+
     def send(
         self,
         message: Any,
@@ -95,9 +99,7 @@ class BaseQueueRouter:
         raise NotImplementedError
 
     def create_subscriber(
-        self,
-        message_handler: AbstractMessageHandler,
-        worker_settings: Any,
+        self, message_handler: Type[AbstractMessageHandler]
     ) -> QueueSubscriber:
         raise NotImplementedError
 

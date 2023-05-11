@@ -242,17 +242,13 @@ class Node(AbstractNode):
             self.init_queue_router(queue_config=queue_config)
 
     def init_queue_router(self, queue_config: QueueConfig):
-        worker_settings = WorkerSettings.from_node(self)
-
         MessageHandlers = [APICallMessageHandler]
 
         self.queue_router = QueueRouter(queue_config)
         self.queue_router.start()
         self.publisher = self.queue_router.publisher
         for subscriber_type in MessageHandlers:
-            subscriber = self.queue_router.create_subscriber(
-                subscriber_type, worker_settings
-            )
+            subscriber = self.queue_router.create_subscriber(subscriber_type)
             subscriber.run()
 
         print("Queue is Online 🟢")
@@ -608,7 +604,11 @@ class Node(AbstractNode):
 
             # Publisher system which pushes to a Queue
 
-            message_bytes = serialize._serialize([task_uid, api_call], to_bytes=True)
+            worker_settings = WorkerSettings.from_node(node=self)
+
+            message_bytes = serialize._serialize(
+                [task_uid, api_call, worker_settings], to_bytes=True
+            )
             self.publisher.send(message=message_bytes, queue_name="api_call")
 
             return item
