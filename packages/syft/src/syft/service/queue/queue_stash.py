@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 from typing import Any
 from typing import List
 from typing import Optional
@@ -29,6 +30,14 @@ from ..response import SyftSuccess
 
 
 @serializable()
+class Status(str, Enum):
+    CREATED = "created"
+    PROCESSING = "processing"
+    ERRORED = "errored"
+    COMPLETED = "completed"
+
+
+@serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -37,6 +46,7 @@ class QueueItem(SyftObject):
     node_uid: UID
     result: Optional[Any]
     resolved: bool = False
+    status: Status = Status.CREATED
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(node_uid=self.node_uid)
