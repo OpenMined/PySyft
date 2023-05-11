@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from enum import Enum
 import inspect
 import traceback
 import types
@@ -27,6 +28,7 @@ from typing_extensions import Self
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
+from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
@@ -35,8 +37,26 @@ from ...types.uid import UID
 from ...util.logger import debug
 from ..response import SyftException
 from .action_data_empty import ActionDataEmpty
+from .action_permissions import ActionPermission
+from .action_types import action_type_for_object
 from .action_types import action_type_for_type
 from .action_types import action_types
+
+
+@serializable()
+class TwinMode(Enum):
+    NONE = 0
+    PRIVATE = 1
+    MOCK = 2
+
+
+@serializable()
+class ActionType(Enum):
+    GETATTRIBUTE = 1
+    METHOD = 2
+    SETATTRIBUTE = 4
+    FUNCTION = 8
+    CREATEOBJECT = 16
 
 
 @serializable()
@@ -69,6 +89,8 @@ class Action(SyftObject):
     args: List[LineageID]
     kwargs: Dict[str, LineageID]
     result_id: Optional[LineageID]
+    action_type: Optional[ActionType]
+    create_object: Optional[SyftObject] = None
 
     @pydantic.validator("id", pre=True, always=True)
     def make_id(cls, v: Optional[UID]) -> UID:
@@ -104,6 +126,21 @@ class Action(SyftObject):
             hashes += hash(arg.syft_history_hash)
         return hashes
 
+    def __repr__(self):
+        def repr_uid(_id):
+            return f"{str(_id)[:3]}..{str(_id)[-1]}"
+
+        arg_repr = ", ".join([repr_uid(x) for x in self.args])
+        kwargs_repr = ", ".join(
+            [f"{key}={repr_uid(value)}" for key, value in self.kwargs.items()]
+        )
+        self_repr = (
+            f"[{repr_uid(self.remote_self)}]" if self.remote_self is not None else ""
+        )
+        return (
+            f"ActionObject {self.path}{self_repr}.{self.op}({arg_repr},{kwargs_repr})"
+        )
+
 
 class ActionObjectPointer:
     pass
@@ -111,6 +148,7 @@ class ActionObjectPointer:
 
 # Hooks
 HOOK_ALWAYS = "ALWAYS"
+HOOK_ON_POINTERS = "ON_POINTERS"
 
 passthrough_attrs = [
     "__dict__",  # python
@@ -184,7 +222,9 @@ class PreHookContext(SyftBaseObject):
     op_name: str
     node_uid: Optional[UID]
     result_id: Optional[Union[UID, LineageID]]
+    result_twin_type: Optional[TwinMode]
     action: Optional[Action]
+    action_type: Optional[ActionType]
 
 
 def make_action_side_effect(
@@ -203,13 +243,38 @@ def make_action_side_effect(
         - Ok[[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]] on success
         - Err[str] on failure
     """
+    # relative
+
     try:
-        action = context.obj.syft_make_method_action(
-            op=context.op_name, args=args, kwargs=kwargs
+        action = context.obj.syft_make_action_with_self(
+            op=context.op_name,
+            args=args,
+            kwargs=kwargs,
+            action_type=context.action_type,
         )
         context.action = action
     except Exception:
+        print(f"make_action_side_effect failed with {traceback.format_exc()}")
         return Err(f"make_action_side_effect failed with {traceback.format_exc()}")
+    return Ok((context, args, kwargs))
+
+
+class TraceResult:
+    result = []
+    _client = None
+
+    @classmethod
+    def reset(cls):
+        cls.result = []
+        cls._client = None
+
+
+def trace_action_side_effect(
+    context: PreHookContext, *args: Any, **kwargs: Any
+) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
+    action = context.action
+    if action is not None:
+        TraceResult.result += [action]
     return Ok((context, args, kwargs))
 
 
@@ -245,23 +310,17 @@ def convert_to_pointers(
     return arg_list, kwarg_dict
 
 
-def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
+def send_action_side_effect(
+    context: PreHookContext, *args: Any, **kwargs: Any
+) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
+    """Create a new action from the context.op_name, and execute it on the remote node."""
     try:
-        if context.op_name not in dont_make_side_effects and hasattr(
-            context.obj, "syft_node_uid"
-        ):
-            if getattr(context.obj, "syft_node_uid", None):
-                if context.action is not None:
-                    action = context.obj.syft_make_method_action(
-                        op=context.op_name, args=args, kwargs=kwargs
-                    )
-                    context.action = action
+        if context.action is None:
+            result = make_action_side_effect(context, *args, **kwargs)
+            if result.is_err():
+                raise RuntimeError(result.err())
 
-        result = make_action_side_effect(context, *args, **kwargs)
-        if result.is_err():
-            raise RuntimeError(result.err())
-
-        context, _, _ = result.ok()
+            context, _, _ = result.ok()
 
         action_result = context.obj.syft_execute_action(context.action, sync=True)
 
@@ -269,9 +328,12 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
             raise RuntimeError(f"Got back unexpected response : {action_result}")
         else:
             context.node_uid = action_result.syft_node_uid
-            context.result_id = context.action.result_id
-    except Exception:
-        return Err(f"send_action_side_effect failed with {traceback.format_exc()}")
+            context.result_id = action_result.id
+            context.result_twin_type = action_result.syft_twin_type
+    except Exception as e:
+        return Err(
+            f"send_action_side_effect failed with {e}\n {traceback.format_exc()}"
+        )
     return Ok((context, args, kwargs))
 
 
@@ -330,6 +392,19 @@ def debox_args_and_kwargs(args: Any, kwargs: Any) -> Tuple[Any, Any]:
     return tuple(filtered_args), filtered_kwargs
 
 
+BASE_PASSTHROUGH_ATTRS = [
+    "is_mock",
+    "is_real",
+    "is_twin",
+    "is_pointer",
+    "request",
+    "__repr__",
+    "_repr_markdown_",
+    "syft_twin_type",
+    "_repr_debug_",
+]
+
+
 class ActionObject(SyftObject):
     """Action object for remote execution."""
 
@@ -350,6 +425,13 @@ class ActionObject(SyftObject):
     syft_node_uid: Optional[UID]
     _syft_pre_hooks__: Dict[str, List] = {}
     _syft_post_hooks__: Dict[str, List] = {}
+    syft_twin_type: TwinMode = TwinMode.NONE
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    # syft_dont_wrap_attrs = ["shape"]
+
+    @property
+    def is_pointer(self) -> bool:
+        return self.syft_node_uid is not None
 
     @property
     def syft_lineage_id(self) -> LineageID:
@@ -360,6 +442,18 @@ class ActionObject(SyftObject):
     def make_id(cls, v: Optional[UID]) -> UID:
         """Generate or reuse an UID"""
         return Action.make_id(v)
+
+    @property
+    def is_mock(self):
+        return self.syft_twin_type == TwinMode.MOCK
+
+    @property
+    def is_real(self):
+        return self.syft_twin_type == TwinMode.PRIVATE
+
+    @property
+    def is_twin(self):
+        return self.syft_twin_type != TwinMode.NONE
 
     @pydantic.validator("syft_action_data", pre=True, always=True)
     def check_action_data(
@@ -420,15 +514,56 @@ class ActionObject(SyftObject):
         )
         return api.make_call(api_call)
 
+    def request(self, client):
+        # relative
+        from ..request.request import ActionStoreChange
+        from ..request.request import SubmitRequest
+
+        action_object_link = LinkedObject.from_obj(self, node_uid=self.syft_node_uid)
+        permission_change = ActionStoreChange(
+            linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
+        )
+
+        submit_request = SubmitRequest(
+            changes=[permission_change],
+            requesting_user_verify_key=client.credentials.verify_key,
+        )
+        return client.api.services.request.submit(submit_request)
+
     def _syft_try_to_save_to_store(self, obj) -> None:
         if self.syft_node_uid is None:
             return
+        elif obj.syft_node_uid is not None:
+            return
+        # TODO fix: the APIRegistry often gets the wrong client
+        # if you have 2 clients in memory
+        # therefore the following happens if you call a method
+        # with a pointer to a twin (mock version)
+        # 1) it gets the wrong credentials
+        # 2) it uses the mock version to overwrite the real version
+        # 3) it shouldnt send in the first place as it already exists
 
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
-        api.services.action.set(obj)
+        action = Action(
+            path="",
+            op="",
+            remote_self=None,
+            result_id=obj.id,
+            args=[],
+            kwargs=dict(),
+            action_type=ActionType.CREATEOBJECT,
+            create_object=obj,
+        )
+
+        if TraceResult._client is not None:
+            api = TraceResult._client.api
+            TraceResult.result += [action]
+        else:
+            api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+
+        api.services.action.execute(action)
 
     def _syft_prepare_obj_uid(self, obj) -> LineageID:
         # We got the UID
@@ -464,6 +599,7 @@ class ActionObject(SyftObject):
         kwargs: Optional[
             Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
         ] = {},
+        action_type: Optional[ActionType] = None,
     ) -> Action:
         """Generate new action from the information
 
@@ -491,7 +627,7 @@ class ActionObject(SyftObject):
         for obj in args:
             arg_ids.append(self._syft_prepare_obj_uid(obj))
 
-        for k, uid in kwargs.items():
+        for k, obj in kwargs.items():
             kwarg_ids[k] = self._syft_prepare_obj_uid(obj)
 
         action = Action(
@@ -500,14 +636,16 @@ class ActionObject(SyftObject):
             remote_self=LineageID(remote_self),
             args=arg_ids,
             kwargs=kwarg_ids,
+            action_type=action_type,
         )
         return action
 
-    def syft_make_method_action(
+    def syft_make_action_with_self(
         self,
         op: str,
         args: Optional[List[Union[UID, ActionObjectPointer]]] = None,
         kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
+        action_type: Optional[ActionType] = None,
     ) -> Action:
         """Generate new method action from the current object.
 
@@ -527,7 +665,12 @@ class ActionObject(SyftObject):
         """
         path = self.syft_get_path()
         return self.syft_make_action(
-            path=path, op=op, remote_self=self.syft_lineage_id, args=args, kwargs=kwargs
+            path=path,
+            op=op,
+            remote_self=self.syft_lineage_id,
+            args=args,
+            kwargs=kwargs,
+            action_type=action_type,
         )
 
     def syft_get_path(self) -> str:
@@ -554,7 +697,7 @@ class ActionObject(SyftObject):
             *args: Optional[List[Union[UID, ActionObjectPointer]]],
             **kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]],
         ) -> Action:
-            return self.syft_make_method_action(op=op, args=args, kwargs=kwargs)
+            return self.syft_make_action_with_self(op=op, args=args, kwargs=kwargs)
 
         return wrapper
 
@@ -565,8 +708,11 @@ class ActionObject(SyftObject):
 
     def get_from(self, client: SyftClient) -> Any:
         """Get the object from a Syft Client"""
-
-        return client.api.services.action.get(self.id).syft_action_data
+        res = client.api.services.action.get(self.id)
+        if not isinstance(res, ActionObject):
+            return Err(res)
+        else:
+            return res.syft_action_data
 
     @staticmethod
     def from_obj(
@@ -587,7 +733,7 @@ class ActionObject(SyftObject):
         if id and syft_lineage_id and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
-        action_type = action_type_for_type(syft_action_data)
+        action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data=syft_action_data)
 
         if id:
@@ -600,6 +746,17 @@ class ActionObject(SyftObject):
             action_object.syft_history_hash = hash(id)
 
         return action_object
+
+    @classmethod
+    def add_trace_hook(cls):
+        return True
+        # if trace_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
+        #     self._syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
+
+    @classmethod
+    def remove_trace_hook(cls):
+        return True
+        # self._syft_pre_hooks__[HOOK_ALWAYS].pop(trace_action_side_effct, None)
 
     @staticmethod
     def empty(
@@ -619,22 +776,37 @@ class ActionObject(SyftObject):
         """
 
         empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
-        return ActionObject.from_obj(
+        res = ActionObject.from_obj(
             syft_action_data=empty, id=id, syft_lineage_id=syft_lineage_id
         )
+        res.__dict__["syft_internal_type"] = syft_internal_type
+        return res
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
         if HOOK_ALWAYS not in self._syft_pre_hooks__:
             self._syft_pre_hooks__[HOOK_ALWAYS] = []
 
+        if HOOK_ON_POINTERS not in self._syft_post_hooks__:
+            self._syft_pre_hooks__[HOOK_ON_POINTERS] = []
+
         # this should be a list as orders matters
-        for side_effect in [make_action_side_effect, send_action_side_effect]:
+        for side_effect in [make_action_side_effect]:
             if side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
                 self._syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
 
+        for side_effect in [send_action_side_effect]:
+            if side_effect not in self._syft_pre_hooks__[HOOK_ON_POINTERS]:
+                self._syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
+
+        if trace_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
+            self._syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
+
         if HOOK_ALWAYS not in self._syft_post_hooks__:
             self._syft_post_hooks__[HOOK_ALWAYS] = []
+
+        if HOOK_ON_POINTERS not in self._syft_post_hooks__:
+            self._syft_post_hooks__[HOOK_ON_POINTERS] = []
 
         for side_effect in [propagate_node_uid]:
             if side_effect not in self._syft_post_hooks__[HOOK_ALWAYS]:
@@ -657,7 +829,6 @@ class ActionObject(SyftObject):
                     context, result_args, result_kwargs = result.ok()
                 else:
                     debug(f"Pre-hook failed with {result.err()}")
-
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self._syft_pre_hooks__:
                 for hook in self._syft_pre_hooks__[HOOK_ALWAYS]:
@@ -665,7 +836,19 @@ class ActionObject(SyftObject):
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
                     else:
-                        debug(f"Pre-hook failed with {result.err()}")
+                        msg = result.err().replace("\\n", "\n")
+                        print(f"Pre-hook failed with {msg}")
+
+        if self.is_pointer:
+            if name not in self._syft_dont_wrap_attrs():
+                if HOOK_ALWAYS in self._syft_pre_hooks__:
+                    for hook in self._syft_pre_hooks__[HOOK_ON_POINTERS]:
+                        result = hook(context, *result_args, **result_kwargs)
+                        if result.is_ok():
+                            context, result_args, result_kwargs = result.ok()
+                        else:
+                            msg = result.err().replace("\\n", "\n")
+                            print(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
 
@@ -691,18 +874,30 @@ class ActionObject(SyftObject):
                     else:
                         debug(f"Post hook failed with {result.err()}")
 
+        if self.is_pointer:
+            if name not in self._syft_dont_wrap_attrs():
+                if HOOK_ALWAYS in self._syft_post_hooks__:
+                    for hook in self._syft_post_hooks__[HOOK_ON_POINTERS]:
+                        result = hook(context, name, new_result)
+                        if result.is_ok():
+                            new_result = result.ok()
+                        else:
+                            debug(f"Post hook failed with {result.err()}")
+
         return new_result
 
     def _syft_output_action_object(
-        self,
-        result: Any,
+        self, result: Any, context: Optional[PreHookContext] = None
     ) -> Any:
         """Wrap the result in an ActionObject"""
         if issubclass(type(result), ActionObject):
             return result
 
         constructor = action_type_for_type(result)
-        result = constructor(syft_action_data=result)
+        syft_twin_type = TwinMode.NONE
+        if context.result_twin_type is not None:
+            syft_twin_type = context.result_twin_type
+        result = constructor(syft_action_data=result, syft_twin_type=syft_twin_type)
 
         return result
 
@@ -733,7 +928,7 @@ class ActionObject(SyftObject):
             return result
 
         # Wrap as Syft Object
-        result = self._syft_output_action_object(result)
+        result = self._syft_output_action_object(result, context)
 
         # Propagate History
         if context.action is not None:
@@ -783,7 +978,9 @@ class ActionObject(SyftObject):
             )
         debug(f"[__getattribute__] Handling property {name} ")
 
-        context = PreHookContext(obj=self, op_name=name)
+        context = PreHookContext(
+            obj=self, op_name=name, action_type=ActionType.GETATTRIBUTE
+        )
         context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
         # no input needs to propagate
         result = self._syft_run_post_hooks__(
@@ -811,7 +1008,9 @@ class ActionObject(SyftObject):
         debug_original_func(name, original_func)
 
         def _base_wrapper(*args: Any, **kwargs: Any) -> Any:
-            context = PreHookContext(obj=self, op_name=name)
+            context = PreHookContext(
+                obj=self, op_name=name, action_type=ActionType.METHOD
+            )
             context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                 context, name, args, kwargs
             )
@@ -856,6 +1055,37 @@ class ActionObject(SyftObject):
 
         return wrapper
 
+    def _syft_setattr(self, name, value):
+        args = (name, value)
+        kwargs = dict()
+        op_name = "__setattr__"
+
+        def fake_func(*args: Any, **kwargs: Any) -> Any:
+            return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
+        if isinstance(self.syft_action_data, ActionDataEmpty) or has_action_data_empty(
+            args=args, kwargs=kwargs
+        ):
+            local_func = fake_func
+        else:
+            local_func = getattr(self.syft_action_data, op_name)
+
+        context = PreHookContext(
+            obj=self, op_name=op_name, action_type=ActionType.SETATTRIBUTE
+        )
+        context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
+            context, "__setattr__", args, kwargs
+        )
+
+        original_args, _ = debox_args_and_kwargs(pre_hook_args, pre_hook_kwargs)
+        val = original_args[1]
+        local_func(name, val)
+        local_result = self
+
+        post_result = self._syft_run_post_hooks__(context, op_name, local_result)
+        post_result = self._syft_attr_propagate_ids(context, op_name, post_result)
+        return post_result
+
     def __getattribute__(self, name: str) -> Any:
         """Called unconditionally to implement attribute accesses for instances of the class.
         If the class also defines __getattr__(), the latter will not be called unless __getattribute__()
@@ -875,6 +1105,7 @@ class ActionObject(SyftObject):
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)
 
+        # third party
         if name in self._syft_passthrough_attrs():
             return object.__getattribute__(self, name)
         context_self = self._syft_get_attr_context(name)
@@ -900,6 +1131,7 @@ class ActionObject(SyftObject):
             self.__dict__[name] = value
             return value
         else:
+            self._syft_setattr(name, value)
             context_self = self.syft_action_data  # type: ignore
             return context_self.__setattr__(name, value)
 
@@ -911,9 +1143,32 @@ class ActionObject(SyftObject):
     # if we do not implement these boiler plate __method__'s then special infix
     # operations like x + y won't trigger __getattribute__
     # unless there is a super special reason we should write no code in these functions
+    def _repr_markdown_(self) -> str:
+        if self.is_mock:
+            res = "TwinPointer(Mock)"
+        elif self.is_real:
+            res = "TwinPointer(Real)"
+        elif not self.is_twin:
+            res = "Pointer"
+        child_repr = (
+            self.syft_action_data._repr_markdown_()
+            if hasattr(self.syft_action_data, "_repr_markdown_")
+            else self.syft_action_data.__repr__()
+        )
+
+        return f"```python\n{res}\n```\n{child_repr}"
 
     def __repr__(self) -> str:
-        return self.__repr__()
+        if self.is_mock:
+            res = "TwinPointer(Mock)"
+        elif self.is_real:
+            res = "TwinPointer(Real)"
+        if not self.is_twin:
+            res = "Pointer"
+        return f"{res}:\n{str(self.syft_action_data)}"
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        return self.__call__(*args, **kwds)
 
     def __str__(self) -> str:
         return self.__str__()
@@ -1068,7 +1323,7 @@ class AnyActionObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[Type[Any]] = Any  # type: ignore
-    syft_passthrough_attrs: List[str] = []
+    # syft_passthrough_attrs: List[str] = []
     syft_dont_wrap_attrs: List[str] = []
 
     def __float__(self) -> float:

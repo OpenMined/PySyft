@@ -17,7 +17,9 @@ import pytest
 from syft.service.action.action_data_empty import ActionDataEmpty
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
+from syft.service.action.action_object import ActionType
 from syft.service.action.action_object import HOOK_ALWAYS
+from syft.service.action.action_object import HOOK_ON_POINTERS
 from syft.service.action.action_object import PreHookContext
 from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_node_uid
@@ -165,7 +167,7 @@ def test_actionobject_hooks_init(orig_obj: Any):
     assert HOOK_ALWAYS in obj._syft_post_hooks__
 
     assert make_action_side_effect in obj._syft_pre_hooks__[HOOK_ALWAYS]
-    assert send_action_side_effect in obj._syft_pre_hooks__[HOOK_ALWAYS]
+    assert send_action_side_effect in obj._syft_pre_hooks__[HOOK_ON_POINTERS]
     assert propagate_node_uid in obj._syft_post_hooks__[HOOK_ALWAYS]
 
 
@@ -277,7 +279,7 @@ def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
         worker, obj, *args, **kwargs
     )
 
-    context = PreHookContext(obj=obj_pointer, op_name=op)
+    context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
     result = send_action_side_effect(context, *args_pointers, **kwargs_pointers)
     assert result.is_ok()
 
@@ -348,7 +350,7 @@ def test_actionobject_syft_execute_ok(worker, testcase):
         worker, obj, *args, **kwargs
     )
 
-    context = PreHookContext(obj=obj_pointer, op_name=op)
+    context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
     result = make_action_side_effect(context, *args_pointers, **kwargs_pointers)
     context, _, _ = result.ok()
 
@@ -408,7 +410,7 @@ def test_actionobject_syft_make_action(worker, testcase):
         (complex(1, 2), "conjugate", [], {}),
     ],
 )
-def test_actionobject_syft_make_method_action(worker, testcase):
+def test_actionobject_syft_make_action_with_self(worker, testcase):
     orig_obj, op, args, kwargs = testcase
 
     obj = helper_make_action_obj(orig_obj)
@@ -416,7 +418,9 @@ def test_actionobject_syft_make_method_action(worker, testcase):
         worker, obj, *args, **kwargs
     )
 
-    action = obj.syft_make_method_action(op, args=args_pointers, kwargs=kwargs_pointers)
+    action = obj.syft_make_action_with_self(
+        op, args=args_pointers, kwargs=kwargs_pointers
+    )
 
     assert action.full_path.endswith("." + op)
 
@@ -526,7 +530,6 @@ def test_actionobject_syft_passthrough_attrs(testcase):
     obj = helper_make_action_obj(testcase)
 
     assert str(obj) == str(testcase)
-    assert repr(obj) == repr(testcase)
 
 
 @pytest.mark.parametrize(
@@ -581,7 +584,7 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     )
     obj_pointer.syft_point_to(client.id)
 
-    context = PreHookContext(obj=obj_pointer, op_name=op)
+    context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
 
     context, result_args, result_kwargs = obj_pointer._syft_run_pre_hooks__(
         context, name=op, args=args_pointers, kwargs=kwargs_pointers
