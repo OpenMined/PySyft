@@ -14,17 +14,14 @@ from zmq import Socket
 import zmq.green as zmq
 
 # relative
-from ...serde.deserialize import _deserialize as deserialize
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
 from .base_queue import QueuePublisher
 from .base_queue import QueueSubscriber
-from .queue_stash import QueueItem
 
 
 class ZMQPublisher(QueuePublisher):
@@ -104,23 +101,6 @@ class ZMQSubscriber(QueueSubscriber):
         if self.recv_thread is not None:
             self.recv_thread.kill()
         self._subscriber.close()
-
-
-class APICallMessageHandler(AbstractMessageHandler):
-    queue = "api_call"
-
-    @classmethod
-    def message_handler(cls, message: bytes, worker: Any):
-        task_uid, api_call = deserialize(message, from_bytes=True)
-        result = worker.handle_api_call(api_call)
-        item = QueueItem(
-            node_uid=worker.id,
-            id=task_uid,
-            result=result,
-            resolved=True,
-        )
-        worker.queue_stash.set_result(api_call.credentials, item)
-        worker.queue_stash.partition.close()
 
 
 class ZMQClientConfig(SyftObject, QueueClientConfig):

@@ -58,10 +58,10 @@ from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import NewProjectService
 from ..service.project.project_service import ProjectService
+from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueRouter
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import APICallMessageHandler
 from ..service.queue.zmq_queue import QueueConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.request.request_service import RequestService
