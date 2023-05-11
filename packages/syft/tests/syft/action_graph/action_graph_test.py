@@ -33,6 +33,7 @@ from syft.store.document_store import QueryKeys
 from syft.store.locks import NoLockingConfig
 from syft.types.datetime import DateTime
 from syft.types.syft_metaclass import Empty
+from syft.types.uid import UID
 
 # relative
 from .fixtures import create_action_node
@@ -575,3 +576,47 @@ def test_simple_in_memory_action_graph_query(
     assert done_result[0] == node_1.id
     assert processing_result[0] == node_2.id
     assert processing_result[1] == node_3.id
+
+
+def test_multithreaded_graph_store_update_node(verify_key: SyftVerifyKey) -> None:
+    execution_err = None
+    store_config = InMemoryGraphConfig()
+    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
+
+    action_obj_node: NodeActionData = create_action_obj_node(verify_key)
+    result = graph_store.set(action_obj_node, credentials=verify_key).ok()
+
+    thread_id_update_map = [
+        {"next_mutagen_node": UID()},
+        {"last_nm_mutagen_node": UID()},
+        {"retry": 42},
+        {"is_mutagen": True},
+        {"is_mutated": True},
+        {"status": ExecutionStatus.DONE},
+    ]
+    thread_cnt = len(thread_id_update_map)
+
+    def _cbk(tid: int) -> None:
+        nonlocal execution_err
+        update_node = NodeActionDataUpdate(**thread_id_update_map[tid])
+        result2 = graph_store.update(
+            uid=result.id, data=update_node, credentials=verify_key
+        )
+        if result2.is_err():
+            execution_err = result2.err()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_cbk, args=(tid,))
+        thread.start()
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_err is None
+    updated_node = graph_store.get(result.id, verify_key).ok()
+
+    for update_params in thread_id_update_map:
+        for param, value in update_params.items():
+            assert getattr(updated_node, param) == value
