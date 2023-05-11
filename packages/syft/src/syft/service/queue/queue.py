@@ -4,6 +4,7 @@ from typing import Any
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
+from ...serde.serializable import serializable
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueRouter
 from .base_queue import QueueConfig
@@ -11,13 +12,15 @@ from .queue_stash import QueueItem
 from .queue_stash import Status
 
 
+@serializable()
 class QueueRouter(BaseQueueRouter):
     config: QueueConfig
 
     def post_init(self):
         self._publisher = None
         self.subscribers = defaultdict(list)
-        self._client = self.config.client_type(self.config.client_config)
+        self.client_config = self.config.client_config()
+        self._client = self.config.client_type(self.client_config)
 
     def start(self):
         self._client.start()
@@ -31,11 +34,11 @@ class QueueRouter(BaseQueueRouter):
 
     @property
     def pub_addr(self):
-        return self.config.client_config.pub_addr
+        return self.client_config.pub_addr
 
     @property
     def sub_addr(self):
-        return self.config.client_config.sub_addr
+        return self.client_config.sub_addr
 
     def create_subscriber(
         self, message_handler: AbstractMessageHandler, worker_settings: Any
@@ -56,6 +59,7 @@ class QueueRouter(BaseQueueRouter):
         return self._publisher
 
 
+@serializable()
 class APICallMessageHandler(AbstractMessageHandler):
     queue = "api_call"
 

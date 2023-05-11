@@ -14,6 +14,7 @@ class QueueClientConfig:
     pass
 
 
+@serializable()
 class AbstractMessageHandler:
     queue: ClassVar[str]
 
@@ -49,6 +50,7 @@ class QueuePublisher:
         raise NotImplementedError
 
 
+@serializable()
 class QueueClient:
     pass
 
@@ -66,7 +68,7 @@ class QueueConfig:
 
     subscriber: Type[QueueSubscriber]
     publisher: Type[QueuePublisher]
-    client_config: Optional[QueueClientConfig]
+    client_config: Optional[Type[QueueClientConfig]]
     client_type: Type[QueueClient]
 
 

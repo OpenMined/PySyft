@@ -1,7 +1,7 @@
 # stdlib
 import binascii
 import os
-import random
+import socketserver
 from typing import Any
 from typing import Callable
 from typing import Optional
@@ -14,6 +14,7 @@ from zmq import Socket
 import zmq.green as zmq
 
 # relative
+from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -24,6 +25,7 @@ from .base_queue import QueuePublisher
 from .base_queue import QueueSubscriber
 
 
+@serializable()
 class ZMQPublisher(QueuePublisher):
     def __init__(self, address: str) -> None:
         ctx = zmq.Context.instance()
@@ -47,6 +49,7 @@ class ZMQPublisher(QueuePublisher):
         self._publisher.close()
 
 
+@serializable()
 class ZMQSubscriber(QueueSubscriber):
     def __init__(
         self,
@@ -103,6 +106,7 @@ class ZMQSubscriber(QueueSubscriber):
         self._subscriber.close()
 
 
+@serializable()
 class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -112,22 +116,24 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     sub_addr: Optional[str]
 
     @staticmethod
-    def _get_random_port():
-        min_port = 49152
-        max_port = 65536
-        port = random.randrange(min_port, max_port)
-        addr = f"tcp://127.0.0.1:{port}"
+    def _get_free_tcp_addr():
+        host = "127.0.0.1"
+        with socketserver.TCPServer((host, 0), None) as s:
+            free_port = s.server_address[1]
+
+        addr = f"tcp://{host}:{free_port}"
         return addr
 
     @validator("pub_addr", pre=True, always=True)
     def make_pub_addr(cls, v: Optional[str]) -> str:
-        return cls._get_random_port() if v is None else v
+        return cls._get_free_tcp_addr() if v is None else v
 
     @validator("sub_addr", pre=True, always=True)
     def make_sub_addr(cls, v: Optional[str]) -> str:
-        return cls._get_random_port() if v is None else v
+        return cls._get_free_tcp_addr() if v is None else v
 
 
+@serializable()
 class ZMQClient(QueueClient):
     def __init__(self, config: QueueClientConfig):
         self.pub_addr = config.pub_addr
@@ -227,8 +233,9 @@ class ZMQClient(QueueClient):
         self.mon_sub.close()
 
 
+@serializable()
 class ZMQQueueConfig(QueueConfig):
     subscriber = ZMQSubscriber
     publisher = ZMQPublisher
-    client_config = ZMQClientConfig()
+    client_config = ZMQClientConfig
     client_type = ZMQClient
