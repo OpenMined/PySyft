@@ -10,8 +10,10 @@ from syft.service.action.action_graph import InMemoryGraphConfig
 from syft.service.action.action_graph import NetworkXBackingStore
 from syft.service.action.action_graph import NodeActionData
 from syft.service.action.action_graph import NodeType
+from syft.service.action.action_graph_service import ActionGraphService
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
+from syft.service.context import AuthedServiceContext
 
 
 def create_action_obj_node(verify_key: SyftVerifyKey) -> NodeActionData:
@@ -123,3 +125,22 @@ def simple_in_memory_action_graph(
     )
 
     return in_mem_graph_store
+
+
+@pytest.fixture
+def authed_context(verify_key: SyftVerifyKey) -> AuthedServiceContext:
+    return AuthedServiceContext(credentials=verify_key)
+
+
+@pytest.fixture
+def in_mem_action_graph_service(
+    in_mem_graph_store: InMemoryActionGraphStore,
+) -> ActionGraphService:
+    return ActionGraphService(store=in_mem_graph_store)
+
+
+@pytest.fixture
+def action_graph_service_simple_graph(
+    in_mem_action_graph_service: ActionGraphService,
+) -> ActionGraphService:
+    pass
