@@ -1,6 +1,6 @@
 # stdlib
 import random
-from typing import Any
+import time
 
 # third party
 from faker import Faker
@@ -8,8 +8,6 @@ import zmq
 from zmq import Socket
 
 # syft absolute
-from syft.node.node import Node
-from syft.node.worker_settings import WorkerSettings
 from syft.service.queue.base_queue import AbstractMessageHandler
 from syft.service.queue.queue import QueueRouter
 from syft.service.queue.zmq_queue import ZMQClient
@@ -64,13 +62,8 @@ def test_zmq_client():
     assert client.logger_thread.dead
 
 
-def test_zmq_pub_sub(faker: Faker, worker: Node):
+def test_zmq_pub_sub(faker: Faker):
     received_messages = []
-
-    class MyMessageHandler(AbstractMessageHandler):
-        @classmethod
-        def message_handler(cls, message: bytes, worker: Any):
-            received_messages.append(message)
 
     pub_port = random.randint(6001, 10004)
 
@@ -79,8 +72,6 @@ def test_zmq_pub_sub(faker: Faker, worker: Node):
     # Create a publisher
     publisher = ZMQPublisher(address=pub_addr)
     queue_name = "ABC"
-
-    worker_settings = WorkerSettings.from_node(worker)
 
     assert publisher.address == pub_addr
     assert isinstance(publisher._publisher, Socket)
@@ -91,16 +82,26 @@ def test_zmq_pub_sub(faker: Faker, worker: Node):
     # queues are attached yet.
     publisher.send(first_message, queue_name=queue_name)
 
+    class MyMessageHandler(AbstractMessageHandler):
+        queue = queue_name
+
+        @classmethod
+        def message_handler(cls, message: bytes):
+            received_messages.append(message)
+
     # Create a queue and subscriber
     subscriber = ZMQSubscriber(
-        worker_settings=worker_settings,
         message_handler=MyMessageHandler.message_handler,
         address=pub_addr,
         queue_name=queue_name,
     )
 
+    # Add sleep for subscriber to connect in green thread
+    time.sleep(1)
+
     assert subscriber.address == pub_addr
     assert isinstance(subscriber._subscriber, Socket)
+    assert subscriber.recv_thread is None
 
     # Send in a second message
     second_message = faker.sentence().encode()
@@ -133,27 +134,19 @@ def test_zmq_pub_sub(faker: Faker, worker: Node):
     assert subscriber._subscriber.closed
 
 
-def test_zmq_queue_router(worker: Node) -> None:
-    pub_port = random.randint(6001, 10004)
-    sub_port = random.randint(6001, 10004)
-
-    pub_addr = f"tcp://127.0.0.1:{pub_port}"
-    sub_addr = f"tcp://127.0.0.1:{sub_port}"
-
+def test_zmq_queue_router() -> None:
     config = ZMQQueueConfig()
 
-    assert isinstance(config.client_config, ZMQClientConfig)
+    assert config.client_config == ZMQClientConfig
     assert config.client_type == ZMQClient
     assert config.publisher == ZMQPublisher
     assert config.subscriber == ZMQSubscriber
 
-    config.client_config.pub_addr = pub_addr
-    config.client_config.sub_addr = sub_addr
-
     queue_router = QueueRouter(config=config)
 
-    assert queue_router.pub_addr == pub_addr
-    assert queue_router.sub_addr == sub_addr
+    assert queue_router.client_config.pub_addr
+    assert queue_router.client_config.sub_addr
+
     assert len(queue_router.subscribers) == 0
     assert isinstance(queue_router._client, ZMQClient)
     assert queue_router._publisher is None
@@ -173,14 +166,11 @@ def test_zmq_queue_router(worker: Node) -> None:
         queue = queue_name
 
         @classmethod
-        def message_handler(cls, message: bytes, worker: Any):
+        def message_handler(cls, message: bytes):
             received_messages.append(message)
-
-    worker_settings = WorkerSettings.from_node(worker)
 
     subscriber = queue_router.create_subscriber(
         message_handler=CustomHandler,
-        worker_settings=worker_settings,
     )
 
     assert isinstance(subscriber, ZMQSubscriber)
