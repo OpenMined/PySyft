@@ -11,7 +11,7 @@ from zmq import Socket
 from syft.node.node import Node
 from syft.node.worker_settings import WorkerSettings
 from syft.service.queue.queue import QueueRouter
-from syft.service.queue.zmq_queue import AbstractMessageHandler
+from syft.service.queue.base_queue import AbstractMessageHandler
 from syft.service.queue.zmq_queue import ZMQClient
 from syft.service.queue.zmq_queue import ZMQClientConfig
 from syft.service.queue.zmq_queue import ZMQPublisher
