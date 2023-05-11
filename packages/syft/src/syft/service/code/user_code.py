@@ -330,15 +330,11 @@ class UserCode(SyftObject):
             inner_function.decorator_list = []
             # compile the function
             raw_byte_code = compile_byte_code(unparse(inner_function))
-            # load it
-            # exec(raw_byte_code)  # nosec
-            # execute it
-            # evil_string = f"{self.service_func_name}(*args, **kwargs)"
-            # result = eval(evil_string, None, locals())  # nosec
-            # return the results
             result = execute_byte_code(
                 raw_byte_code, self.service_func_name, self.id, args, kwargs
             )
+            if isinstance(result, UserCodeExecutionResult):
+                return result.result
             return result
 
         return wrapper
@@ -572,10 +568,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
-            # TODO: Teo this was raise NotImplemented, figure out why
-            context.output["status"] = UserCodeStatusContext(
-                base_dict={node_view: UserCodeStatus.SUBMITTED}
-            )
+            raise Exception(f"Domain {node_view} not in input keys {input_keys}")
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
@@ -620,18 +613,6 @@ class UserCodeExecutionResult(SyftObject):
             return Image.open(BytesIO(self.serialized_plot), "r")
         else:
             return None
-
-    def get_result(self) -> Any:
-        return self.result
-
-    def get_stdout(self) -> str:
-        return self.stdout
-
-    def get_stderr(self) -> str:
-        return self.stderr
-
-    def set_result(self, new_result) -> None:
-        self.result = new_result
 
 
 def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:

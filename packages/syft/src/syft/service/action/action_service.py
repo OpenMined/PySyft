@@ -150,7 +150,7 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         code_item: UserCode,
         kwargs: Dict[str, Any],
-    ) -> Result[ActionObjectPointer, Err]:
+    ) -> Result[ActionObject, Err]:
         filtered_kwargs = code_item.input_policy.filter_kwargs(
             kwargs=kwargs, context=context, code_item_id=code_item.id
         )
@@ -174,7 +174,7 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
                 exec_result = execute_code_item(code_item, filtered_kwargs)
-                result_action_object = wrap_result(code_item.id, result_id, exec_result)
+                result_action_object = wrap_result(result_id, exec_result.result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(

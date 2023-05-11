@@ -723,11 +723,15 @@ class ActionObject(SyftObject):
             syft_lineage_id: Optional[LineageID]
                 Which LineageID to use for the ActionObject. Optional
         """
+
         if id and syft_lineage_id and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
-        action_type = action_type_for_object(syft_action_data)
-        action_object = action_type(syft_action_data=syft_action_data)
+        if not isinstance(syft_action_data, ActionObject):
+            action_type = action_type_for_object(syft_action_data)
+            action_object = action_type(syft_action_data=syft_action_data)
+        else:
+            action_object = syft_action_data
 
         if id:
             action_object.id = id
@@ -820,7 +824,7 @@ class ActionObject(SyftObject):
                         context, result_args, result_kwargs = result.ok()
                     else:
                         msg = result.err().replace("\\n", "\n")
-                        print(f"Pre-hook failed with {msg}")
+                        debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
 

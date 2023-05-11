@@ -327,7 +327,7 @@ class APIModule:
 
 
 @instrument
-@serializable(attrs=["endpoints", "node_uid", "node_name"])
+@serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
