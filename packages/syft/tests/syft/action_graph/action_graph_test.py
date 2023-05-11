@@ -9,6 +9,8 @@ Tests for the classes in /syft/src/syft/service/action/action_graph.py:
 # stdlib
 import os
 from pathlib import Path
+import tempfile
+from threading import Thread
 
 # third party
 import networkx as nx
@@ -31,6 +33,7 @@ from syft.store.document_store import QueryKeys
 from syft.store.locks import NoLockingConfig
 from syft.types.datetime import DateTime
 from syft.types.syft_metaclass import Empty
+from syft.types.uid import UID
 
 # relative
 from .fixtures import create_action_node
@@ -143,8 +146,11 @@ def test_node_action_data_update() -> None:
 def test_in_memory_store_client_config() -> None:
     default_client_conf = InMemoryStoreClientConfig()
     assert default_client_conf.filename == "action_graph.bytes"
-    assert default_client_conf.path == "/tmp"
-    assert default_client_conf.file_path == Path("/tmp") / "action_graph.bytes"
+    assert default_client_conf.path == tempfile.gettempdir()
+    assert (
+        default_client_conf.file_path
+        == Path(tempfile.gettempdir()) / "action_graph.bytes"
+    )
 
     custom_client_conf = InMemoryStoreClientConfig(
         filename="custom_action_graph.bytes", path="/custom"
@@ -448,6 +454,102 @@ def test_simple_in_memory_action_graph(
     )
 
 
+def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -> None:
+    thread_cnt = 5
+    repeats = 3
+
+    execution_err = None
+    store_config = InMemoryGraphConfig()
+    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
+
+    def _cbk(tid: int) -> None:
+        nonlocal execution_err
+        for idx in range(repeats):
+            action_obj_a = ActionObject.from_obj([2, 4, 6])
+            node_data_a = NodeActionData.from_action_obj(
+                action_obj_a, credentials=verify_key
+            )
+            res1 = graph_store.set(node_data_a, credentials=verify_key)
+            if res1.is_err():
+                execution_err = res1.err()
+
+            action_obj_b = ActionObject.from_obj([3, 4, 6])
+            node_data_b = NodeActionData.from_action_obj(
+                action_obj_b, credentials=verify_key
+            )
+            res2 = graph_store.set(node_data_b, credentials=verify_key)
+            if res2.is_err():
+                execution_err = res2.err()
+
+            res3 = graph_store.add_edge(
+                node_data_a.id, node_data_b.id, credentials=verify_key
+            )
+            if res3.is_err():
+                execution_err = res3.err()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_cbk, args=(tid,))
+        thread.start()
+
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    reqd_num_nodes = thread_cnt * repeats * 2
+    reqd_num_edges = thread_cnt * repeats * 1
+
+    assert execution_err is None
+    assert len(graph_store.nodes(None).ok()) == reqd_num_nodes
+    assert len(graph_store.edges(None).ok()) == reqd_num_edges
+
+
+def test_multithreaded_graph_store_delete_node(verify_key: SyftVerifyKey) -> None:
+    thread_cnt = 5
+    repeats = 3
+
+    execution_err = None
+    store_config = InMemoryGraphConfig()
+    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
+
+    thread_id_node_map = {}
+    for tid in range(thread_cnt):
+        thread_id_node_map[tid] = []
+        for rp in range(repeats):
+            action_obj = ActionObject.from_obj([2, 4, 6])
+            node_data = NodeActionData.from_action_obj(
+                action_obj, credentials=verify_key
+            )
+            res = graph_store.set(node_data, credentials=verify_key)
+            if res.is_err():
+                print(f"Failed to add node, error: {res.err()}")
+                assert 0 == 1  # TODO how else to make the test fail?
+            thread_id_node_map[tid].append(node_data.id)
+
+    assert len(graph_store.nodes(None).ok()) == thread_cnt * repeats
+
+    def _cbk(tid: int) -> None:
+        nonlocal execution_err
+        for idx in range(repeats):
+            cur_node_id = thread_id_node_map[tid][idx]
+            res = graph_store.delete(cur_node_id, credentials=verify_key)
+            if res.is_err():
+                execution_err = res.err()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_cbk, args=(tid,))
+        thread.start()
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_err is None
+    assert len(graph_store.nodes(None).ok()) == 0
+
+
 def test_simple_in_memory_action_graph_query(
     simple_in_memory_action_graph: InMemoryActionGraphStore,
     verify_key: SyftVerifyKey,
@@ -474,3 +576,47 @@ def test_simple_in_memory_action_graph_query(
     assert done_result[0] == node_1.id
     assert processing_result[0] == node_2.id
     assert processing_result[1] == node_3.id
+
+
+def test_multithreaded_graph_store_update_node(verify_key: SyftVerifyKey) -> None:
+    execution_err = None
+    store_config = InMemoryGraphConfig()
+    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
+
+    action_obj_node: NodeActionData = create_action_obj_node(verify_key)
+    result = graph_store.set(action_obj_node, credentials=verify_key).ok()
+
+    thread_id_update_map = [
+        {"next_mutagen_node": UID()},
+        {"last_nm_mutagen_node": UID()},
+        {"retry": 42},
+        {"is_mutagen": True},
+        {"is_mutated": True},
+        {"status": ExecutionStatus.DONE},
+    ]
+    thread_cnt = len(thread_id_update_map)
+
+    def _cbk(tid: int) -> None:
+        nonlocal execution_err
+        update_node = NodeActionDataUpdate(**thread_id_update_map[tid])
+        result2 = graph_store.update(
+            uid=result.id, data=update_node, credentials=verify_key
+        )
+        if result2.is_err():
+            execution_err = result2.err()
+
+    tids = []
+    for tid in range(thread_cnt):
+        thread = Thread(target=_cbk, args=(tid,))
+        thread.start()
+        tids.append(thread)
+
+    for thread in tids:
+        thread.join()
+
+    assert execution_err is None
+    updated_node = graph_store.get(result.id, verify_key).ok()
+
+    for update_params in thread_id_update_map:
+        for param, value in update_params.items():
+            assert getattr(updated_node, param) == value

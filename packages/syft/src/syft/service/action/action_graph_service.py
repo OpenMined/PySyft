@@ -118,6 +118,14 @@ class ActionGraphService(AbstractService):
 
         return input_uids, output_uid
 
+    def get(
+        self, uid: UID, context: AuthedServiceContext
+    ) -> Union[NodeActionData, SyftError]:
+        result = self.store.get(uid=uid, credentials=context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return result.ok()
+
     def remove_node(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 from typing import Any
+from typing import Callable
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -30,7 +31,8 @@ from ...store.document_store import QueryKeys
 from ...store.document_store import StoreClientConfig
 from ...store.document_store import StoreConfig
 from ...store.locks import LockingConfig
-from ...store.locks import NoLockingConfig
+from ...store.locks import SyftLock
+from ...store.locks import ThreadingLockingConfig
 from ...types.datetime import DateTime
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -207,23 +209,42 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 
 @serializable()
 class NetworkXBackingStore(BaseGraphStore):
-    def __init__(self, store_config: StoreConfig) -> None:
-        self.file_path = str(store_config.client_config.file_path)
+    def __init__(self, store_config: StoreConfig, reset: bool = False) -> None:
+        self.path_str = store_config.client_config.file_path.as_posix()
 
-        if os.path.exists(self.file_path):
-            self._db = self._load_from_path(str(self.file_path))
+        if not reset and os.path.exists(self.path_str):
+            self._db = self._load_from_path(self.path_str)
         else:
             self._db = nx.DiGraph()
+
+        self.lock = SyftLock(store_config.locking_config)
 
     @property
     def db(self) -> nx.Graph:
         return self._db
 
+    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
+        # TODO copied method from document_store, have it in one place and reuse?
+        locked = self.lock.acquire(blocking=True)
+        if not locked:
+            return Err("Failed to acquire lock for the operation")
+        try:
+            result = cbk(*args, **kwargs)
+        except BaseException as e:
+            result = Err(str(e))
+        self.lock.release()
+
+        return result
+
     def set(self, uid: UID, data: Any) -> None:
+        self._thread_safe_cbk(self._set, uid=uid, data=data)
+
+    def _set(self, uid: UID, data: Any) -> None:
         if self.exists(uid=uid):
             self.update(uid=uid, data=data)
         else:
             self.db.add_node(uid, data=data)
+        self.save()
 
     def get(self, uid: UID) -> Any:
         node_data = self.db.nodes.get(uid)
@@ -233,8 +254,12 @@ class NetworkXBackingStore(BaseGraphStore):
         return uid in self.nodes()
 
     def delete(self, uid: UID) -> None:
+        self._thread_safe_cbk(self._delete, uid=uid)
+
+    def _delete(self, uid: UID) -> None:
         if self.exists(uid=uid):
             self.db.remove_node(uid)
+        self.save()
 
     def find_neighbors(self, uid: UID) -> Optional[Iterable]:
         if self.exists(uid=uid):
@@ -242,14 +267,26 @@ class NetworkXBackingStore(BaseGraphStore):
             return neighbors
 
     def update(self, uid: UID, data: Any) -> None:
+        self._thread_safe_cbk(self._update, uid=uid, data=data)
+
+    def _update(self, uid: UID, data: Any) -> None:
         if self.exists(uid=uid):
             self.db.nodes[uid]["data"] = data
+        self.save()
 
     def add_edge(self, parent: Any, child: Any) -> None:
+        self._thread_safe_cbk(self._add_edge, parent=parent, child=child)
+
+    def _add_edge(self, parent: Any, child: Any) -> None:
         self.db.add_edge(parent, child)
+        self.save()
 
     def remove_edge(self, parent: Any, child: Any) -> None:
+        self._thread_safe_cbk(self._remove_edge, parent=parent, child=child)
+
+    def _remove_edge(self, parent: Any, child: Any) -> None:
         self.db.remove_edge(parent, child)
+        self.save()
 
     def visualize(self, seed: int = 3113794652, figsize=(20, 10)) -> None:
         plt.figure(figsize=figsize)
@@ -272,6 +309,11 @@ class NetworkXBackingStore(BaseGraphStore):
         parents = self.db.predecessors(child)
         return parent in parents
 
+    def save(self) -> None:
+        bytes = _serialize(self.db, to_bytes=True)
+        with open(self.path_str, "wb") as f:
+            f.write(bytes)
+
     def _filter_nodes_by(self, uid: UID, qks: QueryKeys) -> bool:
         node_data = self.db.nodes[uid]["data"]
         matches = []
@@ -287,11 +329,6 @@ class NetworkXBackingStore(BaseGraphStore):
     def topological_sort(self, subgraph: Any) -> Any:
         return list(nx.topological_sort(subgraph))
 
-    def save(self) -> None:
-        bytes = _serialize(self.db, to_bytes=True)
-        with open(str(self.file_path), "wb") as f:
-            f.write(bytes)
-
     @staticmethod
     def _load_from_path(file_path: str) -> None:
         with open(file_path, "rb") as f:
@@ -303,7 +340,7 @@ class NetworkXBackingStore(BaseGraphStore):
 class InMemoryGraphConfig(StoreConfig):
     store_type: Type[BaseGraphStore] = NetworkXBackingStore
     client_config: StoreClientConfig = InMemoryStoreClientConfig()
-    locking_config: LockingConfig = NoLockingConfig()
+    locking_config: LockingConfig = ThreadingLockingConfig()
 
 
 @serializable()
@@ -313,10 +350,10 @@ class ActionGraphStore:
 
 @serializable()
 class InMemoryActionGraphStore(ActionGraphStore):
-    def __init__(self, store_config: StoreConfig):
+    def __init__(self, store_config: StoreConfig, reset: bool = False):
         self.store_config: StoreConfig = store_config
         self.graph: Type[BaseGraphStore] = self.store_config.store_type(
-            self.store_config
+            self.store_config, reset
         )
 
     def set(
@@ -445,10 +482,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
         credentials: SyftVerifyKey,
     ) -> Result[bool, str]:
         if not self.graph.exists(parent):
-            return Err(f"Node does not exists for uid: {parent}")
+            return Err(f"Node does not exists for uid (parent): {parent}")
 
         if not self.graph.exists(child):
-            return Err(f"Node does not exists for uid: {child}")
+            return Err(f"Node does not exists for uid (child): {child}")
 
         result = self._get_last_non_mutated_mutagen(
             uid=parent,
