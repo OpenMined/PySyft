@@ -14,6 +14,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputHistory
 from ..policy.policy import UserPolicy
@@ -29,6 +30,7 @@ from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
+from .user_code import UserCodeExecutionResult
 from .user_code import UserCodeStatus
 from .user_code_stash import UserCodeStash
 
@@ -58,8 +60,6 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
     ):
-        # stdlib
-
         # relative
         from ..request.request import SubmitRequest
         from ..request.request_service import RequestService
@@ -151,10 +151,8 @@ class UserCodeService(AbstractService):
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[ActionObject, SyftNotReady, SyftError]:
         """Call a User Code Function"""
-        # stdlib
-
         try:
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(context.credentials, uid=uid)
@@ -164,7 +162,6 @@ class UserCodeService(AbstractService):
             # Unroll variables
             code_item = result.ok()
             status = code_item.status
-
             # Check if we are allowed to execute the code
             if status.for_context(context) != UserCodeStatus.EXECUTE:
                 if status.for_context(context) == UserCodeStatus.SUBMITTED:
@@ -181,13 +178,19 @@ class UserCodeService(AbstractService):
 
             # Check if the OutputPolicy is valid
             is_valid = output_policy.valid
-
             if not is_valid:
                 if len(output_policy.output_history) > 0:
-                    return get_outputs(
+                    res = get_outputs(
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
+                    if hasattr(res, "syft_action_data") and isinstance(
+                        res.syft_action_data, UserCodeExecutionResult
+                    ):
+                        res = res.syft_action_data
+                    if isinstance(res, UserCodeExecutionResult):
+                        return ActionObject.from_obj(res.result)
+                    return ActionObject.from_obj(res)
                 return is_valid
 
             # Execute the code item
@@ -203,14 +206,13 @@ class UserCodeService(AbstractService):
             policy_result = output_policy.apply_output(
                 context=context, outputs=final_results
             )
-            final_results.set_result(policy_result)
             code_item.output_policy = output_policy
             state_result = self.update_code_state(context=context, code_item=code_item)
             if not state_result:
                 return state_result
-            if isinstance(final_results, TwinObject):
-                return final_results.private
-            return final_results
+            if isinstance(policy_result, TwinObject):
+                return ActionObject.from_obj(policy_result.private)
+            return ActionObject.from_obj(policy_result)
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
 
