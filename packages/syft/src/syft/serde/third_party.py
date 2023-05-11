@@ -162,6 +162,9 @@ recursive_serde_register(
     ),
 )
 
+# unsure why we have to register the object not the type but this works
+recursive_serde_register(np.core._ufunc_config._unspecified())
+
 # how else do you import a relative file to execute it?
 NOTHING = None
 

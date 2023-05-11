@@ -59,7 +59,7 @@ class ActionGraphService(AbstractService):
 
         if action_node.is_mutagen:
             # updated non-mutated successor for all nodes between
-            # node_id and mn_successor_id
+            # node_id and nm_successor_id
             result = self.store.update_non_mutated_successor(
                 node_id=action.remote_self.id,
                 nm_successor_id=action_node.id,
