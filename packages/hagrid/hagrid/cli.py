@@ -2584,7 +2584,7 @@ def make_gcp_vm(
         "https://www.googleapis.com/auth/trace.append",
     ]
     tags = "http-server,https-server"
-    disk_image = "projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20220308"
+    disk_image = "projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-v20230429"
     disk = (
         f"auto-delete=yes,boot=yes,device-name={vm_name},image={disk_image},"
         + f"mode=rw,size={disk_size_gb},type=pd-ssd"
