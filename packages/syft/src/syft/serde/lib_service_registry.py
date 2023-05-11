@@ -13,13 +13,12 @@ from typing import Sequence
 from typing import Union
 
 # third party
+import jaxlib
 import numpy
 from typing_extensions import Self
 
 # relative
-from .lib_permissions import ALL_EXECUTE
 from .lib_permissions import CMPPermission
-from .lib_permissions import NONE_EXECUTE
 from .signature import get_signature
 
 LIB_IGNORE_ATTRIBUTES = set(
@@ -52,6 +51,7 @@ class CMPBase:
         obj: Optional[Any] = None,
         absolute_path: Optional[str] = None,
         text_signature: Optional[str] = None,
+        import_children: bool = True,
     ):
         self.permissions: Optional[CMPPermission] = permissions
         self.path: str = path
@@ -75,6 +75,7 @@ class CMPBase:
             )
 
         self.is_built = False
+        self.import_children = import_children
 
     def set_signature(self) -> None:
         pass
@@ -88,24 +89,25 @@ class CMPBase:
 
         child_paths = set([p for p in self.children.keys()])
 
-        for attr_name in getattr(self.obj, "__dict__", dict()).keys():
-            if attr_name not in LIB_IGNORE_ATTRIBUTES:
-                if attr_name in child_paths:
-                    child = self.children[attr_name]
-                else:
-                    try:
-                        attr = getattr(self.obj, attr_name)
-                    except Exception:  # nosec
-                        continue
-                    child = self.init_child(  # type: ignore
-                        self.obj,
-                        f"{self.path}.{attr_name}",
-                        attr,
-                        f"{self.absolute_path}.{attr_name}",
-                    )
-                if child is not None:
-                    child.build()
-                    self.children[attr_name] = child
+        if self.import_children:
+            for attr_name in getattr(self.obj, "__dict__", dict()).keys():
+                if attr_name not in LIB_IGNORE_ATTRIBUTES:
+                    if attr_name in child_paths:
+                        child = self.children[attr_name]
+                    else:
+                        try:
+                            attr = getattr(self.obj, attr_name)
+                        except Exception:  # nosec
+                            continue
+                        child = self.init_child(  # type: ignore
+                            self.obj,
+                            f"{self.path}.{attr_name}",
+                            attr,
+                            f"{self.absolute_path}.{attr_name}",
+                        )
+                    if child is not None:
+                        child.build()
+                        self.children[attr_name] = child
 
     def __getattr__(self, __name: str) -> Any:
         if __name in self.children:
@@ -130,8 +132,9 @@ class CMPBase:
         Returns:
             _type_: _description_
         """
-        parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
-        if CMPBase.isfunction(child_obj) and parent_is_parent_module:
+        should_import_children = CMPBase.should_import_children(parent_obj, child_obj)
+
+        if CMPBase.isfunction(child_obj):
             return CMPFunction(
                 child_path,
                 permissions=self.permissions,
@@ -151,8 +154,9 @@ class CMPBase:
                 permissions=self.permissions,
                 obj=child_obj,
                 absolute_path=absolute_path,
+                import_children=should_import_children,
             )  # type: ignore
-        elif inspect.isclass(child_obj) and parent_is_parent_module:
+        elif inspect.isclass(child_obj):
             return CMPClass(
                 child_path,
                 permissions=self.permissions,
@@ -165,23 +169,43 @@ class CMPBase:
     @staticmethod
     def is_submodule(parent: type, child: type) -> bool:
         try:
-            if "." not in child.__package__:
-                return False
-            else:
-                child_parent_module = child.__package__.rsplit(".", 1)[0]
-                if parent.__package__ == child_parent_module:
-                    return True
-                else:
-                    return False
+            child_top_level_package = child.__package__.split(".", 1)[0]
+            parent_top_level_pacakage = parent.__package__.split(".", 1)[0]
+            return child_top_level_package == parent_top_level_pacakage
         except Exception:  # nosec
             pass
         return False
 
     @staticmethod
-    def parent_is_parent_module(parent_obj: Any, child_obj: Any) -> Optional[str]:
+    def should_import_children(parent_obj: Any, child_obj: Any) -> bool:
         try:
             if hasattr(child_obj, "__module__"):
-                return child_obj.__module__ == parent_obj.__name__
+                parent_lib_name = parent_obj.__name__.split(".")[0]
+                child_lib_name = child_obj.__module__.split(".")[0]
+                return parent_lib_name == child_lib_name
+            else:
+                return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def should_we_import(parent_obj: Any, child_obj: Any) -> Optional[str]:
+        try:
+            # if its a module, is it a submodule -> True
+            # if the child has a module (function or class) -> True
+            # if its a module, but not a submodule -> True, but we should import but not the childs children
+
+            # jax.numpy.core -> numpy.core
+
+            # if child_obj.__name__.startswith(parent_obj.__name__):
+            #     return True
+            # if inspect.ismodule(child_obj):
+
+            if hasattr(child_obj, "__module__"):
+                parent_lib_name = parent_obj.__name__.split(".")[0]
+                child_lib_name = child_obj.__module__.split(".")[0]
+                return parent_lib_name == child_lib_name
+                # return child_obj.__module__ == parent_obj.__name__
             else:
                 # TODO: this is a fix for for instance numpy ufuncs
                 return child_obj.__class__.__module__ == parent_obj.__name__
@@ -201,6 +225,7 @@ class CMPBase:
             inspect.isfunction(obj)
             or type(obj) == numpy.ufunc
             or isinstance(obj, BuiltinFunctionType)
+            or isinstance(obj, jaxlib.xla_extension.CompiledFunction)
         )
 
     def __repr__(
@@ -332,24 +357,24 @@ class CMPTree:
 
 action_execute_registry_libs = CMPTree(
     children=[
-        CMPModule(
-            "numpy",
-            permissions=ALL_EXECUTE,
-            children=[
-                CMPFunction(
-                    "concatenate",
-                    permissions=ALL_EXECUTE,
-                    text_signature="concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
-                ),
-                CMPFunction("source", permissions=NONE_EXECUTE),
-                CMPFunction("fromfile", permissions=NONE_EXECUTE),
-                CMPFunction(
-                    "set_numeric_ops",
-                    permissions=ALL_EXECUTE,
-                    text_signature="set_numeric_ops(op1,op2, *args)",
-                ),
-                CMPModule("testing", permissions=NONE_EXECUTE),
-            ],
-        ),
+        # CMPModule(
+        #     "numpy",
+        #     permissions=ALL_EXECUTE,
+        #     children=[
+        #         CMPFunction(
+        #             "concatenate",
+        #             permissions=ALL_EXECUTE,
+        #             text_signature="concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
+        #         ),
+        #         CMPFunction("source", permissions=NONE_EXECUTE),
+        #         CMPFunction("fromfile", permissions=NONE_EXECUTE),
+        #         CMPFunction(
+        #             "set_numeric_ops",
+        #             permissions=ALL_EXECUTE,
+        #             text_signature="set_numeric_ops(op1,op2, *args)",
+        #         ),
+        #         CMPModule("testing", permissions=NONE_EXECUTE),
+        # ],
+        # ),
     ]
 ).build()
