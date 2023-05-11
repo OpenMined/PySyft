@@ -8,11 +8,11 @@ from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Type
 from typing import Union
 
 # third party
+import matplotlib.pyplot as plt
 import networkx as nx
 import pydantic
 from result import Err
@@ -65,8 +65,8 @@ class NodeActionData(SyftObject):
     created_at: Optional[DateTime]
     updated_at: Optional[DateTime]
     user_verify_key: SyftVerifyKey
-    is_mutated: bool = False
-    is_mutagen: bool = False
+    is_mutated: bool = False  # denotes that this node has been mutated
+    is_mutagen: bool = False  # denotes that this node is causing a mutation
     next_mutagen_node: Optional[UID]  # next neighboring mutagen node
     last_nm_mutagen_node: Optional[UID]  # last non mutated mutagen node
 
@@ -113,7 +113,7 @@ class NodeActionDataUpdate(PartialSyftObject):
     __canonical_name__ = "NodeActionDataUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: UID
     type: NodeType
     status: ExecutionStatus
     retry: int
@@ -162,7 +162,7 @@ class BaseGraphStore:
     def edges(self) -> Any:
         raise NotImplementedError
 
-    def visualize(self) -> None:
+    def visualize(self, seed: int, figsize: tuple) -> None:
         raise NotImplementedError
 
     def save(self) -> None:
@@ -208,10 +208,10 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 @serializable()
 class NetworkXBackingStore(BaseGraphStore):
     def __init__(self, store_config: StoreConfig) -> None:
-        file_path = store_config.client_config.file_path
+        self.file_path = str(store_config.client_config.file_path)
 
-        if os.path.exists(file_path):
-            self._db = self._load_from_path(str(file_path))
+        if os.path.exists(self.file_path):
+            self._db = self._load_from_path(str(self.file_path))
         else:
             self._db = nx.DiGraph()
 
@@ -229,13 +229,16 @@ class NetworkXBackingStore(BaseGraphStore):
         node_data = self.db.nodes.get(uid)
         return node_data.get("data")
 
+    def exists(self, uid: Any) -> bool:
+        return uid in self.nodes()
+
     def delete(self, uid: UID) -> None:
         if self.exists(uid=uid):
             self.db.remove_node(uid)
 
     def find_neighbors(self, uid: UID) -> Optional[Iterable]:
         if self.exists(uid=uid):
-            neighbors = self.graph.neighbors(uid)
+            neighbors = self.db.neighbors(uid)
             return neighbors
 
     def update(self, uid: UID, data: Any) -> None:
@@ -248,8 +251,10 @@ class NetworkXBackingStore(BaseGraphStore):
     def remove_edge(self, parent: Any, child: Any) -> None:
         self.db.remove_edge(parent, child)
 
-    def visualize(self) -> None:
-        return nx.draw_networkx(self.db, with_labels=True)
+    def visualize(self, seed: int = 3113794652, figsize=(20, 10)) -> None:
+        plt.figure(figsize=figsize)
+        pos = nx.spring_layout(self.db, seed=seed)
+        return nx.draw_networkx(self.db, pos=pos, with_labels=True)
 
     def nodes(self) -> Iterable:
         return self.db.nodes(data=True)
@@ -267,11 +272,6 @@ class NetworkXBackingStore(BaseGraphStore):
         parents = self.db.predecessors(child)
         return parent in parents
 
-    def save(self) -> None:
-        bytes = _serialize(self.db, to_bytes=True)
-        with open(str(self.path), "wb") as f:
-            f.write(bytes)
-
     def _filter_nodes_by(self, uid: UID, qks: QueryKeys) -> bool:
         node_data = self.db.nodes[uid]["data"]
         matches = []
@@ -287,14 +287,16 @@ class NetworkXBackingStore(BaseGraphStore):
     def topological_sort(self, subgraph: Any) -> Any:
         return list(nx.topological_sort(subgraph))
 
+    def save(self) -> None:
+        bytes = _serialize(self.db, to_bytes=True)
+        with open(str(self.file_path), "wb") as f:
+            f.write(bytes)
+
     @staticmethod
     def _load_from_path(file_path: str) -> None:
         with open(file_path, "rb") as f:
             bytes = f.read()
         return _deserialize(blob=bytes, from_bytes=True)
-
-    def exists(self, uid: Any) -> bool:
-        return uid in self.nodes()
 
 
 @serializable()
@@ -344,8 +346,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
         credentials: SyftVerifyKey,
     ) -> Result[NodeActionData, str]:
         # 🟡 TODO: Add permission check
-        node_data = self.graph.get(uid=uid)
-        return Ok(node_data)
+        if self.graph.exists(uid=uid):
+            node_data = self.graph.get(uid=uid)
+            return Ok(node_data)
+        return Err(f"Node does not exists with id: {uid}")
 
     def delete(
         self,
@@ -379,6 +383,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
         nm_successor_id: UID,
         credentials: SyftVerifyKey,
     ) -> Result[NodeActionData, str]:
+        """
+        Used when a node is a mutagen and to update non-mutated
+        successor for all nodes between node_id and nm_successor_id
+        """
         node_data = self.graph.get(uid=node_id)
 
         data = NodeActionDataUpdate(
@@ -455,22 +463,6 @@ class InMemoryActionGraphStore(ActionGraphStore):
         self.graph.add_edge(parent=new_parent, child=child)
 
         return Ok(True)
-
-    def _search_parents_for(self, node: NodeActionData) -> Set:
-        input_ids = []
-        parents = set()
-        if node.action.remote_self:
-            input_ids.append(node.action.remote_self)
-        input_ids.extend(node.action.args)
-        input_ids.extend(node.action.kwargs.values())
-
-        # search for parents in the existing nodes
-        for uid, _node_data in self.graph.nodes():
-            _node = _node_data["data"]
-            if _node.action.result_id in input_ids:
-                parents.add(uid)
-
-        return parents
 
     def is_parent(self, parent: UID, child: UID) -> Result[bool, str]:
         if self.graph.exists(child):
