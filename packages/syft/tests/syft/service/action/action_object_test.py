@@ -19,6 +19,7 @@ from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_object import ActionType
 from syft.service.action.action_object import HOOK_ALWAYS
+from syft.service.action.action_object import HOOK_ON_POINTERS
 from syft.service.action.action_object import PreHookContext
 from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_node_uid
@@ -166,7 +167,7 @@ def test_actionobject_hooks_init(orig_obj: Any):
     assert HOOK_ALWAYS in obj._syft_post_hooks__
 
     assert make_action_side_effect in obj._syft_pre_hooks__[HOOK_ALWAYS]
-    assert send_action_side_effect in obj._syft_pre_hooks__[HOOK_ALWAYS]
+    assert send_action_side_effect in obj._syft_pre_hooks__[HOOK_ON_POINTERS]
     assert propagate_node_uid in obj._syft_post_hooks__[HOOK_ALWAYS]
 
 
