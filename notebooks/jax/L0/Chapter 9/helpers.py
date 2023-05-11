@@ -1,4 +1,5 @@
-# Code from: https://github.com/RobertTLange/code-and-blog/blob/master/04_jax_intro/helpers.py
+# Original source:
+# https://github.com/RobertTLange/code-and-blog/blob/master/04_jax_intro/helpers.py
 
 # third party
 import matplotlib.pyplot as plt
@@ -17,7 +18,7 @@ sns.set(
 
 def plot_mnist_examples(train_loader):
     # Plot some MNIST example samples
-    for data, target in train_loader:
+    for batch_idx, (data, target) in enumerate(train_loader):
         images = onp.array(data[:4, ...]).reshape(4, 28, 28)
         target = onp.array(target[:4, ...])
         break
