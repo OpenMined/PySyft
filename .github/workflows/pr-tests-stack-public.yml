@@ -137,15 +137,33 @@ jobs:
           docker volume prune -f || true
           docker buildx use default || true
 
+      # - name: Run integration tests
+      #   if: steps.changes.outputs.stack == 'true'
+      #   timeout-minutes: 60
+      #   env:
+      #     HAGRID_ART: false
+      #     PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+      #     HAGRID_FLAGS: "--tag=beta --test --build-src=dev"
+      #   run: |
+      #     tox -e stack.test.integration
+
       - name: Run integration tests
+        uses: nick-fields/retry@v2
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 60
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
           HAGRID_FLAGS: "--tag=beta --test --build-src=dev"
+        with:
+          timeout_seconds: 1800
+          max_attempts: 3
+          retry_on: timeout
+          command: tox -e stack.test.integration
+
+      - name: Reboot node
+        if: matrix.os == 'windows' && failure()
         run: |
-          tox -e stack.test.integration
+          shutdown /r /t 1
 
       - name: Run log collector
         timeout-minutes: 5
