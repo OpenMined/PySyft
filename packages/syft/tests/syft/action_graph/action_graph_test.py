@@ -9,6 +9,7 @@ Tests for the classes in /syft/src/syft/service/action/action_graph.py:
 # stdlib
 import os
 from pathlib import Path
+import tempfile
 from threading import Thread
 
 # third party
@@ -144,8 +145,11 @@ def test_node_action_data_update() -> None:
 def test_in_memory_store_client_config() -> None:
     default_client_conf = InMemoryStoreClientConfig()
     assert default_client_conf.filename == "action_graph.bytes"
-    assert default_client_conf.path == "/tmp"
-    assert default_client_conf.file_path == Path("/tmp") / "action_graph.bytes"
+    assert default_client_conf.path == tempfile.gettempdir()
+    assert (
+        default_client_conf.file_path
+        == Path(tempfile.gettempdir()) / "action_graph.bytes"
+    )
 
     custom_client_conf = InMemoryStoreClientConfig(
         filename="custom_action_graph.bytes", path="/custom"

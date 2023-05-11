@@ -64,7 +64,7 @@ def in_mem_graph_config() -> InMemoryGraphConfig:
 
 @pytest.fixture
 def networkx_store(in_mem_graph_config: InMemoryGraphConfig) -> NetworkXBackingStore:
-    return NetworkXBackingStore(store_config=in_mem_graph_config)
+    return NetworkXBackingStore(store_config=in_mem_graph_config, reset=True)
 
 
 @pytest.fixture
@@ -85,7 +85,7 @@ def networkx_store_with_nodes(
 def in_mem_graph_store(
     in_mem_graph_config: InMemoryGraphConfig,
 ) -> InMemoryActionGraphStore:
-    graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config)
+    graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config, reset=True)
     return graph_store
 
 
