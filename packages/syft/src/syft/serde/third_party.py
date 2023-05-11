@@ -3,7 +3,6 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 from io import BytesIO
-import weakref
 
 # third party
 from dateutil import parser
@@ -173,9 +172,7 @@ recursive_serde_register(
         "_type_name",
     ],
 )
-# recursive_serde_register(AsyncResult)
 recursive_serde_register(zmq._Context)
-recursive_serde_register(weakref.WeakSet)
 
 # how else do you import a relative file to execute it?
 NOTHING = None

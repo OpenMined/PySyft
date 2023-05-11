@@ -129,9 +129,15 @@ class ZMQClient(QueueClient):
     def __init__(self, config: QueueClientConfig):
         self.pub_addr = config.pub_addr
         self.sub_addr = config.sub_addr
-        self.context = zmq.Context.instance()
+        self._context = None
         self.logger_thread = None
         self.thread = None
+
+    @property
+    def context(self):
+        if self._context is None:
+            self._context = zmq.Context.instance()
+        return self._context
 
     @staticmethod
     def _setup_monitor(ctx: Context):
@@ -157,7 +163,7 @@ class ZMQClient(QueueClient):
 
     @staticmethod
     def _start_logger(mon_sub: Socket):
-        print("Logging...")
+        print("Started Logging.")
         while True:
             try:
                 mon_sub.recv_multipart()
