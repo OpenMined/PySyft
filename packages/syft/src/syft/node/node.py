@@ -49,6 +49,7 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.firewall.firewall_service import FirewallService
 from ..service.message.message_service import MessageService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.metadata_stash import MetadataStash
@@ -198,6 +199,7 @@ class Node(AbstractNode):
                 ProjectService,
                 DataSubjectMemberService,
                 NewProjectService,
+                FirewallService,
             ]
             if services is None
             else services
@@ -399,6 +401,7 @@ class Node(AbstractNode):
                 ProjectService,
                 DataSubjectMemberService,
                 NewProjectService,
+                FirewallService,
             ]
 
             if OBLV:
