@@ -67,24 +67,33 @@ def test_action_graph_service_add_action_no_mutagen(
     """
     Test the `add_action` method of ActionGraphService when there is no
     mutagen, i.e. a node that causes mutation. Scenario:
-        node_1: action_obj_d = [1,2,3]
-        node_2: action -> np.array(d)
-        node_3: action_obj = np.array([1,2,3])  (automatically created)
+        node_1: action_obj_a = [1,2,3]
+        node_2: action_obj_b = [2,3,4]
+        node_3: action -> add(a, b)
+        node_4: action_obj = a + b  (automatically created)
     """
-    action_obj_d = ActionObject.from_obj([1, 2, 3])
+    action_obj_a = ActionObject.from_obj([1, 2, 3])
+    action_obj_b = ActionObject.from_obj([2, 3, 4])
     in_mem_action_graph_service.add_action_obj(
-        context=authed_context, action_obj=action_obj_d
+        context=authed_context, action_obj=action_obj_a
+    )
+    in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=action_obj_b
     )
     action = Action(
         path="action.execute",
-        op="np.array",
-        remote_self=None,
-        args=[action_obj_d.syft_lineage_id],
+        op="__add__",
+        remote_self=action_obj_a.syft_lineage_id,
+        args=[action_obj_b.syft_lineage_id],
         kwargs={},
     )
     action_node, result_node = in_mem_action_graph_service.add_action(
         context=authed_context, action=action
     )
+
+    assert len(in_mem_action_graph_service.get_all_nodes(authed_context)) == 4
+    assert len(in_mem_action_graph_service.get_all_edges(authed_context)) == 3
+
     assert action_node.id == action.id
     assert action_node.type == NodeType.ACTION
     assert action_node.status == ExecutionStatus.PROCESSING
@@ -115,12 +124,153 @@ def test_action_graph_service_add_action_mutagen(
     authed_context: AuthedServiceContext,
 ) -> None:
     """
-    Test the `add_action` method of ActionGraphService when mutagen occurs.
-    Scenario:
+    Test the `add_action` method of ActionGraphService when mutation occurs.
+    Scenario: We first create a np array, change its type, then change a value
+              at a specific index, then do an addition on the mutated value
         node_1: action_obj_d = [1,2,3]
         node_2: action -> np.array(d)
         node_3: action_obj = np.array([1,2,3])  (automatically created)
         node_4: as_type_action_obj = 'np.int32'
-        node_5: action -> d = np.astype(d, 'np.int32')
+        node_5: action -> d = np.astype(d, 'np.int32')  (first mutation)
+        node_6: idx_action_obj = 2
+        node_7: item_val_action_obj = 5
+        node_8: action -> d[2] = 5  (second mutation)
+        node_9: action_obj_e = 48
+        node_10: action -> d + e
+        node_11: action_obj_f = d + 48  (automatically created)
     """
-    pass
+    # node_1: action_obj_d = [1,2,3]
+    action_obj_d = ActionObject.from_obj([1, 2, 3])
+    in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=action_obj_d
+    )
+    # node_2: action -> np.array(d)
+    action = Action(
+        path="action.execute",
+        op="np.array",
+        remote_self=None,
+        args=[action_obj_d.syft_lineage_id],
+        kwargs={},
+    )
+    action_node, result_node = in_mem_action_graph_service.add_action(
+        context=authed_context, action=action
+    )
+    assert len(in_mem_action_graph_service.get_all_nodes(authed_context)) == 3
+    assert len(in_mem_action_graph_service.get_all_edges(authed_context)) == 2
+    assert action_node.id == action.id
+    assert result_node.id == action.result_id.id
+    assert action_node.type == NodeType.ACTION
+    assert result_node.type == NodeType.ACTION_OBJECT
+    assert result_node.updated_at is None
+    assert result_node.is_mutated is False
+    assert result_node.is_mutagen is False
+    assert result_node.next_mutagen_node is None
+    assert result_node.last_nm_mutagen_node is None
+    # node_3 is the result_node that's automatically created
+    # node_4: as_type_action_obj = 'np.int32'
+    as_type_action_obj = ActionObject.from_obj("np.int32")
+    in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=as_type_action_obj
+    )
+    # node_5: action -> d = np.astype(d, 'np.int32') -- mutation occurs
+    action2 = Action(
+        path="action.execute",
+        op="astype",
+        remote_self=action.result_id,
+        args=[as_type_action_obj.syft_lineage_id],
+        kwargs={},
+        result_id=action.result_id,
+    )
+    action_node_2, result_node_2 = in_mem_action_graph_service.add_action(
+        context=authed_context, action=action2
+    )
+    assert len(in_mem_action_graph_service.get_all_nodes(authed_context)) == 5
+    assert len(in_mem_action_graph_service.get_all_edges(authed_context)) == 4
+    assert action_node_2.type == NodeType.ACTION
+    assert result_node_2.type == NodeType.ACTION_OBJECT
+    assert result_node_2 == result_node
+    assert action_node_2.is_mutagen is True
+    assert action_node_2.is_mutated is False
+    assert result_node_2.is_mutated is True
+    assert result_node_2.is_mutagen is False
+    assert result_node_2.next_mutagen_node == action_node_2.id
+    assert result_node_2.last_nm_mutagen_node == action_node_2.id
+    assert action_node_2.next_mutagen_node is None
+    assert action_node_2.last_nm_mutagen_node is None
+    # node_6: idx_action_obj = 2
+    idx_action_obj = ActionObject.from_obj(2)
+    in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=idx_action_obj
+    )
+    # node_7: item_val_action_obj = 5
+    item_val_action_obj = ActionObject.from_obj(5)
+    in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=item_val_action_obj
+    )
+    # node_8: action -> d[2] = 5  (second mutagen node)
+    action3 = Action(
+        path="action.execute",
+        op="__setitem__",
+        remote_self=action.result_id,
+        args=[idx_action_obj.syft_lineage_id, item_val_action_obj.syft_lineage_id],
+        kwargs={},
+        result_id=action.result_id,
+    )
+    action_node_3, result_node_3 = in_mem_action_graph_service.add_action(
+        context=authed_context, action=action3
+    )
+    assert action.result_id == action2.result_id == action3.result_id
+    assert result_node_3 == action_node_2
+    assert len(in_mem_action_graph_service.get_all_nodes(authed_context)) == 8
+    assert len(in_mem_action_graph_service.get_all_edges(authed_context)) == 7
+    # the action_node_3 is the last non-mutated mutagen node in the chain
+    assert action_node_3.is_mutagen is True
+    assert action_node_3.is_mutated is False
+    assert action_node_3.next_mutagen_node is None
+    assert action_node_3.last_nm_mutagen_node is None
+    # action_node_2 should be changed accordingly
+    assert action_node_2.is_mutagen is True
+    assert action_node_2.is_mutated is True
+    assert action_node_2.next_mutagen_node == action_node_3.id
+    assert action_node_2.last_nm_mutagen_node == action_node_3.id
+    # result_node should be changed accordingly
+    assert result_node.is_mutagen is False
+    assert result_node.is_mutated is True
+    assert result_node.next_mutagen_node == action_node_2.id
+    assert result_node.last_nm_mutagen_node == action_node_3.id
+    # node_9: action_obj_e = 48
+    action_obj_e = ActionObject.from_obj(48)
+    in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=action_obj_e
+    )
+    # node_10: action -> d + e
+    action4 = Action(
+        path="action.execute",
+        op="__add__",
+        remote_self=action.result_id,
+        args=[action_obj_e.syft_lineage_id],
+        kwargs={},
+    )
+    action_node_4, result_node_4 = in_mem_action_graph_service.add_action(
+        context=authed_context, action=action4
+    )
+    # node_11: action_obj_f = d + 48  (= the result_node_4 that's automatically created)
+    assert len(in_mem_action_graph_service.get_all_nodes(authed_context)) == 11
+    assert len(in_mem_action_graph_service.get_all_edges(authed_context)) == 10
+    # the __add__ node should be direct child of the __setitem__ node
+    assert (
+        in_mem_action_graph_service.store.is_parent(
+            parent=action3.id, child=action4.id
+        ).ok()
+        is True
+    )
+    # action_node_4 and result_node_4 do not belong to the mutation chain
+    assert action_node_4.is_mutagen is False
+    assert action_node_4.is_mutated is False
+    assert action_node_4.next_mutagen_node is None
+    assert action_node_4.last_nm_mutagen_node is None
+    # result_node should be changed accordingly
+    assert result_node_4.is_mutagen is False
+    assert result_node_4.is_mutated is False
+    assert result_node_4.next_mutagen_node is None
+    assert result_node_4.last_nm_mutagen_node is None
