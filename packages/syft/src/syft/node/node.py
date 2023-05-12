@@ -251,8 +251,6 @@ class Node(AbstractNode):
             subscriber = self.queue_router.create_subscriber(subscriber_type)
             subscriber.run()
 
-        print("Queue is Online 🟢")
-
     @classmethod
     def named(
         cls,
@@ -565,7 +563,9 @@ class Node(AbstractNode):
             return self.metadata
 
         result = None
-        if self.is_subprocess or self.processes == 0:
+        is_blocking = api_call.message.blocking
+
+        if is_blocking or self.is_subprocess or self.processes == 0:
             credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
@@ -600,10 +600,7 @@ class Node(AbstractNode):
             # self.queue_stash.set_placeholder(item)
             # self.queue_stash.partition.commit()
 
-            # 🟡 TODO:  Integrate ZeroMQ here possibly
-
             # Publisher system which pushes to a Queue
-
             worker_settings = WorkerSettings.from_node(node=self)
 
             message_bytes = serialize._serialize(

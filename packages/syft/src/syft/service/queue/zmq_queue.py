@@ -163,9 +163,10 @@ class ZMQClient(QueueClient):
 
     @staticmethod
     def _start_logger(mon_sub: Socket):
-        print("Started Logging.")
         while True:
             try:
+                # 🟡 TODO: We can track the messages incoming and leaving the queue here.
+                # Possibly mark the status here.
                 mon_sub.recv_multipart()
                 # message_str = " ".join(mess.decode() for mess in message_bytes)
                 # print(message_str)

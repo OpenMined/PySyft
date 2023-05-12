@@ -72,9 +72,6 @@ def recursive_serde_register(
         # If serialize_attrs is provided, append it to our attr list
         attribute_list.update(serialize_attrs)
 
-    if exclude_attrs:
-        attribute_list = attribute_list - set(exclude_attrs)
-
     if issubclass(cls, Enum):
         attribute_list.update(["value"])
 
@@ -86,12 +83,16 @@ def recursive_serde_register(
     attributes = set(list(attribute_list)) if attribute_list else None
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
+    exclude_attrs = [] if exclude_attrs is None else exclude_attrs
+    attribute_list = attribute_list - set(exclude_attrs)
+
     # without fqn duplicate class names overwrite
     TYPE_BANK[fqn] = (
         nonrecursive,
         _serialize,
         _deserialize,
         attributes,
+        exclude_attrs,
         serde_overrides,
         cls,
     )
@@ -136,6 +137,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         serialize,
         deserialize,
         attribute_list,
+        exclude_attrs_list,
         serde_overrides,
         cls,
     ) = TYPE_BANK[fqn]
@@ -150,6 +152,8 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
 
     if attribute_list is None:
         attribute_list = self.__dict__.keys()
+
+    attribute_list = set(attribute_list) - set(exclude_attrs_list)
 
     msg.init("fieldsName", len(attribute_list))
     msg.init("fieldsData", len(attribute_list))
@@ -225,6 +229,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         serialize,
         deserialize,
         attribute_list,
+        exclude_attrs_list,
         serde_overrides,
         cls,
     ) = TYPE_BANK[proto.fullyQualifiedName]
