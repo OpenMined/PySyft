@@ -5,6 +5,7 @@ from typing import Type
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
+from ..response import SyftError
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueRouter
 from .base_queue import QueueConfig
@@ -81,24 +82,23 @@ class APICallMessageHandler(AbstractMessageHandler):
             status=Status.PROCESSING,
         )
         worker.queue_stash.set_result(api_call.credentials, item)
+        status = Status.COMPLETED
 
         try:
             result = worker.handle_api_call(api_call)
-            item = QueueItem(
-                node_uid=worker.id,
-                id=task_uid,
-                result=result,
-                resolved=True,
-                status=Status.COMPLETED,
-            )
-        except Exception:  # nosec
-            item = QueueItem(
-                node_uid=worker.id,
-                id=task_uid,
-                result=None,
-                resolved=True,
-                status=Status.ERRORED,
-            )
+            if isinstance(result, SyftError):
+                status = Status.ERRORED
+        except Exception as e:  # nosec
+            status = Status.ERRORED
+            result = SyftError(message=f"Failed with exception: {e}")
 
-        worker.queue_stash.set_result(api_call.credentials, item)
+        item = QueueItem(
+            node_uid=worker.id,
+            id=task_uid,
+            result=result,
+            resolved=True,
+            status=status,
+        )
+
+        worker.queue_stash.set_result(worker.verify_key, item)
         worker.queue_stash.partition.close()

@@ -489,7 +489,7 @@ class Node(AbstractNode):
     def resolve_future(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Union[Optional[QueueItem], SyftError]:
-        result = self.queue_stash.pop(credentials, uid)
+        result = self.queue_stash.pop_on_complete(credentials, uid)
         if result.is_ok():
             return result.ok()
         return result.err()
@@ -597,8 +597,7 @@ class Node(AbstractNode):
             task_uid = UID()
             item = QueueItem(id=task_uid, node_uid=self.id)
             # 🟡 TODO 36: Needs distributed lock
-            # self.queue_stash.set_placeholder(item)
-            # self.queue_stash.partition.commit()
+            self.queue_stash.set_placeholder(self.verify_key, item)
 
             # Publisher system which pushes to a Queue
             worker_settings = WorkerSettings.from_node(node=self)
