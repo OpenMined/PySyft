@@ -86,13 +86,13 @@ def test_zmq_pub_sub(faker: Faker):
     class MyMessageHandler(AbstractMessageHandler):
         queue = queue_name
 
-        @classmethod
-        def message_handler(cls, message: bytes):
+        @staticmethod
+        def handle_message(message: bytes):
             received_messages.append(message)
 
     # Create a queue and subscriber
     subscriber = ZMQSubscriber(
-        message_handler=MyMessageHandler.message_handler,
+        message_handler=MyMessageHandler,
         address=pub_addr,
         queue_name=queue_name,
     )
@@ -166,8 +166,8 @@ def test_zmq_queue_router() -> None:
     class CustomHandler(AbstractMessageHandler):
         queue = queue_name
 
-        @classmethod
-        def message_handler(cls, message: bytes):
+        @staticmethod
+        def handle_message(message: bytes):
             received_messages.append(message)
 
     subscriber = queue_router.create_subscriber(
