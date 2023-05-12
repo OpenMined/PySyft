@@ -42,7 +42,7 @@ class QueueRouter(BaseQueueRouter):
 
     def create_subscriber(self, message_handler: Type[AbstractMessageHandler]):
         subscriber = self.config.subscriber(
-            message_handler=message_handler.message_handler,
+            message_handler=message_handler,
             address=self.sub_addr,
             queue_name=message_handler.queue,
         )
@@ -60,8 +60,8 @@ class QueueRouter(BaseQueueRouter):
 class APICallMessageHandler(AbstractMessageHandler):
     queue = "api_call"
 
-    @classmethod
-    def message_handler(cls, message: bytes):
+    @staticmethod
+    def handle_message(message: bytes):
         # relative
         from ...node.node import Node
 

@@ -230,6 +230,12 @@ recursive_serde_register(
 )
 
 recursive_serde_register(
+    weakref.WeakSet,
+    serialize=serialize_iterable,
+    deserialize=functools.partial(deserialize_iterable, weakref.WeakSet),
+)
+
+recursive_serde_register(
     frozenset,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, frozenset),
@@ -356,4 +362,3 @@ if sys.version_info >= (3, 9):
     recursive_serde_register_type(_SpecialGenericAlias)
 
 recursive_serde_register_type(EnumMeta)
-recursive_serde_register_type(weakref.WeakSet)

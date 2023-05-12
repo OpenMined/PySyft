@@ -8,6 +8,7 @@ import zmq
 from zmq import Socket
 
 # syft absolute
+import syft
 from syft.service.queue.base_queue import AbstractMessageHandler
 from syft.service.queue.queue import QueueRouter
 from syft.service.queue.zmq_queue import ZMQClient
@@ -183,3 +184,15 @@ def test_zmq_queue_router() -> None:
     assert queue_router.subscribers[queue_name][0] == subscriber
 
     queue_router.close()
+
+
+def test_zmq_client_serde():
+    config = ZMQClientConfig()
+
+    client = ZMQClient(config=config)
+
+    bytes_data = syft.serialize(client, to_bytes=True)
+
+    deser = syft.deserialize(bytes_data, from_bytes=True)
+
+    assert type(deser) == type(client)

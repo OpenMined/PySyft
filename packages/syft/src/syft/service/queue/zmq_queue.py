@@ -2,7 +2,6 @@
 import binascii
 import os
 import socketserver
-from typing import Callable
 from typing import Optional
 
 # third party
@@ -17,6 +16,7 @@ from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
@@ -48,11 +48,11 @@ class ZMQPublisher(QueuePublisher):
         self._publisher.close()
 
 
-@serializable()
+@serializable(attrs=["_subscriber"])
 class ZMQSubscriber(QueueSubscriber):
     def __init__(
         self,
-        message_handler: Callable,
+        message_handler: AbstractMessageHandler,
         address: str,
         queue_name: str,
     ) -> None:
@@ -81,7 +81,7 @@ class ZMQSubscriber(QueueSubscriber):
             else:
                 raise e
 
-        self.message_handler(message=message)
+        self.message_handler.handle_message(message=message)
 
     def _run(self):
         while True:
@@ -124,7 +124,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
         return cls._get_free_tcp_addr() if v is None else v
 
 
-@serializable()
+@serializable(attrs=["pub_addr", "sub_addr", "_context"])
 class ZMQClient(QueueClient):
     def __init__(self, config: QueueClientConfig):
         self.pub_addr = config.pub_addr

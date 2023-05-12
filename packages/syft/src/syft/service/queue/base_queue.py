@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Callable
 from typing import ClassVar
 from typing import Mapping
 from typing import Optional
@@ -19,13 +18,14 @@ class QueueClientConfig:
 class AbstractMessageHandler:
     queue: ClassVar[str]
 
-    def message_handler(self, message: bytes):
+    @staticmethod
+    def handle_message(message: bytes):
         raise NotImplementedError
 
 
-@serializable()
+@serializable(attrs=["message_handler", "queue_name", "address"])
 class QueueSubscriber:
-    message_handler: Callable
+    message_handler: AbstractMessageHandler
     queue_name: str
     address: str
 
