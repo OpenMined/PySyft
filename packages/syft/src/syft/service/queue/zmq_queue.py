@@ -88,8 +88,7 @@ class ZMQConsumer(QueueConsumer):
                 print("Subscriber connection Terminated")
             else:
                 raise e
-
-        self.message_handler(message=message)
+        self.message_handler.handle_message(message=message)
 
     def _run(self):
         while True:

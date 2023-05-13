@@ -1,6 +1,6 @@
 # stdlib
+from collections import defaultdict
 import random
-import time
 
 # third party
 from faker import Faker
@@ -9,12 +9,14 @@ from zmq import Socket
 # syft absolute
 import syft
 from syft.service.queue.base_queue import AbstractMessageHandler
-from syft.service.queue.queue import QueueRouter
+from syft.service.queue.queue import QueueManager
 from syft.service.queue.zmq_queue import ZMQClient
 from syft.service.queue.zmq_queue import ZMQClientConfig
 from syft.service.queue.zmq_queue import ZMQConsumer
 from syft.service.queue.zmq_queue import ZMQProducer
 from syft.service.queue.zmq_queue import ZMQQueueConfig
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 
 
 def test_zmq_client():
@@ -30,9 +32,57 @@ def test_zmq_client():
     assert len(client.producers) == 0
     assert len(client.consumers) == 0
 
-    client.producers
+    assert isinstance(client.producers, dict)
+    assert len(client.producers) == 0
 
-    client.close()
+    assert isinstance(client.consumers, defaultdict)
+    assert len(client.consumers) == 0
+
+    QueueName = "QueueName"
+
+    producer = client.add_producer(queue_name=QueueName)
+    assert isinstance(producer, ZMQProducer)
+    assert producer.address is not None
+    assert producer.alive
+    assert producer.queue_name == QueueName
+
+    received_message = []
+
+    class MyMessageHandler(AbstractMessageHandler):
+        queue_name = QueueName
+
+        @staticmethod
+        def handle_message(message: bytes):
+            received_message.append(message)
+
+    consumer = client.add_consumer(
+        queue_name=QueueName, message_handler=MyMessageHandler
+    )
+    assert isinstance(consumer, ZMQConsumer)
+    assert consumer.address is not None
+    assert consumer.alive
+    assert consumer.queue_name == QueueName
+    assert consumer.address == producer.address
+
+    assert len(client.producers) == 1
+    assert len(client.consumers) == 1
+    assert QueueName in client.producers
+    assert QueueName in client.consumers
+    assert len(client.consumers[QueueName]) > 0
+
+    response = client.send_message(message=b"My Message", queue_name=QueueName)
+
+    assert isinstance(response, SyftSuccess)
+
+    consumer.receive()
+    assert len(received_message) == 1
+
+    response = client.send_message(message="My Message", queue_name="random queue")
+    assert isinstance(response, SyftError)
+
+    assert isinstance(client.close(), SyftSuccess)
+    assert client.producers[QueueName].alive is False
+    assert client.consumers[QueueName][0].alive is False
 
 
 def test_zmq_pub_sub(faker: Faker):
@@ -42,120 +92,102 @@ def test_zmq_pub_sub(faker: Faker):
 
     pub_addr = f"tcp://127.0.0.1:{pub_port}"
 
-    # Create a publisher
-    publisher = ZMQProducer(address=pub_addr)
-    queue_name = "ABC"
+    QueueName = "ABC"
 
-    assert publisher.address == pub_addr
-    assert isinstance(publisher._producer, Socket)
+    # Create a producer
+    producer = ZMQProducer(address=pub_addr, queue_name=QueueName)
+
+    assert producer.address == pub_addr
+    assert isinstance(producer._producer, Socket)
+    assert isinstance(producer, ZMQProducer)
+    assert producer.queue_name == QueueName
+    assert producer.alive
 
     first_message = faker.sentence().encode()
 
-    # The first message will be dropped since no subscriber
-    # queues are attached yet.
-    publisher.send(first_message, queue_name=queue_name)
-
     class MyMessageHandler(AbstractMessageHandler):
-        queue = queue_name
+        queue = QueueName
 
         @staticmethod
         def handle_message(message: bytes):
             received_messages.append(message)
 
-    # Create a queue and subscriber
-    subscriber = ZMQConsumer(
+    # Create a consumer
+    consumer = ZMQConsumer(
         message_handler=MyMessageHandler,
         address=pub_addr,
-        queue_name=queue_name,
+        queue_name=QueueName,
     )
 
-    # Add sleep for subscriber to connect in green thread
-    time.sleep(1)
+    assert isinstance(consumer, ZMQConsumer)
+    assert consumer.address == pub_addr
+    assert isinstance(consumer._consumer, Socket)
+    assert consumer.queue_name == QueueName
+    assert consumer.alive
+    assert consumer.thread is None
+    assert consumer.message_handler == MyMessageHandler
 
-    assert subscriber.address == pub_addr
-    assert isinstance(subscriber._consumer, Socket)
-    assert subscriber.recv_thread is None
+    producer.send(message=first_message)
 
-    # Send in a second message
-    second_message = faker.sentence().encode()
-
-    publisher.send(message=second_message, queue_name=queue_name)
-
-    # Check if subscriber receives the message
-    received_message = subscriber._consumer.recv_multipart()
-
-    # Validate contents of the message
-    assert len(received_message) == 2
-    assert received_message[0] == queue_name.encode()
-    assert received_message[1] == second_message
-
-    # Send in another message
-    publisher.send(message=second_message, queue_name=queue_name)
-
-    # Receive message via the message handler
-    subscriber.receive()
+    # Check if consumer receives the message
+    consumer.receive()
 
     # Validate if message was correctly received in the handler
     assert len(received_messages) == 1
-    received_message = received_messages[0]
-    assert received_message == second_message
+    assert first_message in received_messages
 
     # Close all socket connections
-    publisher.close()
-    subscriber.close()
-    assert publisher._producer.closed
-    assert subscriber._consumer.closed
+    producer.close()
+    consumer.close()
+    assert producer.alive is False
+    assert consumer.alive is False
 
 
-def test_zmq_queue_router() -> None:
+def test_zmq_queue_manager() -> None:
     config = ZMQQueueConfig()
 
     assert config.client_config == ZMQClientConfig
     assert config.client_type == ZMQClient
-    assert config.publisher == ZMQProducer
-    assert config.subscriber == ZMQConsumer
 
-    queue_router = QueueRouter(config=config)
+    queue_manager = QueueManager(config=config)
 
-    assert queue_router.client_config.pub_addr
-    assert queue_router.client_config.sub_addr
+    assert queue_manager.client_config.hostname
 
-    assert len(queue_router.subscribers) == 0
-    assert isinstance(queue_router._client, ZMQClient)
-    assert queue_router._publisher is None
-
-    # start the queue_router
-    queue_router.start()
-    assert queue_router._client.thread
-
-    assert isinstance(queue_router.publisher, ZMQProducer)
+    assert isinstance(queue_manager._client, ZMQClient)
+    assert len(queue_manager.consumers) == 0
+    assert len(queue_manager.producers) == 0
 
     # Add a Message Handler
     received_messages = []
 
-    queue_name = "my-queue"
+    QueueName = "my-queue"
 
     class CustomHandler(AbstractMessageHandler):
-        queue = queue_name
+        queue_name = QueueName
 
         @staticmethod
         def handle_message(message: bytes):
             received_messages.append(message)
 
-    subscriber = queue_router.create_consumer(
-        message_handler=CustomHandler,
-    )
+    producer = queue_manager.create_producer(queue_name=QueueName)
 
-    assert isinstance(subscriber, ZMQConsumer)
+    assert isinstance(producer, ZMQProducer)
 
-    assert len(queue_router.subscribers) == 1
-    assert queue_name in queue_router.subscribers.keys()
-    assert queue_router.subscribers[queue_name]
-    subscriber_count = len(queue_router.subscribers[queue_name])
-    assert subscriber_count == 1
-    assert queue_router.subscribers[queue_name][0] == subscriber
+    consumer = queue_manager.create_consumer(message_handler=CustomHandler)
 
-    queue_router.close()
+    assert isinstance(consumer, ZMQConsumer)
+
+    assert consumer.address == producer.address
+
+    assert len(queue_manager.consumers) == 1
+    assert len(queue_manager.producers) == 1
+    assert QueueName in queue_manager.consumers
+    assert QueueName in queue_manager.producers
+    consumer_count = len(queue_manager.consumers[QueueName])
+    assert consumer_count == 1
+
+    status = queue_manager.close()
+    assert isinstance(status, SyftSuccess)
 
 
 def test_zmq_client_serde():

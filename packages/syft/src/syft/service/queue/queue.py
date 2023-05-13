@@ -22,21 +22,16 @@ class QueueManager(BaseQueueManager):
         self.client_config = self.config.client_config()
         self._client = self.config.client_type(self.client_config)
 
-    def start(self):
-        self._client.start()
-
     def close(self):
         return self._client.close()
 
     def create_consumer(
         self,
-        message_handler_class: Type[AbstractMessageHandler],
+        message_handler: Type[AbstractMessageHandler],
         address: Optional[str] = None,
     ):
-        message_handler = message_handler_class()
-
         consumer = self._client.add_consumer(
-            message_handler=message_handler.handle_message,
+            message_handler=message_handler,
             queue_name=message_handler.queue_name,
             address=address,
         )

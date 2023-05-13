@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import ClassVar
-from typing import Mapping
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -73,7 +72,6 @@ class QueueConfig:
 @serializable()
 class BaseQueueManager:
     config: QueueConfig
-    subscribers: Mapping[str, list[QueueConsumer]]
 
     def __init__(self, config: QueueConfig):
         self.config = config
@@ -81,13 +79,6 @@ class BaseQueueManager:
 
     def post_init(self) -> None:
         pass
-
-    def start(self) -> None:
-        raise NotImplementedError
-
-    def __enter__(self) -> "BaseQueueManager":
-        self.start()
-        return self
 
     def close(self) -> None:
         raise NotImplementedError
