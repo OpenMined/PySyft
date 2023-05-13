@@ -59,7 +59,7 @@ from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import NewProjectService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
-from ..service.queue.queue import QueueRouter
+from ..service.queue.queue import QueueManager
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
 from ..service.queue.zmq_queue import QueueConfig
@@ -239,17 +239,21 @@ class Node(AbstractNode):
 
         self.post_init()
         if not (self.is_subprocess or self.processes == 0):
-            self.init_queue_router(queue_config=queue_config)
+            self.init_queue_manager(queue_config=queue_config)
 
-    def init_queue_router(self, queue_config: QueueConfig):
+    def init_queue_manager(self, queue_config: QueueConfig):
         MessageHandlers = [APICallMessageHandler]
 
-        self.queue_router = QueueRouter(queue_config)
-        self.queue_router.start()
-        self.publisher = self.queue_router.publisher
-        for subscriber_type in MessageHandlers:
-            subscriber = self.queue_router.create_subscriber(subscriber_type)
-            subscriber.run()
+        self.queue_manager = QueueManager(queue_config)
+        for message_handler in MessageHandlers:
+            queue_name = message_handler.queue_name
+            producer = self.queue_manager.create_producer(
+                queue_name=queue_name,
+            )
+            consumer = self.queue_manager.create_consumer(
+                message_handler, producer.address
+            )
+            consumer.run()
 
     @classmethod
     def named(
@@ -605,7 +609,7 @@ class Node(AbstractNode):
             message_bytes = serialize._serialize(
                 [task_uid, api_call, worker_settings], to_bytes=True
             )
-            self.publisher.send(message=message_bytes, queue_name="api_call")
+            self.queue_manager.send(message=message_bytes, queue_name="api_call")
 
             return item
         return result

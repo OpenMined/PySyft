@@ -1,14 +1,14 @@
 # stdlib
-import binascii
-import os
+from collections import defaultdict
 import socketserver
+from typing import DefaultDict
+from typing import Dict
 from typing import Optional
+from typing import Union
 
 # third party
 import gevent
 from pydantic import validator
-from zmq import Context
-from zmq import Socket
 import zmq.green as zmq
 
 # relative
@@ -16,40 +16,50 @@ from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ..response import SyftError
+from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
-from .base_queue import QueuePublisher
-from .base_queue import QueueSubscriber
+from .base_queue import QueueConsumer
+from .base_queue import QueueProducer
 
 
 @serializable()
-class ZMQPublisher(QueuePublisher):
-    def __init__(self, address: str) -> None:
+class ZMQProducer(QueueProducer):
+    def __init__(self, address: str, queue_name: str) -> None:
         ctx = zmq.Context.instance()
         self.address = address
-        self._publisher = ctx.socket(zmq.PUB)
-        self._publisher.bind(address)
+        self._producer = ctx.socket(zmq.PUSH)
+        self._producer.bind(address)
+        self.queue_name = queue_name
 
-    def send(self, message: bytes, queue_name: str):
+    def send(self, message: bytes) -> None:
         try:
-            queue_name_bytes = queue_name.encode()
-            message_list = [queue_name_bytes, message]
-            self._publisher.send_multipart(message_list)
+            message_list = [message]
+            # TODO: Enable zero copy
+            self._producer.send_multipart(message_list)
             print("Message Queued Successfully !")
+        except zmq.Again as e:
+            # TODO: Add retry mechanism if this error occurs
+            raise e
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
-                print("Connection Interupted....")
+                print("Connection Interrupted....")
             else:
                 raise e
 
     def close(self):
-        self._publisher.close()
+        self._producer.close()
+
+    @property
+    def alive(self):
+        return not self._producer.closed
 
 
 @serializable(attrs=["_subscriber"])
-class ZMQSubscriber(QueueSubscriber):
+class ZMQConsumer(QueueConsumer):
     def __init__(
         self,
         message_handler: AbstractMessageHandler,
@@ -63,17 +73,15 @@ class ZMQSubscriber(QueueSubscriber):
 
     def post_init(self):
         ctx = zmq.Context.instance()
-        self._subscriber = ctx.socket(zmq.SUB)
+        self._consumer = ctx.socket(zmq.PULL)
 
-        self.recv_thread = None
-        self._subscriber.connect(self.address)
-
-        self._subscriber.setsockopt_string(zmq.SUBSCRIBE, self.queue_name)
+        self.thread = None
+        self._consumer.connect(self.address)
 
     def receive(self):
         try:
-            message_list = self._subscriber.recv_multipart()
-            message = message_list[1]
+            message_list = self._consumer.recv_multipart()
+            message = message_list[0]
             print("Message Received Successfully !")
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
@@ -81,20 +89,24 @@ class ZMQSubscriber(QueueSubscriber):
             else:
                 raise e
 
-        self.message_handler.handle_message(message=message)
+        self.message_handler(message=message)
 
     def _run(self):
         while True:
             self.receive()
 
     def run(self):
-        self.recv_thread = gevent.spawn(self._run)
-        self.recv_thread.start()
+        self.thread = gevent.spawn(self._run)
+        self.thread.start()
 
     def close(self):
-        if self.recv_thread is not None:
-            self.recv_thread.kill()
-        self._subscriber.close()
+        if self.thread is not None:
+            self.thread.kill()
+        self._consumer.close()
+
+    @property
+    def alive(self):
+        return not self._consumer.closed
 
 
 @serializable()
@@ -103,137 +115,147 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
-    pub_addr: Optional[str]
-    sub_addr: Optional[str]
+    hostname: Optional[str]
+
+    @validator("hostname", pre=True, always=True)
+    def get_hostname(cls, v: Optional[str]) -> str:
+        return "127.0.0.1" if v is None else v
+
+
+@serializable(attrs=["host"])
+class ZMQClient(QueueClient):
+    """ZMQ Client for creating producers and consumers."""
+
+    producers: Dict[str, ZMQProducer]
+    consumers: DefaultDict[str, list[ZMQConsumer]]
+
+    def __init__(self, config: ZMQClientConfig) -> None:
+        self.host = config.hostname
+        self.producers = dict()
+        self.consumers = defaultdict(list)
 
     @staticmethod
-    def _get_free_tcp_addr():
-        host = "127.0.0.1"
+    def _get_free_tcp_addr(host: str):
         with socketserver.TCPServer((host, 0), None) as s:
             free_port = s.server_address[1]
-
         addr = f"tcp://{host}:{free_port}"
         return addr
 
-    @validator("pub_addr", pre=True, always=True)
-    def make_pub_addr(cls, v: Optional[str]) -> str:
-        return cls._get_free_tcp_addr() if v is None else v
+    def add_producer(
+        self, queue_name: str, address: Optional[str] = None
+    ) -> ZMQProducer:
+        """Add a producer of a queue.
 
-    @validator("sub_addr", pre=True, always=True)
-    def make_sub_addr(cls, v: Optional[str]) -> str:
-        return cls._get_free_tcp_addr() if v is None else v
+        A queue can have at most one producer attached to it.
+        """
+        if queue_name in self.producers:
+            producer = self.producers[queue_name]
+            if producer.alive:
+                return producer
+            address = producer.address
+        elif queue_name in self.consumers:
+            consumers = self.consumers[queue_name]
+            connected_consumers = len(consumers)
+            consumer = consumers[0] if connected_consumers > 0 else None
+            address = consumer.address if consumer else None
 
+        address = self._get_free_tcp_addr(self.host) if address is None else address
+        producer = ZMQProducer(address=address, queue_name=queue_name)
+        self.producers[queue_name] = producer
 
-@serializable(attrs=["pub_addr", "sub_addr", "_context"])
-class ZMQClient(QueueClient):
-    def __init__(self, config: QueueClientConfig):
-        self.pub_addr = config.pub_addr
-        self.sub_addr = config.sub_addr
-        self._context = None
-        self.logger_thread = None
-        self.thread = None
+        return producer
 
-    @property
-    def context(self):
-        if self._context is None:
-            self._context = zmq.Context.instance()
-        return self._context
+    def add_consumer(
+        self,
+        queue_name: str,
+        message_handler: AbstractMessageHandler,
+        address: Optional[str] = None,
+    ) -> ZMQConsumer:
+        """Add a consumer to a queue
 
-    @staticmethod
-    def _setup_monitor(ctx: Context):
-        mon_addr = "inproc://%s" % binascii.hexlify(os.urandom(8))
-        mon_pub = ctx.socket(zmq.PAIR)
-        mon_sub = ctx.socket(zmq.PAIR)
+        A queue should have at least one producer attached to the group.
 
-        mon_sub.linger = mon_sub.linger = 0
+        """
+        if address is None:
+            if queue_name in self.producers:
+                address = self.producers[queue_name].address
+            elif queue_name in self.consumers:
+                consumers = self.consumers[queue_name]
+                consumer = consumers[0] if len(consumers) > 0 else None
+                address = consumer.address if consumer else None
 
-        mon_sub.hwm = mon_sub.hwm = 1
-        mon_pub.bind(mon_addr)
-        mon_sub.connect(mon_addr)
-        return mon_pub, mon_sub, mon_addr
-
-    def _setup_connections(self):
-        self.xsub = self.context.socket(zmq.XSUB)
-        self.xpub = self.context.socket(zmq.XPUB)
-
-        self.xsub.connect(self.pub_addr)
-        self.xpub.bind(self.sub_addr)
-
-        self.mon_pub, self.mon_sub, self.mon_addr = self._setup_monitor(self.context)
-
-    @staticmethod
-    def _start_logger(mon_sub: Socket):
-        while True:
-            try:
-                # 🟡 TODO: We can track the messages incoming and leaving the queue here.
-                # Possibly mark the status here.
-                mon_sub.recv_multipart()
-                # message_str = " ".join(mess.decode() for mess in message_bytes)
-                # print(message_str)
-            except zmq.ZMQError as e:
-                if e.errno == zmq.ETERM:
-                    break  # Interrupted
-
-    @staticmethod
-    def _start(
-        in_socket: Socket,
-        out_socket: Socket,
-        mon_socket: Socket,
-        in_prefix: bytes,
-        out_prefix: bytes,
-    ):
-        poller = zmq.Poller()
-        poller.register(in_socket, zmq.POLLIN)
-        poller.register(out_socket, zmq.POLLIN)
-
-        while True:
-            events = dict(poller.poll())
-
-            if in_socket in events:
-                message = in_socket.recv_multipart()
-                out_socket.send_multipart(message)
-                mon_socket.send_multipart([in_prefix] + message)
-
-            if out_socket in events:
-                message = out_socket.recv_multipart()
-                in_socket.send_multipart(message)
-                mon_socket.send_multipart([out_prefix] + message)
-
-    def start(self, in_prefix: bytes = b"", out_prefix: bytes = b""):
-        self._setup_connections()
-        self.logger_thread = gevent.spawn(self._start_logger, self.mon_sub)
-        self.thread = gevent.spawn(
-            self._start,
-            self.xpub,
-            self.xsub,
-            self.mon_pub,
-            in_prefix,
-            out_prefix,
+        address = (
+            self._get_free_tcp_addr(
+                self.host,
+            )
+            if address is None
+            else address
         )
 
-        self.logger_thread.start()
-        self.thread.start()
+        consumer = ZMQConsumer(
+            queue_name=queue_name,
+            message_handler=message_handler,
+            address=address,
+        )
+        self.consumers[queue_name].append(consumer)
 
-    def check_logs(self, timeout: Optional[int]):
+        return consumer
+
+    def send_message(
+        self,
+        message: bytes,
+        queue_name: str,
+    ) -> Union[SyftSuccess, SyftError]:
+        producer = self.producers.get(queue_name)
+        if producer is None:
+            return SyftError(
+                message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
+            )
         try:
-            if self.logger_thread:
-                self.logger_thread.join(timeout=timeout)
-        except KeyboardInterrupt:
-            pass
+            producer.send(message=message)
+        except Exception as e:
+            return SyftError(
+                message=f"Failed to send message to: {queue_name} with error: {e}"
+            )
+        return SyftSuccess(
+            message=f"Successfully queued message to : {queue_name}",
+        )
 
-    def close(self):
-        self.thread.kill()
-        self.logger_thread.kill()
-        self.context.destroy()
-        self.xpub.close()
-        self.xpub.close()
-        self.mon_pub.close()
-        self.mon_sub.close()
+    def close(self) -> Union[SyftError, SyftSuccess]:
+        try:
+            for _, consumers in self.consumers.items():
+                for consumer in consumers:
+                    consumer.close()
+
+            for _, producer in self.producers.items():
+                producer.close()
+        except Exception as e:
+            return SyftError(message=f"Failed to close connection: {e}")
+
+        return SyftSuccess(message="All connections closed.")
+
+    def purge_queue(self, queue_name: str) -> Union[SyftError, SyftSuccess]:
+        if queue_name not in self.producers:
+            return SyftError(message=f"No producer running for : {queue_name}")
+
+        producer = self.producers[queue_name]
+
+        # close existing connection.
+        producer.close()
+
+        # add a new connection
+        self.add_producer(queue_name=queue_name, address=producer.address)
+
+        return SyftSuccess(message=f"Queue: {queue_name} successfully purged")
+
+    def purge_all(self) -> Union[SyftError, SyftSuccess]:
+        for queue_name in self.producers:
+            self.purge_queue(queue_name=queue_name)
+
+        return SyftSuccess(message="Successfully purged all queues.")
 
 
 @serializable()
 class ZMQQueueConfig(QueueConfig):
-    subscriber = ZMQSubscriber
-    publisher = ZMQPublisher
     client_config = ZMQClientConfig
     client_type = ZMQClient

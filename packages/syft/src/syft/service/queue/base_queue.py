@@ -4,9 +4,12 @@ from typing import ClassVar
 from typing import Mapping
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # relative
 from ...serde.serializable import serializable
+from ..response import SyftError
+from ..response import SyftSuccess
 
 
 @serializable()
@@ -16,7 +19,7 @@ class QueueClientConfig:
 
 @serializable()
 class AbstractMessageHandler:
-    queue: ClassVar[str]
+    queue_name: ClassVar[str]
 
     @staticmethod
     def handle_message(message: bytes):
@@ -24,7 +27,7 @@ class AbstractMessageHandler:
 
 
 @serializable(attrs=["message_handler", "queue_name", "address"])
-class QueueSubscriber:
+class QueueConsumer:
     message_handler: AbstractMessageHandler
     queue_name: str
     address: str
@@ -40,13 +43,13 @@ class QueueSubscriber:
 
 
 @serializable()
-class QueuePublisher:
+class QueueProducer:
     address: str
+    queue_name: str
 
     def send(
         self,
         message: Any,
-        queue_name: str,
     ):
         raise NotImplementedError
 
@@ -61,25 +64,16 @@ class QueueClient:
 
 @serializable()
 class QueueConfig:
-    """Base Store configuration
+    """Base Queue configuration"""
 
-    Parameters:
-        store_type: Type
-            Document Store type
-        client_config: Optional[StoreClientConfig]
-            Backend-specific config
-    """
-
-    subscriber: Type[QueueSubscriber]
-    publisher: Type[QueuePublisher]
-    client_config: Optional[Type[QueueClientConfig]]
+    client_config: Type[QueueClientConfig]
     client_type: Type[QueueClient]
 
 
 @serializable()
-class BaseQueueRouter:
+class BaseQueueManager:
     config: QueueConfig
-    subscribers: Mapping[str, list[QueueSubscriber]]
+    subscribers: Mapping[str, list[QueueConsumer]]
 
     def __init__(self, config: QueueConfig):
         self.config = config
@@ -91,18 +85,26 @@ class BaseQueueRouter:
     def start(self) -> None:
         raise NotImplementedError
 
-    def __enter__(self) -> "BaseQueueRouter":
+    def __enter__(self) -> "BaseQueueManager":
         self.start()
         return self
 
     def close(self) -> None:
         raise NotImplementedError
 
-    def create_subscriber(
-        self, message_handler: Type[AbstractMessageHandler]
-    ) -> QueueSubscriber:
+    def create_consumer(
+        self,
+        message_handler: Type[AbstractMessageHandler],
+        address: Optional[str],
+    ) -> QueueConsumer:
+        raise NotImplementedError
+
+    def create_producer(self, queue_name: str) -> QueueProducer:
+        raise NotImplementedError
+
+    def send(self, message: bytes, queue_name: str) -> Union[SyftSuccess, SyftError]:
         raise NotImplementedError
 
     @property
-    def publisher(self) -> QueuePublisher:
+    def publisher(self) -> QueueProducer:
         raise NotImplementedError
