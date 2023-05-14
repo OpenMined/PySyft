@@ -84,6 +84,26 @@ jobs:
         run: |
           tox -e frontend.test.unit
 
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+          dest: ~/setup-pnpm
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          # cache: "pnpm"
+          # cache-dependency-path: packages/grid/frontend/pnpm-lock.yaml
+
+      - name: Run Frontend Playwright e2e Tests
+        if: steps.changes.outputs.stack == 'true'
+        env:
+          DOCKER: true
+        run: |
+          tox -e frontend.test.e2e
+
   pr-tests-frontend-e2e:
     strategy:
       max-parallel: 3
@@ -147,22 +167,3 @@ jobs:
           docker volume prune -f || true
           docker buildx use default || true
 
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
-          run_install: false
-          dest: ~/setup-pnpm
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          # cache: "pnpm"
-          # cache-dependency-path: packages/grid/frontend/pnpm-lock.yaml
-
-      - name: Run Frontend Playwright e2e Tests
-        if: steps.changes.outputs.stack == 'true'
-        env:
-          DOCKER: true
-        run: |
-          tox -e frontend.test.e2e
