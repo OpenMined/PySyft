@@ -40,6 +40,7 @@ from nacl.signing import VerifyKey
 import requests
 
 # relative
+from ..serde.serialize import _serialize
 from .logger import critical
 from .logger import debug
 from .logger import error
@@ -840,5 +841,12 @@ def recursive_hash(obj: Any) -> int:
                 hashes += recursive_hash(item_key)
                 hashes += recursive_hash(item)
     else:
-        hashes += hash(obj)
+        # TODO: remove the generic python hash from other checks and use a more secure one
+        # As the python hash does not produce unique hashes for different runs
+        # and also for different python versions
+        # to be modified in the hashing PR
+        # Adding a temp fix for now
+        serde_bytes = _serialize(obj, to_bytes=True)
+        hash_bytes = hashlib.sha256(serde_bytes).digest()
+        hashes += int.from_bytes(hash_bytes, byteorder="big")
     return hashes
