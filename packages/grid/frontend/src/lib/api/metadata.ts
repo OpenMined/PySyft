@@ -1,7 +1,7 @@
 import ky from 'ky';
 import { syftCall } from './syft-api-call';
 import { API_BASE_URL } from '../constants';
-import { deserialize } from "./serde";
+import { deserialize } from './serde';
 import { parse as uuidParse } from 'uuid';
 import { UUID } from '../client/objects/uid';
 
