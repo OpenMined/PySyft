@@ -88,11 +88,11 @@ class ProjectEvent(SyftObject):
     seq_no: Optional[int]
     project_id: Optional[UID]
     creator_verify_key: Optional[SyftVerifyKey]
-    parent_event_uid: Optional[UID]
     prev_event_uid: Optional[UID]
     prev_signed_event_hash: Optional[int]
     event_hash: Optional[int]
     signature: Optional[bytes]  # dont use in signature
+    allowed_sub_types: Optional[List] = []
 
     @pydantic.root_validator(pre=True)
     def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -140,7 +140,7 @@ class ProjectEvent(SyftObject):
             return SyftError(message=f"Failed to validate message. {e}")
 
     def valid_descendant(
-        self, project: UID, prev_event: Optional[Self]
+        self, project: NewProject, prev_event: Optional[Self]
     ) -> Union[SyftSuccess, SyftError]:
         valid = self.valid
         if not valid:
@@ -164,6 +164,13 @@ class ProjectEvent(SyftObject):
                 message=f"{self} prev_signed_event_hash: {self.prev_signed_event_hash} "
                 "does not match {prev_event_hash}"
             )
+
+        if hasattr(self, "parent_seq_no"):
+            parent_event = project.events[self.parent_seq_no - 1]
+            if type(self) not in parent_event.allowed_sub_types:
+                return SyftError(
+                    message=f"{self} is not a valid subevent" "for {parent_event}"
+                )
         return SyftSuccess(message=f"{self} is valid descendant of {prev_event}")
 
     def sign(self, signing_key: SyftSigningKey) -> None:
@@ -197,9 +204,25 @@ class ProjectEventAddLink(ProjectEvent):
     __version__ = SYFT_OBJECT_VERSION_1
 
 
+# Project Sub Event are the events which tend to describe the main events
+# For example, if a project event is created, then the project sub event will be the
+# 1. ProjectThreadMessage
+# 2. Emojis
+# 3. Approval for request based events
+# Mainly these events are used to describe the main events
+# For example, we could make our messaging system to have only one level of thread messages
+# it would also help us define the expected sub events for each event
+# such that only allowed events could be the sub type of the main event
+class ProjectSubEvent(ProjectEvent):
+    __canonical_name__ = "ProjectSubEvent"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    parent_seq_no: int
+
+
 @serializable()
-class ProjectMessage(ProjectEventAddObject):
-    __canonical_name__ = "ProjectMessage"
+class ProjectThreadMessage(ProjectSubEvent):
+    __canonical_name__ = "ProjectThreadMessage"
     __version__ = SYFT_OBJECT_VERSION_1
 
     message: str
@@ -208,14 +231,32 @@ class ProjectMessage(ProjectEventAddObject):
         "id",
         "timestamp",
         "creator_verify_key",
-        "parent_event_uid",
+        "parent_seq_no",
+        "prev_event_uid",
+        "prev_signed_event_hash",
+        "message",
+    ]
+
+
+@serializable()
+class ProjectMessage(ProjectEventAddObject):
+    __canonical_name__ = "ProjectMessage"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    message: str
+    allowed_sub_types: List[Type] = [ProjectThreadMessage]
+
+    __hash_keys__ = [
+        "id",
+        "timestamp",
+        "creator_verify_key",
         "prev_event_uid",
         "prev_signed_event_hash",
         "message",
     ]
 
     def reply(self, message: str) -> ProjectMessage:
-        return ProjectMessage(message=message, parent_event_uid=self.id)
+        return ProjectThreadMessage(message=message, parent_seq_no=self.seq_no)
 
 
 @serializable()
@@ -452,7 +493,7 @@ class NewProject(SyftObject):
         return SyftSuccess(message=valid_str(current_hash))
 
     def get_children(self, event: ProjectEvent) -> List[ProjectEvent]:
-        return self.get_events(parent_uids=event.id)
+        return self.get_events(parent_seq_nos=event.seq_no)
 
     def get_parent(self, parent_uid: UID) -> Optional[ProjectEvent]:
         parent_event = None
@@ -467,7 +508,7 @@ class NewProject(SyftObject):
     def get_events(
         self,
         types: Optional[Union[Type, List[Type]]] = None,
-        parent_uids: Optional[Union[UID, List[UID]]] = None,
+        parent_seq_nos: Optional[Union[UID, List[UID]]] = None,
         ids: Optional[Union[UID, List[UID]]] = None,
     ):
         if types is None:
@@ -475,10 +516,10 @@ class NewProject(SyftObject):
         if isinstance(types, type):
             types = [types]
 
-        if parent_uids is None:
-            parent_uids = []
-        if isinstance(parent_uids, UID):
-            parent_uids = [parent_uids]
+        if parent_seq_nos is None:
+            parent_seq_nos = []
+        if isinstance(parent_seq_nos, int):
+            parent_seq_nos = [parent_seq_nos]
 
         if ids is None:
             ids = []
@@ -492,8 +533,9 @@ class NewProject(SyftObject):
                 type_check = True
 
             parent_check = False
-            if (len(parent_uids) == 0 and event.parent_event_uid is None) or (
-                event.parent_event_uid in parent_uids
+            if (len(parent_seq_nos) == 0 and not hasattr(event, "parent_seq_no")) or (
+                hasattr(event, "parent_seq_no")
+                and event.parent_seq_no in parent_seq_nos
             ):
                 parent_check = True
 
@@ -530,6 +572,19 @@ class NewProject(SyftObject):
     ):
         message_event = ProjectMessage(message=message)
         return self.add_event(message_event, credentials)
+
+    def reply_message(
+        self,
+        reply: str,
+        message: ProjectMessage,
+        credentials: Union[SyftSigningKey, SyftClient],
+    ):
+        if not isinstance(message, ProjectMessage):
+            return SyftError(
+                message=f"You can only reply to a message: {type(message)}"
+            )
+        reply_event = message.reply(reply)
+        return self.add_event(reply_event, credentials)
 
     def sync(
         self, client: Optional[SyftClient] = None
