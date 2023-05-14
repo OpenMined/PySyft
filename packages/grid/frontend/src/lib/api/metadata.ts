@@ -1,17 +1,16 @@
 import ky from 'ky';
 import { syftCall } from './syft-api-call';
 import { API_BASE_URL } from '../constants';
+import { deserialize } from "./serde";
 import { parse as uuidParse } from 'uuid';
 import { UUID } from '../client/objects/uid';
 
 export async function getMetadata() {
   try {
-    const res = await ky.get(`${API_BASE_URL}/new/metadata`);
-    const metadata = await res.json();
-    // const res = await ky.get(`${API_BASE_URL}/new/metadata_capnp`);
-    // const metadata = await deserialize(res);
+    const res = await ky.get(`${API_BASE_URL}/new/metadata_capnp`);
+    const metadata = await deserialize(res);
 
-    const nodeUIDString = metadata?.id;
+    const nodeUIDString = metadata?.id?.value;
     const nodeIdHyphen = hyphenateUUIDv4(nodeUIDString);
     window.localStorage.setItem('metadata', JSON.stringify(metadata));
     window.localStorage.setItem('nodeId', nodeIdHyphen);
