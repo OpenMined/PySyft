@@ -351,7 +351,7 @@ class NewProject(SyftObject):
         api = APIRegistry.api_for(self.state_sync_leader.id)
         if api is None:
             return SyftError(
-                message=f"You must login to {self.state_sync_leader.name}-{self.state_sync_leader.id}"
+                message=f"You must login to leader-{str(self.state_sync_leader.id)[0:8]}"
             )
         return api.services.newproject.broadcast_event(project_event)
 
@@ -542,7 +542,7 @@ class NewProject(SyftObject):
             api = APIRegistry.api_for(self.state_sync_leader.id)
             if api is None:
                 return SyftError(
-                    message=f"You must login to {self.state_sync_leader.name}-{self.state_sync_leader.id}"
+                    message=f"You must login to leader node-{str(self.state_sync_leader.id)[0:8]}"
                 )
             unsynced_events = api.services.newproject.sync(
                 project_id=self.id, seq_no=self.get_last_seq_no()
@@ -606,7 +606,7 @@ class NewProjectSubmit(SyftObject):
 
             api = APIRegistry.api_for(shareholder.id)
             if api is None:
-                raise Exception(f"You must login to {shareholder.id}")
+                raise Exception(f"You must login to {str(shareholder.id)[0:8]}")
             result = api.services.newproject.create_project(
                 project=self, project_id=project_id
             )
