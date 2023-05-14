@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import copy
 from enum import Enum
+import time
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -17,6 +18,7 @@ from typing import Union
 import pydantic
 from pydantic import validator
 from result import OkErr
+from rich.progress import track
 from typing_extensions import Self
 
 # relative
@@ -43,6 +45,7 @@ from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
 from ..response import SyftException
+from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..service import TYPE_TO_SERVICE
 
@@ -82,6 +85,7 @@ class ProjectEvent(SyftObject):
 
     id: UID
     timestamp: DateTime
+    seq_no: Optional[int]
     project_id: Optional[UID]
     creator_verify_key: Optional[SyftVerifyKey]
     parent_event_uid: Optional[UID]
@@ -102,14 +106,17 @@ class ProjectEvent(SyftObject):
     def __hash__(self) -> int:
         return type(self).calculate_hash(self, self.__hash_keys__)
 
-    def rebase(self, project: UID, prev_event: Optional[ProjectEvent]) -> Self:
+    def rebase(self, project: NewProject, prev_event: Optional[ProjectEvent]) -> Self:
         self.project_id = project.id
+
         if prev_event:
             self.prev_event_uid = prev_event.id
             self.prev_signed_event_hash = hash(prev_event)
+            self.seq_no = prev_event.seq_no + 1
         else:
             self.prev_event_uid = project.id
             self.prev_signed_event_hash = project.start_hash
+            self.seq_no = 1
 
         # make sure these are reset
         self.event_hash = None
@@ -359,7 +366,9 @@ class NewProject(SyftObject):
         event = event.rebase(self, prev_event)
         return event
 
-    def append_event(self, event: ProjectEvent) -> Union[SyftSuccess, SyftError]:
+    def append_event(
+        self, event: ProjectEvent, credentials: SyftSigningKey, broadcast: bool = True
+    ) -> Union[SyftSuccess, SyftError]:
         prev_event = None
         if len(self.events) > 0:
             prev_event = self.events[-1]
@@ -367,8 +376,27 @@ class NewProject(SyftObject):
         if not valid:
             return valid
 
+        result = None
+        if broadcast:
+            result = self._broadcast_event(event)
+            if isinstance(result, SyftError):
+                return result
+            if isinstance(result, SyftNotReady):
+                self.sync()
+                event = event.rebase(
+                    project=self, prev_event=self.events[-1] if self.events else None
+                )
+                event.sign(credentials)
+                # recursively call append_event as due to network latency the event could reach late
+                # and other events would be being streamed to the leader
+                # This scenario could lead to starvation of node trying to sync with the leader
+                # This would be solved in our future leaderless approach
+                return self.append_event(
+                    event=event, credentials=credentials, broadcast=broadcast
+                )
+
         self.events.append(copy.deepcopy(event))
-        return self._broadcast_event(event)
+        return result
 
     @property
     def event_ids(self) -> Set[UID]:
@@ -392,7 +420,8 @@ class NewProject(SyftObject):
         event._pre_add_update(self)
         event = self.rebase_event(event)
         event.sign(credentials)
-        result = self.append_event(event)
+
+        result = self.append_event(event, credentials=credentials)
         return result
 
     def validate_events(self, debug: bool = False) -> Union[SyftSuccess, SyftError]:
@@ -476,7 +505,8 @@ class NewProject(SyftObject):
                 results.append(event)
         return results
 
-    def print_messages(self) -> str:
+    @property
+    def messages(self) -> str:
         message_text = ""
         top_messages = self.get_events(types=ProjectMessage)
         for message in top_messages:
@@ -488,8 +518,53 @@ class NewProject(SyftObject):
                 message_text += (
                     f"> {str(child.creator_verify_key)[0:8]}: {child.message}\n"
                 )
+        if message_text == "":
+            message_text = "No messages"
+        print(message_text)
 
-        return message_text
+    def get_last_seq_no(self) -> int:
+        return len(self.events)
+
+    def send_message(
+        self, message: str, credentials: Union[SyftSigningKey, SyftClient]
+    ):
+        message_event = ProjectMessage(message=message)
+        return self.add_event(message_event, credentials)
+
+    def sync(
+        self, client: Optional[SyftClient] = None
+    ) -> Union[SyftSuccess, SyftError]:
+        """Sync the latest project with the state sync leader"""
+        if client is None:
+            # relative
+            from ...client.api import APIRegistry
+
+            api = APIRegistry.api_for(self.state_sync_leader.id)
+            if api is None:
+                return SyftError(
+                    message=f"You must login to {self.state_sync_leader.name}-{self.state_sync_leader.id}"
+                )
+            unsynced_events = api.services.newproject.sync(
+                project_id=self.id, seq_no=self.get_last_seq_no()
+            )
+        else:
+            unsynced_events = client.api.services.newproject.sync(
+                project_id=self.id, seq_no=self.get_last_seq_no()
+            )
+        if isinstance(unsynced_events, SyftError):
+            return unsynced_events
+
+        # purely for UI
+        for step in track(range(len(unsynced_events)), description="Syncing"):
+            if step <= 7:
+                time.sleep(0.2)
+
+        self.events.extend(unsynced_events)
+        # We check if the updates from the leader are valid
+        # TODO: optimize check, as check the whole chain, would be inefficient
+        self.validate_events()
+
+        return SyftSuccess(message="Synced project  with Leader")
 
 
 @serializable()

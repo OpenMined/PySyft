@@ -17,6 +17,7 @@ from ..message.message_service import CreateMessage
 from ..message.message_service import Message
 from ..message.message_service import MessageService
 from ..response import SyftError
+from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -187,6 +188,11 @@ class NewProjectService(AbstractService):
                     message="Only the leader of the project can broadcast events"
                 )
 
+            if project_event.seq_no <= len(project.events) and len(project.events) > 0:
+                return SyftNotReady(message="Project out of sync event")
+            if project_event.seq_no > len(project.events) + 1:
+                return SyftError(message="Project event out of order!")
+
             project.events.append(project_event)
 
             # Broadcast the event to all the members of the project
@@ -217,6 +223,40 @@ class NewProjectService(AbstractService):
             if result.is_err():
                 return SyftError(message=str(result.err()))
             return result.ok()
+
+        if project_obj.is_err():
+            return SyftError(message=str(project_obj.err()))
+
+    @service_method(
+        path="newproject.sync",
+        name="sync",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def sync(
+        self, context: AuthedServiceContext, project_id: UID, seq_no: int
+    ) -> Union[SyftSuccess, SyftError, List[ProjectEvent]]:
+        """To add events to a projects"""
+        # Event object should be received from the leader of the project
+
+        # retrieve the project object by node verify key
+        project_obj = self.stash.get_by_uid(context.node.verify_key, uid=project_id)
+
+        if project_obj.is_ok():
+            project: NewProject = project_obj.ok()
+            if project.state_sync_leader.verify_key != context.node.verify_key:
+                return SyftError(
+                    message="Project Events should be synced only with the leader"
+                )
+            shareholder_keys = [
+                shareholder.verify_key for shareholder in project.shareholders
+            ]
+            if context.credentials not in shareholder_keys:
+                return SyftError(
+                    message="Only the shareholders of the project can sync events"
+                )
+
+            # retrieving unsycned events based on seq_no
+            return project.events[seq_no:]
 
         if project_obj.is_err():
             return SyftError(message=str(project_obj.err()))
