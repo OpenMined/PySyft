@@ -13,7 +13,6 @@ from syft.service.action.action_graph import NodeType
 from syft.service.action.action_graph_service import ActionGraphService
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
-from syft.service.context import AuthedServiceContext
 
 
 def create_action_obj_node(verify_key: SyftVerifyKey) -> NodeActionData:
@@ -125,11 +124,6 @@ def simple_in_memory_action_graph(
     )
 
     return in_mem_graph_store
-
-
-@pytest.fixture
-def authed_context(verify_key: SyftVerifyKey) -> AuthedServiceContext:
-    return AuthedServiceContext(credentials=verify_key)
 
 
 @pytest.fixture
