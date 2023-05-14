@@ -1,14 +1,15 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { metadata } from '$lib/store';
+  import { register } from '$lib/api/auth';
   import Button from '$lib/components/Button.svelte';
   import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
-  import Modal from '$lib/components/Modal.svelte';
   import Input from '$lib/components/Input.svelte';
-  import { register } from '$lib/api/auth';
+  import Modal from '$lib/components/Modal.svelte';
 
   let signUpError = '';
   let signUpSuccess = '';
+
   async function createUser({
     email,
     password,
@@ -34,9 +35,8 @@
     Object.keys(newUser).forEach((k) => newUser[k] == '' && delete newUser[k]);
 
     try {
-      let response = await register(newUser); // This will return a success message and the new user info
+      let response = await register(newUser);
       signUpSuccess = response[0].message;
-      console.log(signUpSuccess);
       setTimeout(() => {
         goto('/login');
       }, 2000);
@@ -60,22 +60,51 @@
       </div>
       <div class="contents" slot="body">
         <div class="w-full gap-6 flex flex-col tablet:flex-row">
-          <Input label="Full name" id="fullName" placeholder="Jane Doe" required />
-          <Input label="Company/Institution" id="organization" placeholder="OpenMined University" />
+          <Input
+            label="Full name"
+            id="fullName"
+            placeholder="Jane Doe"
+            required
+            data-testid="full_name"
+          />
+          <Input
+            label="Company/Institution"
+            id="organization"
+            placeholder="OpenMined University"
+            data-testid="institution"
+          />
         </div>
-        <Input label="Email" id="email" placeholder="info@openmined.org" required />
+        <Input
+          label="Email"
+          id="email"
+          placeholder="info@openmined.org"
+          required
+          data-testid="email"
+        />
         <div class="w-full gap-6 flex flex-col tablet:flex-row">
-          <Input type="password" label="Password" id="password" placeholder="******" required />
+          <Input
+            type="password"
+            label="Password"
+            id="password"
+            placeholder="******"
+            required
+            data-testid="password"
+          />
           <Input
             type="password"
             label="Confirm Password"
             id="confirm_password"
             placeholder="******"
             required
+            data-testid="confirm_password"
           />
         </div>
-        <Input label="Website/Profile" id="website" placeholder="https://openmined.org" />
-
+        <Input
+          label="Website/Profile"
+          id="website"
+          placeholder="https://openmined.org"
+          data-testid="website"
+        />
         <p class="text-center text-green-500" hidden={!signUpSuccess}>{signUpSuccess}</p>
         <p class="text-center text-rose-500" hidden={!signUpError}>{signUpError}</p>
         <p class="text-center">
@@ -88,7 +117,9 @@
           .
         </p>
       </div>
-      <Button type="submit" variant="secondary" slot="button-group">Sign up</Button>
+      <Button type="submit" variant="secondary" slot="button-group" data-testid="submit">
+        Sign up
+      </Button>
     </Modal>
   </form>
 </div>

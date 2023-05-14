@@ -53,7 +53,11 @@ export async function register(newUser: SignUpDetails) {
 
   if (Array.isArray(data)) {
     return data;
-  } else {
-    throw new Error(data.message);
   }
+
+  if (data.Error) {
+    throw new Error(data.Error);
+  }
+
+  throw new Error(data.message);
 }

@@ -27,3 +27,19 @@ def action_type_for_type(obj_or_type: Any) -> Type:
         return action_types[Any]
 
     return action_types[obj_or_type]
+
+
+def action_type_for_object(obj: Any) -> Type:
+    """Convert standard type to Syft types
+
+    Parameters:
+        obj_or_type: Union[object, type]
+            Can be an object or a class
+    """
+    _type = type(obj)
+
+    if _type not in action_types:
+        debug(f"WARNING: No Type for {_type}, returning {action_types[Any]}")
+        return action_types[Any]
+
+    return action_types[_type]

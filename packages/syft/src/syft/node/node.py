@@ -6,6 +6,7 @@ import contextlib
 from datetime import datetime
 from functools import partial
 import hashlib
+from multiprocessing import current_process
 import os
 import threading
 import traceback
@@ -54,6 +55,7 @@ from ..service.metadata.metadata_stash import MetadataStash
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
+from ..service.project.project_service import NewProjectService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
@@ -177,6 +179,7 @@ class Node(AbstractNode):
 
         self.processes = processes
         self.is_subprocess = is_subprocess
+
         if name is None:
             name = random_name()
         self.name = name
@@ -194,6 +197,7 @@ class Node(AbstractNode):
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
+                NewProjectService,
             ]
             if services is None
             else services
@@ -274,7 +278,7 @@ class Node(AbstractNode):
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
-        return credentials == self.signing_key.verify_key
+        return credentials == self.verify_key
 
     @property
     def root_client(self):
@@ -295,25 +299,29 @@ class Node(AbstractNode):
         return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
-        services = []
-        for service in self.services:
-            services.append(service.__name__)
-        service_string = "\n".join(sorted(services))
-        return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}\n\nServices:\n{service_string}"
+        service_string = ""
+        if not self.is_subprocess:
+            services = []
+            for service in self.services:
+                services.append(service.__name__)
+            service_string = ", ".join(sorted(services))
+            service_string = f"\n\nServices:\n{service_string}"
+        return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}{service_string}"
 
     def post_init(self) -> None:
-        context = AuthedServiceContext(
-            node=self, credentials=self.signing_key.verify_key
-        )
+        context = AuthedServiceContext(node=self, credentials=self.verify_key)
 
         if UserCodeService in self.services:
             user_code_service = self.get_service(UserCodeService)
             user_code_service.load_user_code(context=context)
-        if self.is_subprocess:
+
+        if self.is_subprocess or current_process().name != "MainProcess":
             # print(f"> Starting Subprocess {self}")
             pass
         else:
-            print(f"> {self}")
+            pass
+            # why would we do this?
+            # print(f"> {self}")
 
         def reload_user_code() -> None:
             user_code_service.load_user_code(context=context)
@@ -344,7 +352,7 @@ class Node(AbstractNode):
         self.document_store_config = document_store_config
 
         self.document_store = document_store(
-            root_verify_key=self.signing_key.verify_key,
+            root_verify_key=self.verify_key,
             store_config=document_store_config,
         )
         if action_store_config is None:
@@ -363,12 +371,10 @@ class Node(AbstractNode):
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store = SQLiteActionStore(
                 store_config=action_store_config,
-                root_verify_key=self.signing_key.verify_key,
+                root_verify_key=self.verify_key,
             )
         else:
-            self.action_store = DictActionStore(
-                root_verify_key=self.signing_key.verify_key
-            )
+            self.action_store = DictActionStore(root_verify_key=self.verify_key)
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
@@ -392,6 +398,7 @@ class Node(AbstractNode):
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
+                NewProjectService,
             ]
 
             if OBLV:
@@ -435,7 +442,7 @@ class Node(AbstractNode):
         return NodeMetadata(
             name=self.name,
             id=self.id,
-            verify_key=self.signing_key.verify_key,
+            verify_key=self.verify_key,
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
@@ -444,6 +451,10 @@ class Node(AbstractNode):
     @property
     def icon(self) -> str:
         return "🦾"
+
+    @property
+    def verify_key(self) -> SyftVerifyKey:
+        return self.signing_key.verify_key
 
     def __hash__(self) -> int:
         return hash(self.id)
@@ -609,8 +620,6 @@ class Node(AbstractNode):
 def task_producer(
     pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
 ) -> Any:
-    print("task_producer: Start")
-
     try:
         result = None
         with pipe:
@@ -623,7 +632,6 @@ def task_producer(
                     pass
             pipe.close()
         if blocking:
-            print("task_producer: End")
             return result
     except gipc.gipc.GIPCClosed:
         pass
@@ -637,8 +645,6 @@ def task_runner(
     task_uid: UID,
     blocking: bool,
 ) -> None:
-    print("task_runner: Start")
-
     worker = Node(
         id=worker_settings.id,
         name=worker_settings.name,
@@ -664,7 +670,6 @@ def task_runner(
     except Exception as e:
         print("Exception in task_runner", e)
         raise e
-    print("task_runner: End")
 
 
 def queue_task(
@@ -673,8 +678,6 @@ def queue_task(
     task_uid: UID,
     blocking: bool,
 ) -> Optional[Any]:
-    print("queue_task: Start")
-
     with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
         cend,
         pend,
@@ -691,9 +694,7 @@ def queue_task(
         process.join()
 
     if blocking:
-        print("queue_task: End")
         return producer.value
-    print("queue_task: End")
     return None
 
 
