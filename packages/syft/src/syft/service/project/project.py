@@ -558,6 +558,13 @@ class NewProject(SyftObject):
                 results.append(event)
         return results
 
+    def get_messages(self) -> List[Union[ProjectMessage, ProjectThreadMessage]]:
+        messages = []
+        for event in self.events:
+            if isinstance(event, (ProjectMessage, ProjectThreadMessage)):
+                messages.append(event)
+        return messages
+
     @property
     def messages(self) -> str:
         message_text = ""
@@ -573,7 +580,7 @@ class NewProject(SyftObject):
                 )
         if message_text == "":
             message_text = "No messages"
-        print(message_text)
+        return message_text
 
     def get_last_seq_no(self) -> int:
         return len(self.events)
@@ -632,7 +639,7 @@ class NewProject(SyftObject):
             return unsynced_events
 
         # UI progress bar for syncing
-        if verbose:
+        if verbose and unsynced_events:
             with Progress() as progress:
                 curr_val = 0
                 task1 = progress.add_task(
