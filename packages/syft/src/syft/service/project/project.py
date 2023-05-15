@@ -18,7 +18,7 @@ from typing import Union
 import pydantic
 from pydantic import validator
 from result import OkErr
-from rich.progress import track
+from rich.progress import Progress
 from typing_extensions import Self
 
 # relative
@@ -381,6 +381,7 @@ class NewProject(SyftObject):
     store: Dict[UID, Dict[UID, SyftObject]] = {}
     permissions: Dict[UID, Dict[UID, Set[str]]] = {}
     events: List[ProjectEvent] = []
+    event_id_hashmap: Dict[UID, ProjectEvent] = {}
     start_hash: int
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
@@ -454,6 +455,7 @@ class NewProject(SyftObject):
                 )
 
         self.events.append(copy.deepcopy(event))
+        self.event_id_hashmap[event.id] = event
         return result
 
     @property
@@ -629,12 +631,29 @@ class NewProject(SyftObject):
         if isinstance(unsynced_events, SyftError):
             return unsynced_events
 
-        # purely for UI
-        for step in track(range(len(unsynced_events)), description="Syncing"):
-            if step <= 7:
-                time.sleep(0.2)
+        # UI progress bar for syncing
+        with Progress() as progress:
+            curr_val = 0
+            task1 = progress.add_task(
+                f"[bold white]Syncing... {curr_val}/{len(unsynced_events)}",
+                total=len(unsynced_events),
+            )
 
-        self.events.extend(unsynced_events)
+            while not progress.finished:
+                event = unsynced_events[curr_val]
+                curr_val += 1
+                progress.tasks[
+                    task1
+                ].description = (
+                    f"[bold white]Syncing... {curr_val}/{len(unsynced_events)}"
+                )
+                progress.update(task1, advance=1)
+                self.events.append(event)
+                self.event_id_hashmap[event.id] = event
+                # for a better UI view , deliberately slowing the slow
+                if curr_val <= 7:
+                    time.sleep(0.2)
+
         # We check if the updates from the leader are valid
         # TODO: optimize check, as check the whole chain, would be inefficient
         self.validate_events()

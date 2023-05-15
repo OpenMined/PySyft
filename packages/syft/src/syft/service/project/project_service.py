@@ -153,6 +153,7 @@ class NewProjectService(AbstractService):
                 )
 
             project.events.append(project_event)
+            project.event_id_hashmap[project_event.id] = project_event
             # updating the project object using root verify key of node
             result = self.stash.update(context.node.verify_key, project)
 
@@ -194,6 +195,7 @@ class NewProjectService(AbstractService):
                 return SyftError(message="Project event out of order!")
 
             project.events.append(project_event)
+            project.event_id_hashmap[project_event.id] = project_event
 
             # Broadcast the event to all the members of the project
             network_service = context.node.get_service("networkservice")
