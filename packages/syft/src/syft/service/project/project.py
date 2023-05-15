@@ -83,16 +83,19 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    # 1. Creation attrs
     id: UID
     timestamp: DateTime
-    seq_no: Optional[int]
+    allowed_sub_types: Optional[List] = []
+    # 2. Rebase attrs
     project_id: Optional[UID]
-    creator_verify_key: Optional[SyftVerifyKey]
+    seq_no: Optional[int]
     prev_event_uid: Optional[UID]
     prev_event_hash: Optional[int]
     event_hash: Optional[int]
+    # 3. Signature attrs
+    creator_verify_key: Optional[SyftVerifyKey]
     signature: Optional[bytes]  # dont use in signature
-    allowed_sub_types: Optional[List] = []
 
     @pydantic.root_validator(pre=True)
     def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
