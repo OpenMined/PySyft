@@ -106,7 +106,7 @@ class UserUpdate(PartialSyftObject):
         return EmailStr(v) if isinstance(v, str) else v
 
     email: EmailStr
-    name: Optional[str]
+    name: str
     role: ServiceRole  # make sure role cant be set without uid
     password: str
     password_verify: str
