@@ -282,7 +282,7 @@ def test_networkx_backing_store_save_load_default(
 def test_networkx_backing_store_save_load_custom(verify_key: SyftVerifyKey) -> None:
     # save the store to and from a custom location
     custom_client_conf = InMemoryStoreClientConfig(
-        filename="custom_action_graph.bytes", path="/tmp"
+        filename="custom_action_graph.bytes", path=tempfile.gettempdir()
     )
     custom_in_mem_graph_config = InMemoryGraphConfig()
     custom_in_mem_graph_config.client_config = custom_client_conf
