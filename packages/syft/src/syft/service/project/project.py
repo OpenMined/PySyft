@@ -152,9 +152,11 @@ class ProjectEvent(SyftObject):
         if prev_event:
             prev_event_id = prev_event.id
             prev_event_hash = prev_event.event_hash
+            prev_seq_no = prev_event.seq_no
         else:
             prev_event_id = project.id
             prev_event_hash = project.start_hash
+            prev_seq_no = 0
 
         if self.prev_event_uid != prev_event_id:
             return SyftError(
@@ -166,6 +168,18 @@ class ProjectEvent(SyftObject):
             return SyftError(
                 message=f"{self} prev_event_hash: {self.prev_event_hash} "
                 "does not match {prev_event_hash}"
+            )
+
+        if self.seq_no != prev_seq_no + 1:
+            return SyftError(
+                message=f"{self} seq_no: {self.seq_no} "
+                "is not subsequent to {prev_seq_no}"
+            )
+
+        if self.project_id != project.id:
+            return SyftError(
+                message=f"{self} project_id: {self.project_id} "
+                "does not match {project.id}"
             )
 
         if hasattr(self, "parent_seq_no"):
@@ -188,7 +202,7 @@ class ProjectEvent(SyftObject):
         self.signature = signed_obj._signature
 
     def publish(
-        self, project: Project, credentials: Union[SyftSigningKey, SyftClient]
+        self, project: NewProject, credentials: Union[SyftSigningKey, SyftClient]
     ) -> Union[SyftSuccess, SyftError]:
         try:
             result = project.add_event(self, credentials)
