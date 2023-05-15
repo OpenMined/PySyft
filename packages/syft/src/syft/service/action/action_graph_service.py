@@ -135,7 +135,7 @@ class ActionGraphService(AbstractService):
         )
         if result.is_ok():
             return SyftSuccess(
-                f"Successfully deleted node with uid: {uid} from the graph."
+                message=f"Successfully deleted node with uid: {uid} from the graph."
             )
 
         return SyftError(message=result.err())

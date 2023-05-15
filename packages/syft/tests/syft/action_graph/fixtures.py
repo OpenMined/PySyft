@@ -131,10 +131,3 @@ def in_mem_action_graph_service(
     in_mem_graph_store: InMemoryActionGraphStore,
 ) -> ActionGraphService:
     return ActionGraphService(store=in_mem_graph_store)
-
-
-@pytest.fixture
-def action_graph_service_simple_graph(
-    in_mem_action_graph_service: ActionGraphService,
-) -> ActionGraphService:
-    pass
