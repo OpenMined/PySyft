@@ -207,7 +207,7 @@ class InMemoryStoreClientConfig(StoreClientConfig):
         return Path(self.path) / self.filename if self.filename is not None else None
 
 
-@serializable()
+@serializable(without=["_lock"])
 class NetworkXBackingStore(BaseGraphStore):
     def __init__(self, store_config: StoreConfig, reset: bool = False) -> None:
         self.path_str = store_config.client_config.file_path.as_posix()
@@ -217,7 +217,14 @@ class NetworkXBackingStore(BaseGraphStore):
         else:
             self._db = nx.DiGraph()
 
-        self.lock = SyftLock(store_config.locking_config)
+        self.locking_config = store_config.locking_config
+        self._lock = None
+
+    @property
+    def lock(self) -> SyftLock:
+        if not hasattr(self, "_lock") or self._lock is None:
+            self._lock = SyftLock(self.locking_config)
+        return self._lock
 
     @property
     def db(self) -> nx.Graph:
