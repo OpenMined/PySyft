@@ -587,14 +587,25 @@ class NewProject(SyftObject):
     def reply_message(
         self,
         reply: str,
-        message: ProjectMessage,
+        msg_id: UID,
         credentials: Union[SyftSigningKey, SyftClient],
     ):
-        if not isinstance(message, ProjectMessage):
+        if msg_id not in self.event_ids:
+            raise SyftError(message=f"Message id: {msg_id} not found")
+        message = self.event_id_hashmap[msg_id]
+
+        reply_event: Union[ProjectMessage, ProjectThreadMessage]
+        if isinstance(message, ProjectMessage):
+            reply_event = message.reply(reply)
+        elif isinstance(message, ProjectThreadMessage):
+            reply_event = ProjectThreadMessage(
+                message=reply, parent_event_id=message.parent_event_id
+            )
+        else:
             return SyftError(
                 message=f"You can only reply to a message: {type(message)}"
+                "Kindly re-check the msg_id"
             )
-        reply_event = message.reply(reply)
         return self.add_event(reply_event, credentials)
 
     def sync(
