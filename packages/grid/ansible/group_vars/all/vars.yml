@@ -11,7 +11,8 @@ node_name: node
 node_type: domain
 root_user: root
 root_homedir: "/{{ root_user }}"
-docker_compose_url: https://github.com/docker/compose/releases/download/v2.3.4/docker-compose-linux-x86_64
+docker_compose_url_x86: https://github.com/docker/compose/releases/download/v2.17.1/docker-compose-linux-x86_64
+docker_compose_url_arm64: https://github.com/docker/compose/releases/download/v2.17.1/docker-compose-linux-aarch64
 tls: "false"
 release: "production"
 cert_store_path: "{{ om_homedir }}/certs"

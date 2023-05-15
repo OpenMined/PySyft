@@ -8,11 +8,11 @@ from typing import Optional
 import pytest
 
 # syft absolute
-from syft.core.node.new import transforms
-from syft.core.node.new.syft_object import SyftBaseObject
-from syft.core.node.new.syft_object import SyftObjectRegistry
-from syft.core.node.new.transforms import TransformContext
-from syft.core.node.new.transforms import validate_klass_and_version
+from syft.types import transforms
+from syft.types.syft_object import SyftBaseObject
+from syft.types.syft_object import SyftObjectRegistry
+from syft.types.transforms import TransformContext
+from syft.types.transforms import validate_klass_and_version
 
 
 class MockObjectFromSyftBaseObj(SyftBaseObject):

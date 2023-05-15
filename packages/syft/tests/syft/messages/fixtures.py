@@ -2,18 +2,18 @@
 import pytest
 
 # syft absolute
-from syft.core.node.new.context import AuthedServiceContext
-from syft.core.node.new.credentials import SyftSigningKey
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.datetime import DateTime
-from syft.core.node.new.linked_obj import LinkedObject
-from syft.core.node.new.message_service import MessageService
-from syft.core.node.new.message_stash import MessageStash
-from syft.core.node.new.messages import CreateMessage
-from syft.core.node.new.messages import Message
-from syft.core.node.new.uid import UID
-from syft.core.node.new.user import User
-from syft.core.node.worker import Worker
+from syft.node.credentials import SyftSigningKey
+from syft.node.credentials import SyftVerifyKey
+from syft.node.worker import Worker
+from syft.service.context import AuthedServiceContext
+from syft.service.message.message_service import MessageService
+from syft.service.message.message_stash import MessageStash
+from syft.service.message.messages import CreateMessage
+from syft.service.message.messages import Message
+from syft.service.user.user import User
+from syft.store.linked_obj import LinkedObject
+from syft.types.datetime import DateTime
+from syft.types.uid import UID
 
 test_verify_key_string = (
     "e143d6cec3c7701e6ca9c6fb83d09e06fdad947742126831a684a111aba41a8c"
@@ -68,6 +68,7 @@ def mock_create_message(faker) -> CreateMessage:
 
 @pytest.fixture(autouse=True)
 def mock_message(
+    root_verify_key,
     message_stash: MessageStash,
 ) -> Message:
     mock_message = Message(
@@ -78,7 +79,7 @@ def mock_message(
         created_at=DateTime.now(),
     )
 
-    result = message_stash.set(mock_message)
+    result = message_stash.set(root_verify_key, mock_message)
     assert result.is_ok()
 
     return mock_message
