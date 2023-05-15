@@ -6,13 +6,16 @@ from syft.service.action.action_graph import ExecutionStatus
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import NetworkXBackingStore
 from syft.service.action.action_graph import NodeActionData
+from syft.service.action.action_graph import NodeActionDataUpdate
 from syft.service.action.action_graph import NodeType
 from syft.service.action.action_graph_service import ActionGraphService
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 from syft.types.datetime import DateTime
+from syft.types.uid import UID
 
 
 def test_action_graph_service_init(
@@ -126,7 +129,8 @@ def test_action_graph_service_add_action_mutagen(
     """
     Test the `add_action` method of ActionGraphService when mutation occurs.
     Scenario: We first create a np array, change its type, then change a value
-              at a specific index, then do an addition on the mutated value
+              at a specific index, then do an addition on the mutated value.
+              The final graph has 11 nodes, 10 edges, 2 mutagen nodes and 2 mutated nodes
         node_1: action_obj_d = [1,2,3]
         node_2: action -> np.array(d)
         node_3: action_obj = np.array([1,2,3])  (automatically created)
@@ -257,10 +261,11 @@ def test_action_graph_service_add_action_mutagen(
     # node_11: action_obj_f = d + 48  (= the result_node_4 that's automatically created)
     assert len(in_mem_action_graph_service.get_all_nodes(authed_context)) == 11
     assert len(in_mem_action_graph_service.get_all_edges(authed_context)) == 10
-    # the __add__ node should be direct child of the __setitem__ node
+    # the __add__ node (action_node_4) should be a
+    # direct child of the __setitem__ (action_node_3) node
     assert (
         in_mem_action_graph_service.store.is_parent(
-            parent=action3.id, child=action4.id
+            parent=action_node_3.id, child=action_node_4.id
         ).ok()
         is True
     )
@@ -274,3 +279,82 @@ def test_action_graph_service_add_action_mutagen(
     assert result_node_4.is_mutated is False
     assert result_node_4.next_mutagen_node is None
     assert result_node_4.last_nm_mutagen_node is None
+
+
+def test_action_graph_service_get_remove_nodes(
+    in_mem_action_graph_service: ActionGraphService,
+    authed_context: AuthedServiceContext,
+) -> None:
+    """
+    Test the get and remove_node method of the ActionGraphService
+    """
+    action_obj_a = ActionObject.from_obj([1, 2, 3])
+    action_obj_b = ActionObject.from_obj([2, 3, 4])
+    action_obj_node_a: NodeActionData = in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=action_obj_a
+    )
+    action_obj_node_b: NodeActionData = in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=action_obj_b
+    )
+    action = Action(
+        path="action.execute",
+        op="__add__",
+        remote_self=action_obj_a.syft_lineage_id,
+        args=[action_obj_b.syft_lineage_id],
+        kwargs={},
+    )
+    action_node, result_node = in_mem_action_graph_service.add_action(
+        context=authed_context, action=action
+    )
+    assert len(in_mem_action_graph_service.get_all_nodes(authed_context)) == 4
+    assert len(in_mem_action_graph_service.get_all_edges(authed_context)) == 3
+    nodes = set(
+        dict(in_mem_action_graph_service.get_all_nodes(context=authed_context)).keys()
+    )
+    # test the get method
+    assert action_obj_node_a == in_mem_action_graph_service.get(
+        uid=action_obj_a.id, context=authed_context
+    )
+    assert action_obj_node_b == in_mem_action_graph_service.get(
+        uid=action_obj_b.id, context=authed_context
+    )
+    assert action_node == in_mem_action_graph_service.get(
+        uid=action.id, context=authed_context
+    )
+    # test the remove_node method
+    removed_result: SyftSuccess = in_mem_action_graph_service.remove_node(
+        authed_context, action_node.id
+    )
+    assert (
+        removed_result.message
+        == f"Successfully deleted node with uid: {action.id} from the graph."
+    )
+    assert len(in_mem_action_graph_service.get_all_nodes(authed_context)) == 3
+    assert len(in_mem_action_graph_service.get_all_edges(authed_context)) == 0
+    nodes_after_remove = set(
+        dict(in_mem_action_graph_service.get_all_nodes(context=authed_context)).keys()
+    )
+    assert action_node.id == (nodes - nodes_after_remove).pop()
+
+
+def test_action_graph_service_update(
+    in_mem_action_graph_service_4_nodes: ActionGraphService,
+    authed_context: AuthedServiceContext,
+) -> None:
+    NodeActionDataUpdate(
+        status=ExecutionStatus.DONE,
+        is_mutagen=True,
+        is_mutated=True,
+        next_mutagen_node=UID(),
+        last_nm_mutagen_node=UID(),
+    )
+
+
+def test_action_graph_service_status(
+    in_mem_action_graph_service: ActionGraphService,
+    authed_context: AuthedServiceContext,
+) -> None:
+    """
+    Test the update_action_status and get_by_action_status methods
+    """
+    pass
