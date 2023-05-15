@@ -184,9 +184,7 @@ class ProjectEvent(SyftObject):
 
         if hasattr(self, "parent_seq_no"):
             parent_event = project.events[self.parent_seq_no - 1]
-            if type(self) not in parent_event.allowed_sub_types and not isinstance(
-                self, ProjectSubEvent
-            ):
+            if type(self) not in parent_event.allowed_sub_types:
                 return SyftError(
                     message=f"{self} is not a valid subevent" "for {parent_event}"
                 )
