@@ -108,6 +108,7 @@ def gipc_decoder(obj_bytes):
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
+NODE_TYPE = "NODE_TYPE"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
@@ -119,6 +120,10 @@ def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
 
 def get_private_key_env() -> Optional[str]:
     return get_env(NODE_PRIVATE_KEY)
+
+
+def get_node_type() -> Optional[str]:
+    return get_env(NODE_TYPE, "domain")
 
 
 def get_node_uid_env() -> Optional[str]:
@@ -349,7 +354,6 @@ class Node(AbstractNode):
             user_code_service.load_user_code(context=context)
 
         CODE_RELOADER[thread_ident()] = reload_user_code
-        # super().post_init()
 
     def init_stores(
         self,
