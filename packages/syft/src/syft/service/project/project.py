@@ -89,7 +89,7 @@ class ProjectEvent(SyftObject):
     project_id: Optional[UID]
     creator_verify_key: Optional[SyftVerifyKey]
     prev_event_uid: Optional[UID]
-    prev_signed_event_hash: Optional[int]
+    prev_event_hash: Optional[int]
     event_hash: Optional[int]
     signature: Optional[bytes]  # dont use in signature
     allowed_sub_types: Optional[List] = []
@@ -111,11 +111,11 @@ class ProjectEvent(SyftObject):
 
         if prev_event:
             self.prev_event_uid = prev_event.id
-            self.prev_signed_event_hash = hash(prev_event)
+            self.prev_event_hash = prev_event.event_hash
             self.seq_no = prev_event.seq_no + 1
         else:
             self.prev_event_uid = project.id
-            self.prev_signed_event_hash = project.start_hash
+            self.prev_event_hash = project.start_hash
             self.seq_no = 1
 
         # make sure these are reset
@@ -148,7 +148,7 @@ class ProjectEvent(SyftObject):
 
         if prev_event:
             prev_event_id = prev_event.id
-            prev_event_hash = hash(prev_event)
+            prev_event_hash = prev_event.event_hash
         else:
             prev_event_id = project.id
             prev_event_hash = project.start_hash
@@ -159,9 +159,9 @@ class ProjectEvent(SyftObject):
                 "does not match {prev_event_id}"
             )
 
-        if self.prev_signed_event_hash != prev_event_hash:
+        if self.prev_event_hash != prev_event_hash:
             return SyftError(
-                message=f"{self} prev_signed_event_hash: {self.prev_signed_event_hash} "
+                message=f"{self} prev_event_hash: {self.prev_event_hash} "
                 "does not match {prev_event_hash}"
             )
 
@@ -233,7 +233,7 @@ class ProjectThreadMessage(ProjectSubEvent):
         "creator_verify_key",
         "parent_seq_no",
         "prev_event_uid",
-        "prev_signed_event_hash",
+        "prev_event_hash",
         "message",
     ]
 
@@ -251,7 +251,7 @@ class ProjectMessage(ProjectEventAddObject):
         "timestamp",
         "creator_verify_key",
         "prev_event_uid",
-        "prev_signed_event_hash",
+        "prev_event_hash",
         "message",
     ]
 
@@ -272,7 +272,7 @@ class AnswerProjectPoll(ProjectEventAddObject):
         "creator_verify_key",
         "parent_event_uid",
         "prev_event_uid",
-        "prev_signed_event_hash",
+        "prev_event_hash",
         "answer",
     ]
 
@@ -305,7 +305,7 @@ class ProjectPoll(ProjectEventAddObject):
         "creator_verify_key",
         "parent_event_uid",
         "prev_event_uid",
-        "prev_signed_event_hash",
+        "prev_event_hash",
         "question",
         "respondents",
     ]
@@ -505,6 +505,9 @@ class NewProject(SyftObject):
         else:
             raise Exception(f"More than 1 result for {parent_uid}")
 
+    # TODO: add a another view for the project objects
+    # to be able to have a Directed Acyclic Graph view of the graph events
+    # this would allow to query the sub events effectively
     def get_events(
         self,
         types: Optional[Union[Type, List[Type]]] = None,
