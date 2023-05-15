@@ -237,7 +237,7 @@ class NewProjectService(AbstractService):
     def sync(
         self, context: AuthedServiceContext, project_id: UID, seq_no: int
     ) -> Union[SyftSuccess, SyftError, List[ProjectEvent]]:
-        """To add events to a projects"""
+        """To fetch unsynced events from the project"""
         # Event object should be received from the leader of the project
 
         # retrieve the project object by node verify key
@@ -256,6 +256,8 @@ class NewProjectService(AbstractService):
                 return SyftError(
                     message="Only the shareholders of the project can sync events"
                 )
+            if seq_no < 0:
+                raise SyftError(message="Input seq_no should be a non negative integer")
 
             # retrieving unsycned events based on seq_no
             return project.events[seq_no:]

@@ -8,6 +8,7 @@ import time
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
@@ -421,40 +422,35 @@ class NewProject(SyftObject):
         ]
 
     def append_event(
-        self, event: ProjectEvent, credentials: SyftSigningKey, broadcast: bool = True
+        self, event: ProjectEvent, credentials: SyftSigningKey
     ) -> Union[SyftSuccess, SyftError]:
         prev_event = self.events[-1] if self.events else None
         valid = event.valid_descendant(self, prev_event)
         if not valid:
             return valid
 
-        result = None
-        if broadcast:
-            result = self._broadcast_event(event)
-            if isinstance(result, SyftError):
-                return result
-            if isinstance(result, SyftNotReady):
-                self.sync()
-                event = event.rebase(project=self)
-                event.sign(credentials)
-                # recursively call append_event as due to network latency the event could reach late
-                # and other events would be being streamed to the leader
-                # This scenario could lead to starvation of node trying to sync with the leader
-                # This would be solved in our future leaderless approach
-                return self.append_event(
-                    event=event, credentials=credentials, broadcast=broadcast
-                )
+        result = self._broadcast_event(event)
+        if isinstance(result, SyftError):
+            return result
+        if isinstance(result, SyftNotReady):
+            # If the client if out of sync, sync project updates from leader
+            self.sync()
+            event = event.rebase(project=self)
+            event.sign(credentials)
+            # Retrying broadcasting the event to leader
+            # recursively call append_event as due to network latency the event could reach late
+            # and other events would be being streamed to the leader
+            # This scenario could lead to starvation of node trying to sync with the leader
+            # This would be solved in our future leaderless approach
+            return self.append_event(event=event, credentials=credentials)
 
         self.events.append(copy.deepcopy(event))
         self.event_id_hashmap[event.id] = event
         return result
 
     @property
-    def event_ids(self) -> Set[UID]:
-        event_ids = set()
-        for event in self.events:
-            event_ids.add(event.id)
-        return event_ids
+    def event_ids(self) -> Iterable[UID]:
+        return self.event_id_hashmap.keys()
 
     def add_event(
         self, event: ProjectEvent, credentials: Union[SyftSigningKey, SyftClient]
@@ -602,7 +598,7 @@ class NewProject(SyftObject):
         return self.add_event(reply_event, credentials)
 
     def sync(
-        self, client: Optional[SyftClient] = None
+        self, client: Optional[SyftClient] = None, verbose: Optional[bool] = True
     ) -> Union[SyftSuccess, SyftError]:
         """Sync the latest project with the state sync leader"""
         if client is None:
@@ -625,31 +621,32 @@ class NewProject(SyftObject):
             return unsynced_events
 
         # UI progress bar for syncing
-        with Progress() as progress:
-            curr_val = 0
-            task1 = progress.add_task(
-                f"[bold white]Syncing... {curr_val}/{len(unsynced_events)}",
-                total=len(unsynced_events),
-            )
-
-            while not progress.finished:
-                event = unsynced_events[curr_val]
-                curr_val += 1
-                progress.tasks[
-                    task1
-                ].description = (
-                    f"[bold white]Syncing... {curr_val}/{len(unsynced_events)}"
+        if verbose:
+            with Progress() as progress:
+                curr_val = 0
+                task1 = progress.add_task(
+                    f"[bold white]Syncing... {curr_val}/{len(unsynced_events)}",
+                    total=len(unsynced_events),
                 )
-                progress.update(task1, advance=1)
+
+                while not progress.finished:
+                    event = unsynced_events[curr_val]
+                    curr_val += 1
+                    progress.tasks[
+                        task1
+                    ].description = (
+                        f"[bold white]Syncing... {curr_val}/{len(unsynced_events)}"
+                    )
+                    progress.update(task1, advance=1)
+                    self.events.append(event)
+                    self.event_id_hashmap[event.id] = event
+                    # for a fancy UI view , deliberately slowing the sync
+                    if curr_val <= 7:
+                        time.sleep(0.2)
+        else:
+            for event in unsynced_events:
                 self.events.append(event)
                 self.event_id_hashmap[event.id] = event
-                # for a fancy UI view , deliberately slowing the sync
-                if curr_val <= 7:
-                    time.sleep(0.2)
-
-        # We check if the updates from the leader are valid
-        # TODO: optimize check, as checking the whole chain, would be inefficient
-        self.validate_events()
 
         return SyftSuccess(message="Synced project  with Leader")
 
@@ -658,6 +655,14 @@ class NewProject(SyftObject):
 class NewProjectSubmit(SyftObject):
     __canonical_name__ = "NewProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    name: str
+    description: Optional[str]
+    shareholders: List[NodeIdentity]
+    project_permissions: Set[str] = set()
+    state_sync_leader: Optional[NodeIdentity]
+    consensus_model: ConsensusModel
 
     @validator("shareholders", pre=True)
     def make_shareholders(cls, objs: List[SyftClient]) -> List[NodeIdentity]:
@@ -674,14 +679,6 @@ class NewProjectSubmit(SyftObject):
                     f"Shareholders should be either SyftClient or NodeIdentity received: {type(obj)}"
                 )
         return shareholders
-
-    id: Optional[UID]
-    name: str
-    description: Optional[str]
-    shareholders: List[NodeIdentity]
-    project_permissions: Set[str] = set()
-    state_sync_leader: Optional[NodeIdentity]
-    consensus_model: ConsensusModel
 
     def start(self) -> NewProject:
         # Creating a new unique UID to be used by all shareholders
