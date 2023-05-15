@@ -80,10 +80,11 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID = UID()
+    id: UID
     timestamp: DateTime
     project_id: Optional[UID]
     creator_verify_key: Optional[SyftVerifyKey]
+    parent_event_uid: Optional[UID]
     prev_event_uid: Optional[UID]
     prev_signed_event_hash: Optional[int]
     event_hash: Optional[int]
@@ -94,6 +95,9 @@ class ProjectEvent(SyftObject):
         if "timestamp" not in values or values["timestamp"] is None:
             values["timestamp"] = DateTime.now()
         return values
+
+    def _pre_add_update(self, project: Project) -> None:
+        pass
 
     def __hash__(self) -> int:
         return type(self).calculate_hash(self, self.__hash_keys__)
@@ -156,7 +160,11 @@ class ProjectEvent(SyftObject):
         return SyftSuccess(message=f"{self} is valid descendant of {prev_event}")
 
     def sign(self, signing_key: SyftSigningKey) -> None:
-        self.creator_verify_key = signing_key.verify_key
+        if self.creator_verify_key != signing_key.verify_key:
+            raise Exception(
+                f"creator_verify_key has changed from: {self.creator_verify_key} to "
+                f"{signing_key.verify_key}"
+            )
         self.signature = None
         signed_bytes = _serialize(self, to_bytes=True)
         signed_obj = signing_key.signing_key.sign(signed_bytes)
@@ -193,9 +201,87 @@ class ProjectMessage(ProjectEventAddObject):
         "id",
         "timestamp",
         "creator_verify_key",
+        "parent_event_uid",
+        "prev_event_uid",
         "prev_signed_event_hash",
         "message",
     ]
+
+    def reply(self, message: str) -> ProjectMessage:
+        return ProjectMessage(message=message, parent_event_uid=self.id)
+
+
+@serializable()
+class AnswerProjectPoll(ProjectEventAddObject):
+    __canonical_name__ = "AnswerProjectPoll"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    answer: bool
+
+    __hash_keys__ = [
+        "id",
+        "timestamp",
+        "creator_verify_key",
+        "parent_event_uid",
+        "prev_event_uid",
+        "prev_signed_event_hash",
+        "answer",
+    ]
+
+    def _pre_add_update(self, project: Project) -> None:
+        if not project.key_in_project(self.creator_verify_key):
+            # TODO: add Data Scientist key so this works
+            # raise Exception(
+            #     f"{self.creator_verify_key} is not a shareholder: {project.shareholders}"
+            # )
+            pass
+
+        poll = project.get_parent(self.parent_event_uid)
+        if self.creator_verify_key not in poll.respondents:
+            # TODO: add Data Scientist key so this works
+            # raise Exception(f"{self.creator_verify_key} is not in this poll")
+            pass
+
+
+@serializable()
+class ProjectPoll(ProjectEventAddObject):
+    __canonical_name__ = "ProjectPoll"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    question: str
+    respondents: List[SyftVerifyKey] = []
+
+    __hash_keys__ = [
+        "id",
+        "timestamp",
+        "creator_verify_key",
+        "parent_event_uid",
+        "prev_event_uid",
+        "prev_signed_event_hash",
+        "question",
+        "respondents",
+    ]
+
+    def answer(self, answer: bool) -> ProjectMessage:
+        return AnswerProjectPoll(answer=answer, parent_event_uid=self.id)
+
+    def _pre_add_update(self, project: Project) -> None:
+        super()._pre_add_update(project=project)
+        shareholder_keys = [
+            shareholder.verify_key for shareholder in project.shareholders
+        ]
+        if len(self.respondents) == 0:
+            self.respondents = shareholder_keys
+        else:
+            respondents_set = set(self.respondents)
+            # TODO: make this some larger set of keys that are allowed on the project
+            if not respondents_set.issubset(set(shareholder_keys)):
+                raise Exception(
+                    f"Respondents: {self.respondents} must be in the project"
+                )
+
+    def status(self) -> float:
+        pass
 
 
 class ConsensusModel:
@@ -262,12 +348,15 @@ class NewProject(SyftObject):
             )
         return api.services.newproject.broadcast_event(project_event)
 
+    def key_in_project(self, verify_key: SyftVerifyKey) -> bool:
+        shareholder_keys = [shareholder.verify_key for shareholder in self.shareholders]
+        return verify_key in shareholder_keys
+
     def rebase_event(self, event: ProjectEvent) -> ProjectEvent:
         prev_event = None
         if len(self.events) > 0:
             prev_event = self.events[-1]
         event = event.rebase(self, prev_event)
-        print("rebased event", event)
         return event
 
     def append_event(self, event: ProjectEvent) -> Union[SyftSuccess, SyftError]:
@@ -299,12 +388,14 @@ class NewProject(SyftObject):
         if not isinstance(credentials, SyftSigningKey):
             raise Exception(f"Adding an event requires a signing key. {credentials}")
 
+        event.creator_verify_key = credentials.verify_key
+        event._pre_add_update(self)
         event = self.rebase_event(event)
         event.sign(credentials)
         result = self.append_event(event)
         return result
 
-    def validate_events(self) -> Union[SyftSuccess, SyftError]:
+    def validate_events(self, debug: bool = False) -> Union[SyftSuccess, SyftError]:
         current_hash = self.start_hash
 
         def valid_str(current_hash: int) -> str:
@@ -317,10 +408,88 @@ class NewProject(SyftObject):
         for event in self.events:
             result = event.valid_descendant(self, last_event)
             current_hash = event.event_hash
+
+            if debug:
+                icon = "✅" if result else "❌"
+                prev_event = last_event if last_event is not None else self
+                print(
+                    f"{icon} {type(event).__name__}: {event.id} "
+                    f"after {type(prev_event).__name__}: {prev_event.id}"
+                )
+
             if not result:
                 return result
             last_event = event
         return SyftSuccess(message=valid_str(current_hash))
+
+    def get_children(self, event: ProjectEvent) -> List[ProjectEvent]:
+        return self.get_events(parent_uids=event.id)
+
+    def get_parent(self, parent_uid: UID) -> Optional[ProjectEvent]:
+        parent_event = None
+        event_query = self.get_events(ids=parent_uid)
+        if len(event_query) == 0:
+            return parent_event
+        elif len(event_query) == 1:
+            return event_query[0]
+        else:
+            raise Exception(f"More than 1 result for {parent_uid}")
+
+    def get_events(
+        self,
+        types: Optional[Union[Type, List[Type]]] = None,
+        parent_uids: Optional[Union[UID, List[UID]]] = None,
+        ids: Optional[Union[UID, List[UID]]] = None,
+    ):
+        if types is None:
+            types = []
+        if isinstance(types, type):
+            types = [types]
+
+        if parent_uids is None:
+            parent_uids = []
+        if isinstance(parent_uids, UID):
+            parent_uids = [parent_uids]
+
+        if ids is None:
+            ids = []
+        if isinstance(ids, UID):
+            ids = [ids]
+
+        results = []
+        for event in self.events:
+            type_check = False
+            if len(types) == 0 or isinstance(event, tuple(types)):
+                type_check = True
+
+            parent_check = False
+            if (len(parent_uids) == 0 and event.parent_event_uid is None) or (
+                event.parent_event_uid in parent_uids
+            ):
+                parent_check = True
+
+            id_check = False
+            if len(ids) == 0 or event.id in ids:
+                id_check = True
+
+            if type_check and parent_check and id_check:
+                results.append(event)
+        return results
+
+    def print_messages(self) -> str:
+        message_text = ""
+        top_messages = self.get_events(types=ProjectMessage)
+        for message in top_messages:
+            message_text += (
+                f"{str(message.creator_verify_key)[0:8]}: {message.message}\n"
+            )
+            children = self.get_children(message)
+            for child in children:
+                message_text += (
+                    f"> {str(child.creator_verify_key)[0:8]}: {child.message}\n"
+                )
+
+        return message_text
 
 
 @serializable()
