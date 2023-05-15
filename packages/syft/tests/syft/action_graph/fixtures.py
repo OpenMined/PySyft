@@ -13,7 +13,6 @@ from syft.service.action.action_graph import NodeType
 from syft.service.action.action_graph_service import ActionGraphService
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
-from syft.service.context import AuthedServiceContext
 
 
 def create_action_obj_node(verify_key: SyftVerifyKey) -> NodeActionData:
@@ -132,31 +131,3 @@ def in_mem_action_graph_service(
     in_mem_graph_store: InMemoryActionGraphStore,
 ) -> ActionGraphService:
     return ActionGraphService(store=in_mem_graph_store)
-
-
-@pytest.fixture
-def in_mem_action_graph_service_4_nodes(
-    in_mem_action_graph_service: ActionGraphService,
-    authed_context: AuthedServiceContext,
-) -> ActionGraphService:
-    """
-    Return an action graph service with a graph of 4 nodes and 3 edges
-    """
-    action_obj_a = ActionObject.from_obj([1, 2, 3])
-    action_obj_b = ActionObject.from_obj([2, 3, 4])
-    in_mem_action_graph_service.add_action_obj(
-        context=authed_context, action_obj=action_obj_a
-    )
-    in_mem_action_graph_service.add_action_obj(
-        context=authed_context, action_obj=action_obj_b
-    )
-    action = Action(
-        path="action.execute",
-        op="__add__",
-        remote_self=action_obj_a.syft_lineage_id,
-        args=[action_obj_b.syft_lineage_id],
-        kwargs={},
-    )
-    in_mem_action_graph_service.add_action(context=authed_context, action=action)
-
-    return in_mem_action_graph_service

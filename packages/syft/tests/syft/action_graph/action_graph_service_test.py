@@ -2,6 +2,9 @@
 Tests for the ActionGraphService in /syft/src/syft/service/action/action_graph_service.py
 """
 # syft absolute
+from syft.node.credentials import SyftSigningKey
+from syft.node.credentials import SyftVerifyKey
+from syft.node.worker import Worker
 from syft.service.action.action_graph import ExecutionStatus
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import NetworkXBackingStore
@@ -338,16 +341,37 @@ def test_action_graph_service_get_remove_nodes(
 
 
 def test_action_graph_service_update(
-    in_mem_action_graph_service_4_nodes: ActionGraphService,
+    in_mem_action_graph_service: ActionGraphService,
     authed_context: AuthedServiceContext,
 ) -> None:
-    NodeActionDataUpdate(
+    action_obj_d = ActionObject.from_obj([1, 2, 3])
+    in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=action_obj_d
+    )
+    action = Action(
+        path="action.execute",
+        op="np.array",
+        remote_self=None,
+        args=[action_obj_d.syft_lineage_id],
+        kwargs={},
+    )
+    action_node, _ = in_mem_action_graph_service.add_action(
+        context=authed_context, action=action
+    )
+    update_data = NodeActionDataUpdate(
         status=ExecutionStatus.DONE,
         is_mutagen=True,
         is_mutated=True,
         next_mutagen_node=UID(),
         last_nm_mutagen_node=UID(),
     )
+    updated_node: NodeActionData = in_mem_action_graph_service.update(
+        context=authed_context, uid=action_node.id, node_data=update_data
+    )
+    assert updated_node.id == action_node.id
+    assert updated_node.type == NodeType.ACTION
+    for k, v in update_data.to_dict(exclude_empty=True).items():
+        assert getattr(updated_node, k) == v
 
 
 def test_action_graph_service_status(
@@ -357,4 +381,75 @@ def test_action_graph_service_status(
     """
     Test the update_action_status and get_by_action_status methods
     """
-    pass
+    action_obj_d = ActionObject.from_obj([1, 2, 3])
+    in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=action_obj_d
+    )
+    action = Action(
+        path="action.execute",
+        op="np.array",
+        remote_self=None,
+        args=[action_obj_d.syft_lineage_id],
+        kwargs={},
+    )
+    action_node, _ = in_mem_action_graph_service.add_action(
+        context=authed_context, action=action
+    )
+
+    assert (
+        len(
+            in_mem_action_graph_service.get_by_action_status(
+                authed_context, ExecutionStatus.PROCESSING
+            )
+        )
+        == 3
+    )
+
+    updated_node = in_mem_action_graph_service.update_action_status(
+        context=authed_context, action_id=action_node.id, status=ExecutionStatus.DONE
+    )
+
+    assert updated_node.status == ExecutionStatus.DONE
+
+    done_nodes = in_mem_action_graph_service.get_by_action_status(
+        authed_context, ExecutionStatus.DONE
+    )
+    assert len(done_nodes) == 1
+    assert done_nodes[0] == updated_node.id  # should be just updated_node?
+    assert (
+        len(
+            in_mem_action_graph_service.get_by_action_status(
+                authed_context, ExecutionStatus.PROCESSING
+            )
+        )
+        == 2
+    )
+
+
+def test_action_graph_service_get_by_verify_key(
+    worker: Worker,
+    in_mem_action_graph_service: ActionGraphService,
+) -> None:
+    verify_key: SyftVerifyKey = SyftSigningKey.generate().verify_key
+    verify_key_2: SyftVerifyKey = SyftSigningKey.generate().verify_key
+    assert verify_key_2 != verify_key
+    authed_context = AuthedServiceContext(credentials=verify_key, node=worker)
+    authed_context_2 = AuthedServiceContext(credentials=verify_key_2, node=worker)
+    action_obj = ActionObject.from_obj([1, 2, 3])
+    action_obj_2 = ActionObject.from_obj([2, 3, 4])
+    node_1 = in_mem_action_graph_service.add_action_obj(
+        context=authed_context, action_obj=action_obj
+    )
+    node_2 = in_mem_action_graph_service.add_action_obj(
+        context=authed_context_2, action_obj=action_obj_2
+    )
+
+    assert (
+        in_mem_action_graph_service.get_by_verify_key(authed_context, verify_key)[0]
+        == node_1.id
+    )
+
+    assert (
+        in_mem_action_graph_service.get_by_verify_key(authed_context_2, verify_key_2)[0]
+        == node_2.id
+    )
