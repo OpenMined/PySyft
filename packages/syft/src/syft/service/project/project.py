@@ -109,7 +109,8 @@ class ProjectEvent(SyftObject):
     def __hash__(self) -> int:
         return type(self).calculate_hash(self, self.__hash_keys__)
 
-    def rebase(self, project: NewProject, prev_event: Optional[ProjectEvent]) -> Self:
+    def rebase(self, project: NewProject) -> Self:
+        prev_event = project.events[-1] if project.events else None
         self.project_id = project.id
 
         if prev_event:
@@ -415,22 +416,14 @@ class NewProject(SyftObject):
         return api.services.newproject.broadcast_event(project_event)
 
     def key_in_project(self, verify_key: SyftVerifyKey) -> bool:
-        shareholder_keys = [shareholder.verify_key for shareholder in self.shareholders]
-        return verify_key in shareholder_keys
-
-    def rebase_event(self, event: ProjectEvent) -> ProjectEvent:
-        prev_event = None
-        if len(self.events) > 0:
-            prev_event = self.events[-1]
-        event = event.rebase(self, prev_event)
-        return event
+        return verify_key in [
+            shareholder.verify_key for shareholder in self.shareholders
+        ]
 
     def append_event(
         self, event: ProjectEvent, credentials: SyftSigningKey, broadcast: bool = True
     ) -> Union[SyftSuccess, SyftError]:
-        prev_event = None
-        if len(self.events) > 0:
-            prev_event = self.events[-1]
+        prev_event = self.events[-1] if self.events else None
         valid = event.valid_descendant(self, prev_event)
         if not valid:
             return valid
@@ -442,9 +435,7 @@ class NewProject(SyftObject):
                 return result
             if isinstance(result, SyftNotReady):
                 self.sync()
-                event = event.rebase(
-                    project=self, prev_event=self.events[-1] if self.events else None
-                )
+                event = event.rebase(project=self)
                 event.sign(credentials)
                 # recursively call append_event as due to network latency the event could reach late
                 # and other events would be being streamed to the leader
@@ -478,7 +469,7 @@ class NewProject(SyftObject):
 
         event.creator_verify_key = credentials.verify_key
         event._pre_add_update(self)
-        event = self.rebase_event(event)
+        event = event.rebase(self)
         event.sign(credentials)
 
         result = self.append_event(event, credentials=credentials)
