@@ -1914,8 +1914,21 @@ def create_launch_docker_cmd(
     print("\n")
 
     use_blob_storage = (
-        False if str(node_type.input) == "network" else bool(kwargs["use_blob_storage"])
+        False
+        if str(node_type.input) in ["network", "gateway"]
+        else bool(kwargs["use_blob_storage"])
     )
+
+    # use a docker volume
+    backend_storage = "credentials-data"
+
+    # in development use a folder mount
+    if kwargs.get("release", "") == "development":
+        RELATIVE_PATH = ""
+        # if EDITABLE_MODE:
+        #     RELATIVE_PATH = "../"
+        # we might need to change this for the hagrid template mode
+        backend_storage = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
 
     envs = {
         "RELEASE": "production",
@@ -1935,6 +1948,7 @@ def create_launch_docker_cmd(
             generate_sec_random_password(length=48, special_chars=False)
         ),
         "ENABLE_OBLV": str(enable_oblv).lower(),
+        "BACKEND_STORAGE_PATH": backend_storage,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -1965,7 +1979,9 @@ def create_launch_docker_cmd(
         envs["RABBITMQ_MANAGEMENT"] = "-management"
 
     # currently we only have a domain frontend for dev mode
-    if kwargs.get("release", "") == "development" and str(node_type.input) != "network":
+    if kwargs.get("release", "") == "development" and (
+        str(node_type.input) not in ["network", "gateway"]
+    ):
         envs["FRONTEND_TARGET"] = "grid-ui-development"
 
     if "set_root_password" in kwargs and kwargs["set_root_password"] is not None:
@@ -2044,7 +2060,7 @@ def create_launch_docker_cmd(
     if bool(kwargs["vpn"]):
         cmd += " --profile vpn"
 
-    if str(node_type.input) == "network":
+    if str(node_type.input) in ["network", "gateway"]:
         cmd += " --profile network"
 
     if use_blob_storage:
