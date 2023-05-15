@@ -23,6 +23,7 @@ from pymongo.collection import Collection
 from result import Err
 from result import Ok
 from result import Result
+import zmq.green as zmq
 
 # relative
 from .deserialize import _deserialize as deserialize
@@ -162,6 +163,16 @@ recursive_serde_register(
 
 # unsure why we have to register the object not the type but this works
 recursive_serde_register(np.core._ufunc_config._unspecified())
+
+recursive_serde_register(
+    zmq._Socket,
+    serialize_attrs=[
+        "_shadow",
+        "_monitor_socket",
+        "_type_name",
+    ],
+)
+recursive_serde_register(zmq._Context)
 
 # how else do you import a relative file to execute it?
 NOTHING = None
