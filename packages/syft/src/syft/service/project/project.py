@@ -188,7 +188,7 @@ class ProjectEvent(SyftObject):
             parent_event = project.event_id_hashmap[self.parent_event_id]
             if type(self) not in parent_event.allowed_sub_types:
                 return SyftError(
-                    message=f"{self} is not a valid subevent" "for {parent_event}"
+                    message=f"{self} is not a valid subevent" f"for {parent_event}"
                 )
         return SyftSuccess(message=f"{self} is valid descendant of {prev_event}")
 
@@ -279,73 +279,79 @@ class ProjectMessage(ProjectEventAddObject):
 
 
 @serializable()
-class AnswerProjectPoll(ProjectEventAddObject):
+class AnswerProjectPoll(ProjectSubEvent):
     __canonical_name__ = "AnswerProjectPoll"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    answer: bool
+    answer: int
 
     __hash_keys__ = [
         "id",
         "timestamp",
         "creator_verify_key",
-        "parent_event_uid",
+        "parent_event_id",
         "prev_event_uid",
         "prev_event_hash",
         "answer",
     ]
 
-    def _pre_add_update(self, project: Project) -> None:
-        if not project.key_in_project(self.creator_verify_key):
-            # TODO: add Data Scientist key so this works
-            # raise Exception(
-            #     f"{self.creator_verify_key} is not a shareholder: {project.shareholders}"
-            # )
-            pass
+    # def _pre_add_update(self, project: Project) -> None:
+    #     if not project.key_in_project(self.creator_verify_key):
+    #         # TODO: add Data Scientist key so this works
+    #         # raise Exception(
+    #         #     f"{self.creator_verify_key} is not a shareholder: {project.shareholders}"
+    #         # )
+    #         pass
 
-        poll = project.get_parent(self.parent_event_uid)
-        if self.creator_verify_key not in poll.respondents:
-            # TODO: add Data Scientist key so this works
-            # raise Exception(f"{self.creator_verify_key} is not in this poll")
-            pass
+    #     poll = project.get_parent(self.parent_event_id)
+    #     if self.creator_verify_key not in poll.respondents:
+    #         # TODO: add Data Scientist key so this works
+    #         # raise Exception(f"{self.creator_verify_key} is not in this poll")
+    #         pass
 
 
 @serializable()
-class ProjectPoll(ProjectEventAddObject):
+class ProjectMultipleChoicePoll(ProjectEventAddObject):
     __canonical_name__ = "ProjectPoll"
     __version__ = SYFT_OBJECT_VERSION_1
 
     question: str
-    respondents: List[SyftVerifyKey] = []
+    choices: List[str]
+    allowed_sub_types: List[Type] = [AnswerProjectPoll]
+
+    @validator("choices")
+    def choices_min_length(cls, v):
+        if len(v) < 1:
+            raise ValueError("choices must have at least one item")
+        return v
 
     __hash_keys__ = [
         "id",
         "timestamp",
         "creator_verify_key",
-        "parent_event_uid",
         "prev_event_uid",
         "prev_event_hash",
         "question",
-        "respondents",
+        "choices",
     ]
 
-    def answer(self, answer: bool) -> ProjectMessage:
-        return AnswerProjectPoll(answer=answer, parent_event_uid=self.id)
+    def answer(self, answer: int) -> ProjectMessage:
+        return AnswerProjectPoll(answer=answer, parent_event_id=self.id)
 
-    def _pre_add_update(self, project: Project) -> None:
-        super()._pre_add_update(project=project)
-        shareholder_keys = [
-            shareholder.verify_key for shareholder in project.shareholders
-        ]
-        if len(self.respondents) == 0:
-            self.respondents = shareholder_keys
-        else:
-            respondents_set = set(self.respondents)
-            # TODO: make this some larger set of keys that are allowed on the project
-            if not respondents_set.issubset(set(shareholder_keys)):
-                raise Exception(
-                    f"Respondents: {self.respondents} must be in the project"
-                )
+    # def _pre_add_update(self, project: Project) -> None:
+    #     super()._pre_add_update(project=project)
+    #     shareholder_keys = [
+    #         shareholder.verify_key for shareholder in project.shareholders
+    #     ]
+    #     if len(self.respondents) == 0:
+    #         self.respondents = shareholder_keys
+    #     else:
+    #         respondents_set = set(self.respondents)
+    #         # TODO: make this some larger set of keys that are allowed on the project
+    #         if not respondents_set.issubset(set(shareholder_keys)):
+    #             raise Exception(
+    #                 f"Respondents: {self.respondents} must be in the project"
+    #             )
 
     def status(self) -> float:
         pass
@@ -614,6 +620,39 @@ class NewProject(SyftObject):
                 "Kindly re-check the msg_id"
             )
         return self.add_event(reply_event, credentials)
+
+    def create_poll(
+        self,
+        question: str,
+        choices: List[str],
+        credentials: Union[SyftSigningKey, SyftClient],
+    ):
+        poll_event = ProjectMultipleChoicePoll(question=question, choices=choices)
+        return self.add_event(poll_event, credentials)
+
+    def answer_poll(
+        self,
+        answer: int,
+        poll_id: UID,
+        credentials: Union[SyftSigningKey, SyftClient],
+    ):
+        if poll_id not in self.event_ids:
+            raise SyftError(message=f"Poll id: {poll_id} not found")
+        poll = self.event_id_hashmap[poll_id]
+
+        if not isinstance(poll, ProjectMultipleChoicePoll):
+            return SyftError(
+                message=f"You can only reply to a poll: {type(poll)}"
+                "Kindly re-check the poll_id"
+            )
+
+        if not isinstance(answer, int) or answer <= 0 or answer > len(poll.choices):
+            return SyftError(
+                message=f"Poll Answer should be a natural number between 1 and {len(poll.choices)}"
+            )
+        answer_event = poll.answer(answer)
+
+        return self.add_event(answer_event, credentials)
 
     def sync(
         self, client: Optional[SyftClient] = None, verbose: Optional[bool] = True
