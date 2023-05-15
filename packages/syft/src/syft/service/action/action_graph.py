@@ -120,7 +120,7 @@ class NodeActionDataUpdate(PartialSyftObject):
     status: ExecutionStatus
     retry: int
     created_at: DateTime
-    updated_at: DateTime
+    updated_at: Optional[DateTime]
     credentials: SyftVerifyKey
     is_mutated: bool
     is_mutagen: bool
@@ -128,7 +128,7 @@ class NodeActionDataUpdate(PartialSyftObject):
     last_nm_mutagen_node: UID  # last non mutated mutagen node
 
     @pydantic.validator("updated_at", pre=True, always=True)
-    def make_updated_at(cls, v: Optional[DateTime]) -> DateTime:
+    def set_updated_at(cls, v: Optional[DateTime]) -> DateTime:
         return DateTime.now() if v is None else v
 
 
