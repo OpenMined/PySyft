@@ -182,8 +182,8 @@ class ProjectEvent(SyftObject):
                 "does not match {project.id}"
             )
 
-        if hasattr(self, "parent_seq_no"):
-            parent_event = project.events[self.parent_seq_no - 1]
+        if hasattr(self, "parent_event_id"):
+            parent_event = project.event_id_hashmap[self.parent_event_id]
             if type(self) not in parent_event.allowed_sub_types:
                 return SyftError(
                     message=f"{self} is not a valid subevent" "for {parent_event}"
@@ -234,7 +234,7 @@ class ProjectSubEvent(ProjectEvent):
     __canonical_name__ = "ProjectSubEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    parent_seq_no: int
+    parent_event_id: UID
 
 
 @serializable()
@@ -248,7 +248,7 @@ class ProjectThreadMessage(ProjectSubEvent):
         "id",
         "timestamp",
         "creator_verify_key",
-        "parent_seq_no",
+        "parent_event_id",
         "prev_event_uid",
         "prev_event_hash",
         "message",
@@ -273,7 +273,7 @@ class ProjectMessage(ProjectEventAddObject):
     ]
 
     def reply(self, message: str) -> ProjectMessage:
-        return ProjectThreadMessage(message=message, parent_seq_no=self.seq_no)
+        return ProjectThreadMessage(message=message, parent_event_id=self.id)
 
 
 @serializable()
@@ -512,7 +512,7 @@ class NewProject(SyftObject):
         return SyftSuccess(message=valid_str(current_hash))
 
     def get_children(self, event: ProjectEvent) -> List[ProjectEvent]:
-        return self.get_events(parent_seq_nos=event.seq_no)
+        return self.get_events(parent_event_ids=event.id)
 
     def get_parent(self, parent_uid: UID) -> Optional[ProjectEvent]:
         parent_event = None
@@ -530,7 +530,7 @@ class NewProject(SyftObject):
     def get_events(
         self,
         types: Optional[Union[Type, List[Type]]] = None,
-        parent_seq_nos: Optional[Union[UID, List[UID]]] = None,
+        parent_event_ids: Optional[Union[UID, List[UID]]] = None,
         ids: Optional[Union[UID, List[UID]]] = None,
     ):
         if types is None:
@@ -538,10 +538,10 @@ class NewProject(SyftObject):
         if isinstance(types, type):
             types = [types]
 
-        if parent_seq_nos is None:
-            parent_seq_nos = []
-        if isinstance(parent_seq_nos, int):
-            parent_seq_nos = [parent_seq_nos]
+        if parent_event_ids is None:
+            parent_event_ids = []
+        if isinstance(parent_event_ids, UID):
+            parent_event_ids = [parent_event_ids]
 
         if ids is None:
             ids = []
@@ -555,9 +555,11 @@ class NewProject(SyftObject):
                 type_check = True
 
             parent_check = False
-            if (len(parent_seq_nos) == 0 and not hasattr(event, "parent_seq_no")) or (
-                hasattr(event, "parent_seq_no")
-                and event.parent_seq_no in parent_seq_nos
+            if (
+                len(parent_event_ids) == 0 and not hasattr(event, "parent_event_id")
+            ) or (
+                hasattr(event, "parent_event_id")
+                and event.parent_event_id in parent_event_ids
             ):
                 parent_check = True
 
@@ -650,12 +652,12 @@ class NewProject(SyftObject):
                 progress.update(task1, advance=1)
                 self.events.append(event)
                 self.event_id_hashmap[event.id] = event
-                # for a better UI view , deliberately slowing the slow
+                # for a fancy UI view , deliberately slowing the sync
                 if curr_val <= 7:
                     time.sleep(0.2)
 
         # We check if the updates from the leader are valid
-        # TODO: optimize check, as check the whole chain, would be inefficient
+        # TODO: optimize check, as checking the whole chain, would be inefficient
         self.validate_events()
 
         return SyftSuccess(message="Synced project  with Leader")
