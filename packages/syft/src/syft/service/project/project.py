@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import copy
 from enum import Enum
+import textwrap
 import time
 from typing import Any
 from typing import Callable
@@ -276,6 +277,187 @@ class ProjectMessage(ProjectEventAddObject):
 
     def reply(self, message: str) -> ProjectMessage:
         return ProjectThreadMessage(message=message, parent_event_id=self.id)
+
+
+def poll_creation_wizard() -> List[Any]:
+    w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
+
+    welcome_msg = "Welcome to the Poll Creation Wizard 🧙‍♂️ 🪄!!!"
+
+    description1 = """You've arrived here because you were interested in a creating poll.
+A poll is a way to gather opinions or information from a group of people.
+It typically involves asking a specific question and providing a set of answer choices for respondents to choose from"""
+
+    description2 = """In a poll, the question is the inquiry being asked of the participants.
+It should be a multiple-choice. The choices are the options that respondents
+are given to select as their answer to the question.For example, a poll question might be
+"Which is your favorite color?" with answer choices of red, blue, green, and yellow.
+Participants can then select the answer that best represents their opinion or preference"""
+
+    description3 = """Since you didn't pass in questions, choices into .create_poll() (or you did so incorrectly),
+this wizard is going to guide you through the process of creating a poll."""
+
+    description4 = """In this wizard, we're going to ask you for a question and list of choices
+to create the poll. The Questions and choices are converted to strings"""
+
+    print("\t" + "=" * 69)
+    print(w.fill(welcome_msg))
+    print("\t" + "=" * 69)
+    print()
+    print(w.fill(description1))
+    print()
+    print(w.fill(description2))
+    print()
+    print(w.fill(description3))
+    print()
+    print(w.fill(description4))
+    print()
+
+    print("\tDo you understand, and are you ready to proceed? (yes/no)")
+    print()
+    consent = str(input("\t"))
+    print()
+
+    if consent == "no":
+        raise Exception("User cancelled poll creation wizard!")
+
+    print("\tExcellent! Let's begin!")
+
+    print()
+
+    print("\t" + "-" * 69)
+    print()
+
+    print(w.fill("Question 1: Input a question to ask in the poll"))
+    print()
+    print(w.fill("Examples:"))
+    print("\t - What is your favorite type of food?")
+    print("\t - What day shall we meet?")
+    print("\t - Do you believe that climate change is a serious problem?")
+    print()
+    print()
+    question = input("\t")
+    print()
+
+    print("\t" + "-" * 69)
+    print()
+    print(
+        w.fill(
+            "Question 2: Enter the number of choices, you would like to have in the poll"
+        )
+    )
+    print()
+    while True:
+        try:
+            num_choices = int(input("\t"))
+        except ValueError:
+            print()
+            print(
+                w.fill("Number of choices, should be an integer.Kindly re-enter again.")
+            )
+            print()
+            continue
+        break
+
+    print()
+    print("\t" + "-" * 69)
+    print()
+    print(w.fill("Excellent! Let's  input each choice for the input"))
+    print()
+    choices = []
+    for idx in range(num_choices):
+        print(w.fill(f"Enter Choice {idx+1}"))
+        print()
+        choice = str(input("\t"))
+        choices.append(choice)
+        print()
+    print("\t" + "=" * 69)
+
+    print()
+
+    print(
+        w.fill("All done! You have successfully completed the Poll Creation Wizard! 🎩")
+    )
+    return (question, choices)
+
+
+def poll_answer_wizard(poll: ProjectMultipleChoicePoll) -> int:
+    w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
+
+    welcome_msg = "Welcome to the Poll Answer Wizard 🧙‍♂️ 🪄!!!"
+
+    description1 = """You've arrived here because you were interested in a answering a poll.
+A poll is a way to gather opinions or information from a group of people.
+It typically involves asking a specific question and providing a set of answer choices for respondents to choose from"""
+
+    description2 = """In a poll, the question is the inquiry being asked of the participants.
+It should be a multiple-choice. The choices are the options that respondents
+are given to select as their answer to the question.For example, a poll question might be
+"Which is your favorite color?" with answer choices of red, blue, green, and yellow.
+Participants can then select the answer that best represents their opinion or preference"""
+
+    description3 = """Since you didn't pass in the choices into .answer_poll() (or you did so incorrectly),
+this wizard is going to guide you through the process of answering the poll."""
+
+    print("\t" + "=" * 69)
+    print(w.fill(welcome_msg))
+    print("\t" + "=" * 69)
+    print()
+    print(w.fill(description1))
+    print()
+    print(w.fill(description2))
+    print()
+    print(w.fill(description3))
+    print()
+
+    print("\tDo you understand, and are you ready to proceed? (yes/no)")
+    print()
+    consent = str(input("\t"))
+    print()
+
+    if consent == "no":
+        raise Exception("User cancelled poll answer wizard!")
+
+    print("\tExcellent! Let's display the poll question")
+
+    print()
+
+    print("\t" + "-" * 69)
+    print()
+
+    print(w.fill(f"Question : {poll.question}"))
+    print()
+    for idx, choice in enumerate(poll.choices):
+        print(w.fill(f"{idx+1}. {choice}"))
+        print()
+
+    print("\t" + "-" * 69)
+    print()
+
+    print(w.fill("Kindly enter your choice for the poll"))
+    print()
+    while True:
+        try:
+            choice = int(input("\t"))
+            if choice < 1 or choice > len(poll.choices):
+                raise ValueError()
+        except ValueError:
+            print()
+            print(
+                w.fill(
+                    f"Poll Answer should be a natural number between 1 and {len(poll.choices)}"
+                )
+            )
+            print()
+            continue
+        break
+
+    print("\t" + "=" * 69)
+    print()
+    print(w.fill("All done! You have successfully completed the Poll Answer Wizard! 🎩"))
+    print()
+
+    return choice
 
 
 @serializable()
@@ -667,18 +849,26 @@ class NewProject(SyftObject):
 
     def create_poll(
         self,
-        question: str,
-        choices: List[str],
         credentials: Union[SyftSigningKey, SyftClient],
+        question: Optional[str] = None,
+        choices: Optional[List[str]] = None,
     ):
+        if (
+            question is None
+            or choices is None
+            or not isinstance(question, str)
+            or not isinstance(choices, list)
+        ):
+            question, choices = poll_creation_wizard()
+
         poll_event = ProjectMultipleChoicePoll(question=question, choices=choices)
         return self.add_event(poll_event, credentials)
 
     def answer_poll(
         self,
-        answer: int,
         poll_id: UID,
         credentials: Union[SyftSigningKey, SyftClient],
+        answer: Optional[int] = None,
     ):
         if poll_id not in self.event_ids:
             raise SyftError(message=f"Poll id: {poll_id} not found")
@@ -691,9 +881,8 @@ class NewProject(SyftObject):
             )
 
         if not isinstance(answer, int) or answer <= 0 or answer > len(poll.choices):
-            return SyftError(
-                message=f"Poll Answer should be a natural number between 1 and {len(poll.choices)}"
-            )
+            answer = poll_answer_wizard(poll)
+
         answer_event = poll.answer(answer)
 
         return self.add_event(answer_event, credentials)
