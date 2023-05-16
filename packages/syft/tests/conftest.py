@@ -37,6 +37,16 @@ def root_domain_client(worker):
 
 
 @pytest.fixture(autouse=True)
+def root_verify_key(worker):
+    return worker.root_client.credentials.verify_key
+
+
+@pytest.fixture(autouse=True)
+def guest_client(worker):
+    return worker.guest_client
+
+
+@pytest.fixture(autouse=True)
 def guest_domain_client(root_domain_client):
     return root_domain_client.guest()
 

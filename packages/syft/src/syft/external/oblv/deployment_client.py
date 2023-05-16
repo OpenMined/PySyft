@@ -14,24 +14,21 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
-from typing import cast
 
 # third party
-from oblv import OblvClient
+from oblv_ctl import OblvClient
 from pydantic import BaseModel
 from pydantic import validator
 import requests
 
 # relative
-from ...core.node.new.api import SyftAPI
-from ...core.node.new.client import HTTPConnection
-from ...core.node.new.client import Routes
-from ...core.node.new.client import SyftSigningKey
-from ...core.node.new.deserialize import _deserialize as deserialize
-from ...core.node.new.node_metadata import EnclaveMetadata
-from ...core.node.new.serializable import serializable
-from ...core.node.new.uid import UID
-from ...util import bcolors
+from ...client.api import SyftAPI
+from ...client.client import SyftClient
+from ...client.client import login
+from ...serde.serializable import serializable
+from ...service.metadata.node_metadata import EnclaveMetadata
+from ...types.uid import UID
+from ...util.util import bcolors
 from .constants import LOCAL_MODE
 from .exceptions import OblvEnclaveError
 from .exceptions import OblvUnAuthorizedError
@@ -39,7 +36,7 @@ from .oblv_proxy import check_oblv_proxy_installation_status
 
 if TYPE_CHECKING:
     # relative
-    from ...core.node.new.user_code import SubmitUserCode
+    from ...service.code.user_code import SubmitUserCode
 
 
 @serializable()
@@ -76,11 +73,12 @@ class OblvMetadata(EnclaveMetadata, BaseModel):
 class DeploymentClient:
     deployment_id: str
     key_name: str
-    domain_clients: List[Any] = []  # List of domain client objects
+    domain_clients: List[SyftClient] = []  # List of domain client objects
     oblv_client: OblvClient = None
     __conn_string: str
     __logs: Any
     __process: Any
+    __enclave_client: SyftClient
 
     def __init__(
         self,
@@ -102,6 +100,7 @@ class DeploymentClient:
         self.__process = None
         self.__logs = None
         self._api = api
+        self.__enclave_client = None
 
     def make_request_to_enclave(
         self,
@@ -242,6 +241,34 @@ class DeploymentClient:
         self.__process = process
         return
 
+    def register(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        institution: Optional[str] = None,
+        website: Optional[str] = None,
+    ):
+        self.check_connection_string()
+        guest_client = login(url=self.__conn_string)
+        return guest_client.register(
+            name=name,
+            email=email,
+            password=password,
+            institution=institution,
+            website=website,
+        )
+
+    def login(
+        self,
+        email: str,
+        password: str,
+    ) -> None:
+        self.check_connection_string()
+        self.__enclave_client = login(
+            url=self.__conn_string, email=email, password=password
+        )
+
     def check_connection_string(self) -> None:
         if not self.__conn_string:
             raise Exception(
@@ -265,7 +292,7 @@ class DeploymentClient:
 
     def request_code_execution(self, code: SubmitUserCode) -> Any:
         # relative
-        from ...core.node.new.user_code import SubmitUserCode
+        from ...service.code.user_code import SubmitUserCode
 
         if not isinstance(code, SubmitUserCode):
             raise Exception(
@@ -287,39 +314,12 @@ class DeploymentClient:
 
         return res
 
-    def _get_api(self) -> SyftAPI:
-        self.check_connection_string()
-        signing_key = SyftSigningKey.generate()
-
-        params = {"verify_key": str(signing_key.verify_key)}
-        req = self.make_request_to_enclave(
-            requests.get,
-            connection_string=self.__conn_string + Routes.ROUTE_API.value,
-            params=params,
-        )
-        self.sanity_check_oblv_response(req)
-        obj = deserialize(req.content, from_bytes=True)
-        # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
-        obj.signing_key = signing_key
-        obj.connection = HTTPConnection(self.__conn_string)
-        return cast(SyftAPI, obj)
-
-    # public attributes
-
-    def _set_api(self) -> None:
-        _api = self._get_api()
-        # APIRegistry.set_api_for(node_uid=self.id, api=_api)
-        self._api = _api
-
     @property
     def api(self) -> SyftAPI:
-        if self._api is None:
-            self._set_api()
+        if not self.__enclave_client:
+            raise Exception("Kindly login or register with the enclave")
 
-        return cast(SyftAPI, self._api)
-
-    def refresh(self) -> None:
-        self._set_api()
+        return self.__enclave_client.api
 
     def close_connection(self) -> Optional[str]:
         if self.check_proxy_running():

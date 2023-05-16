@@ -5,12 +5,12 @@ from typing import Any
 import pytest
 
 # syft absolute
-from syft.core.node.new.action_store import ActionObjectEXECUTE
-from syft.core.node.new.action_store import ActionObjectOWNER
-from syft.core.node.new.action_store import ActionObjectREAD
-from syft.core.node.new.action_store import ActionObjectWRITE
-from syft.core.node.new.credentials import SyftVerifyKey
-from syft.core.node.new.uid import UID
+from syft.node.credentials import SyftVerifyKey
+from syft.service.action.action_store import ActionObjectEXECUTE
+from syft.service.action.action_store import ActionObjectOWNER
+from syft.service.action.action_store import ActionObjectREAD
+from syft.service.action.action_store import ActionObjectWRITE
+from syft.types.uid import UID
 
 # relative
 from .store_constants_test import test_verify_key_string_client
@@ -126,7 +126,7 @@ def test_action_store_test_data_set_get(store: Any):
     data_uid = UID()
     obj = MockSyftObject(data=1)
 
-    res = store.set(data_uid, client_key, obj)
+    res = store.set(data_uid, client_key, obj, has_result_read_permission=True)
     assert res.is_ok()
     res = store.get(data_uid, client_key)
     assert res.is_ok()
