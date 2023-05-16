@@ -279,6 +279,81 @@ class ProjectMessage(ProjectEventAddObject):
         return ProjectThreadMessage(message=message, parent_event_id=self.id)
 
 
+@serializable()
+class ProjectRequestResponse(ProjectSubEvent):
+    __canonical_name__ = "ProjectRequestResponse"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    response: bool
+
+    __hash_keys__ = [
+        "id",
+        "timestamp",
+        "creator_verify_key",
+        "parent_event_id",
+        "prev_event_uid",
+        "prev_event_hash",
+        "response",
+    ]
+
+
+@serializable()
+class ProjectRequest(ProjectEventAddObject):
+    __canonical_name__ = "ProjectRequest"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    request: Request
+    allowed_sub_types: List[Type] = [ProjectRequestResponse]
+
+    __hash_keys__ = [
+        "id",
+        "timestamp",
+        "creator_verify_key",
+        "prev_event_uid",
+        "prev_event_hash",
+        "request",
+    ]
+
+    def approve(self) -> ProjectRequestResponse:
+        result = self.request.approve()
+        if isinstance(result, SyftError):
+            return result
+        return ProjectRequestResponse(response=True, parent_event_id=self.id)
+
+    # TODO: To add deny requests, when deny functionality is added
+
+    def status(self, project: NewProject) -> Union[Dict, SyftError]:
+        """Returns the status of the request
+
+        Args:
+            project (NewProject): Project object to check the status
+
+        Returns:
+            str: Status of the request
+
+        During Request  status calculation, we do not allow multiple responses
+        """
+        responses = project.get_children(self)
+        if len(responses) == 0:
+            return "No one has responded to the request yet. Kindly recheck later 🙂"
+
+        if len(responses) > 1:
+            raise SyftError(
+                message="The Request Contains more than one Response"
+                "which is currently not possible"
+                "The request should contain only one response"
+                "Kindly re-submit a new request"
+                "The Syft Team is working on this issue to handle multiple responses"
+            )
+        response = responses[0]
+        if not isinstance(response, ProjectRequestResponse):
+            raise SyftError(
+                message=f"Response : {type(response)} is not of type ProjectRequestResponse"
+            )
+
+        print("Request Status : ", "Approved" if response.response else "Denied")
+
+
 def poll_creation_wizard() -> List[Any]:
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
 
@@ -887,6 +962,35 @@ class NewProject(SyftObject):
 
         return self.add_event(answer_event, credentials)
 
+    def add_request(
+        self, request: Request, credentials: Union[SyftSigningKey, SyftClient]
+    ):
+        request_event = ProjectRequest(request=request)
+        return self.add_event(request_event, credentials)
+
+    # Since currently we do not have the notion of denying a request
+    # Adding only approve request, which would later be used to approve or deny a request
+    def approve_request(
+        self,
+        req_id: UID,
+        credentials: Union[SyftSigningKey, SyftClient],
+    ):
+        if req_id not in self.event_ids:
+            raise SyftError(message=f"Request id: {req_id} not found")
+        request = self.event_id_hashmap[req_id]
+
+        request_event: ProjectRequestResponse
+        if isinstance(request, ProjectRequest):
+            request_event = request.approve()
+            if isinstance(request_event, SyftError):
+                return request_event
+        else:
+            return SyftError(
+                message=f"You can only approve a request: {type(request)}"
+                "Kindly re-check the req_id"
+            )
+        return self.add_event(request_event, credentials)
+
     def sync(
         self, client: Optional[SyftClient] = None, verbose: Optional[bool] = True
     ) -> Union[SyftSuccess, SyftError]:
@@ -952,7 +1056,7 @@ class NewProjectSubmit(SyftObject):
     shareholders: List[NodeIdentity]
     project_permissions: Set[str] = set()
     state_sync_leader: Optional[NodeIdentity]
-    consensus_model: ConsensusModel
+    consensus_model: ConsensusModel = DemocraticConsensusModel()
 
     @validator("shareholders", pre=True)
     def make_shareholders(cls, objs: List[SyftClient]) -> List[NodeIdentity]:
