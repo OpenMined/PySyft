@@ -1,5 +1,6 @@
 # stdlib
 from datetime import datetime
+from typing import Optional
 
 # third party
 from typing_extensions import Self
@@ -8,6 +9,7 @@ from typing_extensions import Self
 from ..serde.serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
+from .uid import UID
 
 
 @serializable()
@@ -15,6 +17,7 @@ class DateTime(SyftObject):
     __canonical_name__ = "DateTime"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    id: Optional[UID]
     utc_timestamp: float
 
     @staticmethod
