@@ -6,6 +6,7 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from datetime import datetime
 
 # third party
 from pydantic import EmailStr
@@ -149,6 +150,13 @@ def add_credentials_for_key(key: str) -> Callable:
 
     return add_credentials
 
+def add_current_date(field_name: str) -> Callable:
+    def wrapper_add_current_date(context: TransformContext) -> TransformContext:
+        current_date = datetime.now()
+        formatted_date = current_date.strftime("%b %d, %Y")
+        context.output[field_name] = formatted_date
+        return context
+    return wrapper_add_current_date
 
 def add_node_uid_for_key(key: str) -> Callable:
     def add_node_uid(context: TransformContext) -> TransformContext:

@@ -24,6 +24,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
+from ...types.transforms import add_current_date
 from ...types.uid import UID
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
@@ -370,16 +371,9 @@ def convert_asset(context: TransformContext) -> TransformContext:
     return context
 
 
-def add_current_date(context: TransformContext) -> TransformContext:
-    current_date = datetime.now()
-    formatted_date = current_date.strftime("%b %d, %Y")
-    context.output["updated_at"] = formatted_date
-    return context
-
-
 @transform(CreateDataset, Dataset)
 def createdataset_to_dataset() -> List[Callable]:
-    return [generate_id, validate_url, convert_asset, add_current_date]
+    return [generate_id, validate_url, convert_asset, add_current_date("update_at")]
 
 
 class DatasetUpdate:
