@@ -15,9 +15,10 @@ files:
       - seaweedfs/s3config.json
       - vpn/config.yaml
     docker:
-      - .env
+      - default.env
       - docker-compose.build.yml
       - docker-compose.dev.yml
+      - docker-compose.pull.yml
       - docker-compose.test.yml
       - docker-compose.tls.yml
       - docker-compose.yml
