@@ -1214,7 +1214,7 @@ def create_launch_cmd(
     if (
         parsed_kwargs["tag"] is not None
         and parsed_kwargs["template"] is None
-        and parsed_kwargs["tag"] != "local"
+        and parsed_kwargs["tag"] not in ["local", "latest"]
     ):
         template = parsed_kwargs["tag"]
         # if template == "beta":
