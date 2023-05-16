@@ -28,6 +28,7 @@ from ..service.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from .document_store import BaseStash
+from .document_store import PartitionKey
 from .document_store import PartitionSettings
 from .document_store import QueryKey
 from .document_store import QueryKeys
@@ -283,11 +284,14 @@ class KeyValueStorePartition(StorePartition):
         return False
 
     def _all(
-        self, credentials: SyftVerifyKey
+        self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None
     ) -> Result[List[BaseStash.object_type], str]:
         # this checks permissions
         res = [self._get(uid, credentials) for uid in self.data.keys()]
-        return Ok([x.ok() for x in res if x.is_ok()])
+        result = [x.ok() for x in res if x.is_ok()]
+        if order_by is not None:
+            result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
+        return Ok(result)
 
     def _remove_keys(
         self,
@@ -307,7 +311,11 @@ class KeyValueStorePartition(StorePartition):
             ck_col.pop(pk_value, None)
 
     def _find_index_or_search_keys(
-        self, credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        index_qks: QueryKeys,
+        search_qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
         ids: Optional[Set] = None
         errors = []
@@ -339,7 +347,9 @@ class KeyValueStorePartition(StorePartition):
             return Ok([])
 
         qks: QueryKeys = self.store_query_keys(ids)
-        return self._get_all_from_store(credentials=credentials, qks=qks)
+        return self._get_all_from_store(
+            credentials=credentials, qks=qks, order_by=order_by
+        )
 
     def remove_keys(
         self,
@@ -421,7 +431,10 @@ class KeyValueStorePartition(StorePartition):
             return Err(f"Failed to update obj {obj} with error: {e}")
 
     def _get_all_from_store(
-        self, credentials: SyftVerifyKey, qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
         matches = []
         for qk in qks.all:
@@ -430,6 +443,8 @@ class KeyValueStorePartition(StorePartition):
                     ActionObjectREAD(uid=qk.value, credentials=credentials)
                 ):
                     matches.append(self.data[qk.value])
+        if order_by is not None:
+            matches = sorted(matches, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(matches)
 
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:

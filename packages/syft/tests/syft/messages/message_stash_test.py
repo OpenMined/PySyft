@@ -8,6 +8,7 @@ from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.message.message_stash import FromUserVerifyKeyPartitionKey
 from syft.service.message.message_stash import MessageStash
+from syft.service.message.message_stash import OrderByTimeStampPartitionKey
 from syft.service.message.message_stash import StatusPartitionKey
 from syft.service.message.message_stash import ToUserVerifyKeyPartitionKey
 from syft.service.message.messages import Message
@@ -112,6 +113,19 @@ def test_status_partitionkey() -> None:
         StatusPartitionKey.with_obj(message_expiry_status_auto)
 
 
+def test_orderbytimestamp_partitionkey() -> None:
+    random_datetime = DateTime.now()
+
+    assert OrderByTimeStampPartitionKey.key == "created_at"
+    assert OrderByTimeStampPartitionKey.type_ == DateTime
+
+    result = OrderByTimeStampPartitionKey.with_obj(random_datetime)
+
+    assert result.type_ == DateTime
+    assert result.key == "created_at"
+    assert result.value == random_datetime
+
+
 def test_messagestash_get_all_inbox_for_verify_key(
     root_verify_key, document_store
 ) -> None:
@@ -132,6 +146,35 @@ def test_messagestash_get_all_inbox_for_verify_key(
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
+    mock_message2 = add_mock_message(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
+
+    mock_message3 = add_mock_message(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
+
+    mock_message4 = add_mock_message(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
+
+    mock_message5 = add_mock_message(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
+
+    # list of mock messages
+    message_list = [
+        mock_message,
+        mock_message2,
+        mock_message3,
+        mock_message4,
+        mock_message5,
+    ]
+
+    # sort the list of mock messages by created_at to use as expected result
+    sorted_message_list = sorted(message_list, key=lambda x: x.created_at)
+
+    # returned list of messages from stash that's sorted by created_at
     response2 = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
     )
@@ -139,12 +182,15 @@ def test_messagestash_get_all_inbox_for_verify_key(
     assert response2.is_ok()
 
     result = response2.ok()
-    assert len(response2.value) == 1
+    assert len(response2.value) == 5
 
     assert result[0] == mock_message
 
     with pytest.raises(AttributeError):
         test_stash.get_all_inbox_for_verify_key(root_verify_key, random_signing_key)
+
+    # assert that the returned list of messages is sorted by created_at
+    assert result == sorted_message_list
 
 
 def test_messagestash_get_all_sent_for_verify_key(
