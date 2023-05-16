@@ -91,6 +91,22 @@ class Asset(SyftObject):
         return "```python\n" + _repr_str + "\n```"
 
     @property
+    def pointer(self) -> Any:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid=self.node_uid)
+        return api.services.action.get_pointer(self.action_id)
+
+    @property
+    def mock_data(self) -> Any:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid=self.node_uid)
+        return api.services.action.get_pointer(self.action_id).syft_action_data
+
+    @property
     def mock(self) -> Any:
         # relative
         from ...client.api import APIRegistry
