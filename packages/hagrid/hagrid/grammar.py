@@ -15,7 +15,7 @@ from typing import Union
 from .deps import allowed_hosts
 from .lib import find_available_port
 
-ALLOWED_NODE_TYPES = ["domain", "network", "enclave"]
+ALLOWED_NODE_TYPES = ["domain", "network", "gateway", "enclave"]
 
 
 class BadGrammar(Exception):
