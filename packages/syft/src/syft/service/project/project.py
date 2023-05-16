@@ -295,6 +295,7 @@ class AnswerProjectPoll(ProjectSubEvent):
         "answer",
     ]
 
+    # TODO: Re-enable when we have data scientist identity integerated
     # def _pre_add_update(self, project: Project) -> None:
     #     if not project.key_in_project(self.creator_verify_key):
     #         # TODO: add Data Scientist key so this works
@@ -338,6 +339,7 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
     def answer(self, answer: int) -> ProjectMessage:
         return AnswerProjectPoll(answer=answer, parent_event_id=self.id)
 
+    # TODO: Re-enable when we have data scientist identity integerated
     # def _pre_add_update(self, project: Project) -> None:
     #     super()._pre_add_update(project=project)
     #     shareholder_keys = [
@@ -353,8 +355,44 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
     #                 f"Respondents: {self.respondents} must be in the project"
     #             )
 
-    def status(self) -> float:
-        pass
+    def status(
+        self, project: NewProject, pretty_print: bool = True
+    ) -> Union[Dict, SyftError]:
+        """Returns the status of the poll
+
+        Args:
+            project (NewProject): Project object to check the status
+
+        Returns:
+            str: Status of the poll
+
+        During Poll calculation, a user would have answered the poll many times
+        The status of the poll would be calculated based on the latest answer of the user
+        """
+        poll_answers = project.get_children(self)
+        if len(poll_answers) == 0:
+            return "No one has answered this poll"
+
+        respondents = {}
+        for poll_answer in poll_answers[::-1]:
+            if not isinstance(poll_answer, AnswerProjectPoll):
+                raise SyftError(
+                    message=f"Poll answer: {type(poll_answer)} is not of type AnswerProjectPoll"
+                )
+            creator_verify_key = poll_answer.creator_verify_key
+            # Store only the latest response from the user
+            # TODO: modify this when we have revamped the data scientist identity
+            identity = project.get_identity_from_key(creator_verify_key)
+            if identity not in respondents:
+                respondents[identity] = poll_answer.answer
+        if pretty_print:
+            for respondent, answer in respondents.items():
+                print(f"{str(respondent.verify_key)[0:8]}: {answer}")
+            print("\nChoices:\n")
+            for idx, choice in enumerate(self.choices):
+                print(f"{idx+1}: {choice}")
+        else:
+            return respondents
 
 
 class ConsensusModel:
@@ -426,6 +464,12 @@ class NewProject(SyftObject):
         return verify_key in [
             shareholder.verify_key for shareholder in self.shareholders
         ]
+
+    def get_identity_from_key(self, verify_key: SyftVerifyKey) -> List[NodeIdentity]:
+        for shareholder in self.shareholders:
+            if shareholder.verify_key == verify_key:
+                return shareholder
+        return SyftError(message=f"Shareholder with verify key: {verify_key} not found")
 
     def append_event(
         self, event: ProjectEvent, credentials: SyftSigningKey
