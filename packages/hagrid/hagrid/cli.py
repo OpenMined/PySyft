@@ -1938,10 +1938,19 @@ def create_launch_docker_cmd(
     else:
         template_grid_dir = GRID_SRC_PATH()
 
+    compose_src_path = kwargs["compose_src_path"]
+    if not compose_src_path:
+        compose_src_path = get_compose_src_path(
+            node_type=node_type,
+            node_name=snake_name,
+            template_location=kwargs["template"],
+        )
+
     enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - TEMPLATE DIR: " + template_grid_dir)
-    print("  - COMPOSE SOURCE: " + kwargs["compose_src_path"])
+    if compose_src_path:
+        print("  - COMPOSE SOURCE: " + compose_src_path)
     print("  - RELEASE: " + kwargs["release"])
     print("  - ARCH: " + docker_platform)
     print("  - TYPE: " + str(node_type.input))
@@ -2039,25 +2048,24 @@ def create_launch_docker_cmd(
         envs["RELEASE"] = kwargs["release"]
 
     cmd = ""
-    # args = []
-    # for k, v in envs.items():
-    #     if is_windows():
-    #         # powershell envs
-    #         quoted = f"'{v}'" if not isinstance(v, int) else v
-    #         args.append(f"$env:{k}={quoted}")
-    #     else:
-    #         args.append(f"{k}={v}")
-    # if is_windows():
-    #     cmd += "; ".join(args)
-    #     cmd += "; "
-    # else:
-    #     cmd += " ".join(args)
+    args = []
+    for k, v in envs.items():
+        if is_windows():
+            # powershell envs
+            quoted = f"'{v}'" if not isinstance(v, int) else v
+            args.append(f"$env:{k}={quoted}")
+        else:
+            args.append(f"{k}={v}")
+    if is_windows():
+        cmd += "; ".join(args)
+        cmd += "; "
+    else:
+        cmd += " ".join(args)
 
-    cmd += "docker compose -p " + snake_name
+    cmd += " docker compose -p " + snake_name
 
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
-    compose_src_path = kwargs["compose_src_path"]
 
     default_env = f"{template_grid_dir}/default.env"
     if not os.path.exists(default_env):
