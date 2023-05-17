@@ -46,6 +46,9 @@ from .logger import debug
 from .logger import error
 from .logger import traceback_and_raise
 
+DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
+PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
+
 
 def full_name_with_qualname(klass: type) -> str:
     """Returns the klass module name + klass qualname."""
