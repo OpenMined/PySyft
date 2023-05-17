@@ -29,6 +29,7 @@ from .project import NewProject
 from .project import NewProjectSubmit
 from .project import Project
 from .project import ProjectEvent
+from .project import ProjectRequest
 from .project import ProjectSubmit
 from .project_stash import NewProjectStash
 from .project_stash import ProjectStash
@@ -154,6 +155,11 @@ class NewProjectService(AbstractService):
 
             project.events.append(project_event)
             project.event_id_hashmap[project_event.id] = project_event
+
+            message_result = check_for_project_request(project, project_event, context)
+            if isinstance(message_result, SyftError):
+                return message_result
+
             # updating the project object using root verify key of node
             result = self.stash.update(context.node.verify_key, project)
 
@@ -196,6 +202,10 @@ class NewProjectService(AbstractService):
 
             project.events.append(project_event)
             project.event_id_hashmap[project_event.id] = project_event
+
+            message_result = check_for_project_request(project, project_event, context)
+            if isinstance(message_result, SyftError):
+                return message_result
 
             # Broadcast the event to all the members of the project
             network_service = context.node.get_service("networkservice")
@@ -274,6 +284,37 @@ class NewProjectService(AbstractService):
             return SyftError(message=str(result.err()))
         projects = result.ok()
         return projects
+
+
+def check_for_project_request(
+    project: NewProject, project_event: ProjectEvent, context: AuthedServiceContext
+):
+    """To check for project request event and create a message for the root user
+
+    Args:
+        project (NewProject): Project object
+        project_event (ProjectEvent): Project event object
+        context (AuthedServiceContext): Context of the node
+
+    Returns:
+        Union[SyftSuccess, SyftError]: SyftSuccess if message is created else SyftError
+    """
+    if (
+        isinstance(project_event, ProjectRequest)
+        and project_event.request.node_uid == context.node.id
+    ):
+        link = LinkedObject.with_context(project, context=context)
+        message = CreateMessage(
+            subject="Project Approval",
+            from_user_verify_key=context.credentials,
+            to_user_verify_key=context.node.verify_key,
+            linked_obj=link,
+        )
+        method = context.node.get_service_method(MessageService.send)
+        result = method(context=context, message=message)
+        if isinstance(result, SyftError):
+            return result
+    return SyftSuccess(message="Successfully Validated Project Request")
 
 
 TYPE_TO_SERVICE[Project] = ProjectService

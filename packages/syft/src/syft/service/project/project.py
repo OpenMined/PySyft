@@ -40,6 +40,7 @@ from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
 from ..code.user_code import UserCode
+from ..code.user_code import UserCodeStatus
 from ..request.request import EnumMutation
 from ..request.request import Request
 from ..request.request import SubmitRequest
@@ -962,10 +963,45 @@ class NewProject(SyftObject):
 
         return self.add_event(answer_event, credentials)
 
-    def add_request(
-        self, request: Request, credentials: Union[SyftSigningKey, SyftClient]
+    def create_request(
+        self,
+        obj: UserCode,
+        permission: Enum,
+        credentials: Union[SyftSigningKey, SyftClient],
     ):
-        request_event = ProjectRequest(request=request)
+        if not isinstance(obj, UserCode):
+            raise SyftError(
+                message=f"Currently we only support requests for UserCode: {type(obj)}"
+            )
+
+        node_uid = obj.node_uid
+        if node_uid is None:
+            raise SyftError(f"Node uid is not set for the object: {obj}")
+
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid)
+        if api is None:
+            # TODO: It would hard for users to figure out the node by uid
+            # Maybe we could include the node name in the error message?
+            return SyftError(
+                message=f"You must login to node - {str(node_uid)[0:8]}"
+                "to create a request"
+            )
+        linked_obj = LinkedObject.from_obj(obj, node_uid=node_uid)
+
+        CODE_EXECUTE = UserCodeStatusChange(
+            value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
+        )
+        changes = [CODE_EXECUTE]
+
+        request = SubmitRequest(changes=changes)
+        submitted_req = api.services.request.submit(request, send_message=False)
+        if isinstance(submitted_req, SyftError):
+            return submitted_req
+
+        request_event = ProjectRequest(request=submitted_req)
         return self.add_event(request_event, credentials)
 
     # Since currently we do not have the notion of denying a request
