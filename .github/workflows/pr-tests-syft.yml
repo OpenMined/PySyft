@@ -86,10 +86,12 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
         node-type: ["python"]
+        notebook-paths: ["api/0.8"]
         include:
           - python-version: "3.9"
             os: "ubuntu-latest"
             node-type: "python"
+            notebook-paths: "api/0.8"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -139,6 +141,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
         run: |
           tox -e syft.test.notebook
 
@@ -149,6 +152,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10"]
         node-type: ["enclave"]
+        notebook-paths: ["tutorials"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -236,6 +240,7 @@ jobs:
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
           DEV_MODE: "True" # force orchestra --build
+          TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
         run: |
           tox -e stack.test.notebook
 
