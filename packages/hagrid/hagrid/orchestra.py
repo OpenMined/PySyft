@@ -132,6 +132,7 @@ class Orchestra:
         processes: int = 1,  # temporary work around for jax in subprocess
         local_db: bool = False,
         tag: Optional[str] = "latest",
+        verbose: bool = False,
     ) -> Optional[NodeHandle]:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
@@ -203,6 +204,9 @@ class Orchestra:
 
         if tail:
             commands.append("--tail")
+
+        if verbose:
+            commands.append("--verbose")
 
         if tag:
             commands.append(f"--tag={tag}")
