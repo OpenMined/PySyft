@@ -1,6 +1,6 @@
 # stdlib
 from collections import defaultdict
-import random
+import secrets
 from typing import Any
 from typing import Dict
 from typing import List
@@ -20,7 +20,7 @@ class CachedFaker:
 
     def __getattr__(self, name: str) -> Any:
         if len(self.cache.get(name, [])) > 100:
-            return lambda: random.choice(self.cache[name])
+            return lambda: secrets.choice(self.cache[name])
         else:
 
             def wrapper(*args: Any, **kwargs: Any) -> Any:
