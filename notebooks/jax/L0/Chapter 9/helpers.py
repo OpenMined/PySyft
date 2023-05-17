@@ -16,12 +16,10 @@ sns.set(
 )
 
 
-def plot_mnist_examples(train_loader):
+def plot_mnist_examples(train_data, train_labels):
     # Plot some MNIST example samples
-    for batch_idx, (data, target) in enumerate(train_loader):
-        images = onp.array(data[:4, ...]).reshape(4, 28, 28)
-        target = onp.array(target[:4, ...])
-        break
+    images = train_data[:4, ...].reshape(4, 28, 28)
+    target = train_labels[:4, ...]
 
     fig, axs = plt.subplots(1, 4, figsize=(10, 5))
     for i, ax in enumerate(axs.flatten()):
