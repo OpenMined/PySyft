@@ -72,7 +72,7 @@ class NetworkRegistry:
                 if not version or version == "unknown":
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
-                        version_url = url + "api/v1/new/metadata"
+                        version_url = url + "api/v2/metadata"
                         res = requests.get(version_url, timeout=0.5)  # nosec
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
@@ -176,7 +176,7 @@ class DomainRegistry:
                 if not version or version == "unknown":
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
-                        version_url = url + "api/v1/new/metadata"
+                        version_url = url + "api/v2/metadata"
                         res = requests.get(version_url, timeout=0.5)
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
