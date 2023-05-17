@@ -91,7 +91,7 @@ jobs:
           - python-version: "3.9"
             os: "ubuntu-latest"
             node-type: "python"
-            notebook-paths: ["api/0.8"]
+            notebook-paths: "api/0.8"
 
     runs-on: ${{ matrix.os }}
     steps:
