@@ -27,7 +27,7 @@ ToUserVerifyKeyPartitionKey = PartitionKey(
 )
 StatusPartitionKey = PartitionKey(key="status", type_=MessageStatus)
 
-OrderByTimeStampPartitionKey = PartitionKey(key="created_at", type_=DateTime)
+OrderByCreatedAtTimeStampPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 
 @instrument
@@ -67,7 +67,7 @@ class MessageStash(BaseUIDStoreStash):
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         return self.query_all(
-            credentials, qks=qks, order_by=OrderByTimeStampPartitionKey
+            credentials, qks=qks, order_by=OrderByCreatedAtTimeStampPartitionKey
         )
 
     def get_all_by_verify_key_for_status(
@@ -83,7 +83,7 @@ class MessageStash(BaseUIDStoreStash):
             ]
         )
         return self.query_all(
-            credentials, qks=qks, order_by=OrderByTimeStampPartitionKey
+            credentials, qks=qks, order_by=OrderByCreatedAtTimeStampPartitionKey
         )
 
     def update_message_status(

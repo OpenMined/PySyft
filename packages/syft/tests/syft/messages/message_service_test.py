@@ -34,15 +34,13 @@ def add_mock_message(
 ) -> Message:
     # prepare: add mock message
 
-    message_status_undelivered = MessageStatus(0)
-
     mock_message = Message(
         subject="mock_message",
         node_uid=UID(),
         from_user_verify_key=from_user_verify_key,
         to_user_verify_key=to_user_verify_key,
         created_at=DateTime.now(),
-        status=message_status_undelivered,
+        status=MessageStatus.UNREAD,
     )
 
     result = message_stash.set(root_verify_key, mock_message)
@@ -212,7 +210,6 @@ def test_messageservice_get_all_by_verify_key_for_status_success(
     random_verify_key = random_signing_key.verify_key
     test_message_service = MessageService(document_store)
     test_stash = MessageStash(store=document_store)
-    messeage_status_undelivered = MessageStatus(0)
 
     expected_message = add_mock_message(
         authed_context.credentials, test_stash, random_verify_key, test_verify_key
@@ -228,7 +225,7 @@ def test_messageservice_get_all_by_verify_key_for_status_success(
     )
 
     response = test_message_service.get_all_for_status(
-        authed_context, messeage_status_undelivered
+        authed_context, MessageStatus.UNREAD
     )
 
     assert len(response) == 1
@@ -241,7 +238,6 @@ def test_messageservice_error_on_get_all_for_status(
     message_service: MessageService,
     authed_context: AuthedServiceContext,
 ) -> None:
-    messeage_status_undelivered = MessageStatus(0)
     expected_error = "Failed to get all for status."
 
     def mock_get_all_by_verify_key_for_status(
@@ -257,14 +253,14 @@ def test_messageservice_error_on_get_all_for_status(
 
     response = message_service.get_all_for_status(
         authed_context,
-        messeage_status_undelivered,
+        MessageStatus.UNREAD,
     )
 
     assert isinstance(response, SyftError)
     assert response.message == expected_error
 
 
-def test_messageservice_mark_as_deilvered_success(
+def test_messageservice_mark_as_read_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
@@ -275,14 +271,12 @@ def test_messageservice_mark_as_deilvered_success(
     random_verify_key = random_signing_key.verify_key
     test_message_service = MessageService(document_store)
     test_stash = MessageStash(store=document_store)
-    messeage_status_undelivered = MessageStatus(0)
-    messeage_status_delivered = MessageStatus(1)
 
     expected_message = add_mock_message(
         authed_context.credentials, test_stash, test_verify_key, random_verify_key
     )
 
-    assert expected_message.status == messeage_status_undelivered
+    assert expected_message.status == MessageStatus.UNREAD
 
     def mock_update_message_status() -> Ok:
         return Ok(expected_message)
@@ -293,14 +287,14 @@ def test_messageservice_mark_as_deilvered_success(
         mock_update_message_status,
     )
 
-    response = test_message_service.mark_as_delivered(
+    response = test_message_service.mark_as_read(
         authed_context, expected_message.id
     )
 
-    assert response.status == messeage_status_delivered
+    assert response.status == MessageStatus.READ
 
 
-def test_messageservice_mark_as_delivered_error_on_update_message_status(
+def test_messageservice_mark_as_read_error_on_update_message_status(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     message_service: MessageService,
@@ -327,7 +321,7 @@ def test_messageservice_mark_as_delivered_error_on_update_message_status(
         mock_update_message_status,
     )
 
-    response = message_service.mark_as_delivered(authed_context, expected_message.id)
+    response = message_service.mark_as_read(authed_context, expected_message.id)
 
     assert isinstance(response, SyftError)
     assert response.message == expected_error

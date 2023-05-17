@@ -21,7 +21,7 @@ RequestingUserVerifyKeyPartitionKey = PartitionKey(
 )
 StatusPartitionKey = PartitionKey(key="status", type_=RequestStatus)
 
-OrderByTimeStampPartitionKey = PartitionKey(key="request_time", type_=DateTime)
+OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=DateTime)
 
 
 @instrument
@@ -41,7 +41,9 @@ class RequestStash(BaseUIDStoreStash):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_all(
-            credentials=credentials, qks=qks, order_by=OrderByTimeStampPartitionKey
+            credentials=credentials,
+            qks=qks,
+            order_by=OrderByRequestTimeStampPartitionKey,
         )
 
     def get_all_for_status(
@@ -49,5 +51,7 @@ class RequestStash(BaseUIDStoreStash):
     ) -> Result[List[Request], str]:
         qks = QueryKeys(qks=[StatusPartitionKey.with_obj(status)])
         return self.query_all(
-            credentials=credentials, qks=qks, order_by=OrderByTimeStampPartitionKey
+            credentials=credentials,
+            qks=qks,
+            order_by=OrderByRequestTimeStampPartitionKey,
         )

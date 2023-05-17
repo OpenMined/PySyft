@@ -82,12 +82,29 @@ class MessageService(AbstractService):
         messages = result.ok()
         return messages
 
-    @service_method(path="messages.mark_as_delivered", name="mark_as_delivered")
-    def mark_as_delivered(
+    @service_method(
+        path="messages.get_all_unread",
+        name="get_all_unread",
+    )
+    def get_all_unread(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[List[Message], SyftError]:
+        result = self.stash.get_all_by_verify_key_for_status(
+            context.credentials, verify_key=context.credentials, status=MessageStatus.UNREAD
+        )
+        if result.err():
+            return SyftError(message=str(result.err()))
+        messages = result.ok()
+        return messages
+
+
+    @service_method(path="messages.mark_as_read", name="mark_as_read")
+    def mark_as_read(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[Message, SyftError]:
         result = self.stash.update_message_status(
-            context.credentials, uid=uid, status=MessageStatus.DELIVERED
+            context.credentials, uid=uid, status=MessageStatus.READ
         )
         if result.is_err():
             return SyftError(message=str(result.err()))

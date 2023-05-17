@@ -301,14 +301,16 @@ class KeyValueStorePartition(StorePartition):
         uqks = unique_query_keys.all
         for qk in uqks:
             pk_key, pk_value = qk.key, qk.value
-            ck_col = self.unique_keys[pk_key]
-            ck_col.pop(pk_value, None)
+            # ck_col = self.unique_keys[pk_key]
+            # ck_col.pop(pk_value, None)
+            self.unique_keys[pk_key].pop(pk_value, None)
 
         sqks = searchable_query_keys.all
         for qk in sqks:
             pk_key, pk_value = qk.key, qk.value
-            ck_col = self.searchable_keys[pk_key]
-            ck_col.pop(pk_value, None)
+            # ck_col = self.searchable_keys[pk_key]
+            # ck_col.pop(pk_value, None)
+            self.searchable_keys[pk_key].pop(pk_value, None)
 
     def _find_index_or_search_keys(
         self,
@@ -350,23 +352,6 @@ class KeyValueStorePartition(StorePartition):
         return self._get_all_from_store(
             credentials=credentials, qks=qks, order_by=order_by
         )
-
-    def remove_keys(
-        self,
-        unique_query_keys: QueryKeys,
-        searchable_query_keys: QueryKeys,
-    ) -> None:
-        uqks = unique_query_keys.all
-        for qk in uqks:
-            pk_key, pk_value = qk.key, qk.value
-            ck_col = self.unique_keys[pk_key]
-            ck_col.pop(pk_value, None)
-
-        sqks = searchable_query_keys.all
-        for qk in sqks:
-            pk_key, pk_value = qk.key, qk.value
-            ck_col = self.searchable_keys[pk_key]
-            ck_col.pop(pk_value, None)
 
     def _update(
         self,
@@ -415,13 +400,6 @@ class KeyValueStorePartition(StorePartition):
                 )
 
                 # 🟡 TODO 28: Add locking in this transaction
-
-                # update the object with new data
-                for key, value in obj.to_dict(exclude_none=True).items():
-                    if key == "id":
-                        # protected field
-                        continue
-                    setattr(_original_obj, key, value)
 
                 return Ok(_original_obj)
             else:

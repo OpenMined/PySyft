@@ -19,8 +19,8 @@ from ...types.uid import UID
 
 @serializable()
 class MessageStatus(Enum):
-    UNDELIVERED = 0
-    DELIVERED = 1
+    UNREAD = 0
+    READ = 1
 
 
 class MessageExpiryStatus(Enum):
@@ -38,7 +38,7 @@ class Message(SyftObject):
     from_user_verify_key: SyftVerifyKey
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
-    status: MessageStatus = MessageStatus.UNDELIVERED
+    status: MessageStatus = MessageStatus.UNREAD
     linked_obj: Optional[LinkedObject]
 
     __attr_searchable__ = [

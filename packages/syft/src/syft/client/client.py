@@ -47,6 +47,7 @@ from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
 from .connection import NodeConnection
+from ..service.message.message_service import MessageStatus
 
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
@@ -419,7 +420,7 @@ class SyftClient:
     @property
     def notifications(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "messages"):
-            return self.api.services.messages
+            return self.api.services.messages.get_all_unread()
         return None
 
     @property
