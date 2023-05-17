@@ -353,6 +353,55 @@ def clean(location: str) -> None:
     type=str,
     help="Set root password of node",
 )
+@click.option(
+    "--azure-resource-group",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Resource Group",
+)
+@click.option(
+    "--azure-location",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Resource Group Location",
+)
+@click.option(
+    "--azure-size",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure VM Size",
+)
+@click.option(
+    "--azure-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure VM Username",
+)
+@click.option(
+    "--azure-key-path",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Key Path",
+)
+@click.option(
+    "--azure-repo",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Source Repo",
+)
+@click.option(
+    "--azure-branch",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Source Branch",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
