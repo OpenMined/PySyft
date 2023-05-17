@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../constants';
 
 export async function getMetadata() {
   try {
-    const res = await ky.get(`${API_BASE_URL}/new/metadata_capnp`);
+    const res = await ky.get(`${API_BASE_URL}/metadata_capnp`);
 
     const metadata = await deserialize(res);
 

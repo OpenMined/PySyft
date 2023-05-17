@@ -60,7 +60,7 @@ vars:
   - name: JAX_ENABLE_X64
     value: "True"
   - name: VITE_PUBLIC_API_BASE_URL
-    value: "/api/v1"
+    value: "/api/v2"
   - name: USE_NEW_SERVICE
     value: "True"
   - name: DOCKER_IMAGE_SEAWEEDFS
