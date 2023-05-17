@@ -121,7 +121,7 @@ def get_compose_src_path(
 ) -> str:
     grid_path = GRID_SRC_PATH()
     if EDITABLE_MODE and template_location is None:
-        if node_type == "enclave":
+        if node_type.input == "enclave":
             return grid_path + "/worker"
         else:
             return grid_path
