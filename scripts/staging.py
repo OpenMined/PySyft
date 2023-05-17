@@ -139,7 +139,9 @@ def get_repo_checkout(node: Dict) -> str:
 def run_remote_shell(node: Dict, cmd: str) -> Optional[str]:
     try:
         ip = node["ip"]
-        ssh_cmd = f"ssh -i {KEY} azureuser@{ip}"
+        ssh_cmd = (
+            f"ssh -o LogLevel=ERROR -o StrictHostKeyChecking=no -i {KEY} azureuser@{ip}"
+        )
         shell_cmd = f'{ssh_cmd} "{cmd}"'
         print("Running:", shell_cmd)
         return shell(shell_cmd)
