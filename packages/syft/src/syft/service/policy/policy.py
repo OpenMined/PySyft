@@ -27,6 +27,7 @@ from result import Ok
 from ...abstract_node import NodeType
 from ...client.api import NodeView
 from ...node.credentials import SyftVerifyKey
+from ...serde.recursive import recursive_serde_register
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
@@ -137,6 +138,9 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     api_list = APIRegistry.get_all_api()
     output_kwargs = {}
     for k, v in kwargs.items():
+        if isinstance(v, VariableInput):
+            output_kwargs[k] = v
+            continue
         uid = v
         if isinstance(v, ActionObject):
             uid = v.id
@@ -270,6 +274,38 @@ class ExactMatch(InputPolicy):
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         )
+        results = retrieve_from_db(
+            code_item_id=code_item_id,
+            allowed_inputs=allowed_inputs,
+            context=context,
+        )
+        return results
+
+
+class VariableInput(SyftObject):
+    __canonical_name__ = "VariableInput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+@serializable()
+class Match(InputPolicy):
+    # version
+    __canonical_name__ = "Match"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def filter_kwargs(
+        self, kwargs: Dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
+    ) -> Dict[Any, Any]:
+        allowed_inputs = allowed_ids_only(
+            allowed_inputs=self.inputs, kwargs=kwargs, context=context
+        )
+        variable_inputs = {
+            k: kwargs[k] for k, v in self.inputs.items() if isinstance(v, VariableInput)
+        }
+        allowed_inputs = {**allowed_inputs, **variable_inputs}
         results = retrieve_from_db(
             code_item_id=code_item_id,
             allowed_inputs=allowed_inputs,
@@ -715,3 +751,6 @@ def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
     policy_object = policy_class()
     policy_object.__user_init__(**init_args)
     return policy_object
+
+
+recursive_serde_register(VariableInput)

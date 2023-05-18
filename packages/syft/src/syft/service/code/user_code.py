@@ -45,6 +45,7 @@ from ..policy.policy import OutputPolicy
 from ..policy.policy import Policy
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
+from ..policy.policy import VariableInput
 from ..policy.policy import init_policy
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
@@ -488,8 +489,11 @@ def new_check_code(context: TransformContext) -> TransformContext:
         input_keys = list(input_kwargs.keys())
     else:
         input_keys = []
-        for d in input_kwargs.values():
-            input_keys += d.keys()
+        for k, d in input_kwargs.items():
+            if not isinstance(d, VariableInput):
+                input_keys += d.keys()
+            else:
+                input_keys += [k]
 
     processed_code = process_code(
         raw_code=context.output["raw_code"],

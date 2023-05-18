@@ -5,6 +5,7 @@ from typing import List
 from typing import Union
 
 # third party
+from result import Err
 from result import OkErr
 
 # relative
@@ -159,6 +160,13 @@ class UserCodeService(AbstractService):
             code_item = result.ok()
             status = code_item.status
 
+            root_context = AuthedServiceContext(
+                credentials=self.stash.partition.root_verify_key,
+                id=context.id,
+                node=context.node,
+                role=context.role,
+            )
+
             # Check if we are allowed to execute the code
             if status.for_context(context) != UserCodeStatus.EXECUTE:
                 if status.for_context(context) == UserCodeStatus.SUBMITTED:
@@ -179,6 +187,7 @@ class UserCodeService(AbstractService):
             if not is_valid:
                 if len(output_policy.output_history) > 0:
                     return get_outputs(
+                        root_context,
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
@@ -186,8 +195,14 @@ class UserCodeService(AbstractService):
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
+            root_context = AuthedServiceContext(
+                credentials=self.stash.partition.root_verify_key,
+                id=context.id,
+                node=context.node,
+                role=context.role,
+            )
             result = action_service._user_code_execute(
-                context, code_item, filtered_kwargs
+                root_context, code_item, filtered_kwargs
             )
             if isinstance(result, str):
                 return SyftError(message=result)
@@ -206,7 +221,11 @@ class UserCodeService(AbstractService):
             return SyftError(message=f"Failed to run. {e}")
 
 
-def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) -> Any:
+def get_outputs(
+    root_context: AuthedServiceContext,
+    context: AuthedServiceContext,
+    output_history: OutputHistory,
+) -> Any:
     # relative
     from ...service.action.action_object import TwinMode
 
@@ -214,17 +233,21 @@ def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) ->
         if len(output_history.outputs) == 0:
             return None
         outputs = []
-        for output_id in output_history.outputs:
-            action_service = context.node.get_service("actionservice")
-            result = action_service.get(
-                context, uid=output_id, twin_mode=TwinMode.PRIVATE
-            )
-            if isinstance(result, OkErr):
-                result = result.value
-            outputs.append(result)
-        if len(outputs) == 1:
-            return outputs[0]
-        return outputs
+        # TODO: outputhistory should also verify the inputs
+        if output_history.executing_user_verify_key == context.credentials:
+            for output_id in output_history.outputs:
+                action_service = context.node.get_service("actionservice")
+                result = action_service.get(
+                    root_context, uid=output_id, twin_mode=TwinMode.PRIVATE
+                )
+                if isinstance(result, OkErr):
+                    result = result.value
+                outputs.append(result)
+            if len(outputs) == 1:
+                return outputs[0]
+            return outputs
+        else:
+            return Err("Output policy not approved")
     else:
         raise NotImplementedError
 
