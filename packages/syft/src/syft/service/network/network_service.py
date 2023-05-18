@@ -330,12 +330,15 @@ class NetworkService(AbstractService):
         # check root user is asking for the exchange
 
         remote_client = remote_node_peer.client_with_context(context=context)
-        remote_res = remote_client.api.services.network.add_peer(self_node_peer)
+        random_challenge = secrets.token_bytes(16)
+        remote_res = remote_client.api.services.network.add_peer(
+            self_node_peer, random_challenge
+        )
 
         if isinstance(remote_res, SyftError):
             return remote_res
 
-        random_challenge, challenge_signature = remote_res
+        challenge_signature = remote_res
         verify_key = remote_node_peer.verify_key
 
         # Verifying if the challenge is valid
@@ -350,8 +353,8 @@ class NetworkService(AbstractService):
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
     def add_peer(
-        self, context: AuthedServiceContext, peer: NodePeer
-    ) -> Union[List, SyftError]:
+        self, context: AuthedServiceContext, peer: NodePeer, challenge: bytes
+    ) -> Union[bytes, SyftError]:
         """Add a Network Node Peer"""
         # save the peer and verify the key matches the message signer
         if peer.verify_key != context.credentials:
@@ -368,30 +371,79 @@ class NetworkService(AbstractService):
 
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify
-        random_challenge = secrets.token_bytes(16)
+
         challenge_signature = context.node.signing_key.signing_key.sign(
-            random_challenge
+            challenge
         ).signature
-        return [random_challenge, challenge_signature]
+        return challenge_signature
+
+    @service_method(path="network.ping", name="ping")
+    def ping(
+        self, context: AuthedServiceContext, challenge: bytes
+    ) -> Union[bytes, SyftError]:
+        """To check alivesness/authenticity of a peer"""
+
+        # Only the root user can ping the node to check its state
+        if context.node.verify_key != context.credentials:
+            return SyftError(message=("Only the root user can access ping endpoint"))
+
+        # this way they can match up who we are with who they think we are
+        # Sending a signed messages for the peer to verify
+        challenge_signature = context.node.signing_key.signing_key.sign(
+            challenge
+        ).signature
+
+        return challenge_signature
+
+    @service_method(path="network.add_route", name="add_route", roles=GUEST_ROLE_LEVEL)
+    def add_route(
+        self, context: AuthedServiceContext, route: NodeRoute
+    ) -> Union[List, SyftError]:
+        """Add a route to node as part of self discovery"""
+        # Step 1: Check if the given route is able to reach the same
+        # Step 2: Verify the route with digital signatures
+        client = route.client_with_context(context=context)
+
+        # generating a random challenge
+        random_challenge = secrets.token_bytes(16)
+        challenge_signature = client.api.services.network.ping(random_challenge)
+
+        if isinstance(challenge_signature, SyftError):
+            return challenge_signature
+
+        # Verifying if the challenge is valid
+        context.node.verify_key.verify_key.verify(random_challenge, challenge_signature)
+
+        # check if root user has a peer of itself
+        peer = self.stash.get_for_verify_key(
+            context.node.verify_key, context.credentials
+        )
+        if peer.is_err():
+            return SyftError(message=peer.err())
+        peer = peer.ok()
+
+        if peer is None:
+            peer = context.node.metadata.to(NodePeer)
+
+        peer.update_routes([route])
+
+        result = self.stash.update_peer(context.node.verify_key, peer)
+
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        return SyftSuccess(message="Route Added to Node")
 
     @service_method(path="network.add_route_for", name="add_route_for")
     def add_route_for(
         self,
         context: AuthedServiceContext,
         route: NodeRoute,
-        peer: Optional[NodePeer] = None,
-        client: Optional[SyftClient] = None,
+        peer: NodePeer,
     ) -> Union[SyftSuccess, SyftError]:
         """Add Route for this Node to another Node"""
         # check root user is asking for the exchange
-        if isinstance(client, SyftClient):
-            remote_peer = NodePeer.from_client(client)
-        else:
-            remote_peer = peer
-        if remote_peer is None:
-            return SyftError("exchange_credentials_with requires peer or client")
-
-        client = remote_peer.client_with_context(context=context)
+        client = peer.client_with_context(context=context)
         result = client.api.services.network.verify_route(route)
 
         if not isinstance(result, SyftSuccess):
@@ -413,12 +465,10 @@ class NetworkService(AbstractService):
             return SyftError(message=peer.err())
         peer = peer.ok()
 
-        client = route.client_with_context(context=context)
-        metadata = client.metadata.to(NodeMetadata)
-        if peer.verify_key != metadata.verify_key:
+        if peer.verify_key != context.credentials:
             return SyftError(
                 message=(
-                    f"verify_key: {metadata.verify_key} at route {route} "
+                    f"verify_key: {context.credentials} at route {route} "
                     f"does not match listed peer: {peer}"
                 )
             )
