@@ -65,10 +65,10 @@ class MessageService(AbstractService):
         messages = result.ok()
         return messages
 
-    @service_method(
-        path="messages.get_all_for_status",
-        name="get_all_for_status",
-    )
+    # get_all_read and unread cover the same functionality currently as
+    # get_all_for_status. However, there may be more statuses added in the future,
+    # so we are keeping the more generic get_all_for_status method.
+    @service_method(path="messages.get_all_for_status", name="get_all_for_status")
     def get_all_for_status(
         self,
         context: AuthedServiceContext,
@@ -82,22 +82,35 @@ class MessageService(AbstractService):
         messages = result.ok()
         return messages
 
-    @service_method(
-        path="messages.get_all_unread",
-        name="get_all_unread",
-    )
-    def get_all_unread(
+    @service_method(path="messages.get_all_read", name="get_all_read")
+    def get_all_read(
         self,
         context: AuthedServiceContext,
     ) -> Union[List[Message], SyftError]:
         result = self.stash.get_all_by_verify_key_for_status(
-            context.credentials, verify_key=context.credentials, status=MessageStatus.UNREAD
+            context.credentials,
+            verify_key=context.credentials,
+            status=MessageStatus.READ,
         )
         if result.err():
             return SyftError(message=str(result.err()))
         messages = result.ok()
         return messages
 
+    @service_method(path="messages.get_all_unread", name="get_all_unread")
+    def get_all_unread(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[List[Message], SyftError]:
+        result = self.stash.get_all_by_verify_key_for_status(
+            context.credentials,
+            verify_key=context.credentials,
+            status=MessageStatus.UNREAD,
+        )
+        if result.err():
+            return SyftError(message=str(result.err()))
+        messages = result.ok()
+        return messages
 
     @service_method(path="messages.mark_as_read", name="mark_as_read")
     def mark_as_read(
@@ -108,7 +121,17 @@ class MessageService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
+        return result.ok()
 
+    @service_method(path="messages.mark_as_unread", name="mark_as_unread")
+    def mark_as_unread(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[Message, SyftError]:
+        result = self.stash.update_message_status(
+            context.credentials, uid=uid, status=MessageStatus.UNREAD
+        )
+        if result.is_err():
+            return SyftError(message=str(result.err()))
         return result.ok()
 
     @service_method(path="messages.resolve_object", name="resolve_object")

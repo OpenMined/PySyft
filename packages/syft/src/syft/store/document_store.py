@@ -560,7 +560,6 @@ class BaseStash:
         qks: Union[QueryKey, QueryKeys],
         order_by: Optional[PartitionKey] = None,
     ) -> Result[List[BaseStash.object_type], str]:
-
         if isinstance(qks, QueryKey):
             qks = QueryKeys(qks=qks)
 

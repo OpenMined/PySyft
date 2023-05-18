@@ -47,7 +47,6 @@ from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
 from .connection import NodeConnection
-from ..service.message.message_service import MessageStatus
 
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
