@@ -41,6 +41,7 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
+from ..network.network_service import NodePeer
 from ..request.request import EnumMutation
 from ..request.request import Request
 from ..request.request import SubmitRequest
@@ -681,6 +682,7 @@ class NewProject(SyftObject):
     shareholders: List[NodeIdentity]
     project_permissions: Set[str]
     state_sync_leader: NodeIdentity
+    leader_node_route: Optional[NodePeer]
     consensus_model: ConsensusModel
     store: Dict[UID, Dict[UID, SyftObject]] = {}
     permissions: Dict[UID, Dict[UID, Set[str]]] = {}
@@ -1111,9 +1113,10 @@ class NewProjectSubmit(SyftObject):
                 raise Exception(
                     f"Shareholders should be either SyftClient or NodeIdentity received: {type(obj)}"
                 )
-        route_exchange = cls.exchange_routes(objs)
-        if isinstance(route_exchange, SyftError):
-            raise SyftException(route_exchange)
+        if isinstance(objs[0], SyftClient):
+            route_exchange = cls.exchange_routes(objs)
+            if isinstance(route_exchange, SyftError):
+                raise SyftException(route_exchange)
 
         return shareholders
 

@@ -1,4 +1,5 @@
 # stdlib
+import secrets
 from typing import Any
 from typing import Callable
 from typing import List
@@ -320,49 +321,37 @@ class NetworkService(AbstractService):
     def exchange_credentials_with(
         self,
         context: AuthedServiceContext,
-        peer: Optional[NodePeer] = None,
-        client: Optional[SyftClient] = None,
+        self_node_peer: NodePeer,
+        remote_node_peer: NodePeer,
     ) -> Union[SyftSuccess, SyftError]:
         """Exchange Credentials With Another Node"""
+        # Q,TODO: What if the Data Scientist could give his own custom routes to the node?
+        # A node should be able to verify the self node peer by a ping service to itself
         # check root user is asking for the exchange
-        if isinstance(client, SyftClient):
-            remote_peer = NodePeer.from_client(client)
-        else:
-            remote_peer = peer
-        if remote_peer is None:
-            return SyftError("exchange_credentials_with requires peer or client")
 
-        # tell the remote peer our details
-        if not context.node:
-            return SyftError(f"{type(context)} has no node")
-        self_metadata = context.node.metadata
-        self_node_peer = self_metadata.to(NodePeer)
+        remote_client = remote_node_peer.client_with_context(context=context)
+        remote_res = remote_client.api.services.network.add_peer(self_node_peer)
 
-        # switch to the nodes signing key
-        client = remote_peer.client_with_context(context=context)
-        remote_peer_metadata = client.api.services.network.add_peer(self_node_peer)
+        if isinstance(remote_res, SyftError):
+            return remote_res
 
-        if remote_peer_metadata.verify_key != remote_peer.verify_key:
-            return SyftError(
-                (
-                    f"Response from remote peer {remote_peer_metadata} "
-                    f"does not match initial peer {remote_peer}"
-                )
-            )
+        random_challenge, challenge_signature = remote_res
+        verify_key = remote_node_peer.verify_key
+
+        # Verifying if the challenge is valid
+        verify_key.verify_key.verify(random_challenge, challenge_signature)
 
         # save the remote peer for later
-        result = self.stash.update_peer(context.node.verify_key, remote_peer)
+        result = self.stash.update_peer(context.node.verify_key, remote_node_peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Credentials Exchanged")
+        return SyftSuccess(message="Routes Exchanged")
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
     def add_peer(
         self, context: AuthedServiceContext, peer: NodePeer
-    ) -> Union[NodeMetadata, SyftError]:
+    ) -> Union[List, SyftError]:
         """Add a Network Node Peer"""
         # save the peer and verify the key matches the message signer
         if peer.verify_key != context.credentials:
@@ -376,9 +365,14 @@ class NetworkService(AbstractService):
         result = self.stash.update_peer(context.credentials, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
+
         # this way they can match up who we are with who they think we are
-        metadata = context.node.metadata
-        return metadata
+        # Sending a signed messages for the peer to verify
+        random_challenge = secrets.token_bytes(16)
+        challenge_signature = context.node.signing_key.signing_key.sign(
+            random_challenge
+        ).signature
+        return [random_challenge, challenge_signature]
 
     @service_method(path="network.add_route_for", name="add_route_for")
     def add_route_for(

@@ -16,6 +16,7 @@ from ..context import AuthedServiceContext
 from ..message.message_service import CreateMessage
 from ..message.message_service import Message
 from ..message.message_service import MessageService
+from ..network.network_service import NodePeer
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -115,8 +116,33 @@ class NewProjectService(AbstractService):
         """Start a Project"""
         try:
             project.id = project_id
-            project_obj = project.to(NewProject, context=context)
-            # project_obj.id = project_id
+            project_obj: NewProject = project.to(NewProject, context=context)
+
+            # Updating the leader node route of the project object
+            # In case the current node, is the leader, they would input their node route
+            # For the followers, they would check if the leader is their node peer
+            # using the leader's verify_key
+            # If the follower do not have the leader as its peer in its routes
+            # They would raise as error
+            leader_node = project_obj.state_sync_leader
+
+            # If the current node is a follower
+            if leader_node.verify_key != context.node.verify_key:
+                network_service = context.node.get_service("networkservice")
+                peer = network_service.stash.get_for_verify_key(
+                    credentials=context.node.verify_key,
+                    verify_key=leader_node.verify_key,
+                )
+                if peer.is_err():
+                    return SyftError(
+                        message=f"Leader node does not have peer {leader_node.name}-{leader_node.id}"
+                        + " Kindly exchange routes with the peer"
+                    )
+                leader_node_route = peer.ok()
+            else:
+                leader_node_route = context.node.metadata.to(NodePeer)
+
+            project_obj.leader_node_route = leader_node_route
 
             result = self.stash.set(context.credentials, project_obj)
             if result.is_err():
