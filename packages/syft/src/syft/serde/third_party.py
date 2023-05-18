@@ -180,7 +180,6 @@ recursive_serde_register(zmq._Context)
 NOTHING = None
 
 
-# TODO: debug serializing after updating a node
 def serialize_networkx_graph(graph: DiGraph) -> bytes:
     graph_dict: dict = nx.node_link_data(graph)
     return serialize(graph_dict, to_bytes=True)
@@ -196,3 +195,18 @@ recursive_serde_register(
     serialize=serialize_networkx_graph,
     deserialize=deserialize_networkx_graph,
 )
+
+
+# def serialize_custom_policy(custom_policy: CustomPolicy) -> bytes:
+#     return serialize(custom_policy, to_bytes=True)
+
+
+# def deserialize_custom_policy(buf: bytes) -> CustomPolicy:
+#     return deserialize(buf, from_bytes=True)
+
+
+# recursive_serde_register(
+#     CustomPolicy,
+#     serialize=serialize_custom_policy,
+#     deserialize=deserialize_custom_policy,
+# )
