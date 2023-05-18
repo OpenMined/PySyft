@@ -27,6 +27,7 @@ from result import Ok
 from ...abstract_node import NodeType
 from ...client.api import NodeView
 from ...node.credentials import SyftVerifyKey
+from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
@@ -362,6 +363,7 @@ class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
 SingleExecutionExactOutput = OutputPolicyExecuteOnce
 
 
+@serializable()
 class CustomPolicy(type):
     # capture the init_kwargs transparently
     def __call__(cls, *args: Any, **kwargs: Any) -> None:
@@ -370,6 +372,10 @@ class CustomPolicy(type):
         return obj
 
 
+recursive_serde_register_type(CustomPolicy)
+
+
+@serializable()
 class CustomOutputPolicy(metaclass=CustomPolicy):
     def apply_output(
         self,
