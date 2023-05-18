@@ -751,7 +751,7 @@ def create_admin_new(
     try:
         user_stash = UserStash(store=node.document_store)
         row_exists = user_stash.get_by_email(
-            credentials=node.signing_key.verify_key, email=email
+            credentials=node.verify_key, email=email
         ).ok()
         if row_exists:
             return None
@@ -768,7 +768,7 @@ def create_admin_new(
             user = create_user.to(User)
             user.signing_key = node.signing_key
             user.verify_key = user.signing_key.verify_key
-            result = user_stash.set(credentials=node.signing_key.verify_key, user=user)
+            result = user_stash.set(credentials=node.verify_key, user=user)
             if result.is_ok():
                 return result.ok()
             else:

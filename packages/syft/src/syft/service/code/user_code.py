@@ -129,7 +129,7 @@ class UserCodeStatusContext:
         elif context.node.node_type == NodeType.DOMAIN:
             node_view = NodeView(
                 node_name=context.node.name,
-                verify_key=context.node.signing_key.verify_key,
+                verify_key=context.node.verify_key,
             )
             if node_view in self.base_dict:
                 return self.base_dict[node_view]
@@ -567,7 +567,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name, verify_key=context.node.verify_key
         )
         if node_view in input_keys:
             context.output["status"] = UserCodeStatusContext(

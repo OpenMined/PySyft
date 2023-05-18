@@ -18,3 +18,6 @@ class ActionDataEmpty(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: Optional[Type] = Any
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}: {self.syft_internal_type.__name__}"

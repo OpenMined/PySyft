@@ -30,7 +30,7 @@ class MetadataService(AbstractService):
     @service_method(path="metadata.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Metadata"""
-        result = self.stash.get_all(context.node.signing_key.verify_key)
+        result = self.stash.get_all(context.node.verify_key)
         if result.is_ok():
             metadata = result.ok()
             # check if the metadata list is empty

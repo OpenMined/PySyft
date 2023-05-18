@@ -22,6 +22,7 @@ from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ..response import SyftSuccess
+from .action_object import ActionObject
 from .action_object import TwinMode
 from .action_permissions import ActionObjectEXECUTE
 from .action_permissions import ActionObjectOWNER
@@ -98,6 +99,12 @@ class KeyValueActionStore(ActionStore):
                     # we patch the real id on it so we can keep using the twin
                     obj.id = uid
                 else:
+                    # TODO: should return ActionDataEmpty not the real data
+                    obj = ActionObject.empty(
+                        syft_internal_type=type(obj),
+                        id=obj.id,
+                        syft_lineage_id=obj.syft_lineage_id,
+                    )
                     obj.syft_twin_type = TwinMode.NONE
                 obj.syft_point_to(node_uid)
                 return Ok(obj)

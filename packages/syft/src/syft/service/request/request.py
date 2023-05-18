@@ -443,7 +443,7 @@ class UserCodeStatusChange(Change):
         res = obj.status.mutate(
             value=self.value,
             node_name=context.node.name,
-            verify_key=context.node.signing_key.verify_key,
+            verify_key=context.node.verify_key,
         )
         if res.is_ok():
             obj.status = res.ok()

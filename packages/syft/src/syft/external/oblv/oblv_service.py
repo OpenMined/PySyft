@@ -390,7 +390,7 @@ class OblvService(AbstractService):
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
         user_code = user_code_service.stash.get_by_uid(
-            context.node.signing_key.verify_key, uid=user_code_id
+            context.node.verify_key, uid=user_code_id
         )
         if user_code.is_err():
             return SyftError(
