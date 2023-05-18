@@ -1096,6 +1096,9 @@ class NewProjectSubmit(SyftObject):
 
     @validator("shareholders", pre=True)
     def make_shareholders(cls, objs: List[SyftClient]) -> List[NodeIdentity]:
+        if not objs:
+            raise SyftException("Shareholders cannot be empty")
+
         shareholders = []
         for obj in objs:
             if isinstance(obj, NodeIdentity):
@@ -1108,7 +1111,39 @@ class NewProjectSubmit(SyftObject):
                 raise Exception(
                     f"Shareholders should be either SyftClient or NodeIdentity received: {type(obj)}"
                 )
+        route_exchange = cls.exchange_routes(objs)
+        if isinstance(route_exchange, SyftError):
+            raise SyftException(route_exchange)
+
         return shareholders
+
+    @staticmethod
+    def exchange_routes(
+        shareholders: List[SyftClient],
+    ) -> Union[SyftSuccess, SyftError]:
+        # Since we are implementing a leader based system
+        # To be able to optimize exchanging routes.
+        # We require only the leader to exchange routes with all the shareholders
+        # Meaning if we could guarantee, that the leader node is able to reach the shareholders
+        # the project events could be broadcasted to all the shareholders
+
+        # Currently we are assuming that the first shareholder is the leader
+        # This would be changed in our future leaderless approach
+        leader_client = shareholders[0]
+
+        for follower_client in shareholders[1::]:
+            print()
+            print(
+                f"Exchanging Routes 📡: {leader_client.name} --- {follower_client.name}",
+                end="",
+            )
+            result = leader_client.exchange_route(follower_client)
+            if isinstance(result, SyftError):
+                return result
+            print(" ✅")
+            print()
+
+        return SyftSuccess(message="Successfully Exchaged Routes")
 
     def start(self) -> NewProject:
         # Creating a new unique UID to be used by all shareholders
