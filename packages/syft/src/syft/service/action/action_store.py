@@ -99,12 +99,19 @@ class KeyValueActionStore(ActionStore):
                     # we patch the real id on it so we can keep using the twin
                     obj.id = uid
                 else:
-                    # TODO: should return ActionDataEmpty not the real data
-                    obj = ActionObject.empty(
-                        syft_internal_type=type(obj),
-                        id=obj.id,
-                        syft_lineage_id=obj.syft_lineage_id,
-                    )
+                    # TODO: write tests for this situation
+                    read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+                    if not self.has_permission(read_permission):
+                        # there is no mock and the user has no permission so return
+                        # ActionDataEmpty which can still do basic functions
+                        obj_type = type(obj)
+                        if isinstance(obj, ActionObject):
+                            obj_type = type(obj.syft_action_data)
+                        obj = ActionObject.empty(
+                            syft_internal_type=obj_type,
+                            id=obj.id,
+                            syft_lineage_id=obj.syft_lineage_id,
+                        )
                     obj.syft_twin_type = TwinMode.NONE
                 obj.syft_point_to(node_uid)
                 return Ok(obj)

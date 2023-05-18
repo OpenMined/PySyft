@@ -198,16 +198,10 @@ def retrieve_from_db(
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
 
-    # getting stuff from the db needs to be root user
-    # TODO: we could use something like ChangeContext with approving_user
-    root_context = AuthedServiceContext(
-        node=context.node, credentials=context.node.verify_key, role=context.role
-    )
-
     if context.node.node_type == NodeType.DOMAIN:
         for var_name, arg_id in allowed_inputs.items():
             kwarg_value = action_service.get(
-                context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
+                context=context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if kwarg_value.is_err():
                 return kwarg_value
@@ -216,7 +210,7 @@ def retrieve_from_db(
     elif context.node.node_type == NodeType.ENCLAVE:
         # TODO 🟣 Temporarily added skip permission arguments for enclave
         # until permissions are fully integrated
-        dict_object = action_service.get(context=root_context, uid=code_item_id)
+        dict_object = action_service.get(context=context, uid=code_item_id)
         if dict_object.is_err():
             return dict_object
         for value in dict_object.ok().base_dict.values():

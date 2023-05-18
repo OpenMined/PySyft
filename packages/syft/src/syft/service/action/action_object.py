@@ -427,7 +427,6 @@ class ActionObject(SyftObject):
     _syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
-    # syft_dont_wrap_attrs = ["shape"]
 
     @property
     def is_pointer(self) -> bool:
@@ -1331,6 +1330,12 @@ class AnyActionObject(ActionObject):
 
     def __int__(self) -> float:
         return int(self.syft_action_data)
+
+    def __str__(self) -> str:
+        return str(self.syft_action_data)
+
+    def __repr__(self) -> str:
+        return str(repr(self.syft_action_data))
 
 
 action_types[Any] = AnyActionObject
