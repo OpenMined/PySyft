@@ -1,5 +1,7 @@
 FROM node:18-alpine as base
 
+ARG VITE_PUBLIC_API_BASE_URL
+ENV VITE_PUBLIC_API_BASE_URL ${VITE_PUBLIC_API_BASE_URL}
 ENV NODE_TYPE domain
 
 WORKDIR /app
@@ -13,6 +15,13 @@ COPY pnpm-lock.yaml ./
 FROM base AS dependencies
 
 RUN pnpm i --frozen-lockfile
+
+FROM dependencies as grid-ui-tests
+COPY vite.config.ts ./
+COPY ./tests ./tests
+COPY ./src/ ./src
+
+CMD pnpm test:unit
 
 FROM dependencies as grid-ui-development
 

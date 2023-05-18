@@ -222,7 +222,7 @@ class UserCodeService(AbstractService):
 
 def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) -> Any:
     # relative
-    from ...service.action.action_service import TwinMode
+    from ...service.action.action_object import TwinMode
 
     if isinstance(output_history.outputs, list):
         if len(output_history.outputs) == 0:
