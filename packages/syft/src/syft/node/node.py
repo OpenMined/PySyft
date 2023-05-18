@@ -50,6 +50,7 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.syft_file.syft_file_service import SyftFileService
 from ..service.model.model_service import ModelInterfaceService
 from ..service.message.message_service import MessageService
 from ..service.metadata.metadata_service import MetadataService
@@ -201,6 +202,7 @@ class Node(AbstractNode):
                 MetadataService,
                 ActionService,
                 DatasetService,
+                SyftFileService,
                 ModelInterfaceService,
                 UserCodeService,
                 RequestService,
@@ -418,6 +420,7 @@ class Node(AbstractNode):
                 UserService,
                 MetadataService,
                 DatasetService,
+                SyftFileService,
                 ModelInterfaceService,
                 UserCodeService,
                 RequestService,

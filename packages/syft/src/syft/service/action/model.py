@@ -10,6 +10,7 @@ from .action_types import action_types
 from typing import Union
 from transformers.models.gpt2.tokenization_gpt2_fast import GPT2TokenizerFast
 from transformers.pipelines.text_generation import TextGenerationPipeline
+from typing_extensions import Self
 
 class ModelPointer:
     pass
@@ -23,6 +24,13 @@ class ModelObject(ActionObject):
     syft_pointer_type = ModelPointer
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     # syft_dont_wrap_attrs = ["dtype"]
+    
+    @staticmethod
+    def from_model(model: Any, node) -> Self:
+        
+        
+        return ModelObject(syft_action_data=new_model)
+        
 
 action_types[GPT2TokenizerFast] = ModelObject
 action_types[TextGenerationPipeline] = ModelObject

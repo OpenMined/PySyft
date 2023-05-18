@@ -3,6 +3,8 @@ from typing import List
 from typing import Any
 from enum import Enum
 from typing import Union
+from typing import ClassVar
+from typing import Type
 from typing import Callable
 
 from ...serde.serializable import serializable
@@ -18,6 +20,8 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import add_current_date
 from ...types.transforms import validate_url
+from ...types.syft_file import ModelConfig
+from typing_extensions import Self
 
 @serializable()
 class Model(SyftObject):
@@ -30,6 +34,8 @@ class Model(SyftObject):
     name: str
     description: Optional[str]
     contributors: List[Contributor] = []
+    model_config: ModelConfig
+    model_type: ClassVar[Type[Any]] = None
     
     def _repr_markdown_(self) -> str:
         _repr_str = f"Model: {self.name}\n"
@@ -86,6 +92,17 @@ class CreateModel(SyftObject):
             model = ModelObject(syft_action_data=model)
         self.model = model
 
+    @staticmethod
+    def from_model(model: Any, name=str) -> Self:
+        pass
+        # model_type = type(model)
+        
+        # obj_model = 
+        
+        # return CreateModel(
+        #     action_id=obj_model.id,
+        #     name=name,
+        # )
 
 class ModelUpdate:
     pass
