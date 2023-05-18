@@ -14,6 +14,7 @@ from .model_stash import ModelInterfaceStash
 from ..context import AuthedServiceContext
 from .model import CreateModelInterface
 from .model import ModelInterface
+from .model import Model
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..action.action_permissions import ActionObjectPermission
@@ -30,9 +31,9 @@ class ModelInterfaceService(AbstractService):
     
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = ModelInterfaceService(store=store)
+        self.stash = ModelInterfaceStash(store=store)
     
-    @service_method(path="model_interface.add", name="add", role=DATA_OWNER_ROLE_LEVEL)
+    @service_method(path="model_interface.add", name="add", roles=DATA_OWNER_ROLE_LEVEL)
     def add(
         self, context: AuthedServiceContext, model_interface: CreateModelInterface
     ) -> Union[SyftSuccess, SyftError]:
@@ -64,18 +65,60 @@ class ModelInterfaceService(AbstractService):
             return results
         return SyftError(message=result.err())
     
-    def get_by_id():
-        pass
+    @service_method(path="model_interface.get_by_id", name="get_by_id")
+    def get_by_id(
+        self, context: AuthedServiceContext, uid:UID
+    ) -> Union[SyftSuccess, SyftError]:
+        """Get Model Interface by id"""
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
+        if result.is_ok():
+            model_interface = result.ok()
+            model_interface.node_uid = context.node.id
+            return model_interface
+        return SyftError(message=result.err())
     
-    def get_by_action_id():
-        pass
+    @service_method(path="model_interface.get_by_action_id", name="get_by_action_id")
+    def get_by_action_id(
+        self, context: AuthedServiceContext, uid:UID
+    ) -> Union[List[ModelInterface], SyftError]:
+        """"""
+        result = self.stash.search_action_ids(context.credentials, uid=uid)
+        if result.is_ok():
+            model_interfacess = result.ok()
+            for model_interfaces in model_interfacess:
+                model_interfaces.node_uid = model_interfaces.node.id
+            return model_interfacess
+        return SyftError(message=result.err())
     
-    def get_models_by_action_id():
-        pass
+    @service_method(
+        path="model_interface.get_models_by_action_id", name="get_models_by_action_id"
+    )
+    def get_models_by_action_id(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[List[Model], SyftError]:
+        model_interfaces = self.get_by_action_id(context=context, uid=uid)
+        models = []
+        if issubclass(model_interfaces, list):
+            for model_interface in model_interfaces:
+                for model in model_interface.model_list:
+                    models.append(model)
+        elif isinstance(model_interfaces, SyftError):
+            return model_interfaces
+        return models
 
-    def search():
-        pass
-    
+    @service_method(path="model_interface.search", name="search")
+    def search(
+        self, context: AuthedServiceContext, name: str 
+    )-> Union[List[ModelInterface], SyftError]:
+        """Search a Model Interface by name"""
+        results = self.get_all(context)
+
+        return (
+            results
+            if isinstance(results, SyftError)
+            else [model for model in results if name in model.name]
+        )
+
     def delete_model_interface():
         pass
     

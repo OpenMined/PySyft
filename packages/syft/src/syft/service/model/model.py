@@ -145,7 +145,7 @@ class ModelInterface(SyftObject):
             )
         return client
     
-@serializable
+@serializable()
 class CreateModelInterface(ModelInterface):
     __canonical_name__ = "CreateModelInterface"
     __version__ = SYFT_OBJECT_VERSION_1

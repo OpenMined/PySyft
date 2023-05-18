@@ -50,6 +50,7 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.model.model_service import ModelInterfaceService
 from ..service.message.message_service import MessageService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.metadata_stash import MetadataStash
@@ -200,6 +201,7 @@ class Node(AbstractNode):
                 MetadataService,
                 ActionService,
                 DatasetService,
+                ModelInterfaceService,
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
@@ -416,6 +418,7 @@ class Node(AbstractNode):
                 UserService,
                 MetadataService,
                 DatasetService,
+                ModelInterfaceService,
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
