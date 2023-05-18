@@ -1146,6 +1146,14 @@ class NewProjectSubmit(SyftObject):
             print(" ✅")
             print()
 
+        # Add a self discovery route for the leader
+        res = leader_client.api.services.network.add_route(
+            leader_client.connection.route
+        )
+
+        if isinstance(res, SyftError):
+            return res
+
         return SyftSuccess(message="Successfully Exchaged Routes")
 
     def start(self) -> NewProject:

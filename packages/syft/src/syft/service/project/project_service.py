@@ -16,7 +16,6 @@ from ..context import AuthedServiceContext
 from ..message.message_service import CreateMessage
 from ..message.message_service import Message
 from ..message.message_service import MessageService
-from ..network.network_service import NodePeer
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -127,20 +126,18 @@ class NewProjectService(AbstractService):
             leader_node = project_obj.state_sync_leader
 
             # If the current node is a follower
-            if leader_node.verify_key != context.node.verify_key:
-                network_service = context.node.get_service("networkservice")
-                peer = network_service.stash.get_for_verify_key(
-                    credentials=context.node.verify_key,
-                    verify_key=leader_node.verify_key,
+
+            network_service = context.node.get_service("networkservice")
+            peer = network_service.stash.get_for_verify_key(
+                credentials=context.node.verify_key,
+                verify_key=leader_node.verify_key,
+            )
+            if peer.is_err():
+                return SyftError(
+                    message=f"Node {context.node.name}-{str(context.node.id)[:6]} does not"
+                    + "leader node as peer. Kindly exchange routes with the leader node"
                 )
-                if peer.is_err():
-                    return SyftError(
-                        message=f"Leader node does not have peer {leader_node.name}-{leader_node.id}"
-                        + " Kindly exchange routes with the peer"
-                    )
-                leader_node_route = peer.ok()
-            else:
-                leader_node_route = context.node.metadata.to(NodePeer)
+            leader_node_route = peer.ok()
 
             project_obj.leader_node_route = leader_node_route
 

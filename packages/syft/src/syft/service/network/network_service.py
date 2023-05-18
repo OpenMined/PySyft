@@ -398,9 +398,9 @@ class NetworkService(AbstractService):
     @service_method(path="network.add_route", name="add_route", roles=GUEST_ROLE_LEVEL)
     def add_route(
         self, context: AuthedServiceContext, route: NodeRoute
-    ) -> Union[List, SyftError]:
+    ) -> Union[SyftSuccess, SyftError]:
         """Add a route to node as part of self discovery"""
-        # Step 1: Check if the given route is able to reach the same
+        # Step 1: Check if the given route is able to reach itself
         # Step 2: Verify the route with digital signatures
         client = route.client_with_context(context=context)
 
