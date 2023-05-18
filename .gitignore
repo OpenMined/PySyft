@@ -69,3 +69,6 @@ js/node_modules/*
 
 #nohup
 nohup.out
+
+notebooks/api/0.8/gpt2
+notebooks/api/0.8/tiny-gpt2
