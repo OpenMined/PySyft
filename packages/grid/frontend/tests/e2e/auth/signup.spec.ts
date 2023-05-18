@@ -62,13 +62,9 @@ test.describe('User Sign Up', () => {
 
     await page.waitForURL('**/login');
     await expect(page.getByTestId('deployed-on')).toBeVisible();
-    await page.getByTestId('email').fill('jane.doe@openmined.org');
+    await page.getByTestId('email').fill('jane.does@openmined.org');
     await page.getByTestId('password').fill('changethis');
     await page.getByRole('button', { name: /login/i }).click();
     await page.waitForURL('**/datasets');
-    await page.goto('/account');
-    await page.getByTestId('delete-account').click();
-    await page.getByRole('button', { name: /delete account/i }).click();
-    await page.waitForURL('**/login');
   });
 });

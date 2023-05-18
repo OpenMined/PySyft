@@ -3,8 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('User Login', () => {
   let page;
 
-  test.beforeEach(async ({ browser }) => {
-    page = await browser.newPage();
+  test.beforeEach(async ({ page, baseURL }) => {
     await page.goto('/login');
     await expect(page.getByTestId('deployed-on')).toContainText(/deployed on/i);
   });
