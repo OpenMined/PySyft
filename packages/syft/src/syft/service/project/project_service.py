@@ -126,20 +126,28 @@ class NewProjectService(AbstractService):
             leader_node = project_obj.state_sync_leader
 
             # If the current node is a follower
-
-            network_service = context.node.get_service("networkservice")
-            peer = network_service.stash.get_for_verify_key(
-                credentials=context.node.verify_key,
-                verify_key=leader_node.verify_key,
-            )
-            if peer.is_err():
-                return SyftError(
-                    message=f"Node {context.node.name}-{str(context.node.id)[:6]} does not"
-                    + "leader node as peer. Kindly exchange routes with the leader node"
+            # For followers the leader node route is retrieved from its peer
+            if project_obj.state_sync_leader.verify_key != context.node.verify_key:
+                network_service = context.node.get_service("networkservice")
+                peer = network_service.stash.get_for_verify_key(
+                    credentials=context.node.verify_key,
+                    verify_key=leader_node.verify_key,
                 )
-            leader_node_route = peer.ok()
+                if peer.is_err():
+                    return SyftError(
+                        message=f"Node {context.node.name}-{str(context.node.id)[:6]} does not"
+                        + "leader node as peer. Kindly exchange routes with the leader node"
+                    )
+                leader_node_peer = peer.ok()
+            else:
+                # for the leader node, as it does not have route information to itself
+                # we rely on the data scientist to provide the route
+                # the route is then validated by the leader
+                leader_node_peer = project.leader_node_route.validate_with_context(
+                    context=context
+                )
 
-            project_obj.leader_node_route = leader_node_route
+            project_obj.leader_node_peer = leader_node_peer
 
             result = self.stash.set(context.credentials, project_obj)
             if result.is_err():

@@ -18,6 +18,7 @@ from typing import Union
 
 # third party
 import pydantic
+from pydantic import root_validator
 from pydantic import validator
 from result import OkErr
 from rich.progress import Progress
@@ -42,6 +43,8 @@ from ...types.uid import UID
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..network.network_service import NodePeer
+from ..network.routes import NodeRoute
+from ..network.routes import connection_to_route
 from ..request.request import EnumMutation
 from ..request.request import Request
 from ..request.request import SubmitRequest
@@ -682,7 +685,7 @@ class NewProject(SyftObject):
     shareholders: List[NodeIdentity]
     project_permissions: Set[str]
     state_sync_leader: NodeIdentity
-    leader_node_route: Optional[NodePeer]
+    leader_node_peer: Optional[NodePeer]
     consensus_model: ConsensusModel
     store: Dict[UID, Dict[UID, SyftObject]] = {}
     permissions: Dict[UID, Dict[UID, Set[str]]] = {}
@@ -1095,30 +1098,37 @@ class NewProjectSubmit(SyftObject):
     project_permissions: Set[str] = set()
     state_sync_leader: Optional[NodeIdentity]
     consensus_model: ConsensusModel = DemocraticConsensusModel()
+    leader_node_route: Optional[NodeRoute]
 
-    @validator("shareholders", pre=True)
-    def make_shareholders(cls, objs: List[SyftClient]) -> List[NodeIdentity]:
-        if not objs:
+    @root_validator(pre=True)
+    def make_shareholders_and_leader_route(cls, values) -> Dict:
+        clients = values["shareholders"]
+
+        if not clients:
             raise SyftException("Shareholders cannot be empty")
 
         shareholders = []
-        for obj in objs:
-            if isinstance(obj, NodeIdentity):
-                shareholders.append(obj)
-            elif isinstance(obj, SyftClient):
-                metadata = obj.metadata.to(NodeMetadata)
+        for client in clients:
+            if isinstance(client, NodeIdentity):
+                shareholders.append(client)
+            elif isinstance(client, SyftClient):
+                metadata = client.metadata.to(NodeMetadata)
                 node_identity = metadata.to(NodeIdentity)
                 shareholders.append(node_identity)
             else:
                 raise Exception(
-                    f"Shareholders should be either SyftClient or NodeIdentity received: {type(obj)}"
+                    f"Shareholders should be either SyftClient or NodeIdentity received: {type(client)}"
                 )
-        if isinstance(objs[0], SyftClient):
-            route_exchange = cls.exchange_routes(objs)
+        if isinstance(clients[0], SyftClient):
+            route_exchange = cls.exchange_routes(clients)
             if isinstance(route_exchange, SyftError):
                 raise SyftException(route_exchange)
 
-        return shareholders
+            values["leader_node_route"] = connection_to_route(clients[0].connection)
+
+        values["shareholders"] = shareholders
+
+        return values
 
     @staticmethod
     def exchange_routes(
@@ -1145,14 +1155,6 @@ class NewProjectSubmit(SyftObject):
                 return result
             print(" ✅")
             print()
-
-        # Add a self discovery route for the leader
-        res = leader_client.api.services.network.add_route(
-            leader_client.connection.route
-        )
-
-        if isinstance(res, SyftError):
-            return res
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
