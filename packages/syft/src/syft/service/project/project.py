@@ -692,6 +692,8 @@ class NewProject(SyftObject):
     events: List[ProjectEvent] = []
     event_id_hashmap: Dict[UID, ProjectEvent] = {}
     start_hash: int
+    # WARNING:  Do not add it to hash keys , or print directly
+    user_signing_key: Optional[SyftSigningKey] = None
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
     __hash_keys__ = [

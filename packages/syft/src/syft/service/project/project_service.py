@@ -152,7 +152,12 @@ class NewProjectService(AbstractService):
             result = self.stash.set(context.credentials, project_obj)
             if result.is_err():
                 return SyftError(message=str(result.err()))
-            return result.ok()
+
+            project_obj_store = result.ok()
+            project_obj_store = add_signing_key_to_project(context, project_obj_store)
+
+            return project_obj_store
+
         except Exception as e:
             print("Failed to submit Project", e)
             raise e
@@ -313,8 +318,38 @@ class NewProjectService(AbstractService):
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
+
         projects = result.ok()
+
+        for idx, project in enumerate(projects):
+            result = add_signing_key_to_project(context, project)
+            if isinstance(result, SyftError):
+                return result
+            projects[idx] = result
+
         return projects
+
+
+def add_signing_key_to_project(
+    context: AuthedServiceContext, project: NewProject
+) -> Union[NewProject, SyftError]:
+    # Automatically infuse signing key of user
+    # requesting get_all() or creating the project object
+
+    user_service = context.node.get_service(UserService)
+    user = user_service.stash.get_by_verify_key(
+        credentials=context.credentials, verify_key=context.credentials
+    )
+    if user.is_err():
+        return SyftError(message=str(user.err()))
+
+    user = user.ok()
+    if not user:
+        return SyftError(message="User not found! Kindly register user first")
+
+    project.user_signing_key = user.signing_key
+
+    return project
 
 
 def check_for_project_request(
