@@ -109,8 +109,12 @@ class NetworkService(AbstractService):
         self.store = store
         self.stash = NetworkStash(store=store)
 
+    # TODO: Check with MADHAVA, can we even allow guest user to introduce routes to
+    # domain nodes?
     @service_method(
-        path="network.exchange_credentials_with", name="exchange_credentials_with"
+        path="network.exchange_credentials_with",
+        name="exchange_credentials_with",
+        roles=GUEST_ROLE_LEVEL,
     )
     def exchange_credentials_with(
         self,

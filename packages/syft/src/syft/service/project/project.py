@@ -721,9 +721,13 @@ class NewProject(SyftObject):
         return leader_client.api.services.newproject.broadcast_event(project_event)
 
     def key_in_project(self, verify_key: SyftVerifyKey) -> bool:
-        return verify_key in [
+        project_verify_keys = [
             shareholder.verify_key for shareholder in self.shareholders
         ]
+        if isinstance(self.user_verify_keys, list):
+            project_verify_keys.extend(self.user_verify_keys)
+
+        return verify_key in project_verify_keys
 
     def get_identity_from_key(self, verify_key: SyftVerifyKey) -> List[NodeIdentity]:
         for shareholder in self.shareholders:
@@ -751,6 +755,13 @@ class NewProject(SyftObject):
             )
 
         return leader_client
+
+    def has_permission(self, verify_key: SyftVerifyKey) -> bool:
+        # Currently the permission function, initially checks only if the
+        # verify key is present in the project
+        # Later when the project object evolves, we can add more permission checks
+
+        return self.key_in_project(verify_key)
 
     def _append_event(
         self, event: ProjectEvent, credentials: SyftSigningKey
