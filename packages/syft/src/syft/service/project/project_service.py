@@ -220,8 +220,11 @@ class NewProjectService(AbstractService):
         # Only the leader of the project could add events to the projects
         # Any Event to be added to the project should be sent to the leader of the project
         # The leader broadcasts the event to all the members of the project
+
+        # TODO: After integrating DS credentials, check if the given
+        # user who has sent the request , has permission to add events to the project
         project_obj = self.stash.get_by_uid(
-            context.credentials, uid=project_event.project_id
+            context.node.verify_key, uid=project_event.project_id
         )
 
         if project_obj.is_ok():
@@ -266,7 +269,8 @@ class NewProjectService(AbstractService):
                     if isinstance(event_result, SyftError):
                         return event_result
 
-            result = self.stash.update(context.credentials, project)
+            # TODO: do a permission check after integrating DS credentials
+            result = self.stash.update(context.node.verify_key, project)
 
             if result.is_err():
                 return SyftError(message=str(result.err()))

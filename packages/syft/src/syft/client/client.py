@@ -23,6 +23,7 @@ from typing_extensions import Self
 from .. import __version__
 from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
+from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
@@ -615,6 +616,25 @@ class SyftClientSessionCache:
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         cls.__credentials_store__[hash_key] = syft_client
         cls.__client_cache__[syft_client.id] = syft_client
+
+    @classmethod
+    def add_client_by_verify_key(
+        cls,
+        verify_key: SyftVerifyKey,
+        syft_client: SyftClient,
+    ):
+        # node uid could be same for multiple users
+        # verify key is unique for each user
+        # so we use verify key as key for client cache
+        hash_key = str(verify_key)
+        cls.__client_cache__[hash_key] = syft_client
+
+    @classmethod
+    def get_client_by_verify_key(
+        cls, verify_key: SyftVerifyKey
+    ) -> Optional[SyftClient]:
+        hash_key = str(verify_key)
+        return cls.__client_cache__.get(hash_key, None)
 
     @classmethod
     def get_client(

@@ -26,6 +26,7 @@ from typing_extensions import Self
 
 # relative
 from ...client.client import SyftClient
+from ...client.client import SyftClientSessionCache
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -713,15 +714,9 @@ class NewProject(SyftObject):
     def _broadcast_event(
         self, project_event: ProjectEvent
     ) -> Union[SyftSuccess, SyftError]:
-        # relative
-        from ...client.api import APIRegistry
+        leader_client = self.get_leader_client(self.user_signing_key)
 
-        api = APIRegistry.api_for(self.state_sync_leader.id)
-        if api is None:
-            return SyftError(
-                message=f"You must login to leader-{str(self.state_sync_leader.id)[0:8]}"
-            )
-        return api.services.newproject.broadcast_event(project_event)
+        return leader_client.api.services.newproject.broadcast_event(project_event)
 
     def key_in_project(self, verify_key: SyftVerifyKey) -> bool:
         return verify_key in [
@@ -733,6 +728,27 @@ class NewProject(SyftObject):
             if shareholder.verify_key == verify_key:
                 return shareholder
         return SyftError(message=f"Shareholder with verify key: {verify_key} not found")
+
+    def get_leader_client(self, signing_key: SyftSigningKey) -> SyftClient:
+        if self.leader_node_peer is None:
+            raise Exception("Leader node peer is not set")
+
+        if signing_key is None:
+            raise Exception("Signing key is required to create leader client")
+
+        verify_key = signing_key.verify_key
+
+        leader_client = SyftClientSessionCache.get_client_by_verify_key(
+            verify_key=verify_key
+        )
+
+        if leader_client is None:
+            leader_client = self.leader_node_peer.client_with_key(signing_key)
+            SyftClientSessionCache.add_client_by_verify_key(
+                verify_key=verify_key, syft_client=leader_client
+            )
+
+        return leader_client
 
     def _append_event(
         self, event: ProjectEvent, credentials: SyftSigningKey
@@ -1030,26 +1046,14 @@ class NewProject(SyftObject):
             )
         return self.add_event(request_event)
 
-    def sync(
-        self, client: Optional[SyftClient] = None, verbose: Optional[bool] = True
-    ) -> Union[SyftSuccess, SyftError]:
+    def sync(self, verbose: Optional[bool] = True) -> Union[SyftSuccess, SyftError]:
         """Sync the latest project with the state sync leader"""
-        if client is None:
-            # relative
-            from ...client.api import APIRegistry
 
-            api = APIRegistry.api_for(self.state_sync_leader.id)
-            if api is None:
-                return SyftError(
-                    message=f"You must login to leader node-{str(self.state_sync_leader.id)[0:8]}"
-                )
-            unsynced_events = api.services.newproject.sync(
-                project_id=self.id, seq_no=self.get_last_seq_no()
-            )
-        else:
-            unsynced_events = client.api.services.newproject.sync(
-                project_id=self.id, seq_no=self.get_last_seq_no()
-            )
+        leader_client = self.get_leader_client(self.user_signing_key)
+
+        unsynced_events = leader_client.api.services.newproject.sync(
+            project_id=self.id, seq_no=self.get_last_seq_no()
+        )
         if isinstance(unsynced_events, SyftError):
             return unsynced_events
 
