@@ -209,11 +209,9 @@ class ProjectEvent(SyftObject):
         signed_obj = signing_key.signing_key.sign(signed_bytes)
         self.signature = signed_obj._signature
 
-    def publish(
-        self, project: NewProject, credentials: Union[SyftSigningKey, SyftClient]
-    ) -> Union[SyftSuccess, SyftError]:
+    def publish(self, project: NewProject) -> Union[SyftSuccess, SyftError]:
         try:
-            result = project.add_event(self, credentials)
+            result = project.add_event(self)
             return result
         except EventAlreadyAddedException:  # nosec
             return SyftSuccess(message="Event already added")
@@ -736,7 +734,7 @@ class NewProject(SyftObject):
                 return shareholder
         return SyftError(message=f"Shareholder with verify key: {verify_key} not found")
 
-    def append_event(
+    def _append_event(
         self, event: ProjectEvent, credentials: SyftSigningKey
     ) -> Union[SyftSuccess, SyftError]:
         prev_event = self.events[-1] if self.events else None
@@ -753,11 +751,11 @@ class NewProject(SyftObject):
             event = event.rebase(project=self)
             event.sign(credentials)
             # Retrying broadcasting the event to leader
-            # recursively call append_event as due to network latency the event could reach late
+            # recursively call _append_event as due to network latency the event could reach late
             # and other events would be being streamed to the leader
             # This scenario could lead to starvation of node trying to sync with the leader
             # This would be solved in our future leaderless approach
-            return self.append_event(event=event, credentials=credentials)
+            return self._append_event(event=event, credentials=credentials)
 
         self.events.append(copy.deepcopy(event))
         self.event_id_hashmap[event.id] = event
@@ -768,13 +766,18 @@ class NewProject(SyftObject):
         return self.event_id_hashmap.keys()
 
     def add_event(
-        self, event: ProjectEvent, credentials: Union[SyftSigningKey, SyftClient]
+        self,
+        event: ProjectEvent,
+        credentials: Optional[Union[SyftSigningKey, SyftClient]] = None,
     ) -> Union[SyftSuccess, SyftError]:
         if event.id in self.event_ids:
             raise EventAlreadyAddedException(f"Event already added. {event}")
 
-        if isinstance(credentials, SyftClient):
+        if credentials is None:
+            credentials = self.user_signing_key
+        elif isinstance(credentials, SyftClient):
             credentials = credentials.credentials
+
         if not isinstance(credentials, SyftSigningKey):
             raise Exception(f"Adding an event requires a signing key. {credentials}")
 
@@ -783,7 +786,7 @@ class NewProject(SyftObject):
         event = event.rebase(self)
         event.sign(credentials)
 
-        result = self.append_event(event, credentials=credentials)
+        result = self._append_event(event, credentials=credentials)
         return result
 
     def validate_events(self, debug: bool = False) -> Union[SyftSuccess, SyftError]:
@@ -900,17 +903,14 @@ class NewProject(SyftObject):
     def get_last_seq_no(self) -> int:
         return len(self.events)
 
-    def send_message(
-        self, message: str, credentials: Union[SyftSigningKey, SyftClient]
-    ):
+    def send_message(self, message: str):
         message_event = ProjectMessage(message=message)
-        return self.add_event(message_event, credentials)
+        return self.add_event(message_event)
 
     def reply_message(
         self,
         reply: str,
         msg_id: UID,
-        credentials: Union[SyftSigningKey, SyftClient],
     ):
         if msg_id not in self.event_ids:
             raise SyftError(message=f"Message id: {msg_id} not found")
@@ -928,11 +928,10 @@ class NewProject(SyftObject):
                 message=f"You can only reply to a message: {type(message)}"
                 "Kindly re-check the msg_id"
             )
-        return self.add_event(reply_event, credentials)
+        return self.add_event(reply_event)
 
     def create_poll(
         self,
-        credentials: Union[SyftSigningKey, SyftClient],
         question: Optional[str] = None,
         choices: Optional[List[str]] = None,
     ):
@@ -945,12 +944,11 @@ class NewProject(SyftObject):
             question, choices = poll_creation_wizard()
 
         poll_event = ProjectMultipleChoicePoll(question=question, choices=choices)
-        return self.add_event(poll_event, credentials)
+        return self.add_event(poll_event)
 
     def answer_poll(
         self,
         poll_id: UID,
-        credentials: Union[SyftSigningKey, SyftClient],
         answer: Optional[int] = None,
     ):
         if poll_id not in self.event_ids:
@@ -968,13 +966,12 @@ class NewProject(SyftObject):
 
         answer_event = poll.answer(answer)
 
-        return self.add_event(answer_event, credentials)
+        return self.add_event(answer_event)
 
     def create_request(
         self,
         obj: UserCode,
         permission: Enum,
-        credentials: Union[SyftSigningKey, SyftClient],
     ):
         if not isinstance(obj, UserCode):
             raise SyftError(
@@ -1009,14 +1006,13 @@ class NewProject(SyftObject):
             return submitted_req
 
         request_event = ProjectRequest(request=submitted_req)
-        return self.add_event(request_event, credentials)
+        return self.add_event(request_event)
 
     # Since currently we do not have the notion of denying a request
     # Adding only approve request, which would later be used to approve or deny a request
     def approve_request(
         self,
         req_id: UID,
-        credentials: Union[SyftSigningKey, SyftClient],
     ):
         if req_id not in self.event_ids:
             raise SyftError(message=f"Request id: {req_id} not found")
@@ -1032,7 +1028,7 @@ class NewProject(SyftObject):
                 message=f"You can only approve a request: {type(request)}"
                 "Kindly re-check the req_id"
             )
-        return self.add_event(request_event, credentials)
+        return self.add_event(request_event)
 
     def sync(
         self, client: Optional[SyftClient] = None, verbose: Optional[bool] = True
