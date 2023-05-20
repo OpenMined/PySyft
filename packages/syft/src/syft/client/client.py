@@ -326,6 +326,12 @@ class SyftClient:
     def authed(self) -> bool:
         return bool(self.credentials)
 
+    @property
+    def verify_key(self) -> SyftVerifyKey:
+        if self.credentials is None:
+            raise ValueError("SigningKey not set on client")
+        return self.credentials.verify_key
+
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> Self:
         return SyftClient(connection=HTTPConnection(GridURL.from_url(url)))

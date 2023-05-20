@@ -693,6 +693,8 @@ class NewProject(SyftObject):
     start_hash: int
     # WARNING:  Do not add it to hash keys , or print directly
     user_signing_key: Optional[SyftSigningKey] = None
+    user_email_address: Optional[str] = None
+    user_verify_keys: Optional[List[SyftVerifyKey]] = None
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
     __hash_keys__ = [
@@ -1101,6 +1103,8 @@ class NewProjectSubmit(SyftObject):
     state_sync_leader: Optional[NodeIdentity]
     consensus_model: ConsensusModel = DemocraticConsensusModel()
     leader_node_route: Optional[NodeRoute]
+    user_email_address: Optional[str] = None
+    user_verify_keys: Optional[List[SyftVerifyKey]] = None
 
     @root_validator(pre=True)
     def make_shareholders_and_leader_route(cls, values) -> Dict:
@@ -1129,6 +1133,23 @@ class NewProjectSubmit(SyftObject):
             values["leader_node_route"] = connection_to_route(clients[0].connection)
 
         values["shareholders"] = shareholders
+
+        return values
+
+    @root_validator()
+    def check_user_email_and_keys(cls, values) -> Dict:
+        if values["user_email_address"] is not None:
+            user_verify_keys = values["user_verify_keys"]
+            if not isinstance(user_verify_keys, list) or len(user_verify_keys) == 0:
+                raise SyftException(
+                    "User verify keys cannot be empty if user email address is provided"
+                )
+
+            share_holders = values["shareholders"]
+            if len(share_holders) != len(user_verify_keys):
+                raise SyftException(
+                    "Number of user verify keys should be equal to number of shareholders"
+                )
 
         return values
 
