@@ -146,11 +146,9 @@ class KeyValueStorePartition(StorePartition):
         # relative
         from ..service.action.action_store import ActionObjectREAD
 
-        # TODO 🟣 Temporarily added skip permission argument for enclave
-        # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        # if True:
+
         if self.has_permission(read_permission):
             syft_object = self.data[uid]
             return Ok(syft_object)

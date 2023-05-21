@@ -18,6 +18,7 @@ from typing import Union
 
 # third party
 import pydantic
+from pydantic import root_validator
 from pydantic import validator
 from result import OkErr
 from rich.progress import Progress
@@ -25,6 +26,7 @@ from typing_extensions import Self
 
 # relative
 from ...client.client import SyftClient
+from ...client.client import SyftClientSessionCache
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -41,6 +43,9 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
+from ..network.network_service import NodePeer
+from ..network.routes import NodeRoute
+from ..network.routes import connection_to_route
 from ..request.request import EnumMutation
 from ..request.request import Request
 from ..request.request import SubmitRequest
@@ -76,6 +81,10 @@ class NodeIdentity(SyftObject):
         id_str = f"{self.id}"
         return f"<🔑 {verify_key_str[0:8]} @ 🟢 {id_str[0:8]}>"
 
+    @staticmethod
+    def from_client(client: SyftClient) -> NodeIdentity:
+        return NodeIdentity(id=client.id, verify_key=client.credentials.verify_key)
+
 
 @transform(NodeMetadata, NodeIdentity)
 def metadata_to_node_identity() -> List[Callable]:
@@ -106,7 +115,7 @@ class ProjectEvent(SyftObject):
             values["timestamp"] = DateTime.now()
         return values
 
-    def _pre_add_update(self, project: Project) -> None:
+    def _pre_add_update(self, project: NewProject) -> None:
         pass
 
     def __hash__(self) -> int:
@@ -205,11 +214,9 @@ class ProjectEvent(SyftObject):
         signed_obj = signing_key.signing_key.sign(signed_bytes)
         self.signature = signed_obj._signature
 
-    def publish(
-        self, project: NewProject, credentials: Union[SyftSigningKey, SyftClient]
-    ) -> Union[SyftSuccess, SyftError]:
+    def publish(self, project: NewProject) -> Union[SyftSuccess, SyftError]:
         try:
-            result = project.add_event(self, credentials)
+            result = project.add_event(self)
             return result
         except EventAlreadyAddedException:  # nosec
             return SyftSuccess(message="Event already added")
@@ -681,12 +688,17 @@ class NewProject(SyftObject):
     shareholders: List[NodeIdentity]
     project_permissions: Set[str]
     state_sync_leader: NodeIdentity
+    leader_node_peer: Optional[NodePeer]
     consensus_model: ConsensusModel
     store: Dict[UID, Dict[UID, SyftObject]] = {}
     permissions: Dict[UID, Dict[UID, Set[str]]] = {}
     events: List[ProjectEvent] = []
     event_id_hashmap: Dict[UID, ProjectEvent] = {}
     start_hash: int
+    # WARNING:  Do not add it to hash keys , or print directly
+    user_signing_key: Optional[SyftSigningKey] = None
+    user_email_address: Optional[str] = None
+    users: Optional[List[NodeIdentity]] = None
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
     __hash_keys__ = [
@@ -708,20 +720,19 @@ class NewProject(SyftObject):
     def _broadcast_event(
         self, project_event: ProjectEvent
     ) -> Union[SyftSuccess, SyftError]:
-        # relative
-        from ...client.api import APIRegistry
+        leader_client = self.get_leader_client(self.user_signing_key)
 
-        api = APIRegistry.api_for(self.state_sync_leader.id)
-        if api is None:
-            return SyftError(
-                message=f"You must login to leader-{str(self.state_sync_leader.id)[0:8]}"
-            )
-        return api.services.newproject.broadcast_event(project_event)
+        return leader_client.api.services.newproject.broadcast_event(project_event)
 
     def key_in_project(self, verify_key: SyftVerifyKey) -> bool:
-        return verify_key in [
+        project_verify_keys = [
             shareholder.verify_key for shareholder in self.shareholders
         ]
+        if isinstance(self.users, list):
+            user_verify_keys = [user.verify_key for user in self.users]
+            project_verify_keys.extend(user_verify_keys)
+
+        return verify_key in project_verify_keys
 
     def get_identity_from_key(self, verify_key: SyftVerifyKey) -> List[NodeIdentity]:
         for shareholder in self.shareholders:
@@ -729,7 +740,37 @@ class NewProject(SyftObject):
                 return shareholder
         return SyftError(message=f"Shareholder with verify key: {verify_key} not found")
 
-    def append_event(
+    def get_leader_client(self, signing_key: SyftSigningKey) -> SyftClient:
+        if self.leader_node_peer is None:
+            raise Exception("Leader node peer is not set")
+
+        if signing_key is None:
+            raise Exception("Signing key is required to create leader client")
+
+        verify_key = signing_key.verify_key
+
+        leader_client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
+            verify_key=verify_key, node_uid=self.leader_node_peer.id
+        )
+
+        if leader_client is None:
+            leader_client = self.leader_node_peer.client_with_key(signing_key)
+            SyftClientSessionCache.add_client_by_uid_and_verify_key(
+                verify_key=verify_key,
+                node_uid=leader_client.id,
+                syft_client=leader_client,
+            )
+
+        return leader_client
+
+    def has_permission(self, verify_key: SyftVerifyKey) -> bool:
+        # Currently the permission function, initially checks only if the
+        # verify key is present in the project
+        # Later when the project object evolves, we can add more permission checks
+
+        return self.key_in_project(verify_key)
+
+    def _append_event(
         self, event: ProjectEvent, credentials: SyftSigningKey
     ) -> Union[SyftSuccess, SyftError]:
         prev_event = self.events[-1] if self.events else None
@@ -746,11 +787,11 @@ class NewProject(SyftObject):
             event = event.rebase(project=self)
             event.sign(credentials)
             # Retrying broadcasting the event to leader
-            # recursively call append_event as due to network latency the event could reach late
+            # recursively call _append_event as due to network latency the event could reach late
             # and other events would be being streamed to the leader
             # This scenario could lead to starvation of node trying to sync with the leader
             # This would be solved in our future leaderless approach
-            return self.append_event(event=event, credentials=credentials)
+            return self._append_event(event=event, credentials=credentials)
 
         self.events.append(copy.deepcopy(event))
         self.event_id_hashmap[event.id] = event
@@ -761,13 +802,18 @@ class NewProject(SyftObject):
         return self.event_id_hashmap.keys()
 
     def add_event(
-        self, event: ProjectEvent, credentials: Union[SyftSigningKey, SyftClient]
+        self,
+        event: ProjectEvent,
+        credentials: Optional[Union[SyftSigningKey, SyftClient]] = None,
     ) -> Union[SyftSuccess, SyftError]:
         if event.id in self.event_ids:
             raise EventAlreadyAddedException(f"Event already added. {event}")
 
-        if isinstance(credentials, SyftClient):
+        if credentials is None:
+            credentials = self.user_signing_key
+        elif isinstance(credentials, SyftClient):
             credentials = credentials.credentials
+
         if not isinstance(credentials, SyftSigningKey):
             raise Exception(f"Adding an event requires a signing key. {credentials}")
 
@@ -776,7 +822,7 @@ class NewProject(SyftObject):
         event = event.rebase(self)
         event.sign(credentials)
 
-        result = self.append_event(event, credentials=credentials)
+        result = self._append_event(event, credentials=credentials)
         return result
 
     def validate_events(self, debug: bool = False) -> Union[SyftSuccess, SyftError]:
@@ -893,17 +939,14 @@ class NewProject(SyftObject):
     def get_last_seq_no(self) -> int:
         return len(self.events)
 
-    def send_message(
-        self, message: str, credentials: Union[SyftSigningKey, SyftClient]
-    ):
+    def send_message(self, message: str):
         message_event = ProjectMessage(message=message)
-        return self.add_event(message_event, credentials)
+        return self.add_event(message_event)
 
     def reply_message(
         self,
         reply: str,
         msg_id: UID,
-        credentials: Union[SyftSigningKey, SyftClient],
     ):
         if msg_id not in self.event_ids:
             raise SyftError(message=f"Message id: {msg_id} not found")
@@ -921,11 +964,10 @@ class NewProject(SyftObject):
                 message=f"You can only reply to a message: {type(message)}"
                 "Kindly re-check the msg_id"
             )
-        return self.add_event(reply_event, credentials)
+        return self.add_event(reply_event)
 
     def create_poll(
         self,
-        credentials: Union[SyftSigningKey, SyftClient],
         question: Optional[str] = None,
         choices: Optional[List[str]] = None,
     ):
@@ -938,12 +980,11 @@ class NewProject(SyftObject):
             question, choices = poll_creation_wizard()
 
         poll_event = ProjectMultipleChoicePoll(question=question, choices=choices)
-        return self.add_event(poll_event, credentials)
+        return self.add_event(poll_event)
 
     def answer_poll(
         self,
         poll_id: UID,
-        credentials: Union[SyftSigningKey, SyftClient],
         answer: Optional[int] = None,
     ):
         if poll_id not in self.event_ids:
@@ -961,13 +1002,12 @@ class NewProject(SyftObject):
 
         answer_event = poll.answer(answer)
 
-        return self.add_event(answer_event, credentials)
+        return self.add_event(answer_event)
 
     def create_request(
         self,
         obj: UserCode,
         permission: Enum,
-        credentials: Union[SyftSigningKey, SyftClient],
     ):
         if not isinstance(obj, UserCode):
             raise SyftError(
@@ -977,6 +1017,11 @@ class NewProject(SyftObject):
         node_uid = obj.node_uid
         if node_uid is None:
             raise SyftError(f"Node uid is not set for the object: {obj}")
+
+        # TODO: Find a workaround for the api registry problem
+        # when we have Data Owner and Data scientist in the same notebook
+        # they belong to the same Node UID, which would give same api for both
+        # users
 
         # relative
         from ...client.api import APIRegistry
@@ -1002,14 +1047,13 @@ class NewProject(SyftObject):
             return submitted_req
 
         request_event = ProjectRequest(request=submitted_req)
-        return self.add_event(request_event, credentials)
+        return self.add_event(request_event)
 
     # Since currently we do not have the notion of denying a request
     # Adding only approve request, which would later be used to approve or deny a request
     def approve_request(
         self,
         req_id: UID,
-        credentials: Union[SyftSigningKey, SyftClient],
     ):
         if req_id not in self.event_ids:
             raise SyftError(message=f"Request id: {req_id} not found")
@@ -1025,28 +1069,16 @@ class NewProject(SyftObject):
                 message=f"You can only approve a request: {type(request)}"
                 "Kindly re-check the req_id"
             )
-        return self.add_event(request_event, credentials)
+        return self.add_event(request_event)
 
-    def sync(
-        self, client: Optional[SyftClient] = None, verbose: Optional[bool] = True
-    ) -> Union[SyftSuccess, SyftError]:
+    def sync(self, verbose: Optional[bool] = True) -> Union[SyftSuccess, SyftError]:
         """Sync the latest project with the state sync leader"""
-        if client is None:
-            # relative
-            from ...client.api import APIRegistry
 
-            api = APIRegistry.api_for(self.state_sync_leader.id)
-            if api is None:
-                return SyftError(
-                    message=f"You must login to leader node-{str(self.state_sync_leader.id)[0:8]}"
-                )
-            unsynced_events = api.services.newproject.sync(
-                project_id=self.id, seq_no=self.get_last_seq_no()
-            )
-        else:
-            unsynced_events = client.api.services.newproject.sync(
-                project_id=self.id, seq_no=self.get_last_seq_no()
-            )
+        leader_client = self.get_leader_client(self.user_signing_key)
+
+        unsynced_events = leader_client.api.services.newproject.sync(
+            project_id=self.id, seq_no=self.get_last_seq_no()
+        )
         if isinstance(unsynced_events, SyftError):
             return unsynced_events
 
@@ -1093,35 +1125,119 @@ class NewProjectSubmit(SyftObject):
     project_permissions: Set[str] = set()
     state_sync_leader: Optional[NodeIdentity]
     consensus_model: ConsensusModel = DemocraticConsensusModel()
+    leader_node_route: Optional[NodeRoute]
+    user_email_address: Optional[str] = None
+    users: Optional[List[NodeIdentity]] = None
 
-    @validator("shareholders", pre=True)
-    def make_shareholders(cls, objs: List[SyftClient]) -> List[NodeIdentity]:
+    @root_validator(pre=True)
+    def make_shareholders_and_leader_route(cls, values) -> Dict:
+        clients = values["shareholders"]
+
+        if not clients:
+            raise SyftException("Shareholders cannot be empty")
+
         shareholders = []
-        for obj in objs:
-            if isinstance(obj, NodeIdentity):
-                shareholders.append(obj)
-            elif isinstance(obj, SyftClient):
-                metadata = obj.metadata.to(NodeMetadata)
+        for client in clients:
+            if isinstance(client, NodeIdentity):
+                shareholders.append(client)
+            elif isinstance(client, SyftClient):
+                metadata = client.metadata.to(NodeMetadata)
                 node_identity = metadata.to(NodeIdentity)
                 shareholders.append(node_identity)
             else:
                 raise Exception(
-                    f"Shareholders should be either SyftClient or NodeIdentity received: {type(obj)}"
+                    f"Shareholders should be either SyftClient or NodeIdentity received: {type(client)}"
                 )
-        return shareholders
+        if isinstance(clients[0], SyftClient):
+            route_exchange = cls.exchange_routes(clients)
+            if isinstance(route_exchange, SyftError):
+                raise SyftException(route_exchange)
+
+            values["leader_node_route"] = connection_to_route(clients[0].connection)
+
+        values["shareholders"] = shareholders
+
+        return values
+
+    @root_validator(pre=True)
+    def check_user_email_and_users(cls, values) -> Dict:
+        if values["user_email_address"] is not None:
+            users = values["users"]
+            if not isinstance(users, list) or len(users) == 0:
+                raise SyftException(
+                    "Users cannot be empty if user email address is provided"
+                )
+
+            share_holders = values["shareholders"]
+            if len(share_holders) != len(users):
+                raise SyftException(
+                    "Number of users should be equal to number of shareholders"
+                )
+            users_node_identity = []
+            for user in users:
+                if isinstance(user, SyftClient):
+                    users_node_identity.append(NodeIdentity.from_client(user))
+                elif isinstance(user, NodeIdentity):
+                    users_node_identity.append(user)
+                else:
+                    raise SyftException(
+                        "Users should be either SyftClient or NodeIdentity"
+                    )
+            values["users"] = users_node_identity
+
+        return values
+
+    @staticmethod
+    def exchange_routes(
+        shareholders: List[SyftClient],
+    ) -> Union[SyftSuccess, SyftError]:
+        # Since we are implementing a leader based system
+        # To be able to optimize exchanging routes.
+        # We require only the leader to exchange routes with all the shareholders
+        # Meaning if we could guarantee, that the leader node is able to reach the shareholders
+        # the project events could be broadcasted to all the shareholders
+
+        # Currently we are assuming that the first shareholder is the leader
+        # This would be changed in our future leaderless approach
+        leader_client = shareholders[0]
+
+        for follower_client in shareholders[1::]:
+            print()
+            print(
+                f"Exchanging Routes 📡: {leader_client.name} --- {follower_client.name}",
+                end="",
+            )
+            result = leader_client.exchange_route(follower_client)
+            if isinstance(result, SyftError):
+                return result
+            print(" ✅")
+            print()
+
+        return SyftSuccess(message="Successfully Exchaged Routes")
 
     def start(self) -> NewProject:
         # Creating a new unique UID to be used by all shareholders
         project_id = UID()
         projects = []
-        for shareholder in self.shareholders:
-            # relative
-            from ...client.api import APIRegistry
 
-            api = APIRegistry.api_for(shareholder.id)
-            if api is None:
-                raise Exception(f"You must login to {str(shareholder.id)[0:8]}")
-            result = api.services.newproject.create_project(
+        if self.users is None:
+            # If the Data Owner creates the project
+            node_identities = self.shareholders
+        else:
+            # If the Data Scientist creates the project
+            node_identities = self.users
+
+        for node_identity in node_identities:
+            client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
+                verify_key=node_identity.verify_key, node_uid=node_identity.id
+            )
+            if client is None:
+                raise SyftException(
+                    f"Client not found for node_identity: {node_identity}"
+                    "Kindly login to the node"
+                )
+
+            result = client.api.services.newproject.create_project(
                 project=self, project_id=project_id
             )
             if isinstance(result, SyftError):

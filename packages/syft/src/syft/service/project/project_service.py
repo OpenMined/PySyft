@@ -115,13 +115,49 @@ class NewProjectService(AbstractService):
         """Start a Project"""
         try:
             project.id = project_id
-            project_obj = project.to(NewProject, context=context)
-            # project_obj.id = project_id
+            project_obj: NewProject = project.to(NewProject, context=context)
+
+            # Updating the leader node route of the project object
+            # In case the current node, is the leader, they would input their node route
+            # For the followers, they would check if the leader is their node peer
+            # using the leader's verify_key
+            # If the follower do not have the leader as its peer in its routes
+            # They would raise as error
+            leader_node = project_obj.state_sync_leader
+
+            # If the current node is a follower
+            # For followers the leader node route is retrieved from its peer
+            if project_obj.state_sync_leader.verify_key != context.node.verify_key:
+                network_service = context.node.get_service("networkservice")
+                peer = network_service.stash.get_for_verify_key(
+                    credentials=context.node.verify_key,
+                    verify_key=leader_node.verify_key,
+                )
+                if peer.is_err():
+                    return SyftError(
+                        message=f"Node {context.node.name}-{str(context.node.id)[:6]} does not"
+                        + "leader node as peer. Kindly exchange routes with the leader node"
+                    )
+                leader_node_peer = peer.ok()
+            else:
+                # for the leader node, as it does not have route information to itself
+                # we rely on the data scientist to provide the route
+                # the route is then validated by the leader
+                leader_node_peer = project.leader_node_route.validate_with_context(
+                    context=context
+                )
+
+            project_obj.leader_node_peer = leader_node_peer
 
             result = self.stash.set(context.credentials, project_obj)
             if result.is_err():
                 return SyftError(message=str(result.err()))
-            return result.ok()
+
+            project_obj_store = result.ok()
+            project_obj_store = add_signing_key_to_project(context, project_obj_store)
+
+            return project_obj_store
+
         except Exception as e:
             print("Failed to submit Project", e)
             raise e
@@ -184,60 +220,63 @@ class NewProjectService(AbstractService):
         # Only the leader of the project could add events to the projects
         # Any Event to be added to the project should be sent to the leader of the project
         # The leader broadcasts the event to all the members of the project
+
         project_obj = self.stash.get_by_uid(
-            context.credentials, uid=project_event.project_id
+            context.node.verify_key, uid=project_event.project_id
         )
-
-        if project_obj.is_ok():
-            project: NewProject = project_obj.ok()
-            if project.state_sync_leader.verify_key != context.node.verify_key:
-                return SyftError(
-                    message="Only the leader of the project can broadcast events"
-                )
-
-            if project_event.seq_no <= len(project.events) and len(project.events) > 0:
-                return SyftNotReady(message="Project out of sync event")
-            if project_event.seq_no > len(project.events) + 1:
-                return SyftError(message="Project event out of order!")
-
-            project.events.append(project_event)
-            project.event_id_hashmap[project_event.id] = project_event
-
-            message_result = check_for_project_request(project, project_event, context)
-            if isinstance(message_result, SyftError):
-                return message_result
-
-            # Broadcast the event to all the members of the project
-            network_service = context.node.get_service("networkservice")
-            for sharedholder in project.shareholders:
-                if sharedholder.verify_key != context.node.verify_key:
-                    # Retrieving the NodePeer Object to communicate with the node
-                    peer = network_service.stash.get_for_verify_key(
-                        credentials=context.node.verify_key,
-                        verify_key=sharedholder.verify_key,
-                    )
-
-                    if peer.is_err():
-                        return SyftError(
-                            message=f"Leader node does not have peer {sharedholder.name}-{sharedholder.id}"
-                            + " Kindly exchange routes with the peer"
-                        )
-                    peer = peer.ok()
-                    client = peer.client_with_context(context)
-                    event_result = client.api.services.newproject.add_event(
-                        project_event
-                    )
-                    if isinstance(event_result, SyftError):
-                        return event_result
-
-            result = self.stash.update(context.credentials, project)
-
-            if result.is_err():
-                return SyftError(message=str(result.err()))
-            return result.ok()
 
         if project_obj.is_err():
             return SyftError(message=str(project_obj.err()))
+
+        project = project_obj.ok()
+
+        if not project.has_permission(context.credentials):
+            return SyftError(message="User does not have permission to add events")
+
+        project: NewProject = project_obj.ok()
+        if project.state_sync_leader.verify_key != context.node.verify_key:
+            return SyftError(
+                message="Only the leader of the project can broadcast events"
+            )
+
+        if project_event.seq_no <= len(project.events) and len(project.events) > 0:
+            return SyftNotReady(message="Project out of sync event")
+        if project_event.seq_no > len(project.events) + 1:
+            return SyftError(message="Project event out of order!")
+
+        project.events.append(project_event)
+        project.event_id_hashmap[project_event.id] = project_event
+
+        message_result = check_for_project_request(project, project_event, context)
+        if isinstance(message_result, SyftError):
+            return message_result
+
+        # Broadcast the event to all the members of the project
+        network_service = context.node.get_service("networkservice")
+        for sharedholder in project.shareholders:
+            if sharedholder.verify_key != context.node.verify_key:
+                # Retrieving the NodePeer Object to communicate with the node
+                peer = network_service.stash.get_for_verify_key(
+                    credentials=context.node.verify_key,
+                    verify_key=sharedholder.verify_key,
+                )
+
+                if peer.is_err():
+                    return SyftError(
+                        message=f"Leader node does not have peer {sharedholder.name}-{sharedholder.id}"
+                        + " Kindly exchange routes with the peer"
+                    )
+                peer = peer.ok()
+                client = peer.client_with_context(context)
+                event_result = client.api.services.newproject.add_event(project_event)
+                if isinstance(event_result, SyftError):
+                    return event_result
+
+        result = self.stash.update(context.node.verify_key, project)
+
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
 
     @service_method(
         path="newproject.sync",
@@ -259,13 +298,10 @@ class NewProjectService(AbstractService):
                 return SyftError(
                     message="Project Events should be synced only with the leader"
                 )
-            shareholder_keys = [
-                shareholder.verify_key for shareholder in project.shareholders
-            ]
-            if context.credentials not in shareholder_keys:
-                return SyftError(
-                    message="Only the shareholders of the project can sync events"
-                )
+
+            if not project.has_permission(context.credentials):
+                return SyftError(message="User does not have permission to sync events")
+
             if seq_no < 0:
                 raise SyftError(message="Input seq_no should be a non negative integer")
 
@@ -275,15 +311,45 @@ class NewProjectService(AbstractService):
         if project_obj.is_err():
             return SyftError(message=str(project_obj.err()))
 
-    @service_method(path="newproject.get_all", name="get_all")
+    @service_method(path="newproject.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[List[NewProject], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
+
         projects = result.ok()
+
+        for idx, project in enumerate(projects):
+            result = add_signing_key_to_project(context, project)
+            if isinstance(result, SyftError):
+                return result
+            projects[idx] = result
+
         return projects
+
+
+def add_signing_key_to_project(
+    context: AuthedServiceContext, project: NewProject
+) -> Union[NewProject, SyftError]:
+    # Automatically infuse signing key of user
+    # requesting get_all() or creating the project object
+
+    user_service = context.node.get_service(UserService)
+    user = user_service.stash.get_by_verify_key(
+        credentials=context.credentials, verify_key=context.credentials
+    )
+    if user.is_err():
+        return SyftError(message=str(user.err()))
+
+    user = user.ok()
+    if not user:
+        return SyftError(message="User not found! Kindly register user first")
+
+    project.user_signing_key = user.signing_key
+
+    return project
 
 
 def check_for_project_request(
