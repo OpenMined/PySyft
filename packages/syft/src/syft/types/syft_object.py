@@ -30,6 +30,7 @@ from ..util.autoreload import autoreload_enabled
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from ..util.util import recursive_hash
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -381,6 +382,17 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
 
+    @staticmethod
+    def calculate_hash(obj: Any, keys: List[str]) -> int:
+        hashes = 0
+        for key in keys:
+            if isinstance(obj, dict):
+                value = obj[key]
+            else:
+                value = getattr(obj, key)
+            hashes += recursive_hash(value)
+        return hashes
+
 
 def list_dict_repr_html(self) -> str:
     try:
@@ -482,8 +494,23 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
             if _field.default or _field.allow_none:
                 fields_with_default.add(_field_name)
 
+        # Fields whose values are set via a validator hook
+        fields_set_via_validator = []
+
+        for _field_name in self.__validators__.keys():
+            _field = self.__fields__[_field_name]
+            if self.__dict__[_field_name] is None:
+                # Since all fields are None, only allow None
+                # where either none is allowed or default is None
+                if _field.allow_none or _field.default is None:
+                    fields_set_via_validator.append(_field)
+
         # Exclude unset fields
-        unset_fields = set(self.__fields__) - set(self.__fields_set__)
+        unset_fields = (
+            set(self.__fields__)
+            - set(self.__fields_set__)
+            - set(fields_set_via_validator)
+        )
 
         empty_fields = unset_fields - fields_with_default
         for field_name in empty_fields:

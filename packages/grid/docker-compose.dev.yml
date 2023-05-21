@@ -1,10 +1,10 @@
 version: "3.8"
 services:
-  # tailscale:
-  #   profiles:
-  #     - vpn
-  #   volumes:
-  #     - ${RELATIVE_PATH}./vpn:/tailscale
+  tailscale:
+    profiles:
+      - vpn
+    volumes:
+      - ${RELATIVE_PATH}./vpn:/tailscale
 
   proxy:
     ports:
@@ -63,13 +63,13 @@ services:
   #   environment:
   #     - DEV_MODE=True
 
-  # headscale:
-  #   profiles:
-  #     - network
-  #   volumes:
-  #     - ${RELATIVE_PATH}./vpn:/headscale
-  #   ports:
-  #     - "4000"
+  headscale:
+    profiles:
+      - network
+    volumes:
+      - ${RELATIVE_PATH}./vpn:/headscale
+    ports:
+      - "4000"
 
   # seaweedfs:
   #   profiles:

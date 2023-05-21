@@ -226,6 +226,16 @@ def generate_remote_lib_function(
         )
 
     def wrapper(*args, **kwargs):
+        # relative
+        from ..service.action.action_object import TraceResult
+
+        if TraceResult._client is not None:
+            wrapper_make_call = TraceResult._client.api.make_call
+            wrapper_node_uid = TraceResult._client.api.node_uid
+        else:
+            # somehow this is necessary to prevent shadowing problems
+            wrapper_make_call = make_call
+            wrapper_node_uid = node_uid
         blocking = True
         if "blocking" in kwargs:
             blocking = bool(kwargs["blocking"])
@@ -242,34 +252,38 @@ def generate_remote_lib_function(
 
         # relative
         from ..service.action.action_object import Action
+        from ..service.action.action_object import ActionType
         from ..service.action.action_object import convert_to_pointers
 
         action_args, action_kwargs = convert_to_pointers(
-            api, node_uid, _valid_args, _valid_kwargs
+            api, wrapper_node_uid, _valid_args, _valid_kwargs
         )
 
         # e.g. numpy.array -> numpy, array
         module, op = module_path.rsplit(".", 1)
-        service_args = [
-            Action(
-                path=module,
-                op=op,
-                remote_self=None,
-                args=[x.syft_lineage_id for x in action_args],
-                kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
-                # TODO: fix
-                result_id=LineageID(UID(), 1),
-            )
-        ]
+        action = Action(
+            path=module,
+            op=op,
+            remote_self=None,
+            args=[x.syft_lineage_id for x in action_args],
+            kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
+            action_type=ActionType.FUNCTION,
+            # TODO: fix
+            result_id=LineageID(UID(), 1),
+        )
+        service_args = [action]
+        # TODO: implement properly
+        TraceResult.result += [action]
 
         api_call = SyftAPICall(
-            node_uid=node_uid,
+            node_uid=wrapper_node_uid,
             path=path,
             args=service_args,
             kwargs=dict(),
             blocking=blocking,
         )
-        result = make_call(api_call=api_call)
+
+        result = wrapper_make_call(api_call=api_call)
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature
@@ -313,7 +327,7 @@ class APIModule:
 
 
 @instrument
-@serializable(attrs=["endpoints", "node_uid", "node_name"])
+@serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
