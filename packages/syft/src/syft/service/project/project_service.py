@@ -276,7 +276,7 @@ class NewProjectService(AbstractService):
 
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return result.ok()
+        return SyftSuccess(message="Successfully Broadcasted Event")
 
     @service_method(
         path="newproject.sync",

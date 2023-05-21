@@ -941,7 +941,10 @@ class NewProject(SyftObject):
 
     def send_message(self, message: str):
         message_event = ProjectMessage(message=message)
-        return self.add_event(message_event)
+        result = self.add_event(message_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Message sent successfully")
+        return result
 
     def reply_message(
         self,
@@ -964,7 +967,11 @@ class NewProject(SyftObject):
                 message=f"You can only reply to a message: {type(message)}"
                 "Kindly re-check the msg_id"
             )
-        return self.add_event(reply_event)
+
+        result = self.add_event(reply_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Reply sent successfully")
+        return result
 
     def create_poll(
         self,
@@ -980,7 +987,10 @@ class NewProject(SyftObject):
             question, choices = poll_creation_wizard()
 
         poll_event = ProjectMultipleChoicePoll(question=question, choices=choices)
-        return self.add_event(poll_event)
+        result = self.add_event(poll_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Poll created successfully")
+        return result
 
     def answer_poll(
         self,
@@ -1002,7 +1012,10 @@ class NewProject(SyftObject):
 
         answer_event = poll.answer(answer)
 
-        return self.add_event(answer_event)
+        result = self.add_event(answer_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Poll answered successfully")
+        return result
 
     def create_request(
         self,
@@ -1047,7 +1060,11 @@ class NewProject(SyftObject):
             return submitted_req
 
         request_event = ProjectRequest(request=submitted_req)
-        return self.add_event(request_event)
+        result = self.add_event(request_event)
+
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Request created successfully")
+        return result
 
     # Since currently we do not have the notion of denying a request
     # Adding only approve request, which would later be used to approve or deny a request
@@ -1069,7 +1086,10 @@ class NewProject(SyftObject):
                 message=f"You can only approve a request: {type(request)}"
                 "Kindly re-check the req_id"
             )
-        return self.add_event(request_event)
+        result = self.add_event(request_event)
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Request approved successfully")
+        return result
 
     def sync(self, verbose: Optional[bool] = True) -> Union[SyftSuccess, SyftError]:
         """Sync the latest project with the state sync leader"""
