@@ -453,6 +453,15 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
+                # Adding another cache storage by verify key
+                # as this would be useful in retrieving clients
+                # when we have multiple clients of same node
+                # in the same sessions, as verify key is unique
+                # TODO: It would be better to have a single cache storage
+                # combining both email, password and verify key
+                SyftClientSessionCache.add_client_by_verify_key(
+                    verify_key=signing_key.verify_key, syft_client=self
+                )
         return self
 
     def register(

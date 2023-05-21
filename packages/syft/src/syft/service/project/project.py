@@ -742,17 +742,18 @@ class NewProject(SyftObject):
         if signing_key is None:
             raise Exception("Signing key is required to create leader client")
 
-        verify_key = signing_key.verify_key
+        # verify_key = signing_key.verify_key
 
-        leader_client = SyftClientSessionCache.get_client_by_verify_key(
-            verify_key=verify_key
-        )
+        # leader_client = SyftClientSessionCache.get_client_by_verify_key(
+        #     verify_key=verify_key
+        # )
 
-        if leader_client is None:
-            leader_client = self.leader_node_peer.client_with_key(signing_key)
-            SyftClientSessionCache.add_client_by_verify_key(
-                verify_key=verify_key, syft_client=leader_client
-            )
+        # TODO: Readd the notion of client cache
+        # when syft client session cache incorporated uid and verify key
+        leader_client = self.leader_node_peer.client_with_key(signing_key)
+        # SyftClientSessionCache.add_client_by_verify_key(
+        #     verify_key=verify_key, syft_client=leader_client
+        # )
 
         return leader_client
 
@@ -1011,6 +1012,11 @@ class NewProject(SyftObject):
         if node_uid is None:
             raise SyftError(f"Node uid is not set for the object: {obj}")
 
+        # TODO: Find a workaround for the api registry problem
+        # when we have Data Owner and Data scientist in the same notebook
+        # they belong to the same Node UID, which would give same api for both
+        # users
+
         # relative
         from ...client.api import APIRegistry
 
@@ -1196,14 +1202,23 @@ class NewProjectSubmit(SyftObject):
         # Creating a new unique UID to be used by all shareholders
         project_id = UID()
         projects = []
-        for shareholder in self.shareholders:
-            # relative
-            from ...client.api import APIRegistry
 
-            api = APIRegistry.api_for(shareholder.id)
-            if api is None:
-                raise Exception(f"You must login to {str(shareholder.id)[0:8]}")
-            result = api.services.newproject.create_project(
+        if self.user_verify_keys is None:
+            # If the Data Owner creates the project
+            verify_keys = [shareholder.verify_key for shareholder in self.shareholders]
+        else:
+            # If the Data Scientist creates the project
+            verify_keys = self.user_verify_keys
+
+        for verify_key in verify_keys:
+            client = SyftClientSessionCache.get_client_by_verify_key(verify_key)
+            if client is None:
+                raise SyftException(
+                    f"Client not found for verify key: {str(verify_key)[0:8]}"
+                    "Kindly login to the node"
+                )
+
+            result = client.api.services.newproject.create_project(
                 project=self, project_id=project_id
             )
             if isinstance(result, SyftError):

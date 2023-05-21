@@ -298,13 +298,10 @@ class NewProjectService(AbstractService):
                 return SyftError(
                     message="Project Events should be synced only with the leader"
                 )
-            shareholder_keys = [
-                shareholder.verify_key for shareholder in project.shareholders
-            ]
-            if context.credentials not in shareholder_keys:
-                return SyftError(
-                    message="Only the shareholders of the project can sync events"
-                )
+
+            if not project.has_permission(context.credentials):
+                return SyftError(message="User does not have permission to sync events")
+
             if seq_no < 0:
                 raise SyftError(message="Input seq_no should be a non negative integer")
 
