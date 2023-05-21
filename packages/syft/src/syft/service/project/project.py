@@ -81,6 +81,10 @@ class NodeIdentity(SyftObject):
         id_str = f"{self.id}"
         return f"<🔑 {verify_key_str[0:8]} @ 🟢 {id_str[0:8]}>"
 
+    @staticmethod
+    def from_client(client: SyftClient) -> NodeIdentity:
+        return NodeIdentity(id=client.id, verify_key=client.credentials.verify_key)
+
 
 @transform(NodeMetadata, NodeIdentity)
 def metadata_to_node_identity() -> List[Callable]:
@@ -111,7 +115,7 @@ class ProjectEvent(SyftObject):
             values["timestamp"] = DateTime.now()
         return values
 
-    def _pre_add_update(self, project: Project) -> None:
+    def _pre_add_update(self, project: NewProject) -> None:
         pass
 
     def __hash__(self) -> int:
@@ -694,7 +698,7 @@ class NewProject(SyftObject):
     # WARNING:  Do not add it to hash keys , or print directly
     user_signing_key: Optional[SyftSigningKey] = None
     user_email_address: Optional[str] = None
-    user_verify_keys: Optional[List[SyftVerifyKey]] = None
+    users: Optional[List[NodeIdentity]] = None
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
     __hash_keys__ = [
@@ -724,8 +728,9 @@ class NewProject(SyftObject):
         project_verify_keys = [
             shareholder.verify_key for shareholder in self.shareholders
         ]
-        if isinstance(self.user_verify_keys, list):
-            project_verify_keys.extend(self.user_verify_keys)
+        if isinstance(self.users, list):
+            user_verify_keys = [user.verify_key for user in self.users]
+            project_verify_keys.extend(user_verify_keys)
 
         return verify_key in project_verify_keys
 
@@ -742,18 +747,19 @@ class NewProject(SyftObject):
         if signing_key is None:
             raise Exception("Signing key is required to create leader client")
 
-        # verify_key = signing_key.verify_key
+        verify_key = signing_key.verify_key
 
-        # leader_client = SyftClientSessionCache.get_client_by_verify_key(
-        #     verify_key=verify_key
-        # )
+        leader_client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
+            verify_key=verify_key, node_uid=self.leader_node_peer.id
+        )
 
-        # TODO: Readd the notion of client cache
-        # when syft client session cache incorporated uid and verify key
-        leader_client = self.leader_node_peer.client_with_key(signing_key)
-        # SyftClientSessionCache.add_client_by_verify_key(
-        #     verify_key=verify_key, syft_client=leader_client
-        # )
+        if leader_client is None:
+            leader_client = self.leader_node_peer.client_with_key(signing_key)
+            SyftClientSessionCache.add_client_by_uid_and_verify_key(
+                verify_key=verify_key,
+                node_uid=leader_client.id,
+                syft_client=leader_client,
+            )
 
         return leader_client
 
@@ -1121,7 +1127,7 @@ class NewProjectSubmit(SyftObject):
     consensus_model: ConsensusModel = DemocraticConsensusModel()
     leader_node_route: Optional[NodeRoute]
     user_email_address: Optional[str] = None
-    user_verify_keys: Optional[List[SyftVerifyKey]] = None
+    users: Optional[List[NodeIdentity]] = None
 
     @root_validator(pre=True)
     def make_shareholders_and_leader_route(cls, values) -> Dict:
@@ -1153,20 +1159,31 @@ class NewProjectSubmit(SyftObject):
 
         return values
 
-    @root_validator()
-    def check_user_email_and_keys(cls, values) -> Dict:
+    @root_validator(pre=True)
+    def check_user_email_and_users(cls, values) -> Dict:
         if values["user_email_address"] is not None:
-            user_verify_keys = values["user_verify_keys"]
-            if not isinstance(user_verify_keys, list) or len(user_verify_keys) == 0:
+            users = values["users"]
+            if not isinstance(users, list) or len(users) == 0:
                 raise SyftException(
-                    "User verify keys cannot be empty if user email address is provided"
+                    "Users cannot be empty if user email address is provided"
                 )
 
             share_holders = values["shareholders"]
-            if len(share_holders) != len(user_verify_keys):
+            if len(share_holders) != len(users):
                 raise SyftException(
-                    "Number of user verify keys should be equal to number of shareholders"
+                    "Number of users should be equal to number of shareholders"
                 )
+            users_node_identity = []
+            for user in users:
+                if isinstance(user, SyftClient):
+                    users_node_identity.append(NodeIdentity.from_client(user))
+                elif isinstance(user, NodeIdentity):
+                    users_node_identity.append(user)
+                else:
+                    raise SyftException(
+                        "Users should be either SyftClient or NodeIdentity"
+                    )
+            values["users"] = users_node_identity
 
         return values
 
@@ -1203,18 +1220,20 @@ class NewProjectSubmit(SyftObject):
         project_id = UID()
         projects = []
 
-        if self.user_verify_keys is None:
+        if self.users is None:
             # If the Data Owner creates the project
-            verify_keys = [shareholder.verify_key for shareholder in self.shareholders]
+            node_identities = self.shareholders
         else:
             # If the Data Scientist creates the project
-            verify_keys = self.user_verify_keys
+            node_identities = self.users
 
-        for verify_key in verify_keys:
-            client = SyftClientSessionCache.get_client_by_verify_key(verify_key)
+        for node_identity in node_identities:
+            client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
+                verify_key=node_identity.verify_key, node_uid=node_identity.id
+            )
             if client is None:
                 raise SyftException(
-                    f"Client not found for verify key: {str(verify_key)[0:8]}"
+                    f"Client not found for node_identity: {node_identity}"
                     "Kindly login to the node"
                 )
 

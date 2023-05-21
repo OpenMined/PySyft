@@ -453,14 +453,17 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
-                # Adding another cache storage by verify key
-                # as this would be useful in retrieving clients
-                # when we have multiple clients of same node
-                # in the same sessions, as verify key is unique
+                # Adding another cache storage
+                # as this would be useful in retrieving unique clients
+                # node uid and verify key are not individually unique
+                # both the combination of node uid and verify key are unique
+                # which could be used to identity a client uniquely of any given node
                 # TODO: It would be better to have a single cache storage
-                # combining both email, password and verify key
-                SyftClientSessionCache.add_client_by_verify_key(
-                    verify_key=signing_key.verify_key, syft_client=self
+                # combining both email, password and verify key and uid
+                SyftClientSessionCache.add_client_by_uid_and_verify_key(
+                    verify_key=signing_key.verify_key,
+                    node_uid=self.id,
+                    syft_client=self,
                 )
         return self
 
@@ -634,22 +637,20 @@ class SyftClientSessionCache:
         cls.__client_cache__[syft_client.id] = syft_client
 
     @classmethod
-    def add_client_by_verify_key(
+    def add_client_by_uid_and_verify_key(
         cls,
         verify_key: SyftVerifyKey,
+        node_uid: UID,
         syft_client: SyftClient,
     ):
-        # node uid could be same for multiple users
-        # verify key is unique for each user
-        # so we use verify key as key for client cache
-        hash_key = str(verify_key)
+        hash_key = str(node_uid) + str(verify_key)
         cls.__client_cache__[hash_key] = syft_client
 
     @classmethod
-    def get_client_by_verify_key(
-        cls, verify_key: SyftVerifyKey
+    def get_client_by_uid_and_verify_key(
+        cls, verify_key: SyftVerifyKey, node_uid: UID
     ) -> Optional[SyftClient]:
-        hash_key = str(verify_key)
+        hash_key = str(node_uid) + str(verify_key)
         return cls.__client_cache__.get(hash_key, None)
 
     @classmethod
