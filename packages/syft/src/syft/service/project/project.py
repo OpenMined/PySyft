@@ -346,7 +346,7 @@ class ProjectRequest(ProjectEventAddObject):
             return "No one has responded to the request yet. Kindly recheck later 🙂"
 
         if len(responses) > 1:
-            raise SyftError(
+            return SyftError(
                 message="The Request Contains more than one Response"
                 "which is currently not possible"
                 "The request should contain only one response"
@@ -355,7 +355,7 @@ class ProjectRequest(ProjectEventAddObject):
             )
         response = responses[0]
         if not isinstance(response, ProjectRequestResponse):
-            raise SyftError(
+            return SyftError(
                 message=f"Response : {type(response)} is not of type ProjectRequestResponse"
             )
 
@@ -641,7 +641,7 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
         respondents = {}
         for poll_answer in poll_answers[::-1]:
             if not isinstance(poll_answer, AnswerProjectPoll):
-                raise SyftError(
+                return SyftError(
                     message=f"Poll answer: {type(poll_answer)} is not of type AnswerProjectPoll"
                 )
             creator_verify_key = poll_answer.creator_verify_key
@@ -949,7 +949,7 @@ class NewProject(SyftObject):
         msg_id: UID,
     ):
         if msg_id not in self.event_ids:
-            raise SyftError(message=f"Message id: {msg_id} not found")
+            return SyftError(message=f"Message id: {msg_id} not found")
         message = self.event_id_hashmap[msg_id]
 
         reply_event: Union[ProjectMessage, ProjectThreadMessage]
@@ -988,7 +988,7 @@ class NewProject(SyftObject):
         answer: Optional[int] = None,
     ):
         if poll_id not in self.event_ids:
-            raise SyftError(message=f"Poll id: {poll_id} not found")
+            return SyftError(message=f"Poll id: {poll_id} not found")
         poll = self.event_id_hashmap[poll_id]
 
         if not isinstance(poll, ProjectMultipleChoicePoll):
@@ -1010,13 +1010,13 @@ class NewProject(SyftObject):
         permission: Enum,
     ):
         if not isinstance(obj, UserCode):
-            raise SyftError(
+            return SyftError(
                 message=f"Currently we only support requests for UserCode: {type(obj)}"
             )
 
         node_uid = obj.node_uid
         if node_uid is None:
-            raise SyftError(f"Node uid is not set for the object: {obj}")
+            return SyftError(f"Node uid is not set for the object: {obj}")
 
         # TODO: Find a workaround for the api registry problem
         # when we have Data Owner and Data scientist in the same notebook
@@ -1056,7 +1056,7 @@ class NewProject(SyftObject):
         req_id: UID,
     ):
         if req_id not in self.event_ids:
-            raise SyftError(message=f"Request id: {req_id} not found")
+            return SyftError(message=f"Request id: {req_id} not found")
         request = self.event_id_hashmap[req_id]
 
         request_event: ProjectRequestResponse

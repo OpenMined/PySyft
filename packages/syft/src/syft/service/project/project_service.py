@@ -303,7 +303,9 @@ class NewProjectService(AbstractService):
                 return SyftError(message="User does not have permission to sync events")
 
             if seq_no < 0:
-                raise SyftError(message="Input seq_no should be a non negative integer")
+                return SyftError(
+                    message="Input seq_no should be a non negative integer"
+                )
 
             # retrieving unsycned events based on seq_no
             return project.events[seq_no:]
