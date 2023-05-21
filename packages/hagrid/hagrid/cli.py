@@ -121,7 +121,7 @@ def get_compose_src_path(
 ) -> str:
     grid_path = GRID_SRC_PATH()
     if EDITABLE_MODE and template_location is None:
-        if node_type == "enclave":
+        if node_type.input == "enclave":
             return grid_path + "/worker"
         else:
             return grid_path
@@ -352,6 +352,55 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Set root password of node",
+)
+@click.option(
+    "--azure-resource-group",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Resource Group",
+)
+@click.option(
+    "--azure-location",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Resource Group Location",
+)
+@click.option(
+    "--azure-size",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure VM Size",
+)
+@click.option(
+    "--azure-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure VM Username",
+)
+@click.option(
+    "--azure-key-path",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Key Path",
+)
+@click.option(
+    "--azure-repo",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Source Repo",
+)
+@click.option(
+    "--azure-branch",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Source Branch",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
