@@ -1020,29 +1020,22 @@ class NewProject(SyftObject):
         if node_uid is None:
             return SyftError(f"Node uid is not set for the object: {obj}")
 
-        # TODO: Find a workaround for the api registry problem
-        # when we have Data Owner and Data scientist in the same notebook
-        # they belong to the same Node UID, which would give same api for both
-        # users
-
-        # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(node_uid)
-        if api is None:
-            # TODO: It would hard for users to figure out the node by uid
-            # Maybe we could include the node name in the error message?
+        user_verify_key = self.user_signing_key.verify_key
+        client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
+            verify_key=user_verify_key, node_uid=node_uid
+        )
+        if client is None:
             return SyftError(
-                message=f"You must login to node - {str(node_uid)[0:8]}"
-                "to create a request"
+                message=f"Client not found for node uid: {node_uid}, verify_key: {user_verify_key}"
             )
+
         linked_obj = LinkedObject.from_obj(obj, node_uid=node_uid)
 
         CODE_EXECUTE = UserCodeStatusChange(value=permission, linked_obj=linked_obj)
         changes = [CODE_EXECUTE]
 
         request = SubmitRequest(changes=changes)
-        submitted_req = api.services.request.submit(request, send_message=False)
+        submitted_req = client.api.services.request.submit(request, send_message=False)
         if isinstance(submitted_req, SyftError):
             return submitted_req
 
