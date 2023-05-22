@@ -440,7 +440,20 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
+
+        # relative
+        from ..node.node import CODE_RELOADER
+        from ..node.node import thread_ident
+
+        CODE_RELOADER[thread_ident()] = self._reload_user_code
         return self
+
+    def _reload_user_code(self):
+        # relative
+        from ..service.code.user_code import load_approved_policy_code
+
+        user_code_items = self.code.get_all_for_user()
+        load_approved_policy_code(user_code_items)
 
     def register(
         self,

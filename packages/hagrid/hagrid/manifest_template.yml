@@ -9,26 +9,26 @@ files:
   grid:
     path: packages/grid/
     common:
-    - rabbitmq/rabbitmq.conf
-    - redis/redis.conf
-    - seaweedfs/filer.toml
-    - seaweedfs/s3config.json
-    - vpn/config.yaml
+      - rabbitmq/rabbitmq.conf
+      - redis/redis.conf
+      - seaweedfs/filer.toml
+      - seaweedfs/s3config.json
+      - vpn/config.yaml
     docker:
-    - default.env
-    - docker-compose.build.yml
-    - docker-compose.dev.yml
-    - docker-compose.pull.yml
-    - docker-compose.test.yml
-    - docker-compose.tls.yml
-    - docker-compose.yml
-    - traefik/docker/dynamic-tls.yml
-    - traefik/docker/dynamic.yml
-    - traefik/docker/traefik-tls.template.yml
-    - traefik/docker/traefik.yml
-    - vpn/headscale.dockerfile
-    - vpn/tailscale.dockerfile
+      - default.env
+      - docker-compose.build.yml
+      - docker-compose.dev.yml
+      - docker-compose.pull.yml
+      - docker-compose.test.yml
+      - docker-compose.tls.yml
+      - docker-compose.yml
+      - traefik/docker/dynamic-tls.yml
+      - traefik/docker/dynamic.yml
+      - traefik/docker/traefik-tls.template.yml
+      - traefik/docker/traefik.yml
+      - vpn/headscale.dockerfile
+      - vpn/tailscale.dockerfile
     k8s:
-    - devspace.yaml
-    - traefik/k8s/dynamic.yml
-    - traefik/k8s/traefik.yml
+      - devspace.yaml
+      - traefik/k8s/dynamic.yml
+      - traefik/k8s/traefik.yml
