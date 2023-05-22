@@ -937,11 +937,12 @@ class NewProject(SyftObject):
     def reply_message(
         self,
         reply: str,
-        msg_id: UID,
+        message: Union[UID, ProjectMessage, ProjectThreadMessage],
     ):
-        if msg_id not in self.event_ids:
-            return SyftError(message=f"Message id: {msg_id} not found")
-        message = self.event_id_hashmap[msg_id]
+        if isinstance(message, UID):
+            if message not in self.event_ids:
+                return SyftError(message=f"Message id: {message} not found")
+            message = self.event_id_hashmap[message]
 
         reply_event: Union[ProjectMessage, ProjectThreadMessage]
         if isinstance(message, ProjectMessage):
@@ -953,7 +954,7 @@ class NewProject(SyftObject):
         else:
             return SyftError(
                 message=f"You can only reply to a message: {type(message)}"
-                "Kindly re-check the msg_id"
+                "Kindly re-check the msg"
             )
 
         result = self.add_event(reply_event)
@@ -982,17 +983,18 @@ class NewProject(SyftObject):
 
     def answer_poll(
         self,
-        poll_id: UID,
+        poll: Union[UID, ProjectMultipleChoicePoll],
         answer: Optional[int] = None,
     ):
-        if poll_id not in self.event_ids:
-            return SyftError(message=f"Poll id: {poll_id} not found")
-        poll = self.event_id_hashmap[poll_id]
+        if isinstance(poll, UID):
+            if poll not in self.event_ids:
+                return SyftError(message=f"Poll id: {poll} not found")
+            poll = self.event_id_hashmap[poll]
 
         if not isinstance(poll, ProjectMultipleChoicePoll):
             return SyftError(
                 message=f"You can only reply to a poll: {type(poll)}"
-                "Kindly re-check the poll_id"
+                "Kindly re-check the poll"
             )
 
         if not isinstance(answer, int) or answer <= 0 or answer > len(poll.choices):
@@ -1058,11 +1060,12 @@ class NewProject(SyftObject):
     # Adding only approve request, which would later be used to approve or deny a request
     def approve_request(
         self,
-        req_id: UID,
+        request: Union[UID, ProjectRequest],
     ):
-        if req_id not in self.event_ids:
-            return SyftError(message=f"Request id: {req_id} not found")
-        request = self.event_id_hashmap[req_id]
+        if isinstance(request, UID):
+            if request not in self.event_ids:
+                return SyftError(message=f"Request id: {request} not found")
+            request = self.event_id_hashmap[request]
 
         request_event: ProjectRequestResponse
         if isinstance(request, ProjectRequest):
@@ -1072,7 +1075,7 @@ class NewProject(SyftObject):
         else:
             return SyftError(
                 message=f"You can only approve a request: {type(request)}"
-                "Kindly re-check the req_id"
+                "Kindly re-check the request"
             )
         result = self.add_event(request_event)
         if isinstance(result, SyftSuccess):
