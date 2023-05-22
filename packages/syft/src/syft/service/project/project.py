@@ -63,16 +63,15 @@ class EventAlreadyAddedException(SyftException):
     pass
 
 
-@serializable()
-class NodeIdentity(SyftObject):
-    __canonical_name__ = "NodeIdentity"
+class Identity(SyftObject):
+    __canonical_name__ = "Identity"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     verify_key: SyftVerifyKey
 
     def __hash__(self) -> int:
-        return hash(self.id) + hash(self.verify_key)
+        return hash(str(self.id) + str(self.verify_key))
 
     __attr_repr_cols__ = ["id", "verify_key"]
 
@@ -81,9 +80,26 @@ class NodeIdentity(SyftObject):
         id_str = f"{self.id}"
         return f"<🔑 {verify_key_str[0:8]} @ 🟢 {id_str[0:8]}>"
 
-    @staticmethod
-    def from_client(client: SyftClient) -> NodeIdentity:
-        return NodeIdentity(id=client.id, verify_key=client.credentials.verify_key)
+    @classmethod
+    def from_client(cls, client: SyftClient) -> Identity:
+        return cls(id=client.id, verify_key=client.credentials.verify_key)
+
+
+@serializable()
+class NodeIdentity(Identity):
+    """This class is used to identify the node owner"""
+
+    __canonical_name__ = "NodeIdentity"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+# Used to Identity data scientist users of the node
+@serializable()
+class UserIdentity(Identity):
+    """This class is used to identify the data scientist users of the node"""
+
+    __canonical_name__ = "UserIdentity"
+    __version__ = SYFT_OBJECT_VERSION_1
 
 
 @transform(NodeMetadata, NodeIdentity)
@@ -614,8 +630,8 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
                     message=f"Poll answer: {type(poll_answer)} is not of type AnswerProjectPoll"
                 )
             creator_verify_key = poll_answer.creator_verify_key
+
             # Store only the latest response from the user
-            # TODO: modify this when we have revamped the data scientist identity
             identity = project.get_identity_from_key(creator_verify_key)
             if identity not in respondents:
                 respondents[identity] = poll_answer.answer
@@ -667,7 +683,7 @@ class NewProject(SyftObject):
     # WARNING:  Do not add it to hash keys , or print directly
     user_signing_key: Optional[SyftSigningKey] = None
     user_email_address: Optional[str] = None
-    users: Optional[List[NodeIdentity]] = None
+    users: List[UserIdentity] = []
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
     __hash_keys__ = [
@@ -693,20 +709,23 @@ class NewProject(SyftObject):
 
         return leader_client.api.services.newproject.broadcast_event(project_event)
 
+    def get_all_identities(self) -> List[Identity]:
+        return [*self.shareholders, *self.users]
+
     def key_in_project(self, verify_key: SyftVerifyKey) -> bool:
         project_verify_keys = [
-            shareholder.verify_key for shareholder in self.shareholders
+            identity.verify_key for identity in self.get_all_identities()
         ]
-        if isinstance(self.users, list):
-            user_verify_keys = [user.verify_key for user in self.users]
-            project_verify_keys.extend(user_verify_keys)
 
         return verify_key in project_verify_keys
 
-    def get_identity_from_key(self, verify_key: SyftVerifyKey) -> List[NodeIdentity]:
-        for shareholder in self.shareholders:
-            if shareholder.verify_key == verify_key:
-                return shareholder
+    def get_identity_from_key(
+        self, verify_key: SyftVerifyKey
+    ) -> List[Union[NodeIdentity, UserIdentity]]:
+        identities: List[Identity] = self.get_all_identities()
+        for identity in identities:
+            if identity.verify_key == verify_key:
+                return identity
         return SyftError(message=f"Shareholder with verify key: {verify_key} not found")
 
     def get_leader_client(self, signing_key: SyftSigningKey) -> SyftClient:
@@ -1116,7 +1135,7 @@ class NewProjectSubmit(SyftObject):
     consensus_model: ConsensusModel = DemocraticConsensusModel()
     leader_node_route: Optional[NodeRoute]
     user_email_address: Optional[str] = None
-    users: Optional[List[NodeIdentity]] = None
+    users: List[UserIdentity] = []
 
     @root_validator(pre=True)
     def make_shareholders_and_leader_route(cls, values) -> Dict:
@@ -1152,7 +1171,7 @@ class NewProjectSubmit(SyftObject):
     def check_user_email_and_users(cls, values) -> Dict:
         if values["user_email_address"] is not None:
             users = values["users"]
-            if not isinstance(users, list) or len(users) == 0:
+            if len(users) == 0:
                 raise SyftException(
                     "Users cannot be empty if user email address is provided"
                 )
@@ -1165,12 +1184,12 @@ class NewProjectSubmit(SyftObject):
             users_node_identity = []
             for user in users:
                 if isinstance(user, SyftClient):
-                    users_node_identity.append(NodeIdentity.from_client(user))
-                elif isinstance(user, NodeIdentity):
+                    users_node_identity.append(UserIdentity.from_client(user))
+                elif isinstance(user, UserIdentity):
                     users_node_identity.append(user)
                 else:
                     raise SyftException(
-                        "Users should be either SyftClient or NodeIdentity"
+                        "Users should be either SyftClient or UserIdentity"
                     )
             values["users"] = users_node_identity
 
@@ -1209,7 +1228,7 @@ class NewProjectSubmit(SyftObject):
         project_id = UID()
         projects = []
 
-        if self.users is None:
+        if not self.users:
             # If the Data Owner creates the project
             node_identities = self.shareholders
         else:
@@ -1252,27 +1271,6 @@ def elect_leader(context: TransformContext) -> TransformContext:
     if len(context.output["shareholders"]) == 0:
         raise Exception("Project's require at least one shareholder")
 
-    # leader_key: Optional[SyftVerifyKey] = None
-
-    # shareholders_verify_key = [
-    #     shareholder.verify_key for shareholder in context.output["shareholders"]
-    # ]
-
-    # TODO: implement consensus model for selecting a leader
-    # Assume by default that the first shareholder is the leader
-    # leader_key = shareholders_verify_key[0]
-
-    # if context.node.verify_key == leader_key:
-    #     # get NodePeer for self
-    #     peer = context.node.metadata.to(NodePeer)
-    # else:
-    #     peer = context.node.get_service("networkservice").stash.get_for_verify_key(leader_key)
-    #     if peer.is_err():
-    #         raise Exception(f"Leader is unknown peer. {leader_key}")
-    #     peer = peer.ok()
-
-    # TODO: implement consensus model for selecting a leader
-    # Assume by default that the first shareholder is the leader
     context.output["state_sync_leader"] = context.output["shareholders"][0]
 
     return context
