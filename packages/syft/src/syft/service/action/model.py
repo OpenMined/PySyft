@@ -23,13 +23,18 @@ class ModelObject(ActionObject):
     syft_internal_type: ClassVar[Type[Any]] = Union[GPT2TokenizerFast, TextGenerationPipeline]
     syft_pointer_type = ModelPointer
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    __serde_overrides__ = {"syft_action_data": (lambda x: None, lambda x: None)}
+    
+    def __post_init__(self) -> None:
+        # TODO: load model 
+        return ...
     # syft_dont_wrap_attrs = ["dtype"]
     
-    @staticmethod
-    def from_model(model: Any, node) -> Self:
+    # @staticmethod
+    # def from_model(model: Any, node) -> Self:
         
         
-        return ModelObject(syft_action_data=new_model)
+    #     return ModelObject(syft_action_data=new_model)
         
 
 action_types[GPT2TokenizerFast] = ModelObject

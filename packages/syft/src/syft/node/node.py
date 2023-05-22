@@ -51,7 +51,7 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.syft_file.syft_file_service import SyftFileService
-from ..service.model.model_service import ModelInterfaceService
+from ..service.model.model_service import ModelCardService
 from ..service.message.message_service import MessageService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.metadata_stash import MetadataStash
@@ -203,7 +203,7 @@ class Node(AbstractNode):
                 ActionService,
                 DatasetService,
                 SyftFileService,
-                ModelInterfaceService,
+                ModelCardService,
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
@@ -421,7 +421,7 @@ class Node(AbstractNode):
                 MetadataService,
                 DatasetService,
                 SyftFileService,
-                ModelInterfaceService,
+                ModelCardService,
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
