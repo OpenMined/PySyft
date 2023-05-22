@@ -560,21 +560,6 @@ class AnswerProjectPoll(ProjectSubEvent):
         "answer",
     ]
 
-    # TODO: Re-enable when we have data scientist identity integerated
-    # def _pre_add_update(self, project: Project) -> None:
-    #     if not project.key_in_project(self.creator_verify_key):
-    #         # TODO: add Data Scientist key so this works
-    #         # raise Exception(
-    #         #     f"{self.creator_verify_key} is not a shareholder: {project.shareholders}"
-    #         # )
-    #         pass
-
-    #     poll = project.get_parent(self.parent_event_id)
-    #     if self.creator_verify_key not in poll.respondents:
-    #         # TODO: add Data Scientist key so this works
-    #         # raise Exception(f"{self.creator_verify_key} is not in this poll")
-    #         pass
-
 
 @serializable()
 class ProjectMultipleChoicePoll(ProjectEventAddObject):
@@ -603,22 +588,6 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
 
     def answer(self, answer: int) -> ProjectMessage:
         return AnswerProjectPoll(answer=answer, parent_event_id=self.id)
-
-    # TODO: Re-enable when we have data scientist identity integerated
-    # def _pre_add_update(self, project: Project) -> None:
-    #     super()._pre_add_update(project=project)
-    #     shareholder_keys = [
-    #         shareholder.verify_key for shareholder in project.shareholders
-    #     ]
-    #     if len(self.respondents) == 0:
-    #         self.respondents = shareholder_keys
-    #     else:
-    #         respondents_set = set(self.respondents)
-    #         # TODO: make this some larger set of keys that are allowed on the project
-    #         if not respondents_set.issubset(set(shareholder_keys)):
-    #             raise Exception(
-    #                 f"Respondents: {self.respondents} must be in the project"
-    #             )
 
     def status(
         self, project: NewProject, pretty_print: bool = True
