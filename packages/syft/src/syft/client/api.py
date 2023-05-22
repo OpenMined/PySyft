@@ -266,7 +266,7 @@ def generate_remote_lib_function(
             op=op,
             remote_self=None,
             args=[x.syft_lineage_id for x in action_args],
-            kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
+            kwargs={k: v.syft_lineage_id for k, v in action_kwargs.items()},
             action_type=ActionType.FUNCTION,
             # TODO: fix
             result_id=LineageID(UID(), 1),
@@ -655,7 +655,10 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
             if isinstance(param.annotation, str):
                 # 🟡 TODO 21: make this work for weird string type situations
                 # happens when from __future__ import annotations in a class file
-                t = index_syft_by_module_name(param.annotation)
+                try:
+                    t = index_syft_by_module_name(param.annotation)
+                except Exception:
+                    t = param.annotation
             else:
                 t = param.annotation
             msg = None

@@ -181,7 +181,11 @@ class CMPBase:
     def parent_is_parent_module(parent_obj: Any, child_obj: Any) -> Optional[str]:
         try:
             if hasattr(child_obj, "__module__"):
-                return child_obj.__module__ == parent_obj.__name__
+                # checks if from same library
+                return (
+                    child_obj.__module__.split(".")[0]
+                    == parent_obj.__name__.split(".")[0]
+                )
             else:
                 # TODO: this is a fix for for instance numpy ufuncs
                 return child_obj.__class__.__module__ == parent_obj.__name__
@@ -350,6 +354,11 @@ action_execute_registry_libs = CMPTree(
                 ),
                 CMPModule("testing", permissions=NONE_EXECUTE),
             ],
+        ),
+        CMPModule(
+            "pandas",
+            permissions=ALL_EXECUTE,
+            children=[],
         ),
     ]
 ).build()
