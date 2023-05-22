@@ -20,6 +20,7 @@ import re
 from secrets import randbelow
 import socket
 import sys
+import threading
 import time
 from types import ModuleType
 from typing import Any
@@ -853,3 +854,7 @@ def recursive_hash(obj: Any) -> int:
         hash_bytes = hashlib.sha256(serde_bytes).digest()
         hashes += int.from_bytes(hash_bytes, byteorder="big")
     return hashes
+
+
+def thread_ident() -> int:
+    return threading.current_thread().ident

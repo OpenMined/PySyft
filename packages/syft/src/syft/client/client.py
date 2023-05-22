@@ -40,6 +40,7 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
+from ..util.util import thread_ident
 from ..util.util import verify_tls
 from .api import APIModule
 from .api import APIRegistry
@@ -443,9 +444,9 @@ class SyftClient:
 
         # relative
         from ..node.node import CODE_RELOADER
-        from ..node.node import thread_ident
 
         CODE_RELOADER[thread_ident()] = self._reload_user_code
+
         return self
 
     def _reload_user_code(self):

@@ -6,7 +6,6 @@ from copy import deepcopy
 from pathlib import Path
 import sqlite3
 import tempfile
-import threading
 from typing import Any
 from typing import Dict
 from typing import List
@@ -25,6 +24,7 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..types.uid import UID
+from ..util.util import thread_ident
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -39,10 +39,6 @@ def _repr_debug_(value: Any) -> str:
     if hasattr(value, "_repr_debug_"):
         return str(value._repr_debug_())
     return repr(value)
-
-
-def thread_ident() -> int:
-    return threading.current_thread().ident
 
 
 @serializable(attrs=["index_name", "settings", "store_config"])

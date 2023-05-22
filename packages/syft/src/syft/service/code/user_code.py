@@ -650,6 +650,7 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
 
 
 def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
+    """Reload the policy code in memory for user code that is approved."""
     try:
         for user_code in user_code_items:
             if user_code.status.approved:
