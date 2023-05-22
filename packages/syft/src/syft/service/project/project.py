@@ -42,7 +42,6 @@ from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
 from ..code.user_code import UserCode
-from ..code.user_code import UserCodeStatus
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
@@ -1039,9 +1038,7 @@ class NewProject(SyftObject):
             )
         linked_obj = LinkedObject.from_obj(obj, node_uid=node_uid)
 
-        CODE_EXECUTE = UserCodeStatusChange(
-            value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
-        )
+        CODE_EXECUTE = UserCodeStatusChange(value=permission, linked_obj=linked_obj)
         changes = [CODE_EXECUTE]
 
         request = SubmitRequest(changes=changes)
