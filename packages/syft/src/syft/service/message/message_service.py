@@ -14,6 +14,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .message_stash import MessageStash
 from .messages import CreateMessage
 from .messages import LinkedObject
@@ -53,7 +54,9 @@ class MessageService(AbstractService):
         messages = result.ok()
         return messages
 
-    @service_method(path="messages.get_all_sent", name="outbox")
+    @service_method(
+        path="messages.get_all_sent", name="outbox", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def get_all_sent(
         self, context: AuthedServiceContext
     ) -> Union[List[Message], SyftError]:

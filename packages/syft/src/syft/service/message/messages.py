@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional
 
 # relative
+from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
@@ -53,6 +54,14 @@ class Message(SyftObject):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+    def read(self) -> None:
+        api = APIRegistry.api_for(self.node_uid)
+        return api.services.messages.mark_as_read(uid=self.id)
+
+    def unread(self) -> None:
+        api = APIRegistry.api_for(self.node_uid)
+        return api.services.messages.mark_as_unread(uid=self.id)
 
 
 @serializable()
