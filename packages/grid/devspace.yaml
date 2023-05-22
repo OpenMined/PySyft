@@ -59,7 +59,7 @@ vars:
     value: "6379"
   - name: JAX_ENABLE_X64
     value: "True"
-  - name: NEXT_PUBLIC_API_URL
+  - name: VITE_PUBLIC_API_BASE_URL
     value: "/api/v1"
   - name: USE_NEW_SERVICE
     value: "True"
@@ -109,7 +109,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.8"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -121,7 +121,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.8"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -137,7 +137,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.8"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -149,7 +149,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.8"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -161,7 +161,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.8"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -660,8 +660,8 @@ deployments:
                 value: ${VERSION_HASH}
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
-              - name: NEXT_PUBLIC_API_URL
-                value: ${NEXT_PUBLIC_API_URL}
+              - name: VITE_PUBLIC_API_BASE_URL
+                value: ${VITE_PUBLIC_API_BASE_URL}
         service:
           name: ${SERVICE_NAME_FRONTEND}
           ports:

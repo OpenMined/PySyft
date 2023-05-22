@@ -11,7 +11,7 @@ import zipfile
 import requests
 
 # relative
-from ...util import bcolors
+from ...util.util import bcolors
 
 
 def check_oblv_proxy_installation_status():

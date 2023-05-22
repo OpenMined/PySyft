@@ -10,12 +10,14 @@ import subprocess  # nosec
 from typing import Any
 from typing import Callable
 from typing import Optional
+from typing import Union
 
 # third party
 import gevent
 
 # relative
 from .cli import str_to_bool
+from .deps import LATEST_STABLE_SYFT
 from .grammar import find_available_port
 from .names import random_name
 from .util import shell
@@ -50,6 +52,35 @@ def get_syft_client() -> Optional[Any]:
     return None
 
 
+def container_exists(name: str) -> bool:
+    output = shell(f"docker ps -q -f name='{name}'")
+    return len(output) > 0
+
+
+def container_id(name: str) -> Optional[str]:
+    output = shell(f"docker ps -q -f name='{name}'")
+    if len(output) > 0:
+        return output[0].strip()
+    return None
+
+
+def port_from_container(name: str) -> Optional[int]:
+    cid = container_id(name)
+    if cid is None:
+        return None
+    output = shell(f"docker port {cid}")
+    if len(output) > 0:
+        try:
+            # 80/tcp -> 0.0.0.0:8080
+            lines = output.split("\n")
+            parts = lines[0].split(":")
+            port = int(parts[1].strip())
+            return port
+        except Exception:  # nosec
+            return None
+    return None
+
+
 def container_exists_with(name: str, port: int) -> bool:
     output = shell(f"docker ps -q -f name='{name}' -f expose='{port}'")
     return len(output) > 0
@@ -61,6 +92,7 @@ class NodeType(Enum):
     WORKER = "worker"
     ENCLAVE = "enclave"
     PYTHON = "python"
+    VM = "vm"
 
 
 class NodeHandle:
@@ -84,7 +116,7 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(port=self.port)  # type: ignore
+            return sy.login(url=self.url, port=self.port)  # type: ignore
         elif self.node_type == NodeType.PYTHON:
             return self.python_node.guest_client  # type: ignore
 
@@ -100,6 +132,8 @@ class NodeHandle:
         if self.node_type == NodeType.PYTHON:
             if self.shutdown:
                 self.shutdown()
+        elif self.node_type == NodeType.VM:
+            pass
         else:
             Orchestra.land(self.name, node_type=self.node_type.value)
 
@@ -123,10 +157,12 @@ class Orchestra:
         cmd: bool = False,
         reset: bool = False,
         tail: bool = False,
-        port: Optional[int] = None,
-        host: Optional[str] = None,
+        port: Optional[Union[int, str]] = None,
+        host: Optional[str] = "0.0.0.0",  # nosec
         processes: int = 1,  # temporary work around for jax in subprocess
         local_db: bool = False,
+        tag: Optional[str] = "latest",
+        verbose: bool = False,
     ) -> Optional[NodeHandle]:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
@@ -138,7 +174,11 @@ class Orchestra:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
             if port:
-                start, stop = sy.bind_worker(  # type: ignore
+                if port == "auto":
+                    port = find_available_port(
+                        host="localhost", port=default_port, search=True
+                    )
+                start, stop = sy.serve_node(  # type: ignore
                     name=name,
                     host=host,
                     port=port,
@@ -155,21 +195,33 @@ class Orchestra:
                     shutdown=stop,
                 )
             else:
-                worker = sy.Worker.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
+                worker = sy.Domain.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
                 return NodeHandle(
                     node_type=node_type_enum, name=name, python_node=worker
+                )
+
+        if node_type_enum == NodeType.VM:
+            return NodeHandle(
+                node_type=node_type_enum, name=name, port=80, url="http://192.168.56.2"
+            )
+
+        if port == "auto" or port is None:
+            if container_exists(name=name):
+                port = port_from_container(name=name)
+            else:
+                port = find_available_port(
+                    host="localhost", port=default_port, search=True
                 )
 
         # Currently by default we launch in dev mode
         if reset:
             Orchestra.reset(name, node_type)
         else:
-            _port = default_port if port is None else port
-            if container_exists_with(name=name, port=_port):
+            if container_exists_with(name=name, port=port):
                 return NodeHandle(
                     node_type=node_type_enum,
                     name=name,
-                    port=_port,
+                    port=port,
                     url="http://localhost",
                 )
 
@@ -178,9 +230,6 @@ class Orchestra:
 
         name = random_name() if not name else name
         commands.extend([name, node_type_enum.value])
-
-        if port is None:
-            port = find_available_port(host="localhost", port=default_port, search=True)
 
         commands.append("to")
         commands.append(f"docker:{port}")
@@ -193,6 +242,16 @@ class Orchestra:
 
         if tail:
             commands.append("--tail")
+
+        if verbose:
+            commands.append("--verbose")
+
+        if tag:
+            commands.append(f"--tag={tag}")
+            if tag == "beta":
+                commands.append("--build-src=dev")
+            if tag == "latest":
+                commands.append(f"--build-src={LATEST_STABLE_SYFT}")
 
         # needed for building containers
         USER = os.environ.get("USER", getpass.getuser())
@@ -237,8 +296,11 @@ class Orchestra:
     def reset(name: str, node_type_enum: NodeType) -> None:
         if node_type_enum == NodeType.PYTHON:
             sy = get_syft_client()
-            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+            _ = sy.Domain.named(name, processes=1, reset=True)  # type: ignore
         else:
+            if container_exists(name=name):
+                Orchestra.shutdown(name=name, node_type_enum=node_type_enum)
+
             snake_name = to_snake_case(name)
 
             volume_output = shell(

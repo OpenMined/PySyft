@@ -24,9 +24,9 @@ from RestrictedPython import compile_restricted
 from result import Ok
 
 # relative
+from ...abstract_node import NodeType
 from ...client.api import NodeView
 from ...node.credentials import SyftVerifyKey
-from ...node.node import NodeType
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
@@ -193,7 +193,7 @@ def retrieve_from_db(
     code_item_id: UID, allowed_inputs: Dict[str, UID], context: AuthedServiceContext
 ) -> Dict:
     # relative
-    from ...service.action.action_service import TwinMode
+    from ...service.action.action_object import TwinMode
 
     action_service = context.node.get_service("actionservice")
     code_inputs = {}

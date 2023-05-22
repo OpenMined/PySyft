@@ -22,9 +22,9 @@ from result import Ok
 from result import Result
 
 # relative
+from ...abstract_node import NodeType
 from ...client.api import NodeView
 from ...node.credentials import SyftVerifyKey
-from ...node.node import NodeType
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -323,18 +323,25 @@ class UserCode(SyftObject):
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
         def wrapper(*args: Any, **kwargs: Any) -> Callable:
-            # remove the decorator
-            inner_function = ast.parse(self.raw_code).body[0]
-            inner_function.decorator_list = []
-            # compile the function
-            raw_byte_code = compile_byte_code(unparse(inner_function))
-            # load it
-            exec(raw_byte_code)  # nosec
-            # execute it
-            evil_string = f"{self.service_func_name}(*args, **kwargs)"
-            result = eval(evil_string, None, locals())  # nosec
-            # return the results
-            return result
+            try:
+                filtered_kwargs = {}
+                for k, v in kwargs.items():
+                    filtered_kwargs[k] = debox_asset(v)
+
+                # remove the decorator
+                inner_function = ast.parse(self.raw_code).body[0]
+                inner_function.decorator_list = []
+                # compile the function
+                raw_byte_code = compile_byte_code(unparse(inner_function))
+                # load it
+                exec(raw_byte_code)  # nosec
+                # execute it
+                evil_string = f"{self.service_func_name}(**filtered_kwargs)"
+                result = eval(evil_string, None, locals())  # nosec
+                # return the results
+                return result
+            except Exception as e:
+                print(f"Failed to run unsafe_function. {e}")
 
         return wrapper
 

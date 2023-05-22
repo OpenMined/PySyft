@@ -13,6 +13,7 @@ from loguru import logger
 from pydantic import ValidationError
 
 # relative
+from ..abstract_node import AbstractNode
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
 from ..service.context import NodeServiceContext
@@ -26,7 +27,6 @@ from ..service.user.user_service import UserService
 from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
-from .node import NewNode
 from .worker import Worker
 
 
@@ -114,7 +114,7 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_new_api_call(data)
 
-    def handle_login(email: str, password: str, node: NewNode) -> Any:
+    def handle_login(email: str, password: str, node: AbstractNode) -> Any:
         try:
             login_credentials = UserLoginCredentials(email=email, password=password)
         except ValidationError as e:
@@ -138,7 +138,7 @@ def make_routes(worker: Worker) -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    def handle_register(data: bytes, node: NewNode) -> Any:
+    def handle_register(data: bytes, node: AbstractNode) -> Any:
         user_create = deserialize(data, from_bytes=True)
 
         if not isinstance(user_create, UserCreate):
@@ -151,7 +151,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         if isinstance(result, SyftError):
             logger.bind(payload={"user": user_create}).error(result.message)
-            response = SyftError(message=f"User Registration failed: {result.message}")
+            response = SyftError(message=f"{result.message}")
         else:
             response = result
 

@@ -27,10 +27,11 @@ services:
       - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:
       - credentials-data:/storage
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   credentials-data:
 
 networks:
   worker-public:
-

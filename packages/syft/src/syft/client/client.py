@@ -21,9 +21,9 @@ from typing_extensions import Self
 
 # relative
 from .. import __version__
+from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import UserLoginCredentials
-from ..node.node import NewNode
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
@@ -93,7 +93,8 @@ class HTTPConnection(NodeConnection):
     def __init__(
         self, url: Union[GridURL, str], proxy_target_uid: Optional[UID] = None
     ) -> None:
-        url = GridURL.from_url(url)
+        url = GridURL.from_url(url).as_container_host()
+
         proxy_target_uid = proxy_target_uid
         super().__init__(url=url, proxy_target_uid=proxy_target_uid)
 
@@ -226,7 +227,7 @@ class PythonConnection(NodeConnection):
     __canonical_name__ = "PythonConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    node: NewNode
+    node: AbstractNode
     proxy_target_uid: Optional[UID]
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
@@ -329,7 +330,7 @@ class SyftClient:
         return SyftClient(connection=HTTPConnection(GridURL.from_url(url)))
 
     @staticmethod
-    def from_node(node: NewNode) -> Self:
+    def from_node(node: AbstractNode) -> Self:
         return SyftClient(connection=PythonConnection(node=node))
 
     @property
@@ -530,7 +531,7 @@ class SyftClient:
 @instrument
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-    node: Optional[NewNode] = None,
+    node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
 ) -> SyftClient:
     if node:
@@ -547,7 +548,7 @@ def connect(
 @instrument
 def login(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-    node: Optional[NewNode] = None,
+    node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
     email: Optional[str] = None,
     password: Optional[str] = None,

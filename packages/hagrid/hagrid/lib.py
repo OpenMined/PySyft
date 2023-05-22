@@ -178,6 +178,7 @@ def get_git_repo() -> git.Repo:
 
     is_git = check_is_git(path=repo_src_path())
     console = rich.get_console()
+
     if not EDITABLE_MODE and not is_git:
         github_repo = "OpenMined/PySyft.git"
         git_url = f"https://github.com/{github_repo}"
@@ -463,6 +464,6 @@ def check_jupyter_server(
         return False
 
 
-GIT_REPO = get_git_repo()
-GRID_SRC_VERSION = get_version_module()
-GRID_SRC_PATH = grid_src_path()
+GIT_REPO = get_git_repo
+GRID_SRC_VERSION = get_version_module
+GRID_SRC_PATH = grid_src_path

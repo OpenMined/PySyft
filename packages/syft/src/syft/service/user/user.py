@@ -103,7 +103,7 @@ class UserUpdate(PartialSyftObject):
 
     @pydantic.validator("email", pre=True)
     def make_email(cls, v: EmailStr) -> Optional[EmailStr]:
-        return EmailStr(v) if v is not None else v
+        return EmailStr(v) if isinstance(v, str) else v
 
     email: EmailStr
     name: str
@@ -150,6 +150,9 @@ class UserView(SyftObject):
 
     email: EmailStr
     name: str
+    role: ServiceRole  # make sure role cant be set without uid
+    institution: Optional[str]
+    website: Optional[str]
 
     __attr_repr_cols__ = ["name", "email"]
 

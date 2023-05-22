@@ -8,6 +8,7 @@ import sys
 from types import MappingProxyType
 from typing import Any
 from typing import Collection
+from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -16,6 +17,7 @@ from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
 from typing import cast
+import weakref
 
 # relative
 from .capnp import get_capnp_schema
@@ -123,7 +125,7 @@ def deserialize_defaultdict(blob: bytes) -> Mapping:
     df_tuple = _deserialize(blob, from_bytes=True)
     df_type_bytes, df_kv_bytes = df_tuple[0], df_tuple[1]
     df_type = _deserialize(df_type_bytes, from_bytes=True)
-    mapping = defaultdict(df_type)
+    mapping: Dict = defaultdict(df_type)
 
     pairs = get_deserialized_kv_pairs(blob=df_kv_bytes)
     mapping.update(pairs)
@@ -225,6 +227,12 @@ recursive_serde_register(
     set,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, set),
+)
+
+recursive_serde_register(
+    weakref.WeakSet,
+    serialize=serialize_iterable,
+    deserialize=functools.partial(deserialize_iterable, weakref.WeakSet),
 )
 
 recursive_serde_register(
@@ -339,7 +347,18 @@ recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
 
 if sys.version_info >= (3, 9):
-    recursive_serde_register_type(_UnionGenericAlias)
+    recursive_serde_register_type(
+        _UnionGenericAlias,
+        serialize_attrs=[
+            "__parameters__",
+            "__slots__",
+            "_inst",
+            "_name",
+            "__args__",
+            "__module__",
+            "__origin__",
+        ],
+    )
     recursive_serde_register_type(_SpecialGenericAlias)
 
 recursive_serde_register_type(EnumMeta)
