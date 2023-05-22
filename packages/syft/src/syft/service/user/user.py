@@ -103,7 +103,7 @@ class UserUpdate(PartialSyftObject):
 
     @pydantic.validator("email", pre=True)
     def make_email(cls, v: EmailStr) -> Optional[EmailStr]:
-        return EmailStr(v) if v is not None else v
+        return EmailStr(v) if isinstance(v, str) else v
 
     email: EmailStr
     name: str

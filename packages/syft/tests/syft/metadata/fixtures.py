@@ -3,14 +3,11 @@ import pytest
 
 # syft absolute
 from syft.__init__ import __version__
-from syft.node.worker import Worker
-from syft.service.context import AuthedServiceContext
 from syft.service.metadata.metadata_service import MetadataService
 from syft.service.metadata.metadata_stash import MetadataStash
 from syft.service.metadata.node_metadata import NodeMetadata
 from syft.service.metadata.node_metadata import NodeMetadataJSON
 from syft.service.metadata.node_metadata import NodeMetadataUpdate
-from syft.service.user.user import User
 from syft.types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from syft.types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 
@@ -57,8 +54,3 @@ def metadata_json(faker) -> NodeMetadataJSON:
 @pytest.fixture
 def metadata_service(document_store) -> MetadataService:
     return MetadataService(store=document_store)
-
-
-@pytest.fixture
-def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
-    return AuthedServiceContext(credentials=admin_user.verify_key, node=worker)

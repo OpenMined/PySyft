@@ -6,6 +6,7 @@ import contextlib
 from datetime import datetime
 from functools import partial
 import hashlib
+from multiprocessing import current_process
 import os
 import threading
 import traceback
@@ -35,6 +36,7 @@ from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..external import OBLV
+from ..serde import serialize
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
@@ -54,9 +56,14 @@ from ..service.metadata.metadata_stash import MetadataStash
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
+from ..service.project.project_service import NewProjectService
 from ..service.project.project_service import ProjectService
+from ..service.queue.queue import APICallMessageHandler
+from ..service.queue.queue import QueueManager
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
+from ..service.queue.zmq_queue import QueueConfig
+from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.request.request_service import RequestService
 from ..service.response import SyftError
 from ..service.service import AbstractService
@@ -101,6 +108,7 @@ def gipc_decoder(obj_bytes):
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
+NODE_TYPE = "NODE_TYPE"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
@@ -112,6 +120,10 @@ def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
 
 def get_private_key_env() -> Optional[str]:
     return get_env(NODE_PRIVATE_KEY)
+
+
+def get_node_type() -> Optional[str]:
+    return get_env(NODE_TYPE, "domain")
 
 
 def get_node_uid_env() -> Optional[str]:
@@ -154,6 +166,7 @@ class Node(AbstractNode):
         node_type: NodeType = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
+        queue_config: QueueConfig = ZMQQueueConfig,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -177,6 +190,7 @@ class Node(AbstractNode):
 
         self.processes = processes
         self.is_subprocess = is_subprocess
+
         if name is None:
             name = random_name()
         self.name = name
@@ -194,6 +208,7 @@ class Node(AbstractNode):
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
+                NewProjectService,
             ]
             if services is None
             else services
@@ -228,6 +243,22 @@ class Node(AbstractNode):
         self.node_type = node_type
 
         self.post_init()
+        if not (self.is_subprocess or self.processes == 0):
+            self.init_queue_manager(queue_config=queue_config)
+
+    def init_queue_manager(self, queue_config: QueueConfig):
+        MessageHandlers = [APICallMessageHandler]
+
+        self.queue_manager = QueueManager(queue_config)
+        for message_handler in MessageHandlers:
+            queue_name = message_handler.queue_name
+            producer = self.queue_manager.create_producer(
+                queue_name=queue_name,
+            )
+            consumer = self.queue_manager.create_consumer(
+                message_handler, producer.address
+            )
+            consumer.run()
 
     @classmethod
     def named(
@@ -274,7 +305,7 @@ class Node(AbstractNode):
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
-        return credentials == self.signing_key.verify_key
+        return credentials == self.verify_key
 
     @property
     def root_client(self):
@@ -295,31 +326,34 @@ class Node(AbstractNode):
         return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
-        services = []
-        for service in self.services:
-            services.append(service.__name__)
-        service_string = "\n".join(sorted(services))
-        return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}\n\nServices:\n{service_string}"
+        service_string = ""
+        if not self.is_subprocess:
+            services = []
+            for service in self.services:
+                services.append(service.__name__)
+            service_string = ", ".join(sorted(services))
+            service_string = f"\n\nServices:\n{service_string}"
+        return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}{service_string}"
 
     def post_init(self) -> None:
-        context = AuthedServiceContext(
-            node=self, credentials=self.signing_key.verify_key
-        )
+        context = AuthedServiceContext(node=self, credentials=self.verify_key)
 
         if UserCodeService in self.services:
             user_code_service = self.get_service(UserCodeService)
             user_code_service.load_user_code(context=context)
-        if self.is_subprocess:
+
+        if self.is_subprocess or current_process().name != "MainProcess":
             # print(f"> Starting Subprocess {self}")
             pass
         else:
-            print(f"> {self}")
+            pass
+            # why would we do this?
+            # print(f"> {self}")
 
         def reload_user_code() -> None:
             user_code_service.load_user_code(context=context)
 
         CODE_RELOADER[thread_ident()] = reload_user_code
-        # super().post_init()
 
     def init_stores(
         self,
@@ -344,7 +378,7 @@ class Node(AbstractNode):
         self.document_store_config = document_store_config
 
         self.document_store = document_store(
-            root_verify_key=self.signing_key.verify_key,
+            root_verify_key=self.verify_key,
             store_config=document_store_config,
         )
         if action_store_config is None:
@@ -363,12 +397,10 @@ class Node(AbstractNode):
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store = SQLiteActionStore(
                 store_config=action_store_config,
-                root_verify_key=self.signing_key.verify_key,
+                root_verify_key=self.verify_key,
             )
         else:
-            self.action_store = DictActionStore(
-                root_verify_key=self.signing_key.verify_key
-            )
+            self.action_store = DictActionStore(root_verify_key=self.verify_key)
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
@@ -392,6 +424,7 @@ class Node(AbstractNode):
                 MessageService,
                 ProjectService,
                 DataSubjectMemberService,
+                NewProjectService,
             ]
 
             if OBLV:
@@ -435,7 +468,7 @@ class Node(AbstractNode):
         return NodeMetadata(
             name=self.name,
             id=self.id,
-            verify_key=self.signing_key.verify_key,
+            verify_key=self.verify_key,
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
@@ -444,6 +477,10 @@ class Node(AbstractNode):
     @property
     def icon(self) -> str:
         return "🦾"
+
+    @property
+    def verify_key(self) -> SyftVerifyKey:
+        return self.signing_key.verify_key
 
     def __hash__(self) -> int:
         return hash(self.id)
@@ -457,8 +494,10 @@ class Node(AbstractNode):
 
         return True
 
-    def resolve_future(self, uid: UID) -> Union[Optional[QueueItem], SyftError]:
-        result = self.queue_stash.pop(uid)
+    def resolve_future(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Union[Optional[QueueItem], SyftError]:
+        result = self.queue_stash.pop_on_complete(credentials, uid)
         if result.is_ok():
             return result.ok()
         return result.err()
@@ -524,13 +563,17 @@ class Node(AbstractNode):
             return self.forward_message(api_call=api_call)
 
         if api_call.message.path == "queue":
-            return self.resolve_future(uid=api_call.message.kwargs["uid"])
+            return self.resolve_future(
+                credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]
+            )
 
         if api_call.message.path == "metadata":
             return self.metadata
 
         result = None
-        if self.is_subprocess or self.processes == 0:
+        is_blocking = api_call.message.blocking
+
+        if is_blocking or self.is_subprocess or self.processes == 0:
             credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
@@ -559,36 +602,20 @@ class Node(AbstractNode):
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
                 )
         else:
-            worker_settings = WorkerSettings(
-                id=self.id,
-                name=self.name,
-                signing_key=self.signing_key,
-                document_store_config=self.document_store_config,
-                action_store_config=self.action_store_config,
-            )
-
             task_uid = UID()
             item = QueueItem(id=task_uid, node_uid=self.id)
             # 🟡 TODO 36: Needs distributed lock
-            # self.queue_stash.set_placeholder(item)
-            # self.queue_stash.partition.commit()
-            thread = gevent.spawn(
-                queue_task,
-                api_call,
-                worker_settings,
-                task_uid,
-                api_call.message.blocking,
+            self.queue_stash.set_placeholder(self.verify_key, item)
+
+            # Publisher system which pushes to a Queue
+            worker_settings = WorkerSettings.from_node(node=self)
+
+            message_bytes = serialize._serialize(
+                [task_uid, api_call, worker_settings], to_bytes=True
             )
-            if api_call.message.blocking:
-                gevent.joinall([thread])
-                signed_result = thread.value
+            self.queue_manager.send(message=message_bytes, queue_name="api_call")
 
-                if not signed_result.is_valid:
-                    return SyftError(message="The result signature is invalid")  # type: ignore
-
-                result = signed_result.message.data
-            else:
-                result = item
+            return item
         return result
 
     def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
@@ -609,8 +636,6 @@ class Node(AbstractNode):
 def task_producer(
     pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
 ) -> Any:
-    print("task_producer: Start")
-
     try:
         result = None
         with pipe:
@@ -623,7 +648,6 @@ def task_producer(
                     pass
             pipe.close()
         if blocking:
-            print("task_producer: End")
             return result
     except gipc.gipc.GIPCClosed:
         pass
@@ -637,8 +661,6 @@ def task_runner(
     task_uid: UID,
     blocking: bool,
 ) -> None:
-    print("task_runner: Start")
-
     worker = Node(
         id=worker_settings.id,
         name=worker_settings.name,
@@ -664,7 +686,6 @@ def task_runner(
     except Exception as e:
         print("Exception in task_runner", e)
         raise e
-    print("task_runner: End")
 
 
 def queue_task(
@@ -673,8 +694,6 @@ def queue_task(
     task_uid: UID,
     blocking: bool,
 ) -> Optional[Any]:
-    print("queue_task: Start")
-
     with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
         cend,
         pend,
@@ -691,9 +710,7 @@ def queue_task(
         process.join()
 
     if blocking:
-        print("queue_task: End")
         return producer.value
-    print("queue_task: End")
     return None
 
 

@@ -193,7 +193,7 @@ def retrieve_from_db(
     code_item_id: UID, allowed_inputs: Dict[str, UID], context: AuthedServiceContext
 ) -> Dict:
     # relative
-    from ...service.action.action_service import TwinMode
+    from ...service.action.action_object import TwinMode
 
     action_service = context.node.get_service("actionservice")
     code_inputs = {}

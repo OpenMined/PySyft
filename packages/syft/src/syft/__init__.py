@@ -1,4 +1,4 @@
-__version__ = "0.8.1-beta.0"
+__version__ = "0.8.1-beta.3"
 
 # stdlib
 from pathlib import Path
@@ -30,6 +30,8 @@ from .serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .serde.serializable import serializable  # noqa: F401
 from .serde.serialize import _serialize as serialize  # noqa: F401
 from .service.action.action_object import ActionObject  # noqa: F401
+from .service.action.plan import Plan  # noqa: F401
+from .service.action.plan import planify  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401
 from .service.code.user_code import syft_function  # noqa: F401
 from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
@@ -49,12 +51,16 @@ from .service.response import SyftNotReady  # noqa: F401
 from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
+from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
 from .util import jax_settings  # noqa: F401
 from .util import logger  # noqa: F401
+from .util.autoreload import disable_autoreload  # noqa: F401
+from .util.autoreload import enable_autoreload  # noqa: F401
 from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
+from .util.util import get_root_data_path  # noqa: F401
 from .util.version_compare import make_requires
 
 LATEST_STABLE_SYFT = "0.8"
