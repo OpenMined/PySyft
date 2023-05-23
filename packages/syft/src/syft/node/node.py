@@ -39,6 +39,8 @@ from ..external import OBLV
 from ..serde import serialize
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
+from ..service.action.action_graph import InMemoryActionGraphStore
+from ..service.action.action_graph import InMemoryGraphConfig
 from ..service.action.action_graph_service import ActionGraphService
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
@@ -168,6 +170,7 @@ class Node(AbstractNode):
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: QueueConfig = ZMQQueueConfig,
+        action_graph_config: Optional[StoreConfig] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -200,6 +203,7 @@ class Node(AbstractNode):
                 UserService,
                 MetadataService,
                 ActionService,
+                ActionGraphService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -210,7 +214,6 @@ class Node(AbstractNode):
                 ProjectService,
                 DataSubjectMemberService,
                 NewProjectService,
-                ActionGraphService,
             ]
             if services is None
             else services
@@ -222,6 +225,7 @@ class Node(AbstractNode):
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
+            action_graph_config=action_graph_config,
         )
 
         if OBLV:
@@ -361,6 +365,7 @@ class Node(AbstractNode):
         self,
         document_store_config: Optional[StoreConfig] = None,
         action_store_config: Optional[StoreConfig] = None,
+        action_graph_config: Optional[StoreConfig] = None,
     ):
         if document_store_config is None:
             if self.local_db or (self.processes > 0 and not self.is_subprocess):
@@ -406,6 +411,12 @@ class Node(AbstractNode):
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
+        if action_graph_config is None:
+            action_graph_config = InMemoryGraphConfig()
+        self.action_graph_store = InMemoryActionGraphStore(
+            store_config=action_graph_config,
+            reset=True,
+        )
 
     def _construct_services(self):
         self.service_path_map = {}
@@ -414,6 +425,8 @@ class Node(AbstractNode):
             kwargs = {}
             if service_klass == ActionService:
                 kwargs["store"] = self.action_store
+            elif service_klass == ActionGraphService:
+                kwargs["store"] = self.action_graph_store
             store_services = [
                 UserService,
                 MetadataService,
@@ -427,7 +440,6 @@ class Node(AbstractNode):
                 ProjectService,
                 DataSubjectMemberService,
                 NewProjectService,
-                ActionGraphService,
             ]
 
             if OBLV:
