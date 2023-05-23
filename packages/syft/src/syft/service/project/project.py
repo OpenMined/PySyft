@@ -1293,13 +1293,3 @@ def calculate_final_hash(context: TransformContext) -> TransformContext:
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
     return [elect_leader, check_permissions, calculate_final_hash]
-
-
-@serializable()
-class ObjectPermissionChange(SyftObject):
-    __canonical_name__ = "PermissionChange"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    object_uid: UID
-    permission: Enum
-    object_type: Type[SyftObject]
