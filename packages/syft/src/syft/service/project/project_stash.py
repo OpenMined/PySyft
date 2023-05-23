@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 
 # third party
 from result import Result
@@ -11,6 +12,8 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...store.document_store import UIDPartitionKey
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..request.request import Request
 from ..response import SyftError
@@ -34,3 +37,9 @@ class ProjectStash(BaseUIDStoreStash):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_all(credentials=credentials, qks=qks)
+
+    def get_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Result[Optional[Project], str]:
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
+        return self.query_one(credentials=credentials, qks=qks)

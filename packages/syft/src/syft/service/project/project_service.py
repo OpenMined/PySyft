@@ -48,6 +48,19 @@ class ProjectService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Start a Project"""
         try:
+            # Check if the project with given id already exists
+            project_id_check = self.stash.get_by_uid(
+                credentials=context.node.verify_key, uid=project_id
+            )
+
+            if project_id_check.is_err():
+                return SyftError(message=f"{project_id_check.err()}")
+
+            if project_id_check.ok() is not None:
+                return SyftError(
+                    message=f"Project with id {project_id} already exists. Kindly use a different id"
+                )
+
             project.id = project_id
             project_obj: Project = project.to(Project, context=context)
 
