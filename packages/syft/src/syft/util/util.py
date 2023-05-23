@@ -853,3 +853,9 @@ def recursive_hash(obj: Any) -> int:
         hash_bytes = hashlib.sha256(serde_bytes).digest()
         hashes += int.from_bytes(hash_bytes, byteorder="big")
     return hashes
+
+
+if os_name() == "macOS":
+    # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+    # progress in another thread when fork() was called.
+    multiprocessing.set_start_method("spawn", True)

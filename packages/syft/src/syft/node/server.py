@@ -18,8 +18,14 @@ from starlette.middleware.cors import CORSMiddleware
 import uvicorn
 
 # relative
+from ..util.util import os_name
 from .domain import Domain
 from .routes import make_routes
+
+if os_name() == "macOS":
+    # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+    # progress in another thread when fork() was called.
+    multiprocessing.set_start_method("spawn", True)
 
 
 def make_app(name: str, router: APIRouter) -> FastAPI:
