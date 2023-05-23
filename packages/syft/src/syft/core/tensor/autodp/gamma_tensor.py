@@ -2001,6 +2001,50 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.ADD.value,
             sources=output_state,
         )
+    
+    def __mul__(self, other: Any) -> GammaTensor:
+
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        output_state[self.id] = self
+        
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+        
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+
+            child = self.child * other.child
+            min_min = self.min_vals.data * other.min_vals.data
+            min_max = self.min_vals.data * other.max_vals.data
+            max_min = self.max_vals.data * other.min_vals.data
+            max_max = self.max_vals.data * other.max_vals.data
+            _min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            _max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
+            min_val = lazyrepeatarray(data=_min_val, shape=self.shape)
+            max_val = lazyrepeatarray(data=_max_val, shape=self.shape)
+
+            output_ds = self.data_subjects + other.data_subjects
+        
+        else:
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+
+            child = self.child
+            min_val = self.min_vals * other
+            max_val = self.max_vals * other
+            
+            output_ds = self.data_subjects
+        
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.MULTIPLY.value,
+            sources=output_state,
+        )
+        
 
     def __mod__(self, other: Any) -> GammaTensor:
         # relative
