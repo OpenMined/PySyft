@@ -14,17 +14,17 @@ from ...store.document_store import QueryKeys
 from ...util.telemetry import instrument
 from ..request.request import Request
 from ..response import SyftError
-from .project import NewProject
+from .project import Project
 
 VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 
 
 @instrument
 @serializable()
-class NewProjectStash(BaseUIDStoreStash):
-    object_type = NewProject
+class ProjectStash(BaseUIDStoreStash):
+    object_type = Project
     settings: PartitionSettings = PartitionSettings(
-        name=NewProject.__canonical_name__, object_type=NewProject
+        name=Project.__canonical_name__, object_type=Project
     )
 
     def get_all_for_verify_key(

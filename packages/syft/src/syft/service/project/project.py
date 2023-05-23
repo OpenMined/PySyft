@@ -125,13 +125,13 @@ class ProjectEvent(SyftObject):
             values["timestamp"] = DateTime.now()
         return values
 
-    def _pre_add_update(self, project: NewProject) -> None:
+    def _pre_add_update(self, project: Project) -> None:
         pass
 
     def __hash__(self) -> int:
         return type(self).calculate_hash(self, self.__hash_keys__)
 
-    def rebase(self, project: NewProject) -> Self:
+    def rebase(self, project: Project) -> Self:
         prev_event = project.events[-1] if project.events else None
         self.project_id = project.id
 
@@ -166,7 +166,7 @@ class ProjectEvent(SyftObject):
             return SyftError(message=f"Failed to validate message. {e}")
 
     def valid_descendant(
-        self, project: NewProject, prev_event: Optional[Self]
+        self, project: Project, prev_event: Optional[Self]
     ) -> Union[SyftSuccess, SyftError]:
         valid = self.valid
         if not valid:
@@ -224,7 +224,7 @@ class ProjectEvent(SyftObject):
         signed_obj = signing_key.signing_key.sign(signed_bytes)
         self.signature = signed_obj._signature
 
-    def publish(self, project: NewProject) -> Union[SyftSuccess, SyftError]:
+    def publish(self, project: Project) -> Union[SyftSuccess, SyftError]:
         try:
             result = project.add_event(self)
             return result
@@ -340,11 +340,11 @@ class ProjectRequest(ProjectEventAddObject):
 
     # TODO: To add deny requests, when deny functionality is added
 
-    def status(self, project: NewProject) -> Union[Dict, SyftError]:
+    def status(self, project: Project) -> Union[Dict, SyftError]:
         """Returns the status of the request
 
         Args:
-            project (NewProject): Project object to check the status
+            project (Project): Project object to check the status
 
         Returns:
             str: Status of the request
@@ -600,12 +600,12 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
         return AnswerProjectPoll(answer=answer, parent_event_id=self.id)
 
     def status(
-        self, project: NewProject, pretty_print: bool = True
+        self, project: Project, pretty_print: bool = True
     ) -> Union[Dict, SyftError]:
         """Returns the status of the poll
 
         Args:
-            project (NewProject): Project object to check the status
+            project (Project): Project object to check the status
 
         Returns:
             str: Status of the poll
@@ -657,8 +657,8 @@ class DemocraticConsensusModel(ConsensusModel):
 
 
 @serializable()
-class NewProject(SyftObject):
-    __canonical_name__ = "NewProject"
+class Project(SyftObject):
+    __canonical_name__ = "Project"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
@@ -701,7 +701,7 @@ class NewProject(SyftObject):
     ) -> Union[SyftSuccess, SyftError]:
         leader_client = self.get_leader_client(self.user_signing_key)
 
-        return leader_client.api.services.newproject.broadcast_event(project_event)
+        return leader_client.api.services.project.broadcast_event(project_event)
 
     def get_all_identities(self) -> List[Identity]:
         return [*self.shareholders, *self.users]
@@ -1072,7 +1072,7 @@ class NewProject(SyftObject):
 
         leader_client = self.get_leader_client(self.user_signing_key)
 
-        unsynced_events = leader_client.api.services.newproject.sync(
+        unsynced_events = leader_client.api.services.project.sync(
             project_id=self.id, seq_no=self.get_last_seq_no()
         )
         if isinstance(unsynced_events, SyftError):
@@ -1110,8 +1110,8 @@ class NewProject(SyftObject):
 
 
 @serializable()
-class NewProjectSubmit(SyftObject):
-    __canonical_name__ = "NewProjectSubmit"
+class ProjectSubmit(SyftObject):
+    __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
@@ -1211,7 +1211,7 @@ class NewProjectSubmit(SyftObject):
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
-    def start(self) -> NewProject:
+    def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders
         project_id = UID()
         projects = []
@@ -1233,7 +1233,7 @@ class NewProjectSubmit(SyftObject):
                     "Kindly login to the node"
                 )
 
-            result = client.api.services.newproject.create_project(
+            result = client.api.services.project.create_project(
                 project=self, project_id=project_id
             )
             if isinstance(result, SyftError):
@@ -1285,12 +1285,12 @@ def calculate_final_hash(context: TransformContext) -> TransformContext:
     context.output["permissions"] = {}
     context.output["events"] = []
 
-    start_hash = NewProject.calculate_hash(context.output, NewProject.__hash_keys__)
+    start_hash = Project.calculate_hash(context.output, Project.__hash_keys__)
     context.output["start_hash"] = start_hash
     return context
 
 
-@transform(NewProjectSubmit, NewProject)
+@transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
     return [elect_leader, check_permissions, calculate_final_hash]
 

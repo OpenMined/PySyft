@@ -20,36 +20,36 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
-from .project import NewProject
-from .project import NewProjectSubmit
+from .project import Project
 from .project import ProjectEvent
 from .project import ProjectRequest
-from .project_stash import NewProjectStash
+from .project import ProjectSubmit
+from .project_stash import ProjectStash
 
 
 @instrument
 @serializable()
-class NewProjectService(AbstractService):
+class ProjectService(AbstractService):
     store: DocumentStore
-    stash: NewProjectStash
+    stash: ProjectStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = NewProjectStash(store=store)
+        self.stash = ProjectStash(store=store)
 
     @service_method(
-        path="newproject.create_project", name="create_project", roles=GUEST_ROLE_LEVEL
+        path="project.create_project", name="create_project", roles=GUEST_ROLE_LEVEL
     )
     def create_project(
         self,
         context: AuthedServiceContext,
-        project: NewProjectSubmit,
+        project: ProjectSubmit,
         project_id: UID,
     ) -> Union[SyftSuccess, SyftError]:
         """Start a Project"""
         try:
             project.id = project_id
-            project_obj: NewProject = project.to(NewProject, context=context)
+            project_obj: Project = project.to(Project, context=context)
 
             # Updating the leader node route of the project object
             # In case the current node, is the leader, they would input their node route
@@ -97,7 +97,7 @@ class NewProjectService(AbstractService):
             raise e
 
     @service_method(
-        path="newproject.add_event",
+        path="project.add_event",
         name="add_event",
         roles=GUEST_ROLE_LEVEL,
     )
@@ -113,7 +113,7 @@ class NewProjectService(AbstractService):
         )
 
         if project_obj.is_ok():
-            project: NewProject = project_obj.ok()
+            project: Project = project_obj.ok()
             if project.state_sync_leader.verify_key == context.node.verify_key:
                 return SyftError(
                     message="Project Events should be passed to leader by broadcast endpoint"
@@ -143,7 +143,7 @@ class NewProjectService(AbstractService):
             return SyftError(message=str(project_obj.err()))
 
     @service_method(
-        path="newproject.broadcast_event",
+        path="project.broadcast_event",
         name="broadcast_event",
         roles=GUEST_ROLE_LEVEL,
     )
@@ -167,7 +167,7 @@ class NewProjectService(AbstractService):
         if not project.has_permission(context.credentials):
             return SyftError(message="User does not have permission to add events")
 
-        project: NewProject = project_obj.ok()
+        project: Project = project_obj.ok()
         if project.state_sync_leader.verify_key != context.node.verify_key:
             return SyftError(
                 message="Only the leader of the project can broadcast events"
@@ -202,7 +202,7 @@ class NewProjectService(AbstractService):
                     )
                 peer = peer.ok()
                 client = peer.client_with_context(context)
-                event_result = client.api.services.newproject.add_event(project_event)
+                event_result = client.api.services.project.add_event(project_event)
                 if isinstance(event_result, SyftError):
                     return event_result
 
@@ -213,7 +213,7 @@ class NewProjectService(AbstractService):
         return SyftSuccess(message="Successfully Broadcasted Event")
 
     @service_method(
-        path="newproject.sync",
+        path="project.sync",
         name="sync",
         roles=GUEST_ROLE_LEVEL,
     )
@@ -227,7 +227,7 @@ class NewProjectService(AbstractService):
         project_obj = self.stash.get_by_uid(context.node.verify_key, uid=project_id)
 
         if project_obj.is_ok():
-            project: NewProject = project_obj.ok()
+            project: Project = project_obj.ok()
             if project.state_sync_leader.verify_key != context.node.verify_key:
                 return SyftError(
                     message="Project Events should be synced only with the leader"
@@ -247,10 +247,8 @@ class NewProjectService(AbstractService):
         if project_obj.is_err():
             return SyftError(message=str(project_obj.err()))
 
-    @service_method(path="newproject.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> Union[List[NewProject], SyftError]:
+    @service_method(path="project.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
+    def get_all(self, context: AuthedServiceContext) -> Union[List[Project], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -267,8 +265,8 @@ class NewProjectService(AbstractService):
 
 
 def add_signing_key_to_project(
-    context: AuthedServiceContext, project: NewProject
-) -> Union[NewProject, SyftError]:
+    context: AuthedServiceContext, project: Project
+) -> Union[Project, SyftError]:
     # Automatically infuse signing key of user
     # requesting get_all() or creating the project object
 
@@ -289,12 +287,12 @@ def add_signing_key_to_project(
 
 
 def check_for_project_request(
-    project: NewProject, project_event: ProjectEvent, context: AuthedServiceContext
+    project: Project, project_event: ProjectEvent, context: AuthedServiceContext
 ):
     """To check for project request event and create a message for the root user
 
     Args:
-        project (NewProject): Project object
+        project (Project): Project object
         project_event (ProjectEvent): Project event object
         context (AuthedServiceContext): Context of the node
 
@@ -319,5 +317,5 @@ def check_for_project_request(
     return SyftSuccess(message="Successfully Validated Project Request")
 
 
-TYPE_TO_SERVICE[NewProject] = NewProjectService
-SERVICE_TO_TYPES[NewProjectService].update({NewProject})
+TYPE_TO_SERVICE[Project] = ProjectService
+SERVICE_TO_TYPES[ProjectService].update({Project})
