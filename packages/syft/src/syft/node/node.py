@@ -9,7 +9,6 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
-import threading
 import traceback
 from typing import Any
 from typing import Callable
@@ -87,14 +86,10 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.telemetry import instrument
 from ..util.util import random_name
+from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .worker_settings import WorkerSettings
-
-
-def thread_ident() -> int:
-    return threading.current_thread().ident
-
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific node UID and thread
