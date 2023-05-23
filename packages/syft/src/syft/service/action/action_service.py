@@ -26,6 +26,7 @@ from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .action_graph_service import ActionGraphService
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -68,6 +69,8 @@ class ActionService(AbstractService):
             credentials=context.credentials,
             syft_object=action_object,
         )
+        method = context.node.get_service_method(ActionGraphService.add_action_obj)
+        print(method)
         if result.is_ok():
             if isinstance(action_object, TwinObject):
                 action_object = action_object.mock
