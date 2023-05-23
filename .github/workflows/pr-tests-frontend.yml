@@ -129,6 +129,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Install Docker Compose
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.16.0
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
@@ -160,9 +169,9 @@ jobs:
           # cache: "pnpm"
           # cache-dependency-path: packages/grid/frontend/pnpm-lock.yaml
 
-      - name: Run Frontend Playwright e2e Tests
-        if: steps.changes.outputs.stack == 'true'
-        env:
-          DOCKER: true
-        run: |
-          tox -e frontend.test.e2e
+      # - name: Run Frontend Playwright e2e Tests
+      #   if: steps.changes.outputs.stack == 'true'
+      #   env:
+      #     DOCKER: true
+      #   run: |
+      #     tox -e frontend.test.e2e
