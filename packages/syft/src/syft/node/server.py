@@ -21,6 +21,10 @@ import uvicorn
 from .domain import Domain
 from .routes import make_routes
 
+# needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+# progress in another thread when fork() was called.
+multiprocessing.set_start_method("spawn", True)
+
 
 def make_app(name: str, router: APIRouter) -> FastAPI:
     app = FastAPI(

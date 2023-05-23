@@ -46,6 +46,10 @@ from .logger import debug
 from .logger import error
 from .logger import traceback_and_raise
 
+# needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+# progress in another thread when fork() was called.
+multiprocessing.set_start_method("spawn", True)
+
 DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
 PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
 
