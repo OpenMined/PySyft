@@ -205,3 +205,7 @@ class ActionGraphService(AbstractService):
             return result.ok()
 
         return SyftError(message=result.err())
+
+    def visualize(self, context: AuthedServiceContext) -> None:
+        # 🟡 TODO: Add permission check
+        self.store.graph.visualize()

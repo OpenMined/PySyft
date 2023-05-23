@@ -39,6 +39,7 @@ from ..external import OBLV
 from ..serde import serialize
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
+from ..service.action.action_graph_service import ActionGraphService
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
@@ -209,6 +210,7 @@ class Node(AbstractNode):
                 ProjectService,
                 DataSubjectMemberService,
                 NewProjectService,
+                ActionGraphService,
             ]
             if services is None
             else services
@@ -425,6 +427,7 @@ class Node(AbstractNode):
                 ProjectService,
                 DataSubjectMemberService,
                 NewProjectService,
+                ActionGraphService,
             ]
 
             if OBLV:
