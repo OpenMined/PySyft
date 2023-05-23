@@ -671,6 +671,7 @@ class Node(AbstractNode):
         except Exception as e:
             print("create_worker_metadata failed", e)
 
+
 def task_producer(
     pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
 ) -> Any:
