@@ -1,4 +1,4 @@
-__version__ = "0.8.1-beta.2"
+__version__ = "0.8.1-beta.3"
 
 # stdlib
 from pathlib import Path
