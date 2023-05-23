@@ -57,7 +57,6 @@ from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import NewProjectService
-from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_stash import QueueItem
@@ -206,7 +205,6 @@ class Node(AbstractNode):
                 NetworkService,
                 PolicyService,
                 MessageService,
-                ProjectService,
                 DataSubjectMemberService,
                 NewProjectService,
             ]
@@ -422,7 +420,6 @@ class Node(AbstractNode):
                 NetworkService,
                 PolicyService,
                 MessageService,
-                ProjectService,
                 DataSubjectMemberService,
                 NewProjectService,
             ]
