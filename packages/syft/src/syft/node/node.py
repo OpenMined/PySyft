@@ -17,6 +17,7 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from datetime import datetime
 import uuid
 
 # third party
@@ -52,7 +53,9 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.message.message_service import MessageService
-from ..service.metadata.metadata_service import MetadataService
+from ..service.settings.settings_service import SettingsService
+from ..service.settings.settings_stash import SettingsStash
+from ..service.settings.settings import NodeSettings
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
@@ -197,7 +200,7 @@ class Node(AbstractNode):
         services = (
             [
                 UserService,
-                MetadataService,
+                SettingsService,
                 ActionService,
                 DatasetService,
                 UserCodeService,
@@ -423,7 +426,7 @@ class Node(AbstractNode):
                 kwargs["store"] = self.action_store
             store_services = [
                 UserService,
-                MetadataService,
+                SettingsService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -474,6 +477,8 @@ class Node(AbstractNode):
 
     @property
     def metadata(self) -> NodeMetadata:
+        settings_stash = SettingsStash(store=self.document_store)
+        settings = settings_stash.get_all(self.signing_key.verify_key).ok()[0]
         return NodeMetadata(
             name=self.name,
             id=self.id,
@@ -481,6 +486,10 @@ class Node(AbstractNode):
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
+            deployed_on=settings.deployed_on,
+            description=settings.description,
+            organization=settings.organization,
+            on_board=settings.on_board,
         )
 
     @property
@@ -571,7 +580,6 @@ class Node(AbstractNode):
 
         if api_call.message.node_uid != self.id:
             return self.forward_message(api_call=api_call)
-
         if api_call.message.path == "queue":
             return self.resolve_future(
                 credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]
@@ -724,32 +732,27 @@ def queue_task(
     return None
 
 
-# def create_worker_metadata(
-#     worker: AbstractNode,
-# ) -> Optional[NodeMetadata]:
-#     try:
-#         metadata_stash = MetadataStash(store=worker.document_store)
-#         metadata_exists = metadata_stash.get_all(worker.signing_key.verify_key).ok()
-#         if metadata_exists:
-#             return None
-#         else:
-#             new_metadata = NodeMetadata(
-#                 name=worker.name,
-#                 id=worker.id,
-#                 verify_key=worker.signing_key.verify_key,
-#                 highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
-#                 lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
-#                 syft_version=__version__,
-#                 deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
-#             )
-#             result = metadata_stash.set(
-#                 credentials=worker.signing_key.verify_key, metadata=new_metadata
-#             )
-#             if result.is_ok():
-#                 return result.ok()
-#             return None
-#     except Exception as e:
-#         print("create_worker_metadata failed", e)
+def create_initial_settings(
+    worker: AbstractNode,
+) -> Optional[NodeSettings]:
+    try:
+        settings_stash = SettingsStash(store=worker.document_store)
+        settings_exists = settings_stash.get_all(worker.signing_key.verify_key).ok()
+        if settings_exists:
+            return None
+        else:
+            new_settings = NodeSettings(
+                name=worker.name,
+                deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+            )
+            result = settings_stash.set(
+                credentials=worker.signing_key.verify_key, settings=new_settings
+            )
+            if result.is_ok():
+                return result.ok()
+            return None
+    except Exception as e:
+        print("create_worker_metadata failed", e)
 
 
 def create_admin_new(
