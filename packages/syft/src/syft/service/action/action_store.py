@@ -99,6 +99,9 @@ class KeyValueActionStore(ActionStore):
                     obj.id = uid
                 else:
                     obj.syft_twin_type = TwinMode.NONE
+                    # todo: check permission
+                    # we copy to prevent changing the store (for in memory stores)
+                    obj = obj.as_empty()
                 obj.syft_point_to(node_uid)
                 return Ok(obj)
             # third party

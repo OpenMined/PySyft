@@ -57,6 +57,7 @@ class ActionType(Enum):
     SETATTRIBUTE = 4
     FUNCTION = 8
     CREATEOBJECT = 16
+    INPLACE_METHOD = 32
 
 
 @serializable()
@@ -193,7 +194,7 @@ dont_make_side_effects = [
     "_repr_latex_",
     "__repr__",
     "__getitem__",
-    "__setitem__",
+    # "__setitem__",
     "__len__",
     "shape",
 ]
@@ -402,6 +403,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_markdown_",
     "syft_twin_type",
     "_repr_debug_",
+    "as_empty",
 ]
 
 
@@ -731,6 +733,7 @@ class ActionObject(SyftObject):
                 Which LineageID to use for the ActionObject. Optional
         """
         if id and syft_lineage_id and id != syft_lineage_id.id:
+            # third party
             raise ValueError("UID and LineageID should match")
 
         action_type = action_type_for_object(syft_action_data)
@@ -781,6 +784,13 @@ class ActionObject(SyftObject):
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
+
+    def as_empty(self):
+        id = self.id
+        # TODO: fix
+        if isinstance(id, LineageID):
+            id = id.id
+        return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id)
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
@@ -837,6 +847,7 @@ class ActionObject(SyftObject):
                         context, result_args, result_kwargs = result.ok()
                     else:
                         msg = result.err().replace("\\n", "\n")
+                        print(msg)
                         debug(f"Pre-hook failed with {msg}")
 
         if self.is_pointer:
@@ -848,6 +859,7 @@ class ActionObject(SyftObject):
                             context, result_args, result_kwargs = result.ok()
                         else:
                             msg = result.err().replace("\\n", "\n")
+                            print(msg)
                             debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
@@ -1086,6 +1098,34 @@ class ActionObject(SyftObject):
         post_result = self._syft_attr_propagate_ids(context, op_name, post_result)
         return post_result
 
+    def _syft_inplace_method(self, op_name, *args, **kwargs):
+        def fake_func(*args: Any, **kwargs: Any) -> Any:
+            return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
+        if isinstance(self.syft_action_data, ActionDataEmpty) or has_action_data_empty(
+            args=args, kwargs=kwargs
+        ):
+            local_func = fake_func
+        else:
+            local_func = getattr(self.syft_action_data, op_name)
+
+        context = PreHookContext(
+            obj=self, op_name=op_name, action_type=ActionType.INPLACE_METHOD
+        )
+        context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
+            context, op_name, args, kwargs
+        )
+
+        original_args, original_kwargs = debox_args_and_kwargs(
+            pre_hook_args, pre_hook_kwargs
+        )
+        local_func(*original_args, **original_kwargs)
+        local_result = self
+
+        post_result = self._syft_run_post_hooks__(context, op_name, local_result)
+        post_result = self._syft_attr_propagate_ids(context, op_name, post_result)
+        return post_result
+
     def __getattribute__(self, name: str) -> Any:
         """Called unconditionally to implement attribute accesses for instances of the class.
         If the class also defines __getattr__(), the latter will not be called unless __getattribute__()
@@ -1131,7 +1171,7 @@ class ActionObject(SyftObject):
             self.__dict__[name] = value
             return value
         else:
-            self._syft_setattr(name, value)
+            self._syft_inplace_method("__setattr__", name, value)
             context_self = self.syft_action_data  # type: ignore
             return context_self.__setattr__(name, value)
 
@@ -1180,7 +1220,11 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__getitem__(key))
 
     def __setitem__(self, key: Any, value: Any) -> None:
-        return self.__setitem__(key, value)
+        self._syft_inplace_method("__setitem__", key, value)
+        context_self = self.syft_action_data  # type: ignore
+        if hasattr(value, "syft_action_data"):
+            value = value.syft_action_data
+        return context_self.__setitem__(key, value)
 
     def __contains__(self, key: Any) -> bool:
         return self.__contains__(key)

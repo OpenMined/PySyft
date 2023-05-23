@@ -250,37 +250,54 @@ class ActionService(AbstractService):
                 f"Failed executing {action}. You have no permission for {absolute_path}"
             )
 
-    def set_attribute(
+    def inplace_method(
         self,
         context: AuthedServiceContext,
         action: Action,
         resolved_self: Union[ActionObject, TwinObject],
     ):
-        args, _ = resolve_action_args(action, context, self)
+        args, has_twin_args = resolve_action_args(action, context, self)
+        kwargs, has_twin_kwargs = resolve_action_kwargs(action, context, self)
         if args.is_err():
             return Err(
                 f"Failed executing action {action}, could not resolve args: {args.err()}"
             )
         else:
             args = args.ok()
+        if kwargs.is_err():
+            return Err(
+                f"Failed executing action {action}, could not resolve args: {args.err()}"
+            )
+        else:
+            kwargs = kwargs.ok()
+
+        # TODO: check permissions
         if not isinstance(args[0], ActionObject):
             return Err(
                 f"Failed executing action {action} setattribute requires a non-twin string as first argument"
             )
-        name = args[0].syft_action_data
-        # dont do the whole filtering dance with the name
-        args = [args[1]]
+        # name = args[0].syft_action_data
+        # # dont do the whole filtering dance with the name
+        # args = [args[1]]
 
         if isinstance(resolved_self, TwinObject):
             # todo, create copy?
             private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE)
-            private_val = private_args[0]
-            setattr(resolved_self.private.syft_action_data, name, private_val)
+            private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE)
+            # private_val = private_args[0]
+            method = getattr(resolved_self.private.syft_action_data, action.op)
+            method(*private_args, **private_kwargs)
+            # setattr(resolved_self.private.syft_action_data, name, private_val)
+            # setattr(resolved_self.private.syft_action_data, name, private_val)
             # todo: what do we use as data for the mock here?
             # depending on permisisons?
             public_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
-            public_val = public_args[0]
-            setattr(resolved_self.mock.syft_action_data, name, public_val)
+            public_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.MOCK)
+            # public_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
+            # public_val = public_args[0]
+            method = getattr(resolved_self.mock.syft_action_data, action.op)
+            method(*public_args, **public_kwargs)
+            # setattr(resolved_self.mock.syft_action_data, name, public_val)
             return Ok(
                 TwinObject(
                     id=action.result_id,
@@ -295,8 +312,11 @@ class ActionService(AbstractService):
         else:
             # TODO: Implement for twinobject args
             args = filter_twin_args(args, twin_mode=TwinMode.NONE)
-            val = args[0]
-            setattr(resolved_self.syft_action_data, name, val)
+            kwargs = filter_twin_args(kwargs, twin_mode=TwinMode.NONE)
+            method = getattr(resolved_self.syft_action_data, action.op)
+            method(*args, **kwargs)
+            # val = args[0]
+            # setattr(resolved_self.syft_action_data, name, val)
             return Ok(
                 ActionObject.from_obj(resolved_self.syft_action_data),
             )
@@ -340,6 +360,7 @@ class ActionService(AbstractService):
                 twin_mode=TwinMode.PRIVATE,
             )
             if private_result.is_err():
+                # third party
                 return Err(
                     f"Failed executing action {action}, result is an error: {private_result.err()}"
                 )
@@ -399,8 +420,8 @@ class ActionService(AbstractService):
                     plan_kwargs=action.kwargs,
                 )
                 return result_action_object
-            elif action.action_type == ActionType.SETATTRIBUTE:
-                result_action_object = self.set_attribute(
+            elif action.action_type == ActionType.INPLACE_METHOD:
+                result_action_object = self.inplace_method(
                     context, action, resolved_self
                 )
             elif action.action_type == ActionType.GETATTRIBUTE:
@@ -411,6 +432,7 @@ class ActionService(AbstractService):
                 return Err("Unknown action")
 
         if result_action_object.is_err():
+            # third party
             return Err(
                 f"Failed executing action {action}, result is an error: {result_action_object.err()}"
             )
@@ -437,6 +459,9 @@ class ActionService(AbstractService):
             result_action_object = result_action_object.mock
             # we patch this on the object, because this is the thing we are getting back
             result_action_object.id = action.result_id
+        else:
+            if not has_result_read_permission:
+                result_action_object = result_action_object.as_empty()
         result_action_object.syft_point_to(context.node.id)
 
         return Ok(result_action_object)
@@ -640,6 +665,7 @@ def execute_object(
             return Err("Missing target method")
 
     except Exception as e:
+        # third party
         return Err(e)
 
     return Ok(result_action_object)

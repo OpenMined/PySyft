@@ -13,6 +13,7 @@ from typing import Union
 
 # third party
 from capnp.lib.capnp import _DynamicStructBuilder
+import numpy as np
 from pydantic import BaseModel
 
 # syft absolute
@@ -120,6 +121,9 @@ def combine_bytes(capnp_list: List[bytes]) -> bytes:
     return bytes_value
 
 
+ALLOWED_FUNCTIONS = [np.median]
+
+
 def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     is_type = False
     if isinstance(self, type):
@@ -170,7 +174,10 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         if transforms is not None:
             field_obj = transforms[0](field_obj)
 
-        if isinstance(field_obj, types.FunctionType):
+        if (
+            isinstance(field_obj, types.FunctionType)
+            and field_obj not in ALLOWED_FUNCTIONS
+        ):
             continue
 
         serialized = sy.serialize(field_obj, to_bytes=True)

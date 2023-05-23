@@ -22,9 +22,9 @@ class PandasDataFrameObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[Type[Any]] = DataFrame
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS  # + ["plot"]
     # this is added for instance checks for dataframes
-    # syft_dont_wrap_attrs = ["shape"]
+    syft_dont_wrap_attrs = ["plot"]
 
     def __dataframe__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__dataframe__(*args, **kwargs)
@@ -49,6 +49,7 @@ class PandasSeriesObject(ActionObject):
 
     syft_internal_type = Series
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs = ["plot"]
 
     name: Optional[str] = None
     # syft_dont_wrap_attrs = ["shape"]
