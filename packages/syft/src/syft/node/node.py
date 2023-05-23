@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import binascii
 import contextlib
+from datetime import datetime
 from functools import partial
 import hashlib
 from multiprocessing import current_process
@@ -17,7 +18,6 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
-from datetime import datetime
 import uuid
 
 # third party
@@ -53,9 +53,6 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.message.message_service import MessageService
-from ..service.settings.settings_service import SettingsService
-from ..service.settings.settings_stash import SettingsStash
-from ..service.settings.settings import NodeSettings
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
@@ -72,6 +69,9 @@ from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.settings.settings import NodeSettings
+from ..service.settings.settings_service import SettingsService
+from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
@@ -246,6 +246,7 @@ class Node(AbstractNode):
         self.node_type = node_type
 
         self.post_init()
+        self.create_initial_settings()
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
 
@@ -480,7 +481,7 @@ class Node(AbstractNode):
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key).ok()[0]
         return NodeMetadata(
-            name=self.name,
+            name=settings.name,
             id=self.id,
             verify_key=self.verify_key,
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
@@ -650,6 +651,25 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
+    def create_initial_settings(self) -> Optional[NodeSettings]:
+        try:
+            settings_stash = SettingsStash(store=self.document_store)
+            settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
+            if settings_exists:
+                return None
+            else:
+                new_settings = NodeSettings(
+                    name=self.name,
+                    deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+                )
+                result = settings_stash.set(
+                    credentials=self.signing_key.verify_key, settings=new_settings
+                )
+                if result.is_ok():
+                    return result.ok()
+                return None
+        except Exception as e:
+            print("create_worker_metadata failed", e)
 
 def task_producer(
     pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
@@ -730,29 +750,6 @@ def queue_task(
     if blocking:
         return producer.value
     return None
-
-
-def create_initial_settings(
-    worker: AbstractNode,
-) -> Optional[NodeSettings]:
-    try:
-        settings_stash = SettingsStash(store=worker.document_store)
-        settings_exists = settings_stash.get_all(worker.signing_key.verify_key).ok()
-        if settings_exists:
-            return None
-        else:
-            new_settings = NodeSettings(
-                name=worker.name,
-                deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
-            )
-            result = settings_stash.set(
-                credentials=worker.signing_key.verify_key, settings=new_settings
-            )
-            if result.is_ok():
-                return result.ok()
-            return None
-    except Exception as e:
-        print("create_worker_metadata failed", e)
 
 
 def create_admin_new(
