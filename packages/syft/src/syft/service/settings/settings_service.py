@@ -17,6 +17,7 @@ from .settings import NodeSettings
 from .settings import NodeSettingsUpdate
 from .settings_stash import SettingsStash
 
+
 @serializable()
 class SettingsService(AbstractService):
     store: DocumentStore
@@ -60,7 +61,6 @@ class SettingsService(AbstractService):
         if result.is_ok():
             current_settings = result.ok()
             if len(current_settings) > 0:
-                print("Settings dict: ", settings.dict(exclude_unset=True))
                 new_settings = current_settings[0].copy(
                     update=settings.dict(exclude_unset=True)
                 )
