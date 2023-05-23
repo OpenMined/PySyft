@@ -31,7 +31,7 @@ function hyphenateUUIDv4(uuid: string): string {
 
 export async function updateMetadata(newMetadata) {
   const payload = {
-    metadata: { ...newMetadata, fqn: 'syft.service.metadata.node_metadata.NodeMetadataUpdate' }
+    settings: { ...newMetadata, fqn: 'syft.service.settings.settings.NodeSettingsUpdate' }
   };
-  return await syftCall({ path: 'metadata.update', payload });
+  return await syftCall({ path: 'settings.update', payload });
 }
