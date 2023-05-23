@@ -148,6 +148,7 @@ class ActionObjectPointer:
 
 # Hooks
 HOOK_ALWAYS = "ALWAYS"
+HOOK_ON_POINTERS = "ON_POINTERS"
 
 passthrough_attrs = [
     "__dict__",  # python
@@ -314,11 +315,12 @@ def send_action_side_effect(
 ) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
     """Create a new action from the context.op_name, and execute it on the remote node."""
     try:
-        result = make_action_side_effect(context, *args, **kwargs)
-        if result.is_err():
-            raise RuntimeError(result.err())
+        if context.action is None:
+            result = make_action_side_effect(context, *args, **kwargs)
+            if result.is_err():
+                raise RuntimeError(result.err())
 
-        context, _, _ = result.ok()
+            context, _, _ = result.ok()
 
         action_result = context.obj.syft_execute_action(context.action, sync=True)
 
@@ -394,6 +396,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "is_mock",
     "is_real",
     "is_twin",
+    "is_pointer",
     "request",
     "__repr__",
     "_repr_markdown_",
@@ -425,6 +428,10 @@ class ActionObject(SyftObject):
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     # syft_dont_wrap_attrs = ["shape"]
+
+    @property
+    def is_pointer(self) -> bool:
+        return self.syft_node_uid is not None
 
     @property
     def syft_lineage_id(self) -> LineageID:
@@ -784,16 +791,26 @@ class ActionObject(SyftObject):
         if HOOK_ALWAYS not in self._syft_pre_hooks__:
             self._syft_pre_hooks__[HOOK_ALWAYS] = []
 
+        if HOOK_ON_POINTERS not in self._syft_post_hooks__:
+            self._syft_pre_hooks__[HOOK_ON_POINTERS] = []
+
         # this should be a list as orders matters
-        for side_effect in [make_action_side_effect, send_action_side_effect]:
+        for side_effect in [make_action_side_effect]:
             if side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
                 self._syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
+
+        for side_effect in [send_action_side_effect]:
+            if side_effect not in self._syft_pre_hooks__[HOOK_ON_POINTERS]:
+                self._syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
 
         if trace_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
             self._syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
         if HOOK_ALWAYS not in self._syft_post_hooks__:
             self._syft_post_hooks__[HOOK_ALWAYS] = []
+
+        if HOOK_ON_POINTERS not in self._syft_post_hooks__:
+            self._syft_post_hooks__[HOOK_ON_POINTERS] = []
 
         for side_effect in [propagate_node_uid]:
             if side_effect not in self._syft_post_hooks__[HOOK_ALWAYS]:
@@ -826,6 +843,17 @@ class ActionObject(SyftObject):
                         msg = result.err().replace("\\n", "\n")
                         debug(f"Pre-hook failed with {msg}")
 
+        if self.is_pointer:
+            if name not in self._syft_dont_wrap_attrs():
+                if HOOK_ALWAYS in self._syft_pre_hooks__:
+                    for hook in self._syft_pre_hooks__[HOOK_ON_POINTERS]:
+                        result = hook(context, *result_args, **result_kwargs)
+                        if result.is_ok():
+                            context, result_args, result_kwargs = result.ok()
+                        else:
+                            msg = result.err().replace("\\n", "\n")
+                            print(f"Pre-hook failed with {msg}")
+
         return context, result_args, result_kwargs
 
     def _syft_run_post_hooks__(
@@ -849,6 +877,16 @@ class ActionObject(SyftObject):
                         new_result = result.ok()
                     else:
                         debug(f"Post hook failed with {result.err()}")
+
+        if self.is_pointer:
+            if name not in self._syft_dont_wrap_attrs():
+                if HOOK_ALWAYS in self._syft_post_hooks__:
+                    for hook in self._syft_post_hooks__[HOOK_ON_POINTERS]:
+                        result = hook(context, name, new_result)
+                        if result.is_ok():
+                            new_result = result.ok()
+                        else:
+                            debug(f"Post hook failed with {result.err()}")
 
         return new_result
 

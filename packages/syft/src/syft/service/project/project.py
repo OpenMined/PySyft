@@ -1,4 +1,8 @@
+# future
+from __future__ import annotations
+
 # stdlib
+import copy
 from enum import Enum
 from typing import Any
 from typing import Callable
@@ -13,6 +17,7 @@ from typing import Union
 import pydantic
 from pydantic import validator
 from result import OkErr
+from typing_extensions import Self
 
 # relative
 from ...client.client import SyftClient
@@ -37,8 +42,14 @@ from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
+from ..response import SyftException
 from ..response import SyftSuccess
 from ..service import TYPE_TO_SERVICE
+
+
+@serializable()
+class EventAlreadyAddedException(SyftException):
+    pass
 
 
 @serializable()
@@ -65,21 +76,18 @@ def metadata_to_node_identity() -> List[Callable]:
     return [keep(["id", "verify_key"])]
 
 
-# @serializable()
-# class EventTypes(Enum):
-#     REQUEST = "REQUEST"
-#     USER_CODE = "USER_CODE"
-
-
 class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID = UID()
-    project_id: UID
     timestamp: DateTime
-    creator_verify_key: SyftVerifyKey
-    prev_event_hash: int
+    project_id: Optional[UID]
+    creator_verify_key: Optional[SyftVerifyKey]
+    prev_event_uid: Optional[UID]
+    prev_signed_event_hash: Optional[int]
+    event_hash: Optional[int]
+    signature: Optional[bytes]  # dont use in signature
 
     @pydantic.root_validator(pre=True)
     def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -87,11 +95,24 @@ class ProjectEvent(SyftObject):
             values["timestamp"] = DateTime.now()
         return values
 
-    event_hash: Optional[int]
-    signature: Optional[bytes]
-
     def __hash__(self) -> int:
         return type(self).calculate_hash(self, self.__hash_keys__)
+
+    def rebase(self, project: UID, prev_event: Optional[ProjectEvent]) -> Self:
+        self.project_id = project.id
+        if prev_event:
+            self.prev_event_uid = prev_event.id
+            self.prev_signed_event_hash = hash(prev_event)
+        else:
+            self.prev_event_uid = project.id
+            self.prev_signed_event_hash = project.start_hash
+
+        # make sure these are reset
+        self.event_hash = None
+        self.signature = None
+
+        self.event_hash = hash(self)  # recalculate it
+        return self
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
@@ -107,13 +128,48 @@ class ProjectEvent(SyftObject):
         except Exception as e:
             return SyftError(message=f"Failed to validate message. {e}")
 
+    def valid_descendant(
+        self, project: UID, prev_event: Optional[Self]
+    ) -> Union[SyftSuccess, SyftError]:
+        valid = self.valid
+        if not valid:
+            return valid
+
+        if prev_event:
+            prev_event_id = prev_event.id
+            prev_event_hash = hash(prev_event)
+        else:
+            prev_event_id = project.id
+            prev_event_hash = project.start_hash
+
+        if self.prev_event_uid != prev_event_id:
+            return SyftError(
+                message=f"{self} prev_event_uid: {self.prev_event_uid} "
+                "does not match {prev_event_id}"
+            )
+
+        if self.prev_signed_event_hash != prev_event_hash:
+            return SyftError(
+                message=f"{self} prev_signed_event_hash: {self.prev_signed_event_hash} "
+                "does not match {prev_event_hash}"
+            )
+        return SyftSuccess(message=f"{self} is valid descendant of {prev_event}")
+
     def sign(self, signing_key: SyftSigningKey) -> None:
-        if signing_key.verify_key != self.creator_verify_key:
-            raise Exception("Wrong key")
+        self.creator_verify_key = signing_key.verify_key
         self.signature = None
         signed_bytes = _serialize(self, to_bytes=True)
         signed_obj = signing_key.signing_key.sign(signed_bytes)
         self.signature = signed_obj._signature
+
+    def publish(
+        self, project: Project, credentials: Union[SyftSigningKey, SyftClient]
+    ) -> Union[SyftSuccess, SyftError]:
+        try:
+            result = project.add_event(self, credentials)
+            return result
+        except EventAlreadyAddedException:  # nosec
+            return SyftSuccess(message="Event already added")
 
 
 class ProjectEventAddObject(ProjectEvent):
@@ -137,7 +193,7 @@ class ProjectMessage(ProjectEventAddObject):
         "id",
         "timestamp",
         "creator_verify_key",
-        "prev_event_hash",
+        "prev_signed_event_hash",
         "message",
     ]
 
@@ -206,15 +262,65 @@ class NewProject(SyftObject):
             )
         return api.services.newproject.broadcast_event(project_event)
 
-    def add_event(self, event: ProjectEvent) -> Union[SyftSuccess, SyftError]:
-        # event = ProjectEvent(
-        #     event_type=EventTypes.REQUEST,
-        #     event_data=obj,
-        #     user_verify_key=obj.requesting_user_verify_key,
-        #     project_id=self.id,
-        # )
-        self.events.append(event)
+    def rebase_event(self, event: ProjectEvent) -> ProjectEvent:
+        prev_event = None
+        if len(self.events) > 0:
+            prev_event = self.events[-1]
+        event = event.rebase(self, prev_event)
+        print("rebased event", event)
+        return event
+
+    def append_event(self, event: ProjectEvent) -> Union[SyftSuccess, SyftError]:
+        prev_event = None
+        if len(self.events) > 0:
+            prev_event = self.events[-1]
+        valid = event.valid_descendant(self, prev_event)
+        if not valid:
+            return valid
+
+        self.events.append(copy.deepcopy(event))
         return self._broadcast_event(event)
+
+    @property
+    def event_ids(self) -> Set[UID]:
+        event_ids = set()
+        for event in self.events:
+            event_ids.add(event.id)
+        return event_ids
+
+    def add_event(
+        self, event: ProjectEvent, credentials: Union[SyftSigningKey, SyftClient]
+    ) -> Union[SyftSuccess, SyftError]:
+        if event.id in self.event_ids:
+            raise EventAlreadyAddedException(f"Event already added. {event}")
+
+        if isinstance(credentials, SyftClient):
+            credentials = credentials.credentials
+        if not isinstance(credentials, SyftSigningKey):
+            raise Exception(f"Adding an event requires a signing key. {credentials}")
+
+        event = self.rebase_event(event)
+        event.sign(credentials)
+        result = self.append_event(event)
+        return result
+
+    def validate_events(self) -> Union[SyftSuccess, SyftError]:
+        current_hash = self.start_hash
+
+        def valid_str(current_hash: int) -> str:
+            return f"Project: {self.id} HEAD<{current_hash}> events are valid"
+
+        if len(self.events) == 0:
+            return SyftSuccess(message=valid_str(current_hash))
+
+        last_event = None
+        for event in self.events:
+            result = event.valid_descendant(self, last_event)
+            current_hash = event.event_hash
+            if not result:
+                return result
+            last_event = event
+        return SyftSuccess(message=valid_str(current_hash))
 
 
 @serializable()

@@ -46,7 +46,6 @@ class PandasSeriesObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type = Series
-    syft_passthrough_attrs = []
     # syft_dont_wrap_attrs = ["shape"]
 
     def __getattribute__(self, name: str) -> Any:
