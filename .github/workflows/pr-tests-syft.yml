@@ -143,9 +143,6 @@ jobs:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
         run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            wget https://lets.tunshell.com/init.sh -O - 2> /dev/null | sh -s -- T 5GTM3y9wefqOWkakjU4Wmx Ow8fT6tK8TVwJVpDtNMb3c eu.relay.tunshell.com
-          fi
           tox -e syft.test.notebook
 
   pr-tests-syft-notebook-container:
