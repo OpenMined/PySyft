@@ -127,7 +127,9 @@ def serve_node(
         else:
             for _ in range(WAIT_TIME_SECONDS):
                 try:
-                    req = requests.get(f"http://{host}:{port}/api/v1/new/metadata")
+                    req = requests.get(
+                        f"http://{host}:{port}/api/v1/new/metadata", timeout=0.5
+                    )
                     if req.status_code == 200:
                         print("Server Started")
                         break
