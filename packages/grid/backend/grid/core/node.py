@@ -1,7 +1,6 @@
 # syft absolute
 from syft.node.domain import Domain
 from syft.node.gateway import Gateway
-from syft.node.node import create_worker_metadata
 from syft.node.node import get_node_type
 from syft.store.mongo_client import MongoStoreClientConfig
 from syft.store.mongo_document_store import MongoStoreConfig
@@ -34,4 +33,3 @@ else:
     worker = Domain(
         action_store_config=sql_store_config, document_store_config=mongo_store_config
     )
-create_worker_metadata(worker)

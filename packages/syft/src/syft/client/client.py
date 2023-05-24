@@ -41,6 +41,7 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
+from ..util.util import thread_ident
 from ..util.util import verify_tls
 from .api import APIModule
 from .api import APIRegistry
@@ -66,7 +67,7 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
     return url
 
 
-API_PATH = "/api/v1/new"
+API_PATH = "/api/v2"
 
 
 class Routes(Enum):
@@ -449,7 +450,20 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
+
+        # relative
+        from ..node.node import CODE_RELOADER
+
+        CODE_RELOADER[thread_ident()] = self._reload_user_code
+
         return self
+
+    def _reload_user_code(self):
+        # relative
+        from ..service.code.user_code import load_approved_policy_code
+
+        user_code_items = self.code.get_all_for_user()
+        load_approved_policy_code(user_code_items)
 
     def register(
         self,

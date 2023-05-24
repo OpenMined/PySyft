@@ -28,9 +28,9 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     )
 
     api_router = APIRouter()
-    api_router.include_router(router, prefix="/new", tags=["new"])
 
-    app.include_router(api_router, prefix="/api/v1")
+    api_router.include_router(router)
+    app.include_router(api_router, prefix="/api/v2")
 
     app.add_middleware(
         CORSMiddleware,
@@ -73,7 +73,9 @@ def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
             log_level = "info"
             logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
             logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-        config = uvicorn.Config(app, host=host, port=port, log_level=log_level)
+        config = uvicorn.Config(
+            app, host=host, port=port, log_level=log_level, reload=dev_mode
+        )
         server = uvicorn.Server(config)
 
         await server.serve()
