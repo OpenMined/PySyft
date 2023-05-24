@@ -67,7 +67,9 @@ class MessageStash(BaseUIDStoreStash):
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         return self.query_all(
-            credentials, qks=qks, order_by=OrderByCreatedAtTimeStampPartitionKey
+            credentials,
+            qks=qks,
+            order_by=OrderByCreatedAtTimeStampPartitionKey,
         )
 
     def get_all_by_verify_key_for_status(
@@ -83,7 +85,9 @@ class MessageStash(BaseUIDStoreStash):
             ]
         )
         return self.query_all(
-            credentials, qks=qks, order_by=OrderByCreatedAtTimeStampPartitionKey
+            credentials,
+            qks=qks,
+            order_by=OrderByCreatedAtTimeStampPartitionKey,
         )
 
     def update_message_status(
@@ -102,7 +106,10 @@ class MessageStash(BaseUIDStoreStash):
     def delete_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[bool, str]:
-        result = self.get_all_inbox_for_verify_key(credentials, verify_key=verify_key)
+        result = self.get_all_inbox_for_verify_key(
+            credentials,
+            verify_key=verify_key,
+        )
         # If result is an error then return the error
         if result.is_err():
             return result

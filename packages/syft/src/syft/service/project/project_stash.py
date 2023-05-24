@@ -18,6 +18,7 @@ from .project import NewProject
 from .project import Project
 
 VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
+OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
@@ -51,4 +52,8 @@ class NewProjectStash(BaseUIDStoreStash):
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(
+            credentials=credentials,
+            qks=qks,
+            order_by=OrderByNamePartitionKey,
+        )
