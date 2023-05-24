@@ -1,6 +1,9 @@
 """
 Tests for the ActionGraphService in /syft/src/syft/service/action/action_graph_service.py
 """
+# third party
+import networkx as nx
+
 # syft absolute
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
@@ -453,3 +456,11 @@ def test_action_graph_service_get_by_verify_key(
         in_mem_action_graph_service.get_by_verify_key(authed_context_2, verify_key_2)[0]
         == node_2.id
     )
+
+
+def test_action_graph_service_init_with_node(worker: Worker) -> None:
+    action_graph_service = worker.get_service("actiongraphservice")
+    assert isinstance(action_graph_service, ActionGraphService)
+    assert isinstance(action_graph_service.store, InMemoryActionGraphStore)
+    assert isinstance(action_graph_service.store.graph, NetworkXBackingStore)
+    assert isinstance(action_graph_service.store.graph.db, nx.DiGraph)
