@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 import copy
-from enum import Enum
 import textwrap
 import time
 from typing import Any
@@ -31,7 +30,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
-from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -39,13 +37,10 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
-from ..code.user_code import UserCode
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
 from ..request.request import Request
-from ..request.request import SubmitRequest
-from ..request.request import UserCodeStatusChange
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
@@ -1001,40 +996,11 @@ class Project(SyftObject):
             return SyftSuccess(message="Poll answered successfully")
         return result
 
-    def create_request(
+    def add_request(
         self,
-        obj: UserCode,
-        permission: Enum,
+        request: Request,
     ):
-        if not isinstance(obj, UserCode):
-            return SyftError(
-                message=f"Currently we only support requests for UserCode: {type(obj)}"
-            )
-
-        node_uid = obj.node_uid
-        if node_uid is None:
-            return SyftError(f"Node uid is not set for the object: {obj}")
-
-        user_verify_key = self.user_signing_key.verify_key
-        client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
-            verify_key=user_verify_key, node_uid=node_uid
-        )
-        if client is None:
-            return SyftError(
-                message=f"Client not found for node uid: {node_uid}, verify_key: {user_verify_key}"
-            )
-
-        linked_obj = LinkedObject.from_obj(obj, node_uid=node_uid)
-
-        CODE_EXECUTE = UserCodeStatusChange(value=permission, linked_obj=linked_obj)
-        changes = [CODE_EXECUTE]
-
-        request = SubmitRequest(changes=changes)
-        submitted_req = client.api.services.request.submit(request, send_message=False)
-        if isinstance(submitted_req, SyftError):
-            return submitted_req
-
-        request_event = ProjectRequest(request=submitted_req)
+        request_event = ProjectRequest(request=request)
         result = self.add_event(request_event)
 
         if isinstance(result, SyftSuccess):
