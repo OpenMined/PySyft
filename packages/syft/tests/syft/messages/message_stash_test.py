@@ -146,9 +146,6 @@ def test_messagestash_get_all_inbox_for_verify_key(
         )
         message_list.append(mock_message)
 
-    # sort the list of mock messages by created_at to use as expected result
-    sorted_message_list = sorted(message_list, key=lambda x: x.created_at)
-
     # returned list of messages from stash that's sorted by created_at
     response2 = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
@@ -159,12 +156,15 @@ def test_messagestash_get_all_inbox_for_verify_key(
     result = response2.ok()
     assert len(response2.value) == 5
 
-    assert result[0] == sorted_message_list[0]
+    for message in message_list:
+        # check if all messages are present in the result
+        assert message in result
 
     with pytest.raises(AttributeError):
         test_stash.get_all_inbox_for_verify_key(root_verify_key, random_signing_key)
 
     # assert that the returned list of messages is sorted by created_at
+    sorted_message_list = sorted(result, key=lambda x: x.created_at)
     assert result == sorted_message_list
 
 
