@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 # syft absolute
+from syft import ActionObject
 from syft.serde.lib_permissions import *
 from syft.serde.lib_service_registry import *
 from syft.service.response import SyftAttributeError
@@ -68,4 +69,4 @@ def test_numpy_functions(func, func_arguments, numpy_syft_instance):
     else:
         original_result = eval(f"np.{func}({func_arguments})")
         assert result == original_result
-        # what else should be tested
+        assert isinstance(result, ActionObject)
