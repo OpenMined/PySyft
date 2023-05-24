@@ -28,9 +28,9 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     )
 
     api_router = APIRouter()
-    api_router.include_router(router, prefix="/new", tags=["new"])
 
-    app.include_router(api_router, prefix="/api/v1")
+    api_router.include_router(router)
+    app.include_router(api_router, prefix="/api/v2")
 
     app.add_middleware(
         CORSMiddleware,

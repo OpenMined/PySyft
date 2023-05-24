@@ -336,7 +336,7 @@ def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
 # Check api metadata
 def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
-        url = f"http://{ip}/api/v1/new/metadata"
+        url = f"http://{ip}/api/v2/metadata"
         response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
