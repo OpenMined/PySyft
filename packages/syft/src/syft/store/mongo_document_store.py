@@ -321,7 +321,8 @@ class MongoStorePartition(StorePartition):
         if order_by is not None:
             storage_objs = collection.find(filter=qks.as_dict_mongo).sort(order_by.key)
         else:
-            storage_objs = collection.find(filter=qks.as_dict_mongo)
+            _default_key = "_id"
+            storage_objs = collection.find(filter=qks.as_dict_mongo).sort(_default_key)
         syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
