@@ -856,10 +856,10 @@ def recursive_hash(obj: Any) -> int:
     return hashes
 
 
-# if os_name() == "macOS":
-#     # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
-#     # progress in another thread when fork() was called.
-#     multiprocessing.set_start_method("spawn", True)
+if os_name() == "macOS":
+    # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+    # progress in another thread when fork() was called.
+    multiprocessing.set_start_method("spawn", True)
 
 
 def thread_ident() -> int:
