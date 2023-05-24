@@ -59,7 +59,6 @@ PYTHON_ARRAY = [0, 1, 1, 2, 2, 3]
     ],
 )
 def test_numpy_functions(func, func_arguments, numpy_syft_instance):
-    np_sy = numpy_syft_instance
     try:
         result = eval(f"np_sy.{func}({func_arguments})")
     except Exception as e:
