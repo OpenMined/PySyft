@@ -71,7 +71,6 @@ class MessageService(AbstractService):
     # get_all_read and unread cover the same functionality currently as
     # get_all_for_status. However, there may be more statuses added in the future,
     # so we are keeping the more generic get_all_for_status method.
-    @service_method(path="messages.get_all_for_status", name="get_all_for_status")
     def get_all_for_status(
         self,
         context: AuthedServiceContext,
@@ -90,30 +89,20 @@ class MessageService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Union[List[Message], SyftError]:
-        result = self.stash.get_all_by_verify_key_for_status(
-            context.credentials,
-            verify_key=context.credentials,
+        return self.get_all_for_status(
+            context=context,
             status=MessageStatus.READ,
         )
-        if result.err():
-            return SyftError(message=str(result.err()))
-        messages = result.ok()
-        return messages
 
     @service_method(path="messages.get_all_unread", name="get_all_unread")
     def get_all_unread(
         self,
         context: AuthedServiceContext,
     ) -> Union[List[Message], SyftError]:
-        result = self.stash.get_all_by_verify_key_for_status(
-            context.credentials,
-            verify_key=context.credentials,
+        return self.get_all_for_status(
+            context=context,
             status=MessageStatus.UNREAD,
         )
-        if result.err():
-            return SyftError(message=str(result.err()))
-        messages = result.ok()
-        return messages
 
     @service_method(path="messages.mark_as_read", name="mark_as_read")
     def mark_as_read(

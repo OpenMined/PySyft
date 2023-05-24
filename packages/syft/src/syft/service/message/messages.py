@@ -55,11 +55,11 @@ class Message(SyftObject):
             return self.linked_obj.resolve
         return None
 
-    def read(self) -> None:
+    def mark_read(self) -> None:
         api = APIRegistry.api_for(self.node_uid)
         return api.services.messages.mark_as_read(uid=self.id)
 
-    def unread(self) -> None:
+    def mark_unread(self) -> None:
         api = APIRegistry.api_for(self.node_uid)
         return api.services.messages.mark_as_unread(uid=self.id)
 
