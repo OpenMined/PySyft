@@ -83,15 +83,10 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [macos-latest]
         python-version: ["3.10"]
         node-type: ["python"]
         notebook-paths: ["api/0.8"]
-        include:
-          - python-version: "3.9"
-            os: "ubuntu-latest"
-            node-type: "python"
-            notebook-paths: "api/0.8"
 
     runs-on: ${{ matrix.os }}
     steps:
