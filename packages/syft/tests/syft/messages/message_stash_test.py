@@ -137,34 +137,14 @@ def test_messagestash_get_all_inbox_for_verify_key(
     result = response.ok()
     assert len(result) == 0
 
-    mock_message = add_mock_message(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
-    )
-
-    mock_message2 = add_mock_message(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
-    )
-
-    mock_message3 = add_mock_message(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
-    )
-
-    mock_message4 = add_mock_message(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
-    )
-
-    mock_message5 = add_mock_message(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
-    )
-
     # list of mock messages
-    message_list = [
-        mock_message,
-        mock_message2,
-        mock_message3,
-        mock_message4,
-        mock_message5,
-    ]
+    message_list = []
+
+    for i in range(5):
+        mock_message = add_mock_message(
+            root_verify_key, test_stash, test_verify_key, random_verify_key
+        )
+        message_list.append(mock_message)
 
     # sort the list of mock messages by created_at to use as expected result
     sorted_message_list = sorted(message_list, key=lambda x: x.created_at)
@@ -179,7 +159,7 @@ def test_messagestash_get_all_inbox_for_verify_key(
     result = response2.ok()
     assert len(response2.value) == 5
 
-    assert result[0] == mock_message
+    assert result[0] == sorted_message_list[0]
 
     with pytest.raises(AttributeError):
         test_stash.get_all_inbox_for_verify_key(root_verify_key, random_signing_key)
