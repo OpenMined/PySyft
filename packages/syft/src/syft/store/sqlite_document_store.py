@@ -96,8 +96,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
         try:
             self.cur.execute(
                 f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                + "repr TEXT NOT NULL, value BLOB NOT NULL) "  # nosec
-                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL"  # nosec
+                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
             )
             self.db.commit()
         except sqlite3.OperationalError as e:
