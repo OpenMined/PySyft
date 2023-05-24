@@ -66,7 +66,7 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
     return url
 
 
-API_PATH = "/api/v1/new"
+API_PATH = "/api/v2"
 
 
 class Routes(Enum):

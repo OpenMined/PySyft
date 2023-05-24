@@ -3255,7 +3255,7 @@ HEALTH_CHECK_ICONS = {
 HEALTH_CHECK_URLS = {
     "host": "{ip_address}",
     "UI (βeta)": "http://{ip_address}/login",
-    "api": "http://{ip_address}/api/v1/openapi.json",
+    "api": "http://{ip_address}/api/v2/openapi.json",
     "ssh": "hagrid ssh {ip_address}",
     "jupyter": "http://{ip_address}:8888",
 }
