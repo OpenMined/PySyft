@@ -19,6 +19,7 @@ from starlette.middleware.cors import CORSMiddleware
 import uvicorn
 
 # relative
+from ..client.client import API_PATH
 from ..util.util import os_name
 from .domain import Domain
 from .routes import make_routes
@@ -130,7 +131,7 @@ def serve_node(
             for _ in range(WAIT_TIME_SECONDS):
                 try:
                     req = requests.get(
-                        f"http://{host}:{port}/api/v1/new/metadata", timeout=0.5
+                        f"http://{host}:{port}{API_PATH}/metadata", timeout=0.5
                     )
                     if req.status_code == 200:
                         print("Server Started")
