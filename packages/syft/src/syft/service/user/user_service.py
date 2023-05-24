@@ -324,7 +324,7 @@ class UserService(AbstractService):
             return SyftError(message=str(result.err()))
 
         user = result.ok()
-        msg = SyftSuccess(message=f"{user.email} User successfully registered !!!")
+        msg = SyftSuccess(message="User successfully registered!")
         return tuple([msg, user.to(UserPrivateKey)])
 
     def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:

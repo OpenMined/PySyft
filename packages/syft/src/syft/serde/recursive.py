@@ -1,7 +1,6 @@
 # stdlib
 from enum import Enum
 import sys
-import threading
 import types
 from typing import Any
 from typing import Callable
@@ -26,10 +25,6 @@ from .capnp import get_capnp_schema
 TYPE_BANK = {}
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
-
-
-def thread_ident() -> int:
-    return int(threading.current_thread().ident)
 
 
 def recursive_serde_register(
@@ -249,13 +244,14 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     kwargs = {}
 
     for attr_name, attr_bytes_list in zip(proto.fieldsName, proto.fieldsData):
-        attr_bytes = combine_bytes(attr_bytes_list)
-        attr_value = _deserialize(attr_bytes, from_bytes=True)
-        transforms = serde_overrides.get(attr_name, None)
+        if attr_name != "":
+            attr_bytes = combine_bytes(attr_bytes_list)
+            attr_value = _deserialize(attr_bytes, from_bytes=True)
+            transforms = serde_overrides.get(attr_name, None)
 
-        if transforms is not None:
-            attr_value = transforms[1](attr_value)
-        kwargs[attr_name] = attr_value
+            if transforms is not None:
+                attr_value = transforms[1](attr_value)
+            kwargs[attr_name] = attr_value
 
     if hasattr(class_type, "serde_constructor"):
         return getattr(class_type, "serde_constructor")(kwargs)

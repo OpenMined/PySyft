@@ -837,7 +837,7 @@ class ActionObject(SyftObject):
                         context, result_args, result_kwargs = result.ok()
                     else:
                         msg = result.err().replace("\\n", "\n")
-                        print(f"Pre-hook failed with {msg}")
+                        debug(f"Pre-hook failed with {msg}")
 
         if self.is_pointer:
             if name not in self._syft_dont_wrap_attrs():
@@ -848,7 +848,7 @@ class ActionObject(SyftObject):
                             context, result_args, result_kwargs = result.ok()
                         else:
                             msg = result.err().replace("\\n", "\n")
-                            print(f"Pre-hook failed with {msg}")
+                            debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
 

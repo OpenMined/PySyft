@@ -151,7 +151,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         if isinstance(result, SyftError):
             logger.bind(payload={"user": user_create}).error(result.message)
-            response = SyftError(message=f"User Registration failed: {result.message}")
+            response = SyftError(message=f"{result.message}")
         else:
             response = result
 
