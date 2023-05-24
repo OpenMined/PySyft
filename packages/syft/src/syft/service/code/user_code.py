@@ -46,6 +46,7 @@ from ..policy.policy import Policy
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
 from ..policy.policy import init_policy
+from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from .code_parse import GlobalsVisitor
@@ -646,3 +647,16 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+
+def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
+    """Reload the policy code in memory for user code that is approved."""
+    try:
+        for user_code in user_code_items:
+            if user_code.status.approved:
+                if isinstance(user_code.input_policy_type, UserPolicy):
+                    load_policy_code(user_code.input_policy_type)
+                if isinstance(user_code.output_policy_type, UserPolicy):
+                    load_policy_code(user_code.output_policy_type)
+    except Exception as e:
+        raise Exception(f"Failed to load code: {user_code}: {e}")
