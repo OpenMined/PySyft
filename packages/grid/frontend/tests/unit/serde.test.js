@@ -1,5 +1,5 @@
 import { expect, it, expectTypeOf } from 'vitest';
-import { JSSerde } from '$lib/client/jsserde.svelte';
+import { JSSerde } from '$lib/client/jsserde.ts';
 import { v4 as uuidv4 } from 'uuid';
 import { UUID } from '$lib/client/objects/uid.ts';
 import { SyftVerifyKey } from '$lib/client/objects/key.ts';
