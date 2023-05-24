@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import binascii
 import contextlib
 from datetime import datetime
 from functools import partial
@@ -16,6 +17,7 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+import uuid
 
 # third party
 import gevent
@@ -50,8 +52,6 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.message.message_service import MessageService
-from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.metadata_stash import MetadataStash
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
@@ -67,6 +67,9 @@ from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.settings.settings import NodeSettings
+from ..service.settings.settings_service import SettingsService
+from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
@@ -191,7 +194,7 @@ class Node(AbstractNode):
         services = (
             [
                 UserService,
-                MetadataService,
+                SettingsService,
                 ActionService,
                 DatasetService,
                 UserCodeService,
@@ -236,6 +239,7 @@ class Node(AbstractNode):
         self.node_type = node_type
 
         self.post_init()
+        self.create_initial_settings()
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
 
@@ -263,7 +267,16 @@ class Node(AbstractNode):
         sqlite_path: Optional[str] = None,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
-        uid = UID(name_hash[0:16])
+        name_hash_uuid = name_hash[0:16]
+        name_hash_uuid = bytearray(name_hash_uuid)
+        name_hash_uuid[6] = (
+            name_hash_uuid[6] & 0x0F
+        ) | 0x40  # Set version to 4 (uuid4)
+        name_hash_uuid[8] = (name_hash_uuid[8] & 0x3F) | 0x80  # Set variant to RFC 4122
+        name_hash_string = binascii.hexlify(bytearray(name_hash_uuid)).decode("utf-8")
+        if uuid.UUID(name_hash_string).version != 4:
+            raise Exception(f"Invalid UID: {name_hash_string} for name: {name}")
+        uid = UID(name_hash_string)
         key = SyftSigningKey(SigningKey(name_hash))
         if reset:
             store_config = SQLiteStoreClientConfig()
@@ -407,7 +420,7 @@ class Node(AbstractNode):
                 kwargs["store"] = self.action_store
             store_services = [
                 UserService,
-                MetadataService,
+                SettingsService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -457,13 +470,19 @@ class Node(AbstractNode):
 
     @property
     def metadata(self) -> NodeMetadata:
+        settings_stash = SettingsStash(store=self.document_store)
+        settings = settings_stash.get_all(self.signing_key.verify_key).ok()[0]
         return NodeMetadata(
-            name=self.name,
+            name=settings.name,
             id=self.id,
             verify_key=self.verify_key,
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
+            deployed_on=settings.deployed_on,
+            description=settings.description,
+            organization=settings.organization,
+            on_board=settings.on_board,
         )
 
     @property
@@ -490,6 +509,7 @@ class Node(AbstractNode):
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Union[Optional[QueueItem], SyftError]:
         result = self.queue_stash.pop_on_complete(credentials, uid)
+
         if result.is_ok():
             return result.ok()
         return result.err()
@@ -511,7 +531,7 @@ class Node(AbstractNode):
             client = self.client_cache[node_uid]
         else:
             network_service = self.get_service(NetworkService)
-            peer = network_service.stash.get_by_uid(node_uid)
+            peer = network_service.stash.get_by_uid(self.verify_key, node_uid)
 
             if peer.is_ok() and peer.ok():
                 peer = peer.ok()
@@ -553,7 +573,6 @@ class Node(AbstractNode):
 
         if api_call.message.node_uid != self.id:
             return self.forward_message(api_call=api_call)
-
         if api_call.message.path == "queue":
             return self.resolve_future(
                 credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]
@@ -624,6 +643,26 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
+    def create_initial_settings(self) -> Optional[NodeSettings]:
+        try:
+            settings_stash = SettingsStash(store=self.document_store)
+            settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
+            if settings_exists:
+                return None
+            else:
+                new_settings = NodeSettings(
+                    name=self.name,
+                    deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+                )
+                result = settings_stash.set(
+                    credentials=self.signing_key.verify_key, settings=new_settings
+                )
+                if result.is_ok():
+                    return result.ok()
+                return None
+        except Exception as e:
+            print("create_worker_metadata failed", e)
+
 
 def task_producer(
     pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
@@ -672,7 +711,7 @@ def task_runner(
                 item = QueueItem(
                     node_uid=worker.id, id=task_uid, result=result, resolved=True
                 )
-                worker.queue_stash.set_result(item)
+                worker.queue_stash.set_result(worker.verify_key, item)
                 worker.queue_stash.partition.close()
             pipe.close()
     except Exception as e:
@@ -704,34 +743,6 @@ def queue_task(
     if blocking:
         return producer.value
     return None
-
-
-def create_worker_metadata(
-    worker: AbstractNode,
-) -> Optional[NodeMetadata]:
-    try:
-        metadata_stash = MetadataStash(store=worker.document_store)
-        metadata_exists = metadata_stash.get_all(worker.signing_key.verify_key).ok()
-        if metadata_exists:
-            return None
-        else:
-            new_metadata = NodeMetadata(
-                name=worker.name,
-                id=worker.id,
-                verify_key=worker.signing_key.verify_key,
-                highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
-                lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
-                syft_version=__version__,
-                deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
-            )
-            result = metadata_stash.set(
-                credentials=worker.signing_key.verify_key, metadata=new_metadata
-            )
-            if result.is_ok():
-                return result.ok()
-            return None
-    except Exception as e:
-        print("create_worker_metadata failed", e)
 
 
 def create_admin_new(
