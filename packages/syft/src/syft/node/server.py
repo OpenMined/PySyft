@@ -14,6 +14,7 @@ from typing import Tuple
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
+import requests
 from starlette.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -26,6 +27,8 @@ if os_name() == "macOS":
     # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
     # progress in another thread when fork() was called.
     multiprocessing.set_start_method("spawn", True)
+
+WAIT_TIME_SECONDS = 20
 
 
 def make_app(name: str, router: APIRouter) -> FastAPI:
@@ -111,6 +114,7 @@ def serve_node(
     def start():
         print(f"Starting {name} server on {host}:{port}")
         server_process.start()
+
         if tail:
             try:
                 while True:
@@ -120,6 +124,16 @@ def serve_node(
                     stop()
                 except SystemExit:
                     os._exit(130)
+        else:
+            for _ in range(WAIT_TIME_SECONDS):
+                try:
+                    req = requests.get(f"http://{host}:{port}/api/v1/new/metadata")
+                    if req.status_code == 200:
+                        print("Server Started")
+                        break
+                except Exception:
+                    time.sleep(1)
+                    print("Waiting for server to start")
 
     return start, stop
 
