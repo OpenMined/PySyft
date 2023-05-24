@@ -56,7 +56,7 @@ export function isValid(syftCall: SignedSyftCall) {
   return sodium.crypto_sign_verify_detached(
     syftCall.signature,
     syftCall.serialized_message,
-    syftCall.credentials.verify_key
+    syftCall.credentials.verify_key.key
   );
 }
 
