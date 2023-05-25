@@ -81,7 +81,7 @@ def status_callback(context: Dict, future: Future) -> None:
 
 shell2http.register_command(
     endpoint="status",
-    command_name="tailscale status",
+    command_name="tailscale status --json",
     callback_fn=status_callback,
     decorators=[basic_auth_check],
 )

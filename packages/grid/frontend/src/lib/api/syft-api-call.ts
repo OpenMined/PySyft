@@ -4,7 +4,7 @@ import { getKeyFromStorage, getNodeIdFromStorage } from './keys';
 import { deserialize, deserializeSyftResponseObject, serialize } from './serde';
 import { API_BASE_URL } from '../constants';
 
-const SYFT_MSG_URL = `${API_BASE_URL}/new/api_call`;
+const SYFT_MSG_URL = `${API_BASE_URL}/api_call`;
 
 export interface VerifyKey {
   key: Uint8Array;
@@ -56,7 +56,7 @@ export function isValid(syftCall: SignedSyftCall) {
   return sodium.crypto_sign_verify_detached(
     syftCall.signature,
     syftCall.serialized_message,
-    syftCall.credentials.verify_key
+    syftCall.credentials.verify_key.key
   );
 }
 

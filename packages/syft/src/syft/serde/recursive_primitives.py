@@ -17,6 +17,7 @@ from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
 from typing import cast
+import weakref
 
 # relative
 from .capnp import get_capnp_schema
@@ -226,6 +227,12 @@ recursive_serde_register(
     set,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, set),
+)
+
+recursive_serde_register(
+    weakref.WeakSet,
+    serialize=serialize_iterable,
+    deserialize=functools.partial(deserialize_iterable, weakref.WeakSet),
 )
 
 recursive_serde_register(
