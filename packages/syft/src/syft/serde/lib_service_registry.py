@@ -105,15 +105,7 @@ class CMPBase:
                     )
                 if child is not None:
                     child.build()
-                    try:
-                        # syft absolute
-                        import syft as sy
-
-                        # check if we can serialize
-                        sy.serialize(child, to_bytes=True)
-                        self.children[attr_name] = child
-                    except Exception:
-                        pass
+                    self.children[attr_name] = child
 
     def __getattr__(self, __name: str) -> Any:
         if __name in self.children:

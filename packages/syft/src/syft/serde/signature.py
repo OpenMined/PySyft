@@ -1,4 +1,5 @@
 # stdlib
+from collections import OrderedDict
 import inspect
 from inspect import Parameter
 from inspect import Signature
@@ -55,6 +56,8 @@ def serialize_signature(obj: Signature) -> bytes:
 
 def deserialize_signature(blob: bytes) -> Signature:
     obj_dict = _deserialize(blob, from_bytes=True)
+    # TODO: look into this hack, sometimes deserialization of signatures breaks
+    obj_dict = OrderedDict({k: v for k, v in obj_dict.items() if hasattr(v, "default")})
     return Signature(**obj_dict)
 
 

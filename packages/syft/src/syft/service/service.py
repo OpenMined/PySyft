@@ -130,12 +130,28 @@ class LibConfigRegistry:
             cls.__service_config_registry__[config.public_path] = config
 
     @classmethod
+    def _filtered(cls):
+        # syft absolute
+        import syft as sy
+
+        def can_serialize(service_config: ServiceConfig):
+            try:
+                sy.serialize(service_config, to_bytes=True)
+                return True
+            except Exception:
+                return False
+
+        return {
+            k: v for k, v in cls.__service_config_registry__.items() if can_serialize(v)
+        }
+
+    @classmethod
     def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
-        return cls.__service_config_registry__
+        return cls._filtered()
 
     @classmethod
     def path_exists(cls, path: str):
-        return path in cls.__service_config_registry__
+        return path in cls._filtered()
 
 
 class UserLibConfigRegistry:
@@ -205,7 +221,6 @@ def register_lib_obj(lib_obj: CMPBase):
                 permissions=set([lib_obj.permissions]),
                 is_from_lib=True,
             )
-
             LibConfigRegistry.register(lib_config)
 
 

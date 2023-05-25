@@ -79,6 +79,6 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
 def test_api_serialization(worker):
     client = worker.root_client
     sy.deserialize(
-        sy.serialize(api=worker.get_api(client.credentials.verify_key), to_bytes=True),
+        sy.serialize(worker.get_api(client.credentials.verify_key), to_bytes=True),
         from_bytes=True,
     )
