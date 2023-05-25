@@ -6,6 +6,7 @@ from enum import Enum
 import inspect
 import traceback
 import types
+import typing
 from typing import Any
 from typing import Callable
 from typing import ClassVar
@@ -404,6 +405,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_twin_type",
     "_repr_debug_",
     "as_empty",
+    "process_args_and_kwargs",
 ]
 
 
@@ -1006,7 +1008,10 @@ class ActionObject(SyftObject):
 
         # check for other types that aren't methods, functions etc
         def fake_func(*args: Any, **kwargs: Any) -> Any:
-            return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+            # why not possible to set any?
+            res = ActionObject.empty(str)
+            res.syft_internal_type = typing.Any
+            return res
 
         debug(f"[__getattribute__] Handling method {name} ")
         if (
@@ -1067,40 +1072,29 @@ class ActionObject(SyftObject):
 
         return wrapper
 
-    def _syft_setattr(self, name, value):
-        args = (name, value)
-        kwargs = dict()
-        op_name = "__setattr__"
+    def process_args_and_kwargs(self, pre_hook_args, pre_hook_kwargs, op_name):
+        if op_name == "__setitem__" or op_name == "__getitem__":
+            indices = pre_hook_args[0]
+            value = pre_hook_args[1]
+            if isinstance(indices, tuple):
+                flat_args = list(indices) + [value]
+                n_indices = len(indices)
+                deboxed_flat_args, deboxed_kwargs = debox_args_and_kwargs(
+                    flat_args, pre_hook_kwargs
+                )
+                deboxed_nested_args = tuple(
+                    [tuple(deboxed_flat_args[:n_indices]), deboxed_flat_args[-1]]
+                )
+                return deboxed_nested_args, deboxed_kwargs
 
-        def fake_func(*args: Any, **kwargs: Any) -> Any:
-            return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
-
-        if isinstance(self.syft_action_data, ActionDataEmpty) or has_action_data_empty(
-            args=args, kwargs=kwargs
-        ):
-            local_func = fake_func
-        else:
-            local_func = getattr(self.syft_action_data, op_name)
-
-        context = PreHookContext(
-            obj=self, op_name=op_name, action_type=ActionType.SETATTRIBUTE
-        )
-        context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
-            context, "__setattr__", args, kwargs
-        )
-
-        original_args, _ = debox_args_and_kwargs(pre_hook_args, pre_hook_kwargs)
-        val = original_args[1]
-        local_func(name, val)
-        local_result = self
-
-        post_result = self._syft_run_post_hooks__(context, op_name, local_result)
-        post_result = self._syft_attr_propagate_ids(context, op_name, post_result)
-        return post_result
+        return debox_args_and_kwargs(pre_hook_args, pre_hook_kwargs)
 
     def _syft_inplace_method(self, op_name, *args, **kwargs):
         def fake_func(*args: Any, **kwargs: Any) -> Any:
-            return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+            # why not possible to set any?
+            res = ActionObject.empty(str)
+            res.syft_internal_type = typing.Any
+            return res
 
         if isinstance(self.syft_action_data, ActionDataEmpty) or has_action_data_empty(
             args=args, kwargs=kwargs
@@ -1116,9 +1110,10 @@ class ActionObject(SyftObject):
             context, op_name, args, kwargs
         )
 
-        original_args, original_kwargs = debox_args_and_kwargs(
-            pre_hook_args, pre_hook_kwargs
+        original_args, original_kwargs = self.process_args_and_kwargs(
+            pre_hook_args, pre_hook_kwargs, op_name
         )
+
         local_func(*original_args, **original_kwargs)
         local_result = self
 
@@ -1221,10 +1216,9 @@ class ActionObject(SyftObject):
 
     def __setitem__(self, key: Any, value: Any) -> None:
         self._syft_inplace_method("__setitem__", key, value)
-        context_self = self.syft_action_data  # type: ignore
         if hasattr(value, "syft_action_data"):
             value = value.syft_action_data
-        return context_self.__setitem__(key, value)
+        # return context_self.__setitem__(key, value)
 
     def __contains__(self, key: Any) -> bool:
         return self.__contains__(key)

@@ -6,6 +6,9 @@ from typing import cast
 import numpy as np
 import pyarrow as pa
 
+# syft absolute
+import syft as sy
+
 # relative
 from ..util.experimental_flags import ApacheArrowCompression
 from ..util.experimental_flags import flags
@@ -111,7 +114,10 @@ def arraytonumpyutf8(string_list: Union[str, np.ndarray]) -> bytes:
 
 
 def numpy_serialize(obj: np.ndarray) -> bytes:
-    if obj.dtype.type != np.str_:
+    all_str = all(map(lambda i: isinstance(i, str), obj))
+    if obj.dtype.type == np.object_ and not all_str:
+        return sy.serialize(obj.tolist(), to_bytes=True)
+    if obj.dtype.type != np.str_ and not all(map(lambda i: isinstance(i, str), obj)):
         return arrow_serialize(obj)
     else:
         return arraytonumpyutf8(obj)
@@ -121,6 +127,8 @@ def numpy_deserialize(buf: bytes) -> np.ndarray:
     deser = _deserialize(buf, from_bytes=True)
     if isinstance(deser, tuple):
         return arrow_deserialize(*deser)
+    elif isinstance(deser, list):
+        return np.array(deser)
     elif isinstance(deser, np.ndarray):
         return numpyutf8toarray(deser)
     else:

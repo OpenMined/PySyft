@@ -13,7 +13,6 @@ from typing import Union
 
 # third party
 from capnp.lib.capnp import _DynamicStructBuilder
-import numpy as np
 from pydantic import BaseModel
 
 # syft absolute
@@ -22,6 +21,7 @@ import syft as sy
 # relative
 from ..util.util import get_fully_qualified_name
 from ..util.util import index_syft_by_module_name
+from ..util.util import is_function
 from .capnp import get_capnp_schema
 
 TYPE_BANK = {}
@@ -46,13 +46,18 @@ def recursive_serde_register(
     base_attrs = None
     attribute_list: Set[str] = set()
 
-    cls = type(cls) if not isinstance(cls, type) else cls
-    fqn = f"{cls.__module__}.{cls.__name__}"
+    _is_function = is_function(cls)
+    if not _is_function:
+        cls = type(cls) if not isinstance(cls, type) else cls
+    fqn = f"{cls.__module__}.{cls.__name__}"  # type: ignore
 
     nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
     _deserialize = deserialize if nonrecursive else rs_proto2object
-    is_pydantic = issubclass(cls, BaseModel)
+    if _is_function:
+        is_pydantic = False
+    else:
+        is_pydantic = issubclass(cls, BaseModel)
 
     if inherit_attrs and not is_pydantic:
         # get attrs from base class
@@ -64,7 +69,7 @@ def recursive_serde_register(
         # cls.__fields__ auto inherits attrs
         pydantic_fields = [
             f.name
-            for f in cls.__fields__.values()
+            for f in cls.__fields__.values()  # type: ignore
             if f.outer_type_ not in (Callable, types.FunctionType, types.LambdaType)
         ]
         attribute_list.update(pydantic_fields)
@@ -73,7 +78,7 @@ def recursive_serde_register(
         # If serialize_attrs is provided, append it to our attr list
         attribute_list.update(serialize_attrs)
 
-    if issubclass(cls, Enum):
+    if not _is_function and issubclass(cls, Enum):
         attribute_list.update(["value"])
 
     exclude_attrs = [] if exclude_attrs is None else exclude_attrs
@@ -119,9 +124,6 @@ def combine_bytes(capnp_list: List[bytes]) -> bytes:
     for value in capnp_list:
         bytes_value += value
     return bytes_value
-
-
-ALLOWED_FUNCTIONS = [np.median]
 
 
 def rs_object2proto(self: Any) -> _DynamicStructBuilder:
@@ -176,7 +178,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
 
         if (
             isinstance(field_obj, types.FunctionType)
-            and field_obj not in ALLOWED_FUNCTIONS
+            and f"{field_obj.__module__}.{field_obj.__name__}" not in TYPE_BANK
         ):
             continue
 
@@ -243,7 +245,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
     if class_type == type(None):
         # yes this looks stupid but it works and the opposite breaks
-        class_type = cls
+        class_type = cls  # type: ignore
 
     if nonrecursive:
         if deserialize is None:

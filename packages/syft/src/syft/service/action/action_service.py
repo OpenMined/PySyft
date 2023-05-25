@@ -40,6 +40,86 @@ from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 
 
+class CollectionSearchContext:
+    def __init__(self, context, get_mock, action_service):
+        self.collection_contains_non_twins = False
+        self.has_result_read_permissions = True
+        self.service_context = context
+        self.ids = []
+        self.get_mock: bool = get_mock
+        self.action_service: ActionService = action_service
+
+    def add_id(self, obj):
+        if isinstance(obj, ActionObject):
+            _id = obj.id
+            self.ids.append(_id)
+
+    def has_result_read_permission(self):
+        permissions = [
+            ActionObjectREAD(uid=_id, credentials=self.service_context.credentials)
+            for _id in self.ids
+        ]
+        return self.action_service.store.has_permissions(permissions)
+
+    def get_value(self, x):
+        if self.get_mock:
+            twin_mode = TwinMode.MOCK
+        else:
+            twin_mode = TwinMode.PRIVATE
+
+        res = self.action_service._get(
+            self.service_context, x.id, twin_mode, has_permission=True
+        )
+        if res.is_ok():
+            return res.ok().syft_action_data
+        else:
+            raise ValueError("")
+
+
+def is_twin(x):
+    return isinstance(x, ActionObject) and x.is_twin
+
+
+def is_collection(x):
+    return isinstance(x, (list, dict, set, tuple))
+
+
+def depointerize_collection_elements(x, context):
+    """Takes a collection and unwraps (nested) elements"""
+    if is_collection(x):
+        res_values = []
+        res_type = type(x)
+        if not isinstance(x, dict):
+            for e in x:
+                context.add_id(e)
+                val, _ = depointerize_collection_elements(e, context)
+                res_values.append(val)
+            # we first gather the values, then create an object of the same type
+            res = res_type(res_values)
+        else:
+            res = dict()
+            for k, v in x.items():
+                context.add_id(k)
+                context.add_id(v)
+                val_v, _ = depointerize_collection_elements(v, context)
+                if not is_twin(k):
+                    context.collection_contains_non_twins = True
+                if isinstance(k, ActionObject):
+                    val_k = context.get_value(k)
+                else:
+                    val_k = k
+                res[val_k] = val_v
+        return res, context
+    else:
+        if not is_twin(x):
+            context.collection_contains_non_twins = True
+        if isinstance(x, ActionObject):
+            return context.get_value(x), context
+        else:
+            context.collection_contains_non_twins = True
+            return x, context
+
+
 @serializable()
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
@@ -55,6 +135,47 @@ class ActionService(AbstractService):
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
+    def preprocess_action_to_store(
+        self,
+        context: AuthedServiceContext,
+        action_object: Union[ActionObject, TwinObject],
+    ):
+        if isinstance(action_object, ActionObject) and is_collection(
+            action_object.syft_action_data
+        ):
+            obj = action_object.syft_action_data
+            search_context = CollectionSearchContext(
+                context=context, get_mock=False, action_service=self
+            )
+            private_data, search_context = depointerize_collection_elements(
+                obj, search_context
+            )
+
+            has_result_read_permission = search_context.has_result_read_permission()
+            if search_context.collection_contains_non_twins:
+                # cant make a twin
+                action_object = ActionObject.from_obj(
+                    private_data,
+                    id=action_object.id,
+                    syft_lineage_id=action_object.syft_lineage_id,
+                )
+            else:
+                # all nested objs are twin, so we can make a twin
+                search_context = CollectionSearchContext(
+                    context=context, get_mock=True, action_service=self
+                )
+                mock_data, search_context = depointerize_collection_elements(
+                    obj, search_context
+                )
+                mock_obj = ActionObject.from_obj(mock_data)
+                private_obj = ActionObject.from_obj(private_data)
+                action_object = TwinObject(
+                    id=action_object.id, mock_obj=mock_obj, private_obj=private_obj
+                )
+            return action_object, has_result_read_permission
+        else:
+            return action_object, True
+
     @service_method(path="action.set", name="set", roles=GUEST_ROLE_LEVEL)
     def set(
         self,
@@ -62,15 +183,25 @@ class ActionService(AbstractService):
         action_object: Union[ActionObject, TwinObject],
     ) -> Result[ActionObject, str]:
         """Save an object to the action store"""
+
+        has_result_read_permission = True
+        action_object, has_result_read_permission = self.preprocess_action_to_store(
+            context, action_object
+        )
+
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
         result = self.store.set(
             uid=action_object.id,
             credentials=context.credentials,
             syft_object=action_object,
+            has_result_read_permission=has_result_read_permission,
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
                 action_object = action_object.mock
+            else:
+                if not has_result_read_permission:
+                    action_object = action_object.as_empty()
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
         return result.err()
@@ -272,10 +403,11 @@ class ActionService(AbstractService):
             kwargs = kwargs.ok()
 
         # TODO: check permissions
-        if not isinstance(args[0], ActionObject):
-            return Err(
-                f"Failed executing action {action} setattribute requires a non-twin string as first argument"
-            )
+        # if not isinstance(args[0], ActionObject):
+
+        #     return Err(
+        #         f"Failed executing action {action} setattribute requires a non-twin string as first argument"
+        #     )
         # name = args[0].syft_action_data
         # # dont do the whole filtering dance with the name
         # args = [args[1]]
@@ -395,8 +527,12 @@ class ActionService(AbstractService):
         # relative
         from .plan import Plan
 
+        has_result_read_permission = None
         if action.action_type == ActionType.CREATEOBJECT:
-            result_action_object = Ok(action.create_object)
+            action_object, has_result_read_permission = self.preprocess_action_to_store(
+                context, action.create_object
+            )
+            result_action_object = Ok(action_object)
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action)
         else:
@@ -440,9 +576,10 @@ class ActionService(AbstractService):
             result_action_object = result_action_object.ok()
 
         # check if we have read permissions on the result
-        has_result_read_permission = self.has_read_permission_for_action_result(
-            context, action
-        )
+        if has_result_read_permission is None:
+            has_result_read_permission = self.has_read_permission_for_action_result(
+                context, action
+            )
 
         set_result = self.store.set(
             uid=action.result_id,

@@ -15,6 +15,13 @@ from .action_object import ActionObject
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
+# class LocalLocObject():
+
+#     def __init__(self, obj):
+#         self.obj=obj
+
+#     def __setitem__(self, *args, **kwargs):
+
 
 @serializable()
 class PandasDataFrameObject(ActionObject):
@@ -22,9 +29,12 @@ class PandasDataFrameObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[Type[Any]] = DataFrame
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS  # + ["plot"]
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS + ["loc"]
     # this is added for instance checks for dataframes
     syft_dont_wrap_attrs = ["plot"]
+
+    # @property
+    # def loc(self):
 
     def __dataframe__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__dataframe__(*args, **kwargs)

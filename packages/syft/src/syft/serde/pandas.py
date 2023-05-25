@@ -8,6 +8,10 @@ from matplotlib.axes._subplots import Subplot
 import numpy
 import numpy as np
 import pandas
+from pandas.core import resample
+
+# syft absolute
+import syft as sy
 
 # relative
 from .arrow import numpy_deserialize
@@ -58,8 +62,43 @@ recursive_serde_register(pandas.core.groupby.ops.BaseGrouper)
 recursive_serde_register(pandas.core.groupby.grouper.Grouping)
 recursive_serde_register(Subplot, exclude_attrs=["axes", "_axes", "_callbacks"])
 
+recursive_serde_register(resample.DatetimeIndexResampler)
+
+recursive_serde_register(resample.TimeGrouper)
+
+recursive_serde_register(pandas.core.groupby.ops.BinGrouper)
+
 recursive_serde_register(
-    np.median, serialize=lambda x: "median", deserialize=lambda buffer: np.median
+    pandas._libs.tslibs.offsets.MonthEnd,
+    serialize=lambda x: "np.MontEnd",
+    deserialize=lambda buffer: pandas._libs.tslibs.offsets.MonthEnd(),
+)
+
+recursive_serde_register(
+    np.median, serialize=lambda x: "np.median", deserialize=lambda buffer: np.median
+)
+
+recursive_serde_register(
+    np.mean, serialize=lambda x: "np.mean", deserialize=lambda buffer: np.mean
+)
+
+recursive_serde_register(sum, serialize=lambda x: "sum", deserialize=lambda buffer: sum)
+
+recursive_serde_register(sum, serialize=lambda x: "sum", deserialize=lambda buffer: sum)
+
+
+recursive_serde_register(
+    pandas.core.strings.accessor.StringMethods,
+    serialize=lambda x: sy.serialize(x._data, to_bytes=True),
+    deserialize=lambda buffer: pandas.core.strings.accessor.StringMethods(
+        sy.deserialize(buffer, from_bytes=True)
+    ),
+)
+
+recursive_serde_register(
+    pandas.core.indexing._LocIndexer,
+    serialize=lambda x: sy.serialize(x.obj, to_bytes=True),
+    deserialize=lambda buffer: sy.deserialize(buffer, from_bytes=True).loc,
 )
 
 # recursive_serde_register(

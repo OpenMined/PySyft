@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import functools
 import hashlib
+import inspect
 from itertools import repeat
 import multiprocessing
 import multiprocessing as mp
@@ -21,6 +22,7 @@ from secrets import randbelow
 import socket
 import sys
 import time
+import types
 from types import ModuleType
 from typing import Any
 from typing import Callable
@@ -121,6 +123,10 @@ def validate_field(_object: object, _field: str) -> Any:
     traceback_and_raise(f"Object {_object} has no {_field} field set.")
 
 
+def is_function(obj: object):
+    return inspect.isfunction(obj) or isinstance(obj, types.BuiltinFunctionType)
+
+
 def get_fully_qualified_name(obj: object) -> str:
     """Return the full path and name of a class
 
@@ -134,6 +140,10 @@ def get_fully_qualified_name(obj: object) -> str:
         the full path and name of the object
 
     """
+
+    if is_function(obj):
+        # np.sum, builtins.sum, etc.
+        return f"{obj.__module__}.{obj.__name__}"
 
     fqn = obj.__class__.__module__
 
