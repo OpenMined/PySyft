@@ -32,27 +32,38 @@ class ModelCardService(AbstractService):
         self.store = store
         self.stash = ModelCardStash(store=store)
     
-    # @service_method(path="model_card.add_from_files", name="add_from_files", roles=DATA_OWNER_ROLE_LEVEL)
-    # def add_from_files(
-    #     self, context: AuthedServiceContext, files: List[CreateSyftFile], name: str
-    # ) -> Union[SyftSuccess, SyftError]:
+    @service_method(path="model_card.add_from_files", name="add_from_files", roles=DATA_OWNER_ROLE_LEVEL)
+    def add_from_files(
+        self, context: AuthedServiceContext, files: List[CreateSyftFile], name: str
+    ) -> Union[SyftSuccess, SyftError]:
         
-    #     model_card = ModelCard(
-    #         name=name
-    #     )
+        model_card = ModelCard(
+            name=name
+        )
         
-    #     result = self.stash.set(
-    #         context.credentials,
-    #         model_card,
-    #         add_permissions=[
-    #             ActionObjectPermission(
-    #                 uid=model_card.id, permission=ActionPermission.ALL_READ
-    #             ),
-    #         ]
-    #     )
-    #     if result.is_err():
-    #         return SyftError(message=str(result.err()))
-    #     return SyftSuccess(message="Model Card Added")
+        result = self.stash.set(
+            context.credentials,
+            model_card,
+            add_permissions=[
+                ActionObjectPermission(
+                    uid=model_card.id, permission=ActionPermission.ALL_READ
+                ),
+            ]
+        )
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return SyftSuccess(message="Model Card Added")
+    
+    @service_method(
+        path="model_card.add_from_safetensors", 
+        name="add_from_safetensors", 
+        roles=DATA_OWNER_ROLE_LEVEL
+    )
+    def add_from_safetensors(
+        self, context: AuthedServiceContext, files: List[CreateSyftFile], name: str
+    ) -> Union[SyftSuccess, SyftError]:
+        pass
+    
     
     @service_method(path="model_card.add", name="add", roles=DATA_OWNER_ROLE_LEVEL)
     def add(
