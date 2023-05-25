@@ -74,3 +74,11 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
     guest_client.login(email="a@b.org", password="aaa")
 
     assert guest_client.upload_dataset(dataset)
+
+
+def test_api_serialization(worker):
+    client = worker.root_client
+    sy.deserialize(
+        sy.serialize(api=worker.get_api(client.credentials.verify_key), to_bytes=True),
+        from_bytes=True,
+    )

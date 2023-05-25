@@ -4,7 +4,6 @@ import json
 from typing import Any
 
 # third party
-from matplotlib.axes._subplots import Subplot
 import numpy
 import numpy as np
 import pandas
@@ -60,7 +59,6 @@ recursive_serde_register(pandas._libs.lib._NoDefault)
 recursive_serde_register(pandas.core.groupby.ops.BaseGrouper)
 
 recursive_serde_register(pandas.core.groupby.grouper.Grouping)
-recursive_serde_register(Subplot, exclude_attrs=["axes", "_axes", "_callbacks"])
 
 recursive_serde_register(resample.DatetimeIndexResampler)
 
@@ -109,6 +107,7 @@ recursive_serde_register(
 #  "_agg_filter", "_callbacks", "_fontproperties", "_renderer"])
 # recursive_serde_register(Subplot, exclude_attrs=["axes", "_axes",
 #  "_callbacks", "_children", "_get_lines", "_get_patches_for_fill"])
+# recursive_serde_register(Subplot, exclude_attrs=["axes", "_axes", "_callbacks"])
 
 # how else do you import a relative file to execute it?
 NOTHING = None
