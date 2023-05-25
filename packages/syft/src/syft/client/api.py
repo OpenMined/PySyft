@@ -59,7 +59,7 @@ class APIRegistry:
 
     @classmethod
     def api_for(cls, node_uid: UID) -> SyftAPI:
-        return cls.__api_registry__[node_uid]
+        return cls.__api_registry__.get(node_uid, None)
 
     @classmethod
     def get_all_api(cls) -> List[SyftAPI]:
@@ -322,7 +322,10 @@ class APIModule:
     def _repr_html_(self) -> Any:
         if not hasattr(self, "get_all"):
             return NotImplementedError
-        results = self.get_all()
+        if hasattr(self, "get_all_unread"):
+            results = self.get_all_unread()
+        else:
+            results = self.get_all()
         return results._repr_html_()
 
 

@@ -1,7 +1,6 @@
 # stdlib
 from enum import Enum
 import sys
-import threading
 import types
 from typing import Any
 from typing import Callable
@@ -27,10 +26,6 @@ from .capnp import get_capnp_schema
 TYPE_BANK = {}
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
-
-
-def thread_ident() -> int:
-    return int(threading.current_thread().ident)
 
 
 def recursive_serde_register(

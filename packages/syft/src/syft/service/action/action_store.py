@@ -66,8 +66,6 @@ class KeyValueActionStore(ActionStore):
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
-        # TODO 🟣 Temporarily added skip permission argument for enclave
-        # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         if has_permission or self.has_permission(read_permission):

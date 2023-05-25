@@ -18,7 +18,6 @@ from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
 from ..service.context import NodeServiceContext
 from ..service.context import UnauthedServiceContext
-from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftError
 from ..service.user.user import UserCreate
@@ -63,11 +62,9 @@ def make_routes(worker: Worker) -> APIRouter:
 
     @router.get("/metadata_capnp")
     def syft_metadata_capnp() -> Response:
-        context = NodeServiceContext(node=worker)
-        method = worker.get_method_with_context(MetadataService.get, context)
-        result = method()
+        result = worker.metadata
         return Response(
-            serialize(result.ok(), to_bytes=True),
+            serialize(result, to_bytes=True),
             media_type="application/octet-stream",
         )
 
@@ -151,7 +148,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         if isinstance(result, SyftError):
             logger.bind(payload={"user": user_create}).error(result.message)
-            response = SyftError(message=f"User Registration failed: {result.message}")
+            response = SyftError(message=f"{result.message}")
         else:
             response = result
 
