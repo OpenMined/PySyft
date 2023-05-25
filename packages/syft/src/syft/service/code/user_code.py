@@ -32,6 +32,7 @@ from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
@@ -596,6 +597,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
+        add_node_uid_for_key("node_uid"),
     ]
 
 
