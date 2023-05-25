@@ -71,7 +71,7 @@ class Asset(SyftObject):
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
-    shape: Tuple
+    shape: Optional[Tuple]
 
     # @property
     # def pointer(self) -> ActionObjectPointer:
@@ -121,6 +121,25 @@ class Asset(SyftObject):
 
         api = APIRegistry.api_for(node_uid=self.node_uid)
         return api.services.action.get(self.action_id)
+
+
+def is_action_data_empty(mock: Any) -> bool:
+    # relative
+    from ...service.action.action_data_empty import ActionDataEmpty
+    from ...service.action.action_object import AnyActionObject
+
+    if isinstance(mock, AnyActionObject) and isinstance(
+        mock.syft_action_data, ActionDataEmpty
+    ):
+        return True
+    return False
+
+
+def check_mock(data: Any, mock: Any) -> bool:
+    if type(data) == type(mock):
+        return True
+
+    return is_action_data_empty(mock)
 
 
 @serializable()
@@ -176,16 +195,17 @@ class CreateAsset(SyftObject):
         self.shape = shape
 
     def check(self) -> Union[SyftSuccess, SyftError]:
-        if type(self.data) != type(self.mock):  # noqa: E721
+        if not check_mock(self.data, self.mock):
             return SyftError(
                 message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
             )
-        data_shape = get_shape_or_len(self.data)
-        mock_shape = get_shape_or_len(self.mock)
-        if data_shape != mock_shape:
-            return SyftError(
-                message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
-            )
+        if not is_action_data_empty(self.mock):
+            data_shape = get_shape_or_len(self.data)
+            mock_shape = get_shape_or_len(self.mock)
+            if data_shape != mock_shape:
+                return SyftError(
+                    message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
+                )
 
         return SyftSuccess(message="Dataset is Valid")
 
@@ -351,7 +371,8 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
 
 def infer_shape(context: TransformContext) -> TransformContext:
     if context.output["shape"] is None:
-        context.output["shape"] = get_shape_or_len(context.obj.mock)
+        if not is_action_data_empty(context.obj.mock):
+            context.output["shape"] = get_shape_or_len(context.obj.mock)
     return context
 
 
