@@ -6,6 +6,8 @@ import { DataList } from './capnp/datalist.capnp.js';
 import { DataBox } from './capnp/databox.capnp.js';
 import { stringify as uuidStringify } from 'uuid';
 import { parse as uuidParse } from 'uuid';
+import { VerifyKey } from '$lib/client/objects/key.ts';
+import { classMapping } from './jsPyClassMap.js';
 
 export class JSSerde {
   constructor() {
@@ -222,7 +224,7 @@ export class JSSerde {
         return key.key.buffer;
       },
       (buffer) => {
-        return new Uint8Array(buffer);
+        return new VerifyKey(new Uint8Array(buffer));
       },
       null,
       {}
@@ -616,7 +618,14 @@ export class JSSerde {
         }
       }
 
-      return kvIterable;
+      if (classMapping[fqn]) {
+        const objInstance = new classMapping[fqn]();
+        Object.assign(objInstance, kvIterable);
+        return objInstance;
+      } else {
+        kvIterable['fqn'] = fqn;
+        return kvIterable;
+      }
     }
   }
 }

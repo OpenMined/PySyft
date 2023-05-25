@@ -88,6 +88,7 @@ def process_type_bank(type_bank: Dict[str, Tuple[Any, ...]]) -> Dict[str, Dict]:
             serialize,
             deserialize,
             attribute_list,
+            exclude_attrs,
             serde_overrides,
             cls,
             attribute_types,

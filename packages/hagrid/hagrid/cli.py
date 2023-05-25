@@ -1263,7 +1263,7 @@ def create_launch_cmd(
     if (
         parsed_kwargs["tag"] is not None
         and parsed_kwargs["template"] is None
-        and parsed_kwargs["tag"] not in ["local", "latest"]
+        and parsed_kwargs["tag"] not in ["local", "latest", "0.7.0"]
     ):
         template = parsed_kwargs["tag"]
         # if template == "beta":
@@ -3255,7 +3255,7 @@ HEALTH_CHECK_ICONS = {
 HEALTH_CHECK_URLS = {
     "host": "{ip_address}",
     "UI (βeta)": "http://{ip_address}/login",
-    "api": "http://{ip_address}/api/v1/openapi.json",
+    "api": "http://{ip_address}/api/v2/openapi.json",
     "ssh": "hagrid ssh {ip_address}",
     "jupyter": "http://{ip_address}:8888",
 }
