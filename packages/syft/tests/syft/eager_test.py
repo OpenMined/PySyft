@@ -1,9 +1,15 @@
 # third party
 import numpy as np
+import pandas as pd
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
+from syft.service.action.action_object import convert_to_pointers
+from syft.service.action.action_service import CollectionSearchContext
+from syft.service.action.action_service import depointerize_collection_elements
 from syft.service.action.plan import planify
+from syft.service.context import AuthedServiceContext
+from syft.service.user.user_roles import ServiceRole
 from syft.types.twin_object import TwinObject
 
 
@@ -202,3 +208,122 @@ def test_eager_dunder_method(worker, guest_client):
     assert first_row_pointer.id.id in worker.action_store.data
     # check result
     assert all(first_row_pointer.get_from(root_domain_client) == np.array([1, 2, 3]))
+
+
+def test_depointerize_collection_elements(worker):
+    client = worker.root_client
+    guest_client = worker.guest_client
+    input_obj = TwinObject(
+        private_obj=pd.DataFrame({"A": [1, 2, 3]}),
+        mock_obj=pd.DataFrame({"A": [1, 2, 3]}),
+    )
+    input_obj2 = TwinObject(
+        private_obj=pd.DataFrame({"A": [4, 5, 6]}),
+        mock_obj=pd.DataFrame({"A": [4, 5, 6]}),
+    )
+    input_obj3 = ActionObject.from_obj(
+        pd.DataFrame({"A": [4, 5, 6]}),
+    )
+
+    ptr1 = client.api.services.action.set(input_obj)
+    ptr2 = client.api.services.action.set(input_obj2)
+    ptr3 = client.api.services.action.set(input_obj3)
+    c1, c2, c3 = [
+        CollectionSearchContext(
+            context=AuthedServiceContext(
+                credentials=guest_client.credentials.verify_key,
+                role=ServiceRole.GUEST,
+                node=worker,
+            ),
+            get_mock=False,
+            action_service=worker.get_service("actionservice"),
+        )
+        for i in range(3)
+    ]
+    assert depointerize_collection_elements([[[ptr1]], ptr2, "a"], c1)[
+        1
+    ].collection_contains_non_twins
+    assert depointerize_collection_elements([[[ptr1]], ptr2, ptr3], c2)[
+        1
+    ].collection_contains_non_twins
+    assert not depointerize_collection_elements([[[ptr1]], ptr2], c3)[
+        1
+    ].collection_contains_non_twins
+
+    # tests whether nested things are not pointerized
+    args, _ = convert_to_pointers(
+        client.api, client.api.node_uid, args=([ptr1, ptr2],), kwargs=dict()
+    )
+    arg = args[0]
+    first_element = arg.syft_action_data[0]
+    # the first element should be a dataframe, and not a pointer!
+    assert type(first_element) == pd.DataFrame
+
+
+def test_call_function_with_collection_of_pointers(worker):
+    client = worker.root_client
+    input_obj = TwinObject(
+        private_obj=pd.DataFrame({"A": [1, 2, 3]}),
+        mock_obj=pd.DataFrame({"A": [1, 2, 3]}),
+    )
+    input_obj2 = TwinObject(
+        private_obj=pd.DataFrame({"A": [4, 5, 6]}),
+        mock_obj=pd.DataFrame({"A": [4, 5, 6]}),
+    )
+
+    ptr1 = client.api.services.action.set(input_obj)
+    ptr2 = client.api.services.action.set(input_obj2)
+
+    res_ptr = client.api.lib.pandas.concat([ptr1, ptr2])
+    res = res_ptr.get_from(client)
+    assert type(res) == pd.DataFrame and len(res) == 6
+
+
+def test_setitem(worker):
+    client = worker.root_client
+    input_obj = TwinObject(
+        private_obj=np.array([[3, 3, 3], [3, 3, 3]]),
+        mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
+    )
+
+    input_ptr = client.api.services.action.set(input_obj)
+    input_ptr[0, 0] = 5
+
+    assert input_ptr.get_from(client)[0, 0] == 5
+
+
+def test_setitem_with_pointer_as_index(worker):
+    client = worker.root_client
+    input_obj2 = TwinObject(
+        private_obj=ActionObject.from_obj(0), mock_obj=ActionObject.from_obj(0)
+    )
+    input_obj = TwinObject(
+        private_obj=np.array([[3, 3, 3], [3, 3, 3]]),
+        mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
+    )
+
+    input_ptr = client.api.services.action.set(input_obj)
+    input_ptr2 = client.api.services.action.set(input_obj2)
+    input_ptr[0, input_ptr2] = 5
+    input_ptr
+    res = input_ptr.get_from(client)
+    assert res[0, 0] == 5
+
+
+def test_setitem_with_pointer_as_value(worker):
+    client = worker.root_client
+    input_obj = TwinObject(
+        private_obj=np.array([[3, 3, 3], [3, 3, 3]]),
+        mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
+    )
+
+    input_obj2 = TwinObject(
+        private_obj=ActionObject.from_obj(5), mock_obj=ActionObject.from_obj(2)
+    )
+
+    input_ptr = client.api.services.action.set(input_obj)
+
+    val = client.api.services.action.set(input_obj2)
+
+    input_ptr[0, 0] = val
+    assert input_ptr.get_from(client)[0, 0] == 5
