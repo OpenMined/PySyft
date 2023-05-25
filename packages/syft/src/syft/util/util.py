@@ -20,6 +20,7 @@ import re
 from secrets import randbelow
 import socket
 import sys
+import threading
 import time
 from types import ModuleType
 from typing import Any
@@ -45,6 +46,9 @@ from .logger import critical
 from .logger import debug
 from .logger import error
 from .logger import traceback_and_raise
+
+DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
+PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
 
 
 def full_name_with_qualname(klass: type) -> str:
@@ -850,3 +854,13 @@ def recursive_hash(obj: Any) -> int:
         hash_bytes = hashlib.sha256(serde_bytes).digest()
         hashes += int.from_bytes(hash_bytes, byteorder="big")
     return hashes
+
+
+if os_name() == "macOS":
+    # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+    # progress in another thread when fork() was called.
+    multiprocessing.set_start_method("spawn", True)
+
+
+def thread_ident() -> int:
+    return threading.current_thread().ident

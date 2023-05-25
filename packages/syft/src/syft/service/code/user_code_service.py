@@ -17,8 +17,7 @@ from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputHistory
-from ..policy.policy import UserPolicy
-from ..policy.policy import load_policy_code
+from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..response import SyftError
 from ..response import SyftNotReady
@@ -32,6 +31,7 @@ from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeExecutionResult
 from .user_code import UserCodeStatus
+from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
 
@@ -45,7 +45,7 @@ class UserCodeService(AbstractService):
         self.store = store
         self.stash = UserCodeStash(store=store)
 
-    @service_method(path="code.submit", name="submit")
+    @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
@@ -141,12 +141,7 @@ class UserCodeService(AbstractService):
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_ok():
             user_code_items = result.ok()
-            for user_code in user_code_items:
-                if user_code.status.approved:
-                    if isinstance(user_code.input_policy_type, UserPolicy):
-                        load_policy_code(user_code.input_policy_type)
-                    if isinstance(user_code.output_policy_type, UserPolicy):
-                        load_policy_code(user_code.output_policy_type)
+            load_approved_policy_code(user_code_items=user_code_items)
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(

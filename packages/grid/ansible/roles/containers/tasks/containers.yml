@@ -1,17 +1,17 @@
 ---
-- name: Build Docker Images
-  shell: "docker compose build"
-  args:
-    chdir: "{{ build_dir }}/packages/grid"
-  become_user: "{{ om_user }}"
-  when: vagrant is not defined and install == "true" and docker_tag == "local"
+# - name: Build Docker Images
+#   shell: "docker compose build"
+#   args:
+#     chdir: "{{ build_dir }}/packages/grid"
+#   become_user: "{{ om_user }}"
+#   when: vagrant is not defined and install == "true" and docker_tag == "local"
 
-- name: Build Docker Images
-  shell: "docker compose build"
-  args:
-    chdir: "{{ syft_dir }}/packages/grid"
-  become_user: "{{ om_user }}"
-  when: vagrant is defined and install == "true" and docker_tag == "local"
+# - name: Build Docker Images
+#   shell: "docker compose build"
+#   args:
+#     chdir: "{{ syft_dir }}/packages/grid"
+#   become_user: "{{ om_user }}"
+#   when: vagrant is defined and install == "true" and docker_tag == "local"
 
 - name: Remove old Docker Images
   shell: "docker rmi $(docker images -qa -f 'dangling=true') || true"
@@ -19,11 +19,11 @@
   ignore_errors: yes
   when: install == "true" and docker_tag == "local"
 
-- name: Remove Docker Volumes
-  shell: "docker volume prune -f"
-  become_user: "{{ om_user }}"
-  ignore_errors: yes
-  when: docker_volume_destroy is defined
+# - name: Remove Docker Volumes
+#   shell: "docker volume prune -f"
+#   become_user: "{{ om_user }}"
+#   ignore_errors: yes
+#   when: docker_volume_destroy is defined
 
 - name: Restart Docker Service
   service:

@@ -5,7 +5,6 @@ from typing import Any
 
 STABLE_BRANCH = "0.8"
 DEFAULT_BRANCH = "0.8"
-RENDERED_DIR = "rendered"
 DEFAULT_REPO = "OpenMined/PySyft"
 
 arg_defaults = {

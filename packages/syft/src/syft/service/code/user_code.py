@@ -34,6 +34,7 @@ from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
@@ -48,6 +49,7 @@ from ..policy.policy import Policy
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
 from ..policy.policy import init_policy
+from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from .code_parse import GlobalsVisitor
@@ -325,18 +327,25 @@ class UserCode(SyftObject):
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
         def wrapper(*args: Any, **kwargs: Any) -> Callable:
-            # remove the decorator
-            inner_function = ast.parse(self.raw_code).body[0]
-            inner_function.decorator_list = []
-            # compile the function
-            raw_byte_code = compile_byte_code(unparse(inner_function))
-            result = execute_byte_code(
-                raw_byte_code, self.service_func_name, self.id, args, kwargs
-            )
-            if isinstance(result, UserCodeExecutionResult):
-                return result.result
-            return result
+            try:
+                filtered_kwargs = {}
+                for k, v in kwargs.items():
+                    filtered_kwargs[k] = debox_asset(v)
 
+                # remove the decorator
+                inner_function = ast.parse(self.raw_code).body[0]
+                inner_function.decorator_list = []
+                # compile the function
+                raw_byte_code = compile_byte_code(unparse(inner_function))
+                # load it
+                exec(raw_byte_code)  # nosec
+                # execute it
+                evil_string = f"{self.service_func_name}(**filtered_kwargs)"
+                result = eval(evil_string, None, locals())  # nosec
+                # return the results
+                return result
+            except Exception as e:
+                print(f"Failed to run unsafe_function. {e}")
         return wrapper
 
     @property
@@ -563,7 +572,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        if node_view in input_keys:
+        if node_view in input_keys or len(input_keys) == 0:
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
@@ -589,6 +598,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
+        add_node_uid_for_key("node_uid"),
     ]
 
 
@@ -685,3 +695,16 @@ def execute_byte_code(
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+
+def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
+    """Reload the policy code in memory for user code that is approved."""
+    try:
+        for user_code in user_code_items:
+            if user_code.status.approved:
+                if isinstance(user_code.input_policy_type, UserPolicy):
+                    load_policy_code(user_code.input_policy_type)
+                if isinstance(user_code.output_policy_type, UserPolicy):
+                    load_policy_code(user_code.output_policy_type)
+    except Exception as e:
+        raise Exception(f"Failed to load code: {user_code}: {e}")
