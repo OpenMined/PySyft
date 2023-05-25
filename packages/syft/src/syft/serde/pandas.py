@@ -84,9 +84,6 @@ recursive_serde_register(
 
 recursive_serde_register(sum, serialize=lambda x: "sum", deserialize=lambda buffer: sum)
 
-recursive_serde_register(sum, serialize=lambda x: "sum", deserialize=lambda buffer: sum)
-
-
 recursive_serde_register(
     pandas.core.strings.accessor.StringMethods,
     serialize=lambda x: sy.serialize(x._data, to_bytes=True),

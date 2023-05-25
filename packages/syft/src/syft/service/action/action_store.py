@@ -101,7 +101,10 @@ class KeyValueActionStore(ActionStore):
                     obj.syft_twin_type = TwinMode.NONE
                     # todo: check permission
                     # we copy to prevent changing the store (for in memory stores)
-                    obj = obj.as_empty()
+                    if not self.has_permission(
+                        ActionObjectREAD(uid=uid, credentials=credentials)
+                    ):
+                        obj = obj.as_empty()
                 obj.syft_point_to(node_uid)
                 return Ok(obj)
             # third party
