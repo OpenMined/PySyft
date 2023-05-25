@@ -28,6 +28,7 @@ from ..service.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from .document_store import BaseStash
+from .document_store import PartitionKey
 from .document_store import PartitionSettings
 from .document_store import QueryKey
 from .document_store import QueryKeys
@@ -281,14 +282,18 @@ class KeyValueStorePartition(StorePartition):
         return False
 
     def _all(
-        self, credentials: SyftVerifyKey
+        self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None
     ) -> Result[List[BaseStash.object_type], str]:
         # this checks permissions
         res = [self._get(uid, credentials) for uid in self.data.keys()]
-        return Ok([x.ok() for x in res if x.is_ok()])
+        result = [x.ok() for x in res if x.is_ok()]
+        if order_by is not None:
+            result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
+        return Ok(result)
 
     def _remove_keys(
         self,
+        store_key: QueryKey,
         unique_query_keys: QueryKeys,
         searchable_query_keys: QueryKeys,
     ) -> None:
@@ -296,16 +301,23 @@ class KeyValueStorePartition(StorePartition):
         for qk in uqks:
             pk_key, pk_value = qk.key, qk.value
             ck_col = self.unique_keys[pk_key]
-            ck_col.pop(pk_value, None)
+            ck_col.pop(store_key.value, None)
+            self.unique_keys[pk_key] = ck_col
 
         sqks = searchable_query_keys.all
         for qk in sqks:
             pk_key, pk_value = qk.key, qk.value
             ck_col = self.searchable_keys[pk_key]
-            ck_col.pop(pk_value, None)
+            if pk_value in ck_col and (store_key.value in ck_col[pk_value]):
+                ck_col[pk_value].remove(store_key.value)
+            self.searchable_keys[pk_key] = ck_col
 
     def _find_index_or_search_keys(
-        self, credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        index_qks: QueryKeys,
+        search_qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
         ids: Optional[Set] = None
         errors = []
@@ -337,24 +349,9 @@ class KeyValueStorePartition(StorePartition):
             return Ok([])
 
         qks: QueryKeys = self.store_query_keys(ids)
-        return self._get_all_from_store(credentials=credentials, qks=qks)
-
-    def remove_keys(
-        self,
-        unique_query_keys: QueryKeys,
-        searchable_query_keys: QueryKeys,
-    ) -> None:
-        uqks = unique_query_keys.all
-        for qk in uqks:
-            pk_key, pk_value = qk.key, qk.value
-            ck_col = self.unique_keys[pk_key]
-            ck_col.pop(pk_value, None)
-
-        sqks = searchable_query_keys.all
-        for qk in sqks:
-            pk_key, pk_value = qk.key, qk.value
-            ck_col = self.searchable_keys[pk_key]
-            ck_col.pop(pk_value, None)
+        return self._get_all_from_store(
+            credentials=credentials, qks=qks, order_by=order_by
+        )
 
     def _update(
         self,
@@ -378,14 +375,17 @@ class KeyValueStorePartition(StorePartition):
                     _original_obj
                 )
 
+                store_query_key = self.settings.store_key.with_obj(_original_obj)
+
                 # remove old keys
                 self._remove_keys(
+                    store_key=store_query_key,
                     unique_query_keys=_original_unique_keys,
                     searchable_query_keys=_original_searchable_keys,
                 )
 
                 # update the object with new data
-                for key, value in obj.to_dict(exclude_none=True).items():
+                for key, value in obj.to_dict(exclude_empty=True).items():
                     if key == "id":
                         # protected field
                         continue
@@ -393,7 +393,7 @@ class KeyValueStorePartition(StorePartition):
 
                 # update data and keys
                 self._set_data_and_keys(
-                    store_query_key=qk,
+                    store_query_key=store_query_key,
                     unique_query_keys=self.settings.unique_keys.with_obj(_original_obj),
                     searchable_query_keys=self.settings.searchable_keys.with_obj(
                         _original_obj
@@ -404,13 +404,6 @@ class KeyValueStorePartition(StorePartition):
 
                 # 🟡 TODO 28: Add locking in this transaction
 
-                # update the object with new data
-                for key, value in obj.to_dict(exclude_none=True).items():
-                    if key == "id":
-                        # protected field
-                        continue
-                    setattr(_original_obj, key, value)
-
                 return Ok(_original_obj)
             else:
                 return Err(f"Failed to update obj {obj}, you have no permission")
@@ -419,7 +412,10 @@ class KeyValueStorePartition(StorePartition):
             return Err(f"Failed to update obj {obj} with error: {e}")
 
     def _get_all_from_store(
-        self, credentials: SyftVerifyKey, qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
         matches = []
         for qk in qks.all:
@@ -428,6 +424,8 @@ class KeyValueStorePartition(StorePartition):
                     ActionObjectREAD(uid=qk.value, credentials=credentials)
                 ):
                     matches.append(self.data[qk.value])
+        if order_by is not None:
+            matches = sorted(matches, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(matches)
 
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
@@ -588,7 +586,13 @@ class KeyValueStorePartition(StorePartition):
                 # coerce the list of objects to strings for a single key
                 pk_value = " ".join([str(obj) for obj in pk_value])
 
-            ck_col[pk_value].append(store_query_key.value)
+            # check if key is present, then add to existing key
+            if pk_value in ck_col:
+                ck_col[pk_value].append(store_query_key.value)
+            else:
+                # else create the key with a list
+                ck_col[pk_value] = [store_query_key.value]
+
             self.searchable_keys[pk_key] = ck_col
 
         self.data[store_query_key.value] = obj

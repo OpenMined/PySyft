@@ -8,6 +8,7 @@ from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.message.message_stash import FromUserVerifyKeyPartitionKey
 from syft.service.message.message_stash import MessageStash
+from syft.service.message.message_stash import OrderByCreatedAtTimeStampPartitionKey
 from syft.service.message.message_stash import StatusPartitionKey
 from syft.service.message.message_stash import ToUserVerifyKeyPartitionKey
 from syft.service.message.messages import Message
@@ -35,15 +36,13 @@ def add_mock_message(
 ) -> Message:
     # prepare: add mock message
 
-    message_status_undelivered = MessageStatus(0)
-
     mock_message = Message(
         subject="test_message",
         node_uid=UID(),
         from_user_verify_key=from_user_verify_key,
         to_user_verify_key=to_user_verify_key,
         created_at=DateTime.now(),
-        status=message_status_undelivered,
+        status=MessageStatus.UNREAD,
     )
 
     # print("*******", mock_message._repr_debug_())
@@ -90,26 +89,36 @@ def test_touserverifykey_partitionkey() -> None:
 
 
 def test_status_partitionkey() -> None:
-    message_status_undelivered = MessageStatus(0)
-    message_status_delivered = MessageStatus(1)
-
     assert StatusPartitionKey.key == "status"
     assert StatusPartitionKey.type_ == MessageStatus
 
-    result1 = StatusPartitionKey.with_obj(message_status_undelivered)
-    result2 = StatusPartitionKey.with_obj(message_status_delivered)
+    result1 = StatusPartitionKey.with_obj(MessageStatus.UNREAD)
+    result2 = StatusPartitionKey.with_obj(MessageStatus.READ)
 
     assert result1.type_ == MessageStatus
     assert result1.key == "status"
-    assert result1.value == message_status_undelivered
+    assert result1.value == MessageStatus.UNREAD
     assert result2.type_ == MessageStatus
     assert result2.key == "status"
-    assert result2.value == message_status_delivered
+    assert result2.value == MessageStatus.READ
 
     message_expiry_status_auto = MessageExpiryStatus(0)
 
     with pytest.raises(AttributeError):
         StatusPartitionKey.with_obj(message_expiry_status_auto)
+
+
+def test_orderbycreatedattimestamp_partitionkey() -> None:
+    random_datetime = DateTime.now()
+
+    assert OrderByCreatedAtTimeStampPartitionKey.key == "created_at"
+    assert OrderByCreatedAtTimeStampPartitionKey.type_ == DateTime
+
+    result = OrderByCreatedAtTimeStampPartitionKey.with_obj(random_datetime)
+
+    assert result.type_ == DateTime
+    assert result.key == "created_at"
+    assert result.value == random_datetime
 
 
 def test_messagestash_get_all_inbox_for_verify_key(
@@ -128,10 +137,16 @@ def test_messagestash_get_all_inbox_for_verify_key(
     result = response.ok()
     assert len(result) == 0
 
-    mock_message = add_mock_message(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
-    )
+    # list of mock messages
+    message_list = []
 
+    for i in range(5):
+        mock_message = add_mock_message(
+            root_verify_key, test_stash, test_verify_key, random_verify_key
+        )
+        message_list.append(mock_message)
+
+    # returned list of messages from stash that's sorted by created_at
     response2 = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
     )
@@ -139,12 +154,18 @@ def test_messagestash_get_all_inbox_for_verify_key(
     assert response2.is_ok()
 
     result = response2.ok()
-    assert len(response2.value) == 1
+    assert len(response2.value) == 5
 
-    assert result[0] == mock_message
+    for message in message_list:
+        # check if all messages are present in the result
+        assert message in result
 
     with pytest.raises(AttributeError):
         test_stash.get_all_inbox_for_verify_key(root_verify_key, random_signing_key)
+
+    # assert that the returned list of messages is sorted by created_at
+    sorted_message_list = sorted(result, key=lambda x: x.created_at)
+    assert result == sorted_message_list
 
 
 def test_messagestash_get_all_sent_for_verify_key(
@@ -226,12 +247,10 @@ def test_messagestash_get_all_by_verify_key_for_status(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    messeage_status_undelivered = MessageStatus(0)
-    messeage_status_delivered = MessageStatus(1)
     test_stash = MessageStash(store=document_store)
 
     response = test_stash.get_all_by_verify_key_for_status(
-        root_verify_key, random_verify_key, messeage_status_delivered
+        root_verify_key, random_verify_key, MessageStatus.READ
     )
 
     assert response.is_ok()
@@ -244,7 +263,7 @@ def test_messagestash_get_all_by_verify_key_for_status(
     )
 
     response2 = test_stash.get_all_by_verify_key_for_status(
-        root_verify_key, mock_message.to_user_verify_key, messeage_status_undelivered
+        root_verify_key, mock_message.to_user_verify_key, MessageStatus.UNREAD
     )
     assert response2.is_ok()
 
@@ -255,20 +274,18 @@ def test_messagestash_get_all_by_verify_key_for_status(
 
     with pytest.raises(AttributeError):
         test_stash.get_all_by_verify_key_for_status(
-            root_verify_key, random_signing_key, messeage_status_undelivered
+            root_verify_key, random_signing_key, MessageStatus.UNREAD
         )
 
 
 def test_messagestash_update_message_status(root_verify_key, document_store) -> None:
     random_uid = UID()
     random_verify_key = SyftSigningKey.generate().verify_key
-    messeage_status_undelivered = MessageStatus(0)
-    messeage_status_delivered = MessageStatus(1)
     test_stash = MessageStash(store=document_store)
     expected_error = Err(f"No message exists for id: {random_uid}")
 
     response = test_stash.update_message_status(
-        root_verify_key, uid=random_uid, status=messeage_status_delivered
+        root_verify_key, uid=random_uid, status=MessageStatus.READ
     )
 
     assert response.is_err()
@@ -278,16 +295,16 @@ def test_messagestash_update_message_status(root_verify_key, document_store) -> 
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
-    assert mock_message.status == messeage_status_undelivered
+    assert mock_message.status == MessageStatus.UNREAD
 
     response2 = test_stash.update_message_status(
-        root_verify_key, uid=mock_message.id, status=messeage_status_delivered
+        root_verify_key, uid=mock_message.id, status=MessageStatus.READ
     )
 
     assert response2.is_ok()
 
     result = response2.ok()
-    assert result.status == messeage_status_delivered
+    assert result.status == MessageStatus.READ
 
     message_expiry_status_auto = MessageExpiryStatus(0)
     with pytest.raises(AttributeError):
@@ -302,7 +319,6 @@ def test_messagestash_update_message_status_error_on_get_by_uid(
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     random_uid = UID()
-    messeage_status_delivered = MessageStatus(1)
     test_stash = MessageStash(store=document_store)
 
     def mock_get_by_uid(root_verify_key, uid: random_uid) -> Err:
@@ -317,7 +333,7 @@ def test_messagestash_update_message_status_error_on_get_by_uid(
     add_mock_message(root_verify_key, test_stash, test_verify_key, random_verify_key)
 
     response = test_stash.update_message_status(
-        root_verify_key, random_verify_key, messeage_status_delivered
+        root_verify_key, random_verify_key, MessageStatus.READ
     )
 
     assert response is None
