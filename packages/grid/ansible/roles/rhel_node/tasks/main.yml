@@ -142,11 +142,11 @@
 - name: Install HAGrid
   import_tasks: hagrid.yml
 
-- name: Start Docker Containers (root)
-  shell:
-    cmd: /usr/local/bin/hagrid launch node domain to docker:80 --dev --no-health-checks --verbose --build-kit=0
-  become: yes
-  when: tls == "false" and install == "true"
+# - name: Start Docker Containers (root)
+#   shell:
+#     cmd: /usr/local/bin/hagrid launch node domain to docker:80 --dev --no-health-checks --verbose --build-kit=0
+#   become: yes
+#   when: tls == "false" and install == "true"
 
 # - name: Stop existing cronjobs if provisioning from outside
 #   shell: (crontab -r  || true) && sudo kill -9 $(pgrep cron)

@@ -21,7 +21,58 @@
 #   become: yes
 #   when: vagrant is defined and install == "true"
 
+
+# Install rsync
+- name: Install rsync
+  ansible.builtin.package:
+    name: rsync
+    state: present
+  become: yes
+  when: vagrant is defined and install == "true"
+
+
+# Copy home_dir recursively with synchronization
+- name: Copy home_dir recursively with synchronization
+  ansible.builtin.synchronize:
+    src: "{{ root_dir}}"
+    dest: "{{ om_homedir }}"
+    delete: yes
+    recursive: yes
+  become: yes
+  when: vagrant is defined and install == "true"
+
+
+# Check if home_dir exists
+- name: Check if home_dir exists
+  ansible.builtin.stat:
+    path: "{{ om_homedir }}"
+  register: home_dir
+  become: yes
+  when: vagrant is defined and install == "true"
+
+# Set permissions on home_dir
+# - name: Set permissions on home_dir
+#   ansible.builtin.file:
+#     path: "{{ om_homedir }}"
+#     owner: "{{ om_user }}"
+#     group: "{{ om_group }}"
+#     mode: 0755
+#     recurse: yes
+#   become: yes
+#   when: vagrant is defined and install == "true"
+
+# Copy PySyft to the node
+# - name: Copy PySyft to the node
+#   ansible.builtin.copy:
+#     src: "{{ root_dir}}"
+#     dest: "{{ om_homedir }}"
+#     owner: "{{ om_user }}"
+#     group: "{{ om_group }}"
+#     mode: 0755
+#   become: yes
+#   when: vagrant is defined and install == "true"
+
 - name: Install HAGrid (temp root)
-  shell: "pip install -e {{ syft_dir }}/packages/hagrid"
+  shell: "pip install -e {{ om_homedir }}/packages/hagrid"
   become: yes
   when: vagrant is defined and install == "true"
