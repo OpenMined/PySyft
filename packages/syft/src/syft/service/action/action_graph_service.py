@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -88,11 +89,23 @@ class ActionGraphService(AbstractService):
 
     @service_method(path="graph.add_action_obj", name="add_action_obj")
     def add_action_obj(
-        self, context: AuthedServiceContext, action_obj: ActionObject
+        self,
+        context: AuthedServiceContext,
+        action_obj: Optional[ActionObject] = None,
+        action_obj_id: Optional[UID] = None,
     ) -> Union[NodeActionData, SyftError]:
-        node = NodeActionData.from_action_obj(
-            action_obj=action_obj, credentials=context.credentials
-        )
+        if action_obj is not None:
+            node = NodeActionData.from_action_obj(
+                action_obj=action_obj, credentials=context.credentials
+            )
+        elif action_obj_id is not None:
+            node = NodeActionData.from_action_obj_id(
+                action_obj_id=action_obj_id, credentials=context.credentials
+            )
+        else:
+            return SyftError(
+                message="You need to provide either action_obj or action_obj_id"
+            )
         result = self.store.set(
             credentials=context.credentials,
             node=node,

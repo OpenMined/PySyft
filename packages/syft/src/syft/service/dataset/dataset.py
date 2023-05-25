@@ -323,6 +323,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         result = action_service.set(
             context=context.to_node_context(), action_object=twin
         )
+
         if result.is_err():
             raise Exception(f"Failed to create and store twin. {result}")
 
@@ -330,6 +331,16 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
     else:
         private_obj = context.output.pop("data", None)
         mock_obj = context.output.pop("mock", None)
+
+    action_graph_service = context.node.get_service("actiongraphservice")
+    result2 = action_graph_service.add_action_obj(
+        context=context.to_node_context(), action_obj_id=context.output["action_id"]
+    )
+    if isinstance(result2, SyftError):
+        raise Exception(
+            f"failed to create a node in the action graph with error {result2.message}"
+        )
+
     return context
 
 

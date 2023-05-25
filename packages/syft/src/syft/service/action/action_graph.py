@@ -96,6 +96,14 @@ class NodeActionData(SyftObject):
             user_verify_key=credentials,
         )
 
+    @staticmethod
+    def from_action_obj_id(action_obj_id: UID, credentials: SyftVerifyKey):
+        return NodeActionData(
+            id=action_obj_id,
+            type=NodeType.ACTION_OBJECT,
+            user_verify_key=credentials,
+        )
+
     def __hash__(self):
         return hash(self.id)
 
