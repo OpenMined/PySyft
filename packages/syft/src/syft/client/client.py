@@ -3,7 +3,6 @@ from enum import Enum
 import hashlib
 import json
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Type
@@ -23,12 +22,14 @@ from typing_extensions import Self
 from .. import __version__
 from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
+from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
 from ..service.dataset.dataset import CreateDataset
+from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
@@ -326,6 +327,12 @@ class SyftClient:
     def authed(self) -> bool:
         return bool(self.credentials)
 
+    @property
+    def verify_key(self) -> SyftVerifyKey:
+        if self.credentials is None:
+            raise ValueError("SigningKey not set on client")
+        return self.credentials.verify_key
+
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> Self:
         return SyftClient(connection=HTTPConnection(GridURL.from_url(url)))
@@ -382,13 +389,18 @@ class SyftClient:
             return valid.err()
 
     def exchange_route(self, client: Self) -> None:
-        result = self.api.services.network.exchange_credentials_with(client=client)
-        if result:
-            # relative
-            from ..service.network.network_service import connection_to_route
+        # relative
+        from ..service.network.routes import connection_to_route
 
-            route = connection_to_route(self.connection)
-            result = self.api.services.network.add_route_for(route=route, client=client)
+        self_node_route = connection_to_route(self.connection)
+        remote_node_route = connection_to_route(client.connection)
+
+        result = self.api.services.network.exchange_credentials_with(
+            self_node_route=self_node_route,
+            remote_node_route=remote_node_route,
+            remote_node_verify_key=client.metadata.to(NodeMetadata).verify_key,
+        )
+
         return result
 
     def apply_to_gateway(self, client: Self) -> None:
@@ -409,12 +421,6 @@ class SyftClient:
     def datasets(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "dataset"):
             return self.api.services.dataset
-        return None
-
-    @property
-    def submit_project(self) -> Callable:
-        if self.api is not None and hasattr(self.api.services, "project"):
-            return self.api.services.project.submit
         return None
 
     @property
@@ -439,6 +445,18 @@ class SyftClient:
                     email=email,
                     password=password,
                     connection=self.connection,
+                    syft_client=self,
+                )
+                # Adding another cache storage
+                # as this would be useful in retrieving unique clients
+                # node uid and verify key are not individually unique
+                # both the combination of node uid and verify key are unique
+                # which could be used to identity a client uniquely of any given node
+                # TODO: It would be better to have a single cache storage
+                # combining both email, password and verify key and uid
+                SyftClientSessionCache.add_client_by_uid_and_verify_key(
+                    verify_key=signing_key.verify_key,
+                    node_uid=self.id,
                     syft_client=self,
                 )
 
@@ -624,6 +642,23 @@ class SyftClientSessionCache:
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         cls.__credentials_store__[hash_key] = syft_client
         cls.__client_cache__[syft_client.id] = syft_client
+
+    @classmethod
+    def add_client_by_uid_and_verify_key(
+        cls,
+        verify_key: SyftVerifyKey,
+        node_uid: UID,
+        syft_client: SyftClient,
+    ):
+        hash_key = str(node_uid) + str(verify_key)
+        cls.__client_cache__[hash_key] = syft_client
+
+    @classmethod
+    def get_client_by_uid_and_verify_key(
+        cls, verify_key: SyftVerifyKey, node_uid: UID
+    ) -> Optional[SyftClient]:
+        hash_key = str(node_uid) + str(verify_key)
+        return cls.__client_cache__.get(hash_key, None)
 
     @classmethod
     def get_client(
