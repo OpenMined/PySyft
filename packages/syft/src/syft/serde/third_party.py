@@ -167,6 +167,12 @@ recursive_serde_register(
 recursive_serde_register(np.core._ufunc_config._unspecified())
 
 recursive_serde_register(
+    pydantic.networks.EmailStr,
+    serialize=lambda x: x.encode(),
+    deserialize=lambda x: pydantic.networks.EmailStr(x.decode()),
+)
+
+recursive_serde_register(
     zmq._Socket,
     serialize_attrs=[
         "_shadow",
