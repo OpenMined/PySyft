@@ -571,7 +571,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        if node_view in input_keys:
+        if node_view in input_keys or len(input_keys) == 0:
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
