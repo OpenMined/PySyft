@@ -19,6 +19,6 @@ class NodeConnection(SyftObject):
     @property
     def route(self) -> Any:
         # relative
-        from ..service.network.network_service import connection_to_route
+        from ..service.network.routes import connection_to_route
 
         return connection_to_route(self)

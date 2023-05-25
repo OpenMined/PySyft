@@ -209,8 +209,6 @@ def retrieve_from_db(
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type == NodeType.ENCLAVE:
-        # TODO 🟣 Temporarily added skip permission arguments for enclave
-        # until permissions are fully integrated
         dict_object = action_service.get(context=context, uid=code_item_id)
         if dict_object.is_err():
             return dict_object

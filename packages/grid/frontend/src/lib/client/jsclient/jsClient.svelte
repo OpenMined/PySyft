@@ -16,7 +16,7 @@
 
       this.serde = new JSSerde();
       this.url = url;
-      this.msg_url = `${url}/new/api_call`;
+      this.msg_url = `${url}/api_call`;
       this.key = window.localStorage.getItem('key');
 
       if (this.key) {
@@ -39,7 +39,7 @@
      */
     async login(email, password) {
       // Send a POST request to the login API endpoint with the email and password.
-      const response = await fetch(`${this.url}/new/login`, {
+      const response = await fetch(`${this.url}/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -176,7 +176,7 @@
         const registerPayload = { ...newUser, fqn: 'syft.service.user.user.UserCreate' };
 
         // Make a POST request to the server with the register payload.
-        const response = await fetch(`${this.url}/new/register`, {
+        const response = await fetch(`${this.url}/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/octet-stream' },
           body: this.serde.serialize(registerPayload)
@@ -227,7 +227,7 @@
      */
     get metadata() {
       return (async () => {
-        const response = await fetch(`${this.url}/new/metadata_capnp`);
+        const response = await fetch(`${this.url}/metadata_capnp`);
         const metadataBuffer = await response.arrayBuffer();
         const metadata = this.serde.deserialize(metadataBuffer);
 
