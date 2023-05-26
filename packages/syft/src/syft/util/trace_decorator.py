@@ -9,7 +9,6 @@ from typing import Callable
 from typing import ClassVar
 from typing import Dict
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 from typing import cast
@@ -18,10 +17,7 @@ from typing import cast
 from opentelemetry import trace
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Tracer
-
-if TYPE_CHECKING:
-    # third party
-    from opentelemetry.trace.span import Span
+from opentelemetry.trace.span import Span
 
 
 class TracingDecoratorOptions:
