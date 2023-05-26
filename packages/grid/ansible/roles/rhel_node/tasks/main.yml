@@ -114,6 +114,8 @@
 #     enabled: yes
 #     state: started
 
+- name: Install Docker
+  import_tasks: docker.yml
 
 - name: Install HAGrid
   import_tasks: hagrid.yml

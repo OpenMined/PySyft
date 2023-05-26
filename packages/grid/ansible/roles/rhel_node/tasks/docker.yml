@@ -1,0 +1,53 @@
+---
+#Uninstall old versions
+- name: Uninstall old versions
+  ansible.builtin.yum:
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
+    state: absent
+
+- name: Install required packages
+  ansible.builtin.yum:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+    state: latest
+
+#Set up the stable repository with shell
+- name: Set up the stable repository with shell
+  shell: |
+    sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+
+# - name: Set up the stable repository
+#   ansible.builtin.yum_repository:
+#     name: docker-ce-stable
+#     baseurl: https://download.docker.com/linux/centos/docker-ce.repo
+#     description: Docker CE Stable YUM repository
+#     gpgcheck: no
+#     state: present
+
+- name: Install Docker
+  ansible.builtin.yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: latest
+    update_cache: true
+
+- name: Start Docker
+  ansible.builtin.service:
+    name: docker
+    enabled: true
+    state: started
