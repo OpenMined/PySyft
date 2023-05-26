@@ -7,16 +7,6 @@
 - name: Register VM
   import_tasks: subscription.yml
 
-# - name: Install Python
-#   import_tasks: python.yml
-  # when: deploy_only is not defined and install == "true"
-
-# - name: Update all packages
-#   ansible.builtin.dnf:
-#     name: '*'
-#     state: latest
-#   become: true
-
 
 - name: Configure System
   import_tasks: system.yml
@@ -28,7 +18,6 @@
       - python3-pip
       - git
       - podman
-      - podman-docker
       - firewalld
     state: present
   become: true
@@ -118,35 +107,22 @@
     cmd: sysctl -p
   when: sysctl_config.changed
 
-- name: Enable and start podman.socket
-  become: yes
-  ansible.builtin.systemd:
-    name: podman.socket
-    enabled: yes
-    state: started
-
-# - name: Update /etc/subuid with user range
+# - name: Enable and start podman.socket
 #   become: yes
-#   ansible.builtin.lineinfile:
-#     path: /etc/subuid
-#     line: "{{ om_user }}:100000:65536"
-#     state: present
+#   ansible.builtin.systemd:
+#     name: podman.socket
+#     enabled: yes
+#     state: started
 
-# - name: Update /etc/subgid with user range
-#   become: yes
-#   ansible.builtin.lineinfile:
-#     path: /etc/subgid
-#     line: "{{ om_user }}:100000:65536"
-#     state: present
 
 - name: Install HAGrid
   import_tasks: hagrid.yml
 
-# - name: Start Docker Containers (root)
-#   shell:
-#     cmd: /usr/local/bin/hagrid launch node domain to docker:80 --dev --no-health-checks --verbose --build-kit=0
-#   become: yes
-#   when: tls == "false" and install == "true"
+- name: Start Docker Containers (root)
+  shell:
+    cmd: /usr/local/bin/hagrid launch node domain to docker:80 --dev --no-health-checks --verbose --build-kit=0
+  become: yes
+  when: tls == "false" and install == "true"
 
 # - name: Stop existing cronjobs if provisioning from outside
 #   shell: (crontab -r  || true) && sudo kill -9 $(pgrep cron)

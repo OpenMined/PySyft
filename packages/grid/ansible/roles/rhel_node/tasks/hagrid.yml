@@ -50,27 +50,16 @@
   become: yes
   when: vagrant is defined and install == "true"
 
-# Set permissions on home_dir
-# - name: Set permissions on home_dir
-#   ansible.builtin.file:
-#     path: "{{ om_homedir }}"
-#     owner: "{{ om_user }}"
-#     group: "{{ om_group }}"
-#     mode: 0755
-#     recurse: yes
-#   become: yes
-#   when: vagrant is defined and install == "true"
-
-# Copy PySyft to the node
-# - name: Copy PySyft to the node
-#   ansible.builtin.copy:
-#     src: "{{ root_dir}}"
-#     dest: "{{ om_homedir }}"
-#     owner: "{{ om_user }}"
-#     group: "{{ om_group }}"
-#     mode: 0755
-#   become: yes
-#   when: vagrant is defined and install == "true"
+#Set permissions on home_dir
+- name: Set permissions on home_dir
+  ansible.builtin.file:
+    path: "{{ om_homedir }}"
+    owner: "{{ om_user }}"
+    group: "{{ om_group }}"
+    mode: 0755
+    recurse: yes
+  become: yes
+  when: vagrant is defined and install == "true"
 
 - name: Install HAGrid (temp root)
   shell: "pip install -e {{ om_homedir }}/packages/hagrid"
