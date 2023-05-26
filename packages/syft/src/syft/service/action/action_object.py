@@ -703,7 +703,7 @@ class ActionObject(SyftObject):
 
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
-
+        client.api.services.graph.add_action_obj(self)
         return client.api.services.action.set(self)
 
     def get_from(self, client: SyftClient) -> Any:
