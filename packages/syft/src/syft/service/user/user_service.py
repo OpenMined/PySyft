@@ -93,11 +93,25 @@ class UserService(AbstractService):
 
     @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
     def get_all(
-        self, context: AuthedServiceContext
+        self,
+        context: AuthedServiceContext,
+        chunk_size: Optional[int] = 0,
+        chunk_index: Optional[int] = 0,
     ) -> Union[Optional[UserView], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
-            return [user.to(UserView) for user in result.ok()]
+            results = [user.to(UserView) for user in result.ok()]
+
+            # If chunk size is defined, then split list into evenly sized chunks
+            if chunk_size:
+                results = [
+                    results[i : i + chunk_size]
+                    for i in range(0, len(results), chunk_size)
+                ]
+                # Return the proper slice using chunk_index
+                results = results[chunk_index]
+
+            return results
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
         return SyftError(message="No users exists")
