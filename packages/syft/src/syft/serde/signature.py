@@ -1,5 +1,4 @@
 # stdlib
-from collections import OrderedDict
 import inspect
 from inspect import Parameter
 from inspect import Signature
@@ -12,15 +11,33 @@ from typing import Optional
 # relative
 from .deserialize import _deserialize
 from .recursive import recursive_serde_register
+from .recursive_primitives import recursive_serde_register_type
 from .serialize import _serialize
 
 recursive_serde_register(_ParameterKind)
+recursive_serde_register_type(Parameter.empty)
 
 
-recursive_serde_register(
-    Parameter, serialize_attrs=["_annotation", "_name", "_kind", "_default"]
-)
+def serialize_parameter(obj: Parameter) -> bytes:
+    # some times we end up with Parameter's that have no _default which triggers an
+    # exception even if we print them. The correct default is inspect.Parameter.empty
+    if not hasattr(obj, "_default"):
+        obj._default = inspect.Parameter.empty
+    obj_dict = {
+        "annotation": obj.annotation,
+        "name": obj.name,
+        "kind": obj.kind,
+        "default": obj.default,
+    }
+    return _serialize(obj_dict, to_bytes=True)
 
+
+def deserialize_parameter(blob: bytes) -> Parameter:
+    obj_dict = _deserialize(blob, from_bytes=True)
+    return Parameter(**obj_dict)
+
+
+recursive_serde_register(Parameter, serialize_parameter, deserialize_parameter)
 
 # def serialize_parameter(obj: Parameter) -> bytes:
 #     # 🟡 TODO 3: Solve issue of Signature Parameter types being converted to String depending
@@ -56,8 +73,6 @@ def serialize_signature(obj: Signature) -> bytes:
 
 def deserialize_signature(blob: bytes) -> Signature:
     obj_dict = _deserialize(blob, from_bytes=True)
-    # TODO: look into this hack, sometimes deserialization of signatures breaks
-    obj_dict = OrderedDict({k: v for k, v in obj_dict.items() if hasattr(v, "default")})
     return Signature(**obj_dict)
 
 
