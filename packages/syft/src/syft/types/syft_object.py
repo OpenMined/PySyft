@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+from hashlib import sha256
 import inspect
 from inspect import Signature
 import types
@@ -30,7 +31,6 @@ from ..util.autoreload import autoreload_enabled
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
-from ..util.util import recursive_hash
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -139,7 +139,21 @@ class SyftObjectRegistry:
 print_type_cache = defaultdict(list)
 
 
-class SyftObject(SyftBaseObject, SyftObjectRegistry):
+class SyftHashableObject:
+    __hash_exclude_attrs__ = []
+
+    def __hash__(self) -> int:
+        return int.from_bytes(self.__sha256__(), byteorder="big")
+
+    def __sha256__(self) -> bytes:
+        _bytes = serialize(self, to_bytes=True, for_hashing=True)
+        return sha256(_bytes).digest()
+
+    def hash(self) -> str:
+        return self.__sha256__().hex()
+
+
+class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -350,6 +364,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
 
+    # TODO: Check why Pydantic is removing the __hash__ method during inheritance
+    def __hash__(self) -> int:
+        return int.from_bytes(self.__sha256__(), byteorder="big")
+
     @classmethod
     def _syft_keys_types_dict(cls, attr_name: str) -> Dict[str, type]:
         kt_dict = {}
@@ -381,17 +399,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     @classmethod
     def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
-
-    @staticmethod
-    def calculate_hash(obj: Any, keys: List[str]) -> int:
-        hashes = 0
-        for key in keys:
-            if isinstance(obj, dict):
-                value = obj[key]
-            else:
-                value = getattr(obj, key)
-            hashes += recursive_hash(value)
-        return hashes
 
 
 def list_dict_repr_html(self) -> str:

@@ -100,6 +100,11 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __hash_exclude_attrs__ = [
+        "event_hash",
+        "signature",
+    ]
+
     # 1. Creation attrs
     id: UID
     timestamp: DateTime
@@ -108,8 +113,8 @@ class ProjectEvent(SyftObject):
     project_id: Optional[UID]
     seq_no: Optional[int]
     prev_event_uid: Optional[UID]
-    prev_event_hash: Optional[int]
-    event_hash: Optional[int]
+    prev_event_hash: Optional[str]
+    event_hash: Optional[str]
     # 3. Signature attrs
     creator_verify_key: Optional[SyftVerifyKey]
     signature: Optional[bytes]  # dont use in signature
@@ -123,8 +128,8 @@ class ProjectEvent(SyftObject):
     def _pre_add_update(self, project: Project) -> None:
         pass
 
-    def __hash__(self) -> int:
-        return type(self).calculate_hash(self, self.__hash_keys__)
+    # def __hash__(self) -> int:
+    #     return type(self).calculate_hash(self, self.__hash_keys__)
 
     def rebase(self, project: Project) -> Self:
         prev_event = project.events[-1] if project.events else None
@@ -143,7 +148,7 @@ class ProjectEvent(SyftObject):
         self.event_hash = None
         self.signature = None
 
-        self.event_hash = hash(self)  # recalculate it
+        self.event_hash = self.hash()  # recalculate it
         return self
 
     @property
@@ -260,16 +265,6 @@ class ProjectThreadMessage(ProjectSubEvent):
 
     message: str
 
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "parent_event_id",
-        "prev_event_uid",
-        "prev_event_hash",
-        "message",
-    ]
-
 
 @serializable()
 class ProjectMessage(ProjectEventAddObject):
@@ -278,15 +273,6 @@ class ProjectMessage(ProjectEventAddObject):
 
     message: str
     allowed_sub_types: List[Type] = [ProjectThreadMessage]
-
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "prev_event_uid",
-        "prev_event_hash",
-        "message",
-    ]
 
     def reply(self, message: str) -> ProjectMessage:
         return ProjectThreadMessage(message=message, parent_event_id=self.id)
@@ -299,16 +285,6 @@ class ProjectRequestResponse(ProjectSubEvent):
 
     response: bool
 
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "parent_event_id",
-        "prev_event_uid",
-        "prev_event_hash",
-        "response",
-    ]
-
 
 @serializable()
 class ProjectRequest(ProjectEventAddObject):
@@ -317,15 +293,6 @@ class ProjectRequest(ProjectEventAddObject):
 
     request: Request
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
-
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "prev_event_uid",
-        "prev_event_hash",
-        "request",
-    ]
 
     def approve(self) -> ProjectRequestResponse:
         result = self.request.approve()
@@ -555,16 +522,6 @@ class AnswerProjectPoll(ProjectSubEvent):
 
     answer: int
 
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "parent_event_id",
-        "prev_event_uid",
-        "prev_event_hash",
-        "answer",
-    ]
-
 
 @serializable()
 class ProjectMultipleChoicePoll(ProjectEventAddObject):
@@ -580,16 +537,6 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
         if len(v) < 1:
             raise ValueError("choices must have at least one item")
         return v
-
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "prev_event_uid",
-        "prev_event_hash",
-        "question",
-        "choices",
-    ]
 
     def answer(self, answer: int) -> ProjectMessage:
         return AnswerProjectPoll(answer=answer, parent_event_id=self.id)
@@ -668,28 +615,16 @@ class Project(SyftObject):
     permissions: Dict[UID, Dict[UID, Set[str]]] = {}
     events: List[ProjectEvent] = []
     event_id_hashmap: Dict[UID, ProjectEvent] = {}
-    start_hash: int
+    start_hash: Optional[str]
     # WARNING:  Do not add it to hash keys , or print directly
     user_signing_key: Optional[SyftSigningKey] = None
     user_email_address: Optional[str] = None
     users: List[UserIdentity] = []
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
-    __hash_keys__ = [
-        "id",
-        "name",
-        "description",
-        "shareholders",
-        "project_permissions",
-        "state_sync_leader",
-        "consensus_model",
-        "store",
-        "permissions",
-        "events",
-    ]
 
-    def __hash__(self) -> int:
-        return type(self).calculate_hash(self, self.__hash_keys__)
+    # def __hash__(self) -> int:
+    #     return type(self).calculate_hash(self, self.__hash_keys__)
 
     def _broadcast_event(
         self, project_event: ProjectEvent
@@ -1250,9 +1185,7 @@ def calculate_final_hash(context: TransformContext) -> TransformContext:
     context.output["store"] = {}
     context.output["permissions"] = {}
     context.output["events"] = []
-
-    start_hash = Project.calculate_hash(context.output, Project.__hash_keys__)
-    context.output["start_hash"] = start_hash
+    context.output["start_hash"] = None
     return context
 
 
