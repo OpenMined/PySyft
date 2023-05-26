@@ -59,9 +59,6 @@ class Identity(SyftObject):
     id: UID
     verify_key: SyftVerifyKey
 
-    def __hash__(self) -> int:
-        return hash(str(self.id) + str(self.verify_key))
-
     __attr_repr_cols__ = ["id", "verify_key"]
 
     def __repr__(self) -> str:
