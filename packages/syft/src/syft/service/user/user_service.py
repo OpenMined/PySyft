@@ -121,6 +121,8 @@ class UserService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_search: UserSearch,
+        chunk_size: Optional[int] = 0,
+        chunk_index: Optional[int] = 0,
     ) -> Union[List[UserView], SyftError]:
         kwargs = user_search.to_dict(exclude_empty=True)
 
@@ -131,10 +133,21 @@ class UserService(AbstractService):
                 Allowed params: {valid_search_params}"
             )
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
+
         if result.is_err():
             return SyftError(message=str(result.err()))
         users = result.ok()
-        return [user.to(UserView) for user in users] if users is not None else []
+        results = [user.to(UserView) for user in users] if users is not None else []
+
+        # If chunk size is defined, then split list into evenly sized chunks
+        if chunk_size:
+            results = [
+                results[i : i + chunk_size] for i in range(0, len(results), chunk_size)
+            ]
+            # Return the proper slice using chunk_index
+            results = results[chunk_index]
+
+        return results
 
     @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
     def update(
