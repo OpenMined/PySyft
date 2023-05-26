@@ -31,11 +31,14 @@ def get_mock_client(root_domain_client, role):
     worker = root_domain_client.api.connection.node
     client = worker.guest_client
     mail = Faker().email()
-    assert client.register(name=Faker().name(), email=mail, password="pw")
+    name = Faker().name()
+    password = "pw"
+    assert client.register(name=name, email=mail, password=password)
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
     assert worker.root_client.api.services.user.update(
         user_id, UserUpdate(user_id=user_id, role=role)
     )
+    client.login(email=mail, password=password)
     client._fetch_api(client.credentials)
     # hacky, but useful for testing: patch user id and role on client
     client.user_id = user_id
