@@ -37,6 +37,7 @@ from ..action.action_store import ActionObjectPermission
 from ..action.action_store import ActionPermission
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
+from ..code.user_code import UserCodeExecutionResult
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..response import SyftError
@@ -162,9 +163,11 @@ class Request(SyftObject):
                 return result
         return Ok(SyftSuccess(message=f"Request {self.id} changes reverted"))
 
-    def accept_by_depositing_result(self, result: Any):
+    def accept_by_depositing_result(self, exec_result):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
+        import sys
+        print(f'{exec_result=}', file=sys.stderr)
         change = self.changes[0]
         if not change.is_type(UserCode):
             raise Exception(
@@ -181,7 +184,9 @@ class Request(SyftObject):
         if not api:
             raise Exception(f"Login to {self.node_uid} first.")
 
-        action_object = ActionObject.from_obj(result)
+        action_object = ActionObject.from_obj(exec_result)
+        print(f'{action_object=}', file=sys.stderr)
+        
         result = api.services.action.save(action_object)
         # relative
         from ...service.action.action_service import TwinMode

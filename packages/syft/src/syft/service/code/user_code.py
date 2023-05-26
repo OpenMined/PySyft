@@ -337,11 +337,18 @@ class UserCode(SyftObject):
                 inner_function.decorator_list = []
                 # compile the function
                 raw_byte_code = compile_byte_code(unparse(inner_function))
-                # load it
-                exec(raw_byte_code)  # nosec
-                # execute it
-                evil_string = f"{self.service_func_name}(**filtered_kwargs)"
-                result = eval(evil_string, None, locals())  # nosec
+                # # load it
+                # exec(raw_byte_code)  # nosec
+                # # execute it
+                # evil_string = f"{self.service_func_name}(**filtered_kwargs)"
+                # result = eval(evil_string, None, locals())  # nosec
+                result = execute_byte_code(
+                    raw_byte_code, 
+                    func_name=self.service_func_name, 
+                    code_id=self.id, 
+                    args=args, 
+                    kwargs=filtered_kwargs
+                )
                 # return the results
                 return result
             except Exception as e:
@@ -653,7 +660,7 @@ def execute_byte_code(
 
         exec(byte_code)  # nosec
 
-        evil_string = f"{func_name}(*args, **kwargs)"
+        evil_string = f"{func_name}(**kwargs)"
         try:
             result = eval(evil_string, None, locals())  # nosec
         except Exception as e:
@@ -682,10 +689,11 @@ def execute_byte_code(
         sys.stdout = stdout_
         sys.stderr = stderr_
 
+        # No stderr for the moment
         return UserCodeExecutionResult(
             user_code_id=code_id,
             stdout=str(stdout.getvalue()),
-            stderr=str(stderr.getvalue()),
+            stderr="",# str(stderr.getvalue()), 
             result=result,
             serialized_plot=serialized_plot,
         )

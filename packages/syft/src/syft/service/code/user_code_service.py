@@ -142,6 +142,29 @@ class UserCodeService(AbstractService):
         if result.is_ok():
             user_code_items = result.ok()
             load_approved_policy_code(user_code_items=user_code_items)
+            
+    @service_method(path="code.execution_logs", name="execution_logs")
+    def execution_logs(self, context: AuthedServiceContext, result: Any, code_id: UID):
+        user_code = self.get_by_uid(context=context, uid=code_id)
+        if isinstance(user_code, SyftError):
+            return user_code
+        
+        action_service = context.node.get_service("actionservice")
+        # final_result = action_service.get(context=context, uid=result_id)
+        # print(f'{final_result=}')
+        # print(type(final_result))
+        # if not final_result.is_ok():
+        #     return final_result
+        # final_result = final_result.ok()
+        final_result = result
+        
+        # TODO: adapt this for multiple results with the same data
+        output_histories = user_code.output_policy.output_history
+        for history in output_histories:
+            output = get_outputs(context=context, output_history=history)
+            if output.result == final_result:
+                return output
+        return SyftError(message="Unable to find result ID in code history")
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
