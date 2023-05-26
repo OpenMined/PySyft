@@ -11,6 +11,7 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.datetime import DateTime
 from ...util.telemetry import instrument
 from .request import Request
 from .request import RequestStatus
@@ -19,6 +20,8 @@ RequestingUserVerifyKeyPartitionKey = PartitionKey(
     key="requesting_user_verify_key", type_=SyftVerifyKey
 )
 StatusPartitionKey = PartitionKey(key="status", type_=RequestStatus)
+
+OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=DateTime)
 
 
 @instrument
@@ -37,10 +40,18 @@ class RequestStash(BaseUIDStoreStash):
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(
+            credentials=credentials,
+            qks=qks,
+            order_by=OrderByRequestTimeStampPartitionKey,
+        )
 
     def get_all_for_status(
         self, credentials: SyftVerifyKey, status: RequestStatus
     ) -> Result[List[Request], str]:
         qks = QueryKeys(qks=[StatusPartitionKey.with_obj(status)])
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(
+            credentials=credentials,
+            qks=qks,
+            order_by=OrderByRequestTimeStampPartitionKey,
+        )

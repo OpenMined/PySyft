@@ -96,7 +96,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
         try:
             self.cur.execute(
                 f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                + "repr TEXT NOT NULL, value BLOB NOT NULL)"  # nosec
+                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
             )
             self.db.commit()
         except sqlite3.OperationalError as e:
@@ -159,7 +160,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
             raise ValueError(res.err())
 
     def _get(self, key: UID) -> Any:
-        select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
+        select_sql = (
+            f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
+        )
         res = self._execute(select_sql, [str(key)])
         if res.is_err():
             raise KeyError(f"Query {select_sql} failed")
@@ -186,7 +189,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return bool(row)
 
     def _get_all(self) -> Any:
-        select_sql = f"select * from {self.table_name}"  # nosec
+        select_sql = f"select * from {self.table_name} order by sqltime"  # nosec
         keys = []
         data = []
 
@@ -205,7 +208,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return dict(zip(keys, data))
 
     def _get_all_keys(self) -> Any:
-        select_sql = f"select uid from {self.table_name}"  # nosec
+        select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
         keys = []
 
         res = self._execute(select_sql)

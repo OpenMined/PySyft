@@ -24,6 +24,7 @@ from .project import Project
 from .project import ProjectEvent
 from .project import ProjectRequest
 from .project import ProjectSubmit
+from .project_stash import OrderByNamePartitionKey
 from .project_stash import ProjectStash
 
 
@@ -262,7 +263,10 @@ class ProjectService(AbstractService):
 
     @service_method(path="project.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> Union[List[Project], SyftError]:
-        result = self.stash.get_all(context.credentials)
+        result = self.stash.get_all(
+            context.credentials,
+            order_by=OrderByNamePartitionKey,
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
 

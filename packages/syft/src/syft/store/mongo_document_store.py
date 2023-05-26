@@ -30,6 +30,7 @@ from ..types.transforms import TransformContext
 from ..types.transforms import transform
 from ..types.transforms import transform_method
 from .document_store import DocumentStore
+from .document_store import PartitionKey
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StoreConfig
@@ -294,21 +295,34 @@ class MongoStorePartition(StorePartition):
             return Err(f"Failed to update obj {obj}, you have no permission")
 
     def _find_index_or_search_keys(
-        self, credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        index_qks: QueryKeys,
+        search_qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
         # TODO: pass index as hint to find method
         qks = QueryKeys(qks=(index_qks.all + search_qks.all))
-        return self._get_all_from_store(credentials=credentials, qks=qks)
+        return self._get_all_from_store(
+            credentials=credentials, qks=qks, order_by=order_by
+        )
 
     def _get_all_from_store(
-        self, credentials: SyftVerifyKey, qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
         collection = collection_status.ok()
 
-        storage_objs = collection.find(filter=qks.as_dict_mongo)
+        if order_by is not None:
+            storage_objs = collection.find(filter=qks.as_dict_mongo).sort(order_by.key)
+        else:
+            _default_key = "_id"
+            storage_objs = collection.find(filter=qks.as_dict_mongo).sort(_default_key)
         syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
@@ -345,9 +359,11 @@ class MongoStorePartition(StorePartition):
         # TODO: implement
         return True
 
-    def _all(self, credentials: SyftVerifyKey):
+    def _all(self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None):
         qks = QueryKeys(qks=())
-        return self._get_all_from_store(credentials=credentials, qks=qks)
+        return self._get_all_from_store(
+            credentials=credentials, qks=qks, order_by=order_by
+        )
 
     def __len__(self):
         collection_status = self.collection
