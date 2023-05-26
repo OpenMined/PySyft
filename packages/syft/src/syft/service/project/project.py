@@ -128,9 +128,6 @@ class ProjectEvent(SyftObject):
     def _pre_add_update(self, project: Project) -> None:
         pass
 
-    # def __hash__(self) -> int:
-    #     return type(self).calculate_hash(self, self.__hash_keys__)
-
     def rebase(self, project: Project) -> Self:
         prev_event = project.events[-1] if project.events else None
         self.project_id = project.id
@@ -622,9 +619,6 @@ class Project(SyftObject):
     users: List[UserIdentity] = []
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
-
-    # def __hash__(self) -> int:
-    #     return type(self).calculate_hash(self, self.__hash_keys__)
 
     def _broadcast_event(
         self, project_event: ProjectEvent
