@@ -42,6 +42,8 @@ from .action_types import action_type_for_object
 from .action_types import action_type_for_type
 from .action_types import action_types
 
+NoneType = type(None)
+
 
 @serializable()
 class TwinMode(Enum):
@@ -199,6 +201,7 @@ dont_make_side_effects = [
 ]
 action_data_empty_must_run = [
     "__repr__",
+    "__str__",
 ]
 
 
@@ -760,7 +763,7 @@ class ActionObject(SyftObject):
 
     @staticmethod
     def empty(
-        syft_internal_type: Any = Any,
+        syft_internal_type: Type[Any] = NoneType,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
     ) -> ActionObject:
@@ -1322,9 +1325,9 @@ class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type: ClassVar[Type[Any]] = Any  # type: ignore
+    syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
-    syft_dont_wrap_attrs: List[str] = []
+    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__"]
 
     def __float__(self) -> float:
         return float(self.syft_action_data)

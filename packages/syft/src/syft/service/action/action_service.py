@@ -109,8 +109,7 @@ class ActionService(AbstractService):
         twin_mode: TwinMode = TwinMode.PRIVATE,
         has_permission=False,
     ) -> Result[ActionObject, str]:
-        # TODO 🟣 Temporarily added skip permission arguments for enclave
-        # until permissions are fully integrated
+        """Get an object from the action store"""
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
