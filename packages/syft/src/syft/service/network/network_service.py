@@ -26,6 +26,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.transforms import transform_method
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -105,8 +106,9 @@ class NetworkService(AbstractService):
     store: DocumentStore
     stash: NetworkStash
 
-    def __init__(self, store: DocumentStore) -> None:
+    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
         self.store = store
+        self.node_uid = node_uid
         self.stash = NetworkStash(store=store)
 
     # TODO: Check with MADHAVA, can we even allow guest user to introduce routes to

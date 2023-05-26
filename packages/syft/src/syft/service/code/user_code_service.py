@@ -40,8 +40,9 @@ class UserCodeService(AbstractService):
     store: DocumentStore
     stash: UserCodeStash
 
-    def __init__(self, store: DocumentStore) -> None:
+    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
         self.store = store
+        self.node_uid = node_uid
         self.stash = UserCodeStash(store=store)
 
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)

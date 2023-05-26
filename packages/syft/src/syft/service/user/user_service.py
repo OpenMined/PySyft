@@ -44,8 +44,9 @@ class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash
 
-    def __init__(self, store: DocumentStore) -> None:
+    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
         self.store = store
+        self.node_uid = node_uid
         self.stash = UserStash(store=store)
 
     @service_method(path="user.create", name="create")

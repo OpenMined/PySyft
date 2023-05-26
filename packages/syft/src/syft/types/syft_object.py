@@ -51,6 +51,8 @@ class SyftBaseObject(BaseModel):
     __canonical_name__: str  # the name which doesn't change even when there are multiple classes
     __version__: int  # data is always versioned
 
+    syft_node_location: Optional[UID]
+
 
 class Context(SyftBaseObject):
     pass

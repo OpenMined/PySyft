@@ -311,6 +311,30 @@ def service_method(
         # TODO: this is dangerous, we probably want to be more conservative
         roles = DATA_OWNER_ROLE_LEVEL
 
+    def _attach_node_location(self, result) -> Any:
+        box_to_result_type = None
+
+        if type(result) in OkErr:
+            box_to_result_type = type(result)
+            result = result.value
+
+        if isinstance(result, (list, tuple)):
+            iterable_items = result
+        elif isinstance(result, dict):
+            iterable_items = result.values()
+        else:
+            iterable_items = [result]
+
+        for _object in iterable_items:
+            # if object is SyftBaseObject,
+            # then attach node location
+            if isinstance(_object, SyftBaseObject):
+                setattr(_object, "syft_node_location", self.node_uid)
+        if box_to_result_type is not None:
+            result = box_to_result_type(result)
+
+        return result
+
     def wrapper(func):
         func_name = func.__name__
         class_name = func.__qualname__.split(".")[-2]
@@ -329,7 +353,8 @@ def service_method(
                     args=args,
                     kwargs=kwargs,
                 )
-            return func(self, *args, **kwargs)
+            result = func(self, *args, **kwargs)
+            return _attach_node_location(self, result)
 
         if autosplat is not None and len(autosplat) > 0:
             signature = expand_signature(signature=input_signature, autosplat=autosplat)

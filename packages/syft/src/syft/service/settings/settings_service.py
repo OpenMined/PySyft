@@ -8,6 +8,7 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..response import SyftError
@@ -23,7 +24,7 @@ class SettingsService(AbstractService):
     store: DocumentStore
     stash: SettingsStash
 
-    def __init__(self, store: DocumentStore) -> None:
+    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
         self.store = store
         self.stash = SettingsStash(store=store)
 
