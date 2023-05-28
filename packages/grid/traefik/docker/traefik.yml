@@ -20,7 +20,6 @@ providers:
     watch: true
 
 experimental:
-  plugins:
+  localPlugins:
     fail2ban:
       moduleName: "github.com/tomMoulard/fail2ban"
-      version: "v0.6.6"

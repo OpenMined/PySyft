@@ -17,6 +17,11 @@ services:
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
 
+  proxy:
+    build:
+      context: ${RELATIVE_PATH}./traefik
+      dockerfile: proxy.dockerfile
+
   # backend_stream:
   #   build:
   #     context: ${RELATIVE_PATH}../
