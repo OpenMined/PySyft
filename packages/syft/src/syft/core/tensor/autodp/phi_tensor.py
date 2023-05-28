@@ -469,6 +469,20 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__add__")
 
+    def __mul__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointerorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mul__")
+
     def __sub__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -2674,6 +2688,28 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+
+    def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+            # if the tensor being multiplied is also private
+            if isinstance(other, PhiTensor):
+                return self.gamma * other.gamma
+
+            # if the tensor being multiplied is a public tensor / int / float / etc.
+            elif is_acceptable_simple_type(other):
+
+                return PhiTensor(
+                    child=self.child * other,
+                    min_vals=self.min_vals * other,
+                    max_vals=self.max_vals * other,
+                    data_subjects=self.data_subjects,
+                )
+
+            elif isinstance(other, GammaTensor):
+                return self.gamma * other
+            else:
+                print("Type is unsupported:" + str(type(other)))
+                raise NotImplementedError
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
