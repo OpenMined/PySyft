@@ -1123,29 +1123,30 @@ class ProjectSubmit(SyftObject):
 
     @root_validator(pre=True)
     def check_user_email_and_users(cls, values) -> Dict:
-        if values["user_email_address"] is not None:
-            users = values["users"]
-            if len(users) == 0:
-                raise SyftException(
-                    "Users cannot be empty if user email address is provided"
-                )
-
-            share_holders = values["shareholders"]
-            if len(share_holders) != len(users):
-                raise SyftException(
-                    "Number of users should be equal to number of shareholders"
-                )
-            users_node_identity = []
-            for user in users:
-                if isinstance(user, SyftClient):
-                    users_node_identity.append(UserIdentity.from_client(user))
-                elif isinstance(user, UserIdentity):
-                    users_node_identity.append(user)
-                else:
+        if "user_email_address" in values:  # avoids KeyError below if no email provided
+            if values["user_email_address"] is not None:
+                users = values["users"]
+                if len(users) == 0:
                     raise SyftException(
-                        "Users should be either SyftClient or UserIdentity"
+                        "Users cannot be empty if user email address is provided"
                     )
-            values["users"] = users_node_identity
+
+                share_holders = values["shareholders"]
+                if len(share_holders) != len(users):
+                    raise SyftException(
+                        "Number of users should be equal to number of shareholders"
+                    )
+                users_node_identity = []
+                for user in users:
+                    if isinstance(user, SyftClient):
+                        users_node_identity.append(UserIdentity.from_client(user))
+                    elif isinstance(user, UserIdentity):
+                        users_node_identity.append(user)
+                    else:
+                        raise SyftException(
+                            "Users should be either SyftClient or UserIdentity"
+                        )
+                values["users"] = users_node_identity
 
         return values
 
@@ -1176,6 +1177,17 @@ class ProjectSubmit(SyftObject):
             print()
 
         return SyftSuccess(message="Successfully Exchaged Routes")
+
+    def add_request(
+        self,
+        request: Request,
+    ):
+        request_event = ProjectRequest(request=request)
+        result = self.add_event(request_event)
+
+        if isinstance(result, SyftSuccess):
+            return SyftSuccess(message="Request created successfully")
+        return result
 
     def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders

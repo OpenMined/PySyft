@@ -44,6 +44,7 @@ from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
 from ..policy.policy import Policy
+from ..policy.policy import SingleExecutionExactOutput
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
 from ..policy.policy import init_policy
@@ -400,7 +401,7 @@ def debox_asset(arg: Any) -> Any:
 
 def syft_function(
     input_policy: Union[InputPolicy, UID],
-    output_policy: Union[OutputPolicy, UID],
+    output_policy: Union[OutputPolicy, UID] = SingleExecutionExactOutput(),
 ) -> SubmitUserCode:
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
