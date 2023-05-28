@@ -67,6 +67,12 @@ def curl_ip(container: str, ip_addr: str) -> str:
         raise e
 
 
+def print_firewall_rules():
+    blocked, allowed = sy.client.client.SyftClient.get_ip_rules()
+    print(f"Blocked IPs: {[str(ip) for ip in blocked]}")
+    print(f"Allowed IPs: {[str(ip) for ip in allowed]}")
+
+
 @pytest.mark.network
 def test_firewall() -> None:
     if OS == "windows" or CONTAINER_HOST != "docker" or EMULATION != "false":
@@ -78,20 +84,29 @@ def test_firewall() -> None:
     proxy_ip = get_ip_of_container(proxy_container)
     frontend_ip = get_ip_of_container(frontend_container)
 
+    print("Firewall rules before test")
+    print_firewall_rules()
     # access allowed
-    sy.client.client.SyftClient.unblock_ip(ip=frontend_ip, debug=True)
+    print(f"Unblocking IP {frontend_ip}")
+    sy.client.client.SyftClient.unblock_ip(ip=ipaddress.ip_address(frontend_ip))
+    print_firewall_rules()
     time.sleep(2)
     result = curl_ip(frontend_container, proxy_ip)
     assert result == 200, f"{frontend_ip} is blocked"
 
     # access denied
-    sy.client.client.SyftClient.block_ip(ip=frontend_ip, debug=True)
+    print(f"Blocking IP {frontend_ip}")
+    sy.client.client.SyftClient.block_ip(ip=ipaddress.ip_address(frontend_ip))
+    print_firewall_rules()
     time.sleep(2)
     result = curl_ip(frontend_container, proxy_ip)
     assert result == 403, f"{frontend_ip} is allowed"
 
     # access allowed again
-    sy.client.client.SyftClient.unblock_ip(ip=frontend_ip, debug=True)
+    print(f"Unblocking IP {frontend_ip}")
+
+    sy.client.client.SyftClient.unblock_ip(ip=ipaddress.ip_address(frontend_ip))
+    print_firewall_rules()
     time.sleep(2)
     result = curl_ip(frontend_container, proxy_ip)
     assert result == 200, f"{frontend_ip} is blocked"

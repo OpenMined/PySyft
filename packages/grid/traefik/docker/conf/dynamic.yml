@@ -13,7 +13,7 @@ http:
         fail2ban:
           blacklist:
             files:
-              - /etc/traefik/conf/ip_denylist.txt
+              - /etc/traefik/conf/ip_denylist.IPv4.txt
             ip: []
           logLevel: DEBUG
           rules:
@@ -31,7 +31,7 @@ http:
             findtime: 10m
             ignorecommand: ""
             logencoding: UTF-8
-            maxretry: "4"
+            maxretry: "400"
             mode: ""
             mta: ""
             ports: 0:8000
@@ -41,7 +41,7 @@ http:
             usedns: ""
           whitelist:
             files:
-              - /etc/traefik/conf/ip_allowlist.txt
+              - /etc/traefik/conf/ip_allowlist.IPv4.txt
             ip: []
     fire-ratelimit:
       rateLimit:
@@ -65,7 +65,9 @@ http:
         - vpn
       middlewares:
         - fire-fail2ban
-      rule: PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)
+      rule:
+        PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`)
+        || PathPrefix(`/redoc`)
       service: backend-stream
     blob-storage:
       entryPoints:
