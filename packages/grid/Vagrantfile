@@ -70,9 +70,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     node.vm.hostname = "rhel-9-arm64.openmined.grid"
     node.vm.network :private_network
-    node.vm.synced_folder "../../", "/home/om/PySyft",
-      owner: "om",
-      group: "om"
+    node.vm.synced_folder "../../", "/home/vagrant/PySyft"
 
     node.vm.provider "vmware_desktop" do |vb|
       vb.gui = true
