@@ -6,50 +6,56 @@ import asyncio
 from functools import wraps
 import inspect
 from typing import Callable
+from typing import ClassVar
 from typing import Dict
 from typing import Optional
 from typing import TypeVar
 from typing import Union
+from typing import cast
 
 # third party
 from opentelemetry import trace
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Tracer
+from opentelemetry.trace.span import Span
 
 
 class TracingDecoratorOptions:
     class NamingSchemes:
         @staticmethod
-        def function_qualified_name(func: Callable):
+        def function_qualified_name(func: Callable) -> str:
             return func.__qualname__
 
         default_scheme = function_qualified_name
 
-    naming_scheme: Callable[[Callable], str] = NamingSchemes.default_scheme
-    default_attributes: Dict[str, str] = {}
+    naming_scheme: ClassVar[Callable[[Callable], str]] = NamingSchemes.default_scheme
+    default_attributes: ClassVar[Dict[str, str]] = {}
 
-    @staticmethod
-    def set_naming_scheme(naming_scheme: Callable[[Callable], str]):
-        TracingDecoratorOptions.naming_scheme = naming_scheme
+    @classmethod
+    def set_naming_scheme(cls, naming_scheme: Callable[[Callable], str]) -> None:
+        cls.naming_scheme = naming_scheme
 
-    @staticmethod
-    def set_default_attributes(attributes: Dict[str, str] = None):
-        for att in attributes:
-            TracingDecoratorOptions.default_attributes[att] = attributes[att]
+    @classmethod
+    def set_default_attributes(
+        cls, attributes: Optional[Dict[str, str]] = None
+    ) -> None:
+        if attributes is not None:
+            for att in attributes:
+                cls.default_attributes[att] = attributes[att]
 
 
-T = TypeVar("T", bound=Optional[Union[Callable, type]])
+T = TypeVar("T", bound=Union[Callable, type])
 
 
 def instrument(
-    _func_or_class: T = None,
+    _func_or_class: T,
     *,
     span_name: str = "",
     record_exception: bool = True,
     attributes: Optional[Dict[str, str]] = None,
     existing_tracer: Optional[Tracer] = None,
-    ignore=False,
-):
+    ignore: bool = False,
+) -> T:
     """
     A decorator to instrument a class or function with an OTEL tracing span.
     :param cls: internal, used to specify scope of instrumentation
@@ -75,10 +81,11 @@ def instrument(
                         name,
                         staticmethod(
                             instrument(
+                                method,
                                 record_exception=record_exception,
                                 attributes=attributes,
                                 existing_tracer=existing_tracer,
-                            )(method)
+                            )
                         ),
                     )
                 else:
@@ -86,10 +93,11 @@ def instrument(
                         cls,
                         name,
                         instrument(
+                            method,
                             record_exception=record_exception,
                             attributes=attributes,
                             existing_tracer=existing_tracer,
-                        )(method),
+                        ),
                     )
 
         return cls
@@ -115,19 +123,21 @@ def instrument(
 
         tracer = existing_tracer or trace.get_tracer(func_or_class.__module__)
 
-        def _set_semantic_attributes(span, func: Callable):
+        def _set_semantic_attributes(span: Span, func: Callable) -> None:
             span.set_attribute(SpanAttributes.CODE_NAMESPACE, func.__module__)
             span.set_attribute(SpanAttributes.CODE_FUNCTION, func.__qualname__)
             span.set_attribute(SpanAttributes.CODE_FILEPATH, func.__code__.co_filename)
             span.set_attribute(SpanAttributes.CODE_LINENO, func.__code__.co_firstlineno)
 
-        def _set_attributes(span, attributes_dict):
-            if attributes_dict:
+        def _set_attributes(
+            span: Span, attributes_dict: Optional[Dict[str, str]] = None
+        ) -> None:
+            if attributes_dict is not None:
                 for att in attributes_dict:
                     span.set_attribute(att, attributes_dict[att])
 
         @wraps(func_or_class)
-        def wrap_with_span_sync(*args, **kwargs):
+        def wrap_with_span_sync(*args, **kwargs):  # type: ignore
             name = span_name or TracingDecoratorOptions.naming_scheme(func_or_class)
             with tracer.start_as_current_span(
                 name, record_exception=record_exception
@@ -138,7 +148,7 @@ def instrument(
                 return func_or_class(*args, **kwargs)
 
         @wraps(func_or_class)
-        async def wrap_with_span_async(*args, **kwargs):
+        async def wrap_with_span_async(*args, **kwargs):  # type: ignore
             name = span_name or TracingDecoratorOptions.naming_scheme(func_or_class)
             with tracer.start_as_current_span(
                 name, record_exception=record_exception
@@ -158,9 +168,6 @@ def instrument(
         )
         wrapper.__signature__ = inspect.signature(func_or_class)
 
-        return wrapper
+        return cast(T, wrapper)
 
-    if _func_or_class is None:
-        return span_decorator
-    else:
-        return span_decorator(_func_or_class)
+    return span_decorator(_func_or_class)
