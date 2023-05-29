@@ -27,6 +27,27 @@ TYPE_BANK = {}
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
 
 
+def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type]]:
+    if keys is None:
+        return None
+    types = []
+    for key in keys:
+        _type = None
+        annotations = getattr(cls, "__annotations__", None)
+        if annotations and key in annotations:
+            _type = annotations[key]
+        else:
+            for parent_cls in cls.mro():
+                sub_annotations = getattr(parent_cls, "__annotations__", None)
+                if sub_annotations and key in sub_annotations:
+                    _type = sub_annotations[key]
+        if _type is None:
+            print(f"Failed to find type for key: {key} in {cls}")
+            return None
+        types.append(_type)
+    return types
+
+
 def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
@@ -79,6 +100,7 @@ def recursive_serde_register(
         setattr(cls, "__syft_serializable__", attribute_list)
 
     attributes = set(list(attribute_list)) if attribute_list else None
+    attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     # without fqn duplicate class names overwrite
@@ -90,6 +112,7 @@ def recursive_serde_register(
         exclude_attrs,
         serde_overrides,
         cls,
+        attribute_types,
     )
 
 
@@ -135,6 +158,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         exclude_attrs_list,
         serde_overrides,
         cls,
+        attribute_types,
     ) = TYPE_BANK[fqn]
 
     if nonrecursive or is_type:
@@ -227,6 +251,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         exclude_attrs_list,
         serde_overrides,
         cls,
+        attribute_types,
     ) = TYPE_BANK[proto.fullyQualifiedName]
 
     if class_type == type(None):
