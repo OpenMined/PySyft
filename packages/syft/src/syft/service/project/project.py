@@ -1183,7 +1183,6 @@ class ProjectSubmit(SyftObject):
     def add_request(
         self,
         *args: Request,
-        request: Request,
     ) -> None:
         for request in args:
             request_event = ProjectRequest(request=request)
