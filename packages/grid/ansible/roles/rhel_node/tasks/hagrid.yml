@@ -13,25 +13,6 @@
   become: yes
   when: vagrant is defined
 
-# Check if home_dir exists
-# - name: Check if home_dir exists
-#   ansible.builtin.stat:
-#     path: "{{ om_homedir }}"
-#   register: home_dir
-#   become: yes
-#   when: vagrant is defined and install == "true"
-
-# #Set permissions on home_dir
-# - name: Set permissions on home_dir
-#   ansible.builtin.file:
-#     path: "{{ om_homedir }}"
-#     owner: "{{ om_user }}"
-#     group: "{{ om_group }}"
-#     mode: 0755
-#     recurse: yes
-#   become: yes
-#   when: vagrant is defined and install == "true"
-
 - name: Install HAGrid (temp root)
   shell: "pip install -e {{ syft_dir }}/packages/hagrid"
   become: yes
