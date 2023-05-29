@@ -284,10 +284,13 @@ class Node(AbstractNode):
             raise Exception(f"Invalid UID: {name_hash_string} for name: {name}")
         uid = UID(name_hash_string)
         key = SyftSigningKey(SigningKey(name_hash))
+        graph_config = None
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"
-
+            # reset action graph config
+            graph_config = InMemoryGraphConfig()
+            graph_config.client_config.filename = f"{uid}.bytes"
             # stdlib
             import sqlite3
 
@@ -306,6 +309,7 @@ class Node(AbstractNode):
             with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
+                    os.unlink(graph_config.client_config.file_path)
 
         return cls(
             name=name,
@@ -314,6 +318,7 @@ class Node(AbstractNode):
             processes=processes,
             local_db=local_db,
             sqlite_path=sqlite_path,
+            action_graph_config=graph_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -419,9 +424,9 @@ class Node(AbstractNode):
         self.queue_stash = QueueStash(store=self.document_store)
         if action_graph_config is None:
             action_graph_config = InMemoryGraphConfig()
+            action_graph_config.client_config.filename = f"{self.id}.bytes"
         self.action_graph_store = InMemoryActionGraphStore(
             store_config=action_graph_config,
-            reset=True,
         )
 
     def _construct_services(self):

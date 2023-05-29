@@ -298,6 +298,8 @@ def convert_to_pointers(
                 # arg = action_obj.send(
                 #     client
                 # )  # make sure this doesn't break things later on in send_method_action
+                # TODO: Validate the results from adding a node with graph.add_action_obj
+                api.services.graph.add_action_obj(action_obj=arg)
             arg_list.append(arg)
 
     if kwargs is not None:
@@ -307,6 +309,7 @@ def convert_to_pointers(
                 arg.syft_node_uid = node_uid
                 arg = api.services.action.set(arg)
                 # arg = action_obj.send(client)
+                api.services.graph.add_action_obj(action_obj=arg)
 
             kwarg_dict[k] = arg
 

@@ -271,6 +271,8 @@ def generate_remote_lib_function(
             # TODO: fix
             result_id=LineageID(UID(), 1),
         )
+        # TODO: Validate the results from adding a node with graph.add_action_obj
+        api.services.graph.add_action(action=action)
         service_args = [action]
         # TODO: implement properly
         TraceResult.result += [action]
