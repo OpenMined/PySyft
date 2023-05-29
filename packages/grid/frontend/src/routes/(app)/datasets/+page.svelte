@@ -6,15 +6,9 @@
   import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
   import DatasetModalNew from '$lib/components/Datasets/DatasetModalNew.svelte';
   import { getAllDatasets } from '$lib/api/datasets';
-  import { getAllCodeRequests } from '$lib/api/requests';
-  import { browser } from '$app/environment';
 
   let datasets = null;
   let openModalNew = false;
-
-  if (browser){
-    window.requests = getAllCodeRequests
-  }
 
   function handleClick() {
     openModalNew = !openModalNew;

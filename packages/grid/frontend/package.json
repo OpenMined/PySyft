@@ -16,6 +16,7 @@
     "@playwright/test": "^1.33.0",
     "@sveltejs/adapter-node": "^1.1.7",
     "@sveltejs/kit": "^1.15.2",
+    "@types/prismjs": "^1.26.0",
     "@typescript-eslint/eslint-plugin": "^5.52.0",
     "@typescript-eslint/parser": "^5.52.0",
     "autoprefixer": "^10.4.7",
@@ -41,6 +42,7 @@
     "ky": "^0.33.2",
     "libsodium": "^0.7.11",
     "libsodium-wrappers": "^0.7.11",
+    "prismjs": "^1.29.0",
     "uuid": "^9.0.0"
   },
   "engines": {
