@@ -16,6 +16,17 @@ export async function getSelf() {
   });
 }
 
-export async function searchUsersByName(name: string) {
-  return await syftCall({ path: 'user.search', payload: { name } });
+export async function searchUsersByName(
+  name: string,
+  page_size: number = 0,
+  page_index: number = 0
+) {
+  return await syftCall({
+    path: 'user.search',
+    payload: {
+      user_search: { name: name, fqn: 'syft.service.user.user.UserSearch' },
+      page_size: page_size,
+      page_index: page_index
+    }
+  });
 }
