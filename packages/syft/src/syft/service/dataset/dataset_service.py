@@ -89,7 +89,6 @@ class DatasetService(AbstractService):
         name: str,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-
     ) -> Union[List[Dataset], SyftError]:
         """Search a Dataset by name"""
         results = self.get_all(context)
