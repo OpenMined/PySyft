@@ -1,2 +1,5 @@
 line-length = 120
 
+# Enable flake8-bugbear (`B`) rules.
+# https://beta.ruff.rs/docs/configuration/#using-rufftoml
+select = ["E", "F", "B"]
