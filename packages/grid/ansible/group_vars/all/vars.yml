@@ -2,8 +2,8 @@
 om_user: om
 om_group: om
 om_homedir: "/home/{{ om_user }}"
-syft_dir: "/home/om/PySyft"
-build_dir: "/home/om/build"
+syft_dir: "/home/{{ om_user }}/PySyft"
+build_dir: "/home/{{ om_user }}/build"
 root_dir: "{{ playbook_dir | regex_replace('packages/grid/ansible', '') }}"
 github_repo: OpenMined/PySyft.git
 repo_branch: "dev"

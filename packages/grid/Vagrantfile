@@ -10,10 +10,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     ansible.raw_arguments = Shellwords.shellsplit(ENV['ANSIBLE_ARGS']) if ENV['ANSIBLE_ARGS']
     ansible.compatibility_mode = "auto"
     ansible.playbook = "./ansible/site.yml"
+    ansible.extra_vars = {
+      om_user: "vagrant",
+      om_group: "vagrant"
+    }
     ansible.groups = {
       "ubuntu" => [
-        "ubuntu-20-04-arm64",
-        "ubuntu-20-04-x86",
+        "ubuntu-22-04-arm64",
+        "ubuntu-22-04-x86",
       ],
       "rhel" => [
         "rhel-9-arm64",
