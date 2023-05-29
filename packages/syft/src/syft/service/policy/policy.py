@@ -99,7 +99,7 @@ class Policy(SyftObject):
             init_kwargs = deepcopy(kwargs)
             if "id" in init_kwargs:
                 del init_kwargs["id"]
-        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)
+        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)  # noqa: B026
 
     @classmethod
     @property
