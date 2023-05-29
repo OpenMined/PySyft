@@ -10,6 +10,7 @@ from pydantic.error_wrappers import ValidationError
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import PartitionKey
 from ...store.document_store import QueryKeys
 from ...types.uid import UID
@@ -37,7 +38,7 @@ class ActionGraphService(AbstractService):
     def __init__(self, store: ActionGraphStore):
         self.store = store
 
-    @service_method(path="graph.add_action", name="add_action")
+    @service_method(path="graph.add_action", name="add_action", roles=GUEST_ROLE_LEVEL)
     def add_action(
         self, context: AuthedServiceContext, action: Action
     ) -> Union[NodeActionData, SyftError]:
@@ -87,7 +88,9 @@ class ActionGraphService(AbstractService):
 
         return action_node, result_node
 
-    @service_method(path="graph.add_action_obj", name="add_action_obj")
+    @service_method(
+        path="graph.add_action_obj", name="add_action_obj", roles=GUEST_ROLE_LEVEL
+    )
     def add_action_obj(
         self,
         context: AuthedServiceContext,
