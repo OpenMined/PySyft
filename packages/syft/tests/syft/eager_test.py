@@ -35,9 +35,7 @@ def test_plan(worker, guest_client):
     guest_client = worker.guest_client
 
     @planify
-    def my_plan(x=None):
-        if x is None:
-            x = np.array([[2, 2, 2], [2, 2, 2]])
+    def my_plan(x=np.array([[2, 2, 2], [2, 2, 2]])):  # noqa: B008
         y = x.flatten()
         z = y.prod()
         return z
@@ -77,9 +75,7 @@ def test_plan_with_function_call(worker, guest_client):
     guest_client = worker.guest_client
 
     @planify
-    def my_plan(x=None):
-        if x is None:
-            x = np.array([[2, 2, 2], [2, 2, 2]])
+    def my_plan(x=np.array([[2, 2, 2], [2, 2, 2]])):  # noqa: B008
         y = x.flatten()
         w = guest_client.api.lib.numpy.sum(y)
         return w
@@ -99,9 +95,7 @@ def test_plan_with_function_call(worker, guest_client):
 
 def test_plan_with_object_instantiation(worker, guest_client):
     @planify
-    def my_plan(x=None):
-        if x is None:
-            x = np.array([1, 2, 3, 4, 5, 6])
+    def my_plan(x=np.array([1, 2, 3, 4, 5, 6])):  # noqa: B008
         return x + 1
 
     root_domain_client = worker.root_client
