@@ -95,21 +95,21 @@ class UserService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
-        chunk_size: Optional[int] = 0,
-        chunk_index: Optional[int] = 0,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
     ) -> Union[Optional[UserView], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             results = [user.to(UserView) for user in result.ok()]
 
             # If chunk size is defined, then split list into evenly sized chunks
-            if chunk_size:
+            if page_size:
                 results = [
-                    results[i : i + chunk_size]
-                    for i in range(0, len(results), chunk_size)
+                    results[i : i + page_size]
+                    for i in range(0, len(results), page_size)
                 ]
                 # Return the proper slice using chunk_index
-                results = results[chunk_index]
+                results = results[page_index]
 
             return results
 

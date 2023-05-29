@@ -1,9 +1,9 @@
 import { makeSyftUID, syftCall } from './syft-api-call';
 
-export async function getAllDatasets(chunk_size: number = 0, chunk_index: number = 0) {
+export async function getAllDatasets(page_size: number = 0, page_index: number = 0) {
   return await syftCall({
     path: 'dataset.get_all',
-    payload: { chunk_size: chunk_size, chunk_index: chunk_index }
+    payload: { page_size: page_size, page_index: page_index }
   });
 }
 
