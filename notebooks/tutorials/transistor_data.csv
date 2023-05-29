@@ -1,0 +1,180 @@
+Processor,MOS transistor count,Date of Introduction,Designer,MOSprocess,Area
+Intel 4004 (4-bit  16-pin),2250,1971,Intel,"10,000 nm",12 mm²
+Intel 8008 (8-bit  18-pin),3500,1972,Intel,"10,000 nm",14 mm²
+NEC μCOM-4 (4-bit  42-pin),2500,1973,NEC,"7,500 nm",?
+Intel 4040 (4-bit  16-pin),3000,1974,Intel,"10,000 nm",12 mm²
+Motorola 6800 (8-bit  40-pin),4100,1974,Motorola,"6,000 nm",16 mm²
+Intel 8080 (8-bit  40-pin),6000,1974,Intel,"6,000 nm",20 mm²
+TMS 1000 (4-bit  28-pin),8000,1974,Texas Instruments,"8,000 nm",11 mm²
+MOS Technology 6502 (8-bit  40-pin),4528,1975,MOS Technology,"8,000 nm",21 mm²
+Intersil IM6100 (12-bit  40-pin; clone of PDP-8),4000,1975,Intersil,,
+CDP 1801 (8-bit  2-chip; 40-pin),5000,1975,RCA,,
+RCA 1802 (8-bit  40-pin),5000,1976,RCA,"5,000 nm",27 mm²
+Zilog Z80 (8-bit  4-bit ALU  40-pin),8500,1976,Zilog,"4,000 nm",18 mm²
+Intel 8085 (8-bit  40-pin),6500,1976,Intel,"3,000 nm",20 mm²
+TMS9900 (16-bit),8000,1976,Texas Instruments,,
+Bellmac-8 (8-bit),7000,1977,Bell Labs,"5,000 nm",
+Motorola 6809 (8-bit with some 16-bit features  40-pin),9000,1978,Motorola,"5,000 nm",21 mm²
+Intel 8086 (16-bit  40-pin),29000,1978,Intel,"3,000 nm",33 mm²
+Zilog Z8000 (16-bit),17500,1979,Zilog,,
+Intel 8088 (16-bit  8-bit data bus),29000,1979,Intel,"3,000 nm",33 mm²
+Motorola 68000 (16/32-bit  32-bit registers  16-bit  ALU),68000,1979,Motorola,"3,500 nm",44 mm²
+Intel 8051 (8-bit  40-pin),50000,1980,Intel,,
+WDC 65C02,11500,1981,WDC,"3,000 nm",6 mm²
+ROMP (32-bit),45000,1981,IBM,"2,000 nm",
+Intel 80186 (16-bit  68-pin),55000,1982,Intel,"3,000 nm",60 mm²
+Intel 80286 (16-bit  68-pin),134000,1982,Intel,"1,500 nm",49 mm²
+NEC V20,63000,1984,NEC,,
+Motorola 68020 (32-bit; 114 pins used),190000,1984,Motorola,"2,000 nm",85 mm²
+Intel 80386 (32-bit  132-pin; no cache),275000,1985,Intel,"1,500 nm",104 mm²
+ARM 1 (32-bit; no cache),25000,1985,Acorn,"3,000 nm",50 mm²
+Novix NC4016 (16-bit),16000,1985,Harris Corporation,"3,000 nm",
+SPARC MB86900 (32-bit; no cache),110000,1986,Fujitsu,"1,200 nm",
+NEC V60 (32-bit; no cache),375000,1986,NEC,"1,500 nm",
+ARM 2 (32-bit  84-pin; no cache),27000,1986,Acorn,"2,000 nm",30.25 mm²
+Z80000 (32-bit; very small cache),91000,1986,Zilog,,
+NEC V70 (32-bit; no cache),385000,1987,NEC,"1,500 nm",
+Hitachi Gmicro/200,730000,1987,Hitachi,"1,000 nm",
+Motorola 68030 (32-bit  very small caches),273000,1987,Motorola,800 nm,102 mm²
+TI Explorer's 32-bit Lisp machine chip,553000,1987,Texas Instruments,"2,000 nm",
+DEC WRL MultiTitan,180000,1988,DEC WRL,"1,500 nm",61 mm²
+Intel i960 (32-bit  33-bit memory subsystem  no cache),250000,1988,Intel,"1,500 nm",
+Intel i960CA (32-bit  cache),600000,1989,Intel,800 nm,143 mm²
+Intel i860 (32/64-bit  128-bit SIMD  cache  VLIW),1000000,1989,Intel,,
+Intel 80486 (32-bit  4 KB cache),1180235,1989,Intel,1000 nm,173 mm²
+ARM 3 (32-bit  4 KB cache),310000,1989,Acorn,"1,500 nm",87 mm²
+Motorola 68040 (32-bit  8 KB caches),1200000,1990,Motorola,650 nm,152 mm²
+R4000 (64-bit  16 KB of caches),1350000,1991,MIPS,"1,000 nm",213 mm²
+ARM 6 (32-bit  no cache for this 60 variant),35000,1991,ARM,800 nm,
+Hitachi SH-1 (32-bit  no cache),600000,1992,Hitachi,800 nm,10 mm²
+Intel i960CF (32-bit  cache),900000,1992,Intel,,125 mm²
+DEC Alpha 21064 (64-bit  290-pin; 16 KB of caches),1680000,1992,DEC,750 nm,233.52 mm²
+Hitachi HARP-1 (32-bit  cache),2800000,1993,Hitachi,500 nm,267 mm²
+Pentium (32-bit  16 KB of caches),3100000,1993,Intel,800 nm,294 mm²
+ARM700 (32-bit; 8 KB cache),578977,1994,ARM,700 nm,68.51 mm²
+MuP21 (21-bit  40-pin; includes video),7000,1994,Offete Enterprises,1200 nm,
+Motorola 68060 (32-bit  16 KB of caches),2500000,1994,Motorola,600 nm,218 mm²
+SA-110 (32-bit  32 KB of caches),2500000,1995,Acorn/DEC/Apple,350 nm,50 mm²
+Pentium Pro (32-bit  16 KB of caches; L2 cache on-package  but on separate die),5500000,1995,Intel,500 nm,307 mm²
+AMD K5 (32-bit  caches),4300000,1996,AMD,500 nm,251 mm²
+Hitachi SH-4 (32-bit  caches),10000000,1997,Hitachi,200 nm,42 mm²
+Pentium II Klamath (32-bit  64-bit SIMD  caches),7500000,1997,Intel,350 nm,195 mm²
+AMD K6 (32-bit  caches),8800000,1997,AMD,350 nm,162 mm²
+F21 (21-bit; includes e.g. video),15000,1997,Offete Enterprises,,
+Pentium II Deschutes (32-bit  large cache),7500000,1998,Intel,250 nm,113 mm²
+ARM 9TDMI (32-bit  no cache),111000,1999,Acorn,350 nm,4.8 mm²
+Pentium III Katmai (32-bit  128-bit SIMD  caches),9500000,1999,Intel,250 nm,128 mm²
+Emotion Engine (64-bit  128-bit SIMD  cache),13500000,1999,Sony/Toshiba,180 nm,240 mm²
+Pentium II Mobile Dixon (32-bit  caches),27400000,1999,Intel,180 nm,180 mm²
+AMD K6-III (32-bit  caches),21300000,1999,AMD,250 nm,118 mm²
+AMD K7 (32-bit  caches),22000000,1999,AMD,250 nm,184 mm²
+Gekko (32-bit  large cache),21000000,2000,IBM/Nintendo,180 nm,43 mm²
+Pentium III Coppermine (32-bit  large cache),21000000,2000,Intel,180 nm,80 mm²
+Pentium 4 Willamette (32-bit  large cache),42000000,2000,Intel,180 nm,217 mm²
+SPARC64 V (64-bit  large cache),191000000,2001,Fujitsu,130 nm,290 mm²
+Pentium III Tualatin (32-bit  large cache),45000000,2001,Intel,130 nm,81 mm²
+Pentium 4 Northwood (32-bit  large cache),55000000,2002,Intel,130 nm,145 mm²
+Itanium 2 McKinley (64-bit  large cache),220000000,2002,Intel,180 nm,421 mm²
+DEC Alpha 21364 (64-bit  946-pin  SIMD  very large caches),152000000,2003,DEC,180 nm,397 mm²
+Barton (32-bit  large cache),54300000,2003,AMD,130 nm,101 mm²
+AMD K8 (64-bit  large cache),105900000,2003,AMD,130 nm,193 mm²
+Itanium 2 Madison 6M (64-bit),410000000,2003,Intel,130 nm,374 mm²
+Pentium 4 Prescott (32-bit  large cache),112000000,2004,Intel,90 nm,110 mm²
+SPARC64 V+ (64-bit  large cache),400000000,2004,Fujitsu,90 nm,294 mm²
+Itanium 2 (64-bit;9 MB cache),592000000,2004,Intel,130 nm,432 mm²
+Pentium 4 Prescott-2M (32-bit  large cache),169000000,2005,Intel,90 nm,143 mm²
+Pentium D Smithfield (32-bit  large cache),228000000,2005,Intel,90 nm,206 mm²
+Xenon (64-bit  128-bit SIMD  large cache),165000000,2005,IBM,90 nm,
+Cell (32-bit  cache),250000000,2005,Sony/IBM/Toshiba,90 nm,221 mm²
+Pentium 4 Cedar Mill (32-bit  large cache),184000000,2006,Intel,65 nm,90 mm²
+Pentium D Presler (32-bit  large cache),362000000,2006,Intel,65 nm,162 mm²
+Core 2 Duo Conroe (dual-core 64-bit  large caches),291000000,2006,Intel,65 nm,143 mm²
+Dual-core Itanium 2 (64-bit  SIMD  large caches),1700000000,2006,Intel,90 nm,596 mm²
+AMD K10 quad-core 2M L3 (64-bit  large caches),463000000,2007,AMD,65 nm,283 mm²
+ARM Cortex-A9 (32-bit  (optional) SIMD  caches),26000000,2007,ARM,45 nm,31 mm²
+Core 2 Duo Wolfdale (dual-core 64-bit  SIMD  caches),411000000,2007,Intel,45 nm,107 mm²
+POWER6 (64-bit  large caches),789000000,2007,IBM,65 nm,341 mm²
+Core 2 Duo Allendale (dual-core 64-bit  SIMD  large caches),169000000,2007,Intel,65 nm,111 mm²
+Uniphier,250000000,2007,Matsushita,45 nm,?
+SPARC64 VI (64-bit  SIMD  large caches),540000000,2007,Fujitsu,90 nm,421 mm²
+Core 2 Duo Wolfdale 3M (dual-core 64-bit  SIMD  large caches),230000000,2008,Intel,45 nm,83 mm²
+Core i7 (quad-core 64-bit  SIMD  large caches),731000000,2008,Intel,45 nm,263 mm²
+AMD K10 quad-core 6M L3 (64-bit  SIMD  large caches),758000000,2008,AMD,45 nm,258 mm²
+Atom (32-bit  large cache),47000000,2008,Intel,45 nm,24 mm²
+SPARC64 VII (64-bit  SIMD  large caches),600000000,2008,Fujitsu,65 nm,445 mm²
+Six-core Xeon 7400 (64-bit  SIMD  large caches),1900000000,2008,Intel,45 nm,503 mm²
+Six-core Opteron 2400 (64-bit  SIMD  large caches),904000000,2009,AMD,45 nm,346 mm²
+SPARC64 VIIIfx (64-bit  SIMD  large caches),760000000,2009,Fujitsu,45 nm,513 mm²
+16-core SPARC T3 (64-bit  SIMD  large caches),1000000000,2010,Sun/Oracle,40 nm,377 mm²
+Six-core Core i7 (Gulftown),1170000000,2010,Intel,32 nm,240 mm²
+8-core POWER7 32M L3 (64-bit  SIMD  large caches),1200000000,2010,IBM,45 nm,567 mm²
+Quad-core z196 (64-bit  very large caches),1400000000,2010,IBM,45 nm,512 mm²
+Quad-core Itanium Tukwila (64-bit  SIMD  large caches),2000000000,2010,Intel,65 nm,699 mm²
+8-core Xeon Nehalem-EX (64-bit  SIMD  large caches),2300000000,2010,Intel,45 nm,684 mm²
+SPARC64 IXfx (64-bit  SIMD  large caches),1870000000,2011,Fujitsu,40 nm,484 mm²
+Quad-core + GPU Core i7 (64-bit  SIMD  large caches),1160000000,2011,Intel,32 nm,216 mm²
+Six-core Core i7/8-core Xeon E5 (Sandy Bridge-E/EP) (64-bit  SIMD  large caches),2270000000,2011,Intel,32 nm,434 mm²
+10-core Xeon Westmere-EX (64-bit  SIMD  large caches),2600000000,2011,Intel,32 nm,512 mm²
+"Atom ""Medfield"" (64-bit)",432000000,2012,Intel,32 nm,64 mm²
+SPARC64 X (64-bit  SIMD  caches),2990000000,2012,Fujitsu,28 nm,600 mm²
+8-core AMD Bulldozer (64-bit  SIMD  caches),1200000000,2012,AMD,32 nm,315 mm²
+Quad-core + GPU AMD Trinity (64-bit  SIMD  caches),1303000000,2012,AMD,32 nm,246 mm²
+Quad-core + GPU Core i7 Ivy Bridge (64-bit  SIMD  caches),1400000000,2012,Intel,22 nm,160 mm²
+8-core POWER7+ (64-bit  SIMD)  80 MB L3 cache),2100000000,2012,IBM,32 nm,567 mm²
+Six-core zEC12 (64-bit  SIMD  large caches),2750000000,2012,IBM,32 nm,597 mm²
+8-core Itanium Poulson (64-bit  SIMD  caches),3100000000,2012,Intel,32 nm,544 mm²
+61-core Xeon Phi (32-bit  512-bit SIMD  caches),5000000000,2012,Intel,22 nm,720 mm²
+"Apple A7 (dual-core 64/32-bit ARM64  ""mobile SoC""  SIMD  caches)",1000000000,2013,Apple,28 nm,102 mm²
+Six-core Core i7 Ivy Bridge E (64-bit  SIMD  caches),1860000000,2013,Intel,22 nm,256 mm²
+12-core POWER8 (64-bit  SIMD  caches),4200000000,2013,IBM,22 nm,650 mm²
+Xbox One main SoC (64-bit  SIMD  caches),5000000000,2013,Microsoft/AMD,28 nm,363 mm²
+Quad-core + GPU Core i7 Haswell (64-bit  SIMD  caches),1400000000,2014,Intel,22 nm,177 mm²
+"Apple A8 (dual-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",2000000000,2014,Apple,20 nm,89 mm²
+8-core Core i7 Haswell-E (64-bit  SIMD  caches),2600000000,2014,Intel,22 nm,355 mm²
+"Apple A8X (tri-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",3000000000,2014,Apple,20 nm,128 mm²
+15-core Xeon Ivy Bridge-EX (64-bit  SIMD  caches),4310000000,2014,Intel,22 nm,541 mm²
+18-core Xeon Haswell-E5 (64-bit  SIMD  caches),5560000000,2014,Intel,22 nm,661 mm²
+Quad-core + GPU GT2 Core i7 Skylake K (64-bit  SIMD  caches),1750000000,2015,Intel,14 nm,122 mm²
+Dual-core + GPU Iris Core i7 Broadwell-U (64-bit  SIMD  caches),1900000000,2015,Intel,14 nm,133 mm²
+"Apple A9 (dual-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",2000000000,2015,Apple,14 nm(Samsung),96 mm²(Samsung)
+"Apple A9 (dual-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",2000000000,2015,Apple,16 nm(TSMC),104.5 mm²(TSMC)
+"Apple A9X (dual core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",3000000000,2015,Apple,16 nm,143.9 mm²
+IBM z13 (64-bit  caches),3990000000,2015,IBM,22 nm,678 mm²
+IBM z13 Storage Controller,7100000000,2015,IBM,22 nm,678 mm²
+32-core SPARC M7 (64-bit  SIMD  caches),10000000000,2015,Oracle,20 nm,
+"Qualcomm Snapdragon 835 (octa-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",3000000000,2016,Qualcomm,10 nm,72.3 mm²
+10-core Core i7 Broadwell-E (64-bit  SIMD  caches),3200000000,2016,Intel,14 nm,246 mm²
+"Apple A10 Fusion (quad-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",3300000000,2016,Apple,16 nm,125 mm²
+"HiSilicon Kirin 960 (octa-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",4000000000,2016,Huawei,16 nm,110.00 mm2
+22-core Xeon Broadwell-E5 (64-bit  SIMD  caches),7200000000,2016,Intel,14 nm,456 mm²
+72-core Xeon Phi (64-bit  512-bit SIMD  caches),8000000000,2016,Intel,14 nm,683 mm²
+"Qualcomm Snapdragon 845 (octa-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",5300000000,2017,Qualcomm,10 nm,94 mm²
+"Qualcomm Snapdragon 850  (octa-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",5300000000,2017,Qualcomm,10 nm,94 mm²
+"Apple A11 Bionic (hexa-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",4300000000,2017,Apple,10 nm,89.23 mm²
+Zeppelin SoC Ryzen (64-bit  SIMD  caches),4800000000,2017,AMD,14 nm,192 mm²
+Ryzen 5 1600 Ryzen (64-bit  SIMD  caches),4800000000,2017,AMD,14 nm,213 mm²
+Ryzen 5 1600 X Ryzen (64-bit  SIMD  caches),4800000000,2017,AMD,14 nm,213 mm²
+IBM z14 (64-bit  SIMD  caches),6100000000,2017,IBM,14 nm,696 mm²
+IBM z14 Storage Controller (64-bit),9700000000,2017,IBM,14 nm,696 mm²
+"HiSilicon Kirin 970 (octa-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",5500000000,2017,Huawei,10 nm,96.72 mm2
+Xbox One X (Project Scorpio) main SoC (64-bit  SIMD  caches),7000000000,2017,Microsoft/AMD,16 nm,360 mm²
+POWER9 (64-bit  SIMD  caches),8000000000,2017,IBM,14 nm,695 mm²
+Freedom U500 Base Platform Chip (E51  4×U54) RISC-V (64-bit  caches),250000000,2017,SiFive,28 nm,~30 mm²
+SPARC64 XII (12-core 64-bit  SIMD  caches),5450000000,2017,Fujitsu,20 nm,795 mm2
+"Apple A10X Fusion (hexa-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",4300000000,2017,Apple,10 nm,96.40 mm2
+Centriq 2400 (64/32-bit  SIMD  caches),18000000000,2017,Qualcomm,10 nm,398 mm2
+32-core AMD Epyc (64-bit  SIMD  caches),19200000000,2017,AMD,14 nm,768 mm2
+"Qualcomm Snapdragon 8cx / SCX8180 (octa-core ARM64 ""mobile SoC""  SIMD  caches)",8500000000,2018,Qualcomm,7 nm,112 mm²
+"Apple A12 Bionic (hexa-core ARM64 ""mobile SoC""  SIMD  caches)",6900000000,2018,Apple,7 nm,83.27 mm2
+"HiSilicon Kirin 980 (octa-core ARM64 ""mobile SoC""  SIMD  caches)",6900000000,2018,Huawei,7 nm,74.13 mm2
+HiSilicon Kirin 990 5G,10300000000,2019,Huawei,7 nm,113.31 mm2
+HiSilicon Kirin 990 4G,8000000000,2019,Huawei,7 nm,90.00 mm2
+"HiSilicon Kirin 710 (octa-core ARM64 ""mobile SoC""  SIMD  caches)",5500000000,2018,Huawei,12 nm,
+"Apple A12X Bionic (octa-core 64/32-bit ARM64 ""mobile SoC""  SIMD  caches)",10000000000,2018,Apple,7 nm,122 mm2
+Apple A13 (iPhone 11 Pro),8500000000,2019,Apple,7 nm,98.48 mm2
+Fujitsu A64FX (64/32-bit  SIMD  caches),8786000000,2018,Fujitsu,7 nm,
+Tegra Xavier SoC (64/32-bit),9000000000,2018,Nvidia,12 nm,350 mm²
+AMD Ryzen 7 3700X (64-bit  SIMD  caches  I/O die),5990000000,2019,AMD,7&12 nm (TSMC),199 (74+125) mm²
+AMD Ryzen 9 3900X (64-bit  SIMD  caches  I/O die),9890000000,2019,AMD,7 & 12 nm (TSMC),273 mm²
+AMD Epyc Rome (64-bit  SIMD  caches),39540000000,2019,AMD,7 & 12 nm (TSMC),1088 mm²
+AWS Graviton2 (64-bit  64-core ARM-based  SIMD  caches),30000000000,2019,Amazon,7 nm,
