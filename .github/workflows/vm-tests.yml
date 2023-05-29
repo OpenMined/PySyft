@@ -75,5 +75,7 @@ jobs:
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
           LINUX_DISTRO: "${{ matrix.linux-distro }}"
+          RHEL_SUBSCRIPTION_USERNAME: "${{ secrets.RHEL_SUBSCRIPTION_USERNAME }}"
+          RHEL_SUBSCRIPTION_PASSWORD: "${{ secrets.RHEL_SUBSCRIPTION_PASSWORD }}"
         run: |
           tox -e stack.test.vm

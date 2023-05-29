@@ -12,7 +12,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     ansible.playbook = "./ansible/site.yml"
     ansible.extra_vars = {
       om_user: "vagrant",
-      om_group: "vagrant"
+      om_group: "vagrant",
+      rhel_subscription_username: ENV['RHEL_SUBSCRIPTION_USERNAME'],
+      rhel_subscription_password: ENV['RHEL_SUBSCRIPTION_PASSWORD']
+
     }
     ansible.groups = {
       "ubuntu" => [
