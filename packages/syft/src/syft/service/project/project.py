@@ -1075,10 +1075,11 @@ class Project(SyftObject):
         return SyftSuccess(message="Synced project  with Leader")
 
 
-@serializable()
+@serializable(without="bootstrap_events")
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
+    __attr_repr_cols__ = ["name"]
 
     id: Optional[UID]
     name: str
@@ -1090,6 +1091,7 @@ class ProjectSubmit(SyftObject):
     leader_node_route: Optional[NodeRoute]
     user_email_address: Optional[str] = None
     users: List[UserIdentity] = []
+    bootstrap_events: Optional[List[ProjectEvent]] = []
 
     @root_validator(pre=True)
     def make_shareholders_and_leader_route(cls, values) -> Dict:
@@ -1180,19 +1182,17 @@ class ProjectSubmit(SyftObject):
 
     def add_request(
         self,
+        *args: Request,
         request: Request,
-    ):
-        request_event = ProjectRequest(request=request)
-        result = self.add_event(request_event)
-
-        if isinstance(result, SyftSuccess):
-            return SyftSuccess(message="Request created successfully")
-        return result
+    ) -> None:
+        for request in args:
+            request_event = ProjectRequest(request=request)
+            self.bootstrap_events.append(request_event)
 
     def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders
         project_id = UID()
-        projects = []
+        projects: List[Project] = []
 
         if not self.users:
             # If the Data Owner creates the project
@@ -1219,10 +1219,19 @@ class ProjectSubmit(SyftObject):
             else:
                 projects.append(result)
 
+        if self.bootstrap_events:
+            # TODO: a better way to pick the leader node's project
+            project = projects[0]
+
+            for event in self.bootstrap_events:
+                result = project.add_event(event)
+                if isinstance(result, SyftError):
+                    return result
+
+            self.bootstrap_events.clear()
+
         # as we currently assume that the first shareholder is the leader.
         return projects
-
-    __attr_repr_cols__ = ["name"]
 
 
 def add_shareholders_as_owners(shareholders: List[SyftVerifyKey]) -> Set[str]:
