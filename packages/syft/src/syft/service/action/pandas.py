@@ -22,7 +22,7 @@ class PandasDataFrameObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[Type[Any]] = DataFrame
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS + ["loc"]
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     # this is added for instance checks for dataframes
     syft_dont_wrap_attrs = ["plot"]
 
