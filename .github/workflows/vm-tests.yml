@@ -23,7 +23,7 @@ jobs:
         os: [macos-12]
         python-version: ["3.10"]
         node-type: ["vm"]
-        linux-distro: ["ubuntu-20-04", "rhel-9"]
+        linux-distro: ["ubuntu-22-04", "rhel-9"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
