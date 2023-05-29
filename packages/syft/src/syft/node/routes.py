@@ -162,8 +162,8 @@ def make_routes(worker: Worker) -> APIRouter:
     @router.post("/login", name="login", status_code=200)
     def login(
         request: Request,
-        email: str = Body(..., example="info@openmined.org"),
-        password: str = Body(..., example="changethis"),
+        email: Annotated[str, Body(example="info@openmined.org")],
+        password: Annotated[str, Body(example="changethis")],
     ) -> Any:
         if TRACE_MODE:
             with trace.get_tracer(login.__module__).start_as_current_span(
