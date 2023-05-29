@@ -367,12 +367,16 @@ class InMemoryActionGraphStore(ActionGraphStore):
         self,
         node: NodeActionData,
         credentials: SyftVerifyKey,
-        parent_uids: List[UID] = [],
+        parent_uids: Optional[List[UID]] = None,
     ) -> Result[NodeActionData, str]:
         if self.graph.exists(uid=node.id):
             return Err(f"Node already exists in the graph: {node}")
 
         self.graph.set(uid=node.id, data=node)
+
+        if parent_uids is None:
+            parent_uids = []
+
         for parent_uid in parent_uids:
             result = self.add_edge(
                 parent=parent_uid,
