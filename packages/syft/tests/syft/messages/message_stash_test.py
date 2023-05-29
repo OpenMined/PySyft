@@ -140,7 +140,7 @@ def test_messagestash_get_all_inbox_for_verify_key(
     # list of mock messages
     message_list = []
 
-    for i in range(5):
+    for _ in range(5):
         mock_message = add_mock_message(
             root_verify_key, test_stash, test_verify_key, random_verify_key
         )

@@ -368,7 +368,7 @@ def propagate_node_uid(
 
         if op not in context.obj._syft_dont_wrap_attrs():
             if hasattr(result, "syft_node_uid"):
-                setattr(result, "syft_node_uid", syft_node_uid)
+                result.syft_node_uid = syft_node_uid
         else:
             raise RuntimeError("dont propogate node_uid because output isnt wrapped")
     except Exception:

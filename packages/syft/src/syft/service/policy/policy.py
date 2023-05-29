@@ -366,7 +366,7 @@ class CustomPolicy(type):
     # capture the init_kwargs transparently
     def __call__(cls, *args: Any, **kwargs: Any) -> None:
         obj = super().__call__(*args, **kwargs)
-        setattr(obj, "init_kwargs", kwargs)
+        obj.init_kwargs = kwargs
         return obj
 
 
@@ -664,10 +664,10 @@ def add_class_to_user_module(klass: type, unique_name: str) -> type:
 
     if not hasattr(sy, "user"):
         user_module = types.ModuleType("user")
-        setattr(sys.modules["syft"], "user", user_module)
+        sys.modules["syft"].user = user_module
     user_module = sy.user
     setattr(user_module, unique_name, klass)
-    setattr(sys.modules["syft"], "user", user_module)
+    sys.modules["syft"].user = user_module
     return klass
 
 
