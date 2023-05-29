@@ -7,7 +7,7 @@
   import NoDatasetFound from '$lib/components/Datasets/DatasetNoneFound.svelte';
   import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
   import DatasetModalNew from '$lib/components/Datasets/DatasetModalNew.svelte';
-  import { getAllDatasets } from '$lib/api/datasets';
+  import { getAllDatasets, searchDataset } from '$lib/api/datasets';
 
   let datasets = null;
   let openModalNew = false;
@@ -18,8 +18,8 @@
   }
 
   const search = debounce(async () => {
-    if (searchTerm === '') userList = await getAllDatasets();
-    else userList = await getAllDatasets();
+    if (searchTerm === '') datasets = await getAllDatasets();
+    else datasets = await searchDataset(searchTerm);
   }, 300);
 
   onMount(async () => {
@@ -44,14 +44,15 @@
     <!-- List Actions -->
     <!-- Body -->
     <section class="body pt-10">
+      <div class="w-full max-w-[378px] pb-5">
+        <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} />
+      </div>
+
       {#if datasets === null}
         <h2>Loading</h2>
       {:else if datasets.length === 0}
         <NoDatasetFound />
       {:else if datasets.length > 0}
-        <div class="w-full max-w-[378px] pb-5">
-          <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} />
-        </div>
         {#each datasets as dataset}
           <DatasetListItem {dataset} />
         {/each}
