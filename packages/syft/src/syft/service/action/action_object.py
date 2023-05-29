@@ -232,7 +232,7 @@ class PreHookContext(SyftBaseObject):
 
 
 def make_action_side_effect(
-    context: PreHookContext, *args: List[Any, ...], **kwargs: Dict[str, Any]
+    context: PreHookContext, *args: Any, **kwargs: Any
 ) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
     """Create a new action from context_op_name, and add it to the PreHookContext
 
