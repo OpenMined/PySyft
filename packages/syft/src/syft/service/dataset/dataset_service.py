@@ -55,7 +55,12 @@ class DatasetService(AbstractService):
         return SyftSuccess(message="Dataset Added")
 
     @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Dataset], SyftError]:
+    def get_all(
+        self,
+        context: AuthedServiceContext,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
+    ) -> Union[List[Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -64,6 +69,16 @@ class DatasetService(AbstractService):
             for dataset in datasets:
                 dataset.node_uid = context.node.id
                 results.append(dataset)
+
+            # If chunk size is defined, then split list into evenly sized chunks
+            if page_size:
+                results = [
+                    results[i : i + page_size]
+                    for i in range(0, len(results), page_size)
+                ]
+                # Return the proper slice using chunk_index
+                results = results[page_index]
+
             return results
         return SyftError(message=result.err())
 
@@ -74,6 +89,7 @@ class DatasetService(AbstractService):
         name: str,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
+
     ) -> Union[List[Dataset], SyftError]:
         """Search a Dataset by name"""
         results = self.get_all(context)
@@ -82,6 +98,7 @@ class DatasetService(AbstractService):
             results = [dataset for dataset in results if name in dataset.name]
 
             # If chunk size is defined, then split list into evenly sized chunks
+
             if page_size:
                 results = [
                     results[i : i + page_size]
