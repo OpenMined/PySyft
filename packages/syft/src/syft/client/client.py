@@ -10,6 +10,7 @@ from typing import Union
 from typing import cast
 
 # third party
+import pydantic
 import requests
 from requests import Response
 from requests import Session
@@ -92,13 +93,9 @@ class HTTPConnection(NodeConnection):
     routes: Type[Routes] = Routes
     session_cache: Optional[Session]
 
-    def __init__(
-        self, url: Union[GridURL, str], proxy_target_uid: Optional[UID] = None
-    ) -> None:
-        url = GridURL.from_url(url).as_container_host()
-
-        proxy_target_uid = proxy_target_uid
-        super().__init__(url=url, proxy_target_uid=proxy_target_uid)
+    @pydantic.validator("url", pre=True, always=True)
+    def make_url(cls, v: Union[GridURL, str]) -> GridURL:
+        return GridURL.from_url(v).as_container_host()
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)

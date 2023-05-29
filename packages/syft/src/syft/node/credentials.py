@@ -9,6 +9,7 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import pydantic
 
 # relative
 from ..serde.serializable import serializable
@@ -21,10 +22,9 @@ SIGNING_KEY_FOR = "SigningKey for"
 class SyftVerifyKey(SyftBaseModel):
     verify_key: VerifyKey
 
-    def __init__(self, verify_key: Union[str, VerifyKey]) -> None:
-        if isinstance(verify_key, str):
-            verify_key = VerifyKey(bytes.fromhex(verify_key))
-        super().__init__(verify_key=verify_key)
+    @pydantic.validator("verify_key", pre=True, always=True)
+    def make_verify_key(cls, v: Union[str, VerifyKey]) -> VerifyKey:
+        return VerifyKey(bytes.fromhex(v)) if isinstance(v, str) else v
 
     def __str__(self) -> str:
         return self.verify_key.encode(encoder=HexEncoder).decode("utf-8")
@@ -53,10 +53,9 @@ class SyftVerifyKey(SyftBaseModel):
 class SyftSigningKey(SyftBaseModel):
     signing_key: SigningKey
 
-    def __init__(self, signing_key: Union[str, SigningKey]) -> None:
-        if isinstance(signing_key, str):
-            signing_key = SigningKey(bytes.fromhex(signing_key))
-        super().__init__(signing_key=signing_key)
+    @pydantic.validator("signing_key", pre=True, always=True)
+    def make_verify_key(cls, v: Union[str, SigningKey]) -> SigningKey:
+        return SigningKey(bytes.fromhex(v)) if isinstance(v, str) else v
 
     @property
     def verify_key(self) -> SyftVerifyKey:
