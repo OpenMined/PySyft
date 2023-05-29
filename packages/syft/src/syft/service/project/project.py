@@ -37,6 +37,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
+from ..code.user_code import SubmitUserCode
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
@@ -1180,13 +1181,24 @@ class ProjectSubmit(SyftObject):
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
-    def add_request(
-        self,
-        *args: Request,
-    ) -> None:
-        for request in args:
-            request_event = ProjectRequest(request=request)
-            self.bootstrap_events.append(request_event)
+    def create_request(self, obj: SubmitUserCode, client: SyftClient):
+        if not isinstance(obj, SubmitUserCode):
+            return SyftError(
+                message=f"Currently we are  only support creating requests for SbumitUserCode: {type(obj)}"
+            )
+
+        if not isinstance(client, SyftClient):
+            return SyftError(message="Client should be a valid SyftClient")
+
+        submitted_req = client.api.services.code.request_code_execution(obj)
+        if isinstance(submitted_req, SyftError):
+            return submitted_req
+
+        request_event = ProjectRequest(request=submitted_req)
+
+        self.bootstrap_events.append(request_event)
+
+        return SyftSuccess(message="Request added successfully")
 
     def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders
