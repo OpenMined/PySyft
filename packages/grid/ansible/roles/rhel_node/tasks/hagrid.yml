@@ -8,54 +8,10 @@
     state: present
   become: yes
 
-# - name: Install HAGrid
-#   shell: "runuser -l {{ om_user }} -c 'pip install -e {{ build_dir }}/packages/hagrid'"
-#   become: yes
-#   when: vagrant is not defined and install == "true"
-
 - name: Install HAGrid
   shell: "runuser -l {{ om_user }} -c 'pip install -e {{ syft_dir }}/packages/hagrid'"
   become: yes
   when: vagrant is defined
-
-# # Install rsync
-# - name: Install rsync
-#   ansible.builtin.package:
-#     name: rsync
-#     state: present
-#   become: yes
-#   when: vagrant is defined and install == "true"
-
-# # Copy home_dir recursively with synchronization
-# - name: Copy home_dir recursively with synchronization
-#   ansible.builtin.synchronize:
-#     src: "{{ root_dir}}"
-#     dest: "{{ om_homedir }}"
-#     delete: yes
-#     recursive: yes
-#   become: yes
-#   when: vagrant is defined and install == "true"
-# - name: Install HAGrid
-#   shell: "runuser -l {{ om_user }} -c 'pip install -e {{ syft_dir }}/packages/hagrid'"
-#   become: yes
-
-# # Install rsync
-# - name: Install rsync
-#   ansible.builtin.package:
-#     name: rsync
-#     state: present
-#   become: yes
-#   when: vagrant is defined and install == "true"
-
-# # Copy home_dir recursively with synchronization
-# - name: Copy home_dir recursively with synchronization
-#   ansible.builtin.synchronize:
-#     src: "{{ root_dir}}"
-#     dest: "{{ om_homedir }}"
-#     delete: yes
-#     recursive: yes
-#   become: yes
-#   when: vagrant is defined and install == "true"
 
 # Check if home_dir exists
 - name: Check if home_dir exists
