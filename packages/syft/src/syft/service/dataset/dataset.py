@@ -5,12 +5,14 @@ from enum import Enum
 import sys
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
+from pydantic import root_validator
 from pydantic import validator
 from result import Err
 from result import Ok
@@ -161,6 +163,26 @@ class CreateAsset(SyftObject):
     shape: Optional[Tuple]
     mock_is_real: bool = False
 
+    class Config:
+        validate_assignment = True
+
+    @root_validator()
+    def __empty_mock_cannot_be_real(cls, values) -> Dict:
+        """set mock_is_real to False whenever mock is None or empty"""
+        # relative
+        from ..action.action_data_empty import ActionDataEmpty
+        from ..action.action_object import ActionObject
+
+        mock = values.get("mock")
+        if mock is None or (
+            isinstance(mock, ActionObject)
+            and isinstance(mock.syft_action_data, ActionDataEmpty)
+        ):
+            values["mock_is_real"] = False
+            return values
+
+        return values
+
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
 
@@ -299,8 +321,11 @@ class CreateDataset(Dataset):
 
     id: Optional[UID] = None
 
+    class Config:
+        validate_assignment = True
+
     @validator("asset_list")
-    def __asset_must_contain_mock(
+    def __assets_must_contain_mock(
         cls, asset_list: List[CreateAsset]
     ) -> List[CreateAsset]:
         assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
