@@ -72,9 +72,9 @@ repos:
         # exclude: ^(packages/syft/src/syft/proto)
         files: "^packages/syft(?!(.*_pb2\\.py$)).*\\.py"
 
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.0.246"
+    rev: "v0.0.247"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
