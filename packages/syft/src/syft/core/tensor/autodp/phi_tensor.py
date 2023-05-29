@@ -2690,26 +2690,38 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        # Mimicking the implementation of __truediv__ to make sense of sign management (but without other:any)
 
-            # if the tensor being multiplied is also private
-            if isinstance(other, PhiTensor):
+        # if the tensor being multiplied is also private
+        if isinstance(other, PhiTensor):
+            if np.array(self.data_subjects != other.data_subjects).all():
+                return self.gamma * other.gamma
+            else:
                 return self.gamma * other.gamma
 
-            # if the tensor being multiplied is a public tensor / int / float / etc.
-            elif is_acceptable_simple_type(other):
+        # if the tensor being multiplied is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
 
-                return PhiTensor(
-                    child=self.child * other,
-                    min_vals=self.min_vals * other,
-                    max_vals=self.max_vals * other,
-                    data_subjects=self.data_subjects,
-                )
+            min_min = self.min_vals.data * other
+            min_max = self.min_vals.data * other
+            max_min = self.max_vals.data * other
+            max_max = self.max_vals.data * other
 
-            elif isinstance(other, GammaTensor):
-                return self.gamma * other
-            else:
-                print("Type is unsupported:" + str(type(other)))
-                raise NotImplementedError
+            _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+            return PhiTensor(
+                child=self.child * other,
+                min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+                data_subjects=self.data_subjects,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma * other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
