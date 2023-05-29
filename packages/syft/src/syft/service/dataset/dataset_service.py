@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Union
 
 # relative
@@ -54,7 +55,12 @@ class DatasetService(AbstractService):
         return SyftSuccess(message="Dataset Added")
 
     @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Dataset], SyftError]:
+    def get_all(
+        self,
+        context: AuthedServiceContext,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
+    ) -> Union[List[Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -63,21 +69,43 @@ class DatasetService(AbstractService):
             for dataset in datasets:
                 dataset.node_uid = context.node.id
                 results.append(dataset)
+
+            # If chunk size is defined, then split list into evenly sized chunks
+            if page_size:
+                results = [
+                    results[i : i + page_size]
+                    for i in range(0, len(results), page_size)
+                ]
+                # Return the proper slice using chunk_index
+                results = results[page_index]
+
             return results
         return SyftError(message=result.err())
 
     @service_method(path="dataset.search", name="search")
     def search(
-        self, context: AuthedServiceContext, name: str
+        self,
+        context: AuthedServiceContext,
+        name: str,
+        chunk_size: Optional[int] = 0,
+        chunk_index: Optional[int] = 0,
     ) -> Union[List[Dataset], SyftError]:
         """Search a Dataset by name"""
         results = self.get_all(context)
 
-        return (
-            results
-            if isinstance(results, SyftError)
-            else [dataset for dataset in results if name in dataset.name]
-        )
+        if not isinstance(results, SyftError):
+            results = [dataset for dataset in results if name in dataset.name]
+
+            # If chunk size is defined, then split list into evenly sized chunks
+            if chunk_size:
+                results = [
+                    results[i : i + chunk_size]
+                    for i in range(0, len(results), chunk_size)
+                ]
+                # Return the proper slice using chunk_index
+                results = results[chunk_index]
+
+        return results
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(
