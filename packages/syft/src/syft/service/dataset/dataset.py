@@ -11,6 +11,7 @@ from typing import Tuple
 from typing import Union
 
 # third party
+from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
@@ -185,11 +186,17 @@ class CreateAsset(SyftObject):
             raise SyftException(data)
         self.data = data
 
-    def set_mock(self, mock_data: Any, mock_is_real: bool) -> Any:
+    def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
         if isinstance(mock_data, SyftError):
             raise SyftException(mock_data)
         self.mock = mock_data
         self.mock_is_real = mock_is_real
+
+    def no_mock(self) -> None:
+        # relative
+        from ..action.action_object import ActionObject
+
+        self.mock = ActionObject.empty()
 
     def set_shape(self, shape: Tuple) -> None:
         self.shape = shape
@@ -291,6 +298,28 @@ class CreateDataset(Dataset):
     asset_list: List[CreateAsset] = []
 
     id: Optional[UID] = None
+
+    @validator("asset_list")
+    def __asset_must_contain_mock(
+        cls, asset_list: List[CreateAsset]
+    ) -> List[CreateAsset]:
+        assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
+        if assets_without_mock:
+            raise ValueError(
+                "".join(
+                    [
+                        "These assets do not contain a mock:\n",
+                        *[f"{asset}\n" for asset in assets_without_mock],
+                        "\n",
+                        "To be included in a Dataset, an asset must either contain a mock, ",
+                        "or have it explicitly set to be empty.\n",
+                        "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or "
+                        "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
+                        "`asset.mock = sy.ActionObject.empty()`.",
+                    ]
+                )
+            )
+        return asset_list
 
     def set_description(self, description: str) -> None:
         self.description = description
