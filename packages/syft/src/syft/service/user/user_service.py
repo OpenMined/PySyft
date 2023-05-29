@@ -121,8 +121,8 @@ class UserService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_search: UserSearch,
-        chunk_size: Optional[int] = 0,
-        chunk_index: Optional[int] = 0,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
     ) -> Union[List[UserView], SyftError]:
         kwargs = user_search.to_dict(exclude_empty=True)
 
@@ -139,13 +139,13 @@ class UserService(AbstractService):
         users = result.ok()
         results = [user.to(UserView) for user in users] if users is not None else []
 
-        # If chunk size is defined, then split list into evenly sized chunks
-        if chunk_size:
+        # If page size is defined, then split list into evenly sized chunks
+        if page_size:
             results = [
-                results[i : i + chunk_size] for i in range(0, len(results), chunk_size)
+                results[i : i + page_size] for i in range(0, len(results), page_size)
             ]
-            # Return the proper slice using chunk_index
-            results = results[chunk_index]
+            # Return the proper slice using page_index
+            results = results[page_index]
 
         return results
 
