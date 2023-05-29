@@ -156,9 +156,11 @@ class VPNClientConnection(NodeConnection):
         self,
         path: str,
         api_key: str,
-        command_args: dict = {},
+        command_args: Optional[dict] = None,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> Result[CommandReport, str]:
+        if command_args is None:
+            command_args = {}
         command_args.update({"timeout": timeout, "force_unique_key": True})
         headers = {"X-STACK-API-KEY": api_key}
         result = self._make_post(
