@@ -1178,17 +1178,6 @@ class ProjectSubmit(SyftObject):
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
-    def add_request(
-        self,
-        request: Request,
-    ):
-        request_event = ProjectRequest(request=request)
-        result = self.add_event(request_event)
-
-        if isinstance(result, SyftSuccess):
-            return SyftSuccess(message="Request created successfully")
-        return result
-
     def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders
         project_id = UID()
