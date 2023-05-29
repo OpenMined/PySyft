@@ -7,8 +7,8 @@
     insertafter: EOF
     state: present
   become: yes
-  become_user: om
-  become_method: sudo
+  # become_user: om
+  # become_method: sudo
 
 - name: Install HAGrid
   shell: "runuser -l {{ om_user }} -c 'pip install -e {{ build_dir }}/packages/hagrid'"
