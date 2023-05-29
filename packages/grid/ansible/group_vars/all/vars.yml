@@ -6,7 +6,7 @@ syft_dir: "/home/om/PySyft"
 build_dir: "/home/om/build"
 root_dir: "{{ playbook_dir | regex_replace('packages/grid/ansible', '') }}"
 github_repo: OpenMined/PySyft.git
-repo_branch: "0.6.0"
+repo_branch: "dev"
 docker_compose_plugin_dir: ".docker/cli-plugins"
 node_name: node
 node_type: domain

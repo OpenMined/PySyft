@@ -10,7 +10,6 @@
   become_user: "{{ om_user }}"
   become_method: sudo
 
-
 # - name: Install HAGrid
 #   shell: "runuser -l {{ om_user }} -c 'pip install -e {{ build_dir }}/packages/hagrid'"
 #   become: yes
@@ -21,7 +20,6 @@
 #   become: yes
 #   when: vagrant is defined and install == "true"
 
-
 # Install rsync
 - name: Install rsync
   ansible.builtin.package:
@@ -29,7 +27,6 @@
     state: present
   become: yes
   when: vagrant is defined and install == "true"
-
 
 # Copy home_dir recursively with synchronization
 - name: Copy home_dir recursively with synchronization
@@ -40,7 +37,6 @@
     recursive: yes
   become: yes
   when: vagrant is defined and install == "true"
-
 
 # Check if home_dir exists
 - name: Check if home_dir exists

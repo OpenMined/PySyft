@@ -6,7 +6,6 @@ from copy import deepcopy
 from pathlib import Path
 import sqlite3
 import tempfile
-import threading
 from typing import Any
 from typing import Dict
 from typing import List
@@ -15,6 +14,9 @@ from typing import Type
 from typing import Union
 
 # third party
+from result import Err
+from result import Ok
+from result import Result
 from typing_extensions import Self
 
 # relative
@@ -22,6 +24,7 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..types.uid import UID
+from ..util.util import thread_ident
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -34,12 +37,8 @@ from .locks import LockingConfig
 
 def _repr_debug_(value: Any) -> str:
     if hasattr(value, "_repr_debug_"):
-        return value._repr_debug_()
+        return str(value._repr_debug_())
     return repr(value)
-
-
-def thread_ident() -> int:
-    return threading.current_thread().ident
 
 
 @serializable(attrs=["index_name", "settings", "store_config"])
@@ -97,7 +96,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
         try:
             self.cur.execute(
                 f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                + "repr TEXT NOT NULL, value BLOB NOT NULL)"  # nosec
+                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
             )
             self.db.commit()
         except sqlite3.OperationalError as e:
@@ -126,17 +126,21 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _execute(
         self, sql: str, *args: Optional[List[Any]]
-    ) -> Optional[sqlite3.Cursor]:
+    ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
         cursor: Optional[sqlite3.Cursor] = None
-
+        err = None
         try:
             cursor = self.cur.execute(sql, *args)
-        except BaseException:
+        except BaseException as e:
             self.db.rollback()  # Roll back all changes if an exception occurs.
+            err = Err(str(e))
         else:
             self.db.commit()  # Commit if everything went ok
 
-        return cursor
+        if err is not None:
+            return err
+
+        return Ok(cursor)
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
@@ -144,18 +148,25 @@ class SQLiteBackingStore(KeyValueBackingStore):
         else:
             insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
             data = _serialize(value, to_bytes=True)
-            self._execute(insert_sql, [str(key), _repr_debug_(value), data])
+            res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
+            if res.is_err():
+                raise ValueError(res.err())
 
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         data = _serialize(value, to_bytes=True)
-        self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
+        res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
+        if res.is_err():
+            raise ValueError(res.err())
 
     def _get(self, key: UID) -> Any:
-        select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
-        cursor = self._execute(select_sql, [str(key)])
-        if cursor is None:
+        select_sql = (
+            f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
+        )
+        res = self._execute(select_sql, [str(key)])
+        if res.is_err():
             raise KeyError(f"Query {select_sql} failed")
+        cursor = res.ok()
 
         row = cursor.fetchone()
         if row is None or len(row) == 0:
@@ -166,9 +177,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _exists(self, key: UID) -> bool:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
 
-        cursor = self._execute(select_sql, [str(key)])
-        if cursor is None:
+        res = self._execute(select_sql, [str(key)])
+        if res.is_err():
             return False
+        cursor = res.ok()
 
         row = cursor.fetchone()
         if row is None:
@@ -177,13 +189,14 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return bool(row)
 
     def _get_all(self) -> Any:
-        select_sql = f"select * from {self.table_name}"  # nosec
+        select_sql = f"select * from {self.table_name} order by sqltime"  # nosec
         keys = []
         data = []
 
-        cursor = self._execute(select_sql)
-        if cursor is None:
+        res = self._execute(select_sql)
+        if res.is_err():
             return {}
+        cursor = res.ok()
 
         rows = cursor.fetchall()
         if rows is None:
@@ -195,12 +208,13 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return dict(zip(keys, data))
 
     def _get_all_keys(self) -> Any:
-        select_sql = f"select uid from {self.table_name}"  # nosec
+        select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
         keys = []
 
-        cursor = self._execute(select_sql)
-        if cursor is None:
+        res = self._execute(select_sql)
+        if res.is_err():
             return []
+        cursor = res.ok()
 
         rows = cursor.fetchall()
         if rows is None:
@@ -212,15 +226,22 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _delete(self, key: UID) -> None:
         select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
-        self._execute(select_sql, [str(key)])
+        res = self._execute(select_sql, [str(key)])
+        if res.is_err():
+            raise ValueError(res.err())
 
     def _delete_all(self) -> None:
         select_sql = f"delete from {self.table_name}"  # nosec
-        self._execute(select_sql)
+        res = self._execute(select_sql)
+        if res.is_err():
+            raise ValueError(res.err())
 
     def _len(self) -> int:
         select_sql = f"select count(uid) from {self.table_name}"  # nosec
-        cursor = self._execute(select_sql)
+        res = self._execute(select_sql)
+        if res.is_err():
+            raise ValueError(res.err())
+        cursor = res.ok()
         cnt = cursor.fetchone()[0]
         return cnt
 

@@ -81,7 +81,11 @@ class GridURL:
         return dupe
 
     def as_container_host(self, container_host: Optional[str] = None) -> GridURL:
-        if self.host_or_ip not in ["localhost", "docker-host", "host.k3d.internal"]:
+        if self.host_or_ip not in [
+            "localhost",
+            "host.docker.internal",
+            "host.k3d.internal",
+        ]:
             return self
 
         if container_host is None:
@@ -91,7 +95,9 @@ class GridURL:
 
         if container_host:
             hostname = (
-                "docker-host" if container_host == "docker" else "host.k3d.internal"
+                "host.docker.internal"
+                if container_host == "docker"
+                else "host.k3d.internal"
             )
         else:
             # convert it back for non container clients

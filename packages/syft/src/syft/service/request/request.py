@@ -29,6 +29,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
+from ...types.uid import LineageID
 from ...types.uid import UID
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
@@ -76,14 +77,19 @@ class ActionStoreChange(Change):
         try:
             action_service = context.node.get_service(ActionService)
             action_store = action_service.store
+
+            # can we ever have a lineage ID in the store?
+            obj_uid = self.linked_obj.object_uid
+            obj_uid = obj_uid.id if isinstance(obj_uid, LineageID) else obj_uid
+
             owner_permission = ActionObjectPermission(
-                uid=self.linked_obj.object_uid,
+                uid=obj_uid,
                 credentials=context.approving_user_credentials,
                 permission=self.apply_permission_type,
             )
             if action_store.has_permission(permission=owner_permission):
                 requesting_permission = ActionObjectPermission(
-                    uid=self.linked_obj.object_uid,
+                    uid=obj_uid,
                     credentials=context.requesting_user_credentials,
                     permission=self.apply_permission_type,
                 )
@@ -135,6 +141,9 @@ class Request(SyftObject):
         api = APIRegistry.api_for(self.node_uid)
         return api.services.request.apply(self.id)
 
+    def approve_with_client(self, client):
+        return client.api.services.request.apply(self.id)
+
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         change_context = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
@@ -173,6 +182,7 @@ class Request(SyftObject):
             raise Exception(f"Login to {self.node_uid} first.")
 
         action_object = ActionObject.from_obj(result)
+
         result = api.services.action.save(action_object)
         if not result:
             return result
@@ -204,6 +214,8 @@ class Request(SyftObject):
             changes=[policy_state_mutation, permission_change],
             requesting_user_verify_key=self.requesting_user_verify_key,
         )
+
+        self.status = RequestStatus.APPROVED
 
         new_request = api.services.request.submit(submit_request)
         if not new_request:
@@ -475,7 +487,7 @@ class UserCodeStatusChange(Change):
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
             print(f"failed to apply {type(self)}. {e}")
-            return Err(SyftError(message=e))
+            return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)

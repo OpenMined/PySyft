@@ -24,6 +24,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Request
 from .request import RequestStatus
@@ -41,7 +42,7 @@ class RequestService(AbstractService):
         self.store = store
         self.stash = RequestStash(store=store)
 
-    @service_method(path="request.submit", name="submit")
+    @service_method(path="request.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
         self,
         context: AuthedServiceContext,

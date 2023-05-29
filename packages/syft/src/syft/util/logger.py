@@ -122,7 +122,12 @@ def info(*args: Any, **kwargs: Any) -> None:
     return create_log_and_print_function(level="info")(*args, **kwargs)
 
 
-def debug(*args: Any, **kwargs: Any) -> None:
+def debug(*args) -> None:
+    debug_msg = " ".join([str(a) for a in args])
+    return logger.debug(debug_msg)
+
+
+def _debug(*args: Any, **kwargs: Any) -> None:
     return create_log_and_print_function(level="debug")(*args, **kwargs)
 
 

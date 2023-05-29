@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional
 
 # relative
+from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
@@ -19,8 +20,8 @@ from ...types.uid import UID
 
 @serializable()
 class MessageStatus(Enum):
-    UNDELIVERED = 0
-    DELIVERED = 1
+    UNREAD = 0
+    READ = 1
 
 
 class MessageExpiryStatus(Enum):
@@ -38,7 +39,7 @@ class Message(SyftObject):
     from_user_verify_key: SyftVerifyKey
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
-    status: MessageStatus = MessageStatus.UNDELIVERED
+    status: MessageStatus = MessageStatus.UNREAD
     linked_obj: Optional[LinkedObject]
 
     __attr_searchable__ = [
@@ -53,6 +54,14 @@ class Message(SyftObject):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+    def mark_read(self) -> None:
+        api = APIRegistry.api_for(self.node_uid)
+        return api.services.messages.mark_as_read(uid=self.id)
+
+    def mark_unread(self) -> None:
+        api = APIRegistry.api_for(self.node_uid)
+        return api.services.messages.mark_as_unread(uid=self.id)
 
 
 @serializable()

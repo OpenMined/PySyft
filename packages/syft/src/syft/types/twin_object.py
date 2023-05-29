@@ -8,6 +8,7 @@ from typing import Optional
 # relative
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
+from ..service.action.action_object import TwinMode
 from ..service.action.action_types import action_types
 from .syft_object import SyftObject
 from .uid import UID
@@ -63,6 +64,7 @@ class TwinObject(SyftObject):
     def private(self) -> ActionObject:
         twin_id = self.id
         private = self.private_obj
+        private.syft_twin_type = TwinMode.PRIVATE
         private.id = twin_id
         return private
 
@@ -70,5 +72,6 @@ class TwinObject(SyftObject):
     def mock(self) -> ActionObject:
         twin_id = self.id
         mock = self.mock_obj
+        mock.syft_twin_type = TwinMode.MOCK
         mock.id = twin_id
         return mock

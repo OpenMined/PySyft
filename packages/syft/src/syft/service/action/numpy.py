@@ -10,6 +10,7 @@ import numpy as np
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from .action_object import ActionObject
+from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
 # @serializable(attrs=["id", "node_uid", "parent_id"])
@@ -45,8 +46,8 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
-    syft_passthrough_attrs = []
-    syft_dont_wrap_attrs = ["dtype"]
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs = ["dtype", "shape"]
 
     # def __eq__(self, other: Any) -> bool:
     #     # 🟡 TODO 8: move __eq__ to a Data / Serdeable type interface on ActionObject
@@ -86,8 +87,8 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type = np.number
-    syft_passthrough_attrs = []
-    syft_dont_wrap_attrs = ["dtype"]
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs = ["dtype", "shape"]
 
     def __float__(self) -> float:
         return float(self.syft_action_data)
@@ -99,8 +100,8 @@ class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type = np.bool_
-    syft_passthrough_attrs = []
-    syft_dont_wrap_attrs = ["dtype"]
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs = ["dtype", "shape"]
 
 
 np_array = np.array([1, 2, 3])

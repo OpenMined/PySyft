@@ -1,5 +1,10 @@
 # stdlib
 
+# stdlib
+
+# stdlib
+from typing import Optional
+
 # third party
 import pytest
 from pytest import MonkeyPatch
@@ -15,6 +20,7 @@ from syft.service.request.request import SubmitRequest
 from syft.service.request.request_stash import RequestStash
 from syft.service.request.request_stash import RequestingUserVerifyKeyPartitionKey
 from syft.service.request.request_stash import StatusPartitionKey
+from syft.store.document_store import PartitionKey
 from syft.store.document_store import QueryKeys
 
 
@@ -60,10 +66,12 @@ def test_requeststash_get_all_for_verify_key_success(
     stash_set_result_2 = request_stash.set(
         submit_request_2.to(Request, context=authed_context_guest_domain_client)
     )
+
     requests = request_stash.get_all_for_verify_key(verify_key)
 
     assert requests.is_ok() is True
     assert len(requests.ok()) == 2
+
     # the order might change so we check all requests
     assert (
         requests.ok()[1] == stash_set_result_2.ok()
@@ -82,7 +90,9 @@ def test_requeststash_get_all_for_verify_key_fail(
         "verify key not in the document store's unique or searchable keys"
     )
 
-    def mock_query_all_error(credentials: SyftVerifyKey, qks: QueryKeys) -> Err:
+    def mock_query_all_error(
+        credentials: SyftVerifyKey, qks: QueryKeys, order_by: Optional[PartitionKey]
+    ) -> Err:
         return Err(mock_error_message)
 
     monkeypatch.setattr(request_stash, "query_all", mock_query_all_error)
@@ -105,7 +115,10 @@ def test_requeststash_get_all_for_verify_key_find_index_fail(
     mock_error_message = f"Failed to query index or search with {qks.all[0]}"
 
     def mock_find_index_or_search_keys_error(
-        credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
+        credentials: SyftVerifyKey,
+        index_qks: QueryKeys,
+        search_qks: QueryKeys,
+        order_by: Optional[PartitionKey],
     ) -> Err:
         return Err(mock_error_message)
 
@@ -171,7 +184,10 @@ def test_requeststash_get_all_for_status_fail(
     mock_error_message = f"Failed to query index or search with {qks.all[0]}"
 
     def mock_find_index_or_search_keys_error(
-        credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
+        credentials: SyftVerifyKey,
+        index_qks: QueryKeys,
+        search_qks: QueryKeys,
+        order_by: Optional[PartitionKey],
     ) -> Err:
         return Err(mock_error_message)
 

@@ -60,7 +60,7 @@ vars:
   - name: JAX_ENABLE_X64
     value: "True"
   - name: VITE_PUBLIC_API_BASE_URL
-    value: "/api/v1"
+    value: "/api/v2"
   - name: USE_NEW_SERVICE
     value: "True"
   - name: DOCKER_IMAGE_SEAWEEDFS
@@ -109,7 +109,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.10"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -121,7 +121,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.10"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -137,7 +137,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.10"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -149,7 +149,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.10"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -161,7 +161,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.8.0-beta.10"
+      - "0.8.1-beta.3"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn

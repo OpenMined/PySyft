@@ -17,6 +17,7 @@ from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
 from typing import cast
+import weakref
 
 # relative
 from .capnp import get_capnp_schema
@@ -229,6 +230,12 @@ recursive_serde_register(
 )
 
 recursive_serde_register(
+    weakref.WeakSet,
+    serialize=serialize_iterable,
+    deserialize=functools.partial(deserialize_iterable, weakref.WeakSet),
+)
+
+recursive_serde_register(
     frozenset,
     serialize=serialize_iterable,
     deserialize=functools.partial(deserialize_iterable, frozenset),
@@ -340,7 +347,18 @@ recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
 
 if sys.version_info >= (3, 9):
-    recursive_serde_register_type(_UnionGenericAlias)
+    recursive_serde_register_type(
+        _UnionGenericAlias,
+        serialize_attrs=[
+            "__parameters__",
+            "__slots__",
+            "_inst",
+            "_name",
+            "__args__",
+            "__module__",
+            "__origin__",
+        ],
+    )
     recursive_serde_register_type(_SpecialGenericAlias)
 
 recursive_serde_register_type(EnumMeta)

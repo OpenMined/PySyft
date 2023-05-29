@@ -3,11 +3,11 @@ name: PR Tests - Enclave
 on:
   workflow_call:
 
-  # pull_request:
-  #   branches:
-  #     - dev
-  #     - main
-  #     - "0.8"
+  pull_request:
+    branches:
+      - dev
+      - main
+      - "0.8"
 
   workflow_dispatch:
     inputs:
@@ -22,9 +22,9 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
-        include:
-          - python-version: "3.8"
-            os: "ubuntu-latest"
+        # include:
+        #   - python-version: "3.9"
+        #     os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:

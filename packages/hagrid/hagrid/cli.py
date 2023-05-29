@@ -46,7 +46,6 @@ from .art import quickstart_art
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
-from .cache import RENDERED_DIR
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
@@ -82,6 +81,9 @@ from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .parse_template import deployment_dir
+from .parse_template import get_template_yml
+from .parse_template import manifest_cache_path
 from .parse_template import render_templates
 from .parse_template import setup_from_manifest_template
 from .quickstart_ui import fetch_notebooks_for_url
@@ -101,7 +103,7 @@ def get_azure_image(short_name: str) -> str:
     prebuild_070 = (
         "madhavajay1632269232059:openmined_mj_grid_domain_ubuntu_1:domain_070:latest"
     )
-    fresh_ubuntu = "Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest"
+    fresh_ubuntu = "Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest"
     if short_name == "default":
         return fresh_ubuntu
     elif short_name == "domain_0.7.0":
@@ -112,6 +114,23 @@ def get_azure_image(short_name: str) -> str:
 @click.group(cls=RichGroup)
 def cli() -> None:
     pass
+
+
+def get_compose_src_path(
+    node_type: str,
+    node_name: str,
+    template_location: Optional[str] = None,
+    **kwargs: TypeDict[str, Any],
+) -> str:
+    grid_path = GRID_SRC_PATH()
+    tag = kwargs.get("tag", None)
+    if EDITABLE_MODE and template_location is None or tag == "0.7.0":  # type: ignore
+        if node_type.input == "enclave":
+            return grid_path + "/worker"
+        else:
+            return grid_path
+    else:
+        return deployment_dir(node_name)
 
 
 @click.command(
@@ -304,9 +323,15 @@ def clean(location: str) -> None:
     help="Optional: allow trace to be turned on or off",
 )
 @click.option(
-    "--from-template",
+    "--template",
+    required=False,
+    default=None,
+    help="Path or URL to manifest template",
+)
+@click.option(
+    "--template-overwrite",
     is_flag=True,
-    help="Launch node using the manifest template",
+    help="Force re-downloading of template manifest",
 )
 @click.option(
     "--no-health-checks",
@@ -339,6 +364,55 @@ def clean(location: str) -> None:
     type=click.IntRange(0, 1),
     help="Toggle DOCKER_BUILDKIT",
 )
+@click.option(
+    "--azure-resource-group",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Resource Group",
+)
+@click.option(
+    "--azure-location",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Resource Group Location",
+)
+@click.option(
+    "--azure-size",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure VM Size",
+)
+@click.option(
+    "--azure-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure VM Username",
+)
+@click.option(
+    "--azure-key-path",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Key Path",
+)
+@click.option(
+    "--azure-repo",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Source Repo",
+)
+@click.option(
+    "--azure-branch",
+    default=None,
+    required=False,
+    type=str,
+    help="Azure Source Branch",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -348,8 +422,20 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         print(e)
         return
 
+    node_name = verb.get_named_term_type(name="node_name")
+    snake_name = str(node_name.snake_input)
+    node_type = verb.get_named_term_type(name="node_type")
+
+    compose_src_path = get_compose_src_path(
+        node_type=node_type,
+        node_name=snake_name,
+        template_location=kwargs["template"],
+        **kwargs,
+    )
+    kwargs["compose_src_path"] = compose_src_path
+
     try:
-        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+        update_repo(repo=GIT_REPO(), branch=str(kwargs["build_src"]))
     except Exception as e:
         print(f"Failed to update repo. {e}")
     try:
@@ -370,15 +456,12 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         if tail:
             silent = False
 
-        from_rendered_dir = bool(kwargs["from_template"]) and EDITABLE_MODE
-
-        node_type = verb.get_named_term_type(name="node_type").input
         execute_commands(
             cmds,
             dry_run=dry_run,
             silent=silent,
-            from_rendered_dir=from_rendered_dir,
-            node_type=node_type,
+            compose_src_path=kwargs["compose_src_path"],
+            node_type=node_type.input,
         )
 
         host_term = verb.get_named_term_hostgrammar(name="host")
@@ -394,18 +477,17 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
             (command, *_), *_ = docker_cmds.values()
 
             match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
-            node_name = verb.get_named_term_type(name="node_name").snake_input
             if match_port:
                 rich.get_console().print(
                     "\n[bold green]⠋[bold blue] Checking node API [/bold blue]\t"
                 )
                 port = match_port.group().replace("HTTP_PORT=", "")
 
-                check_status("localhost" + ":" + port, node_name=node_name)
+                check_status("localhost" + ":" + port, node_name=node_name.snake_input)
 
             rich.get_console().print(
                 rich.panel.Panel.fit(
-                    f"✨ To view container logs run [bold green]hagrid logs {node_name}[/bold green]\t"
+                    f"✨ To view container logs run [bold green]hagrid logs {node_name.snake_input}[/bold green]\t"
                 )
             )
 
@@ -556,20 +638,12 @@ def process_cmd(
     node_type: str,
     dry_run: bool,
     silent: bool,
-    from_rendered_dir: bool,
+    compose_src_path: str,
     progress_bar: Union[Progress, None] = None,
     cmd_name: str = "",
 ) -> None:
     process_list: TypeList = []
-
-    if node_type == "enclave":
-        cwd = GRID_SRC_PATH + "/worker"
-    else:
-        cwd = (
-            os.path.join(GRID_SRC_PATH, RENDERED_DIR)
-            if from_rendered_dir
-            else GRID_SRC_PATH
-        )
+    cwd = compose_src_path
 
     username, password = (
         extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
@@ -582,7 +656,7 @@ def process_cmd(
 
     for cmd in cmds:
         if dry_run:
-            print("Running: \n", hide_password(cmd=cmd))
+            print(f"\nRunning:\ncd {cwd}\n", hide_password(cmd=cmd))
             continue
 
         # use powershell if environment is Windows
@@ -647,9 +721,9 @@ def process_cmd(
 def execute_commands(
     cmds: Union[TypeList[str], TypeDict[str, TypeList[str]]],
     node_type: str,
+    compose_src_path: str,
     dry_run: bool = False,
     silent: bool = False,
-    from_rendered_dir: bool = False,
 ) -> None:
     """Execute the launch commands and display their status in realtime.
 
@@ -679,7 +753,7 @@ def execute_commands(
                     node_type=node_type,
                     dry_run=dry_run,
                     silent=silent,
-                    from_rendered_dir=from_rendered_dir,
+                    compose_src_path=compose_src_path,
                     progress_bar=progress,
                     cmd_name=cmd_name,
                 )
@@ -689,7 +763,7 @@ def execute_commands(
             node_type=node_type,
             dry_run=dry_run,
             silent=silent,
-            from_rendered_dir=from_rendered_dir,
+            compose_src_path=compose_src_path,
         )
 
 
@@ -1139,7 +1213,6 @@ def create_launch_cmd(
     parsed_kwargs["dev"] = bool(kwargs["dev"])
 
     parsed_kwargs["silent"] = not bool(kwargs["verbose"])
-    parsed_kwargs["from_template"] = bool(kwargs["from_template"])
 
     parsed_kwargs["trace"] = False
     if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
@@ -1199,13 +1272,29 @@ def create_launch_cmd(
         int(kwargs["build_kit"]) if "build_kit" in kwargs else 1
     )
 
-    if parsed_kwargs["from_template"] and host is not None:
-        # Setup the files from the manifest_template.yml
-        kwargs = setup_from_manifest_template(host_type=host)
+    parsed_kwargs["template"] = kwargs["template"] if "template" in kwargs else None
+    parsed_kwargs["template_overwrite"] = bool(kwargs["template_overwrite"])
 
-        # Override template tag with user input tag
-        if parsed_kwargs["tag"] is not None:
-            kwargs.pop("tag")
+    parsed_kwargs["compose_src_path"] = kwargs["compose_src_path"]
+
+    # Override template tag with user input tag
+    if (
+        parsed_kwargs["tag"] is not None
+        and parsed_kwargs["template"] is None
+        and parsed_kwargs["tag"] not in ["local", "latest", "0.7.0"]
+    ):
+        template = parsed_kwargs["tag"]
+        # if template == "beta":
+        #     template = "dev"
+        parsed_kwargs["template"] = template
+
+    if parsed_kwargs["template"] and host is not None:
+        # Setup the files from the manifest_template.yml
+        kwargs = setup_from_manifest_template(
+            host_type=host,
+            template_location=parsed_kwargs["template"],
+            overwrite=parsed_kwargs["template_overwrite"],
+        )
 
         parsed_kwargs.update(kwargs)
 
@@ -1875,17 +1964,17 @@ def create_launch_docker_cmd(
     version_string = kwargs["tag"]
     version_hash = "dockerhub"
     build = kwargs["build"]
-    from_template = kwargs["from_template"]
 
     # if in development mode, generate a version_string which is either
     # the one you inputed concatenated with -dev or the contents of the VERSION file
+    version = GRID_SRC_VERSION()
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
         # during development we can use the latest beta version
         if version_string is None:
-            version_string = GRID_SRC_VERSION[0]
+            version_string = version[0]
         version_string += "-dev"
-        version_hash = GRID_SRC_VERSION[1]
+        version_hash = version[1]
         build = True
     else:
         # whereas if in production mode and tag == "local" use the local VERSION file
@@ -1895,8 +1984,8 @@ def create_launch_docker_cmd(
         # during production the default would be stable
         if version_string == "local":
             # this can be used in VMs in production to auto update from src
-            version_string = GRID_SRC_VERSION[0]
-            version_hash = GRID_SRC_VERSION[1]
+            version_string = version[0]
+            version_hash = version[1]
             build = True
         elif version_string is None:
             version_string = "latest"
@@ -1909,9 +1998,28 @@ def create_launch_docker_cmd(
     if "platform" in kwargs and kwargs["platform"] is not None:
         docker_platform = kwargs["platform"]
 
+    if kwargs["template"]:
+        _, template_hash = get_template_yml(kwargs["template"])
+        template_dir = manifest_cache_path(template_hash)
+        template_grid_dir = f"{template_dir}/packages/grid"
+    else:
+        template_grid_dir = GRID_SRC_PATH()
+
+    compose_src_path = kwargs["compose_src_path"]
+    if not compose_src_path:
+        compose_src_path = get_compose_src_path(
+            node_type=node_type,
+            node_name=snake_name,
+            template_location=kwargs["template"],
+            **kwargs,
+        )
+
     enable_oblv = bool(kwargs["oblv"])
     build_kit = kwargs["build_kit"]
     print("  - NAME: " + str(snake_name))
+    print("  - TEMPLATE DIR: " + template_grid_dir)
+    if compose_src_path:
+        print("  - COMPOSE SOURCE: " + compose_src_path)
     print("  - RELEASE: " + kwargs["release"])
     print("  - ARCH: " + docker_platform)
     print("  - TYPE: " + str(node_type.input))
@@ -1930,8 +2038,21 @@ def create_launch_docker_cmd(
     print("\n")
 
     use_blob_storage = (
-        False if str(node_type.input) == "network" else bool(kwargs["use_blob_storage"])
+        False
+        if str(node_type.input) in ["network", "gateway"]
+        else bool(kwargs["use_blob_storage"])
     )
+
+    # use a docker volume
+    backend_storage = "credentials-data"
+
+    # in development use a folder mount
+    if kwargs.get("release", "") == "development":
+        RELATIVE_PATH = ""
+        # if EDITABLE_MODE:
+        #     RELATIVE_PATH = "../"
+        # we might need to change this for the hagrid template mode
+        backend_storage = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
 
     envs = {
         "RELEASE": "production",
@@ -1951,11 +2072,12 @@ def create_launch_docker_cmd(
             generate_sec_random_password(length=48, special_chars=False)
         ),
         "ENABLE_OBLV": str(enable_oblv).lower(),
+        "BACKEND_STORAGE_PATH": backend_storage,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
         envs["TRACE"] = "True"
-        envs["JAEGER_HOST"] = "docker-host"
+        envs["JAEGER_HOST"] = "host.docker.internal"
         envs["JAEGER_PORT"] = int(
             find_available_port(host="localhost", port=14268, search=True)
         )
@@ -1981,7 +2103,9 @@ def create_launch_docker_cmd(
         envs["RABBITMQ_MANAGEMENT"] = "-management"
 
     # currently we only have a domain frontend for dev mode
-    if kwargs.get("release", "") == "development" and str(node_type.input) != "network":
+    if kwargs.get("release", "") == "development" and (
+        str(node_type.input) not in ["network", "gateway"]
+    ):
         envs["FRONTEND_TARGET"] = "grid-ui-development"
 
     if "set_root_password" in kwargs and kwargs["set_root_password"] is not None:
@@ -2012,7 +2136,11 @@ def create_launch_docker_cmd(
 
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
-    default_env = f"{GRID_SRC_PATH}/.env"
+
+    default_env = f"{template_grid_dir}/default.env"
+    if not os.path.exists(default_env):
+        # old path
+        default_env = f"{template_grid_dir}/.env"
     default_envs = {}
     with open(default_env, "r") as f:
         for line in f.readlines():
@@ -2026,20 +2154,20 @@ def create_launch_docker_cmd(
     default_envs.update(envs)
 
     # env file path
-    env_file_path = os.path.join(GRID_SRC_PATH, ".envfile")
+    env_file_path = compose_src_path + "/.env"
 
     # Render templates if creating stack from the manifest_template.yml
-    if from_template and host_term.host is not None:
+    if kwargs["template"] and host_term.host is not None:
         # If release is development, update relative path
-        if EDITABLE_MODE:
-            default_envs["RELATIVE_PATH"] = "../"
+        # if EDITABLE_MODE:
+        #     default_envs["RELATIVE_PATH"] = "../"
 
         render_templates(
+            node_name=snake_name,
+            template_location=kwargs["template"],
             env_vars=default_envs,
             host_type=host_term.host,
         )
-
-        env_file_path = os.path.join(GRID_SRC_PATH, RENDERED_DIR, ".envfile")
 
     try:
         env_file = ""
@@ -2049,7 +2177,7 @@ def create_launch_docker_cmd(
         with open(env_file_path, "w") as f:
             f.write(env_file)
 
-        cmd += f" --env-file {env_file_path}"
+        # cmd += f" --env-file {env_file_path}"
     except Exception:  # nosec
         pass
 
@@ -2059,7 +2187,7 @@ def create_launch_docker_cmd(
     if bool(kwargs["vpn"]):
         cmd += " --profile vpn"
 
-    if str(node_type.input) == "network":
+    if str(node_type.input) in ["network", "gateway"]:
         cmd += " --profile network"
 
     if use_blob_storage:
@@ -2144,7 +2272,7 @@ def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
     cmd += f"-e 'node_type={node_type.input}'"
     cmd += '" '
     cmd += "vagrant up --provision"
-    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    cmd = "cd " + GRID_SRC_PATH() + ";" + cmd
     return cmd
 
 
@@ -2599,7 +2727,7 @@ def make_gcp_vm(
         "https://www.googleapis.com/auth/trace.append",
     ]
     tags = "http-server,https-server"
-    disk_image = "projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20220308"
+    disk_image = "projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-v20230429"
     disk = (
         f"auto-delete=yes,boot=yes,device-name={vm_name},image={disk_image},"
         + f"mode=rw,size={disk_size_gb},type=pd-ssd"
@@ -2748,8 +2876,9 @@ def create_ansible_land_cmd(
         print("  - PORT: " + str(host_term.port))
         print("\n")
 
-        playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
-        ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+        grid_path = GRID_SRC_PATH()
+        playbook_path = grid_path + "/ansible/site.yml"
+        ansible_cfg_path = grid_path + "/ansible.cfg"
         auth = cast(AuthCredentials, auth)
 
         if not os.path.exists(playbook_path):
@@ -2781,7 +2910,7 @@ def create_ansible_land_cmd(
         for k, v in ANSIBLE_ARGS.items():
             cmd += f" -e \"{k}='{v}'\""
 
-        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+        cmd = "cd " + grid_path + ";" + cmd
         return cmd
     except Exception as e:
         print(f"Failed to construct custom deployment cmd: {cmd}. {e}")
@@ -2815,8 +2944,9 @@ def create_launch_custom_cmd(
         print("  - PORT: " + str(host_term.port))
         print("\n")
 
-        playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
-        ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+        grid_path = GRID_SRC_PATH()
+        playbook_path = grid_path + "/ansible/site.yml"
+        ansible_cfg_path = grid_path + "/ansible.cfg"
         auth = cast(AuthCredentials, auth)
 
         if not os.path.exists(playbook_path):
@@ -2894,7 +3024,7 @@ def create_launch_custom_cmd(
         for k, v in ANSIBLE_ARGS.items():
             cmd += f" -e \"{k}='{v}'\""
 
-        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+        cmd = "cd " + grid_path + ";" + cmd
         return cmd
     except Exception as e:
         print(f"Failed to construct custom deployment cmd: {cmd}. {e}")
@@ -2996,18 +3126,19 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
 
     # Check if the container name belongs to worker container
+    grid_path = GRID_SRC_PATH()
     if "proxy" in containers:
-        path = GRID_SRC_PATH
+        path = grid_path
         env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
     else:
-        path = GRID_SRC_PATH + "/worker"
+        path = grid_path + "/worker"
         env_var = ";export $(cat ../.env | sed 's/#.*//g' | xargs);"
 
     cmd = ""
     cmd += "docker-compose"
     cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
-    cmd += " down"
+    cmd += " down --remove-orphans"
 
     cmd = "cd " + path + env_var + cmd
     return cmd
@@ -3057,7 +3188,7 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
         return
 
     try:
-        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+        update_repo(repo=GIT_REPO(), branch=str(kwargs["build_src"]))
     except Exception as e:
         print(f"Failed to update repo. {e}")
 
@@ -3079,6 +3210,8 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
             kwargs={},
         )
 
+    grid_path = GRID_SRC_PATH()
+
     if force or _land_domain == "y":
         if not bool(kwargs["cmd"]):
             if not silent:
@@ -3089,14 +3222,14 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
                         cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        cwd=GRID_SRC_PATH,
+                        cwd=grid_path,
                         shell=True,
                     )
                     process.communicate()
 
                     print(f"HAGrid land {target} complete!")
                 else:
-                    subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+                    subprocess.call(cmd, shell=True, cwd=grid_path)  # nosec
             except Exception as e:
                 print(f"Failed to run cmd: {cmd}. {e}")
     else:
@@ -3143,7 +3276,7 @@ HEALTH_CHECK_ICONS = {
 HEALTH_CHECK_URLS = {
     "host": "{ip_address}",
     "UI (βeta)": "http://{ip_address}/login",
-    "api": "http://{ip_address}/api/v1/openapi.json",
+    "api": "http://{ip_address}/api/v2/openapi.json",
     "ssh": "hagrid ssh {ip_address}",
     "jupyter": "http://{ip_address}:8888",
 }

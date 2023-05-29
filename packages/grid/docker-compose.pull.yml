@@ -9,8 +9,8 @@ services:
   # seaweedfs:
   #   image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
 
-  docker-host:
-    image: qoomon/docker-host
+  # docker-host:
+  #   image: qoomon/docker-host
 
   proxy:
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}

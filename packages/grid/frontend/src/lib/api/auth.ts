@@ -18,7 +18,7 @@ interface SignUpDetails {
 }
 
 export async function login({ email, password }: LoginCredentials) {
-  const res = await ky.post(`${API_BASE_URL}/new/login`, {
+  const res = await ky.post(`${API_BASE_URL}/login`, {
     json: { email, password }
   });
 
@@ -44,7 +44,7 @@ export async function register(newUser: SignUpDetails) {
     fqn: 'syft.service.user.user.UserCreate'
   });
 
-  const res = await ky.post(`${API_BASE_URL}/new/register`, {
+  const res = await ky.post(`${API_BASE_URL}/register`, {
     headers: { 'content-type': 'application/octet-stream' },
     body: payload
   });
@@ -55,5 +55,9 @@ export async function register(newUser: SignUpDetails) {
     return data;
   }
 
-  throw new Error('Unexpected response');
+  if (data.Error) {
+    throw new Error(data.Error);
+  }
+
+  throw new Error(data.message);
 }

@@ -40,7 +40,7 @@
         <Badge>{metadata.id?.value}</Badge>
       </div>
       <div class="flex gap-1 items-center">
-        <p class="uppercase text-gray-400">Deployed on:</p>
+        <p class="uppercase text-gray-400" data-testid="deployed-on">Deployed on:</p>
         <p class="font-mono">{metadata.deployed_on}</p>
       </div>
     </div>

@@ -36,11 +36,14 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftAttributeError
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
+from ..types.uid import LineageID
 from ..types.uid import UID
+from ..util.autoreload import autoreload_enabled
 from ..util.telemetry import instrument
 from .connection import NodeConnection
 
@@ -56,7 +59,7 @@ class APIRegistry:
 
     @classmethod
     def api_for(cls, node_uid: UID) -> SyftAPI:
-        return cls.__api_registry__[node_uid]
+        return cls.__api_registry__.get(node_uid, None)
 
     @classmethod
     def get_all_api(cls) -> List[SyftAPI]:
@@ -65,7 +68,21 @@ class APIRegistry:
 
 @serializable()
 class APIEndpoint(SyftBaseObject):
-    path: str
+    service_path: str
+    module_path: str
+    name: str
+    description: str
+    doc_string: Optional[str]
+    signature: Signature
+    has_self: bool = False
+    pre_kwargs: Optional[Dict[str, Any]]
+
+
+@serializable()
+class LibEndpoint(SyftBaseObject):
+    # TODO: bad name, change
+    service_path: str
+    module_path: str
     name: str
     description: str
     doc_string: Optional[str]
@@ -171,74 +188,15 @@ def generate_remote_function(
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 
-        _valid_kwargs = {}
-        if "kwargs" in signature.parameters:
-            _valid_kwargs = kwargs
-        else:
-            for key, value in kwargs.items():
-                if key not in signature.parameters:
-                    return SyftError(
-                        message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
-                    )
-                param = signature.parameters[key]
-                if isinstance(param.annotation, str):
-                    # 🟡 TODO 21: make this work for weird string type situations
-                    # happens when from __future__ import annotations in a class file
-                    t = index_syft_by_module_name(param.annotation)
-                else:
-                    t = param.annotation
-                msg = None
-                try:
-                    if t is not inspect.Parameter.empty:
-                        if isinstance(t, _GenericAlias) and type(None) in t.__args__:
-                            for v in t.__args__:
-                                if issubclass(v, EmailStr):
-                                    v = str
-                                check_type(key, value, v)  # raises Exception
-                                break  # only need one to match
-                        else:
-                            check_type(key, value, t)  # raises Exception
-                except TypeError:
-                    _type_str = getattr(t, "__name__", str(t))
-                    msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+        res = validate_callable_args_and_kwargs(args, kwargs, signature)
 
-                if msg:
-                    return SyftError(message=msg)
-
-                _valid_kwargs[key] = value
-
-        # signature.parameters is an OrderedDict, therefore,
-        # its fair to assume that order of args
-        # and the signature.parameters should always match
-        _valid_args = []
-        if "args" in signature.parameters:
-            _valid_args = args
-        else:
-            for (param_key, param), arg in zip(signature.parameters.items(), args):
-                if param_key in _valid_kwargs:
-                    continue
-                t = param.annotation
-                msg = None
-                try:
-                    if t is not inspect.Parameter.empty:
-                        if isinstance(t, _GenericAlias) and type(None) in t.__args__:
-                            for v in t.__args__:
-                                if issubclass(v, EmailStr):
-                                    v = str
-                                check_type(param_key, arg, v)  # raises Exception
-                                break  # only need one to match
-                        else:
-                            check_type(param_key, arg, t)  # raises Exception
-                except TypeError:
-                    _type_str = getattr(t, "__name__", str(t))
-                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
-                if msg:
-                    return SyftError(message=msg)
-
-                _valid_args.append(arg)
+        if isinstance(res, SyftError):
+            return res
+        _valid_args, _valid_kwargs = res
 
         if pre_kwargs:
             _valid_kwargs.update(pre_kwargs)
+
         api_call = SyftAPICall(
             node_uid=node_uid,
             path=path,
@@ -247,6 +205,85 @@ def generate_remote_function(
             blocking=blocking,
         )
         result = make_call(api_call=api_call)
+        return result
+
+    wrapper.__ipython_inspector_signature_override__ = signature
+    return wrapper
+
+
+def generate_remote_lib_function(
+    api: SyftAPI,
+    node_uid: UID,
+    signature: Signature,
+    path: str,
+    module_path: str,
+    make_call: Callable,
+    pre_kwargs: Dict[str, Any],
+):
+    if "blocking" in signature.parameters:
+        raise Exception(
+            f"Signature {signature} can't have 'blocking' kwarg because its reserved"
+        )
+
+    def wrapper(*args, **kwargs):
+        # relative
+        from ..service.action.action_object import TraceResult
+
+        if TraceResult._client is not None:
+            wrapper_make_call = TraceResult._client.api.make_call
+            wrapper_node_uid = TraceResult._client.api.node_uid
+        else:
+            # somehow this is necessary to prevent shadowing problems
+            wrapper_make_call = make_call
+            wrapper_node_uid = node_uid
+        blocking = True
+        if "blocking" in kwargs:
+            blocking = bool(kwargs["blocking"])
+            del kwargs["blocking"]
+
+        res = validate_callable_args_and_kwargs(args, kwargs, signature)
+
+        if isinstance(res, SyftError):
+            return res
+        _valid_args, _valid_kwargs = res
+
+        if pre_kwargs:
+            _valid_kwargs.update(pre_kwargs)
+
+        # relative
+        from ..service.action.action_object import Action
+        from ..service.action.action_object import ActionType
+        from ..service.action.action_object import convert_to_pointers
+
+        action_args, action_kwargs = convert_to_pointers(
+            api, wrapper_node_uid, _valid_args, _valid_kwargs
+        )
+
+        # e.g. numpy.array -> numpy, array
+        module, op = module_path.rsplit(".", 1)
+        action = Action(
+            path=module,
+            op=op,
+            remote_self=None,
+            args=[x.syft_lineage_id for x in action_args],
+            kwargs={k: v.syft_lineage_id for k, v in action_kwargs},
+            action_type=ActionType.FUNCTION,
+            # TODO: fix
+            result_id=LineageID(UID(), 1),
+        )
+        service_args = [action]
+        # TODO: implement properly
+        TraceResult.result += [action]
+
+        api_call = SyftAPICall(
+            node_uid=wrapper_node_uid,
+            path=path,
+            args=service_args,
+            kwargs=dict(),
+            blocking=blocking,
+        )
+
+        result = wrapper_make_call(api_call=api_call)
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature
@@ -285,12 +322,15 @@ class APIModule:
     def _repr_html_(self) -> Any:
         if not hasattr(self, "get_all"):
             return NotImplementedError
-        results = self.get_all()
+        if hasattr(self, "get_all_unread"):
+            results = self.get_all_unread()
+        else:
+            results = self.get_all()
         return results._repr_html_()
 
 
 @instrument
-@serializable(attrs=["endpoints", "node_uid", "node_name"])
+@serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
@@ -301,7 +341,9 @@ class SyftAPI(SyftObject):
     node_uid: Optional[UID] = None
     node_name: Optional[str] = None
     endpoints: Dict[str, APIEndpoint]
+    lib_endpoints: Optional[Dict[str, LibEndpoint]] = None
     api_module: Optional[APIModule] = None
+    libs: Optional[APIModule] = None
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
@@ -321,21 +363,40 @@ class SyftAPI(SyftObject):
         # TODO: we should probably not allow empty verify keys but instead make user always register
         role = node.get_role_for_credentials(user_verify_key)
         _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
-        endpoints = {}
+        _user_lib_config_registry = UserLibConfigRegistry.from_user(user_verify_key)
+        endpoints: Dict[str, APIEndpoint] = {}
+        lib_endpoints: Dict[str, LibEndpoint] = {}
 
         for (
             path,
             service_config,
         ) in _user_service_config_registry.get_registered_configs().items():
-            endpoint = APIEndpoint(
-                path=path,
-                name=service_config.public_name,
+            if not service_config.is_from_lib:
+                endpoint = APIEndpoint(
+                    service_path=path,
+                    module_path=path,
+                    name=service_config.public_name,
+                    description="",
+                    doc_string=service_config.doc_string,
+                    signature=service_config.signature,
+                    has_self=False,
+                )
+                endpoints[path] = endpoint
+
+        for (
+            path,
+            lib_config,
+        ) in _user_lib_config_registry.get_registered_configs().items():
+            endpoint = LibEndpoint(
+                service_path="action.execute",
+                module_path=path,
+                name=lib_config.public_name,
                 description="",
-                doc_string=service_config.doc_string,
-                signature=service_config.signature,
+                doc_string=lib_config.doc_string,
+                signature=lib_config.signature,
                 has_self=False,
             )
-            endpoints[path] = endpoint
+            lib_endpoints[path] = endpoint
 
         # 🟡 TODO 35: fix root context
         context = AuthedServiceContext(credentials=user_verify_key)
@@ -343,10 +404,11 @@ class SyftAPI(SyftObject):
         code_items = method()
 
         for code_item in code_items:
-            api_path = "code.call"
+            path = "code.call"
             unique_path = f"code.call_{code_item.service_func_name}"
             endpoint = APIEndpoint(
-                path=api_path,
+                service_path=path,
+                module_path=path,
                 name=code_item.service_func_name,
                 description="",
                 doc_string=f"Users custom func {code_item.service_func_name}",
@@ -356,7 +418,12 @@ class SyftAPI(SyftObject):
             )
             endpoints[unique_path] = endpoint
 
-        return SyftAPI(node_name=node.name, node_uid=node.id, endpoints=endpoints)
+        return SyftAPI(
+            node_name=node.name,
+            node_uid=node.id,
+            endpoints=endpoints,
+            lib_endpoints=lib_endpoints,
+        )
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
@@ -398,7 +465,7 @@ class SyftAPI(SyftObject):
     ):
         """Recursively create a module path to the route endpoint."""
 
-        _modules = endpoint.path.split(".")[:-1] + [endpoint.name]
+        _modules = endpoint.module_path.split(".")[:-1] + [endpoint.name]
 
         _self = api_module
         _last_module = _modules.pop()
@@ -411,28 +478,51 @@ class SyftAPI(SyftObject):
         _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
-        api_module = APIModule(path="")
-        for _, v in self.endpoints.items():
-            signature = v.signature
-            if not v.has_self:
-                signature = signature_remove_self(signature)
-            signature = signature_remove_context(signature)
-            endpoint_function = generate_remote_function(
-                self.node_uid,
-                signature,
-                v.path,
-                self.make_call,
-                pre_kwargs=v.pre_kwargs,
-            )
-            endpoint_function.__doc__ = v.doc_string
-            self._add_route(api_module, v, endpoint_function)
-        self.api_module = api_module
+        def build_endpoint_tree(endpoints):
+            api_module = APIModule(path="")
+            for _, v in endpoints.items():
+                signature = v.signature
+                if not v.has_self:
+                    signature = signature_remove_self(signature)
+                signature = signature_remove_context(signature)
+                if isinstance(v, APIEndpoint):
+                    endpoint_function = generate_remote_function(
+                        self.node_uid,
+                        signature,
+                        v.service_path,
+                        self.make_call,
+                        pre_kwargs=v.pre_kwargs,
+                    )
+                elif isinstance(v, LibEndpoint):
+                    endpoint_function = generate_remote_lib_function(
+                        self,
+                        self.node_uid,
+                        signature,
+                        v.service_path,
+                        v.module_path,
+                        self.make_call,
+                        pre_kwargs=v.pre_kwargs,
+                    )
+
+                endpoint_function.__doc__ = v.doc_string
+                self._add_route(api_module, v, endpoint_function)
+            return api_module
+
+        if self.lib_endpoints is not None:
+            self.libs = build_endpoint_tree(self.lib_endpoints)
+        self.api_module = build_endpoint_tree(self.endpoints)
 
     @property
     def services(self) -> APIModule:
         if self.api_module is None:
             self.generate_endpoints()
         return self.api_module
+
+    @property
+    def lib(self) -> APIModule:
+        if self.libs is None:
+            self.generate_endpoints()
+        return self.libs
 
     def __repr__(self) -> str:
         modules = self.services
@@ -552,3 +642,83 @@ class NodeView(BaseModel):
 
     def __hash__(self) -> int:
         return hash((self.node_name, self.verify_key))
+
+
+def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
+    _valid_kwargs = {}
+    if "kwargs" in signature.parameters:
+        _valid_kwargs = kwargs
+    else:
+        for key, value in kwargs.items():
+            if key not in signature.parameters:
+                return SyftError(
+                    message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
+                )
+            param = signature.parameters[key]
+            if isinstance(param.annotation, str):
+                # 🟡 TODO 21: make this work for weird string type situations
+                # happens when from __future__ import annotations in a class file
+                t = index_syft_by_module_name(param.annotation)
+            else:
+                t = param.annotation
+            msg = None
+            try:
+                if t is not inspect.Parameter.empty:
+                    if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                        for v in t.__args__:
+                            if issubclass(v, EmailStr):
+                                v = str
+                            check_type(key, value, v)  # raises Exception
+                            break  # only need one to match
+                    else:
+                        check_type(key, value, t)  # raises Exception
+            except TypeError:
+                _type_str = getattr(t, "__name__", str(t))
+                msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+
+            if msg:
+                return SyftError(message=msg)
+
+            _valid_kwargs[key] = value
+
+    # signature.parameters is an OrderedDict, therefore,
+    # its fair to assume that order of args
+    # and the signature.parameters should always match
+    _valid_args = []
+    if "args" in signature.parameters:
+        _valid_args = args
+    else:
+        for (param_key, param), arg in zip(signature.parameters.items(), args):
+            if param_key in _valid_kwargs:
+                continue
+            t = param.annotation
+            msg = None
+            try:
+                if t is not inspect.Parameter.empty:
+                    if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                        for v in t.__args__:
+                            if issubclass(v, EmailStr):
+                                v = str
+                            check_type(param_key, arg, v)  # raises Exception
+                            break  # only need one to match
+                    else:
+                        check_type(param_key, arg, t)  # raises Exception
+            except TypeError:
+                t_arg = type(arg)
+                if (
+                    autoreload_enabled()
+                    and t.__module__ == t_arg.__module__
+                    and t.__name__ == t_arg.__name__
+                ):
+                    # ignore error when autoreload_enabled()
+                    pass
+                else:
+                    _type_str = getattr(t, "__name__", str(t))
+                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
+
+            if msg:
+                return SyftError(message=msg)
+
+            _valid_args.append(arg)
+
+    return _valid_args, _valid_kwargs

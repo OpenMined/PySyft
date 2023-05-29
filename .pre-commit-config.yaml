@@ -170,7 +170,12 @@ repos:
     rev: 0.6.1
     hooks:
       - id: nbstripout
-        files: "notebooks/api/0.8/*"
+        files: "^notebooks/api|^notebooks/tutorials"
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v3.0.0-alpha.9-for-vscode"
+    hooks:
+      - id: prettier
 
   # - repo: meta
   #   hooks:

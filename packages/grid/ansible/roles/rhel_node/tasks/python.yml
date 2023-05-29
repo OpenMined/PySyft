@@ -9,7 +9,6 @@
       - podman-docker
     state: present
   become: true
-
 # - name: Install required packages for building Python
 #   ansible.builtin.shell: sudo dnf install -y gcc openssl-devel bzip2-devel libffi-devel zlib-devel make wget epel-release openssl11 openssl11-devel
 # sqlite-devel

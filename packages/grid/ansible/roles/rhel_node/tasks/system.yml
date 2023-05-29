@@ -23,9 +23,6 @@
     groups:
       - "{{ om_group }}"
       - docker
-
-
-
 # - name: Install required packages
 #   dnf:
 #     name:

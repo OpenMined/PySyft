@@ -8,6 +8,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -18,6 +19,13 @@ from result import OkErr
 
 # relative
 from ..abstract_node import AbstractNode
+from ..node.credentials import SyftVerifyKey
+from ..serde.lib_permissions import CMPCRUDPermission
+from ..serde.lib_permissions import CMPPermission
+from ..serde.lib_service_registry import CMPBase
+from ..serde.lib_service_registry import CMPClass
+from ..serde.lib_service_registry import CMPFunction
+from ..serde.lib_service_registry import action_execute_registry_libs
 from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
@@ -61,18 +69,97 @@ class AbstractService:
 
 
 @serializable()
-class ServiceConfig(SyftBaseObject):
+class BaseConfig(SyftBaseObject):
     public_path: str
     private_path: str
     public_name: str
     method_name: str
     doc_string: Optional[str]
-    signature: Signature
+    signature: Optional[Signature]
+    is_from_lib: bool = False
+
+
+@serializable()
+class ServiceConfig(BaseConfig):
     permissions: List
     roles: List[ServiceRole]
 
     def has_permission(self, user_service_role: ServiceRole):
         return user_service_role in self.roles
+
+
+@serializable()
+class LibConfig(BaseConfig):
+    permissions: Set[CMPPermission]
+
+    def has_permission(self, credentials: SyftVerifyKey):
+        # TODO: implement user level permissions
+        for p in self.permissions:
+            if p.permission_string == CMPCRUDPermission.ALL_EXECUTE.name:
+                return True
+            if p.permission_string == CMPCRUDPermission.NONE_EXECUTE.name:
+                return False
+        return False
+
+
+class ServiceConfigRegistry:
+    __service_config_registry__: Dict[str, ServiceConfig] = {}
+    # __public_to_private_path_map__: Dict[str, str] = {}
+
+    @classmethod
+    def register(cls, config: ServiceConfig) -> None:
+        if not cls.path_exists(config.public_path):
+            cls.__service_config_registry__[config.public_path] = config
+            # cls.__public_to_private_path_map__[config.public_path] = config.private_path
+
+    @classmethod
+    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
+        return cls.__service_config_registry__
+
+    @classmethod
+    def path_exists(cls, path: str):
+        return path in cls.__service_config_registry__
+
+
+class LibConfigRegistry:
+    __service_config_registry__: Dict[str, ServiceConfig] = {}
+
+    @classmethod
+    def register(cls, config: ServiceConfig) -> None:
+        if not cls.path_exists(config.public_path):
+            cls.__service_config_registry__[config.public_path] = config
+
+    @classmethod
+    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
+        return cls.__service_config_registry__
+
+    @classmethod
+    def path_exists(cls, path: str):
+        return path in cls.__service_config_registry__
+
+
+class UserLibConfigRegistry:
+    def __init__(self, service_config_registry: Dict[str, LibConfig]):
+        self.__service_config_registry__: Dict[str, LibConfig] = service_config_registry
+
+    @classmethod
+    def from_user(cls, credentials: SyftVerifyKey):
+        return cls(
+            {
+                k: lib_config
+                for k, lib_config in LibConfigRegistry.get_registered_configs().items()
+                if lib_config.has_permission(credentials)
+            }
+        )
+
+    def __contains__(self, path: str):
+        return path in self.__service_config_registry__
+
+    def private_path_for(self, public_path: str) -> str:
+        return self.__service_config_registry__[public_path].private_path
+
+    def get_registered_configs(self) -> Dict[str, LibConfig]:
+        return self.__service_config_registry__
 
 
 class UserServiceConfigRegistry:
@@ -101,23 +188,35 @@ class UserServiceConfigRegistry:
         return self.__service_config_registry__
 
 
-class ServiceConfigRegistry:
-    __service_config_registry__: Dict[str, ServiceConfig] = {}
-    # __public_to_private_path_map__: Dict[str, str] = {}
+def register_lib_obj(lib_obj: CMPBase):
+    signature = lib_obj.signature
+    path = lib_obj.absolute_path
+    func_name = lib_obj.name
 
-    @classmethod
-    def register(cls, config: ServiceConfig) -> None:
-        if not cls.path_exists(config.public_path):
-            cls.__service_config_registry__[config.public_path] = config
-            # cls.__public_to_private_path_map__[config.public_path] = config.private_path
+    if signature is not None:
+        if path != "numpy.source":
+            lib_config = LibConfig(
+                public_path=str(path),
+                private_path=str(path),
+                public_name=str(func_name),
+                method_name=str(func_name),
+                doc_string=str(lib_obj.__doc__),
+                signature=signature,
+                permissions=set([lib_obj.permissions]),
+                is_from_lib=True,
+            )
 
-    @classmethod
-    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
-        return cls.__service_config_registry__
+            LibConfigRegistry.register(lib_config)
 
-    @classmethod
-    def path_exists(cls, path: str):
-        return path in cls.__service_config_registry__
+
+# hacky, prevent circular imports
+for lib_obj in action_execute_registry_libs.flatten():
+    # # for functions
+    # func_name = func.__name__
+    # # for classes
+    # func_name = path.split(".")[-1]
+    if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+        register_lib_obj(lib_obj)
 
 
 def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:

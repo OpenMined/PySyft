@@ -1,7 +1,6 @@
 # stdlib
 from enum import Enum
 import sys
-import threading
 import types
 from typing import Any
 from typing import Callable
@@ -28,8 +27,25 @@ TYPE_BANK = {}
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
 
 
-def thread_ident() -> int:
-    return int(threading.current_thread().ident)
+def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type]]:
+    if keys is None:
+        return None
+    types = []
+    for key in keys:
+        _type = None
+        annotations = getattr(cls, "__annotations__", None)
+        if annotations and key in annotations:
+            _type = annotations[key]
+        else:
+            for parent_cls in cls.mro():
+                sub_annotations = getattr(parent_cls, "__annotations__", None)
+                if sub_annotations and key in sub_annotations:
+                    _type = sub_annotations[key]
+        if _type is None:
+            print(f"Failed to find type for key: {key} in {cls}")
+            return None
+        types.append(_type)
+    return types
 
 
 def recursive_serde_register(
@@ -72,11 +88,11 @@ def recursive_serde_register(
         # If serialize_attrs is provided, append it to our attr list
         attribute_list.update(serialize_attrs)
 
-    if exclude_attrs:
-        attribute_list = attribute_list - set(exclude_attrs)
-
     if issubclass(cls, Enum):
         attribute_list.update(["value"])
+
+    exclude_attrs = [] if exclude_attrs is None else exclude_attrs
+    attribute_list = attribute_list - set(exclude_attrs)
 
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because
@@ -84,6 +100,7 @@ def recursive_serde_register(
         setattr(cls, "__syft_serializable__", attribute_list)
 
     attributes = set(list(attribute_list)) if attribute_list else None
+    attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     # without fqn duplicate class names overwrite
@@ -92,8 +109,10 @@ def recursive_serde_register(
         _serialize,
         _deserialize,
         attributes,
+        exclude_attrs,
         serde_overrides,
         cls,
+        attribute_types,
     )
 
 
@@ -127,6 +146,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
     if fqn not in TYPE_BANK:
+        # third party
         raise Exception(f"{fqn} not in TYPE_BANK")
 
     msg.fullyQualifiedName = fqn
@@ -135,8 +155,10 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         serialize,
         deserialize,
         attribute_list,
+        exclude_attrs_list,
         serde_overrides,
         cls,
+        attribute_types,
     ) = TYPE_BANK[fqn]
 
     if nonrecursive or is_type:
@@ -149,6 +171,8 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
 
     if attribute_list is None:
         attribute_list = self.__dict__.keys()
+
+    attribute_list = set(attribute_list) - set(exclude_attrs_list)
 
     msg.init("fieldsName", len(attribute_list))
     msg.init("fieldsData", len(attribute_list))
@@ -224,8 +248,10 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         serialize,
         deserialize,
         attribute_list,
+        exclude_attrs_list,
         serde_overrides,
         cls,
+        attribute_types,
     ) = TYPE_BANK[proto.fullyQualifiedName]
 
     if class_type == type(None):
@@ -243,13 +269,14 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     kwargs = {}
 
     for attr_name, attr_bytes_list in zip(proto.fieldsName, proto.fieldsData):
-        attr_bytes = combine_bytes(attr_bytes_list)
-        attr_value = _deserialize(attr_bytes, from_bytes=True)
-        transforms = serde_overrides.get(attr_name, None)
+        if attr_name != "":
+            attr_bytes = combine_bytes(attr_bytes_list)
+            attr_value = _deserialize(attr_bytes, from_bytes=True)
+            transforms = serde_overrides.get(attr_name, None)
 
-        if transforms is not None:
-            attr_value = transforms[1](attr_value)
-        kwargs[attr_name] = attr_value
+            if transforms is not None:
+                attr_value = transforms[1](attr_value)
+            kwargs[attr_name] = attr_value
 
     if hasattr(class_type, "serde_constructor"):
         return getattr(class_type, "serde_constructor")(kwargs)
