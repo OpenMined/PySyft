@@ -72,7 +72,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.box_check_update = false
 
     node.vm.hostname = "rhel-9-arm64.openmined.grid"
-    node.vm.network :private_network
+    node.vm.network :private_network, ip: "192.168.56.2"
     node.vm.synced_folder "../../", "/home/vagrant/PySyft"
 
     node.vm.provider "vmware_desktop" do |vb|
