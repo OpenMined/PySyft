@@ -93,11 +93,25 @@ class UserService(AbstractService):
 
     @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
     def get_all(
-        self, context: AuthedServiceContext
+        self,
+        context: AuthedServiceContext,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
     ) -> Union[Optional[UserView], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
-            return [user.to(UserView) for user in result.ok()]
+            results = [user.to(UserView) for user in result.ok()]
+
+            # If chunk size is defined, then split list into evenly sized chunks
+            if page_size:
+                results = [
+                    results[i : i + page_size]
+                    for i in range(0, len(results), page_size)
+                ]
+                # Return the proper slice using chunk_index
+                results = results[page_index]
+
+            return results
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
         return SyftError(message="No users exists")
@@ -121,6 +135,8 @@ class UserService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_search: UserSearch,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
     ) -> Union[List[UserView], SyftError]:
         kwargs = user_search.to_dict(exclude_empty=True)
 
@@ -131,10 +147,21 @@ class UserService(AbstractService):
                 Allowed params: {valid_search_params}"
             )
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
+
         if result.is_err():
             return SyftError(message=str(result.err()))
         users = result.ok()
-        return [user.to(UserView) for user in users] if users is not None else []
+        results = [user.to(UserView) for user in users] if users is not None else []
+
+        # If page size is defined, then split list into evenly sized chunks
+        if page_size:
+            results = [
+                results[i : i + page_size] for i in range(0, len(results), page_size)
+            ]
+            # Return the proper slice using page_index
+            results = results[page_index]
+
+        return results
 
     @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
     def update(
