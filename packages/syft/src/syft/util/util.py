@@ -663,6 +663,10 @@ def autocache(
     url: str, extension: Optional[str] = None, cache: bool = True
 ) -> Optional[Path]:
     try:
+        test = os.environ.get('test-csvs') #???
+         
+        # if in test, use shortened data files
+        # TODO: Figure out where these datasets live
         data_path = get_root_data_path()
         file_hash = hashlib.sha256(url.encode("utf8")).hexdigest()
         filename = file_hash
