@@ -343,16 +343,17 @@ class UserCode(SyftObject):
                 # evil_string = f"{self.service_func_name}(**filtered_kwargs)"
                 # result = eval(evil_string, None, locals())  # nosec
                 result = execute_byte_code(
-                    raw_byte_code, 
-                    func_name=self.service_func_name, 
-                    code_id=self.id, 
-                    args=args, 
-                    kwargs=filtered_kwargs
+                    raw_byte_code,
+                    func_name=self.service_func_name,
+                    code_id=self.id,
+                    args=args,
+                    kwargs=filtered_kwargs,
                 )
                 # return the results
                 return result
             except Exception as e:
                 print(f"Failed to run unsafe_function. {e}")
+
         return wrapper
 
     @property
@@ -693,7 +694,7 @@ def execute_byte_code(
         return UserCodeExecutionResult(
             user_code_id=code_id,
             stdout=str(stdout.getvalue()),
-            stderr="",# str(stderr.getvalue()), 
+            stderr="",  # str(stderr.getvalue()),
             result=result,
             serialized_plot=serialized_plot,
         )
