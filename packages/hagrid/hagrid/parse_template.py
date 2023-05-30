@@ -157,16 +157,17 @@ def setup_from_manifest_template(
         # Get all files w.r.t that package e.g. grid, syft, hagrid
         template_files = all_template_files[package_name]
         package_path = template_files["path"]
-        to_absolute_file_path = lambda x: os.path.join(package_path, x)  # noqa: E731
 
         # common files
-        files_to_download += list(map(to_absolute_file_path, template_files["common"]))
+        files_to_download += [
+            os.path.join(package_path, f) for f in template_files["common"]
+        ]
 
         # docker related files
         if host_type in ["docker"]:
-            files_to_download += list(
-                map(to_absolute_file_path, template_files["docker"])
-            )
+            files_to_download += [
+                os.path.join(package_path, f) for f in template_files["docker"]
+            ]
 
         # add k8s related files
         # elif host_type in ["k8s"]:

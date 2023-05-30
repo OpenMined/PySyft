@@ -211,7 +211,7 @@ class PatchedFileLock(FileLock):
         # Acquire lock at OS level
         with self._lock_file:
             if self._data_file.exists():
-                for retry in range(10):
+                for _retry in range(10):
                     try:
                         data = json.loads(self._data_file.read_text())
                         break
@@ -256,7 +256,7 @@ class PatchedFileLock(FileLock):
 
         with self._lock_file:
             data = None
-            for retry in range(10):
+            for _retry in range(10):
                 try:
                     data = json.loads(self._data_file.read_text())
                     break
@@ -285,7 +285,7 @@ class PatchedFileLock(FileLock):
 
         with self._lock_file:
             data = None
-            for retry in range(10):
+            for _retry in range(10):
                 try:
                     data = json.loads(self._data_file.read_text())
                     break

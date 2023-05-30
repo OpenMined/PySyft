@@ -119,7 +119,7 @@ def instrument(
             # We have already decorated this function, override
             return func_or_class
 
-        setattr(func_or_class, "__tracing_unwrapped__", func_or_class)
+        func_or_class.__tracing_unwrapped__ = func_or_class
 
         tracer = existing_tracer or trace.get_tracer(func_or_class.__module__)
 
