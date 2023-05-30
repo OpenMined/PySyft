@@ -22,7 +22,6 @@ COPY grid/backend/wheels /wheels
 
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
     pip install --user /wheels/jaxlib-0.3.14-cp310-none-manylinux2014_aarch64.whl; \
-    pip install --user /wheels/tensorstore-0.1.25-cp310-cp310-linux_aarch64.whl; \
     fi
 
 WORKDIR /app
