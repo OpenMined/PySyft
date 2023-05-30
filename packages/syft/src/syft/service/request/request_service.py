@@ -132,6 +132,18 @@ class RequestService(AbstractService):
             return result.value
         return request.value
 
+    def save(
+        self, context: AuthedServiceContext, request: Request
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.update(context.credentials, request)
+        if result.is_ok():
+            return SyftSuccess(
+                message=f"Request: {request.id} updated successfully !!!"
+            )
+        return SyftError(
+            message=f"Failed to update Request: <{request.id}>. Error: {result.err()}"
+        )
+
 
 TYPE_TO_SERVICE[Request] = RequestService
 SERVICE_TO_TYPES[RequestService].update({Request})

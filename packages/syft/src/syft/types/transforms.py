@@ -76,6 +76,7 @@ def drop(list_keys: List[str]) -> Callable:
         for key in list_keys:
             if key in context.output:
                 del context.output[key]
+        print("In drop completed")
         return context
 
     return drop_keys

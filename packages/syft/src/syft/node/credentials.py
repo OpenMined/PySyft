@@ -22,9 +22,10 @@ SIGNING_KEY_FOR = "SigningKey for"
 class SyftVerifyKey(SyftBaseModel):
     verify_key: VerifyKey
 
-    @pydantic.validator("verify_key", pre=True, always=True)
-    def make_verify_key(cls, v: Union[str, VerifyKey]) -> VerifyKey:
-        return VerifyKey(bytes.fromhex(v)) if isinstance(v, str) else v
+    def __init__(self, verify_key: Union[str, VerifyKey]):
+        if isinstance(verify_key, str):
+            verify_key = VerifyKey(bytes.fromhex(verify_key))
+        super().__init__(verify_key=verify_key)
 
     def __str__(self) -> str:
         return self.verify_key.encode(encoder=HexEncoder).decode("utf-8")

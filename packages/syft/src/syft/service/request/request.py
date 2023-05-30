@@ -62,6 +62,20 @@ class Change(SyftObject):
 
 
 @serializable()
+class ChangeStatus(SyftObject):
+    __canonical_name__ = "ChangeStatus"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    change_id: UID
+    applied: bool = False
+
+    @staticmethod
+    def from_change(change: Change, applied: bool) -> Self:
+        return ChangeStatus(change_id=change.id, applied=applied)
+
+
+@serializable()
 class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -124,10 +138,10 @@ class Request(SyftObject):
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
     approval_time: Optional[DateTime]
-    status: RequestStatus = RequestStatus.PENDING
     node_uid: UID
     request_hash: str
     changes: List[Change]
+    history: List[ChangeStatus] = []
 
     __attr_searchable__ = [
         "requesting_user_verify_key",
@@ -136,6 +150,23 @@ class Request(SyftObject):
     ]
     __attr_unique__ = ["request_hash"]
     __attr_repr_cols__ = ["request_time", "status", "changes"]
+
+    @property
+    def status(self) -> RequestStatus:
+        if len(self.history) == 0:
+            return RequestStatus.PENDING
+
+        change_applied_map = {}
+        for change_status in self.history:
+            change_applied_map[change_status.id] = change_status.applied
+
+        all_changes_applied = all(change_applied_map.values())
+
+        request_status = (
+            RequestStatus.APPROVED if all_changes_applied else RequestStatus.REJECTED
+        )
+
+        return request_status
 
     def approve(self):
         api = APIRegistry.api_for(self.node_uid)
@@ -148,10 +179,25 @@ class Request(SyftObject):
         change_context = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
         for change in self.changes:
+            # by default change status is not applied
+            change_status = ChangeStatus(change_id=change.id, applied=False)
             result = change.apply(context=change_context)
             if result.is_err():
                 return result
+
+            # If no error, then change successfully applied.
+            change_status.applied = True
+            self.history.append(change_status)
+
+        self.save(context=context)
         return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
+
+    def save(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
+        # relative
+        from .request_service import RequestService
+
+        save_method = context.node.get_service_method(RequestService.save)
+        return save_method(context=context, request=self)
 
     def revert(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         change_context = ChangeContext.from_service(context)
@@ -214,8 +260,6 @@ class Request(SyftObject):
             changes=[policy_state_mutation, permission_change],
             requesting_user_verify_key=self.requesting_user_verify_key,
         )
-
-        self.status = RequestStatus.APPROVED
 
         new_request = api.services.request.submit(submit_request)
         if not new_request:

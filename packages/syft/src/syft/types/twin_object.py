@@ -36,9 +36,9 @@ class TwinObject(SyftObject):
 
     id: UID
     private_obj: ActionObject
-    private_obj_id: Optional[UID]
+    private_obj_id: UID = None  # type: ignore
     mock_obj: ActionObject
-    mock_obj_id: Optional[UID]
+    mock_obj_id: UID = None  # type: ignore
 
     @pydantic.validator("private_obj", pre=True, always=True)
     def make_private_obj(cls, v: ActionObject) -> ActionObject:
