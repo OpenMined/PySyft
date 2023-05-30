@@ -13,6 +13,19 @@
   become: yes
   when: vagrant is defined
 
+- name: Ensure /root/.profile exists
+  ansible.builtin.file:
+    path: /root/.profile
+    state: touch
+  become: yes
+
+- name: Add path for root
+  ansible.builtin.lineinfile:
+    path: /root/.profile
+    line: "export PATH=$PATH:/usr/local/bin"
+    state: present
+  become: yes
+
 - name: Install HAGrid (temp root)
   shell: "pip install -e {{ syft_dir }}/packages/hagrid"
   become: yes

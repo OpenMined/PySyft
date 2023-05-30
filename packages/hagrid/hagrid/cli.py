@@ -2132,7 +2132,8 @@ def create_launch_docker_cmd(
     else:
         cmd += " ".join(args)
 
-    cmd += " docker-compose -p " + snake_name
+    # TODO: add detection of docker-compose vs docker compose for podman
+    cmd += " docker compose -p " + snake_name
 
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
@@ -3135,7 +3136,8 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
         env_var = ";export $(cat ../.env | sed 's/#.*//g' | xargs);"
 
     cmd = ""
-    cmd += "docker-compose"
+    # TODO: add detection of docker-compose vs docker compose for podman
+    cmd += "docker compose"
     cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
     cmd += " down --remove-orphans"

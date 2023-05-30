@@ -187,8 +187,9 @@ class DependencyGridDockerCompose(Dependency):
     of: str = "grid"
 
     def check(self) -> None:
+        # TODO: add detection of docker-compose vs docker compose for podman
         binary_info = BinaryInfo(
-            binary="docker", version_cmd="docker-compose version"
+            binary="docker", version_cmd="docker compose version"
         ).get_binary_info()
 
         if (
@@ -495,7 +496,8 @@ def wsl_linux_info() -> str:
 def check_docker_version() -> Optional[str]:
     if is_windows():
         return "N/A"  # todo fix to work with windows
-    result = os.popen("docker-compose version", "r").read()  # nosec
+    # TODO: add detection of docker-compose vs docker compose for podman
+    result = os.popen("docker compose version", "r").read()  # nosec
     version = None
     if "version" in result:
         version = result.split()[-1]
