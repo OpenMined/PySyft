@@ -26,6 +26,8 @@ from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .action_graph import ExecutionStatus
+from .action_graph_service import ActionGraphService
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -409,11 +411,16 @@ class ActionService(AbstractService):
             else:
                 return Err("Unknown action")
 
+        update_node_status = context.node.get_service_method(
+            ActionGraphService.update_action_status
+        )
         if result_action_object.is_err():
+            update_node_status(context, action.id, ExecutionStatus.FAILED)
             return Err(
                 f"Failed executing action {action}, result is an error: {result_action_object.err()}"
             )
         else:
+            update_node_status(context, action.id, ExecutionStatus.DONE)
             result_action_object = result_action_object.ok()
 
         # check if we have read permissions on the result
@@ -428,9 +435,11 @@ class ActionService(AbstractService):
             has_result_read_permission=has_result_read_permission,
         )
         if set_result.is_err():
+            update_node_status(context, action.result_id.id, ExecutionStatus.FAILED)
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"
             )
+        update_node_status(context, action.result_id.id, ExecutionStatus.DONE)
 
         if isinstance(result_action_object, TwinObject):
             result_action_object = result_action_object.mock

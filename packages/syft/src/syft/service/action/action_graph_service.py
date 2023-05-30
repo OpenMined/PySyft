@@ -137,6 +137,7 @@ class ActionGraphService(AbstractService):
     def get(
         self, uid: UID, context: AuthedServiceContext
     ) -> Union[NodeActionData, SyftError]:
+        uid = uid.id
         result = self.store.get(uid=uid, credentials=context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
@@ -145,6 +146,7 @@ class ActionGraphService(AbstractService):
     def remove_node(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
+        uid = uid.id
         result = self.store.delete(
             uid=uid,
             credentials=context.credentials,
@@ -175,6 +177,7 @@ class ActionGraphService(AbstractService):
         uid: UID,
         node_data: NodeActionDataUpdate,
     ) -> Union[NodeActionData, SyftError]:
+        uid = uid.id
         result = self.store.update(
             uid=uid, data=node_data, credentials=context.credentials
         )
@@ -188,6 +191,7 @@ class ActionGraphService(AbstractService):
         action_id: UID,
         status: ExecutionStatus,
     ) -> Union[SyftSuccess, SyftError]:
+        action_id = action_id.id
         try:
             node_data = NodeActionDataUpdate(status=status)
         except ValidationError as e:

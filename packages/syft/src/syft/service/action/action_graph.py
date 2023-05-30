@@ -263,7 +263,9 @@ class NetworkXBackingStore(BaseGraphStore):
 
     def get(self, uid: UID) -> Any:
         node_data = self.db.nodes.get(uid)
-        return node_data.get("data")
+        if node_data is not None:
+            return node_data.get("data")
+        return None
 
     def exists(self, uid: Any) -> bool:
         return uid in self.nodes()
