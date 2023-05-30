@@ -1,17 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Prism from 'prismjs';
-  import 'prismjs/components/prism-python';
-  import 'prismjs/plugins/normalize-whitespace/prism-normalize-whitespace';
-  import 'prismjs/plugins/show-invisibles/prism-show-invisibles';
-  import 'prismjs/themes/prism-solarizedlight.css';
-  import 'prismjs/plugins/show-invisibles/prism-show-invisibles.css';
+  import PrismCode from '$lib/components/PrismCode.svelte';
   import { getAllCodeRequests } from '$lib/api/requests';
 
   let requests;
 
   onMount(async () => {
-    Prism.highlightAll();
     requests = await getAllCodeRequests();
   });
 </script>
@@ -24,11 +18,8 @@
   {:else}
     <div class="flex flex-col gap-4">
       {#each requests as request}
-        <pre class="bg-gray-800 rounded-lg p-6">
-          <code class="language-python">
-            {@html Prism.highlight(`\n${request.raw_code}\n`, Prism.languages.python, 'python')}
-          </code>
-        </pre>
+        <!-- prettier-ignore -->
+        <PrismCode code={request.raw_code} />
       {/each}
     </div>
   {/if}
