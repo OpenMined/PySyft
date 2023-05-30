@@ -5,6 +5,7 @@ from inspect import Signature
 import types
 from typing import Any
 from typing import Callable
+from typing import ClassVar
 from typing import Dict
 from typing import KeysView
 from typing import List
@@ -159,15 +160,17 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             values["id"] = id_field.type_()
         return values
 
-    __attr_searchable__: List[str] = []  # keys which can be searched in the ORM
-    __attr_unique__: List[str] = []
+    __attr_searchable__: ClassVar[
+        List[str]
+    ] = []  # keys which can be searched in the ORM
+    __attr_unique__: ClassVar[List[str]] = []
     # the unique keys for the particular Collection the objects will be stored in
     __serde_overrides__: Dict[
         str, Sequence[Callable]
     ] = {}  # List of attributes names which require a serde override.
     __owner__: str
 
-    __attr_repr_cols__: List[str] = []  # show these in html repr collections
+    __attr_repr_cols__: ClassVar[List[str]] = []  # show these in html repr collections
 
     def to_mongo(self) -> Dict[str, Any]:
         warnings.warn(
