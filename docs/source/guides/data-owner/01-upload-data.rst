@@ -124,7 +124,7 @@ For this tutorial, we will use a simple dataset of four peoples ``ages``.
       dataset = pd.DataFrame(data)
       print(dataset.head())
    except Exception:
-      print("Install the latest version of Pandas using the command: !pip install pandas")
+      print("Install the latest version of Pandas using the command: %pip install pandas")
 
    Out:
 

@@ -598,7 +598,7 @@ def monkey_patch_getdef(self, obj, oname="") -> Union[str, None]:
     try:
         if hasattr(obj, "__ipython_inspector_signature_override__"):
             return _render_signature(
-                getattr(obj, "__ipython_inspector_signature_override__"), oname
+                obj.__ipython_inspector_signature_override__, oname
             )
         return _getdef(self, obj, oname)
     except Exception:

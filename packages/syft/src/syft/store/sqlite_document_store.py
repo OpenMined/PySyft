@@ -14,6 +14,8 @@ from typing import Type
 from typing import Union
 
 # third party
+from pydantic import Field
+from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
@@ -365,19 +367,17 @@ class SQLiteStoreClientConfig(StoreClientConfig):
     """
 
     filename: Optional[str] = None
-    path: Union[str, Path]
+    path: Union[str, Path] = Field(default_factory=tempfile.gettempdir)
     check_same_thread: bool = True
     timeout: int = 5
 
-    def __init__(
-        self,
-        filename: Optional[str] = None,
-        path: Optional[Union[str, Path]] = None,
-        *args,
-        **kwargs,
-    ):
-        path_ = tempfile.gettempdir() if path is None else path
-        super().__init__(filename=filename, path=path_, *args, **kwargs)
+    # We need this in addition to Field(default_factory=...)
+    # so users can still do SQLiteStoreClientConfig(path=None)
+    @validator("path", pre=True)
+    def __default_path(cls, path: Optional[Union[str, Path]]) -> Union[str, Path]:
+        if path is None:
+            return tempfile.gettempdir()
+        return path
 
     @property
     def file_path(self) -> Optional[Path]:

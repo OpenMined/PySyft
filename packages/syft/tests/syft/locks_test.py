@@ -374,12 +374,12 @@ def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     lock = SyftLock(config)
 
     def _kv_cbk(tid: int) -> None:
-        for idx in range(repeats):
+        for _idx in range(repeats):
             locked = lock.acquire()
             if not locked:
                 continue
 
-            for retry in range(10):
+            for _retry in range(10):
                 try:
                     with open(temp_file, "r") as f:
                         prev = f.read()
@@ -436,7 +436,7 @@ def test_parallel_joblib(
         f.write("0")
 
     def _kv_cbk(tid: int) -> None:
-        for idx in range(repeats):
+        for _idx in range(repeats):
             with SyftLock(config):
                 with open(temp_file, "r") as f:
                     prev = int(f.read())
