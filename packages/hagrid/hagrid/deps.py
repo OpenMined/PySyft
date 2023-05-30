@@ -606,7 +606,7 @@ def check_deps(
         of = f" {of}"
     # output += f"Checking{of} Dependencies:\n"
     issues = []
-    for name, dep in deps.items():
+    for dep in deps.values():
         dep.check()
         output += (dep.display + "\n") if display else ""
         issues += dep.issues

@@ -17,7 +17,7 @@ from six.moves import cStringIO
 class FixUnparser(astunparse.Unparser):
     def _Constant(self, t: _ast.expr) -> None:
         if not hasattr(t, "kind"):
-            setattr(t, "kind", None)
+            t.kind = None
 
         super()._Constant(t)
 
