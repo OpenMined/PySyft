@@ -27,7 +27,6 @@ from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Request
-from .request import RequestStatus
 from .request import SubmitRequest
 from .request_stash import RequestStash
 
@@ -96,16 +95,6 @@ class RequestService(AbstractService):
     @service_method(path="request.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Request], SyftError]:
         result = self.stash.get_all(context.credentials)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        requests = result.ok()
-        return requests
-
-    @service_method(path="request.get_all_for_status", name="get_all_for_status")
-    def get_all_for_status(
-        self, context: AuthedServiceContext, status: RequestStatus
-    ) -> Union[List[Request], SyftError]:
-        result = self.stash.get_all_for_status(status=status)
         if result.is_err():
             return SyftError(message=str(result.err()))
         requests = result.ok()

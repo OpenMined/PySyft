@@ -146,7 +146,6 @@ class Request(SyftObject):
     __attr_searchable__ = [
         "requesting_user_verify_key",
         "approving_user_verify_key",
-        "status",
     ]
     __attr_unique__ = ["request_hash"]
     __attr_repr_cols__ = ["request_time", "status", "changes"]
@@ -390,27 +389,6 @@ class EnumMutation(ObjectMutation):
     match_type: bool = True
 
     __attr_repr_cols__ = ["linked_obj", "attr_name", "value"]
-
-    def __init__(
-        self,
-        attr_name: str,
-        enum_type: Type[Enum],
-        match_type: bool = True,
-        linked_obj: Optional[LinkedObject] = None,
-        value: Optional[Enum] = None,
-        id: Optional[UID] = None,
-    ) -> None:
-        if id is None:
-            id = UID()
-
-        super().__init__(
-            id=id,
-            linked_obj=linked_obj,
-            attr_name=attr_name,
-            value=value,
-            enum_type=enum_type,
-            match_type=match_type,
-        )
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
