@@ -275,13 +275,13 @@ class MongoStorePartition(StorePartition):
             obj_id = obj["id"]
 
             # Set ID to the updated object value
-            setattr(obj, "id", prev_obj["id"])
+            obj.id = prev_obj["id"]
 
             # Create the Mongo object
             storage_obj = obj.to(self.storage_type)
 
             # revert the ID
-            setattr(obj, "id", obj_id)
+            obj.id = obj_id
 
             try:
                 collection.update_one(

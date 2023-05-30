@@ -103,7 +103,7 @@ class PartialModelMetaclass(ModelMetaclass):
                 # Restore requiredness
                 optionalize(fields, restore=True)
 
-        setattr(cls, "__init__", __init__)
+        cls.__init__ = __init__
 
         def iter_exclude_empty(self) -> TupleGenerator:
             for key, value in self.__dict__.items():
