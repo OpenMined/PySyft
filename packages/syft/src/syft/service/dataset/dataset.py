@@ -131,11 +131,9 @@ def is_action_data_empty(mock: Any) -> bool:
     from ...service.action.action_data_empty import ActionDataEmpty
     from ...service.action.action_object import AnyActionObject
 
-    if isinstance(mock, AnyActionObject) and isinstance(
+    return isinstance(mock, AnyActionObject) and isinstance(
         mock.syft_action_data, ActionDataEmpty
-    ):
-        return True
-    return False
+    )
 
 
 def check_mock(data: Any, mock: Any) -> bool:
@@ -167,21 +165,22 @@ class CreateAsset(SyftObject):
         validate_assignment = True
 
     @root_validator()
-    def __empty_mock_cannot_be_real(cls, values) -> Dict:
+    def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
         """set mock_is_real to False whenever mock is None or empty"""
-        # relative
-        from ..action.action_data_empty import ActionDataEmpty
-        from ..action.action_object import ActionObject
 
-        mock = values.get("mock")
-        if mock is None or (
-            isinstance(mock, ActionObject)
-            and isinstance(mock.syft_action_data, ActionDataEmpty)
-        ):
+        if (mock := values.get("mock")) is None or is_action_data_empty(mock):
             values["mock_is_real"] = False
-            return values
 
         return values
+
+    @validator("mock_is_real")
+    def __mock_is_real_for_empty_mock_must_be_false(
+        cls, v: bool, values: dict[str, Any], **kwargs: Any
+    ) -> bool:
+        if v and ((mock := values.get("mock")) is None or is_action_data_empty(mock)):
+            raise ValueError("mock_is_real must be False if mock is not provided")
+
+        return v
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
