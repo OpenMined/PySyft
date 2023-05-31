@@ -54,6 +54,7 @@ from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
+from ..action.action_object import ActionObject
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
@@ -326,7 +327,7 @@ class UserCode(SyftObject):
         print("WARNING: This code was submitted by a User and could be UNSAFE.")
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
-        def wrapper(*args: Any, **kwargs: Any) -> Callable:
+        def wrapper(return_context: bool = False, *args: Any, **kwargs: Any) -> Callable:
             try:
                 filtered_kwargs = {}
                 for k, v in kwargs.items():
@@ -347,7 +348,8 @@ class UserCode(SyftObject):
                     func_name=self.service_func_name, 
                     code_id=self.id, 
                     args=args, 
-                    kwargs=filtered_kwargs
+                    kwargs=filtered_kwargs,
+                    return_context=return_context
                 )
                 # return the results
                 return result
@@ -609,6 +611,28 @@ def submit_user_code_to_user_code() -> List[Callable]:
     ]
 
 
+
+@serializable()
+class ExecutionContext(SyftObject):
+    # version
+    __canonical_name__ = "ExecutionContext"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    user_code_id: UID
+    stdout: str
+    stderr: str
+    serialized_plot: Optional[bytes] = None
+    syft_dont_wrap_attrs = ["get_plot"]
+    syft_passthrough_attrs = ["get_plot"]
+    
+    def get_plot(self) -> Image:
+        # TODO: add caching to optimize memory
+        if self.serialized_plot is not None:
+            return Image.open(BytesIO(self.serialized_plot), "r")
+        else:
+            return None
+
 @serializable()
 class UserCodeExecutionResult(SyftObject):
     # version
@@ -617,20 +641,11 @@ class UserCodeExecutionResult(SyftObject):
 
     id: UID
     user_code_id: UID
-    stdout: str
-    stderr: str
-    result: Any
-    serialized_plot: Optional[bytes] = None
-    syft_dont_wrap_attrs = ["get_plot"]
-    syft_passthrough_attrs = ["get_plot"]
-
+    result_id: UID
+    context: Optional[ExecutionContext] = None
+    
     def get_plot(self) -> Image:
-        # TODO: add caching to optimize memory
-        if self.serialized_plot is not None:
-            return Image.open(BytesIO(self.serialized_plot), "r")
-        else:
-            return None
-
+        return self.context.get_plot()
 
 def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     return execute_byte_code(
@@ -643,7 +658,7 @@ def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
 
 
 def execute_byte_code(
-    byte_code, func_name, code_id, args, kwargs: Dict[str, Any]
+    byte_code, func_name, code_id, args, kwargs: Dict[str, Any], return_context: bool = False
 ) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
@@ -665,38 +680,35 @@ def execute_byte_code(
             result = eval(evil_string, None, locals())  # nosec
         except Exception as e:
             # TODO Check if this works
-            return UserCodeExecutionResult(
+            return SyftError("Function execution failed")
+        
+        if not return_context:
+            return result
+        
+        else:
+            plot = None
+            serialized_plot = None
+            # third party
+            import matplotlib.pyplot as plt
+
+            plot = plt.gcf()
+
+            if plot.get_axes():
+                buf = BytesIO()
+                plot.savefig(buf, format="png")
+                serialized_plot = buf.getvalue()
+
+            # restore stdout and stderr
+            sys.stdout = stdout_
+            sys.stderr = stderr_
+
+            # No stderr for the moment
+            return result, ExecutionContext(
                 user_code_id=code_id,
-                stdout="",
-                stderr=str(e),
-                result="",
-                serialized_plot=None,
+                stdout=str(stdout.getvalue()),
+                stderr="",# str(stderr.getvalue()),
+                serialized_plot=serialized_plot,
             )
-
-        plot = None
-        serialized_plot = None
-        # third party
-        import matplotlib.pyplot as plt
-
-        plot = plt.gcf()
-
-        if plot.get_axes():
-            buf = BytesIO()
-            plot.savefig(buf, format="png")
-            serialized_plot = buf.getvalue()
-
-        # restore stdout and stderr
-        sys.stdout = stdout_
-        sys.stderr = stderr_
-
-        # No stderr for the moment
-        return UserCodeExecutionResult(
-            user_code_id=code_id,
-            stdout=str(stdout.getvalue()),
-            stderr="",# str(stderr.getvalue()), 
-            result=result,
-            serialized_plot=serialized_plot,
-        )
 
     except Exception as e:
         print("execute_byte_code failed", e, file=stderr_)

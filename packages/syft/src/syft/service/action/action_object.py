@@ -709,7 +709,13 @@ class ActionObject(SyftObject):
 
         return client.api.services.action.set(self)
 
-    def get_from(self, client: SyftClient) -> Any:
+    def get_from(
+        self, 
+        client: SyftClient, 
+        return_context: bool,
+        print: bool,
+    ) -> Any:
+
         """Get the object from a Syft Client"""
         res = client.api.services.action.get(self.id)
         if not isinstance(res, ActionObject):

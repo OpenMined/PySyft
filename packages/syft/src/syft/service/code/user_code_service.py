@@ -29,7 +29,7 @@ from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
-from .user_code import UserCodeExecutionResult
+from .user_code import UserCodeExecutionResult, ExecutionContext
 from .user_code import UserCodeStatus
 from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
@@ -143,34 +143,27 @@ class UserCodeService(AbstractService):
             user_code_items = result.ok()
             load_approved_policy_code(user_code_items=user_code_items)
             
-    @service_method(path="code.execution_logs", name="execution_logs")
-    def execution_logs(self, context: AuthedServiceContext, result: Any, code_id: UID):
+    @service_method(path="code.execution_logs", name="execution_logs", roles=GUEST_ROLE_LEVEL)
+    def execution_logs(self, context: AuthedServiceContext, result_id: UID, code_id: UID):
         user_code = self.get_by_uid(context=context, uid=code_id)
         if isinstance(user_code, SyftError):
             return user_code
         
-        action_service = context.node.get_service("actionservice")
-        # final_result = action_service.get(context=context, uid=result_id)
-        # print(f'{final_result=}')
-        # print(type(final_result))
-        # if not final_result.is_ok():
-        #     return final_result
-        # final_result = final_result.ok()
-        final_result = result
-        
         # TODO: adapt this for multiple results with the same data
         output_histories = user_code.output_policy.output_history
         for history in output_histories:
-            output = get_outputs(context=context, output_history=history)
-            if output.result == final_result:
-                return output
-        return SyftError(message="Unable to find result ID in code history")
+            if isinstance(history.outputs, UserCodeExecutionResult):
+                if history.outputs.result_id == result_id:
+                    return history.outputs.context
+        return SyftError(message="Unable to find context for this result")
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[ActionObject, SyftNotReady, SyftError]:
         """Call a User Code Function"""
+        import sys
+
         try:
             filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(context.credentials, uid=uid)
@@ -180,6 +173,7 @@ class UserCodeService(AbstractService):
             # Unroll variables
             code_item = result.ok()
             status = code_item.status
+            print(f'{status=}', file=sys.stderr)
             # Check if we are allowed to execute the code
             if status.for_context(context) != UserCodeStatus.EXECUTE:
                 if status.for_context(context) == UserCodeStatus.SUBMITTED:
@@ -196,20 +190,26 @@ class UserCodeService(AbstractService):
 
             # Check if the OutputPolicy is valid
             is_valid = output_policy.valid
+            print(f'{output_policy.output_history=}', file=sys.stderr)
             if not is_valid:
                 if len(output_policy.output_history) > 0:
                     res = get_outputs(
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
-                    if hasattr(res, "syft_action_data") and isinstance(
-                        res.syft_action_data, UserCodeExecutionResult
-                    ):
-                        res = res.syft_action_data
-                    if isinstance(res, UserCodeExecutionResult):
-                        return ActionObject.from_obj(res.result)
-                    return ActionObject.from_obj(res)
+                    print(f'{res=}', file=sys.stderr)
+                    # if hasattr(res, "syft_action_data") and isinstance(
+                    #     res.syft_action_data, UserCodeExecutionResult
+                    # ):
+                    #     res = res.syft_action_data
+                    # if isinstance(res, UserCodeExecutionResult):
+                    #     return ActionObject.from_obj(res.result)
+                    if not isinstance(res, ActionObject):
+                        return ActionObject.from_obj(res)
+                    return res
                 return is_valid
+
+            print(f'Wait a minute', file=sys.stderr)
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
@@ -254,6 +254,13 @@ def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) ->
         if len(outputs) == 1:
             return outputs[0]
         return outputs
+    elif isinstance(output_history.outputs, UserCodeExecutionResult):
+        action_service = context.node.get_service("actionservice")
+        output_id = output_history.outputs.result_id
+        result = action_service.get(context, uid=output_id, twin_mode=TwinMode.PRIVATE)
+        if isinstance(result, OkErr):
+            result = result.value
+        return result
     else:
         raise NotImplementedError
 

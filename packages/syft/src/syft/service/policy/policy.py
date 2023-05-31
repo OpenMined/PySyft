@@ -282,7 +282,7 @@ class OutputHistory(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     output_time: DateTime
-    outputs: Optional[Union[List[UID], Dict[str, UID]]]
+    outputs: Optional[Union[List[UID], Dict[str, UID], Any]]
     executing_user_verify_key: SyftVerifyKey
 
 
@@ -300,7 +300,12 @@ class OutputPolicy(Policy):
         context: NodeServiceContext,
         outputs: Any,
     ) -> Any:
-        output_uids = filter_only_uids(outputs)
+        
+        from ..code.user_code import UserCodeExecutionResult
+        if isinstance(outputs, UserCodeExecutionResult):
+            output_uids = outputs
+        else:
+            output_uids = filter_only_uids(outputs)
         if isinstance(output_uids, UID):
             output_uids = [output_uids]
         history = OutputHistory(
