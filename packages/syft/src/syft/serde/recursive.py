@@ -48,7 +48,7 @@ def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type
     return types
 
 
-def check_fqn_alias(cls: Union[object, type]) -> Optional[str]:
+def check_fqn_alias(cls: Union[object, type]) -> Optional[tuple]:
     """Currently, typing.Any has different metaclasses in different versions of Python 🤦‍♂️.
     For Python <=3.10
     Any is an instance of typing._SpecialForm
@@ -63,10 +63,7 @@ def check_fqn_alias(cls: Union[object, type]) -> Optional[str]:
     As their serde is same, we can use the same serde for both of them.
     with aliases for  fully qualified names in type bank"""
     if cls == Any:
-        if sys.version_info <= (3, 10):
-            return "typing._AnyMeta"
-        else:
-            return "typing._SpecialForm"
+        return ("typing._AnyMeta", "typing._SpecialForm")
 
     return None
 
@@ -141,8 +138,9 @@ def recursive_serde_register(
     TYPE_BANK[fqn] = serde_attributes
 
     alias_fqn = check_fqn_alias(cls)
-    if alias_fqn:
-        TYPE_BANK[alias_fqn] = serde_attributes
+    if isinstance(alias_fqn, tuple):
+        for alias in alias_fqn:
+            TYPE_BANK[alias] = serde_attributes
 
 
 def chunk_bytes(
