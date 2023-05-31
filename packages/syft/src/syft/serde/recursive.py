@@ -103,7 +103,7 @@ def recursive_serde_register(
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because
         # pydantic objects inherit by default
-        setattr(cls, "__syft_serializable__", attribute_list)
+        cls.__syft_serializable__ = attribute_list
 
     attributes = set(list(attribute_list)) if attribute_list else None
     attribute_types = get_types(cls, attributes)
@@ -288,7 +288,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
             kwargs[attr_name] = attr_value
 
     if hasattr(class_type, "serde_constructor"):
-        return getattr(class_type, "serde_constructor")(kwargs)
+        return class_type.serde_constructor(kwargs)
 
     if issubclass(class_type, Enum) and "value" in kwargs:
         obj = class_type.__new__(class_type, kwargs["value"])  # type: ignore
