@@ -274,11 +274,13 @@ def reconstruct_args_kwargs(
         autosplat_objs[autosplat_key] = autosplat_type(**init_kwargs)
 
     final_kwargs = {}
-    for param_key, _ in signature.parameters.items():
+    for param_key, param in signature.parameters.items():
         if param_key in kwargs:
             final_kwargs[param_key] = kwargs[param_key]
         elif param_key in autosplat_objs:
             final_kwargs[param_key] = autosplat_objs[param_key]
+        elif not isinstance(param.default, type(Parameter.empty)):
+            final_kwargs[param_key] = param.default
         else:
             raise Exception(f"Missing {param_key} not in kwargs.")
     return (args, final_kwargs)
