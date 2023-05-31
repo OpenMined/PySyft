@@ -476,7 +476,6 @@ class ActionObject(SyftObject):
     def syft_point_to(self, node_uid: UID) -> "ActionObject":
         """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
-
         return self
 
     def syft_get_property(self, obj: Any, method: str) -> Any:
@@ -573,15 +572,6 @@ class ActionObject(SyftObject):
         api.services.action.execute(action)
 
     def _syft_prepare_obj_uid(self, obj) -> LineageID:
-        # third party
-        # import ipdb
-        # ipdb.set_trace()
-
-        # relative
-        from ...client.api import APIRegistry
-
-        APIRegistry.api_for(node_uid=self.syft_node_uid)
-
         # We got the UID
         if isinstance(obj, (UID, LineageID)):
             return LineageID(obj.id)
@@ -593,7 +583,6 @@ class ActionObject(SyftObject):
         # We got the ActionObject. We need to save it in the store.
         if isinstance(obj, ActionObject):
             self._syft_try_to_save_to_store(obj)
-            # api.services.graph.add_action_obj(action_obj=obj)
             return obj.syft_lineage_id
 
         # We got a raw object. We need to create the ActionObject from scratch and save it in the store.
@@ -602,7 +591,6 @@ class ActionObject(SyftObject):
         act_obj = ActionObject.from_obj(obj, id=obj_id, syft_lineage_id=lin_obj_id)
 
         self._syft_try_to_save_to_store(act_obj)
-        # api.services.graph.add_action_obj(action_obj=act_obj)
 
         return act_obj.syft_lineage_id
 
@@ -659,8 +647,14 @@ class ActionObject(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
-        api.services.graph.add_action(action)
+        try:
+            api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+            api.services.graph.add_action(action)
+        except Exception:
+            # stdlib
+            import warnings
+
+            warnings.warn("Cannot add a node to the action graph")
 
         return action
 
