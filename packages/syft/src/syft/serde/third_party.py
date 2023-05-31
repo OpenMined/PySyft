@@ -6,10 +6,8 @@ from io import BytesIO
 
 # third party
 from dateutil import parser
-import flax
-from flax.core.frozen_dict import FrozenDict
+from jax import Array
 from jax import numpy as jnp
-from jaxlib.xla_extension import DeviceArray
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import networkx as nx
@@ -149,19 +147,11 @@ except Exception:  # nosec
 
 # jax
 recursive_serde_register(
-    DeviceArray,
+    Array,
     serialize=lambda x: serialize(np.array(x), to_bytes=True),
     deserialize=lambda x: jnp.array(deserialize(x, from_bytes=True)),
 )
 
-
-recursive_serde_register(
-    FrozenDict,
-    serialize=lambda x: serialize(flax.serialization.to_state_dict(x), to_bytes=True),
-    deserialize=lambda x: FrozenDict(
-        flax.serialization.from_state_dict(FrozenDict, deserialize(x, from_bytes=True))
-    ),
-)
 
 # unsure why we have to register the object not the type but this works
 recursive_serde_register(np.core._ufunc_config._unspecified())
