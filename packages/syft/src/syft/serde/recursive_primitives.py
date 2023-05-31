@@ -14,6 +14,7 @@ from typing import Mapping
 from typing import Optional
 from typing import TypeVar
 from typing import Union
+from typing import _AnyMeta
 from typing import _GenericAlias
 from typing import _SpecialForm
 from typing import cast
@@ -360,5 +361,9 @@ if sys.version_info >= (3, 9):
         ],
     )
     recursive_serde_register_type(_SpecialGenericAlias)
+
+if sys.version_info.major == 3 and sys.version_info.minor == 11:
+    # typing.Any parent class has been changed to _AnyMeta in python 3.11
+    recursive_serde_register_type(_AnyMeta)
 
 recursive_serde_register_type(EnumMeta)
