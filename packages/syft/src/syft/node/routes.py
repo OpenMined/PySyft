@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Dict
 
 # third party
@@ -111,7 +110,7 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_new_api_call(data)
 
-    def handle_login(email: str, password: str, node: AbstractNode) -> Any:
+    def handle_login(email: str, password: str, node: AbstractNode) -> Response:
         try:
             login_credentials = UserLoginCredentials(email=email, password=password)
         except ValidationError as e:
@@ -135,7 +134,7 @@ def make_routes(worker: Worker) -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    def handle_register(data: bytes, node: AbstractNode) -> Any:
+    def handle_register(data: bytes, node: AbstractNode) -> Response:
         user_create = deserialize(data, from_bytes=True)
 
         if not isinstance(user_create, UserCreate):
@@ -163,7 +162,7 @@ def make_routes(worker: Worker) -> APIRouter:
         request: Request,
         email: str = Body(..., example="info@openmined.org"),  # noqa: B008
         password: str = Body(..., example="changethis"),  # noqa: B008
-    ) -> Any:
+    ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(login.__module__).start_as_current_span(
                 login.__qualname__,
@@ -177,7 +176,7 @@ def make_routes(worker: Worker) -> APIRouter:
     @router.post("/register", name="register", status_code=200)
     def register(
         request: Request, data: bytes = Depends(get_body)  # noqa: B008
-    ) -> Any:
+    ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(register.__module__).start_as_current_span(
                 register.__qualname__,
