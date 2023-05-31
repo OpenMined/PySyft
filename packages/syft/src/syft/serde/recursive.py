@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from enum import EnumMeta
 import sys
 import types
 from typing import Any
@@ -61,9 +62,20 @@ def check_fqn_alias(cls: Union[object, type]) -> Optional[tuple]:
     have different python versions.
 
     As their serde is same, we can use the same serde for both of them.
-    with aliases for  fully qualified names in type bank"""
+    with aliases for  fully qualified names in type bank
+
+    In a similar manner for Enum.
+
+    For Python<=3.10:
+    Enum is metaclass of enum.EnumMeta
+
+    For Python>=3.11:
+    Enum is metaclass of enum.EnumType
+    """
     if cls == Any:
         return ("typing._AnyMeta", "typing._SpecialForm")
+    if cls == EnumMeta:
+        return ("enum.EnumMeta", "enum.EnumType")
 
     return None
 
@@ -81,6 +93,7 @@ def recursive_serde_register(
     base_attrs = None
     attribute_list: Set[str] = set()
 
+    alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
     fqn = f"{cls.__module__}.{cls.__name__}"
 
@@ -137,7 +150,6 @@ def recursive_serde_register(
 
     TYPE_BANK[fqn] = serde_attributes
 
-    alias_fqn = check_fqn_alias(cls)
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
             TYPE_BANK[alias] = serde_attributes
