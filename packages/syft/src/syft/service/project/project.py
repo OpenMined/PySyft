@@ -154,6 +154,7 @@ class ProjectEvent(SyftObject):
         try:
             signature = self.signature
             self.signature = None
+            self.syft_node_location = None
             signed_bytes = _serialize(self, to_bytes=True)
             self.creator_verify_key.verify_key.verify(signed_bytes, signature)
             self.signature = signature
