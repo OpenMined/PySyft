@@ -6,8 +6,8 @@ from io import BytesIO
 
 # third party
 from dateutil import parser
-from jax import Array
 from jax import numpy as jnp
+from jaxlib.xla_extension import ArrayImpl
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import networkx as nx
@@ -147,7 +147,7 @@ except Exception:  # nosec
 
 # jax
 recursive_serde_register(
-    Array,
+    ArrayImpl,
     serialize=lambda x: serialize(np.array(x), to_bytes=True),
     deserialize=lambda x: jnp.array(deserialize(x, from_bytes=True)),
 )
