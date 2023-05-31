@@ -152,7 +152,15 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10"]
         node-type: ["enclave"]
-        notebook-paths: ["tutorials/data-engineer", "tutorials/data-owner"]
+        notebook-paths:
+          [
+            "tutorials/data-engineer",
+            "tutorials/data-owner",
+            "tutorials/data-scientist",
+            "tutorials/hello-syft",
+            "tutorials/pandas-cookbook",
+            "tutorials/pandas-cookbook-level-2",
+          ]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
