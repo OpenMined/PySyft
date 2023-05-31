@@ -64,9 +64,9 @@ def check_fqn_alias(cls: Union[object, type]) -> Optional[str]:
     with aliases for  fully qualified names in type bank"""
     if cls == Any:
         if sys.version_info <= (3, 10):
-            return "typing._SpecialForm"
-        else:
             return "typing._AnyMeta"
+        else:
+            return "typing._SpecialForm"
 
     return None
 
