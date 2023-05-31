@@ -33,7 +33,7 @@ def_params = {
 
 
 def generate_lock_name(length: int = 10) -> str:
-    random.seed(datetime.datetime.now())
+    random.seed(datetime.datetime.now().timestamp())
     return "".join(random.choice(string.ascii_lowercase) for i in range(length))
 
 
