@@ -70,9 +70,9 @@ class ChangeStatus(SyftObject):
     change_id: UID
     applied: bool = False
 
-    @staticmethod
-    def from_change(change: Change, applied: bool) -> Self:
-        return ChangeStatus(change_id=change.id, applied=applied)
+    @classmethod
+    def from_change(cls, change: Change, applied: bool) -> Self:
+        return cls(change_id=change.id, applied=applied)
 
 
 @serializable()
