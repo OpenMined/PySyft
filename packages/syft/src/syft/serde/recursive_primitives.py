@@ -361,11 +361,5 @@ if sys.version_info >= (3, 9):
     )
     recursive_serde_register_type(_SpecialGenericAlias)
 
-if sys.version_info.major == 3 and sys.version_info.minor == 11:
-    # stdlib
-    from typing import _AnyMeta
-
-    # typing.Any parent class has been changed to _AnyMeta in python 3.11
-    recursive_serde_register_type(_AnyMeta)
-
+recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)
