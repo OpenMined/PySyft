@@ -30,6 +30,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -315,7 +316,7 @@ class ProjectRequest(ProjectEventAddObject):
     __canonical_name__ = "ProjectRequest"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    request: Request
+    linked_request: LinkedObject
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
 
     __hash_keys__ = [
@@ -324,8 +325,12 @@ class ProjectRequest(ProjectEventAddObject):
         "creator_verify_key",
         "prev_event_uid",
         "prev_event_hash",
-        "request",
+        "linked_request",
     ]
+
+    @property
+    def request(self):
+        return self.linked_request.resolve
 
     def approve(self) -> ProjectRequestResponse:
         result = self.request.approve()
@@ -1000,7 +1005,8 @@ class Project(SyftObject):
         self,
         request: Request,
     ):
-        request_event = ProjectRequest(request=request)
+        linked_request = LinkedObject.from_obj(request, node_uid=request.node_uid)
+        request_event = ProjectRequest(linked_request=linked_request)
         result = self.add_event(request_event)
 
         if isinstance(result, SyftSuccess):
