@@ -371,7 +371,7 @@ def propagate_node_uid(
 
         if op not in context.obj._syft_dont_wrap_attrs():
             if hasattr(result, "syft_node_uid"):
-                setattr(result, "syft_node_uid", syft_node_uid)
+                result.syft_node_uid = syft_node_uid
         else:
             raise RuntimeError("dont propogate node_uid because output isnt wrapped")
     except Exception:
@@ -601,10 +601,10 @@ class ActionObject(SyftObject):
         remote_self: Optional[Union[UID, LineageID]] = None,
         args: Optional[
             List[Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
-        ] = [],
+        ] = None,
         kwargs: Optional[
             Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
-        ] = {},
+        ] = None,
         action_type: Optional[ActionType] = None,
     ) -> Action:
         """Generate new action from the information
@@ -627,6 +627,11 @@ class ActionObject(SyftObject):
             ValueError: For invalid args or kwargs
             PydanticValidationError: For args and kwargs
         """
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+
         arg_ids = []
         kwarg_ids = {}
 

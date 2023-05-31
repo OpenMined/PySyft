@@ -16,6 +16,8 @@ from typing import Union
 import matplotlib.pyplot as plt
 import networkx as nx
 import pydantic
+from pydantic import Field
+from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
@@ -196,23 +198,20 @@ class BaseGraphStore:
 
 @serializable()
 class InMemoryStoreClientConfig(StoreClientConfig):
-    filename: Optional[str] = None
-    path: Union[str, Path]
+    filename: str = "action_graph.bytes"
+    path: Union[str, Path] = Field(default_factory=tempfile.gettempdir)
 
-    def __init__(
-        self,
-        filename: Optional[str] = None,
-        path: Optional[Union[str, Path]] = None,
-        *args,
-        **kwargs,
-    ):
-        path_ = tempfile.gettempdir() if path is None else path
-        filename_ = "action_graph.bytes" if filename is None else filename
-        super().__init__(filename=filename_, path=path_, *args, **kwargs)
+    # We need this in addition to Field(default_factory=...)
+    # so users can still do InMemoryStoreClientConfig(path=None)
+    @validator("path", pre=True)
+    def __default_path(cls, path: Optional[Union[str, Path]]) -> Union[str, Path]:
+        if path is None:
+            return tempfile.gettempdir()
+        return path
 
     @property
-    def file_path(self) -> Optional[Path]:
-        return Path(self.path) / self.filename if self.filename is not None else None
+    def file_path(self) -> Path:
+        return Path(self.path) / self.filename
 
 
 @serializable(without=["_lock"])
@@ -377,12 +376,16 @@ class InMemoryActionGraphStore(ActionGraphStore):
         self,
         node: NodeActionData,
         credentials: SyftVerifyKey,
-        parent_uids: List[UID] = [],
+        parent_uids: Optional[List[UID]] = None,
     ) -> Result[NodeActionData, str]:
         if self.graph.exists(uid=node.id):
             return Err(f"Node already exists in the graph: {node}")
 
         self.graph.set(uid=node.id, data=node)
+
+        if parent_uids is None:
+            parent_uids = []
+
         for parent_uid in parent_uids:
             result = self.add_edge(
                 parent=parent_uid,
