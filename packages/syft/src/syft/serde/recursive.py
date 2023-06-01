@@ -103,7 +103,7 @@ def recursive_serde_register(
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because
         # pydantic objects inherit by default
-        cls.__syft_serializable__ = attribute_list
+        cls.__syft_serializable__ = attribute_list  # type: ignore
 
     attributes = set(list(attribute_list)) if attribute_list else None
     attribute_types = get_types(cls, attributes)
