@@ -12,6 +12,7 @@ from typing import Tuple
 from typing import Union
 
 # third party
+from pydantic import ValidationError
 from pydantic import root_validator
 from pydantic import validator
 from result import Err
@@ -210,8 +211,15 @@ class CreateAsset(SyftObject):
     def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
         if isinstance(mock_data, SyftError):
             raise SyftException(mock_data)
+
+        current_mock = self.mock
         self.mock = mock_data
-        self.mock_is_real = mock_is_real
+
+        try:
+            self.mock_is_real = mock_is_real
+        except ValidationError as e:
+            self.mock = current_mock
+            raise e
 
     def no_mock(self) -> None:
         # relative

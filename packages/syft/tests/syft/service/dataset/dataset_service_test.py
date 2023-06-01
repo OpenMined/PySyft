@@ -97,6 +97,25 @@ def test_mock_always_not_real_after_set_to_empty(asset_with_mock: Asset) -> None
     assert asset.mock_is_real
 
 
+@pytest.mark.parametrize(
+    "empty_mock",
+    [
+        None,
+        ActionObject.empty(),
+    ],
+)
+def test_cannot_set_empty_mock_with_true_mock_is_real(
+    asset_with_mock: Asset, empty_mock: Any
+) -> None:
+    asset = Asset(**asset_with_mock, mock_is_real=True)
+    assert asset.mock_is_real
+
+    with pytest.raises(ValidationError):
+        asset.set_mock(empty_mock, mock_is_real=True)
+
+    assert asset.mock is asset_with_mock["mock"]
+
+
 def test_dataset_cannot_have_assets_with_none_mock() -> None:
     TOTAL_ASSETS = 10
     ASSETS_WITHOUT_MOCK = random.randint(2, 8)
