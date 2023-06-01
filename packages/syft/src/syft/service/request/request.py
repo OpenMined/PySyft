@@ -35,9 +35,10 @@ from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
 from ..action.action_store import ActionPermission
+from ..code.user_code import ExecutionContext
 from ..code.user_code import UserCode
+from ..code.user_code import UserCodeExecutionResult
 from ..code.user_code import UserCodeStatus
-from ..code.user_code import ExecutionContext, UserCodeExecutionResult
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..response import SyftError
@@ -163,7 +164,9 @@ class Request(SyftObject):
                 return result
         return Ok(SyftSuccess(message=f"Request {self.id} changes reverted"))
 
-    def accept_by_depositing_result(self, exec_result: Any, context: Optional[ExecutionContext] = None):
+    def accept_by_depositing_result(
+        self, exec_result: Any, context: Optional[ExecutionContext] = None
+    ):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
         # stdlib
@@ -214,8 +217,8 @@ class Request(SyftObject):
         else:
             uc = UserCodeExecutionResult(
                 user_code_id=context.user_code_id,
-                result_id=action_object.id, 
-                context=context
+                result_id=action_object.id,
+                context=context,
             )
             state.apply_output(context=ctx, outputs=uc)
 

@@ -300,8 +300,9 @@ class OutputPolicy(Policy):
         context: NodeServiceContext,
         outputs: Any,
     ) -> Any:
-        
+        # relative
         from ..code.user_code import UserCodeExecutionResult
+
         if isinstance(outputs, UserCodeExecutionResult):
             output_uids = outputs
         else:

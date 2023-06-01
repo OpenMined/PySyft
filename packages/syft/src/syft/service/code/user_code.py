@@ -54,7 +54,6 @@ from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
-from ..action.action_object import ActionObject
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
@@ -328,10 +327,14 @@ class UserCode(SyftObject):
         print("WARNING: This code was submitted by a User and could be UNSAFE.")
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
-        def wrapper(return_context: bool = False, *args: Any, **kwargs: Any) -> Callable:
+        def wrapper(
+            return_context: bool = False, *args: Any, **kwargs: Any
+        ) -> Callable:
             if self.request_context and not return_context:
-                print("WARNING: The data scientist has requested the context(stdout and plots) of this function")
-                print("But you have run it with the variable return_context=False")        
+                print(
+                    "WARNING: The data scientist has requested the context(stdout and plots) of this function"
+                )
+                print("But you have run it with the variable return_context=False")
             try:
                 filtered_kwargs = {}
                 for k, v in kwargs.items():
@@ -348,12 +351,12 @@ class UserCode(SyftObject):
                 # evil_string = f"{self.service_func_name}(**filtered_kwargs)"
                 # result = eval(evil_string, None, locals())  # nosec
                 result = execute_byte_code(
-                    raw_byte_code, 
-                    func_name=self.service_func_name, 
-                    code_id=self.id, 
-                    args=args, 
+                    raw_byte_code,
+                    func_name=self.service_func_name,
+                    code_id=self.id,
+                    args=args,
                     kwargs=filtered_kwargs,
-                    return_context=return_context
+                    return_context=return_context,
                 )
                 # return the results
                 return result
@@ -440,7 +443,7 @@ def syft_function(
             output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
-            request_context=request_context
+            request_context=request_context,
         )
 
     return decorator
@@ -619,7 +622,6 @@ def submit_user_code_to_user_code() -> List[Callable]:
     ]
 
 
-
 @serializable()
 class ExecutionContext(SyftObject):
     # version
@@ -633,13 +635,14 @@ class ExecutionContext(SyftObject):
     serialized_plot: Optional[bytes] = None
     syft_dont_wrap_attrs = ["get_plot"]
     syft_passthrough_attrs = ["get_plot"]
-    
+
     def get_plot(self) -> Image:
         # TODO: add caching to optimize memory
         if self.serialized_plot is not None:
             return Image.open(BytesIO(self.serialized_plot), "r")
         else:
             return None
+
 
 @serializable()
 class UserCodeExecutionResult(SyftObject):
@@ -651,9 +654,10 @@ class UserCodeExecutionResult(SyftObject):
     user_code_id: UID
     result_id: UID
     context: Optional[ExecutionContext] = None
-    
+
     def get_plot(self) -> Image:
         return self.context.get_plot()
+
 
 def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     return execute_byte_code(
@@ -666,7 +670,12 @@ def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
 
 
 def execute_byte_code(
-    byte_code, func_name, code_id, args, kwargs: Dict[str, Any], return_context: bool = False
+    byte_code,
+    func_name,
+    code_id,
+    args,
+    kwargs: Dict[str, Any],
+    return_context: bool = False,
 ) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
@@ -686,13 +695,13 @@ def execute_byte_code(
         evil_string = f"{func_name}(**kwargs)"
         try:
             result = eval(evil_string, None, locals())  # nosec
-        except Exception as e:
+        except Exception:
             # TODO Check if this works
             return SyftError("Function execution failed")
-        
+
         if not return_context:
             return result
-        
+
         else:
             plot = None
             serialized_plot = None
@@ -714,7 +723,7 @@ def execute_byte_code(
             return result, ExecutionContext(
                 user_code_id=code_id,
                 stdout=str(stdout.getvalue()),
-                stderr="",# str(stderr.getvalue()),
+                stderr="",  # str(stderr.getvalue()),
                 serialized_plot=serialized_plot,
             )
 

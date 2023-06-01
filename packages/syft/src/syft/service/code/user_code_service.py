@@ -28,7 +28,7 @@ from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
-from .user_code import UserCodeExecutionResult, ExecutionContext
+from .user_code import UserCodeExecutionResult
 from .user_code import UserCodeStatus
 from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
@@ -141,13 +141,17 @@ class UserCodeService(AbstractService):
         if result.is_ok():
             user_code_items = result.ok()
             load_approved_policy_code(user_code_items=user_code_items)
-            
-    @service_method(path="code.execution_logs", name="execution_logs", roles=GUEST_ROLE_LEVEL)
-    def execution_logs(self, context: AuthedServiceContext, result_id: UID, code_id: UID):
+
+    @service_method(
+        path="code.execution_logs", name="execution_logs", roles=GUEST_ROLE_LEVEL
+    )
+    def execution_logs(
+        self, context: AuthedServiceContext, result_id: UID, code_id: UID
+    ):
         user_code = self.get_by_uid(context=context, uid=code_id)
         if isinstance(user_code, SyftError):
             return user_code
-        
+
         # TODO: adapt this for multiple results with the same data
         output_histories = user_code.output_policy.output_history
         for history in output_histories:
@@ -161,6 +165,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[ActionObject, SyftNotReady, SyftError]:
         """Call a User Code Function"""
+        # stdlib
         import sys
 
         try:
@@ -172,7 +177,7 @@ class UserCodeService(AbstractService):
             # Unroll variables
             code_item = result.ok()
             status = code_item.status
-            print(f'{status=}', file=sys.stderr)
+            print(f"{status=}", file=sys.stderr)
             # Check if we are allowed to execute the code
             if status.for_context(context) != UserCodeStatus.EXECUTE:
                 if status.for_context(context) == UserCodeStatus.SUBMITTED:
@@ -189,14 +194,14 @@ class UserCodeService(AbstractService):
 
             # Check if the OutputPolicy is valid
             is_valid = output_policy.valid
-            print(f'{output_policy.output_history=}', file=sys.stderr)
+            print(f"{output_policy.output_history=}", file=sys.stderr)
             if not is_valid:
                 if len(output_policy.output_history) > 0:
                     res = get_outputs(
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
-                    print(f'{res=}', file=sys.stderr)
+                    print(f"{res=}", file=sys.stderr)
                     # if hasattr(res, "syft_action_data") and isinstance(
                     #     res.syft_action_data, UserCodeExecutionResult
                     # ):
@@ -208,7 +213,7 @@ class UserCodeService(AbstractService):
                     return res
                 return is_valid
 
-            print(f'Wait a minute', file=sys.stderr)
+            print("Wait a minute", file=sys.stderr)
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
