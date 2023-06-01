@@ -18,13 +18,13 @@ from result import Ok
 from result import OkErr
 
 # relative
+from ..cmp.lib_permissions import CMPCRUDPermission
+from ..cmp.lib_permissions import CMPPermission
+from ..cmp.lib_service_registry import CMPBase
+from ..cmp.lib_service_registry import CMPClass
+from ..cmp.lib_service_registry import CMPFunction
+from ..cmp.lib_service_registry import action_execute_registry_libs
 from ..node.credentials import SyftVerifyKey
-from ..serde.lib_permissions import CMPCRUDPermission
-from ..serde.lib_permissions import CMPPermission
-from ..serde.lib_service_registry import CMPBase
-from ..serde.lib_service_registry import CMPClass
-from ..serde.lib_service_registry import CMPFunction
-from ..serde.lib_service_registry import action_execute_registry_libs
 from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context

@@ -2,8 +2,8 @@
 from enum import Enum
 
 # relative
+from ..serde.serializable import serializable
 from ..types.uid import UID
-from .serializable import serializable
 
 
 @serializable()

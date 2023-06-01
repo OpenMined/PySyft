@@ -17,10 +17,10 @@ import numpy
 from typing_extensions import Self
 
 # relative
+from ..serde.signature import get_signature
 from .lib_permissions import ALL_EXECUTE
 from .lib_permissions import CMPPermission
 from .lib_permissions import NONE_EXECUTE
-from .signature import get_signature
 
 LIB_IGNORE_ATTRIBUTES = set(
     ["os", "__abstractmethods__", "__base__", " __bases__", "__class__"]
