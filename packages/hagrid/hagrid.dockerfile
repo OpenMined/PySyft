@@ -1,4 +1,4 @@
-FROM python:3.10.10-slim as build
+FROM python:3.11.3-slim as build
 
 WORKDIR /hagrid
 COPY ./ /hagrid
@@ -7,7 +7,7 @@ RUN pip install --upgrade pip setuptools wheel twine
 RUN python setup.py bdist_wheel
 RUN twine check `find -L ./dist -name "*.whl"`
 
-FROM python:3.10.10-slim as backend
+FROM python:3.11.3-slim as backend
 
 # set UTC timezone
 ENV TZ=Etc/UTC
