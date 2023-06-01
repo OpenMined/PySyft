@@ -103,8 +103,8 @@ def user_stash(document_store: DocumentStore) -> UserStash:
 
 
 @pytest.fixture
-def user_service(document_store: DocumentStore):
-    return UserService(store=document_store)
+def user_service(document_store: DocumentStore, worker: Worker):
+    return UserService(store=document_store, node_uid=worker.id)
 
 
 @pytest.fixture

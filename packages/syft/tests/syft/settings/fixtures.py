@@ -54,5 +54,5 @@ def metadata_json(faker) -> NodeMetadataJSON:
 
 
 @pytest.fixture
-def settings_service(document_store) -> SettingsService:
-    return SettingsService(store=document_store)
+def settings_service(document_store, worker) -> SettingsService:
+    return SettingsService(store=document_store, node_uid=worker.id)
