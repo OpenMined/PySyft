@@ -20,5 +20,5 @@ test_verify_key_string_hacker = (
 
 
 def generate_db_name(length: int = 10) -> str:
-    random.seed(datetime.datetime.now())
+    random.seed(datetime.datetime.now().timestamp())
     return "".join(random.choice(string.ascii_lowercase) for i in range(length))
