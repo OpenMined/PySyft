@@ -82,7 +82,9 @@ def test_mock_always_not_real_after_set_mock_to_empty(
     assert asset.mock_is_real
 
 
-def test_mock_always_not_real_after_set_to_empty(asset_with_mock: Asset) -> None:
+def test_mock_always_not_real_after_set_to_empty(
+    asset_with_mock: dict[str, Any]
+) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
 
@@ -105,7 +107,7 @@ def test_mock_always_not_real_after_set_to_empty(asset_with_mock: Asset) -> None
     ],
 )
 def test_cannot_set_empty_mock_with_true_mock_is_real(
-    asset_with_mock: Asset, empty_mock: Any
+    asset_with_mock: dict[str, Any], empty_mock: Any
 ) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
