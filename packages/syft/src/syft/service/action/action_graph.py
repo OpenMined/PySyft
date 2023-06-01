@@ -73,6 +73,7 @@ class NodeActionData(SyftObject):
     is_mutagen: bool = False  # denotes that this node is causing a mutation
     next_mutagen_node: Optional[UID]  # next neighboring mutagen node
     last_nm_mutagen_node: Optional[UID]  # last non mutated mutagen node
+    op_name: Optional[str]
 
     @pydantic.validator("created_at", pre=True, always=True)
     def make_created_at(cls, v: Optional[DateTime]) -> DateTime:
@@ -88,6 +89,7 @@ class NodeActionData(SyftObject):
             type=NodeType.ACTION,
             user_verify_key=credentials,
             is_mutagen=is_mutagen,
+            op_name=action.op,
         )
 
     @staticmethod

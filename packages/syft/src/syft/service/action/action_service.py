@@ -70,11 +70,16 @@ class ActionService(AbstractService):
             credentials=context.credentials,
             syft_object=action_object,
         )
+        update_node_status = context.node.get_service_method(
+            ActionGraphService.update_action_status
+        )
         if result.is_ok():
+            update_node_status(context, action_object.id, ExecutionStatus.DONE)
             if isinstance(action_object, TwinObject):
                 action_object = action_object.mock
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
+        update_node_status(context, action_object.id, ExecutionStatus.FAILED)
         return result.err()
 
     @service_method(path="action.save", name="save")
@@ -435,11 +440,11 @@ class ActionService(AbstractService):
             has_result_read_permission=has_result_read_permission,
         )
         if set_result.is_err():
-            update_node_status(context, action.result_id.id, ExecutionStatus.FAILED)
+            update_node_status(context, action.result_id, ExecutionStatus.FAILED)
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"
             )
-        update_node_status(context, action.result_id.id, ExecutionStatus.DONE)
+        update_node_status(context, action.result_id, ExecutionStatus.DONE)
 
         if isinstance(result_action_object, TwinObject):
             result_action_object = result_action_object.mock

@@ -12,6 +12,8 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import networkx as nx
 from networkx import DiGraph
+from networkx.classes.reportviews import NodeDataView
+from networkx.classes.reportviews import OutEdgeView
 import numpy as np
 from pandas import DataFrame
 from pandas import Series
@@ -176,7 +178,6 @@ recursive_serde_register(zmq._Context)
 NOTHING = None
 
 
-# TODO: debug serializing after updating a node
 def serialize_networkx_graph(graph: DiGraph) -> bytes:
     graph_dict: dict = nx.node_link_data(graph)
     return serialize(graph_dict, to_bytes=True)
@@ -191,4 +192,22 @@ recursive_serde_register(
     DiGraph,
     serialize=serialize_networkx_graph,
     deserialize=deserialize_networkx_graph,
+)
+
+recursive_serde_register(NodeDataView, serialize_attrs=["_nodes", "_data", "_default"])
+
+
+def serialize_networkx_out_edge_view(out_edge_view: OutEdgeView) -> bytes:
+    return serialize(out_edge_view._graph, to_bytes=True)
+
+
+def deserialize_networkx_out_edge_view(buf: bytes) -> OutEdgeView:
+    graph: DiGraph = deserialize(buf, from_bytes=True)
+    return OutEdgeView(graph)
+
+
+recursive_serde_register(
+    OutEdgeView,
+    serialize=serialize_networkx_out_edge_view,
+    deserialize=deserialize_networkx_out_edge_view,
 )

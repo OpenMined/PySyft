@@ -158,6 +158,7 @@ class ActionGraphService(AbstractService):
 
         return SyftError(message=result.err())
 
+    @service_method(path="graph.get_all_nodes", name="nodes")
     def get_all_nodes(self, context: AuthedServiceContext) -> Union[List, SyftError]:
         result = self.store.nodes(context.credentials)
         if result.is_ok():
@@ -165,6 +166,7 @@ class ActionGraphService(AbstractService):
 
         return SyftError(message="Failed to fetch nodes from the graph")
 
+    @service_method(path="graph.get_all_edges", name="edges")
     def get_all_edges(self, context: AuthedServiceContext) -> Union[List, SyftError]:
         result = self.store.edges(context.credentials)
         if result.is_ok():
@@ -226,6 +228,7 @@ class ActionGraphService(AbstractService):
 
         return SyftError(message=result.err())
 
+    @service_method(path="graph.visualize", name="visualize")
     def visualize(self, context: AuthedServiceContext) -> None:
         # 🟡 TODO: Add permission check
         self.store.graph.visualize()
