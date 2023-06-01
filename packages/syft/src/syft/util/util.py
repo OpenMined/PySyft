@@ -51,6 +51,7 @@ from .logger import traceback_and_raise
 
 DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
 PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
+FILE_TO_TESTFILE = {'bikes.csv': 'bikes_small.csv'}
 
 
 def full_name_with_qualname(klass: type) -> str:
@@ -663,13 +664,20 @@ def autocache(
     url: str, extension: Optional[str] = None, cache: bool = True
 ) -> Optional[Path]:
     try:
-        if os.environ.get("PANDAS_COOKBOOK_TEST_DATA", False):
-
-        # if in test, use shortened data files
-        # TODO: Figure out where these datasets live
+        print(os.environ.get("SYFT_USE_TEST_DATA", False))
         data_path = get_root_data_path()
+
+        if os.environ.get("SYFT_USE_TEST_DATA", False):
+            
+            filename = url.rsplit('/',1)[-1]
+            print("filename", filename)
+
+            if filename in FILE_TO_TESTFILE:
+                url = url.replace(filename, FILE_TO_TESTFILE[filename])
+
         file_hash = hashlib.sha256(url.encode("utf8")).hexdigest()
         filename = file_hash
+
         if extension:
             filename += f".{extension}"
         file_path = data_path / filename
