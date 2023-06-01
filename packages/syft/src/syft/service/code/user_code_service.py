@@ -17,7 +17,6 @@ from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputHistory
-from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..response import SyftError
 from ..response import SyftNotReady

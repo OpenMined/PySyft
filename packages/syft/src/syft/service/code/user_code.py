@@ -359,6 +359,7 @@ class UserCode(SyftObject):
                 return result
             except Exception as e:
                 print(f"Failed to run unsafe_function. {e}")
+
         return wrapper
 
     @property
