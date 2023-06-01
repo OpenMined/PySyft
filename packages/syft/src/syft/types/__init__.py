@@ -30,7 +30,7 @@ from .transforms import convert_types
 from .transforms import drop
 from .transforms import generate_id
 from .transforms import generate_transform_wrapper
-from .transforms import get_either_attr
+from .transforms import geteitherattr
 from .transforms import keep
 from .transforms import make_set_default
 from .transforms import rename

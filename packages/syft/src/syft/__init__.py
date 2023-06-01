@@ -7,7 +7,6 @@ from typing import Any
 from typing import Callable
 
 # relative
-from . import gevent_patch  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
@@ -24,6 +23,7 @@ from .node.gateway import Gateway  # noqa: F401
 from .node.server import serve_node  # noqa: F401
 from .node.server import serve_node as bind_worker  # noqa: F401
 from .node.worker import Worker  # noqa: F401
+from .patches import gevent_patch  # noqa: F401
 from .serde import NOTHING  # noqa: F401
 from .serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .serde.serializable import serializable  # noqa: F401
