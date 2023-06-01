@@ -28,7 +28,6 @@ from ...client.client import SyftClientSessionCache
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -114,7 +113,7 @@ class ProjectEvent(SyftObject):
     event_hash: Optional[str]
     # 3. Signature attrs
     creator_verify_key: Optional[SyftVerifyKey]
-    signature: Optional[bytes]  # dont use in signature
+    signature: Optional[bytes]  # dont use in signing
 
     @pydantic.root_validator(pre=True)
     def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -138,11 +137,6 @@ class ProjectEvent(SyftObject):
             self.prev_event_hash = project.start_hash
             self.seq_no = 1
 
-        # make sure these are reset
-        self.event_hash = None
-        self.signature = None
-
-        self.event_hash = self.hash()  # recalculate it
         return self
 
     @property
@@ -150,11 +144,15 @@ class ProjectEvent(SyftObject):
         if self.signature is None:
             return SyftError(message="Sign event first")
         try:
-            signature = self.signature
-            self.signature = None
-            signed_bytes = _serialize(self, to_bytes=True)
-            self.creator_verify_key.verify_key.verify(signed_bytes, signature)
-            self.signature = signature
+            # Recompute hash
+            event_hash_bytes = self.__sha256__()
+            current_hash = event_hash_bytes.hex()
+            if current_hash != self.event_hash:
+                raise Exception(
+                    f"Event hash {current_hash} does not match {self.event_hash}"
+                )
+
+            self.creator_verify_key.verify_key.verify(event_hash_bytes, self.signature)
             return SyftSuccess(message="Event signature is valid")
         except Exception as e:
             return SyftError(message=f"Failed to validate message. {e}")
@@ -213,9 +211,12 @@ class ProjectEvent(SyftObject):
                 f"creator_verify_key has changed from: {self.creator_verify_key} to "
                 f"{signing_key.verify_key}"
             )
-        self.signature = None
-        signed_bytes = _serialize(self, to_bytes=True)
-        signed_obj = signing_key.signing_key.sign(signed_bytes)
+        # Calculate Hash
+        event_hash_bytes = self.__sha256__()
+        self.event_hash = event_hash_bytes.hex()
+
+        # Sign Hash
+        signed_obj = signing_key.signing_key.sign(event_hash_bytes)
         self.signature = signed_obj._signature
 
     def publish(self, project: Project) -> Union[SyftSuccess, SyftError]:
@@ -616,6 +617,7 @@ class Project(SyftObject):
     users: List[UserIdentity] = []
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
+    __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
 
     def _broadcast_event(
         self, project_event: ProjectEvent
@@ -1172,14 +1174,6 @@ def check_permissions(context: TransformContext) -> TransformContext:
     return context
 
 
-def calculate_final_hash(context: TransformContext) -> TransformContext:
-    context.output["store"] = {}
-    context.output["permissions"] = {}
-    context.output["events"] = []
-    context.output["start_hash"] = None
-    return context
-
-
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
-    return [elect_leader, check_permissions, calculate_final_hash]
+    return [elect_leader, check_permissions]
