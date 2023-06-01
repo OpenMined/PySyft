@@ -130,9 +130,6 @@ class lazyrepeatarray:
             raise Exception(
                 f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
             )
-
-        if self.data.shape == other.data.shape:
-            return self.__class__(data=self.data * other.data, shape=self.shape)
         else:
             return self.__class__(data=self.data * other.data, shape=self.shape)
 
