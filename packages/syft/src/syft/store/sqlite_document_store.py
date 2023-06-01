@@ -14,6 +14,8 @@ from typing import Type
 from typing import Union
 
 # third party
+from pydantic import Field
+from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
@@ -96,7 +98,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
         try:
             self.cur.execute(
                 f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                + "repr TEXT NOT NULL, value BLOB NOT NULL)"  # nosec
+                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
             )
             self.db.commit()
         except sqlite3.OperationalError as e:
@@ -159,7 +162,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
             raise ValueError(res.err())
 
     def _get(self, key: UID) -> Any:
-        select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
+        select_sql = (
+            f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
+        )
         res = self._execute(select_sql, [str(key)])
         if res.is_err():
             raise KeyError(f"Query {select_sql} failed")
@@ -186,7 +191,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return bool(row)
 
     def _get_all(self) -> Any:
-        select_sql = f"select * from {self.table_name}"  # nosec
+        select_sql = f"select * from {self.table_name} order by sqltime"  # nosec
         keys = []
         data = []
 
@@ -205,7 +210,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return dict(zip(keys, data))
 
     def _get_all_keys(self) -> Any:
-        select_sql = f"select uid from {self.table_name}"  # nosec
+        select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
         keys = []
 
         res = self._execute(select_sql)
@@ -362,19 +367,17 @@ class SQLiteStoreClientConfig(StoreClientConfig):
     """
 
     filename: Optional[str] = None
-    path: Union[str, Path]
+    path: Union[str, Path] = Field(default_factory=tempfile.gettempdir)
     check_same_thread: bool = True
     timeout: int = 5
 
-    def __init__(
-        self,
-        filename: Optional[str] = None,
-        path: Optional[Union[str, Path]] = None,
-        *args,
-        **kwargs,
-    ):
-        path_ = tempfile.gettempdir() if path is None else path
-        super().__init__(filename=filename, path=path_, *args, **kwargs)
+    # We need this in addition to Field(default_factory=...)
+    # so users can still do SQLiteStoreClientConfig(path=None)
+    @validator("path", pre=True)
+    def __default_path(cls, path: Optional[Union[str, Path]]) -> Union[str, Path]:
+        if path is None:
+            return tempfile.gettempdir()
+        return path
 
     @property
     def file_path(self) -> Optional[Path]:

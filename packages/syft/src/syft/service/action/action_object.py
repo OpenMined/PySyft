@@ -42,6 +42,8 @@ from .action_types import action_type_for_object
 from .action_types import action_type_for_type
 from .action_types import action_types
 
+NoneType = type(None)
+
 
 @serializable()
 class TwinMode(Enum):
@@ -199,6 +201,7 @@ dont_make_side_effects = [
 ]
 action_data_empty_must_run = [
     "__repr__",
+    "__str__",
 ]
 
 
@@ -365,7 +368,7 @@ def propagate_node_uid(
 
         if op not in context.obj._syft_dont_wrap_attrs():
             if hasattr(result, "syft_node_uid"):
-                setattr(result, "syft_node_uid", syft_node_uid)
+                result.syft_node_uid = syft_node_uid
         else:
             raise RuntimeError("dont propogate node_uid because output isnt wrapped")
     except Exception:
@@ -595,10 +598,10 @@ class ActionObject(SyftObject):
         remote_self: Optional[Union[UID, LineageID]] = None,
         args: Optional[
             List[Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
-        ] = [],
+        ] = None,
         kwargs: Optional[
             Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
-        ] = {},
+        ] = None,
         action_type: Optional[ActionType] = None,
     ) -> Action:
         """Generate new action from the information
@@ -621,6 +624,11 @@ class ActionObject(SyftObject):
             ValueError: For invalid args or kwargs
             PydanticValidationError: For args and kwargs
         """
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+
         arg_ids = []
         kwarg_ids = {}
 
@@ -760,7 +768,7 @@ class ActionObject(SyftObject):
 
     @staticmethod
     def empty(
-        syft_internal_type: Any = Any,
+        syft_internal_type: Type[Any] = NoneType,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
     ) -> ActionObject:
@@ -1322,9 +1330,9 @@ class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type: ClassVar[Type[Any]] = Any  # type: ignore
+    syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
-    syft_dont_wrap_attrs: List[str] = []
+    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__"]
 
     def __float__(self) -> float:
         return float(self.syft_action_data)

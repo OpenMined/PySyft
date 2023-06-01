@@ -13,6 +13,7 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from .messages import Message
@@ -25,6 +26,8 @@ ToUserVerifyKeyPartitionKey = PartitionKey(
     key="to_user_verify_key", type_=SyftVerifyKey
 )
 StatusPartitionKey = PartitionKey(key="status", type_=MessageStatus)
+
+OrderByCreatedAtTimeStampPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 
 @instrument
@@ -63,7 +66,11 @@ class MessageStash(BaseUIDStoreStash):
     ) -> Result[List[Message], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
-        return self.query_all(credentials, qks=qks)
+        return self.query_all(
+            credentials,
+            qks=qks,
+            order_by=OrderByCreatedAtTimeStampPartitionKey,
+        )
 
     def get_all_by_verify_key_for_status(
         self,
@@ -77,7 +84,11 @@ class MessageStash(BaseUIDStoreStash):
                 StatusPartitionKey.with_obj(status),
             ]
         )
-        return self.query_all(credentials, qks=qks)
+        return self.query_all(
+            credentials,
+            qks=qks,
+            order_by=OrderByCreatedAtTimeStampPartitionKey,
+        )
 
     def update_message_status(
         self, credentials: SyftVerifyKey, uid: UID, status: MessageStatus
@@ -95,7 +106,10 @@ class MessageStash(BaseUIDStoreStash):
     def delete_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[bool, str]:
-        result = self.get_all_inbox_for_verify_key(credentials, verify_key=verify_key)
+        result = self.get_all_inbox_for_verify_key(
+            credentials,
+            verify_key=verify_key,
+        )
         # If result is an error then return the error
         if result.is_err():
             return result

@@ -30,8 +30,10 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
@@ -94,7 +96,7 @@ class UserCodeStatus(Enum):
 # To make nested dicts hashable for mongodb
 # as status is in attr_searchable
 @serializable(attrs=["base_dict"])
-class UserCodeStatusContext:
+class UserCodeStatusContext(SyftHashableObject):
     base_dict: Dict = {}
 
     def __init__(self, base_dict: Dict):
@@ -102,12 +104,6 @@ class UserCodeStatusContext:
 
     def __repr__(self):
         return str(self.base_dict)
-
-    def __hash__(self) -> int:
-        hash_sum = 0
-        for k, v in self.base_dict.items():
-            hash_sum = hash(k) + hash(v)
-        return hash_sum
 
     @property
     def approved(self) -> bool:
@@ -150,7 +146,7 @@ class UserCodeStatusContext:
         base_dict = self.base_dict
         if node_view in base_dict:
             base_dict[node_view] = value
-            setattr(self, "base_dict", base_dict)
+            self.base_dict = base_dict
             return Ok(self)
         else:
             return Err(
@@ -309,7 +305,7 @@ class UserCode(SyftObject):
         )
         inputs = self.input_policy_init_kwargs[node_view]
         all_assets = []
-        for k, uid in inputs.items():
+        for uid in inputs.values():
             if isinstance(uid, UID):
                 assets = api.services.dataset.get_assets_by_action_id(uid)
                 if not isinstance(assets, list):
@@ -481,7 +477,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
     # TODO remove this tech debt hack
     input_kwargs = context.output["input_policy_init_kwargs"]
     node_view_workaround = False
-    for k, v in input_kwargs.items():
+    for k in input_kwargs.keys():
         if isinstance(k, NodeView):
             node_view_workaround = True
 
@@ -570,7 +566,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        if node_view in input_keys:
+        if node_view in input_keys or len(input_keys) == 0:
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
@@ -596,6 +592,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
+        add_node_uid_for_key("node_uid"),
     ]
 
 

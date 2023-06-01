@@ -117,10 +117,14 @@ def cli() -> None:
 
 
 def get_compose_src_path(
-    node_type: str, node_name: str, template_location: Optional[str] = None
+    node_type: str,
+    node_name: str,
+    template_location: Optional[str] = None,
+    **kwargs: TypeDict[str, Any],
 ) -> str:
     grid_path = GRID_SRC_PATH()
-    if EDITABLE_MODE and template_location is None:
+    tag = kwargs.get("tag", None)
+    if EDITABLE_MODE and template_location is None or tag == "0.7.0":  # type: ignore
         if node_type.input == "enclave":
             return grid_path + "/worker"
         else:
@@ -416,7 +420,10 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     node_type = verb.get_named_term_type(name="node_type")
 
     compose_src_path = get_compose_src_path(
-        node_type=node_type, node_name=snake_name, template_location=kwargs["template"]
+        node_type=node_type,
+        node_name=snake_name,
+        template_location=kwargs["template"],
+        **kwargs,
     )
     kwargs["compose_src_path"] = compose_src_path
 
@@ -1263,7 +1270,7 @@ def create_launch_cmd(
     if (
         parsed_kwargs["tag"] is not None
         and parsed_kwargs["template"] is None
-        and parsed_kwargs["tag"] not in ["local", "latest"]
+        and parsed_kwargs["tag"] not in ["local", "latest", "0.7.0"]
     ):
         template = parsed_kwargs["tag"]
         # if template == "beta":
@@ -1993,6 +2000,7 @@ def create_launch_docker_cmd(
             node_type=node_type,
             node_name=snake_name,
             template_location=kwargs["template"],
+            **kwargs,
         )
 
     enable_oblv = bool(kwargs["oblv"])
@@ -3362,14 +3370,13 @@ def get_docker_status(
         # If there are worker containers with an internal port
         # fetch the worker container with the launched worker name
         worker_containers = worker_containers_output.split("\n")
-        for idx, worker_container in enumerate(worker_containers):
+        for worker_container in worker_containers:
             container_name = worker_container.split(" ")[0]
             if node_name in container_name:
                 network_container = container_name
                 break
-
-        # If the worker container is not created yet
-        if idx == len(worker_containers):
+        else:
+            # If the worker container is not created yet
             return False, ("", "")
 
     if "proxy" in network_container:
