@@ -187,6 +187,7 @@ class UserCode(SyftObject):
     status: UserCodeStatusContext
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+    request_context: bool = False
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
@@ -328,6 +329,9 @@ class UserCode(SyftObject):
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
         def wrapper(return_context: bool = False, *args: Any, **kwargs: Any) -> Callable:
+            if self.request_context and not return_context:
+                print("WARNING: The data scientist has requested the context(stdout and plots) of this function")
+                print("But you have run it with the variable return_context=False")        
             try:
                 filtered_kwargs = {}
                 for k, v in kwargs.items():
@@ -379,6 +383,7 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+    request_context: bool = False
 
     @property
     def kwargs(self) -> List[str]:
@@ -411,6 +416,7 @@ def debox_asset(arg: Any) -> Any:
 def syft_function(
     input_policy: Union[InputPolicy, UID],
     output_policy: Union[OutputPolicy, UID],
+    request_context: bool = False,
 ) -> SubmitUserCode:
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
@@ -433,6 +439,7 @@ def syft_function(
             output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+            request_context=request_context
         )
 
     return decorator
