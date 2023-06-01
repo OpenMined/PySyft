@@ -445,6 +445,24 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     def copy(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
         return self._apply_self_tensor_op("copy", *args, **kwargs)
 
+
+    def __mul__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mul__")
+    
+
     def __add__(
         self,
         other: Union[
@@ -1965,6 +1983,42 @@ class GammaTensor:
     #     elif isinstance(self.child, Iterable):
     #         return all(self.child)
     #     return bool(self.child)
+
+    def __mul__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+
+            child = self.child * other.child
+            min_val = self.min_vals * other.min_vals
+            max_val = self.max_vals * other.max_vals
+            output_ds = self.data_subjects + other.data_subjects
+
+        else:
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+
+            child = self.child * other
+            min_val = self.min_vals * other
+            max_val = self.max_vals * other
+            output_ds = self.data_subjects
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.ADD.value,
+            sources=output_state,
+        )
 
     def __add__(self, other: Any) -> GammaTensor:
         # relative

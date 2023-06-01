@@ -116,6 +116,25 @@ class lazyrepeatarray:
             return self.__class__(data=self.data + other.data, shape=self.shape)
         else:
             return self.__class__(data=self.data + other.data, shape=self.shape)
+        
+    def __mul__(self, other: Any) -> lazyrepeatarray:
+        """
+        THIS MIGHT LOOK LIKE COPY-PASTED CODE!
+        Don't touch it. It's going to get more complicated.
+        """
+        print("HERE")
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data * other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
+            )
+
+        if self.data.shape == other.data.shape:
+            return self.__class__(data=self.data * other.data, shape=self.shape)
+        else:
+            return self.__class__(data=self.data * other.data, shape=self.shape)
 
     def __sub__(self, other: Any) -> lazyrepeatarray:
         """
@@ -418,6 +437,7 @@ def compute_min_max(
 
     if op_str in [
         "__add__",
+        "__mul__",
         "__matmul__",
         "__rmatmul__",
         "__truediv__",
