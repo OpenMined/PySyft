@@ -43,7 +43,6 @@ def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type
                 if sub_annotations and key in sub_annotations:
                     _type = sub_annotations[key]
         if _type is None:
-            print(f"Failed to find type for key: {key} in {cls}")
             return None
         types.append(_type)
     return types
