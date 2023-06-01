@@ -176,6 +176,7 @@ passthrough_attrs = [
     "send",  # syft
     "_copy_and_set_values",  # pydantic
     "get_from",  # syft
+    "delete_data", #syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -789,6 +790,10 @@ class ActionObject(SyftObject):
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
+
+    def delete_data(self) :
+        empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+        self.syft_action_data = empty
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""

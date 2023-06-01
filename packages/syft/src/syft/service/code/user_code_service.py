@@ -172,10 +172,12 @@ class UserCodeService(AbstractService):
 
             if not is_valid:
                 if len(output_policy.output_history) > 0:
-                    return get_outputs(
+                    result = get_outputs(
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
+                    result.delete_data()
+                    return result
                 return is_valid
 
             # Execute the code item
@@ -194,7 +196,9 @@ class UserCodeService(AbstractService):
             if not state_result:
                 return state_result
             if isinstance(final_results, TwinObject):
+                final_results.private.delete_data()
                 return final_results.private
+            final_results.delete_data()
             return final_results
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
