@@ -44,7 +44,7 @@ class UserCodeService(AbstractService):
         self.store = store
         self.stash = UserCodeStash(store=store)
 
-    @service_method(path="code.submit", name="submit")
+    @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:

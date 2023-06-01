@@ -49,7 +49,7 @@
   </div>
   <div class="flex items-center justify-between w-full gap-8">
     <div class="w-full max-w-[378px]">
-      <!-- <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} /> -->
+      <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} />
     </div>
     <div class="flex-shrink-0">
       <Badge variant="gray">Total: {userList?.length || 0}</Badge>

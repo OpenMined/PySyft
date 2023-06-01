@@ -99,7 +99,7 @@ class Policy(SyftObject):
             init_kwargs = deepcopy(kwargs)
             if "id" in init_kwargs:
                 del init_kwargs["id"]
-        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)
+        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)  # noqa: B026
 
     @classmethod
     @property
@@ -209,8 +209,6 @@ def retrieve_from_db(
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type == NodeType.ENCLAVE:
-        # TODO 🟣 Temporarily added skip permission arguments for enclave
-        # until permissions are fully integrated
         dict_object = action_service.get(context=context, uid=code_item_id)
         if dict_object.is_err():
             return dict_object
@@ -368,7 +366,7 @@ class CustomPolicy(type):
     # capture the init_kwargs transparently
     def __call__(cls, *args: Any, **kwargs: Any) -> None:
         obj = super().__call__(*args, **kwargs)
-        setattr(obj, "init_kwargs", kwargs)
+        obj.init_kwargs = kwargs
         return obj
 
 
@@ -666,10 +664,10 @@ def add_class_to_user_module(klass: type, unique_name: str) -> type:
 
     if not hasattr(sy, "user"):
         user_module = types.ModuleType("user")
-        setattr(sys.modules["syft"], "user", user_module)
+        sys.modules["syft"].user = user_module
     user_module = sy.user
     setattr(user_module, unique_name, klass)
-    setattr(sys.modules["syft"], "user", user_module)
+    sys.modules["syft"].user = user_module
     return klass
 
 

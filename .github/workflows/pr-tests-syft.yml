@@ -21,9 +21,11 @@ jobs:
       max-parallel: 4
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ["3.10"]
+        python-version: ["3.11"]
         include:
           - python-version: "3.9"
+            os: "ubuntu-latest"
+          - python-version: "3.10"
             os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
@@ -68,7 +70,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
@@ -84,11 +86,15 @@ jobs:
       max-parallel: 4
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ["3.10"]
+        python-version: ["3.11"]
         node-type: ["python"]
         notebook-paths: ["api/0.8"]
         include:
           - python-version: "3.9"
+            os: "ubuntu-latest"
+            node-type: "python"
+            notebook-paths: "api/0.8"
+          - python-version: "3.10"
             os: "ubuntu-latest"
             node-type: "python"
             notebook-paths: "api/0.8"
@@ -135,7 +141,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
@@ -150,7 +156,7 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.9", "3.10", "3.11"]
         node-type: ["enclave"]
         notebook-paths: ["tutorials"]
       fail-fast: false
@@ -198,7 +204,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker Compose on Linux
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'ubuntu-latest'
@@ -249,7 +255,7 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.10"]
+        python-version: ["3.11"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -293,7 +299,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'

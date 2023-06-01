@@ -41,7 +41,6 @@ from nacl.signing import VerifyKey
 import requests
 
 # relative
-from ..serde.serialize import _serialize
 from .logger import critical
 from .logger import debug
 from .logger import error
@@ -834,26 +833,10 @@ def get_interpreter_module() -> str:
         return "StandardInterpreter"  # not sure
 
 
-def recursive_hash(obj: Any) -> int:
-    hashes = 0
-    if isinstance(obj, (list, dict, set)):
-        if isinstance(obj, (list, set)):
-            for item in obj:
-                hashes += recursive_hash(item)
-        elif isinstance(obj, dict):
-            for item_key, item in obj:
-                hashes += recursive_hash(item_key)
-                hashes += recursive_hash(item)
-    else:
-        # TODO: remove the generic python hash from other checks and use a more secure one
-        # As the python hash does not produce unique hashes for different runs
-        # and also for different python versions
-        # to be modified in the hashing PR
-        # Adding a temp fix for now
-        serde_bytes = _serialize(obj, to_bytes=True)
-        hash_bytes = hashlib.sha256(serde_bytes).digest()
-        hashes += int.from_bytes(hash_bytes, byteorder="big")
-    return hashes
+if os_name() == "macOS":
+    # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+    # progress in another thread when fork() was called.
+    multiprocessing.set_start_method("spawn", True)
 
 
 def thread_ident() -> int:
