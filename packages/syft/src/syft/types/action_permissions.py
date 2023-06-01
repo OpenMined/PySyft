@@ -3,9 +3,9 @@ from enum import Enum
 from typing import Optional
 
 # relative
-from ...serde.serializable import serializable
-from ...types.credentials import SyftVerifyKey
-from ...types.uid import UID
+from ..serde.serializable import serializable
+from .credentials import SyftVerifyKey
+from .uid import UID
 
 
 @serializable()

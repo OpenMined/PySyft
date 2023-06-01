@@ -17,9 +17,9 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..service.action.action_permissions import ActionObjectPermission
-from ..service.action.action_permissions import ActionObjectREAD
-from ..service.action.action_permissions import ActionObjectWRITE
+from ..types.action_permissions import ActionObjectPermission
+from ..types.action_permissions import ActionObjectREAD
+from ..types.action_permissions import ActionObjectWRITE
 from ..types.credentials import SyftVerifyKey
 from ..types.response import SyftSuccess
 from ..types.syft_object import StorableObjectType

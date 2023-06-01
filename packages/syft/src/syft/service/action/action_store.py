@@ -15,6 +15,12 @@ from ...serde.serializable import serializable
 from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
 from ...store.document_store import StoreConfig
+from ...types.action_permissions import ActionObjectEXECUTE
+from ...types.action_permissions import ActionObjectOWNER
+from ...types.action_permissions import ActionObjectPermission
+from ...types.action_permissions import ActionObjectREAD
+from ...types.action_permissions import ActionObjectWRITE
+from ...types.action_permissions import ActionPermission
 from ...types.credentials import SyftSigningKey
 from ...types.credentials import SyftVerifyKey
 from ...types.response import SyftSuccess
@@ -22,12 +28,6 @@ from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from .action_object import TwinMode
-from .action_permissions import ActionObjectEXECUTE
-from .action_permissions import ActionObjectOWNER
-from .action_permissions import ActionObjectPermission
-from .action_permissions import ActionObjectREAD
-from .action_permissions import ActionObjectWRITE
-from .action_permissions import ActionPermission
 from .twin_object import TwinObject
 
 

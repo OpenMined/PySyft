@@ -23,7 +23,7 @@ from typeguard import check_type
 
 # relative
 from ..serde.serializable import serializable
-from ..service.action.action_permissions import ActionObjectPermission
+from ..types.action_permissions import ActionObjectPermission
 from ..types.base import SyftBaseModel
 from ..types.credentials import SyftSigningKey
 from ..types.credentials import SyftVerifyKey

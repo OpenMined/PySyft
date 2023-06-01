@@ -7,6 +7,8 @@ from typing import Union
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.action_permissions import ActionObjectPermission
+from ...types.action_permissions import ActionPermission
 from ...types.context import AuthedServiceContext
 from ...types.context import NodeServiceContext
 from ...types.context import UnauthedServiceContext
@@ -21,8 +23,6 @@ from ...types.user_roles import GUEST_ROLE_LEVEL
 from ...types.user_roles import ServiceRole
 from ...types.user_roles import ServiceRoleCapability
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE

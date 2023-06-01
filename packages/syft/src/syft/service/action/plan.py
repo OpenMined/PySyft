@@ -6,13 +6,12 @@ from typing import List
 from typing import Optional
 
 # relative
-from ... import ActionObject
-from ... import Worker
 from ...client.client import SyftClient
 from ...serde.recursive import recursive_serde_register
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from .action_object import Action
+from .action_object import ActionObject
 from .action_object import TraceResult
 
 
@@ -56,6 +55,9 @@ class Plan(SyftObject):
 
 
 def planify(func):
+    # relative
+    from ...node.worker import Worker
+
     TraceResult.reset()
     ActionObject.add_trace_hook()
     worker = Worker.named("plan_building", reset=True, processes=0)

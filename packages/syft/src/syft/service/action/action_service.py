@@ -13,6 +13,7 @@ from result import Result
 
 # relative
 from ...serde.serializable import serializable
+from ...types.action_permissions import ActionObjectREAD
 from ...types.context import AuthedServiceContext
 from ...types.response import SyftError
 from ...types.response import SyftSuccess
@@ -31,7 +32,6 @@ from .action_object import ActionObjectPointer
 from .action_object import ActionType
 from .action_object import AnyActionObject
 from .action_object import TwinMode
-from .action_permissions import ActionObjectREAD
 from .action_store import ActionStore
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject

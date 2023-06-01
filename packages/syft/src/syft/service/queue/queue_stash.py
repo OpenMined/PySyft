@@ -18,6 +18,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...types.action_permissions import ActionObjectPermission
 from ...types.credentials import SyftVerifyKey
 from ...types.response import SyftError
 from ...types.response import SyftNotReady
@@ -26,7 +27,6 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
 
 
 @serializable()

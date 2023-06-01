@@ -10,14 +10,14 @@ from result import Ok
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.action_permissions import ActionObjectPermission
+from ...types.action_permissions import ActionPermission
 from ...types.context import AuthedServiceContext
 from ...types.response import SyftError
 from ...types.response import SyftSuccess
 from ...types.uid import UID
 from ...types.user_roles import GUEST_ROLE_LEVEL
 from ...util.telemetry import instrument
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
 from ..message.message_service import CreateMessage
 from ..message.message_service import Message
 from ..message.message_service import MessageService
