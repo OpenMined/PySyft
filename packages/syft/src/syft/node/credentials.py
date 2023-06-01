@@ -46,7 +46,7 @@ class SyftVerifyKey(SyftBaseModel):
         return str(self)
 
     def __hash__(self) -> int:
-        return self.verify_key.__hash__()
+        return hash(self.verify_key)
 
 
 @serializable()
@@ -81,7 +81,7 @@ class SyftSigningKey(SyftBaseModel):
         return str(self.verify_key)
 
     def __hash__(self) -> int:
-        return self.signing_key.__hash__()
+        return hash(self.signing_key)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, SyftSigningKey):

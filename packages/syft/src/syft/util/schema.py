@@ -55,7 +55,7 @@ def get_types(cls: Type, keys: List[str]) -> Dict[str, Type]:
                 if annotations and key in annotations:
                     _type = annotations[key]
         if _type is None:
-            print(f"Failed to find type for key: {key} in {cls}")
+            # print(f"Failed to find type for key: {key} in {cls}")
             return None
         types.append(_type)
     return dict(zip(keys, types))
