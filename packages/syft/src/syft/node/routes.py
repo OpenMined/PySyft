@@ -99,7 +99,7 @@ def make_routes(worker: Worker) -> APIRouter:
     # make a request to the SyftAPI
     @router.post("/api_call")
     def syft_new_api_call(
-        request: Request, data: bytes = Depends(get_body)
+        request: Request, data: bytes = Depends(get_body)  # noqa: B008
     ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
@@ -161,8 +161,8 @@ def make_routes(worker: Worker) -> APIRouter:
     @router.post("/login", name="login", status_code=200)
     def login(
         request: Request,
-        email: str = Body(..., example="info@openmined.org"),
-        password: str = Body(..., example="changethis"),
+        email: str = Body(..., example="info@openmined.org"),  # noqa: B008
+        password: str = Body(..., example="changethis"),  # noqa: B008
     ) -> Any:
         if TRACE_MODE:
             with trace.get_tracer(login.__module__).start_as_current_span(
@@ -175,7 +175,9 @@ def make_routes(worker: Worker) -> APIRouter:
             return handle_login(email, password, worker)
 
     @router.post("/register", name="register", status_code=200)
-    def register(request: Request, data: bytes = Depends(get_body)) -> Any:
+    def register(
+        request: Request, data: bytes = Depends(get_body)  # noqa: B008
+    ) -> Any:
         if TRACE_MODE:
             with trace.get_tracer(register.__module__).start_as_current_span(
                 register.__qualname__,

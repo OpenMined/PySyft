@@ -146,7 +146,7 @@ class UserCodeStatusContext(SyftHashableObject):
         base_dict = self.base_dict
         if node_view in base_dict:
             base_dict[node_view] = value
-            setattr(self, "base_dict", base_dict)
+            self.base_dict = base_dict
             return Ok(self)
         else:
             return Err(
@@ -305,7 +305,7 @@ class UserCode(SyftObject):
         )
         inputs = self.input_policy_init_kwargs[node_view]
         all_assets = []
-        for k, uid in inputs.items():
+        for uid in inputs.values():
             if isinstance(uid, UID):
                 assets = api.services.dataset.get_assets_by_action_id(uid)
                 if not isinstance(assets, list):
@@ -477,7 +477,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
     # TODO remove this tech debt hack
     input_kwargs = context.output["input_policy_init_kwargs"]
     node_view_workaround = False
-    for k, v in input_kwargs.items():
+    for k in input_kwargs.keys():
         if isinstance(k, NodeView):
             node_view_workaround = True
 
