@@ -507,7 +507,6 @@ class SyftClient:
             return SyftError(message=str(e))
         response = self.connection.register(new_user=new_user)
         if isinstance(response, tuple):
-            self._fetch_api(self.credentials)
             response = response[0]
         return response
 
