@@ -2,7 +2,6 @@
 from enum import Enum
 import hashlib
 import json
-import types
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -338,14 +337,6 @@ class SyftClient:
     @property
     def name(self) -> Optional[str]:
         return self.metadata.name if self.metadata else None
-
-    @property
-    def numpy(self) -> types.ModuleType:
-        # third party
-        import numpy
-
-        print(f"Using numpy version: {numpy.__version__}")
-        return numpy
 
     @property
     def id(self) -> Optional[UID]:
