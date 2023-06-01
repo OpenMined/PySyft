@@ -1,5 +1,9 @@
 # relative
 from .base import SyftBaseModel
+from .context import AuthedServiceContext
+from .context import ChangeContext
+from .context import NodeServiceContext
+from .context import UnauthedServiceContext
 from .credentials import SIGNING_KEY_FOR
 from .credentials import SyftCredentials
 from .credentials import SyftSigningKey
@@ -39,3 +43,9 @@ from .twin_object import TwinObject
 from .twin_object import to_action_object
 from .uid import LineageID
 from .uid import UID
+from .user_roles import DATA_OWNER_ROLE_LEVEL
+from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from .user_roles import GUEST_ROLE_LEVEL
+from .user_roles import ROLE_TO_CAPABILITIES
+from .user_roles import ServiceRole
+from .user_roles import ServiceRoleCapability

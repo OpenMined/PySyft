@@ -7,16 +7,20 @@ from typing import Union
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.context import AuthedServiceContext
+from ...types.context import NodeServiceContext
+from ...types.context import UnauthedServiceContext
 from ...types.credentials import SyftVerifyKey
 from ...types.credentials import UserLoginCredentials
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
+from ...types.user_roles import DATA_OWNER_ROLE_LEVEL
+from ...types.user_roles import GUEST_ROLE_LEVEL
+from ...types.user_roles import ServiceRole
+from ...types.user_roles import ServiceRoleCapability
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..context import AuthedServiceContext
-from ..context import NodeServiceContext
-from ..context import UnauthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -31,10 +35,6 @@ from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
 from .user import salt_and_hash_password
-from .user_roles import DATA_OWNER_ROLE_LEVEL
-from .user_roles import GUEST_ROLE_LEVEL
-from .user_roles import ServiceRole
-from .user_roles import ServiceRoleCapability
 from .user_stash import UserStash
 
 

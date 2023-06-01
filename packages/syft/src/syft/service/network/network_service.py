@@ -20,14 +20,15 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.context import AuthedServiceContext
 from ...types.credentials import SyftVerifyKey
 from ...types.grid_url import GridURL
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.transforms import transform_method
+from ...types.user_roles import GUEST_ROLE_LEVEL
 from ...util.telemetry import instrument
-from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadata
 from ..response import SyftError
@@ -36,7 +37,6 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..vpn.headscale_client import HeadscaleAuthToken
 from ..vpn.headscale_client import HeadscaleClient
 from ..vpn.tailscale_client import TailscaleClient

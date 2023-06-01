@@ -1,7 +1,7 @@
 # relative
 from ..serde.serializable import serializable
-from ..service.context import AuthedServiceContext
 from ..service.network.network_service import NetworkService
+from ..types.context import AuthedServiceContext
 from .node import Node
 
 

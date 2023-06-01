@@ -9,7 +9,7 @@ from typing import Union
 from typing_extensions import Self
 
 # relative
-from ...serde.serializable import serializable
+from ..serde.serializable import serializable
 
 
 class ServiceRoleCapability(Enum):

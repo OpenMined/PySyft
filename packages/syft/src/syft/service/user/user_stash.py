@@ -17,11 +17,11 @@ from ...store.document_store import UIDPartitionKey
 from ...types.credentials import SyftSigningKey
 from ...types.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...types.user_roles import ServiceRole
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftSuccess
 from .user import User
-from .user_roles import ServiceRole
 
 # 🟡 TODO 27: it would be nice if these could be defined closer to the User
 EmailPartitionKey = PartitionKey(key="email", type_=str)

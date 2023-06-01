@@ -42,10 +42,6 @@ from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.code.user_code_service import UserCodeService
-from ..service.context import AuthedServiceContext
-from ..service.context import NodeServiceContext
-from ..service.context import UnauthedServiceContext
-from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
@@ -70,7 +66,6 @@ from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
 from ..service.user.user import UserCreate
-from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
 from ..store.dict_document_store import DictStoreConfig
@@ -79,12 +74,17 @@ from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.abstract_node import AbstractNode
 from ..types.abstract_node import NodeType
+from ..types.context import AuthedServiceContext
+from ..types.context import NodeServiceContext
+from ..types.context import UnauthedServiceContext
+from ..types.context import UserLoginCredentials
 from ..types.credentials import SyftSigningKey
 from ..types.credentials import SyftVerifyKey
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
+from ..types.user_roles import ServiceRole
 from ..util.telemetry import instrument
 from ..util.util import random_name
 from ..util.util import thread_ident

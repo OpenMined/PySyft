@@ -3,13 +3,13 @@ import pytest
 
 # syft absolute
 from syft.node.worker import Worker
-from syft.service.context import AuthedServiceContext
 from syft.service.message.message_service import MessageService
 from syft.service.message.message_stash import MessageStash
 from syft.service.message.messages import CreateMessage
 from syft.service.message.messages import Message
 from syft.service.user.user import User
 from syft.store.linked_obj import LinkedObject
+from syft.types.context import AuthedServiceContext
 from syft.types.credentials import SyftSigningKey
 from syft.types.credentials import SyftVerifyKey
 from syft.types.datetime import DateTime

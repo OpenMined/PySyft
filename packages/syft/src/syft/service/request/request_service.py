@@ -10,11 +10,12 @@ from result import Ok
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.context import AuthedServiceContext
 from ...types.uid import UID
+from ...types.user_roles import GUEST_ROLE_LEVEL
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..context import AuthedServiceContext
 from ..message.message_service import CreateMessage
 from ..message.message_service import Message
 from ..message.message_service import MessageService
@@ -24,7 +25,6 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Request
 from .request import RequestStatus

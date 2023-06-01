@@ -29,6 +29,8 @@ from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.abstract_node import NodeType
+from ...types.context import AuthedServiceContext
+from ...types.context import NodeServiceContext
 from ...types.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -42,8 +44,6 @@ from ...util.util import is_interpreter_jupyter
 from ..action.action_object import ActionObject
 from ..code.code_parse import GlobalsVisitor
 from ..code.unparse import unparse
-from ..context import AuthedServiceContext
-from ..context import NodeServiceContext
 from ..dataset.dataset import Asset
 from ..response import SyftError
 from ..response import SyftSuccess

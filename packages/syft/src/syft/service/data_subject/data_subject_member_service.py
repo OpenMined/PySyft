@@ -12,9 +12,9 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.context import AuthedServiceContext
 from ...types.credentials import SyftVerifyKey
 from ...util.telemetry import instrument
-from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService

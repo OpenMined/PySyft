@@ -12,7 +12,6 @@ from result import Err
 
 # syft absolute
 from syft.client.client import SyftClient
-from syft.service.context import AuthedServiceContext
 from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
 from syft.service.request.request import SubmitRequest
@@ -21,6 +20,7 @@ from syft.service.request.request_stash import RequestingUserVerifyKeyPartitionK
 from syft.service.request.request_stash import StatusPartitionKey
 from syft.store.document_store import PartitionKey
 from syft.store.document_store import QueryKeys
+from syft.types.context import AuthedServiceContext
 from syft.types.credentials import SyftVerifyKey
 
 

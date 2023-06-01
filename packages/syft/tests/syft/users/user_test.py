@@ -4,11 +4,11 @@ import pytest
 
 # syft absolute
 from syft.client.api import SyftAPICall
-from syft.service.context import AuthedServiceContext
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
+from syft.types.context import AuthedServiceContext
 
 GUEST_ROLES = [ServiceRole.GUEST]
 DS_ROLES = [ServiceRole.GUEST, ServiceRole.DATA_SCIENTIST]

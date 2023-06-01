@@ -23,7 +23,6 @@ from .. import __version__
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
-from ..service.context import NodeServiceContext
 from ..service.dataset.dataset import CreateDataset
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
@@ -33,6 +32,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
 from ..types.abstract_node import AbstractNode
+from ..types.context import NodeServiceContext
 from ..types.credentials import SyftSigningKey
 from ..types.credentials import SyftVerifyKey
 from ..types.credentials import UserLoginCredentials

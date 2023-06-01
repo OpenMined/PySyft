@@ -10,10 +10,10 @@ from pydantic.error_wrappers import ValidationError
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...store.document_store import QueryKeys
+from ...types.context import AuthedServiceContext
 from ...types.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ..code.user_code import UserVerifyKeyPartitionKey
-from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService

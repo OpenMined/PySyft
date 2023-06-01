@@ -5,10 +5,10 @@ from faker import Faker
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
 from syft.service.user.user import UserUpdate
-from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
 from syft.types.credentials import SyftSigningKey
 from syft.types.uid import UID
+from syft.types.user_roles import ServiceRole
 
 
 def add_mock_user(root_domain_client, user_stash: UserStash, user: User) -> User:

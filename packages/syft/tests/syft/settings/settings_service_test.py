@@ -7,12 +7,12 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
+from syft.types.context import AuthedServiceContext
 from syft.types.credentials import SyftVerifyKey
 
 

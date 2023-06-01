@@ -12,9 +12,9 @@ from syft.service.action.action_graph import NodeType
 from syft.service.action.action_graph_service import ActionGraphService
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
-from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.types.context import AuthedServiceContext
 from syft.types.credentials import SyftSigningKey
 from syft.types.credentials import SyftVerifyKey
 from syft.types.datetime import DateTime

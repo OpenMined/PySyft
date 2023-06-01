@@ -4,7 +4,7 @@
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
-from syft.service.context import AuthedServiceContext
+from syft.types.context import AuthedServiceContext
 
 # TODO: Improve ActionService testing
 

@@ -5,9 +5,9 @@ import pytest
 # syft absolute
 from syft.client.client import SyftClient
 from syft.node.worker import Worker
-from syft.service.context import AuthedServiceContext
 from syft.service.request.request_stash import RequestStash
 from syft.store.document_store import DocumentStore
+from syft.types.context import AuthedServiceContext
 from syft.types.credentials import SyftVerifyKey
 
 

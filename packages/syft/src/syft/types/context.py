@@ -6,17 +6,17 @@ from typing import Optional
 from typing_extensions import Self
 
 # relative
-from ..types.abstract_node import AbstractNode
-from ..types.credentials import SyftVerifyKey
-from ..types.credentials import UserLoginCredentials
-from ..types.syft_object import Context
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
-from ..types.syft_object import SyftBaseObject
-from ..types.syft_object import SyftObject
-from ..types.uid import UID
-from .user.user_roles import ROLE_TO_CAPABILITIES
-from .user.user_roles import ServiceRole
-from .user.user_roles import ServiceRoleCapability
+from .abstract_node import AbstractNode
+from .credentials import SyftVerifyKey
+from .credentials import UserLoginCredentials
+from .syft_object import Context
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
+from .uid import UID
+from .user_roles import ROLE_TO_CAPABILITIES
+from .user_roles import ServiceRole
+from .user_roles import ServiceRoleCapability
 
 
 class NodeServiceContext(Context, SyftObject):

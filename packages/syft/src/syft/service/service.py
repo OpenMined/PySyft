@@ -30,15 +30,15 @@ from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
 from ..types.abstract_node import AbstractNode
+from ..types.context import AuthedServiceContext
+from ..types.context import ChangeContext
 from ..types.credentials import SyftVerifyKey
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from .context import AuthedServiceContext
-from .context import ChangeContext
+from ..types.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..types.user_roles import ServiceRole
 from .response import SyftError
-from .user.user_roles import DATA_OWNER_ROLE_LEVEL
-from .user.user_roles import ServiceRole
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)

@@ -15,14 +15,14 @@ from typing_extensions import Annotated
 # relative
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
-from ..service.context import NodeServiceContext
-from ..service.context import UnauthedServiceContext
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
 from ..types.abstract_node import AbstractNode
+from ..types.context import NodeServiceContext
+from ..types.context import UnauthedServiceContext
 from ..types.credentials import SyftVerifyKey
 from ..types.credentials import UserLoginCredentials
 from ..util.telemetry import TRACE_MODE

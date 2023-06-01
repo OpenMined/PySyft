@@ -29,13 +29,13 @@ from ..serde.serialize import _serialize
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
-from ..service.context import AuthedServiceContext
 from ..service.response import SyftAttributeError
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..types.abstract_node import AbstractNode
+from ..types.context import AuthedServiceContext
 from ..types.credentials import SyftSigningKey
 from ..types.credentials import SyftVerifyKey
 from ..types.syft_object import SYFT_OBJECT_VERSION_1

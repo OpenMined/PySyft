@@ -12,9 +12,9 @@ from pydantic import EmailStr
 from typing_extensions import Self
 
 # relative
-from ..service.context import AuthedServiceContext
-from ..service.context import NodeServiceContext
 from .abstract_node import AbstractNode
+from .context import AuthedServiceContext
+from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
 from .grid_url import GridURL
 from .syft_object import Context

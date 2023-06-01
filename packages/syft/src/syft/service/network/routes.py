@@ -18,11 +18,11 @@ from ...client.client import SyftClient
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...types.abstract_node import AbstractNode
+from ...types.context import AuthedServiceContext
+from ...types.context import NodeServiceContext
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
-from ..context import AuthedServiceContext
-from ..context import NodeServiceContext
 from ..response import SyftError
 
 if TYPE_CHECKING:

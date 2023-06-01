@@ -10,9 +10,6 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.service.context import AuthedServiceContext
-from syft.service.context import NodeServiceContext
-from syft.service.context import UnauthedServiceContext
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
@@ -20,10 +17,13 @@ from syft.service.user.user import UserCreate
 from syft.service.user.user import UserPrivateKey
 from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
-from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_service import UserService
+from syft.types.context import AuthedServiceContext
+from syft.types.context import NodeServiceContext
+from syft.types.context import UnauthedServiceContext
 from syft.types.credentials import SyftVerifyKey
 from syft.types.uid import UID
+from syft.types.user_roles import ServiceRole
 
 
 def test_userservice_create_when_user_exists(

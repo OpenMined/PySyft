@@ -8,8 +8,8 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ..context import AuthedServiceContext
-from ..context import UnauthedServiceContext
+from ...types.context import AuthedServiceContext
+from ...types.context import UnauthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
 from ..service import service_method

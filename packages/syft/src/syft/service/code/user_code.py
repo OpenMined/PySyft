@@ -28,6 +28,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...types.abstract_node import NodeType
+from ...types.context import AuthedServiceContext
 from ...types.credentials import SyftVerifyKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftHashableObject
@@ -37,7 +38,6 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
-from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..metadata.node_metadata import EnclaveMetadata
 from ..policy.policy import CustomInputPolicy

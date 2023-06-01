@@ -13,11 +13,12 @@ from result import Result
 
 # relative
 from ...serde.serializable import serializable
+from ...types.context import AuthedServiceContext
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
+from ...types.user_roles import GUEST_ROLE_LEVEL
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
-from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -25,7 +26,6 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer

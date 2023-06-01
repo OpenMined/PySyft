@@ -9,11 +9,11 @@ from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from ..service.context import AuthedServiceContext
-from ..service.context import ChangeContext
-from ..service.context import NodeServiceContext
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..types.context import AuthedServiceContext
+from ..types.context import ChangeContext
+from ..types.context import NodeServiceContext
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID

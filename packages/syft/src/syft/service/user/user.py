@@ -26,7 +26,7 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
-from .user_roles import ServiceRole
+from ...types.user_roles import ServiceRole
 
 
 @serializable()

@@ -11,10 +11,11 @@ from result import OkErr
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.context import AuthedServiceContext
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
+from ...types.user_roles import GUEST_ROLE_LEVEL
 from ...util.telemetry import instrument
-from ..context import AuthedServiceContext
 from ..policy.policy import OutputHistory
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
@@ -26,7 +27,6 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
