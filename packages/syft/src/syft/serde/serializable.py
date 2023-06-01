@@ -21,7 +21,7 @@ def serializable(
     without: Optional[List[str]] = None,
     inherit: Optional[bool] = True,
     inheritable: Optional[bool] = True,
-) -> Callable:
+) -> Callable[[T], T]:
     """
     Recursively serialize attributes of the class.
 

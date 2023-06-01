@@ -92,7 +92,7 @@ def test_read_returns_view(root_domain_client):
     # Test reading returns userview (and not real user), this wasnt the case, adding this as a sanity check
     users = root_domain_client.api.services.user
     assert len(list(users))
-    for user in users:
+    for _ in users:
         # check that result has no sensitive information
         assert isinstance(root_domain_client.api.services.user[0], UserView)
 
