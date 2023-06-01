@@ -12,10 +12,10 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.context import AuthedServiceContext
-from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...types.user_roles import GUEST_ROLE_LEVEL
 from ...util.telemetry import instrument
+from ..action.twin_object import TwinObject
 from ..policy.policy import OutputHistory
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
@@ -225,8 +225,8 @@ def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) ->
 
 def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     # relative
-    from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
+    from ..action.twin_object import TwinObject
     from ..dataset.dataset import Asset
 
     filtered_kwargs = {}

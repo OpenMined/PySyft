@@ -6,12 +6,12 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ..serde.serializable import serializable
-from ..service.action.action_object import ActionObject
-from ..service.action.action_object import TwinMode
-from ..service.action.action_types import action_types
-from .syft_object import SyftObject
-from .uid import UID
+from ...serde.serializable import serializable
+from ...types.syft_object import SyftObject
+from ...types.uid import UID
+from .action_object import ActionObject
+from .action_object import TwinMode
+from .action_types import action_types
 
 
 def to_action_object(obj: Any) -> ActionObject:

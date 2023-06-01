@@ -14,7 +14,6 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...types.context import AuthedServiceContext
-from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...types.user_roles import GUEST_ROLE_LEVEL
 from ..code.user_code import UserCode
@@ -38,6 +37,7 @@ from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
+from .twin_object import TwinObject
 
 
 @serializable()

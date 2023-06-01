@@ -38,10 +38,10 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
-from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.util import is_interpreter_jupyter
 from ..action.action_object import ActionObject
+from ..action.twin_object import TwinObject
 from ..code.code_parse import GlobalsVisitor
 from ..code.unparse import unparse
 from ..dataset.dataset import Asset
@@ -131,8 +131,8 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
     from ...client.api import APIRegistry
     from ...client.api import NodeView
-    from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
+    from ..action.twin_object import TwinObject
 
     # fetches the all the current api's connected
     api_list = APIRegistry.get_all_api()

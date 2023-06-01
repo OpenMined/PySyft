@@ -344,7 +344,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
     action_id = context.output["action_id"]
     if action_id is None:
         # relative
-        from ...types.twin_object import TwinObject
+        from ..action.twin_object import TwinObject
 
         private_obj = context.output.pop("data", None)
         mock_obj = context.output.pop("mock", None)

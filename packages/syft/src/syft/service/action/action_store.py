@@ -18,7 +18,6 @@ from ...store.document_store import StoreConfig
 from ...types.credentials import SyftSigningKey
 from ...types.credentials import SyftVerifyKey
 from ...types.syft_object import SyftObject
-from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ..response import SyftSuccess
@@ -29,6 +28,7 @@ from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import ActionPermission
+from .twin_object import TwinObject
 
 
 class ActionStore:

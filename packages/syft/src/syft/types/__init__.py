@@ -39,8 +39,6 @@ from .transforms import transform_method
 from .transforms import validate_email
 from .transforms import validate_klass_and_version
 from .transforms import validate_url
-from .twin_object import TwinObject
-from .twin_object import to_action_object
 from .uid import LineageID
 from .uid import UID
 from .user_roles import DATA_OWNER_ROLE_LEVEL

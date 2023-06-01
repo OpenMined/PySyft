@@ -62,8 +62,8 @@ PyCodeObject = Any
 
 def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
-    from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
+    from ..action.twin_object import TwinObject
 
     uid_kwargs = {}
     for k, v in kwargs.items():

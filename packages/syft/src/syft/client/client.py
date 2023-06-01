@@ -366,7 +366,7 @@ class SyftClient:
 
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         # relative
-        from ..types.twin_object import TwinObject
+        from ..service.action.twin_object import TwinObject
 
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")

@@ -4,7 +4,7 @@ import numpy as np
 # syft absolute
 from syft.service.action.action_object import ActionObject
 from syft.service.action.plan import planify
-from syft.types.twin_object import TwinObject
+from syft.service.action.twin_object import TwinObject
 
 
 def test_eager_permissions(worker, guest_client):
