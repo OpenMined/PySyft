@@ -6,12 +6,12 @@ from typing import Optional
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.credentials import SyftVerifyKey
 from ...util.telemetry import instrument
 from .user_code import CodeHashPartitionKey
 from .user_code import UserCode

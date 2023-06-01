@@ -24,7 +24,6 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -35,6 +34,7 @@ from ...store.document_store import StoreConfig
 from ...store.locks import LockingConfig
 from ...store.locks import SyftLock
 from ...store.locks import ThreadingLockingConfig
+from ...types.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1

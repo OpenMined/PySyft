@@ -10,7 +10,6 @@ import pytest
 from pytest_mock_resources import create_mongo_fixture
 
 # syft absolute
-from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_store import DictActionStore
 from syft.service.action.action_store import SQLiteActionStore
 from syft.service.queue.queue_stash import QueueStash
@@ -30,6 +29,7 @@ from syft.store.sqlite_document_store import SQLiteDocumentStore
 from syft.store.sqlite_document_store import SQLiteStoreClientConfig
 from syft.store.sqlite_document_store import SQLiteStoreConfig
 from syft.store.sqlite_document_store import SQLiteStorePartition
+from syft.types.credentials import SyftVerifyKey
 
 # relative
 from .store_constants_test import generate_db_name

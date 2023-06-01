@@ -5,12 +5,12 @@ from typing import List
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
+from ...types.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from .settings import NodeSettings

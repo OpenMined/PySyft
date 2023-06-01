@@ -2,7 +2,6 @@
 import pytest
 
 # syft absolute
-from syft.node.credentials import UserLoginCredentials
 from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.context import NodeServiceContext
@@ -17,6 +16,7 @@ from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_service import UserService
 from syft.service.user.user_stash import UserStash
 from syft.store.document_store import DocumentStore
+from syft.types.credentials import UserLoginCredentials
 
 
 @pytest.fixture(autouse=True)

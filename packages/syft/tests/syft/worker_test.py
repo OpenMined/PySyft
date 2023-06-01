@@ -12,9 +12,6 @@ from result import Ok
 import syft as sy
 from syft.client.api import SignedSyftAPICall
 from syft.client.api import SyftAPICall
-from syft.node.credentials import SIGNING_KEY_FOR
-from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
 from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_store import DictActionStore
@@ -26,6 +23,9 @@ from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
 from syft.service.user.user_service import UserService
+from syft.types.credentials import SIGNING_KEY_FOR
+from syft.types.credentials import SyftSigningKey
+from syft.types.credentials import SyftVerifyKey
 from syft.types.uid import UID
 
 test_signing_key_string = (

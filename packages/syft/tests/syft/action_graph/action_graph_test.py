@@ -17,7 +17,6 @@ import networkx as nx
 from result import Err
 
 # syft absolute
-from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import ExecutionStatus
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
@@ -31,6 +30,7 @@ from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
 from syft.store.document_store import QueryKeys
 from syft.store.locks import NoLockingConfig
+from syft.types.credentials import SyftVerifyKey
 from syft.types.datetime import DateTime
 from syft.types.syft_metaclass import Empty
 from syft.types.uid import UID

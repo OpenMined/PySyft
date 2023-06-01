@@ -12,7 +12,6 @@ from result import Err
 
 # syft absolute
 from syft.client.client import SyftClient
-from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
@@ -22,6 +21,7 @@ from syft.service.request.request_stash import RequestingUserVerifyKeyPartitionK
 from syft.service.request.request_stash import StatusPartitionKey
 from syft.store.document_store import PartitionKey
 from syft.store.document_store import QueryKeys
+from syft.types.credentials import SyftVerifyKey
 
 
 def test_requeststash_get_all_for_verify_key_no_requests(

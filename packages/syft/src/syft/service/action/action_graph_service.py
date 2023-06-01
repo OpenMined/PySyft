@@ -7,10 +7,10 @@ from typing import Union
 from pydantic.error_wrappers import ValidationError
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...store.document_store import QueryKeys
+from ...types.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ..code.user_code import UserVerifyKeyPartitionKey
 from ..context import AuthedServiceContext

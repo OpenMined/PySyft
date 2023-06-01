@@ -6,9 +6,9 @@ from typing import Optional
 from typing_extensions import Self
 
 # relative
-from ..node.credentials import SyftVerifyKey
-from ..node.credentials import UserLoginCredentials
 from ..types.abstract_node import AbstractNode
+from ..types.credentials import SyftVerifyKey
+from ..types.credentials import UserLoginCredentials
 from ..types.syft_object import Context
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject

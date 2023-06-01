@@ -12,13 +12,13 @@ from result import Result
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...types.credentials import SyftVerifyKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID

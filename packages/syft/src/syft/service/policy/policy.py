@@ -25,11 +25,11 @@ from result import Ok
 
 # relative
 from ...client.api import NodeView
-from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.abstract_node import NodeType
+from ...types.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject

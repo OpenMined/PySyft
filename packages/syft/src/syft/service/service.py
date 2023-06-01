@@ -24,13 +24,13 @@ from ..cmp.lib_service_registry import CMPBase
 from ..cmp.lib_service_registry import CMPClass
 from ..cmp.lib_service_registry import CMPFunction
 from ..cmp.lib_service_registry import action_execute_registry_libs
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
 from ..types.abstract_node import AbstractNode
+from ..types.credentials import SyftVerifyKey
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID

@@ -79,6 +79,8 @@ from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.abstract_node import AbstractNode
 from ..types.abstract_node import NodeType
+from ..types.credentials import SyftSigningKey
+from ..types.credentials import SyftVerifyKey
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import SyftObject
@@ -86,8 +88,6 @@ from ..types.uid import UID
 from ..util.telemetry import instrument
 from ..util.util import random_name
 from ..util.util import thread_ident
-from .credentials import SyftSigningKey
-from .credentials import SyftVerifyKey
 from .worker_settings import WorkerSettings
 
 # if user code needs to be serded and its not available we can call this to refresh

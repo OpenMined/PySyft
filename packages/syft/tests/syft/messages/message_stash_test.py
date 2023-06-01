@@ -4,8 +4,6 @@ from pytest import MonkeyPatch
 from result import Err
 
 # syft absolute
-from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
 from syft.service.message.message_stash import FromUserVerifyKeyPartitionKey
 from syft.service.message.message_stash import MessageStash
 from syft.service.message.message_stash import OrderByCreatedAtTimeStampPartitionKey
@@ -14,6 +12,8 @@ from syft.service.message.message_stash import ToUserVerifyKeyPartitionKey
 from syft.service.message.messages import Message
 from syft.service.message.messages import MessageExpiryStatus
 from syft.service.message.messages import MessageStatus
+from syft.types.credentials import SyftSigningKey
+from syft.types.credentials import SyftVerifyKey
 from syft.types.datetime import DateTime
 from syft.types.uid import UID
 

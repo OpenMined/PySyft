@@ -3,8 +3,6 @@ import numpy as np
 import pytest
 
 # syft absolute
-from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
 from syft.service.action.action_graph import NetworkXBackingStore
@@ -13,6 +11,8 @@ from syft.service.action.action_graph import NodeType
 from syft.service.action.action_graph_service import ActionGraphService
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
+from syft.types.credentials import SyftSigningKey
+from syft.types.credentials import SyftVerifyKey
 
 
 def create_action_obj_node(verify_key: SyftVerifyKey) -> NodeActionData:

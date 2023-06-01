@@ -23,12 +23,12 @@ from result import Result
 
 # relative
 from ...client.api import NodeView
-from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...types.abstract_node import NodeType
+from ...types.credentials import SyftVerifyKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject

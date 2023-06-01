@@ -12,7 +12,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ..serde.serializable import serializable
-from ..types.base import SyftBaseModel
+from .base import SyftBaseModel
 
 SIGNING_KEY_FOR = "SigningKey for"
 

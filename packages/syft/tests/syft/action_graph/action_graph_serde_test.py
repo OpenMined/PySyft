@@ -7,9 +7,9 @@ from pytest import FixtureRequest
 
 # syft absolute
 import syft as sy
-from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import NodeActionData
+from syft.types.credentials import SyftVerifyKey
 
 # relative
 from .fixtures import create_action_node

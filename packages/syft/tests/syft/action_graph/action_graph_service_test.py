@@ -2,8 +2,6 @@
 Tests for the ActionGraphService in /syft/src/syft/service/action/action_graph_service.py
 """
 # syft absolute
-from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
 from syft.node.worker import Worker
 from syft.service.action.action_graph import ExecutionStatus
 from syft.service.action.action_graph import InMemoryActionGraphStore
@@ -17,6 +15,8 @@ from syft.service.action.action_object import ActionObject
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.types.credentials import SyftSigningKey
+from syft.types.credentials import SyftVerifyKey
 from syft.types.datetime import DateTime
 from syft.types.uid import UID
 

@@ -19,7 +19,6 @@ from .client.user_settings import UserSettings  # noqa: F401
 from .client.user_settings import settings  # noqa: F401
 from .external import OBLV  # noqa: F401
 from .external import enable_external_lib  # noqa: F401
-from .node.credentials import SyftSigningKey  # noqa: F401
 from .node.domain import Domain  # noqa: F401
 from .node.gateway import Gateway  # noqa: F401
 from .node.server import serve_node  # noqa: F401
@@ -52,6 +51,7 @@ from .service.response import SyftNotReady  # noqa: F401
 from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
+from .types.credentials import SyftSigningKey  # noqa: F401
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401

@@ -13,7 +13,6 @@ from result import Result
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
-from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
@@ -21,6 +20,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.credentials import SyftVerifyKey
 from ...types.grid_url import GridURL
 from ...types.transforms import TransformContext
 from ...types.transforms import keep

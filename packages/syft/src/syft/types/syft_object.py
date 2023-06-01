@@ -24,7 +24,6 @@ from pydantic.fields import Undefined
 from typeguard import check_type
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
@@ -32,6 +31,7 @@ from ..util.autoreload import autoreload_enabled
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .credentials import SyftVerifyKey
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID

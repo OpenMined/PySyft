@@ -7,12 +7,12 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument

@@ -11,12 +11,12 @@ from result import Ok
 from result import Result
 
 # relative
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.dict_document_store import DictStoreConfig
 from ...store.document_store import BasePartitionSettings
 from ...store.document_store import StoreConfig
+from ...types.credentials import SyftSigningKey
+from ...types.credentials import SyftVerifyKey
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID

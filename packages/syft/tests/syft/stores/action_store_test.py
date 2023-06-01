@@ -5,11 +5,11 @@ from typing import Any
 import pytest
 
 # syft absolute
-from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_store import ActionObjectEXECUTE
 from syft.service.action.action_store import ActionObjectOWNER
 from syft.service.action.action_store import ActionObjectREAD
 from syft.service.action.action_store import ActionObjectWRITE
+from syft.types.credentials import SyftVerifyKey
 from syft.types.uid import UID
 
 # relative

@@ -20,9 +20,6 @@ from typing_extensions import Self
 
 # relative
 from .. import __version__
-from ..node.credentials import SyftSigningKey
-from ..node.credentials import SyftVerifyKey
-from ..node.credentials import UserLoginCredentials
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
@@ -36,6 +33,9 @@ from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
 from ..types.abstract_node import AbstractNode
+from ..types.credentials import SyftSigningKey
+from ..types.credentials import SyftVerifyKey
+from ..types.credentials import UserLoginCredentials
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID

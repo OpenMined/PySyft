@@ -5,10 +5,10 @@ from typing import Tuple
 from typing import Union
 
 # relative
-from ...node.credentials import SyftVerifyKey
-from ...node.credentials import UserLoginCredentials
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.credentials import SyftVerifyKey
+from ...types.credentials import UserLoginCredentials
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
 from ...util.telemetry import instrument

@@ -24,8 +24,6 @@ from ...client.api import NodeView
 from ...client.api import SyftAPI
 from ...client.client import HTTPConnection
 from ...client.client import Routes
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.code.user_code import UserCode
@@ -37,6 +35,8 @@ from ...service.service import AbstractService
 from ...service.service import service_method
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
+from ...types.credentials import SyftSigningKey
+from ...types.credentials import SyftVerifyKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID

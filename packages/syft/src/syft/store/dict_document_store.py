@@ -7,8 +7,8 @@ from typing import Optional
 from typing import Type
 
 # relative
-from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..types.credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore

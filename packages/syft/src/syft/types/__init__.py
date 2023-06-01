@@ -1,5 +1,10 @@
 # relative
 from .base import SyftBaseModel
+from .credentials import SIGNING_KEY_FOR
+from .credentials import SyftCredentials
+from .credentials import SyftSigningKey
+from .credentials import SyftVerifyKey
+from .credentials import UserLoginCredentials
 from .datetime import DateTime
 from .grid_url import GridURL
 from .syft_metaclass import PartialModelMetaclass

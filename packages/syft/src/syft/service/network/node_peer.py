@@ -7,9 +7,9 @@ from typing_extensions import Self
 
 # relative
 from ...client.client import SyftClient
-from ...node.credentials import SyftSigningKey
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...types.credentials import SyftSigningKey
+from ...types.credentials import SyftVerifyKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
