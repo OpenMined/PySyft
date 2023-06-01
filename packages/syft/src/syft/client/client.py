@@ -4,6 +4,7 @@ import hashlib
 import json
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -359,6 +360,9 @@ class SyftClient:
             self._fetch_api(self.credentials)
 
         return self._api
+
+    def view_projects(self) -> List:
+        return self.api.services.project.get_all()
 
     def guest(self) -> Self:
         self.credentials = SyftSigningKey.generate()
