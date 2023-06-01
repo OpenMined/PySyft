@@ -711,9 +711,7 @@ class ActionObject(SyftObject):
 
     def get_from(
         self, 
-        client: SyftClient, 
-        return_context: bool,
-        print: bool,
+        client: SyftClient,
     ) -> Any:
 
         """Get the object from a Syft Client"""
