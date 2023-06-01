@@ -5,8 +5,8 @@ from typing import Optional
 from typing import Union
 
 # relative
-from .serde.serializable import serializable
-from .types.uid import UID
+from ..serde.serializable import serializable
+from .uid import UID
 
 
 @serializable()

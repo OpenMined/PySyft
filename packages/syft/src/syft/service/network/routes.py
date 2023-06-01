@@ -11,13 +11,13 @@ from typing import TYPE_CHECKING
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import AbstractNode
 from ...client.client import HTTPConnection
 from ...client.client import NodeConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...types.abstract_node import AbstractNode
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext

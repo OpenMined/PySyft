@@ -13,7 +13,6 @@ from pydantic import ValidationError
 from typing_extensions import Annotated
 
 # relative
-from ..abstract_node import AbstractNode
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
 from ..service.context import NodeServiceContext
@@ -23,6 +22,7 @@ from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
+from ..types.abstract_node import AbstractNode
 from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials

@@ -30,8 +30,6 @@ from typing_extensions import Self
 
 # relative
 from .. import __version__
-from ..abstract_node import AbstractNode
-from ..abstract_node import NodeType
 from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
@@ -79,6 +77,8 @@ from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
+from ..types.abstract_node import AbstractNode
+from ..types.abstract_node import NodeType
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import SyftObject

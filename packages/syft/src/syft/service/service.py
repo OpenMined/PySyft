@@ -18,7 +18,6 @@ from result import Ok
 from result import OkErr
 
 # relative
-from ..abstract_node import AbstractNode
 from ..node.credentials import SyftVerifyKey
 from ..serde.lib_permissions import CMPCRUDPermission
 from ..serde.lib_permissions import CMPPermission
@@ -31,6 +30,7 @@ from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
+from ..types.abstract_node import AbstractNode
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID

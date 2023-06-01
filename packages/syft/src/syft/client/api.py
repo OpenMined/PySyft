@@ -22,7 +22,6 @@ from result import Result
 from typeguard import check_type
 
 # relative
-from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..serde.deserialize import _deserialize
@@ -38,6 +37,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..types.abstract_node import AbstractNode
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
