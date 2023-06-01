@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from enum import EnumMeta
 import sys
 import types
 from typing import Any
@@ -42,10 +43,40 @@ def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type
                 if sub_annotations and key in sub_annotations:
                     _type = sub_annotations[key]
         if _type is None:
-            print(f"Failed to find type for key: {key} in {cls}")
             return None
         types.append(_type)
     return types
+
+
+def check_fqn_alias(cls: Union[object, type]) -> Optional[tuple]:
+    """Currently, typing.Any has different metaclasses in different versions of Python 🤦‍♂️.
+    For Python <=3.10
+    Any is an instance of typing._SpecialForm
+
+    For Python >=3.11
+    Any is an instance of typing._AnyMeta
+    Hence adding both the aliases to the type bank.
+
+    This would cause issues, when the server and client
+    have different python versions.
+
+    As their serde is same, we can use the same serde for both of them.
+    with aliases for  fully qualified names in type bank
+
+    In a similar manner for Enum.
+
+    For Python<=3.10:
+    Enum is metaclass of enum.EnumMeta
+
+    For Python>=3.11:
+    Enum is metaclass of enum.EnumType
+    """
+    if cls == Any:
+        return ("typing._AnyMeta", "typing._SpecialForm")
+    if cls == EnumMeta:
+        return ("enum.EnumMeta", "enum.EnumType")
+
+    return None
 
 
 def recursive_serde_register(
@@ -61,6 +92,7 @@ def recursive_serde_register(
     base_attrs = None
     attribute_list: Set[str] = set()
 
+    alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
     fqn = f"{cls.__module__}.{cls.__name__}"
 
@@ -104,7 +136,7 @@ def recursive_serde_register(
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     # without fqn duplicate class names overwrite
-    TYPE_BANK[fqn] = (
+    serde_attributes = (
         nonrecursive,
         _serialize,
         _deserialize,
@@ -114,6 +146,12 @@ def recursive_serde_register(
         cls,
         attribute_types,
     )
+
+    TYPE_BANK[fqn] = serde_attributes
+
+    if isinstance(alias_fqn, tuple):
+        for alias in alias_fqn:
+            TYPE_BANK[alias] = serde_attributes
 
 
 def chunk_bytes(
