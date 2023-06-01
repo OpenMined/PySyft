@@ -649,17 +649,14 @@ class ActionObject(SyftObject):
             kwargs=kwarg_ids,
             action_type=action_type,
         )
-        # relative
-        from ...client.api import APIRegistry
 
-        try:
+        if self.syft_node_uid is not None:
+            # relative
+            from ...client.api import APIRegistry
+
+            # saving the action graph node
             api = APIRegistry.api_for(node_uid=self.syft_node_uid)
             api.services.graph.add_action(action)
-        except Exception:
-            # stdlib
-            import warnings
-
-            warnings.warn("Cannot add a node to the action graph")
 
         return action
 
