@@ -9,9 +9,11 @@ from pydantic import ValidationError
 import pytest
 
 # syft absolute
+from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
+from syft.service.dataset.dataset import is_action_data_empty
 
 
 def random_hash() -> str:
@@ -37,8 +39,13 @@ def make_asset_with_mock() -> dict[str, Any]:
     return {**make_asset_without_mock(), "mock": mock()}
 
 
+def make_asset_with_empty_mock() -> dict[str, Any]:
+    return {**make_asset_without_mock(), "mock": ActionObject.empty()}
+
+
 asset_without_mock = pytest.fixture(make_asset_without_mock)
 asset_with_mock = pytest.fixture(make_asset_with_mock)
+asset_with_empty_mock = pytest.fixture(make_asset_with_empty_mock)
 
 
 @pytest.mark.parametrize(
@@ -155,3 +162,20 @@ def test_dataset_can_have_assets_with_empty_mock() -> None:
     assets = assets_without_mock + assets_with_mock
 
     assert Dataset(name=random_hash(), asset_list=assets)
+
+
+def test_guest_client_can_get_empty_mock(
+    worker: Worker,
+    asset_with_empty_mock: dict[str, Any],
+) -> None:
+    asset = Asset(**asset_with_empty_mock)
+    dataset = Dataset(name=random_hash(), asset_list=[asset])
+
+    root_domain_client = worker.root_client
+    root_domain_client.upload_dataset(dataset)
+
+    guest_domain_client = root_domain_client.guest()
+    guest_datasets = guest_domain_client.api.services.dataset.get_all()
+    guest_dataset = guest_datasets[0]
+
+    assert is_action_data_empty(guest_dataset.assets[0].mock)
