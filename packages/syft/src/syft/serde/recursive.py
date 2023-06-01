@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from enum import EnumMeta
 import sys
 import types
 from typing import Any
@@ -27,6 +28,57 @@ TYPE_BANK = {}
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
 
 
+def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type]]:
+    if keys is None:
+        return None
+    types = []
+    for key in keys:
+        _type = None
+        annotations = getattr(cls, "__annotations__", None)
+        if annotations and key in annotations:
+            _type = annotations[key]
+        else:
+            for parent_cls in cls.mro():
+                sub_annotations = getattr(parent_cls, "__annotations__", None)
+                if sub_annotations and key in sub_annotations:
+                    _type = sub_annotations[key]
+        if _type is None:
+            return None
+        types.append(_type)
+    return types
+
+
+def check_fqn_alias(cls: Union[object, type]) -> Optional[tuple]:
+    """Currently, typing.Any has different metaclasses in different versions of Python 🤦‍♂️.
+    For Python <=3.10
+    Any is an instance of typing._SpecialForm
+
+    For Python >=3.11
+    Any is an instance of typing._AnyMeta
+    Hence adding both the aliases to the type bank.
+
+    This would cause issues, when the server and client
+    have different python versions.
+
+    As their serde is same, we can use the same serde for both of them.
+    with aliases for  fully qualified names in type bank
+
+    In a similar manner for Enum.
+
+    For Python<=3.10:
+    Enum is metaclass of enum.EnumMeta
+
+    For Python>=3.11:
+    Enum is metaclass of enum.EnumType
+    """
+    if cls == Any:
+        return ("typing._AnyMeta", "typing._SpecialForm")
+    if cls == EnumMeta:
+        return ("enum.EnumMeta", "enum.EnumType")
+
+    return None
+
+
 def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
@@ -40,6 +92,7 @@ def recursive_serde_register(
     base_attrs = None
     attribute_list: Set[str] = set()
 
+    alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
     fqn = f"{cls.__module__}.{cls.__name__}"
 
@@ -76,13 +129,14 @@ def recursive_serde_register(
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because
         # pydantic objects inherit by default
-        setattr(cls, "__syft_serializable__", attribute_list)
+        cls.__syft_serializable__ = attribute_list
 
     attributes = set(list(attribute_list)) if attribute_list else None
+    attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     # without fqn duplicate class names overwrite
-    TYPE_BANK[fqn] = (
+    serde_attributes = (
         nonrecursive,
         _serialize,
         _deserialize,
@@ -90,7 +144,14 @@ def recursive_serde_register(
         exclude_attrs,
         serde_overrides,
         cls,
+        attribute_types,
     )
+
+    TYPE_BANK[fqn] = serde_attributes
+
+    if isinstance(alias_fqn, tuple):
+        for alias in alias_fqn:
+            TYPE_BANK[alias] = serde_attributes
 
 
 def chunk_bytes(
@@ -135,6 +196,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         exclude_attrs_list,
         serde_overrides,
         cls,
+        attribute_types,
     ) = TYPE_BANK[fqn]
 
     if nonrecursive or is_type:
@@ -227,6 +289,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         exclude_attrs_list,
         serde_overrides,
         cls,
+        attribute_types,
     ) = TYPE_BANK[proto.fullyQualifiedName]
 
     if class_type == type(None):
@@ -254,7 +317,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
             kwargs[attr_name] = attr_value
 
     if hasattr(class_type, "serde_constructor"):
-        return getattr(class_type, "serde_constructor")(kwargs)
+        return class_type.serde_constructor(kwargs)
 
     if issubclass(class_type, Enum) and "value" in kwargs:
         obj = class_type.__new__(class_type, kwargs["value"])  # type: ignore

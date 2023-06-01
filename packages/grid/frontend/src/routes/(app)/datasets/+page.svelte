@@ -1,18 +1,26 @@
 <script>
   import { onMount } from 'svelte';
+  import debounce from 'just-debounce-it';
+  import Search from '$lib/components/Search.svelte';
   import Button from '$lib/components/Button.svelte';
   import DatasetListItem from '$lib/components/Datasets/DatasetListItem.svelte';
   import NoDatasetFound from '$lib/components/Datasets/DatasetNoneFound.svelte';
   import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
   import DatasetModalNew from '$lib/components/Datasets/DatasetModalNew.svelte';
-  import { getAllDatasets } from '$lib/api/datasets';
+  import { getAllDatasets, searchDataset } from '$lib/api/datasets';
 
   let datasets = null;
   let openModalNew = false;
+  let searchTerm = '';
 
   function handleClick() {
     openModalNew = !openModalNew;
   }
+
+  const search = debounce(async () => {
+    if (searchTerm === '') datasets = await getAllDatasets();
+    else datasets = await searchDataset(searchTerm);
+  }, 300);
 
   onMount(async () => {
     datasets = await getAllDatasets();
@@ -36,6 +44,10 @@
     <!-- List Actions -->
     <!-- Body -->
     <section class="body pt-10">
+      <div class="w-full max-w-[378px] pb-5">
+        <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} />
+      </div>
+
       {#if datasets === null}
         <h2>Loading</h2>
       {:else if datasets.length === 0}

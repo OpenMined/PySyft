@@ -99,7 +99,7 @@ class Policy(SyftObject):
             init_kwargs = deepcopy(kwargs)
             if "id" in init_kwargs:
                 del init_kwargs["id"]
-        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)
+        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)  # noqa: B026
 
     @classmethod
     @property
@@ -372,7 +372,7 @@ class CustomPolicy(type):
     # capture the init_kwargs transparently
     def __call__(cls, *args: Any, **kwargs: Any) -> None:
         obj = super().__call__(*args, **kwargs)
-        setattr(obj, "init_kwargs", kwargs)
+        obj.init_kwargs = kwargs
         return obj
 
 
@@ -670,10 +670,10 @@ def add_class_to_user_module(klass: type, unique_name: str) -> type:
 
     if not hasattr(sy, "user"):
         user_module = types.ModuleType("user")
-        setattr(sys.modules["syft"], "user", user_module)
+        sys.modules["syft"].user = user_module
     user_module = sy.user
     setattr(user_module, unique_name, klass)
-    setattr(sys.modules["syft"], "user", user_module)
+    sys.modules["syft"].user = user_module
     return klass
 
 

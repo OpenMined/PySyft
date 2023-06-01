@@ -322,7 +322,10 @@ class APIModule:
     def _repr_html_(self) -> Any:
         if not hasattr(self, "get_all"):
             return NotImplementedError
-        results = self.get_all()
+        if hasattr(self, "get_all_unread"):
+            results = self.get_all_unread()
+        else:
+            results = self.get_all()
         return results._repr_html_()
 
 
@@ -595,7 +598,7 @@ def monkey_patch_getdef(self, obj, oname="") -> Union[str, None]:
     try:
         if hasattr(obj, "__ipython_inspector_signature_override__"):
             return _render_signature(
-                getattr(obj, "__ipython_inspector_signature_override__"), oname
+                obj.__ipython_inspector_signature_override__, oname
             )
         return _getdef(self, obj, oname)
     except Exception:
