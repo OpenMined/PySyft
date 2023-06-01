@@ -6,8 +6,8 @@ from typing import Union
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
-from ..response import SyftError
-from ..response import SyftSuccess
+from ...types.response import SyftError
+from ...types.response import SyftSuccess
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig

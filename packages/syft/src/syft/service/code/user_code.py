@@ -30,6 +30,7 @@ from ...store.document_store import PartitionKey
 from ...types.abstract_node import NodeType
 from ...types.context import AuthedServiceContext
 from ...types.credentials import SyftVerifyKey
+from ...types.response import SyftError
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
@@ -50,7 +51,6 @@ from ..policy.policy import UserPolicy
 from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
-from ..response import SyftError
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
 

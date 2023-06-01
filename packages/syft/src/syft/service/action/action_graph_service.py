@@ -12,10 +12,10 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import QueryKeys
 from ...types.context import AuthedServiceContext
 from ...types.credentials import SyftVerifyKey
+from ...types.response import SyftError
+from ...types.response import SyftSuccess
 from ...types.uid import UID
 from ..code.user_code import UserVerifyKeyPartitionKey
-from ..response import SyftError
-from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from .action_graph import ActionGraphStore

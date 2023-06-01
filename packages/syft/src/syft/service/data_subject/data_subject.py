@@ -11,6 +11,7 @@ from typing_extensions import Self
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
+from ...types.response import SyftError
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -18,7 +19,6 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
-from ..response import SyftError
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 

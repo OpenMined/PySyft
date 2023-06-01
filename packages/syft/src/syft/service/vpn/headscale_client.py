@@ -6,10 +6,10 @@ from typing import Union
 # relative
 from ...client.connection import NodeConnection
 from ...serde.serializable import serializable
+from ...types.response import SyftError
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ..response import SyftError
 from .vpn import BaseVPNClient
 from .vpn import VPNRoutes
 

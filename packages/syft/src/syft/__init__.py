@@ -47,12 +47,12 @@ from .service.policy.policy import UserInputPolicy  # noqa: F401
 from .service.policy.policy import UserOutputPolicy  # noqa: F401
 from .service.project.project import ProjectSubmit as Project  # noqa: F401
 from .service.request.request import SubmitRequest as Request  # noqa: F401
-from .service.response import SyftError  # noqa: F401
-from .service.response import SyftNotReady  # noqa: F401
-from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
 from .types.credentials import SyftSigningKey  # noqa: F401
+from .types.response import SyftError  # noqa: F401
+from .types.response import SyftNotReady  # noqa: F401
+from .types.response import SyftSuccess  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
 from .util import jax_settings  # noqa: F401

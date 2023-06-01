@@ -16,7 +16,6 @@ from typing_extensions import Annotated
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
 from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
@@ -25,6 +24,7 @@ from ..types.context import NodeServiceContext
 from ..types.context import UnauthedServiceContext
 from ..types.credentials import SyftVerifyKey
 from ..types.credentials import UserLoginCredentials
+from ..types.response import SyftError
 from ..util.telemetry import TRACE_MODE
 from .worker import Worker
 

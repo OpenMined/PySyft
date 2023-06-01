@@ -14,12 +14,12 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...types.context import AuthedServiceContext
+from ...types.response import SyftError
+from ...types.response import SyftSuccess
 from ...types.uid import UID
 from ...types.user_roles import GUEST_ROLE_LEVEL
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
-from ..response import SyftError
-from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE

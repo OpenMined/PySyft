@@ -20,8 +20,8 @@ from ..serde.serializable import serializable
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
-from ..service.response import SyftSuccess
 from ..types.credentials import SyftVerifyKey
+from ..types.response import SyftSuccess
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject

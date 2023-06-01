@@ -20,10 +20,10 @@ from ...serde.serializable import serializable
 from ...types.abstract_node import AbstractNode
 from ...types.context import AuthedServiceContext
 from ...types.context import NodeServiceContext
+from ...types.response import SyftError
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
-from ..response import SyftError
 
 if TYPE_CHECKING:
     # relative

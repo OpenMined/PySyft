@@ -16,10 +16,10 @@ from result import Result
 # relative
 from ...client.connection import NodeConnection
 from ...serde.serializable import serializable
+from ...types.response import SyftError
+from ...types.response import SyftSuccess
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ..response import SyftError
-from ..response import SyftSuccess
 from .headscale_client import HeadscaleClient
 from .headscale_client import HeadscaleRoutes
 from .vpn import BaseVPNClient

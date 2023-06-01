@@ -2,11 +2,11 @@
 from faker import Faker
 
 # syft absolute
-from syft.service.response import SyftSuccess
 from syft.service.user.user import User
 from syft.service.user.user import UserUpdate
 from syft.service.user.user_stash import UserStash
 from syft.types.credentials import SyftSigningKey
+from syft.types.response import SyftSuccess
 from syft.types.uid import UID
 from syft.types.user_roles import ServiceRole
 

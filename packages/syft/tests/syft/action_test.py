@@ -5,7 +5,7 @@ import numpy as np
 from syft import ActionObject
 from syft.client.api import SyftAPICall
 from syft.service.action.action_object import Action
-from syft.service.response import SyftError
+from syft.types.response import SyftError
 from syft.types.uid import LineageID
 
 

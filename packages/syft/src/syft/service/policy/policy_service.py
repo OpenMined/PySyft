@@ -6,9 +6,9 @@ from typing import Union
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.context import AuthedServiceContext
+from ...types.response import SyftError
+from ...types.response import SyftSuccess
 from ...types.uid import UID
-from ..response import SyftError
-from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method

@@ -13,11 +13,11 @@ import zmq.green as zmq
 
 # relative
 from ...serde.serializable import serializable
+from ...types.response import SyftError
+from ...types.response import SyftSuccess
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ..response import SyftError
-from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig

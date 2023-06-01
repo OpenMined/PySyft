@@ -2,7 +2,7 @@
 from typing import Any
 
 # relative
-from ..service.response import SyftError
+from ..types.response import SyftError
 
 
 class InstallOrchestra:

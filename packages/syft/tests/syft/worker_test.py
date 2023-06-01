@@ -16,8 +16,6 @@ from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_store import DictActionStore
 from syft.service.queue.queue_stash import QueueItem
-from syft.service.response import SyftAttributeError
-from syft.service.response import SyftError
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
@@ -26,6 +24,8 @@ from syft.types.context import AuthedServiceContext
 from syft.types.credentials import SIGNING_KEY_FOR
 from syft.types.credentials import SyftSigningKey
 from syft.types.credentials import SyftVerifyKey
+from syft.types.response import SyftAttributeError
+from syft.types.response import SyftError
 from syft.types.uid import UID
 
 test_signing_key_string = (

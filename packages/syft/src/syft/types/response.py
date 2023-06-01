@@ -5,7 +5,7 @@ from typing import Any
 
 # relative
 from ..serde.serializable import serializable
-from ..types.base import SyftBaseModel
+from .base import SyftBaseModel
 
 
 class SyftResponseMessage(SyftBaseModel):

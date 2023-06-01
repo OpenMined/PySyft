@@ -7,8 +7,8 @@ import os
 from typing import Union
 
 # relative
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
+from ..types.response import SyftError
+from ..types.response import SyftSuccess
 from ..util.util import str_to_bool
 
 # Contains all the external libraries that Syft supports.

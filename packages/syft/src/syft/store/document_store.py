@@ -24,10 +24,10 @@ from typeguard import check_type
 # relative
 from ..serde.serializable import serializable
 from ..service.action.action_permissions import ActionObjectPermission
-from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from ..types.credentials import SyftSigningKey
 from ..types.credentials import SyftVerifyKey
+from ..types.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject

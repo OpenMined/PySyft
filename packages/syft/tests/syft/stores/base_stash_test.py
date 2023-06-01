@@ -15,7 +15,6 @@ from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.service.response import SyftSuccess
 from syft.store.dict_document_store import DictDocumentStore
 from syft.store.document_store import BaseUIDStoreStash
 from syft.store.document_store import PartitionKey
@@ -23,6 +22,7 @@ from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKey
 from syft.store.document_store import QueryKeys
 from syft.store.document_store import UIDPartitionKey
+from syft.types.response import SyftSuccess
 from syft.types.syft_object import SyftObject
 from syft.types.uid import UID
 

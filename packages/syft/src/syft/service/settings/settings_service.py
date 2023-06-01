@@ -10,7 +10,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.context import AuthedServiceContext
 from ...types.context import UnauthedServiceContext
-from ..response import SyftError
+from ...types.response import SyftError
 from ..service import AbstractService
 from ..service import service_method
 from .settings import NodeSettings

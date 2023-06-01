@@ -6,11 +6,11 @@ from typing import Union
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.context import AuthedServiceContext
+from ...types.response import SyftError
+from ...types.response import SyftSuccess
 from ...types.uid import UID
 from ...types.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ...util.telemetry import instrument
-from ..response import SyftError
-from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE

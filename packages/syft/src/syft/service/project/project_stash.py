@@ -13,10 +13,10 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.credentials import SyftVerifyKey
+from ...types.response import SyftError
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..request.request import Request
-from ..response import SyftError
 from .project import Project
 
 VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)

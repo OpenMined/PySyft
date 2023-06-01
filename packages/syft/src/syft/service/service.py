@@ -33,12 +33,12 @@ from ..types.abstract_node import AbstractNode
 from ..types.context import AuthedServiceContext
 from ..types.context import ChangeContext
 from ..types.credentials import SyftVerifyKey
+from ..types.response import SyftError
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..types.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..types.user_roles import ServiceRole
-from .response import SyftError
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)

@@ -26,8 +26,6 @@ from ..serde.serialize import _serialize
 from ..service.dataset.dataset import CreateDataset
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.response import SyftError
-from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
@@ -37,6 +35,8 @@ from ..types.credentials import SyftSigningKey
 from ..types.credentials import SyftVerifyKey
 from ..types.credentials import UserLoginCredentials
 from ..types.grid_url import GridURL
+from ..types.response import SyftError
+from ..types.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.logger import debug

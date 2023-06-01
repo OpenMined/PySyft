@@ -28,7 +28,6 @@ from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.code.user_code import UserCode
 from ...service.code.user_code import UserCodeStatus
-from ...service.response import SyftError
 from ...service.service import AbstractService
 from ...service.service import service_method
 from ...store.document_store import DocumentStore
@@ -36,6 +35,7 @@ from ...types.context import AuthedServiceContext
 from ...types.context import ChangeContext
 from ...types.credentials import SyftSigningKey
 from ...types.credentials import SyftVerifyKey
+from ...types.response import SyftError
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID

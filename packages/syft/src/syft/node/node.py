@@ -57,7 +57,6 @@ from ..service.queue.queue_stash import QueueStash
 from ..service.queue.zmq_queue import QueueConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.request.request_service import RequestService
-from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
@@ -80,6 +79,7 @@ from ..types.context import UnauthedServiceContext
 from ..types.context import UserLoginCredentials
 from ..types.credentials import SyftSigningKey
 from ..types.credentials import SyftVerifyKey
+from ..types.response import SyftError
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import SyftObject

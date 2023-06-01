@@ -15,8 +15,8 @@ from syft.service.queue.zmq_queue import ZMQClientConfig
 from syft.service.queue.zmq_queue import ZMQConsumer
 from syft.service.queue.zmq_queue import ZMQProducer
 from syft.service.queue.zmq_queue import ZMQQueueConfig
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
+from syft.types.response import SyftError
+from syft.types.response import SyftSuccess
 
 
 def test_zmq_client():

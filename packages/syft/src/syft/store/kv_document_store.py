@@ -23,8 +23,8 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
-from ..service.response import SyftSuccess
 from ..types.credentials import SyftVerifyKey
+from ..types.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from .document_store import BaseStash

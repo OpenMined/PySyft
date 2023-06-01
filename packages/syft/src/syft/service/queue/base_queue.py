@@ -7,8 +7,8 @@ from typing import Union
 
 # relative
 from ...serde.serializable import serializable
-from ..response import SyftError
-from ..response import SyftSuccess
+from ...types.response import SyftError
+from ...types.response import SyftSuccess
 
 
 @serializable()

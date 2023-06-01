@@ -29,13 +29,13 @@ from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
+from ...types.response import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
-from ..response import SyftException
 from .action_data_empty import ActionDataEmpty
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object

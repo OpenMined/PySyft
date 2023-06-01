@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 
 # relative
-from ..response import SyftError
-from ..response import SyftResponseMessage
-from ..response import SyftSuccess
+from ...types.response import SyftError
+from ...types.response import SyftResponseMessage
+from ...types.response import SyftSuccess
 from .action_object import ActionObject
 
 

@@ -18,6 +18,9 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
+from ...types.response import SyftError
+from ...types.response import SyftException
+from ...types.response import SyftSuccess
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -28,9 +31,6 @@ from ...types.uid import UID
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
-from ..response import SyftError
-from ..response import SyftException
-from ..response import SyftSuccess
 
 
 @serializable()

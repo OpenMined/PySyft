@@ -10,8 +10,6 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserPrivateKey
@@ -22,6 +20,8 @@ from syft.types.context import AuthedServiceContext
 from syft.types.context import NodeServiceContext
 from syft.types.context import UnauthedServiceContext
 from syft.types.credentials import SyftVerifyKey
+from syft.types.response import SyftError
+from syft.types.response import SyftSuccess
 from syft.types.uid import UID
 from syft.types.user_roles import ServiceRole
 
