@@ -1,3 +1,5 @@
+# from .schema import generate_json_schemas DO NOT UNCOMMENT THIS
+
 # relative
 from .autoreload import autoreload_enabled
 from .autoreload import disable_autoreload
@@ -12,15 +14,16 @@ from .logger import start
 from .logger import traceback
 from .logger import traceback_and_raise
 from .logger import warning
-from .schema import generate_json_schemas
 from .telemetry import instrument
 from .util import PANDAS_DATA
+from .util import aggressive_set_attr
 from .util import autocache
 from .util import bcolors
 from .util import char_emoji
 from .util import concurrency_count
 from .util import concurrency_override
 from .util import download_file
+from .util import extract_name
 from .util import find_available_port
 from .util import full_name_with_name
 from .util import full_name_with_qualname
@@ -45,7 +48,6 @@ from .util import parallel_execution
 from .util import print_dynamic_log
 from .util import print_process
 from .util import random_name
-from .util import recursive_hash
 from .util import split_rows
 from .util import ssl_test
 from .util import str_to_bool
