@@ -41,6 +41,7 @@ from ..service.service import UserServiceConfigRegistry
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
+from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
@@ -436,6 +437,12 @@ class SyftAPI(SyftObject):
             return SyftError(message="The result signature is invalid")  # type: ignore
 
         result = signed_result.message.data
+
+        attach_attribute_to_syft_object(
+            result=result,
+            attr_name="syft_client_verify_key",
+            attr_value=self.signing_key.verify_key,
+        )
 
         if isinstance(result, OkErr):
             if result.is_ok():

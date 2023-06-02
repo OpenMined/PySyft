@@ -20,6 +20,7 @@ import pydantic
 from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic.fields import Undefined
+from result import OkErr
 from typeguard import check_type
 
 # relative
@@ -53,6 +54,7 @@ class SyftBaseObject(BaseModel):
     __version__: int  # data is always versioned
 
     syft_node_location: Optional[UID]
+    syft_client_verify_key: Optional[SyftVerifyKey]
 
 
 class Context(SyftBaseObject):
@@ -523,3 +525,32 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 
 
 recursive_serde_register_type(PartialSyftObject)
+
+
+def attach_attribute_to_syft_object(
+    result: Any,
+    attr_name: str,
+    attr_value: Any,
+) -> Any:
+    box_to_result_type = None
+
+    if type(result) in OkErr:
+        box_to_result_type = type(result)
+        result = result.value
+
+    if isinstance(result, (list, tuple)):
+        iterable_items = result
+    elif isinstance(result, dict):
+        iterable_items = result.values()
+    else:
+        iterable_items = [result]
+
+    for _object in iterable_items:
+        # if object is SyftBaseObject,
+        # then attach node location
+        if isinstance(_object, SyftBaseObject):
+            setattr(_object, attr_name, attr_value)
+    if box_to_result_type is not None:
+        result = box_to_result_type(result)
+
+    return result
