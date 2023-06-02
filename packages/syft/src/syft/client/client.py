@@ -182,7 +182,7 @@ class HTTPConnection(NodeConnection):
             obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
 
-    def login(self, email: str, password: str) -> SyftSigningKey:
+    def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
         credentials = {"email": email, "password": password}
         response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
@@ -352,6 +352,7 @@ class SyftClient:
 
     @property
     def api(self) -> SyftAPI:
+        # invalidate API
         if self._api is None or (self._api.signing_key != self.credentials):
             self._fetch_api(self.credentials)
 
@@ -505,7 +506,6 @@ class SyftClient:
         response = self.connection.register(new_user=new_user)
         if isinstance(response, tuple):
             self.credentials = response[1].signing_key
-            self._fetch_api(self.credentials)
             response = response[0]
         return response
 

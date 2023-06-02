@@ -348,6 +348,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         else:
             new_dict = {}
             for k, v in dict(self).items():
+                # exclude dynamically added syft attributes
+                if k in DYNAMIC_SYFT_ATTRIBUTES:
+                    continue
                 if exclude_empty and v is not Empty:
                     new_dict[k] = v
                 if exclude_none and v is not None:
