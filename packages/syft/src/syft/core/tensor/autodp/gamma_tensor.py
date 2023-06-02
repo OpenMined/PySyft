@@ -2030,7 +2030,7 @@ class GammaTensor:
         else:
             output_state[np.random.randint(low=0, high=2**31 - 1)] = other
 
-            child = self.child
+            child = self.child * other
             min_val = self.min_vals * other
             max_val = self.max_vals * other
             
