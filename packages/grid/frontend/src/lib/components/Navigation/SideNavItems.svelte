@@ -15,8 +15,7 @@
           icon: TrayIcon,
           iconFill: TrayFillIcon,
           label: 'Requests',
-          href: '/requests',
-          disabled: true
+          href: '/requests'
         }
       ]
     },
