@@ -176,7 +176,7 @@ passthrough_attrs = [
     "send",  # syft
     "_copy_and_set_values",  # pydantic
     "get_from",  # syft
-    "delete_data", #syft
+    "delete_data",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -406,6 +406,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_markdown_",
     "syft_twin_type",
     "_repr_debug_",
+    "as_empty",
 ]
 
 
@@ -723,6 +724,13 @@ class ActionObject(SyftObject):
         else:
             return res.syft_action_data
 
+    def as_empty(self):
+        id = self.id
+        # TODO: fix
+        if isinstance(id, LineageID):
+            id = id.id
+        return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id)
+
     @staticmethod
     def from_obj(
         syft_action_data: Any,
@@ -791,7 +799,7 @@ class ActionObject(SyftObject):
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
 
-    def delete_data(self) :
+    def delete_data(self):
         empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
         self.syft_action_data = empty
 
