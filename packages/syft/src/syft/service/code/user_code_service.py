@@ -224,10 +224,20 @@ class UserCodeService(AbstractService):
                 return SyftError(message=result)
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            final_results = result.ok()
+            if code_item.request_context:
+                print(f'{result.ok()=}', file=sys.stderr)
+                results, exec_context = result.ok()
+                final_results = UserCodeExecutionResult(
+                    user_code_id=code_item.id,
+                    result_id=results.id,
+                    context=exec_context,
+                )
+            else:
+                final_results = result.ok()
             policy_result = output_policy.apply_output(
                 context=context, outputs=final_results
             )
+            print(f"{policy_result=}", file=sys.stderr)
             code_item.output_policy = output_policy
             state_result = self.update_code_state(context=context, code_item=code_item)
             if not state_result:

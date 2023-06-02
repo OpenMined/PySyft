@@ -166,28 +166,38 @@ class ActionService(AbstractService):
             real_kwargs[key] = kwarg_value
 
         result_id = UID()
+        import sys
+        exec_context = None
         try:
             if not has_twin_inputs:
                 # no twins
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
-                exec_result = execute_code_item(code_item, filtered_kwargs)
-                result_action_object = wrap_result(result_id, exec_result.result)
+                if code_item.request_context:
+                    exec_result, exec_context = execute_code_item(code_item, filtered_kwargs, return_context=True)
+                else:
+                    exec_result = execute_code_item(code_item, filtered_kwargs)
+                # print(f'{exec_result=}', file=sys.stderr)
+                result_action_object = wrap_result(result_id, exec_result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.PRIVATE
                 )
-                private_exec_result = execute_code_item(code_item, private_kwargs)
+                if code_item.request_context:
+                    private_exec_result, exec_context = execute_code_item(code_item, private_kwargs, return_context=True)
+                else:
+                    private_exec_result = execute_code_item(code_item, private_kwargs)
+                print(f'{private_exec_result=}', file=sys.stderr)
                 result_action_object_private = wrap_result(
-                    result_id, private_exec_result.result
+                    result_id, private_exec_result
                 )
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
                 mock_exec_result = execute_code_item(code_item, mock_kwargs)
                 result_action_object_mock = wrap_result(
-                    result_id, mock_exec_result.result
+                    result_id, mock_exec_result
                 )
 
                 result_action_object = TwinObject(
@@ -204,6 +214,9 @@ class ActionService(AbstractService):
         )
         if set_result.is_err():
             return set_result.err()
+        if exec_context is not None:
+            print(f'{exec_context=}', file=sys.stderr)
+            return Ok((result_action_object, exec_context))
         return Ok(result_action_object)
 
     def execute_plan(

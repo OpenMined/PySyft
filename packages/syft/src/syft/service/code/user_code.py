@@ -654,13 +654,14 @@ class UserCodeExecutionResult(SyftObject):
         return self.context.get_plot()
 
 
-def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+def execute_code_item(code_item: UserCode, kwargs: Dict[str, Any], return_context=False) -> Any:
     return execute_byte_code(
         code_item.byte_code,
         code_item.unique_func_name,
         code_item.id,
         args=[],
         kwargs=kwargs,
+        return_context=return_context
     )
 
 
