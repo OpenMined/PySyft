@@ -98,6 +98,9 @@ class ProjectService(AbstractService):
 
             project_obj.leader_node_peer = leader_node_peer
 
+            # This should always be the last call before flushing to DB
+            project_obj.start_hash = project_obj.hash()
+
             result = self.stash.set(context.credentials, project_obj)
             if result.is_err():
                 return SyftError(message=str(result.err()))

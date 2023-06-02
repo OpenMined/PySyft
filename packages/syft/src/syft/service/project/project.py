@@ -28,7 +28,6 @@ from ...client.client import SyftClientSessionCache
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -59,9 +58,6 @@ class Identity(SyftObject):
 
     id: UID
     verify_key: SyftVerifyKey
-
-    def __hash__(self) -> int:
-        return hash(str(self.id) + str(self.verify_key))
 
     __attr_repr_cols__ = ["id", "verify_key"]
 
@@ -101,6 +97,11 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __hash_exclude_attrs__ = [
+        "event_hash",
+        "signature",
+    ]
+
     # 1. Creation attrs
     id: UID
     timestamp: DateTime
@@ -109,11 +110,11 @@ class ProjectEvent(SyftObject):
     project_id: Optional[UID]
     seq_no: Optional[int]
     prev_event_uid: Optional[UID]
-    prev_event_hash: Optional[int]
-    event_hash: Optional[int]
+    prev_event_hash: Optional[str]
+    event_hash: Optional[str]
     # 3. Signature attrs
     creator_verify_key: Optional[SyftVerifyKey]
-    signature: Optional[bytes]  # dont use in signature
+    signature: Optional[bytes]  # dont use in signing
 
     @pydantic.root_validator(pre=True)
     def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -123,9 +124,6 @@ class ProjectEvent(SyftObject):
 
     def _pre_add_update(self, project: Project) -> None:
         pass
-
-    def __hash__(self) -> int:
-        return type(self).calculate_hash(self, self.__hash_keys__)
 
     def rebase(self, project: Project) -> Self:
         prev_event = project.events[-1] if project.events else None
@@ -140,11 +138,6 @@ class ProjectEvent(SyftObject):
             self.prev_event_hash = project.start_hash
             self.seq_no = 1
 
-        # make sure these are reset
-        self.event_hash = None
-        self.signature = None
-
-        self.event_hash = hash(self)  # recalculate it
         return self
 
     @property
@@ -152,13 +145,15 @@ class ProjectEvent(SyftObject):
         if self.signature is None:
             return SyftError(message="Sign event first")
         try:
-            signature = self.signature
-            self.signature = None
-            self.syft_node_location = None
-            self.syft_client_verify_key = None
-            signed_bytes = _serialize(self, to_bytes=True)
-            self.creator_verify_key.verify_key.verify(signed_bytes, signature)
-            self.signature = signature
+            # Recompute hash
+            event_hash_bytes = self.__sha256__()
+            current_hash = event_hash_bytes.hex()
+            if current_hash != self.event_hash:
+                raise Exception(
+                    f"Event hash {current_hash} does not match {self.event_hash}"
+                )
+
+            self.creator_verify_key.verify_key.verify(event_hash_bytes, self.signature)
             return SyftSuccess(message="Event signature is valid")
         except Exception as e:
             return SyftError(message=f"Failed to validate message. {e}")
@@ -217,9 +212,12 @@ class ProjectEvent(SyftObject):
                 f"creator_verify_key has changed from: {self.creator_verify_key} to "
                 f"{signing_key.verify_key}"
             )
-        self.signature = None
-        signed_bytes = _serialize(self, to_bytes=True)
-        signed_obj = signing_key.signing_key.sign(signed_bytes)
+        # Calculate Hash
+        event_hash_bytes = self.__sha256__()
+        self.event_hash = event_hash_bytes.hex()
+
+        # Sign Hash
+        signed_obj = signing_key.signing_key.sign(event_hash_bytes)
         self.signature = signed_obj._signature
 
     def publish(self, project: Project) -> Union[SyftSuccess, SyftError]:
@@ -263,16 +261,6 @@ class ProjectThreadMessage(ProjectSubEvent):
 
     message: str
 
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "parent_event_id",
-        "prev_event_uid",
-        "prev_event_hash",
-        "message",
-    ]
-
 
 @serializable()
 class ProjectMessage(ProjectEventAddObject):
@@ -281,15 +269,6 @@ class ProjectMessage(ProjectEventAddObject):
 
     message: str
     allowed_sub_types: List[Type] = [ProjectThreadMessage]
-
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "prev_event_uid",
-        "prev_event_hash",
-        "message",
-    ]
 
     def reply(self, message: str) -> ProjectMessage:
         return ProjectThreadMessage(message=message, parent_event_id=self.id)
@@ -301,16 +280,6 @@ class ProjectRequestResponse(ProjectSubEvent):
     __version__ = SYFT_OBJECT_VERSION_1
 
     response: bool
-
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "parent_event_id",
-        "prev_event_uid",
-        "prev_event_hash",
-        "response",
-    ]
 
 
 @serializable()
@@ -562,16 +531,6 @@ class AnswerProjectPoll(ProjectSubEvent):
 
     answer: int
 
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "parent_event_id",
-        "prev_event_uid",
-        "prev_event_hash",
-        "answer",
-    ]
-
 
 @serializable()
 class ProjectMultipleChoicePoll(ProjectEventAddObject):
@@ -587,16 +546,6 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
         if len(v) < 1:
             raise ValueError("choices must have at least one item")
         return v
-
-    __hash_keys__ = [
-        "id",
-        "timestamp",
-        "creator_verify_key",
-        "prev_event_uid",
-        "prev_event_hash",
-        "question",
-        "choices",
-    ]
 
     def answer(self, answer: int) -> ProjectMessage:
         return AnswerProjectPoll(answer=answer, parent_event_id=self.id)
@@ -675,28 +624,14 @@ class Project(SyftObject):
     permissions: Dict[UID, Dict[UID, Set[str]]] = {}
     events: List[ProjectEvent] = []
     event_id_hashmap: Dict[UID, ProjectEvent] = {}
-    start_hash: int
+    start_hash: Optional[str]
     # WARNING:  Do not add it to hash keys , or print directly
     user_signing_key: Optional[SyftSigningKey] = None
     user_email_address: Optional[str] = None
     users: List[UserIdentity] = []
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
-    __hash_keys__ = [
-        "id",
-        "name",
-        "description",
-        "shareholders",
-        "project_permissions",
-        "state_sync_leader",
-        "consensus_model",
-        "store",
-        "permissions",
-        "events",
-    ]
-
-    def __hash__(self) -> int:
-        return type(self).calculate_hash(self, self.__hash_keys__)
+    __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
 
     def _broadcast_event(
         self, project_event: ProjectEvent
@@ -1254,16 +1189,6 @@ def check_permissions(context: TransformContext) -> TransformContext:
     return context
 
 
-def calculate_final_hash(context: TransformContext) -> TransformContext:
-    context.output["store"] = {}
-    context.output["permissions"] = {}
-    context.output["events"] = []
-
-    start_hash = Project.calculate_hash(context.output, Project.__hash_keys__)
-    context.output["start_hash"] = start_hash
-    return context
-
-
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
-    return [elect_leader, check_permissions, calculate_final_hash]
+    return [elect_leader, check_permissions]
