@@ -57,7 +57,7 @@
   </div>
   <div class="divide-y divide-gray-100">
     {#each userList as user}
-      <a class="block hover:bg-primary-100 cursor-pointer" href={`/users/${user.id.value}`}>
+      <a class="block hover:bg-primary-100 cursor-pointer" href={`/users/${user.id.value}`} data-testid={`user-${user.id.value}`}>
         <UserListItem {user} />
       </a>
     {/each}
@@ -66,6 +66,7 @@
 <div class="fixed bottom-10 right-12">
   <button
     class="bg-black text-white rounded-full w-14 h-14 flex items-center justify-center"
+    data-testid={`create-user`}
     on:click={() => (openModal = 'newUser')}
   >
     <PlusIcon class="w-6 h-6" />
