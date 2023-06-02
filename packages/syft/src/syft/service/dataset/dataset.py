@@ -95,7 +95,10 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         return api.services.action.get_pointer(self.action_id)
 
     @property
@@ -103,7 +106,10 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         return api.services.action.get_pointer(self.action_id).syft_action_data
 
     @property
@@ -111,7 +117,10 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         return api.services.action.get_pointer(self.action_id)
 
     @property
@@ -119,7 +128,10 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         return api.services.action.get(self.action_id)
 
 

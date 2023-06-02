@@ -577,7 +577,11 @@ class SyftClient:
             return self._fetch_api(self.credentials)
 
         _api.refresh_api_callback = refresh_callback
-        APIRegistry.set_api_for(node_uid=self.id, api=_api)
+        APIRegistry.set_api_for(
+            node_uid=self.id,
+            user_verify_key=self.credentials.verify_key,
+            api=_api,
+        )
         self._api = _api
 
 

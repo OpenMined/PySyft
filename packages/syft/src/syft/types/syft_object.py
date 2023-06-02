@@ -45,7 +45,10 @@ supported_object_versions = [SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2]
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
-DEFAULT_HASH_EXCLUDE_ATTRS = [
+
+# These attributes are dynamically added based on node/client
+# that is interaction with the SyftObject
+DYNAMIC_SYFT_ATTRIBUTES = [
     "syft_node_location",
     "syft_client_verify_key",
 ]
@@ -58,7 +61,7 @@ class SyftHashableObject:
         return int.from_bytes(self.__sha256__(), byteorder="big")
 
     def __sha256__(self) -> bytes:
-        self.__hash_exclude_attrs__.extend(DEFAULT_HASH_EXCLUDE_ATTRS)
+        self.__hash_exclude_attrs__.extend(DYNAMIC_SYFT_ATTRIBUTES)
         _bytes = serialize(self, to_bytes=True, for_hashing=True)
         return sha256(_bytes).digest()
 
@@ -251,7 +254,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "__fields__", {})
         for attr in fields.keys():
-            if attr in DEFAULT_HASH_EXCLUDE_ATTRS:
+            if attr in DYNAMIC_SYFT_ATTRIBUTES:
                 continue
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
@@ -265,7 +268,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "__fields__", {})
         for attr in fields.keys():
-            if attr in DEFAULT_HASH_EXCLUDE_ATTRS:
+            if attr in DYNAMIC_SYFT_ATTRIBUTES:
                 continue
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
@@ -564,9 +567,16 @@ def attach_attribute_to_syft_object(
 
     for _object in iterable_items:
         # if object is SyftBaseObject,
-        # then attach node location
+        # then attach the value to the attribute
+        # on the object
         if isinstance(_object, SyftBaseObject):
             setattr(_object, attr_name, attr_value)
+
+            for field_name, attr in _object.__dict__.items():
+                updated_attr = attach_attribute_to_syft_object(
+                    attr, attr_name, attr_value
+                )
+                setattr(_object, field_name, updated_attr)
     if box_to_result_type is not None:
         result = box_to_result_type(result)
 

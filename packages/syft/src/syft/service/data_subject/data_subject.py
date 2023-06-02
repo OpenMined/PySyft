@@ -39,7 +39,7 @@ class DataSubject(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
         members = api.services.data_subject.members_for(self.name)

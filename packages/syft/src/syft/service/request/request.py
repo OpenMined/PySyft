@@ -168,7 +168,10 @@ class Request(SyftObject):
         return request_status
 
     def approve(self):
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(
+            self.node_uid,
+            self.syft_client_verify_key,
+        )
         return api.services.request.apply(self.id)
 
     def approve_with_client(self, client):
@@ -222,7 +225,7 @@ class Request(SyftObject):
                 f"{type(change)}"
             )
 
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if not api:
             raise Exception(f"Login to {self.node_uid} first.")
 

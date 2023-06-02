@@ -509,7 +509,10 @@ class ActionObject(SyftObject):
         from ...client.api import APIRegistry
         from ...client.api import SyftAPICall
 
-        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
 
         kwargs = {"action": action}
         api_call = SyftAPICall(
@@ -564,8 +567,10 @@ class ActionObject(SyftObject):
             api = TraceResult._client.api
             TraceResult.result += [action]
         else:
-            api = APIRegistry.api_for(node_uid=self.syft_node_uid)
-
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_uid,
+                user_verify_key=self.syft_client_verify_key,
+            )
         api.services.action.execute(action)
 
     def _syft_prepare_obj_uid(self, obj) -> LineageID:
