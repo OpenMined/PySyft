@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from enum import EnumMeta
 import sys
 import types
 from typing import Any
@@ -42,10 +43,40 @@ def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type
                 if sub_annotations and key in sub_annotations:
                     _type = sub_annotations[key]
         if _type is None:
-            print(f"Failed to find type for key: {key} in {cls}")
             return None
         types.append(_type)
     return types
+
+
+def check_fqn_alias(cls: Union[object, type]) -> Optional[tuple]:
+    """Currently, typing.Any has different metaclasses in different versions of Python 🤦‍♂️.
+    For Python <=3.10
+    Any is an instance of typing._SpecialForm
+
+    For Python >=3.11
+    Any is an instance of typing._AnyMeta
+    Hence adding both the aliases to the type bank.
+
+    This would cause issues, when the server and client
+    have different python versions.
+
+    As their serde is same, we can use the same serde for both of them.
+    with aliases for  fully qualified names in type bank
+
+    In a similar manner for Enum.
+
+    For Python<=3.10:
+    Enum is metaclass of enum.EnumMeta
+
+    For Python>=3.11:
+    Enum is metaclass of enum.EnumType
+    """
+    if cls == Any:
+        return ("typing._AnyMeta", "typing._SpecialForm")
+    if cls == EnumMeta:
+        return ("enum.EnumMeta", "enum.EnumType")
+
+    return None
 
 
 def recursive_serde_register(
@@ -61,6 +92,7 @@ def recursive_serde_register(
     base_attrs = None
     attribute_list: Set[str] = set()
 
+    alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
     fqn = f"{cls.__module__}.{cls.__name__}"
 
@@ -68,6 +100,7 @@ def recursive_serde_register(
     _serialize = serialize if nonrecursive else rs_object2proto
     _deserialize = deserialize if nonrecursive else rs_proto2object
     is_pydantic = issubclass(cls, BaseModel)
+    hash_exclude_attrs = getattr(cls, "__hash_exclude_attrs__", [])
 
     if inherit_attrs and not is_pydantic:
         # get attrs from base class
@@ -97,23 +130,30 @@ def recursive_serde_register(
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because
         # pydantic objects inherit by default
-        setattr(cls, "__syft_serializable__", attribute_list)
+        cls.__syft_serializable__ = attribute_list
 
     attributes = set(list(attribute_list)) if attribute_list else None
     attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     # without fqn duplicate class names overwrite
-    TYPE_BANK[fqn] = (
+    serde_attributes = (
         nonrecursive,
         _serialize,
         _deserialize,
         attributes,
         exclude_attrs,
         serde_overrides,
+        hash_exclude_attrs,
         cls,
         attribute_types,
     )
+
+    TYPE_BANK[fqn] = serde_attributes
+
+    if isinstance(alias_fqn, tuple):
+        for alias in alias_fqn:
+            TYPE_BANK[alias] = serde_attributes
 
 
 def chunk_bytes(
@@ -138,7 +178,7 @@ def combine_bytes(capnp_list: List[bytes]) -> bytes:
     return bytes_value
 
 
-def rs_object2proto(self: Any) -> _DynamicStructBuilder:
+def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuilder:
     is_type = False
     if isinstance(self, type):
         is_type = True
@@ -157,6 +197,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         attribute_list,
         exclude_attrs_list,
         serde_overrides,
+        hash_exclude_attrs,
         cls,
         attribute_types,
     ) = TYPE_BANK[fqn]
@@ -172,7 +213,10 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     if attribute_list is None:
         attribute_list = self.__dict__.keys()
 
-    attribute_list = set(attribute_list) - set(exclude_attrs_list)
+    hash_exclude_attrs = hash_exclude_attrs if for_hashing else []
+    attribute_list = (
+        set(attribute_list) - set(exclude_attrs_list) - set(hash_exclude_attrs)
+    )
 
     msg.init("fieldsName", len(attribute_list))
     msg.init("fieldsData", len(attribute_list))
@@ -192,7 +236,7 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         if isinstance(field_obj, types.FunctionType):
             continue
 
-        serialized = sy.serialize(field_obj, to_bytes=True)
+        serialized = sy.serialize(field_obj, to_bytes=True, for_hashing=for_hashing)
         msg.fieldsName[idx] = attr_name
         chunk_bytes(serialized, idx, msg.fieldsData)
 
@@ -250,6 +294,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         attribute_list,
         exclude_attrs_list,
         serde_overrides,
+        hash_exclude_attrs,
         cls,
         attribute_types,
     ) = TYPE_BANK[proto.fullyQualifiedName]
@@ -279,7 +324,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
             kwargs[attr_name] = attr_value
 
     if hasattr(class_type, "serde_constructor"):
-        return getattr(class_type, "serde_constructor")(kwargs)
+        return class_type.serde_constructor(kwargs)
 
     if issubclass(class_type, Enum) and "value" in kwargs:
         obj = class_type.__new__(class_type, kwargs["value"])  # type: ignore

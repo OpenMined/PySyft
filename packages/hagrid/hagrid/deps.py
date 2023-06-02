@@ -67,7 +67,7 @@ docker compose version
 SYFT_MINIMUM_PYTHON_VERSION = (3, 7)
 SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.7"
 SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
-SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
+SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.11"
 WHITE = "\033[0;37m"
 GREEN = "\033[0;32m"
 YELLOW = "\033[0;33m"
@@ -617,7 +617,7 @@ def check_deps(
         of = f" {of}"
     # output += f"Checking{of} Dependencies:\n"
     issues = []
-    for name, dep in deps.items():
+    for dep in deps.values():
         dep.check()
         output += (dep.display + "\n") if display else ""
         issues += dep.issues
@@ -934,6 +934,6 @@ def windows_jaxlib() -> SetupIssue:
     return SetupIssue(
         issue_name="windows_jaxlib",
         description="Windows Python Wheels for Jax are not available on PyPI yet",
-        command=f"pip install jaxlib==0.3.14 -f {WINDOWS_JAXLIB_REPO}",
+        command=f"pip install jaxlib==0.4.10 -f {WINDOWS_JAXLIB_REPO}",
         solution="Windows users must install jaxlib before syft",
     )

@@ -34,12 +34,3 @@ class WorkerSettings(SyftObject):
             document_store_config=node.document_store_config,
             action_store_config=node.action_store_config,
         )
-
-    def __hash__(self) -> int:
-        return (
-            hash(self.id)
-            + hash(self.name)
-            + hash(self.signing_key)
-            + hash(self.document_store_config)
-            + hash(self.action_store_config)
-        )

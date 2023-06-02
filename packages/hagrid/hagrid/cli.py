@@ -3385,14 +3385,13 @@ def get_docker_status(
         # If there are worker containers with an internal port
         # fetch the worker container with the launched worker name
         worker_containers = worker_containers_output.split("\n")
-        for idx, worker_container in enumerate(worker_containers):
+        for worker_container in worker_containers:
             container_name = worker_container.split(" ")[0]
             if node_name in container_name:
                 network_container = container_name
                 break
-
-        # If the worker container is not created yet
-        if idx == len(worker_containers):
+        else:
+            # If the worker container is not created yet
             return False, ("", "")
 
     if "proxy" in network_container:
