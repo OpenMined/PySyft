@@ -229,6 +229,11 @@ class ActionGraphService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(path="graph.visualize", name="visualize")
-    def visualize(self, context: AuthedServiceContext) -> None:
+    def visualize(
+        self,
+        context: AuthedServiceContext,
+        seed: Optional[int] = 3113794652,
+        figsize: Optional[Tuple] = (20, 10),
+    ) -> None:
         # 🟡 TODO: Add permission check
-        self.store.graph.visualize()
+        self.store.graph.visualize(seed=seed, figsize=figsize)

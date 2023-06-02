@@ -1,8 +1,10 @@
 # third party
+from faker import Faker
 import numpy as np
 import pytest
 
 # syft absolute
+import syft as sy
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import InMemoryActionGraphStore
@@ -47,6 +49,21 @@ def create_action_node(verify_key: SyftVerifyKey) -> NodeActionData:
     action_node = NodeActionData.from_action(action=action, credentials=verify_key)
     assert action_node.type == NodeType.ACTION
     return action_node
+
+
+@pytest.fixture
+def faker():
+    return Faker()
+
+
+@pytest.fixture
+def new_worker(faker):
+    return sy.Worker.named(name=faker.name(), reset=True)
+
+
+@pytest.fixture
+def root_client(new_worker):
+    return new_worker.root_client
 
 
 @pytest.fixture

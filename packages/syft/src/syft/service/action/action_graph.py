@@ -380,7 +380,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
         credentials: SyftVerifyKey,
         parent_uids: Optional[List[UID]] = None,
     ) -> Result[NodeActionData, str]:
-        if self.graph.exists(uid=node.id):
+        if self.graph.exists(uid=node.id) or self.graph.exists(uid=node.id.id):
             return Err(f"Node already exists in the graph: {node}")
 
         self.graph.set(uid=node.id, data=node)

@@ -374,7 +374,8 @@ class SyftClient:
                 twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
             except Exception as e:
                 return SyftError(message=f"Failed to create twin. {e}")
-            self.api.services.graph.add_action_obj(action_obj_id=asset.action_id)
+            # adding a node into the graph. Let it fails silently for now (no result handle)
+            self.api.services.graph.add_action_obj(action_obj_id=twin.id)
             response = self.api.services.action.set(twin)
             if isinstance(response, SyftError):
                 print(f"Failed to upload asset\n: {asset}")
