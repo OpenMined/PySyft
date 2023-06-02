@@ -225,7 +225,7 @@ class UserCodeService(AbstractService):
 
             # Apply Output Policy to the results and update the OutputPolicyState
             if code_item.request_context:
-                print(f'{result.ok()=}', file=sys.stderr)
+                print(f"{result.ok()=}", file=sys.stderr)
                 results, exec_context = result.ok()
                 final_results = UserCodeExecutionResult(
                     user_code_id=code_item.id,
