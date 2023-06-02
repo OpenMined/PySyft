@@ -97,10 +97,7 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __hash_exclude_attrs__ = [
-        "event_hash",
-        "signature",
-    ]
+    __hash_exclude_attrs__ = ["event_hash", "signature"]
 
     # 1. Creation attrs
     id: UID

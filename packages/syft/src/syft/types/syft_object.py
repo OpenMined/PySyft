@@ -45,8 +45,28 @@ supported_object_versions = [SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2]
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
+DEFAULT_HASH_EXCLUDE_ATTRS = [
+    "syft_node_location",
+    "syft_client_verify_key",
+]
 
-class SyftBaseObject(BaseModel):
+
+class SyftHashableObject:
+    __hash_exclude_attrs__ = []
+
+    def __hash__(self) -> int:
+        return int.from_bytes(self.__sha256__(), byteorder="big")
+
+    def __sha256__(self) -> bytes:
+        self.__hash_exclude_attrs__.extend(DEFAULT_HASH_EXCLUDE_ATTRS)
+        _bytes = serialize(self, to_bytes=True, for_hashing=True)
+        return sha256(_bytes).digest()
+
+    def hash(self) -> str:
+        return self.__sha256__().hex()
+
+
+class SyftBaseObject(BaseModel, SyftHashableObject):
     class Config:
         arbitrary_types_allowed = True
 
@@ -144,21 +164,7 @@ class SyftObjectRegistry:
 print_type_cache = defaultdict(list)
 
 
-class SyftHashableObject:
-    __hash_exclude_attrs__ = []
-
-    def __hash__(self) -> int:
-        return int.from_bytes(self.__sha256__(), byteorder="big")
-
-    def __sha256__(self) -> bytes:
-        _bytes = serialize(self, to_bytes=True, for_hashing=True)
-        return sha256(_bytes).digest()
-
-    def hash(self) -> str:
-        return self.__sha256__().hex()
-
-
-class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
+class SyftObject(SyftBaseObject, SyftObjectRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -245,6 +251,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "__fields__", {})
         for attr in fields.keys():
+            if attr in DEFAULT_HASH_EXCLUDE_ATTRS:
+                continue
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
@@ -257,6 +265,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "__fields__", {})
         for attr in fields.keys():
+            if attr in DEFAULT_HASH_EXCLUDE_ATTRS:
+                continue
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
