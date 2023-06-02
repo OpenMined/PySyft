@@ -5,9 +5,16 @@ Tests for the integration of action graph into action and action object creation
 # third party
 import pytest
 
+# syft absolute
+from syft.client.client import SyftClient
+
+
+def test_action_graph_creation_no_mutation(root_domain_client: SyftClient) -> None:
+    pass
+
 
 @pytest.mark.skip
-def test_node_creation_dataset_upload() -> None:
+def test_node_creation_dataset_upload(root_domain_client: SyftClient) -> None:
     """
     Create a node in the graph when a dataset is uploaded
     """

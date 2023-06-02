@@ -2,11 +2,15 @@
 from typing import Any
 
 # third party
+from networkx.classes.reportviews import NodeDataView
+from networkx.classes.reportviews import OutEdgeView
 import pytest
 from pytest import FixtureRequest
 
 # syft absolute
 import syft as sy
+from syft import Worker
+from syft.client.client import SyftClient
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import NodeActionData
@@ -41,3 +45,17 @@ def test_in_memory_action_graph_serde(
     assert isinstance(deserialized_graph.graph.db, type(in_memory_graph.graph.db))
     assert deserialized_graph.edges(verify_key) == in_memory_graph.edges(verify_key)
     assert deserialized_graph.nodes(verify_key) == in_memory_graph.nodes(verify_key)
+
+
+def test_nodes_edges_view_serde(worker: Worker) -> None:
+    root_client: SyftClient = worker.root_client
+    root_client.api.lib.numpy.array([1, 2, 3])
+    root_client.api.lib.numpy.array([2, 3, 4])
+    nodes: NodeDataView = worker.action_graph_store.nodes(root_client.credentials).ok()
+    edges: OutEdgeView = worker.action_graph_store.edges(root_client.credentials).ok()
+    assert sy.deserialize(sy.serialize(nodes, to_bytes=True), from_bytes=True) == nodes
+    assert sy.deserialize(sy.serialize(edges, to_bytes=True), from_bytes=True) == edges
+    # the client graph service's nodes and edges methods use
+    # NodeDataView and OutEdgeView serialization
+    assert root_client.api.services.graph.nodes() == nodes
+    assert root_client.api.services.graph.edges() == edges
