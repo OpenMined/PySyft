@@ -77,15 +77,17 @@ def test_action_graph_creation_no_mutation(root_client: SyftClient) -> None:
     d = root_domain_client.api.lib.numpy.array([1, 2, 3])
     e = c * d
     """
-    root_client.api.lib.numpy.array([1, 2, 3])
-    root_client.api.lib.numpy.array([2, 3, 4])
+    a = root_client.api.lib.numpy.array([1, 2, 3])
+    b = root_client.api.lib.numpy.array([2, 3, 4])
     assert len(root_client.api.services.graph.nodes()) == 6
     assert len(root_client.api.services.graph.edges()) == 4
+    c = a + b
     assert len(root_client.api.services.graph.nodes()) == 8
     assert len(root_client.api.services.graph.edges()) == 7
-    root_client.api.lib.numpy.array([3, 4, 5])
+    d = root_client.api.lib.numpy.array([3, 4, 5])
     assert len(root_client.api.services.graph.nodes()) == 11
     assert len(root_client.api.services.graph.edges()) == 9
+    c * d
     assert len(root_client.api.services.graph.nodes()) == 13
     assert len(root_client.api.services.graph.edges()) == 12
 
