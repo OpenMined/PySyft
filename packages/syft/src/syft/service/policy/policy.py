@@ -266,6 +266,8 @@ class ExactMatch(InputPolicy):
     def filter_kwargs(
         self, kwargs: Dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
     ) -> Dict[Any, Any]:
+        if len(self.inputs) == 0 and len(kwargs) == 0:
+            return Ok({})
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         )

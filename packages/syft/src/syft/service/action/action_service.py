@@ -166,9 +166,6 @@ class ActionService(AbstractService):
             real_kwargs[key] = kwarg_value
 
         result_id = UID()
-        # stdlib
-        import sys
-
         exec_context = None
         try:
             if not has_twin_inputs:
@@ -182,7 +179,6 @@ class ActionService(AbstractService):
                     )
                 else:
                     exec_result = execute_code_item(code_item, filtered_kwargs)
-                # print(f'{exec_result=}', file=sys.stderr)
                 result_action_object = wrap_result(result_id, exec_result)
             else:
                 # twins
@@ -195,7 +191,6 @@ class ActionService(AbstractService):
                     )
                 else:
                     private_exec_result = execute_code_item(code_item, private_kwargs)
-                print(f"{private_exec_result=}", file=sys.stderr)
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result
                 )
@@ -219,7 +214,6 @@ class ActionService(AbstractService):
         if set_result.is_err():
             return set_result.err()
         if exec_context is not None:
-            print(f"{exec_context=}", file=sys.stderr)
             return Ok((result_action_object, exec_context))
         return Ok(result_action_object)
 
