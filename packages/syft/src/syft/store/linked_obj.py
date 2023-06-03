@@ -95,6 +95,7 @@ class LinkedObject(SyftObject):
             service_type=service_type,
             object_type=type(obj),
             object_uid=object_uid,
+            syft_client_verify_key=obj.syft_client_verify_key,
         )
 
     @classmethod
