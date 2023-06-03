@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Dict
 
 # third party
@@ -11,6 +10,7 @@ from fastapi import Response
 from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import ValidationError
+from typing_extensions import Annotated
 
 # relative
 from ..abstract_node import AbstractNode
@@ -99,7 +99,7 @@ def make_routes(worker: Worker) -> APIRouter:
     # make a request to the SyftAPI
     @router.post("/api_call")
     def syft_new_api_call(
-        request: Request, data: bytes = Depends(get_body)  # noqa: B008
+        request: Request, data: Annotated[bytes, Depends(get_body)]
     ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
@@ -111,7 +111,7 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_new_api_call(data)
 
-    def handle_login(email: str, password: str, node: AbstractNode) -> Any:
+    def handle_login(email: str, password: str, node: AbstractNode) -> Response:
         try:
             login_credentials = UserLoginCredentials(email=email, password=password)
         except ValidationError as e:
@@ -135,7 +135,7 @@ def make_routes(worker: Worker) -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    def handle_register(data: bytes, node: AbstractNode) -> Any:
+    def handle_register(data: bytes, node: AbstractNode) -> Response:
         user_create = deserialize(data, from_bytes=True)
 
         if not isinstance(user_create, UserCreate):
@@ -161,9 +161,9 @@ def make_routes(worker: Worker) -> APIRouter:
     @router.post("/login", name="login", status_code=200)
     def login(
         request: Request,
-        email: str = Body(..., example="info@openmined.org"),  # noqa: B008
-        password: str = Body(..., example="changethis"),  # noqa: B008
-    ) -> Any:
+        email: Annotated[str, Body(example="info@openmined.org")],
+        password: Annotated[str, Body(example="changethis")],
+    ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(login.__module__).start_as_current_span(
                 login.__qualname__,
@@ -176,8 +176,8 @@ def make_routes(worker: Worker) -> APIRouter:
 
     @router.post("/register", name="register", status_code=200)
     def register(
-        request: Request, data: bytes = Depends(get_body)  # noqa: B008
-    ) -> Any:
+        request: Request, data: Annotated[bytes, Depends(get_body)]
+    ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(register.__module__).start_as_current_span(
                 register.__qualname__,
