@@ -30,6 +30,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
@@ -96,7 +97,7 @@ class UserCodeStatus(Enum):
 # To make nested dicts hashable for mongodb
 # as status is in attr_searchable
 @serializable(attrs=["base_dict"])
-class UserCodeStatusContext:
+class UserCodeStatusContext(SyftHashableObject):
     base_dict: Dict = {}
 
     def __init__(self, base_dict: Dict):
@@ -104,12 +105,6 @@ class UserCodeStatusContext:
 
     def __repr__(self):
         return str(self.base_dict)
-
-    def __hash__(self) -> int:
-        hash_sum = 0
-        for k, v in self.base_dict.items():
-            hash_sum = hash(k) + hash(v)
-        return hash_sum
 
     @property
     def approved(self) -> bool:
