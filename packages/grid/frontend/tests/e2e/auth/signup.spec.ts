@@ -45,8 +45,9 @@ test.describe('User Sign Up', () => {
   });
 
   test('should successfully register a user', async () => {
+    // NOTE: Until we implement Delete user so that we can clean up created test user accounts
+    // this will ensure a new user is created and the test will pass
     const testUser = `test-user-${Math.round(Math.random() * 1000)}@gmail.com`;
-    console.log(`testUser: ${testUser}`);
 
     const fields = [
       { testid: 'full_name', value: 'Jane Doe' },
