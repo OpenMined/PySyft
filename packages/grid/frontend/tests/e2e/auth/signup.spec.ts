@@ -45,10 +45,13 @@ test.describe('User Sign Up', () => {
   });
 
   test('should successfully register a user', async () => {
+    const testUser = `test-user-${Math.round(Math.random() * 1000)}@gmail.com`;
+    console.log(`testUser: ${testUser}`);
+
     const fields = [
       { testid: 'full_name', value: 'Jane Doe' },
       { testid: 'institution', value: 'OpenMined University' },
-      { testid: 'email', value: `jane.does@openmined.org` },
+      { testid: 'email', value: testUser },
       { testid: 'password', value: 'changethis' },
       { testid: 'confirm_password', value: 'changethis' },
       { testid: 'website', value: 'https://openmined.org' }
@@ -62,7 +65,7 @@ test.describe('User Sign Up', () => {
 
     await page.waitForURL('**/login');
     await expect(page.getByTestId('deployed-on')).toBeVisible();
-    await page.getByTestId('email').fill('jane.does@openmined.org');
+    await page.getByTestId('email').fill(testUser);
     await page.getByTestId('password').fill('changethis');
     await page.getByRole('button', { name: /login/i }).click();
     await page.waitForURL('**/datasets');
