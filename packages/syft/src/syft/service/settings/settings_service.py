@@ -27,6 +27,7 @@ class SettingsService(AbstractService):
     def __init__(self, store: DocumentStore, node_uid: UID) -> None:
         self.store = store
         self.stash = SettingsStash(store=store)
+        self.node_uid = node_uid
 
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:

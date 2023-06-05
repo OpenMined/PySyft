@@ -13,7 +13,6 @@ from syft.service.message.messages import CreateMessage
 from syft.service.message.messages import Message
 from syft.service.message.messages import MessageStatus
 from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
 from syft.store.document_store import DocumentStore
 from syft.store.linked_obj import LinkedObject
 from syft.types.datetime import DateTime
@@ -59,7 +58,7 @@ def test_messageservice_send_success(
 ) -> None:
     expected_message = mock_create_message.to(Message, authed_context)
 
-    def mock_set(message_service: MessageService) -> Ok:
+    def mock_set(credentials: SyftVerifyKey, message: Message) -> Ok:
         return Ok(expected_message)
 
     monkeypatch.setattr(message_service.stash, "set", mock_set)
@@ -106,8 +105,8 @@ def test_messageservice_get_all_success(
         MessageStatus.UNREAD,
     )
 
-    def mock_get_all_inbox_for_verify_key() -> Ok:
-        return Ok(expected_message)
+    def mock_get_all_inbox_for_verify_key(*args, **kwargs) -> Ok:
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         message_service.stash,
@@ -167,7 +166,7 @@ def test_messageservice_get_sent_success(
     )
 
     def mock_get_all_sent_for_verify_key(credentials, verify_key) -> Ok:
-        return Ok(expected_message)
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         message_service.stash,
@@ -226,8 +225,8 @@ def test_messageservice_get_all_for_status_success(
         MessageStatus.UNREAD,
     )
 
-    def mock_get_all_by_verify_key_for_status() -> Ok:
-        return Ok(expected_message)
+    def mock_get_all_by_verify_key_for_status(*args, **kwargs) -> Ok:
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         message_service.stash,
@@ -291,15 +290,6 @@ def test_messageservice_get_all_read_success(
         MessageStatus.READ,
     )
 
-    def mock_get_all_by_verify_key_for_status() -> Ok:
-        return Ok(expected_message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "get_all_by_verify_key_for_status",
-        mock_get_all_by_verify_key_for_status,
-    )
-
     response = test_message_service.get_all_read(authed_context)
 
     assert len(response) == 1
@@ -349,15 +339,6 @@ def test_messageservice_get_all_unread_success(
         random_verify_key,
         test_verify_key,
         MessageStatus.UNREAD,
-    )
-
-    def mock_get_all_by_verify_key_for_status() -> Ok:
-        return Ok(expected_message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "get_all_by_verify_key_for_status",
-        mock_get_all_by_verify_key_for_status,
     )
 
     response = test_message_service.get_all_unread(authed_context)
@@ -412,15 +393,6 @@ def test_messageservice_mark_as_read_success(
     )
 
     assert expected_message.status == MessageStatus.UNREAD
-
-    def mock_update_message_status() -> Ok:
-        return Ok(expected_message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "update_message_status",
-        mock_update_message_status,
-    )
 
     response = test_message_service.mark_as_read(authed_context, expected_message.id)
 
@@ -485,15 +457,6 @@ def test_messageservice_mark_as_unread_success(
     )
 
     assert expected_message.status == MessageStatus.READ
-
-    def mock_update_message_status() -> Ok:
-        return Ok(expected_message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "update_message_status",
-        mock_update_message_status,
-    )
 
     response = test_message_service.mark_as_unread(authed_context, expected_message.id)
 
@@ -632,15 +595,6 @@ def test_messageservice_clear_success(
     inbox_before_delete = test_message_service.get_all(authed_context)
 
     assert len(inbox_before_delete) == 1
-
-    def mock_delete_all_for_verify_key(credentials, verify_key) -> Ok:
-        return Ok(SyftSuccess.message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "delete_all_for_verify_key",
-        mock_delete_all_for_verify_key,
-    )
 
     response = test_message_service.clear(authed_context)
     inbox_after_delete = test_message_service.get_all(authed_context)

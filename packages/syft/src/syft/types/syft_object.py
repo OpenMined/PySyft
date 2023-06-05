@@ -4,16 +4,19 @@ from hashlib import sha256
 import inspect
 from inspect import Signature
 import types
+from typing import AbstractSet
 from typing import Any
 from typing import Callable
 from typing import ClassVar
 from typing import Dict
 from typing import KeysView
 from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Type
+from typing import Union
 import warnings
 
 # third party
@@ -36,6 +39,11 @@ from ..util.util import get_qualname_for
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
+
+IntStr = Union[int, str]
+AbstractSetIntStr = AbstractSet[IntStr]
+MappingIntStrAny = Mapping[IntStr, Any]
+
 
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
@@ -344,7 +352,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none and not exclude_empty:
-            return dict(self)
+            return self.dict()
         else:
             new_dict = {}
             for k, v in dict(self).items():
@@ -356,6 +364,32 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
                 if exclude_none and v is not None:
                     new_dict[k] = v
             return new_dict
+
+    def dict(
+        self,
+        *,
+        include: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
+        exclude: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
+        by_alias: bool = False,
+        skip_defaults: Optional[bool] = None,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+    ):
+        if exclude is None:
+            exclude = set()
+
+        for attr in DYNAMIC_SYFT_ATTRIBUTES:
+            exclude.add(attr)
+        return super().dict(
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            skip_defaults=skip_defaults,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+        )
 
     def __post_init__(self) -> None:
         pass
@@ -561,14 +595,21 @@ def attach_attribute_to_syft_object(
         box_to_result_type = type(result)
         result = result.value
 
-    if isinstance(result, (list, tuple)):
-        iterable_items = result
-    elif isinstance(result, dict):
-        iterable_items = result.values()
-    else:
-        iterable_items = [result]
+    single_entity = False
+    is_tuple = isinstance(result, tuple)
 
-    for _object in iterable_items:
+    if isinstance(result, (list, tuple)):
+        iterable_keys = range(len(result))
+        result = list(result)
+    elif isinstance(result, dict):
+        iterable_keys = result.keys()
+    else:
+        iterable_keys = range(1)
+        result = [result]
+        single_entity = True
+
+    for key in iterable_keys:
+        _object = result[key]
         # if object is SyftBaseObject,
         # then attach the value to the attribute
         # on the object
@@ -576,11 +617,16 @@ def attach_attribute_to_syft_object(
             setattr(_object, attr_name, attr_value)
 
             for field_name, attr in _object.__dict__.items():
-                updated_attr = attach_attribute_to_syft_object(
-                    attr, attr_name, attr_value
-                )
-                setattr(_object, field_name, updated_attr)
-    if box_to_result_type is not None:
-        result = box_to_result_type(result)
+                if isinstance(attr, SyftBaseObject):
+                    updated_attr = attach_attribute_to_syft_object(
+                        attr, attr_name, attr_value
+                    )
+                    setattr(_object, field_name, updated_attr)
+        result[key] = _object
 
-    return result
+    wrapped_result = result[0] if single_entity else result
+    wrapped_result = tuple(wrapped_result) if is_tuple else wrapped_result
+    if box_to_result_type is not None:
+        wrapped_result = box_to_result_type(wrapped_result)
+
+    return wrapped_result
