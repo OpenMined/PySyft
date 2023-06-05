@@ -199,17 +199,25 @@ def retrieve_from_db(
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
 
+    # When we are retrieving the code from the database, we need to use the node's
+    # verify key as the credentials. This is because when we approve the code, we
+    # we allow the private data to be used only for this specific code.
+    # but we are not modifying the permissions of the private data
+
+    root_context = AuthedServiceContext(
+        node=context.node, credentials=context.node.verify_key
+    )
     if context.node.node_type == NodeType.DOMAIN:
         for var_name, arg_id in allowed_inputs.items():
             kwarg_value = action_service.get(
-                context=context, uid=arg_id, twin_mode=TwinMode.NONE
+                context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if kwarg_value.is_err():
                 return kwarg_value
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type == NodeType.ENCLAVE:
-        dict_object = action_service.get(context=context, uid=code_item_id)
+        dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
             return dict_object
         for value in dict_object.ok().base_dict.values():

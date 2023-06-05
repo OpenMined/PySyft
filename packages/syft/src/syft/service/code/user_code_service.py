@@ -158,7 +158,17 @@ class UserCodeService(AbstractService):
             code_item = result.ok()
             status = code_item.status
 
-            # Check if we are allowed to execute the code
+            # Check if the user has permission to execute the code
+            # They can execute if they are root user or if they are the user who submitted the code
+            if not (
+                context.credentials == context.node.verify_key
+                or context.credentials == code_item.user_verify_key
+            ):
+                return SyftError(
+                    message=f"Code Execution Permission: {context.credentials} denied"
+                )
+
+            # Check if the code is approved
             if status.for_context(context) != UserCodeStatus.EXECUTE:
                 if status.for_context(context) == UserCodeStatus.SUBMITTED:
                     return SyftNotReady(
