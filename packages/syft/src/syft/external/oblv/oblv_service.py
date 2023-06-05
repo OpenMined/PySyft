@@ -370,7 +370,7 @@ class OblvService(AbstractService):
         obj = deserialize(req.content, from_bytes=True)
         # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
         obj.signing_key = signing_key
-        obj.connection = HTTPConnection(connection_string)
+        obj.connection = HTTPConnection(url=connection_string)
         return cast(SyftAPI, obj)
 
     @service_method(
