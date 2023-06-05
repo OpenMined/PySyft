@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -58,6 +59,7 @@ class UserCodeService(AbstractService):
         self,
         context: AuthedServiceContext,
         code: SubmitUserCode,
+        reason: Optional[str] = "",
     ):
         # relative
         from ..request.request import SubmitRequest
@@ -77,7 +79,7 @@ class UserCodeService(AbstractService):
 
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
-        result = method(context=context, request=request)
+        result = method(context=context, request=request, reason=reason)
 
         # The Request service already returns either a SyftSuccess or SyftError
         return result
@@ -88,10 +90,13 @@ class UserCodeService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def request_code_execution(
-        self, context: AuthedServiceContext, code: SubmitUserCode
+        self,
+        context: AuthedServiceContext,
+        code: SubmitUserCode,
+        reason: Optional[str] = "",
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
-        return self._code_execution(context=context, code=code)
+        return self._code_execution(context=context, code=code, reason=reason)
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(

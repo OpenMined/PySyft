@@ -36,6 +36,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
+from ..code.user_code import SubmitUserCode
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
@@ -1003,10 +1004,11 @@ class Project(SyftObject):
         return SyftSuccess(message="Synced project  with Leader")
 
 
-@serializable()
+@serializable(without="bootstrap_events")
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
+    __attr_repr_cols__ = ["name"]
 
     id: Optional[UID]
     name: str
@@ -1018,6 +1020,7 @@ class ProjectSubmit(SyftObject):
     leader_node_route: Optional[NodeRoute]
     user_email_address: Optional[str] = None
     users: List[UserIdentity] = []
+    bootstrap_events: Optional[List[ProjectEvent]] = []
 
     @root_validator(pre=True)
     def make_shareholders_and_leader_route(cls, values) -> Dict:
@@ -1051,29 +1054,30 @@ class ProjectSubmit(SyftObject):
 
     @root_validator(pre=True)
     def check_user_email_and_users(cls, values) -> Dict:
-        if values["user_email_address"] is not None:
-            users = values["users"]
-            if len(users) == 0:
-                raise SyftException(
-                    "Users cannot be empty if user email address is provided"
-                )
-
-            share_holders = values["shareholders"]
-            if len(share_holders) != len(users):
-                raise SyftException(
-                    "Number of users should be equal to number of shareholders"
-                )
-            users_node_identity = []
-            for user in users:
-                if isinstance(user, SyftClient):
-                    users_node_identity.append(UserIdentity.from_client(user))
-                elif isinstance(user, UserIdentity):
-                    users_node_identity.append(user)
-                else:
+        if "user_email_address" in values:  # avoids KeyError below if no email provided
+            if values["user_email_address"] is not None:
+                users = values["users"]
+                if len(users) == 0:
                     raise SyftException(
-                        "Users should be either SyftClient or UserIdentity"
+                        "Users cannot be empty if user email address is provided"
                     )
-            values["users"] = users_node_identity
+
+                share_holders = values["shareholders"]
+                if len(share_holders) != len(users):
+                    raise SyftException(
+                        "Number of users should be equal to number of shareholders"
+                    )
+                users_node_identity = []
+                for user in users:
+                    if isinstance(user, SyftClient):
+                        users_node_identity.append(UserIdentity.from_client(user))
+                    elif isinstance(user, UserIdentity):
+                        users_node_identity.append(user)
+                    else:
+                        raise SyftException(
+                            "Users should be either SyftClient or UserIdentity"
+                        )
+                values["users"] = users_node_identity
 
         return values
 
@@ -1105,10 +1109,29 @@ class ProjectSubmit(SyftObject):
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
+    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+        if not isinstance(obj, SubmitUserCode):
+            return SyftError(
+                message=f"Currently we are  only support creating requests for SbumitUserCode: {type(obj)}"
+            )
+
+        if not isinstance(client, SyftClient):
+            return SyftError(message="Client should be a valid SyftClient")
+
+        submitted_req = client.api.services.code.request_code_execution(obj)
+        if isinstance(submitted_req, SyftError):
+            return submitted_req
+
+        request_event = ProjectRequest(request=submitted_req)
+
+        self.bootstrap_events.append(request_event)
+
+        return SyftSuccess(message="Request added successfully")
+
     def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders
         project_id = UID()
-        projects = []
+        projects: List[Project] = []
 
         if not self.users:
             # If the Data Owner creates the project
@@ -1135,10 +1158,19 @@ class ProjectSubmit(SyftObject):
             else:
                 projects.append(result)
 
+        if self.bootstrap_events:
+            # TODO: a better way to pick the leader node's project
+            project = projects[0]
+
+            for event in self.bootstrap_events:
+                result = project.add_event(event)
+                if isinstance(result, SyftError):
+                    return result
+
+            self.bootstrap_events.clear()
+
         # as we currently assume that the first shareholder is the leader.
         return projects
-
-    __attr_repr_cols__ = ["name"]
 
 
 def add_shareholders_as_owners(shareholders: List[SyftVerifyKey]) -> Set[str]:
