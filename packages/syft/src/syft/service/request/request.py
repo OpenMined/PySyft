@@ -39,8 +39,10 @@ from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
+from ..message.messages import Message
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..user.user import UserView
 
 
 @serializable()
@@ -225,6 +227,17 @@ class Request(SyftObject):
             return new_request_result
         result = api.services.request.apply(self.id)
         return result
+
+
+@serializable()
+class RequestInfo(SyftObject):
+    # version
+    __canonical_name__ = "RequestInfo"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    user: UserView
+    request: Request
+    message: Message
 
 
 @serializable()

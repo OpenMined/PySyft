@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -24,9 +25,11 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user import UserView
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Request
+from .request import RequestInfo
 from .request import RequestStatus
 from .request import SubmitRequest
 from .request_stash import RequestStash
@@ -48,6 +51,7 @@ class RequestService(AbstractService):
         context: AuthedServiceContext,
         request: SubmitRequest,
         send_message: bool = True,
+        reason: Optional[str] = "",
     ) -> Union[Request, SyftError]:
         """Submit a Request"""
         try:
@@ -71,7 +75,7 @@ class RequestService(AbstractService):
                 root_verify_key = admin_verify_key()
                 if send_message:
                     message = CreateMessage(
-                        subject="Approval Request",
+                        subject="Approval Request" if not reason else reason,
                         from_user_verify_key=context.credentials,
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
@@ -99,6 +103,27 @@ class RequestService(AbstractService):
             return SyftError(message=str(result.err()))
         requests = result.ok()
         return requests
+
+    @service_method(
+        path="request.get_all_info", name="get_all_info", roles=GUEST_ROLE_LEVEL
+    )
+    def get_all_info(
+        self, context: AuthedServiceContext
+    ) -> Union[List[RequestInfo], SyftError]:
+        """Get a Dataset"""
+        result = self.stash.get_all(context.credentials)
+        method = context.node.get_service_method(UserService.get_by_verify_key)
+        get_message = context.node.get_service_method(MessageService.filter_by_obj)
+
+        requests = []
+        if result.is_ok():
+            for req in result.ok():
+                user = method(req.requesting_user_verify_key).to(UserView)
+                message = get_message(context=context, obj_uid=req.id)
+                requests.append(RequestInfo(user=user, request=req, message=message))
+            return requests
+
+        return SyftError(message=result.err())
 
     @service_method(path="request.get_all_for_status", name="get_all_for_status")
     def get_all_for_status(
