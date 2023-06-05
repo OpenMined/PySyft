@@ -4,8 +4,11 @@ export async function getAllCodeRequests() {
   return await syftCall({ path: 'code.get_all', payload: {} });
 }
 
-export async function getAllRequests() {
-  return await syftCall({ path: 'request.get_all_info', payload: {} });
+export async function getAllRequests(page_index: number = 0, page_size: number = 0) {
+  return await syftCall({
+    path: 'request.get_all_info',
+    payload: { page_size: page_size, page_index: page_index }
+  });
 }
 
 export async function filterRequests(name: string, page_index: number = 0, page_size: number = 0) {
