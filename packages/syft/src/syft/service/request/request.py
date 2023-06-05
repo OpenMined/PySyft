@@ -267,6 +267,15 @@ class RequestInfo(SyftObject):
 
 
 @serializable()
+class RequestInfoFilter(SyftObject):
+    # version
+    __canonical_name__ = "RequestInfoFilter"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    name: Optional[str]
+
+
+@serializable()
 class SubmitRequest(SyftObject):
     __canonical_name__ = "SubmitRequest"
     __version__ = SYFT_OBJECT_VERSION_1
