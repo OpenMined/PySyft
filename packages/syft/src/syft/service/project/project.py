@@ -1109,7 +1109,7 @@ class ProjectSubmit(SyftObject):
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
-    def create_request(self, obj: SubmitUserCode, client: SyftClient):
+    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
         if not isinstance(obj, SubmitUserCode):
             return SyftError(
                 message=f"Currently we are  only support creating requests for SbumitUserCode: {type(obj)}"

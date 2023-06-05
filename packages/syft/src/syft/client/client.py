@@ -361,8 +361,11 @@ class SyftClient:
 
         return self._api
 
+    @property
     def view_projects(self) -> List:
-        return self.api.services.project.get_all()
+        if self.api is not None and hasattr(self.api.services, "project"):
+            return self.api.services.project.get_all()
+        return None
 
     def guest(self) -> Self:
         self.credentials = SyftSigningKey.generate()

@@ -396,7 +396,7 @@ def debox_asset(arg: Any) -> Any:
 
 def syft_function(
     input_policy: Union[InputPolicy, UID],
-    output_policy: Union[OutputPolicy, UID] = None,
+    output_policy: Optional[Union[OutputPolicy, UID]] = None,
 ) -> SubmitUserCode:
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
