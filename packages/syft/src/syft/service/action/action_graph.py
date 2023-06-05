@@ -389,13 +389,13 @@ class InMemoryActionGraphStore(ActionGraphStore):
             parent_uids = []
 
         for parent_uid in parent_uids:
-            result = self.add_edge(
+            self.add_edge(
                 parent=parent_uid,
                 child=node.id,
                 credentials=credentials,
             )
-            if result.is_err():
-                return result
+            # if result.is_err():
+            #     return result
 
         return Ok(node)
 

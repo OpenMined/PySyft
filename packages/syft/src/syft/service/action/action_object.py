@@ -570,7 +570,6 @@ class ActionObject(SyftObject):
             TraceResult.result += [action]
         else:
             api = APIRegistry.api_for(node_uid=self.syft_node_uid)
-
         api.services.graph.add_action(action)
         api.services.action.execute(action)
 

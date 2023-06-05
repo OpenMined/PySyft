@@ -49,7 +49,6 @@ class ActionGraphService(AbstractService):
         node = NodeActionData.from_action(
             action=action, credentials=context.credentials
         )
-
         result = self.store.set(
             credentials=context.credentials, node=node, parent_uids=input_uids
         )

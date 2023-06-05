@@ -13,10 +13,6 @@ from syft.client.client import SyftClient
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
 
-# relative
-from ..service.action.action_object_test import helper_make_action_obj
-from ..service.action.action_object_test import helper_make_action_pointers
-
 
 @pytest.mark.parametrize(
     "num_assets",
@@ -106,19 +102,30 @@ def test_node_creation_generate_remote_lib_function(root_client: SyftClient) -> 
     assert len(root_client.api.services.graph.edges()) == 12
 
 
-@pytest.mark.skip
-def test_node_creation_syft_make_action(root_client: SyftClient) -> None:
+@pytest.mark.parametrize(
+    "testcase",
+    [
+        # (object, operation, *args, **kwargs)
+        ("abc", "find", ["b"], {}),
+        (int(1), "__add__", [1], {}),
+        (float(1.2), "__add__", [1], {}),
+        ((1, 1, 3), "count", [1], {}),
+    ],
+)
+def test_node_creation_syft_make_action(root_client: SyftClient, testcase) -> None:
     """
     Create a graph node when an Action is
     created in the syft_make_action method of ActionObject
     """
-    orig_obj, op, args, kwargs = (int(1), "__add__", [1], {})
+    orig_obj, op, args, kwargs = testcase
     obj_id = Action.make_id(None)
     lin_obj_id = Action.make_result_id(obj_id)
     obj = ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
-    root_client.api.services.action.set(obj)
-    obj_pointer = root_client.api.services.action.get_pointer(obj.id)
-    obj_pointer.syft_make_action(str(type(orig_obj)), op, args=args, kwargs=kwargs)
+    obj_pointer = obj.send(root_client)
+    path = str(type(orig_obj))
+    obj_pointer.syft_make_action(
+        path=path, op=op, remote_self=obj_pointer.id, args=args, kwargs=kwargs
+    )
 
-    print(helper_make_action_obj)
-    print(helper_make_action_pointers)
+    assert len(root_client.api.services.graph.nodes()) == 5
+    assert len(root_client.api.services.graph.edges()) == 4
