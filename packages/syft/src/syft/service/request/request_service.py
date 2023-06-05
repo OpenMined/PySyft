@@ -104,7 +104,9 @@ class RequestService(AbstractService):
         requests = result.ok()
         return requests
 
-    @service_method(path="request.get_all_info", name="get_all_info", roles=GUEST_ROLE_LEVEL)
+    @service_method(
+        path="request.get_all_info", name="get_all_info", roles=GUEST_ROLE_LEVEL
+    )
     def get_all_info(
         self, context: AuthedServiceContext
     ) -> Union[List[RequestInfo], SyftError]:
