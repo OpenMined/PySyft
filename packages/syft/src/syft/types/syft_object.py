@@ -617,11 +617,10 @@ def attach_attribute_to_syft_object(
             setattr(_object, attr_name, attr_value)
 
             for field_name, attr in _object.__dict__.items():
-                if isinstance(attr, SyftBaseObject):
-                    updated_attr = attach_attribute_to_syft_object(
-                        attr, attr_name, attr_value
-                    )
-                    setattr(_object, field_name, updated_attr)
+                updated_attr = attach_attribute_to_syft_object(
+                    attr, attr_name, attr_value
+                )
+                setattr(_object, field_name, updated_attr)
         result[key] = _object
 
     wrapped_result = result[0] if single_entity else result
