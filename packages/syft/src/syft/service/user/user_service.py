@@ -210,7 +210,7 @@ class UserService(AbstractService):
         edits_non_role_attrs = any(
             [
                 getattr(user_update, attr) is not Empty
-                for attr in dict(user_update)
+                for attr in user_update.dict()
                 if attr != "role"
             ]
         )
