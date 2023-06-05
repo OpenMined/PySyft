@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import PrismCode from '$lib/components/PrismCode.svelte';
-  import { getAllCodeRequests, getCodeRequest } from '$lib/api/requests';
+  import { getAllCodeRequests, getCodeRequest, getAllRequests } from '$lib/api/requests';
   import Tabs from '$lib/components/Tabs.svelte';
   import debounce from 'just-debounce-it';
   import Search from '$lib/components/Search.svelte';
@@ -17,8 +17,7 @@
   let currentTab = tabs[0].id;
 
   onMount(async () => {
-    requests = await getAllCodeRequests();
-    console.log(requests[0].user_verify_key);
+    requests = await getAllRequests();
   });
 
   const search = debounce(async () => {
@@ -92,7 +91,7 @@
         />
       </div>
       <div class="flex-shrink-0">
-        <Badge variant="gray">Total: {0}</Badge>
+        <Badge variant="gray">Total: {requests?.length || 0}</Badge>
       </div>
     </div>
     {#if !requests}
@@ -100,9 +99,9 @@
     {:else if requests.length === 0}
       <RequestNoneFound />
     {:else}
-      <div class="flex flex-col gap-4 divide-y divide-gray-100">
-        {#each mock_requests as request}
-          <RequestListItem user={request.user} request={request.request} />
+      <div class="flex flex-col divide-y divide-gray-100">
+        {#each requests as request}
+          <RequestListItem user={request.user} request={request.request} message={request.message} />
           <!-- prettier-ignore -->
           <!--<PrismCode code={request.raw_code} />-->
         {/each}

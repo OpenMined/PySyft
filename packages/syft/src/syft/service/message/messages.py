@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from typing import List
 from typing import Optional
 
 # relative
@@ -30,6 +31,17 @@ class MessageExpiryStatus(Enum):
 
 
 @serializable()
+class ReplyMessage(SyftObject):
+    __canonical_name__ = "ReplyMessage"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    text: str
+    target_msg: UID
+    id: Optional[UID]
+    from_user_verify_key: Optional[SyftVerifyKey]
+
+
+@serializable()
 class Message(SyftObject):
     __canonical_name__ = "Message"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -41,6 +53,7 @@ class Message(SyftObject):
     created_at: DateTime
     status: MessageStatus = MessageStatus.UNREAD
     linked_obj: Optional[LinkedObject]
+    replies: Optional[List[ReplyMessage]] = []
 
     __attr_searchable__ = [
         "from_user_verify_key",
