@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -58,6 +59,7 @@ class UserCodeService(AbstractService):
         self,
         context: AuthedServiceContext,
         code: SubmitUserCode,
+        reason: Optional[str] = "",
     ):
         user_code = code.to(UserCode, context=context)
         result = self.stash.set(context.credentials, user_code)
@@ -73,7 +75,7 @@ class UserCodeService(AbstractService):
 
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
-        result = method(context=context, request=request)
+        result = method(context=context, request=request, reason=reason)
 
         # The Request service already returns either a SyftSuccess or SyftError
         return result
@@ -84,10 +86,13 @@ class UserCodeService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def request_code_execution(
-        self, context: AuthedServiceContext, code: SubmitUserCode
+        self,
+        context: AuthedServiceContext,
+        code: SubmitUserCode,
+        reason: Optional[str] = "",
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
-        return self._code_execution(context=context, code=code)
+        return self._code_execution(context=context, code=code, reason=reason)
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
@@ -153,7 +158,17 @@ class UserCodeService(AbstractService):
             code_item = result.ok()
             status = code_item.status
 
-            # Check if we are allowed to execute the code
+            # Check if the user has permission to execute the code
+            # They can execute if they are root user or if they are the user who submitted the code
+            if not (
+                context.credentials == context.node.verify_key
+                or context.credentials == code_item.user_verify_key
+            ):
+                return SyftError(
+                    message=f"Code Execution Permission: {context.credentials} denied"
+                )
+
+            # Check if the code is approved
             if status.for_context(context) != UserCodeStatus.EXECUTE:
                 if status.for_context(context) == UserCodeStatus.SUBMITTED:
                     return SyftNotReady(
