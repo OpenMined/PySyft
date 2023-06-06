@@ -290,6 +290,11 @@ class ProjectRequest(ProjectEventAddObject):
     request: Request
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
 
+    __attr_repr_cols__ = [
+        "request.status",
+        "request.changes[-1].link.service_func_name",
+    ]
+
     def approve(self) -> ProjectRequestResponse:
         result = self.request.approve()
         if isinstance(result, SyftError):

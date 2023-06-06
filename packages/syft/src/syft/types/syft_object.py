@@ -3,6 +3,7 @@ from collections import defaultdict
 from hashlib import sha256
 import inspect
 from inspect import Signature
+import re
 import types
 from typing import Any
 from typing import Callable
@@ -415,6 +416,12 @@ def list_dict_repr_html(self) -> str:
         items_checked = 0
         has_syft = False
         extra_fields = []
+        if isinstance(self, dict):
+            values = list(self.values())
+        else:
+            values = self
+
+        is_homogenous = len(set([type(x) for x in values])) == 1
         for item in iter(self):
             items_checked += 1
             if items_checked > max_check:
@@ -448,26 +455,56 @@ def list_dict_repr_html(self) -> str:
                     cols["key"].append(item)
                     item = self.__getitem__(item)
 
-                if type(item) == type:
-                    cols["type"].append(full_name_with_qualname(item))
-                else:
-                    cols["type"].append(item.__repr__())
+                # get id
+                id_ = getattr(item, "id", None)
+                if id is not None:
+                    id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
 
-                cols["id"].append(getattr(item, "id", None))
+                if type(item) == type:
+                    t = full_name_with_qualname(item)
+                else:
+                    try:
+                        t = item.__class__.__name__
+                    except Exception:
+                        t = item.__repr__()
+                if not is_homogenous:
+                    cols["type"].append(t)
+                    cols["id"].append(id_)
+                else:
+                    cols[f"{t}  -  id"].append(id_)
+
                 for field in extra_fields:
                     value = item
                     try:
-                        for attr in field.split("."):
+                        attrs = field.split(".")
+                        for attr in attrs:
+                            # find indexing like abc[1]
+                            res = re.search("\[[+-]?\d+\]", attr)
+                            has_index = False
+                            if res:
+                                has_index = True
+                                index_str = res.group()
+                                index = int(index_str.replace("[", "").replace("]", ""))
+                                attr = attr.replace(index_str, "")
+
                             value = getattr(value, attr, None)
-                    except Exception:
+                            if isinstance(value, list) and has_index:
+                                value = value[index]
+                    except Exception as e:
+                        print(e)
                         value = None
                     cols[field].append(value)
 
-            x = pd.DataFrame(cols)
+            df = pd.DataFrame(cols)
+            df_styled = df.style.set_properties(**{"text-align": "left"})
+            df_styled = df_styled.set_table_styles(
+                [dict(selector="th", props=[("text-align", "left")])]
+            )
+
             collection_type = (
                 f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
             )
-            return collection_type + x._repr_html_()
+            return collection_type + df_styled._repr_html_()
     except Exception as e:
         print(e)
         pass
