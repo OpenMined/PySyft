@@ -616,7 +616,8 @@ class Project(SyftObject):
     user_signing_key: Optional[SyftSigningKey] = None
     user_email_address: Optional[str] = None
     users: List[UserIdentity] = []
-
+    
+    __attr_searchable__ = ["name"]
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
     __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
 

@@ -26,7 +26,7 @@ from .project import ProjectRequest
 from .project import ProjectSubmit
 from .project_stash import OrderByNamePartitionKey
 from .project_stash import ProjectStash
-
+from ..request.request import UserCodeStatusChange
 
 @instrument
 @serializable()
@@ -283,7 +283,34 @@ class ProjectService(AbstractService):
 
         return projects
 
-
+    @service_method(path="project.find_by_name", name="find_by_name", roles=GUEST_ROLE_LEVEL)
+    def find_by_name(self, context: AuthedServiceContext, name: str) -> Union[List[Project], SyftError]:
+        result = self.stash.get_by_name(context.credentials, name=name)
+        
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        project = result.ok()
+        result = add_signing_key_to_project(context, project)
+        return result
+    
+    @service_method(path="project.find_by_code_name", name="find_by_code_name", roles=GUEST_ROLE_LEVEL)
+    def find_by_code_name(self, context: AuthedServiceContext, code_name: str) -> Union[List[Project], SyftError]:
+        projects = self.get_all(context=context)
+        
+        if isinstance(projects, SyftError):
+            return projects
+        import sys
+        result = []
+        for project in projects:
+            for event in project.events:
+                request = event.request
+                for change in request.changes:
+                    if isinstance(change, UserCodeStatusChange):
+                        if change.link.service_func_name == code_name:
+                            print(change.link, file=sys.stderr)
+                            result.append(project)
+        return result
+    
 def add_signing_key_to_project(
     context: AuthedServiceContext, project: Project
 ) -> Union[Project, SyftError]:

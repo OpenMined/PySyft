@@ -33,7 +33,7 @@ class ProjectStash(BaseUIDStoreStash):
 
     def get_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: VerifyKeyPartitionKey
-    ) -> Result[List[Request], SyftError]:
+    ) -> Result[List[Project], SyftError]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
@@ -48,3 +48,12 @@ class ProjectStash(BaseUIDStoreStash):
     ) -> Result[Optional[Project], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks)
+
+    def get_by_name(
+        self, credentials: SyftVerifyKey, name: str
+    )-> Result[Optional[Project], SyftError]:
+        qks = QueryKeys(qks=[OrderByNamePartitionKey.with_obj(name)])
+        return self.query_one(
+            credentials=credentials, 
+            qks=qks,
+        )
