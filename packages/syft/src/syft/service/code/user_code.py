@@ -20,6 +20,7 @@ from typing import Union
 from result import Err
 from result import Ok
 from result import Result
+import copy
 
 # relative
 from ...abstract_node import NodeType
@@ -346,6 +347,65 @@ class UserCode(SyftObject):
     @property
     def code(self) -> str:
         return self.raw_code
+    
+    def show_code_cell(self):
+        warning_message = "# WARNING: Before running this cell change the name of the function \n# to avoid duplicates\n\n"
+        
+        from IPython import get_ipython
+        ip = get_ipython()
+        ip.set_next_input(warning_message + self.raw_code)
+    
+    @staticmethod
+    def from_existing_obj(
+        code_obj: UserCode,
+        function: Optional[Callable] = None,
+        input_policy: Union[InputPolicy, UID] = None,
+        output_policy: Optional[Union[OutputPolicy, UID]] = None,
+    ) -> UserCode:
+        if function is None:
+            code_string = code_obj.raw_code
+            func_name = code_obj.service_func_name
+            signature = code_obj.signature
+            input_kwargs = code_obj.input_kwargs
+            function = code_obj.unsafe_function
+        else:
+            code_string = inspect.getsource(function)    
+            func_name = function.__name__
+            signature = inspect.signature(function)
+            varnames = function.__code__.co_varnames
+            input_kwargs = varnames[: function.__code__.co_argcount]
+        
+        if input_policy is None:
+            input_policy_type = code_obj.input_policy_type
+            input_policy_init_kwargs = code_obj.input_policy_init_kwargs
+        else:
+            if isinstance(input_policy, CustomInputPolicy):
+                input_policy_type = SubmitUserPolicy.from_obj(input_policy)
+            else:
+                input_policy_type = type(input_policy)
+            input_policy_init_kwargs=input_policy.init_kwargs
+
+        if output_policy is None:
+            output_policy_type = code_obj.output_policy_type
+            output_policy_init_kwargs = code_obj.output_policy_init_kwargs
+        else:
+            if isinstance(output_policy, CustomOutputPolicy):
+                output_policy_type = SubmitUserPolicy.from_obj(output_policy)
+            else:
+                output_policy_type = type(output_policy)
+            output_policy_init_kwargs=output_policy.init_kwargs
+            
+        return SubmitUserCode(
+            code=code_string,
+            func_name=func_name,
+            signature=signature,
+            input_policy_type=input_policy_type,
+            input_policy_init_kwargs=input_policy_init_kwargs,
+            output_policy_type=output_policy_type,
+            output_policy_init_kwargs=output_policy_init_kwargs,
+            local_function=function,
+            input_kwargs=input_kwargs,
+        )
 
 
 @serializable(without=["local_function"])
