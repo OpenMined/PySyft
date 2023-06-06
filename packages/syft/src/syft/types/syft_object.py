@@ -403,16 +403,19 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
     def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
 
+
 def short_qual_name(name: str) -> str:
     # If the name is a qualname of formax a.b.c.d we will only get d
     # otherwise this will leave it like it is
-    return name.split('.')[-1]
+    return name.split(".")[-1]
+
 
 def short_uid(uid: UID) -> str:
     if uid is None:
         return uid
     else:
-        return str(uid)[:6] + "..." 
+        return str(uid)[:6] + "..."
+
 
 def list_dict_repr_html(self) -> str:
     try:
@@ -456,9 +459,8 @@ def list_dict_repr_html(self) -> str:
                 if type(item) == type:
                     type_name = full_name_with_qualname(item)
                 else:
-                    type_name = item.__repr__().split('.')[-1]
+                    type_name = item.__repr__()
                 cols["type"].append(short_qual_name(type_name))
-
 
                 cols["id"].append(short_uid(getattr(item, "id", None)))
                 for field in extra_fields:
