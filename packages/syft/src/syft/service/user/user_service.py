@@ -363,6 +363,18 @@ class UserService(AbstractService):
             return result.ok().verify_key
         return SyftError(message=f"No user with email: {email}")
 
+    def get_by_verify_key(
+        self, verify_key: SyftVerifyKey
+    ) -> Union[UserView, SyftError]:
+        # we are bypassing permissions here, so dont use to return a result directly to the user
+        credentials = self.admin_verify_key()
+        result = self.stash.get_by_verify_key(
+            credentials=credentials, verify_key=verify_key
+        )
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=f"No User with verify_key: {verify_key}")
+
 
 TYPE_TO_SERVICE[User] = UserService
 SERVICE_TO_TYPES[UserService].update({User})

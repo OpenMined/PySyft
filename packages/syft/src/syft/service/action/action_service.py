@@ -204,6 +204,7 @@ class ActionService(AbstractService):
             uid=result_id,
             credentials=context.credentials,
             syft_object=result_action_object,
+            has_result_read_permission=True,
         )
         if set_result.is_err():
             return set_result.err()
