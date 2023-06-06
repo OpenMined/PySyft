@@ -358,19 +358,27 @@ class UserCode(SyftObject):
     @staticmethod
     def from_existing_obj(
         code_obj: UserCode,
+        new_name: Optional[str] = None,
         function: Optional[Callable] = None,
         input_policy: Union[InputPolicy, UID] = None,
         output_policy: Optional[Union[OutputPolicy, UID]] = None,
     ) -> UserCode:
+        
         if function is None:
-            code_string = code_obj.raw_code
-            func_name = code_obj.service_func_name
+            if new_name is None:
+                return SyftError("Please provide either a new name or a new function")
+            if new_name == code_obj.service_func_name:
+                return SyftError("Please use a different name for the new user_code")
+            code_string = change_code_name(code_obj.raw_code, new_name)
+            func_name = new_name
             signature = code_obj.signature
             input_kwargs = code_obj.input_kwargs
             function = code_obj.unsafe_function
         else:
             code_string = inspect.getsource(function)    
             func_name = function.__name__
+            if func_name == code_obj.service_func_name:
+                return SyftError("Please provide a function with a different name")
             signature = inspect.signature(function)
             varnames = function.__code__.co_varnames
             input_kwargs = varnames[: function.__code__.co_argcount]
@@ -497,6 +505,16 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
     context.output["user_unique_func_name"] = user_unique_func_name
     return context
 
+def change_code_name(raw_code: str, new_name: str):
+    tree = ast.parse(raw_code)
+
+    # check there are no globals
+    v = GlobalsVisitor()
+    v.visit(tree)
+    
+    f = tree.body[0]
+    f.name = new_name
+    return unparse(f)
 
 def process_code(
     raw_code: str,
