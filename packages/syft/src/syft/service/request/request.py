@@ -178,12 +178,13 @@ class Request(SyftObject):
                 f"accept_by_depositing_result can only be run on {UserCodeStatusChange} not "
                 f"{type(change)}"
             )
-        
-        import sys
+
+        # stdlib
+
         api = APIRegistry.api_for(self.node_uid)
         if not api:
             raise Exception(f"Login to {self.node_uid} first.")
-        
+
         is_approved = change.approved
 
         permission_request = self.approve()
@@ -197,13 +198,15 @@ class Request(SyftObject):
         # we could fix it in a future release
         if is_approved:
             if not force:
-                return SyftError(message="Already approved, if you want to force updating the result use force=True")
+                return SyftError(
+                    message="Already approved, if you want to force updating the result use force=True"
+                )
             action_obj_id = state.output_history[0].outputs[0]
             action_object = ActionObject.from_obj(result, id=action_obj_id)
             result = api.services.action.save(action_object)
             if not result:
                 return result
-            return SyftSuccess(message='Request submitted for updating result.')
+            return SyftSuccess(message="Request submitted for updating result.")
 
         action_object = ActionObject.from_obj(result)
         result = api.services.action.save(action_object)
