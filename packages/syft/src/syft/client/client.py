@@ -1,11 +1,14 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from enum import Enum
 import hashlib
 import json
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Type
 from typing import Union
 from typing import cast
@@ -55,6 +58,10 @@ from .connection import NodeConnection
 # from syft.grid.connections.http_connection import HTTPConnection
 # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
 
+if TYPE_CHECKING:
+    # relative
+    from ..service.project.project import Project
+
 
 def upgrade_tls(url: GridURL, response: Response) -> GridURL:
     try:
@@ -69,6 +76,8 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
 
 
 API_PATH = "/api/v2"
+DEFAULT_PYGRID_PORT = 80
+DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 
 
 class Routes(Enum):
@@ -77,10 +86,6 @@ class Routes(Enum):
     ROUTE_LOGIN = f"{API_PATH}/login"
     ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
-
-
-DEFAULT_PYGRID_PORT = 80
-DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 
 
 @serializable(attrs=["proxy_target_uid", "url"])
@@ -361,12 +366,6 @@ class SyftClient:
 
         return self._api
 
-    @property
-    def view_projects(self) -> List:
-        if self.api is not None and hasattr(self.api.services, "project"):
-            return self.api.services.project.get_all()
-        return None
-
     def guest(self) -> Self:
         self.credentials = SyftSigningKey.generate()
         return self
@@ -415,44 +414,68 @@ class SyftClient:
 
     @property
     def data_subject_registry(self) -> Optional[APIModule]:
-        if self.api is not None and hasattr(self.api.services, "data_subject"):
+        if self.api is not None and self.api.has_service("data_subject"):
             return self.api.services.data_subject
         return None
 
     @property
     def users(self) -> Optional[APIModule]:
-        if self.api is not None and hasattr(self.api.services, "user"):
+        if self.api is not None and self.api.has_service("user"):
             return self.api.services.user
         return None
 
     @property
     def code(self) -> Optional[APIModule]:
-        if self.api is not None and hasattr(self.api.services, "code"):
+        if self.api is not None and self.api.has_service("code"):
             return self.api.services.code
 
     @property
     def requests(self) -> Optional[APIModule]:
-        if self.api is not None and hasattr(self.api.services, "request"):
+        if self.api is not None and self.api.has_service("request"):
             return self.api.services.request
         return None
 
     @property
     def datasets(self) -> Optional[APIModule]:
-        if self.api is not None and hasattr(self.api.services, "dataset"):
+        if self.api is not None and self.api.has_service("dataset"):
             return self.api.services.dataset
         return None
 
     @property
     def notifications(self) -> Optional[APIModule]:
-        if self.api is not None and hasattr(self.api.services, "messages"):
+        if self.api is not None and self.api.has_service("messages"):
             return self.api.services.messages
         return None
 
     @property
     def domains(self) -> Optional[APIModule]:
-        if self.api is not None and hasattr(self.api.services, "network"):
+        if self.api is not None and self.api.has_service("network"):
             return self.api.services.network.get_all_peers()
         return None
+
+    @property
+    def projects(self) -> Optional[APIModule]:
+        if self.api.has_service("project"):
+            return self.api.services.project
+        return None
+
+    def get_project(
+        self,
+        name: str = None,
+        uid: UID = None,
+    ) -> Optional[Project]:
+        """Get project by name or UID"""
+
+        if not self.api.has_service("project"):
+            return None
+
+        if name:
+            return self.api.services.project.get_by_name(name)
+
+        elif uid:
+            return self.api.services.project.get_by_uid(uid)
+
+        return self.api.services.project.get_all()
 
     def login(self, email: str, password: str, cache: bool = True) -> Self:
         signing_key = self.connection.login(email=email, password=password)

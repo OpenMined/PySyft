@@ -618,6 +618,8 @@ class Project(SyftObject):
     users: List[UserIdentity] = []
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
+    __attr_unique__ = ["name"]
+
     __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
 
     def _broadcast_event(
@@ -1004,12 +1006,16 @@ class Project(SyftObject):
         return SyftSuccess(message="Synced project  with Leader")
 
 
-@serializable(without="bootstrap_events")
+@serializable(without=["bootstrap_events"])
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_repr_cols__ = ["name"]
 
+    # stash rules
+    __attr_repr_cols__ = ["name"]
+    __attr_unique__ = ["name"]
+
+    # init args
     id: Optional[UID]
     name: str
     description: Optional[str]
