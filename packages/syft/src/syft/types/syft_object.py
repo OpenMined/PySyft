@@ -29,6 +29,7 @@ from ..serde.deserialize import _deserialize as deserialize
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
 from ..util.autoreload import autoreload_enabled
+from ..util.markdown import as_markdown_python_code
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
@@ -248,16 +249,17 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
             _repr_str += f"  {attr}: {value_type} = {value}\n"
         return _repr_str
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python=True, indent=0) -> str:
+        s_indent = " " * indent * 2
         class_name = get_qualname_for(type(self))
-        _repr_str = f"class {class_name}:\n"
+        _repr_str = f"{s_indent}class {class_name}:\n"
         fields = getattr(self, "__fields__", {})
         for attr in fields.keys():
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
             value = f'"{value}"' if isinstance(value, str) else value
-            _repr_str += f"  {attr}: {value_type} = {value}\n"
+            _repr_str += f"{s_indent}  {attr}: {value_type} = {value}\n"
 
         # _repr_str += "\n"
         # fqn = full_name_with_qualname(type(self))
@@ -269,7 +271,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
         #     _repr_str += f"  {func}{sig}: pass\n"
         # _repr_str += f"]"
         # return _repr_str
-        return "```python\n" + _repr_str + "\n```"
+        if wrap_as_python:
+            return as_markdown_python_code(_repr_str)
+        else:
+            return _repr_str
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
@@ -450,7 +455,12 @@ def list_dict_repr_html(self) -> str:
 
                 cols["id"].append(getattr(item, "id", None))
                 for field in extra_fields:
-                    value = getattr(item, field, None)
+                    value = item
+                    try:
+                        for attr in field.split("."):
+                            value = getattr(value, attr, None)
+                    except Exception:
+                        value = None
                     cols[field].append(value)
 
             x = pd.DataFrame(cols)

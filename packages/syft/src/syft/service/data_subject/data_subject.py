@@ -18,6 +18,7 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util.markdown import as_markdown_python_code
 from ..response import SyftError
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -62,7 +63,7 @@ class DataSubject(SyftObject):
         _repr_str += f"Description: {self.description}\n"
         _repr_str += f"Aliases: {self.aliases}\n"
         _repr_str += f"Members: {len(self.members)}\n"
-        return "```python\n" + _repr_str + "\n```"
+        return as_markdown_python_code(_repr_str)
 
 
 @serializable()
@@ -108,7 +109,7 @@ class DataSubjectCreate(SyftObject):
         _repr_str += f"Description: {self.description}\n"
         _repr_str += f"Aliases: {self.aliases}\n"
         _repr_str += f"Members: {len(self.members)}\n"
-        return "```python\n" + _repr_str + "\n```"
+        return as_markdown_python_code(_repr_str)
 
 
 def remove_members_list(context: TransformContext) -> TransformContext:
