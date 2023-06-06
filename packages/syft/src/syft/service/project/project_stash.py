@@ -15,7 +15,6 @@ from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..request.request import Request
 from ..response import SyftError
 from .project import Project
 
@@ -51,9 +50,9 @@ class ProjectStash(BaseUIDStoreStash):
 
     def get_by_name(
         self, credentials: SyftVerifyKey, name: str
-    )-> Result[Optional[Project], SyftError]:
+    ) -> Result[Optional[Project], SyftError]:
         qks = QueryKeys(qks=[OrderByNamePartitionKey.with_obj(name)])
         return self.query_one(
-            credentials=credentials, 
+            credentials=credentials,
             qks=qks,
         )

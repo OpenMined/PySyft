@@ -20,7 +20,6 @@ from typing import Union
 from result import Err
 from result import Ok
 from result import Result
-import copy
 
 # relative
 from ...abstract_node import NodeType
@@ -347,14 +346,17 @@ class UserCode(SyftObject):
     @property
     def code(self) -> str:
         return self.raw_code
-    
+
     def show_code_cell(self):
-        warning_message = "# WARNING: Before running this cell change the name of the function \n# to avoid duplicates\n\n"
-        
+        warning_message = """# WARNING: \n# Before you submit
+# change the name of the function \n# for no duplicates\n\n"""
+
+        # third party
         from IPython import get_ipython
+
         ip = get_ipython()
         ip.set_next_input(warning_message + self.raw_code)
-    
+
     @staticmethod
     def from_existing_obj(
         code_obj: UserCode,
@@ -363,7 +365,6 @@ class UserCode(SyftObject):
         input_policy: Union[InputPolicy, UID] = None,
         output_policy: Optional[Union[OutputPolicy, UID]] = None,
     ) -> UserCode:
-        
         if function is None:
             if new_name is None:
                 return SyftError("Please provide either a new name or a new function")
@@ -375,14 +376,14 @@ class UserCode(SyftObject):
             input_kwargs = code_obj.input_kwargs
             function = code_obj.unsafe_function
         else:
-            code_string = inspect.getsource(function)    
+            code_string = inspect.getsource(function)
             func_name = function.__name__
             if func_name == code_obj.service_func_name:
                 return SyftError("Please provide a function with a different name")
             signature = inspect.signature(function)
             varnames = function.__code__.co_varnames
             input_kwargs = varnames[: function.__code__.co_argcount]
-        
+
         if input_policy is None:
             input_policy_type = code_obj.input_policy_type
             input_policy_init_kwargs = code_obj.input_policy_init_kwargs
@@ -391,7 +392,7 @@ class UserCode(SyftObject):
                 input_policy_type = SubmitUserPolicy.from_obj(input_policy)
             else:
                 input_policy_type = type(input_policy)
-            input_policy_init_kwargs=input_policy.init_kwargs
+            input_policy_init_kwargs = input_policy.init_kwargs
 
         if output_policy is None:
             output_policy_type = code_obj.output_policy_type
@@ -401,8 +402,8 @@ class UserCode(SyftObject):
                 output_policy_type = SubmitUserPolicy.from_obj(output_policy)
             else:
                 output_policy_type = type(output_policy)
-            output_policy_init_kwargs=output_policy.init_kwargs
-            
+            output_policy_init_kwargs = output_policy.init_kwargs
+
         return SubmitUserCode(
             code=code_string,
             func_name=func_name,
@@ -505,16 +506,18 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
     context.output["user_unique_func_name"] = user_unique_func_name
     return context
 
+
 def change_code_name(raw_code: str, new_name: str):
     tree = ast.parse(raw_code)
 
     # check there are no globals
     v = GlobalsVisitor()
     v.visit(tree)
-    
+
     f = tree.body[0]
     f.name = new_name
     return unparse(f)
+
 
 def process_code(
     raw_code: str,
