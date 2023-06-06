@@ -127,21 +127,21 @@ class Asset(SyftObject):
         return api.services.action.get(self.action_id)
 
 
-def is_action_data_empty(mock: Any) -> bool:
-    # relative
-    from ...service.action.action_data_empty import ActionDataEmpty
-    from ...service.action.action_object import AnyActionObject
+def _is_action_data_empty(obj: Any) -> bool:
+    # just a wrapper of action_object.is_action_data_empty
+    # to work around circular import error
 
-    return isinstance(mock, AnyActionObject) and isinstance(
-        mock.syft_action_data, ActionDataEmpty
-    )
+    # relative
+    from ...service.action.action_object import is_action_data_empty as f
+
+    return f(obj)
 
 
 def check_mock(data: Any, mock: Any) -> bool:
     if type(data) == type(mock):
         return True
 
-    return is_action_data_empty(mock)
+    return _is_action_data_empty(mock)
 
 
 @serializable()
@@ -169,7 +169,7 @@ class CreateAsset(SyftObject):
     def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
         """set mock_is_real to False whenever mock is None or empty"""
 
-        if (mock := values.get("mock")) is None or is_action_data_empty(mock):
+        if (mock := values.get("mock")) is None or _is_action_data_empty(mock):
             values["mock_is_real"] = False
 
         return values
@@ -178,7 +178,7 @@ class CreateAsset(SyftObject):
     def __mock_is_real_for_empty_mock_must_be_false(
         cls, v: bool, values: dict[str, Any], **kwargs: Any
     ) -> bool:
-        if v and ((mock := values.get("mock")) is None or is_action_data_empty(mock)):
+        if v and ((mock := values.get("mock")) is None or _is_action_data_empty(mock)):
             raise ValueError("mock_is_real must be False if mock is not provided")
 
         return v
@@ -235,7 +235,7 @@ class CreateAsset(SyftObject):
             return SyftError(
                 message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
             )
-        if not is_action_data_empty(self.mock):
+        if not _is_action_data_empty(self.mock):
             data_shape = get_shape_or_len(self.data)
             mock_shape = get_shape_or_len(self.mock)
             if data_shape != mock_shape:
@@ -432,7 +432,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
 
 def infer_shape(context: TransformContext) -> TransformContext:
     if context.output["shape"] is None:
-        if not is_action_data_empty(context.obj.mock):
+        if not _is_action_data_empty(context.obj.mock):
             context.output["shape"] = get_shape_or_len(context.obj.mock)
     return context
 

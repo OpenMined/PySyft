@@ -11,9 +11,9 @@ import pytest
 # syft absolute
 from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
+from syft.service.action.action_object import is_action_data_empty
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
-from syft.service.dataset.dataset import is_action_data_empty
 
 
 def random_hash() -> str:

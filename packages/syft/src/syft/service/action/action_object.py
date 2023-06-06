@@ -1368,11 +1368,9 @@ def debug_original_func(name: str, func: Callable) -> None:
 
 
 def is_action_data_empty(obj: Any) -> bool:
-    if hasattr(obj, "syft_action_data"):
-        obj = obj.syft_action_data
-    if isinstance(obj, ActionDataEmpty):
-        return True
-    return False
+    return isinstance(obj, AnyActionObject) and isinstance(
+        obj.syft_action_data, ActionDataEmpty
+    )
 
 
 def has_action_data_empty(args: Any, kwargs: Any) -> bool:
