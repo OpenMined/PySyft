@@ -446,12 +446,12 @@ def list_dict_repr_html(self) -> str:
             import pandas as pd
 
             cols = defaultdict(list)
-            max_lines = 5
+            # max_lines = 5
             line = 0
             for item in iter(self):
                 line += 1
-                if line > max_lines:
-                    break
+                # if line > max_lines:
+                #     break
                 if isinstance(self, dict):
                     cols["key"].append(item)
                     item = self.__getitem__(item)
