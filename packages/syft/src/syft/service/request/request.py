@@ -171,7 +171,7 @@ class Request(SyftObject):
                 return result
         return Ok(SyftSuccess(message=f"Request {self.id} changes reverted"))
 
-    def accept_by_depositing_result(self, result: Any):
+    def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
         change = self.changes[0]
@@ -186,15 +186,13 @@ class Request(SyftObject):
                 f"{type(change)}"
             )
 
+        # stdlib
+
         api = APIRegistry.api_for(self.node_uid)
         if not api:
             raise Exception(f"Login to {self.node_uid} first.")
 
-        action_object = ActionObject.from_obj(result)
-
-        result = api.services.action.save(action_object)
-        if not result:
-            return result
+        is_approved = change.approved
 
         permission_request = self.approve()
         if not permission_request:
@@ -202,6 +200,25 @@ class Request(SyftObject):
 
         code = change.linked_obj.resolve
         state = code.output_policy
+
+        # This weird order is due to the fact that state is None before calling approve
+        # we could fix it in a future release
+        if is_approved:
+            if not force:
+                return SyftError(
+                    message="Already approved, if you want to force updating the result use force=True"
+                )
+            action_obj_id = state.output_history[0].outputs[0]
+            action_object = ActionObject.from_obj(result, id=action_obj_id)
+            result = api.services.action.save(action_object)
+            if not result:
+                return result
+            return SyftSuccess(message="Request submitted for updating result.")
+
+        action_object = ActionObject.from_obj(result)
+        result = api.services.action.save(action_object)
+        if not result:
+            return result
         ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
         state.apply_output(context=ctx, outputs=action_object)
@@ -461,6 +478,10 @@ class UserCodeStatusChange(Change):
     value: UserCodeStatus
     linked_obj: LinkedObject
     match_type: bool = True
+
+    @property
+    def approved(self) -> bool:
+        return self.linked_obj.resolve.status.approved
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
