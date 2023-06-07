@@ -20,6 +20,12 @@ class ExperimentalFlags:
     def __init__(self) -> None:
         self._APACHE_ARROW_TENSOR_SERDE = True
         self._APACHE_ARROW_COMPRESSION = ApacheArrowCompression.ZSTD
+        self._CAN_REGISTER = str_to_bool(
+            os.getenv(
+                "ENABLE_SIGNUP",
+                "True",
+            )
+        )
 
     @property
     def APACHE_ARROW_TENSOR_SERDE(self) -> bool:
@@ -44,6 +50,14 @@ class ExperimentalFlags:
     @property
     def USE_NEW_SERVICE(self) -> bool:
         return str_to_bool(os.getenv("USE_NEW_SERVICE", "False"))
+
+    @property
+    def CAN_REGISTER(self) -> bool:
+        return self._CAN_REGISTER
+
+    @CAN_REGISTER.setter
+    def CAN_REGISTER(self, value: bool) -> None:
+        self._CAN_REGISTER = value
 
 
 flags = ExperimentalFlags()

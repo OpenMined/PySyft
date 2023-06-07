@@ -104,7 +104,6 @@ class NodeHandle:
         url: Optional[str] = None,
         python_node: Optional[Any] = None,
         shutdown: Optional[Callable] = None,
-        can_register: bool = False,
     ) -> None:
         self.node_type = node_type
         self.name = name
@@ -112,13 +111,12 @@ class NodeHandle:
         self.url = url
         self.python_node = python_node
         self.shutdown = shutdown
-        self.can_register = can_register
 
     @property
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port, can_register=self.can_register)  # type: ignore
+            return sy.login(url=self.url, port=self.port)  # type: ignore
         elif self.node_type == NodeType.PYTHON:
             return self.python_node.guest_client  # type: ignore
 
@@ -165,7 +163,6 @@ class Orchestra:
         local_db: bool = False,
         tag: Optional[str] = "latest",
         verbose: bool = False,
-        can_register: bool = False,  # if False, only the root user can register new users
     ) -> Optional[NodeHandle]:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
@@ -196,7 +193,6 @@ class Orchestra:
                     port=port,
                     url="http://localhost",
                     shutdown=stop,
-                    can_register=can_register,
                 )
             else:
                 worker = sy.Domain.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
@@ -204,7 +200,6 @@ class Orchestra:
                     node_type=node_type_enum,
                     name=name,
                     python_node=worker,
-                    can_register=can_register,
                 )
 
         if node_type_enum == NodeType.VM:
@@ -213,7 +208,6 @@ class Orchestra:
                 name=name,
                 port=80,
                 url="http://192.168.56.2",
-                can_register=can_register,
             )
 
         if port == "auto" or port is None:
@@ -234,7 +228,6 @@ class Orchestra:
                     name=name,
                     port=port,
                     url="http://localhost",
-                    can_register=can_register,
                 )
 
         # Start a subprocess and capture its output
@@ -286,7 +279,6 @@ class Orchestra:
                 name=name,
                 port=port,
                 url="http://localhost",
-                can_register=can_register,
             )
         return None
 

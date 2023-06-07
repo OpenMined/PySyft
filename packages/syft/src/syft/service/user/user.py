@@ -128,6 +128,7 @@ class UserCreate(UserUpdate):
     verify_key: Optional[SyftVerifyKey]
     institution: Optional[str]
     website: Optional[str]
+    created_by: Optional[SyftVerifyKey]
 
     __attr_repr_cols__ = ["name", "email"]
 
@@ -174,7 +175,7 @@ def user_create_to_user() -> List[Callable]:
         hash_password,
         generate_key,
         default_role(ServiceRole.GUEST),
-        drop(["password", "password_verify"]),
+        drop(["password", "password_verify", "created_by"]),
     ]
 
 

@@ -83,6 +83,7 @@ from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
+from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
 from ..util.util import random_name
 from ..util.util import thread_ident
@@ -483,6 +484,7 @@ class Node(AbstractNode):
             description=settings.description,
             organization=settings.organization,
             on_board=settings.on_board,
+            signup_enabled=settings.signup_enabled,
         )
 
     @property
@@ -653,6 +655,7 @@ class Node(AbstractNode):
                 new_settings = NodeSettings(
                     name=self.name,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+                    signup_enabled=flags.CAN_REGISTER,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings

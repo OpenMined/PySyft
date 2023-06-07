@@ -62,7 +62,7 @@ class SettingsService(AbstractService):
             current_settings = result.ok()
             if len(current_settings) > 0:
                 new_settings = current_settings[0].copy(
-                    update=settings.dict(exclude_unset=True)
+                    update=settings.to_dict(exclude_empty=True)
                 )
                 update_result = self.stash.update(context.credentials, new_settings)
                 if update_result.is_ok():

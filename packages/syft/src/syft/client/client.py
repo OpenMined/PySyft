@@ -312,13 +312,11 @@ class SyftClient:
         metadata: Optional[NodeMetadataJSON] = None,
         credentials: Optional[SyftSigningKey] = None,
         api: Optional[SyftAPI] = None,
-        can_register: bool = False,
     ) -> None:
         self.connection = connection
         self.metadata = metadata
         self.credentials: Optional[SyftSigningKey] = credentials
         self._api = api
-        self.can_register = can_register
 
         self.post_init()
 
@@ -460,7 +458,6 @@ class SyftClient:
         signing_key = self.connection.login(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
-            self.can_register = True  # root client can register new users
             self._fetch_api(self.credentials)
             if cache:
                 SyftClientSessionCache.add_client(
@@ -496,23 +493,6 @@ class SyftClient:
         user_code_items = self.code.get_all_for_user()
         load_approved_policy_code(user_code_items)
 
-    def disable_register(self) -> None:
-        """
-        If the client is the root client, e.g. Data Owner, he can disable other clients
-        from registering new guest client
-        """
-        if self.credentials is not None:
-            print
-            print("disabling registering for the guest clients")
-        else:
-            print("you don't have permision to disable register")
-
-    def enable_register(self):
-        if self.credentials is not None:
-            print("enabling registering for the guest clients")
-        else:
-            print("you don't have permision to enable register")
-
     def register(
         self,
         name: str,
@@ -521,23 +501,21 @@ class SyftClient:
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ):
-        if self.can_register:
-            try:
-                new_user = UserCreate(
-                    name=name,
-                    email=email,
-                    password=password,
-                    password_verify=password,
-                    institution=institution,
-                    website=website,
-                )
-            except Exception as e:
-                return SyftError(message=str(e))
-            response = self.connection.register(new_user=new_user)
-            if isinstance(response, tuple):
-                response = response[0]
-        else:
-            return SyftError(message="Not allowed to register!")
+        try:
+            new_user = UserCreate(
+                name=name,
+                email=email,
+                password=password,
+                password_verify=password,
+                institution=institution,
+                website=website,
+                created_by=self.credentials.verify_key,
+            )
+        except Exception as e:
+            return SyftError(message=str(e))
+        response = self.connection.register(new_user=new_user)
+        if isinstance(response, tuple):
+            response = response[0]
         return response
 
     @property
@@ -617,7 +595,6 @@ def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
-    can_register: bool = False,
 ) -> SyftClient:
     if node:
         connection = PythonConnection(node=node)
@@ -626,7 +603,7 @@ def connect(
         if isinstance(port, (int, str)):
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
-    _client = SyftClient(connection=connection, can_register=can_register)
+    _client = SyftClient(connection=connection)
     return _client
 
 
@@ -638,14 +615,16 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     cache: bool = True,
-    can_register: bool = False,
 ) -> SyftClient:
-    _client = connect(url=url, node=node, port=port, can_register=can_register)
+    _client = connect(url=url, node=node, port=port)
     connection = _client.connection
 
     login_credentials = None
     if email and password:
         login_credentials = UserLoginCredentials(email=email, password=password)
+
+    if login_credentials is None:
+        return _client.guest()
 
     if cache and login_credentials:
         _client_cache = SyftClientSessionCache.get_client(
