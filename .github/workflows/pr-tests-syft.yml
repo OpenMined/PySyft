@@ -20,7 +20,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows, ubuntu-latest, macos-13]
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
@@ -30,6 +30,14 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      - name: "clean .git/config"
+        if: matrix.os == 'windows'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - uses: actions/checkout@v3
 
       - name: Check for file changes
@@ -73,11 +81,13 @@ jobs:
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker on MacOS
-        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
+        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
+        env:
+          WINDIR: "C:\\Windows"
         run: |
           tox -e syft.test.unit
 
@@ -85,7 +95,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-13]
         python-version: ["3.11"]
         node-type: ["python"]
         notebook-paths: ["tutorials"]

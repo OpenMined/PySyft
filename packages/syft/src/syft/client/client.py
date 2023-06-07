@@ -545,7 +545,7 @@ class SyftClient:
             return getattr(self.api.lib, name)
         else:
             raise AttributeError(
-                f"{self.__class__.__name__} object has no attribute {name}"
+                f"{self.__class__.__name__} object has no attribute {name}."
             )
 
     def __hash__(self) -> int:
