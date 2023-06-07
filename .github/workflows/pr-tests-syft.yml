@@ -20,7 +20,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [windows, ubuntu-latest, macos-latest]
+        os: [windows, ubuntu-latest, macos-13]
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
@@ -95,7 +95,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-13]
         python-version: ["3.11"]
         node-type: ["python"]
         notebook-paths: ["tutorials"]
