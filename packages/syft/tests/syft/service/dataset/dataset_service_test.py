@@ -11,9 +11,9 @@ import pytest
 # syft absolute
 from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
-from syft.service.action.action_object import is_action_data_empty
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
+from syft.types.twin_object import TwinMode
 
 
 def random_hash() -> str:
@@ -164,7 +164,7 @@ def test_dataset_can_have_assets_with_empty_mock() -> None:
     assert Dataset(name=random_hash(), asset_list=assets)
 
 
-def test_guest_client_can_get_empty_mock(
+def test_guest_client_get_empty_mock_as_private_pointer(
     worker: Worker,
     asset_with_empty_mock: dict[str, Any],
 ) -> None:
@@ -178,4 +178,8 @@ def test_guest_client_can_get_empty_mock(
     guest_datasets = guest_domain_client.api.services.dataset.get_all()
     guest_dataset = guest_datasets[0]
 
-    assert is_action_data_empty(guest_dataset.assets[0].mock)
+    mock = guest_dataset.assets[0].mock
+
+    assert mock.is_real
+    assert mock.is_pointer
+    assert mock.syft_twin_type is TwinMode.PRIVATE
