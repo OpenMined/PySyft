@@ -1,10 +1,10 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Set
 from hashlib import sha256
 import inspect
 from inspect import Signature
 import types
-from collections.abc import Set
 from typing import Any
 from typing import Callable
 from typing import ClassVar
