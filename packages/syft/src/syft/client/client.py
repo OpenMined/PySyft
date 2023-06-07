@@ -617,6 +617,7 @@ def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
+    can_register: bool = False,
 ) -> SyftClient:
     if node:
         connection = PythonConnection(node=node)
@@ -625,7 +626,7 @@ def connect(
         if isinstance(port, (int, str)):
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
-    _client = SyftClient(connection=connection)
+    _client = SyftClient(connection=connection, can_register=can_register)
     return _client
 
 
@@ -637,8 +638,9 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     cache: bool = True,
+    can_register: bool = False,
 ) -> SyftClient:
-    _client = connect(url=url, node=node, port=port)
+    _client = connect(url=url, node=node, port=port, can_register=can_register)
     connection = _client.connection
 
     login_credentials = None

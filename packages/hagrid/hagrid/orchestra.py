@@ -118,7 +118,7 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port)  # type: ignore
+            return sy.login(url=self.url, port=self.port, can_register=self.can_register)  # type: ignore
         elif self.node_type == NodeType.PYTHON:
             return self.python_node.guest_client  # type: ignore
 
