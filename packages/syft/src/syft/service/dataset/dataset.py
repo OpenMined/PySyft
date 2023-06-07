@@ -132,9 +132,9 @@ def _is_action_data_empty(obj: Any) -> bool:
     # to work around circular import error
 
     # relative
-    from ...service.action.action_object import is_action_data_empty as f
+    from ...service.action.action_object import is_action_data_empty
 
-    return f(obj)
+    return is_action_data_empty(obj)
 
 
 def check_mock(data: Any, mock: Any) -> bool:
