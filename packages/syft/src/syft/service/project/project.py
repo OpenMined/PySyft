@@ -604,9 +604,8 @@ class Project(SyftObject):
         "description",
         "user_email_address",
         "events",
-        "user_signing_key"
+        "user_signing_key",
     ]
-
 
     id: Optional[UID]
     name: str
@@ -1024,7 +1023,6 @@ class ProjectSubmit(SyftObject):
         "description",
         "user_email_address",
     ]
-
 
     id: Optional[UID]
     name: str

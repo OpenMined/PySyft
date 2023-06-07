@@ -257,7 +257,7 @@ class Dataset(SyftObject):
             data[asset.name] = asset
         return data
 
-    def _repr_markdown_(self) -> str:
+    def _old_repr_markdown_(self) -> str:
         _repr_str = f"Syft Dataset: {self.name}\n"
         _repr_str += "Assets:\n"
         for asset in self.asset_list:
@@ -269,6 +269,23 @@ class Dataset(SyftObject):
         if self.description:
             _repr_str += f"Description: {self.description}\n"
         return "```python\n" + _repr_str + "\n```"
+
+    def _repr_markdown_(self) -> str:
+        # return self._old_repr_markdown_()
+        return self._markdown_()
+
+    def _markdown_(self) -> str:
+        _repr_str = f"Syft Dataset: {self.name}\n\n"
+        _repr_str += "Assets:\n\n"
+        for asset in self.asset_list:
+            _repr_str += f"\t{asset.name}: {asset.description}\n\n"
+        if self.citation:
+            _repr_str += f"Citation: {self.citation}\n\n"
+        if self.url:
+            _repr_str += f"URL: {self.url}\n\n"
+        if self.description:
+            _repr_str += f"Description: \n\n{self.description}\n\n"
+        return _repr_str
 
     @property
     def client(self) -> Optional[Any]:

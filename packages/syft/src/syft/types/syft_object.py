@@ -183,8 +183,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
     __owner__: str
 
     __attr_repr_cols__: ClassVar[List[str]] = []  # show these in html repr collections
-    __attr_custom_repr__: ClassVar[List[str]] = None  # show these in html repr of an object
-
+    __attr_custom_repr__: ClassVar[
+        List[str]
+    ] = None  # show these in html repr of an object
 
     def to_mongo(self) -> Dict[str, Any]:
         warnings.warn(
