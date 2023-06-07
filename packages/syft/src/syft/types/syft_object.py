@@ -183,6 +183,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
     __owner__: str
 
     __attr_repr_cols__: ClassVar[List[str]] = []  # show these in html repr collections
+    __attr_custom_repr__: ClassVar[List[str]] = None  # show these in html repr of an object
+
 
     def to_mongo(self) -> Dict[str, Any]:
         warnings.warn(
@@ -251,8 +253,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
     def _repr_markdown_(self) -> str:
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"
-        fields = getattr(self, "__fields__", {})
-        for attr in fields.keys():
+        if self.__attr_custom_repr__ is None:
+            fields = getattr(self, "__fields__", {}).keys()
+        else:
+            fields = self.__attr_custom_repr__
+        for attr in fields:
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
