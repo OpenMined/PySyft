@@ -357,6 +357,43 @@ class UserCode(SyftObject):
         ip = get_ipython()
         ip.set_next_input(warning_message + self.raw_code)
 
+
+@serializable(without=["local_function"])
+class SubmitUserCode(SyftObject):
+    # version
+    __canonical_name__ = "SubmitUserCode"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    code: str
+    func_name: str
+    signature: inspect.Signature
+    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    local_function: Optional[Callable]
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+
+    @property
+    def kwargs(self) -> List[str]:
+        return self.input_policy_init_kwargs
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        # only run this on the client side
+        if self.local_function:
+            # filtered_args = []
+            filtered_kwargs = {}
+            # for arg in args:
+            #     filtered_args.append(debox_asset(arg))
+            for k, v in kwargs.items():
+                filtered_kwargs[k] = debox_asset(v)
+
+            return self.local_function(**filtered_kwargs)
+        else:
+            raise NotImplementedError
+
     @staticmethod
     def from_existing_obj(
         code_obj: UserCode,
@@ -364,7 +401,7 @@ class UserCode(SyftObject):
         function: Optional[Callable] = None,
         input_policy: Union[InputPolicy, UID] = None,
         output_policy: Optional[Union[OutputPolicy, UID]] = None,
-    ) -> UserCode:
+    ) -> SubmitUserCode:
         if function is None:
             if new_name is None:
                 return SyftError("Please provide either a new name or a new function")
@@ -415,44 +452,6 @@ class UserCode(SyftObject):
             local_function=function,
             input_kwargs=input_kwargs,
         )
-
-
-@serializable(without=["local_function"])
-class SubmitUserCode(SyftObject):
-    # version
-    __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: Optional[UID]
-    code: str
-    func_name: str
-    signature: inspect.Signature
-    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    local_function: Optional[Callable]
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-
-    @property
-    def kwargs(self) -> List[str]:
-        return self.input_policy_init_kwargs
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        # only run this on the client side
-        if self.local_function:
-            # filtered_args = []
-            filtered_kwargs = {}
-            # for arg in args:
-            #     filtered_args.append(debox_asset(arg))
-            for k, v in kwargs.items():
-                filtered_kwargs[k] = debox_asset(v)
-
-            return self.local_function(**filtered_kwargs)
-        else:
-            raise NotImplementedError
-
 
 def debox_asset(arg: Any) -> Any:
     deboxed_arg = arg
