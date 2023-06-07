@@ -20,7 +20,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows, ubuntu-latest, macos-latest]
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
@@ -30,6 +30,14 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      - name: "clean .git/config"
+        if: matrix.os == 'windows'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - uses: actions/checkout@v3
 
       - name: Check for file changes
