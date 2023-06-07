@@ -86,6 +86,8 @@ jobs:
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
+        env:
+          WINDIR: "C:\\Windows"
         run: |
           tox -e syft.test.unit
 
