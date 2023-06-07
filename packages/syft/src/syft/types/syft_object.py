@@ -17,6 +17,7 @@ from typing import Type
 import warnings
 
 # third party
+import itables
 import pydantic
 from pydantic import BaseModel
 from pydantic import EmailStr
@@ -410,6 +411,19 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
         return cls._syft_keys_types_dict("__attr_searchable__")
 
 
+def short_qual_name(name: str) -> str:
+    # If the name is a qualname of formax a.b.c.d we will only get d
+    # otherwise this will leave it like it is
+    return name.split(".")[-1]
+
+
+def short_uid(uid: UID) -> str:
+    if uid is None:
+        return uid
+    else:
+        return str(uid)[:6] + "..."
+
+
 def list_dict_repr_html(self) -> str:
     try:
         max_check = 1
@@ -439,22 +453,23 @@ def list_dict_repr_html(self) -> str:
             import pandas as pd
 
             cols = defaultdict(list)
-            max_lines = 5
+            # max_lines = 5
             line = 0
             for item in iter(self):
                 line += 1
-                if line > max_lines:
-                    break
+                # if line > max_lines:
+                #     break
                 if isinstance(self, dict):
                     cols["key"].append(item)
                     item = self.__getitem__(item)
 
                 if type(item) == type:
-                    cols["type"].append(full_name_with_qualname(item))
+                    type_name = full_name_with_qualname(item)
                 else:
-                    cols["type"].append(item.__repr__())
+                    type_name = item.__repr__()
+                cols["type"].append(short_qual_name(type_name))
 
-                cols["id"].append(getattr(item, "id", None))
+                cols["id"].append(short_uid(getattr(item, "id", None)))
                 for field in extra_fields:
                     value = getattr(item, field, None)
                     cols[field].append(value)
@@ -463,7 +478,15 @@ def list_dict_repr_html(self) -> str:
             collection_type = (
                 f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
             )
-            return collection_type + x._repr_html_()
+
+            # This can be customize however we want
+            css = """
+            .itables table { margin: 0 auto; float: left; }
+            """
+            html_datatable = itables.to_html_datatable(df=x, css=css)
+
+            return collection_type + html_datatable
+            # return collection_type + x._repr_html_()
     except Exception as e:
         print(e)
         pass
