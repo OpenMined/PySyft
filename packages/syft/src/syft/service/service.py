@@ -333,10 +333,14 @@ def service_method(
                     kwargs=kwargs,
                 )
             result = func(self, *args, **kwargs)
+            context = kwargs.get("context", None)
+            context = args[0] if context is None else context
+            attrs_to_attach = {
+                "syft_node_location": self.node_uid,
+                "syft_client_verify_key": context.credentials,
+            }
             return attach_attribute_to_syft_object(
-                result=result,
-                attr_name="syft_node_location",
-                attr_value=self.node_uid,
+                result=result, attr_dict=attrs_to_attach
             )
 
         if autosplat is not None and len(autosplat) > 0:

@@ -584,11 +584,7 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 recursive_serde_register_type(PartialSyftObject)
 
 
-def attach_attribute_to_syft_object(
-    result: Any,
-    attr_name: str,
-    attr_value: Any,
-) -> Any:
+def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> Any:
     box_to_result_type = None
 
     if type(result) in OkErr:
@@ -614,12 +610,11 @@ def attach_attribute_to_syft_object(
         # then attach the value to the attribute
         # on the object
         if isinstance(_object, SyftBaseObject):
-            setattr(_object, attr_name, attr_value)
+            for attr_name, attr_value in attr_dict.items():
+                setattr(_object, attr_name, attr_value)
 
             for field_name, attr in _object.__dict__.items():
-                updated_attr = attach_attribute_to_syft_object(
-                    attr, attr_name, attr_value
-                )
+                updated_attr = attach_attribute_to_syft_object(attr, attr_dict)
                 setattr(_object, field_name, updated_attr)
         result[key] = _object
 

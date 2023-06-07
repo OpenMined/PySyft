@@ -187,6 +187,9 @@ class Request(SyftObject):
             change_status = ChangeStatus(change_id=change.id, applied=False)
             result = change.apply(context=change_context)
             if result.is_err():
+                # add to history and save history to request
+                self.history.append(change_status)
+                self.save(context=context)
                 return result
 
             # If no error, then change successfully applied.
