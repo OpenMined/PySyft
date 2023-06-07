@@ -81,7 +81,7 @@ jobs:
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker on MacOS
-        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
+        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
       - name: Run unit tests
