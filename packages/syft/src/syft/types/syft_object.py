@@ -15,6 +15,7 @@ from typing import Sequence
 from typing import Tuple
 from typing import Type
 import warnings
+import itables
 
 # third party
 import pydantic
@@ -471,7 +472,18 @@ def list_dict_repr_html(self) -> str:
             collection_type = (
                 f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
             )
-            return collection_type + x._repr_html_()
+            
+            # This can be customize however we want
+            css = """
+            .itables table { margin: 0 auto; float: left; }
+            """
+            html_datatable = itables.to_html_datatable(
+                                df=x,
+                                css=css
+                            )
+            
+            return collection_type + html_datatable
+            # return collection_type + x._repr_html_()
     except Exception as e:
         print(e)
         pass
