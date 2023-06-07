@@ -159,9 +159,12 @@ class Request(SyftObject):
 
         change_applied_map = {}
         for change_status in self.history:
+            # only store the last change
             change_applied_map[change_status.id] = change_status.applied
 
-        all_changes_applied = all(change_applied_map.values())
+        all_changes_applied = all(change_applied_map.values()) and (
+            len(change_applied_map) == len(self.changes)
+        )
 
         request_status = (
             RequestStatus.APPROVED if all_changes_applied else RequestStatus.REJECTED
