@@ -4,7 +4,7 @@ from hashlib import sha256
 import inspect
 from inspect import Signature
 import types
-from typing import AbstractSet
+from collections.abc import Set
 from typing import Any
 from typing import Callable
 from typing import ClassVar
@@ -41,7 +41,7 @@ from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
 
 IntStr = Union[int, str]
-AbstractSetIntStr = AbstractSet[IntStr]
+AbstractSetIntStr = Set[IntStr]
 MappingIntStrAny = Mapping[IntStr, Any]
 
 
