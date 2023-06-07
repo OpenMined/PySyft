@@ -31,7 +31,7 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util.markdown import as_markdown_python_code
+from ...util.markdown import markdown_as_class_with_fields
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
@@ -462,15 +462,23 @@ class UserCodeStatusChange(Change):
     ]
 
     def _repr_markdown_(self) -> str:
-        _repr_str = "class UserCodeStatusChange:\n  "
+        link = self.link
+        input_policy = (
+            link.input_policy._repr_markdown_(wrap_as_python=False, indent=1)
+            if link.input_policy is not None
+            else None
+        )
+        output_policy = (
+            link.input_policy._repr_markdown_(wrap_as_python=False, indent=1)
+            if link.output_policy is not None
+            else None
+        )
         repr_dict = {
-            "id": self.id,
-            "function": self.link.service_func_name,
-            "input_policy": f"\n{self.link.input_policy._repr_markdown_(wrap_as_python=False, indent=1)}",
-            "output_policy": f"\n{self.link.output_policy._repr_markdown_(wrap_as_python=False, indent=1)}",
+            "function": link.service_func_name,
+            "input_policy": f"\n{input_policy}",
+            "output_policy": f"\n{output_policy}",
         }
-        _repr_str += "\n  ".join([f"{k}: {v}" for k, v in repr_dict.items()])
-        return as_markdown_python_code(_repr_str)
+        return markdown_as_class_with_fields(self, repr_dict)
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
