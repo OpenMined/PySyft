@@ -7,6 +7,7 @@ from typing import Union
 
 # third party
 from result import OkErr
+from result import Result
 
 # relative
 from ...serde.serializable import serializable
@@ -15,6 +16,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputHistory
 from ..request.request import SubmitRequest
@@ -188,30 +190,34 @@ class UserCodeService(AbstractService):
 
             if not is_valid:
                 if len(output_policy.output_history) > 0:
-                    return get_outputs(
+                    result = get_outputs(
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
+                    return result.as_empty()
                 return is_valid
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
-            result = action_service._user_code_execute(
+            result: Result = action_service._user_code_execute(
                 context, code_item, filtered_kwargs
             )
             if isinstance(result, str):
                 return SyftError(message=result)
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            final_results = result.ok()
-            output_policy.apply_output(context=context, outputs=final_results)
+            result: Union[ActionObject, TwinObject] = result.ok()
+            output_policy.apply_output(context=context, outputs=result)
             code_item.output_policy = output_policy
-            state_result = self.update_code_state(context=context, code_item=code_item)
-            if not state_result:
-                return state_result
-            if isinstance(final_results, TwinObject):
-                return final_results.private
-            return final_results
+            update_success = self.update_code_state(
+                context=context, code_item=code_item
+            )
+            if not update_success:
+                return update_success
+            if isinstance(result, TwinObject):
+                return result.mock
+            else:
+                return result.as_empty()
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
 
