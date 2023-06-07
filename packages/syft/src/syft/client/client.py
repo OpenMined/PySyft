@@ -312,11 +312,13 @@ class SyftClient:
         metadata: Optional[NodeMetadataJSON] = None,
         credentials: Optional[SyftSigningKey] = None,
         api: Optional[SyftAPI] = None,
+        can_register: bool = False,
     ) -> None:
         self.connection = connection
         self.metadata = metadata
         self.credentials: Optional[SyftSigningKey] = credentials
         self._api = api
+        self.can_register = can_register
 
         self.post_init()
 
@@ -458,6 +460,7 @@ class SyftClient:
         signing_key = self.connection.login(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
+            self.can_register = True  # root client can register new users
             self._fetch_api(self.credentials)
             if cache:
                 SyftClientSessionCache.add_client(
@@ -493,6 +496,23 @@ class SyftClient:
         user_code_items = self.code.get_all_for_user()
         load_approved_policy_code(user_code_items)
 
+    def disable_register(self) -> None:
+        """
+        If the client is the root client, e.g. Data Owner, he can disable other clients
+        from registering new guest client
+        """
+        if self.credentials is not None:
+            print
+            print("disabling registering for the guest clients")
+        else:
+            print("you don't have permision to disable register")
+
+    def enable_register(self):
+        if self.credentials is not None:
+            print("enabling registering for the guest clients")
+        else:
+            print("you don't have permision to enable register")
+
     def register(
         self,
         name: str,
@@ -501,20 +521,23 @@ class SyftClient:
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ):
-        try:
-            new_user = UserCreate(
-                name=name,
-                email=email,
-                password=password,
-                password_verify=password,
-                institution=institution,
-                website=website,
-            )
-        except Exception as e:
-            return SyftError(message=str(e))
-        response = self.connection.register(new_user=new_user)
-        if isinstance(response, tuple):
-            response = response[0]
+        if self.can_register:
+            try:
+                new_user = UserCreate(
+                    name=name,
+                    email=email,
+                    password=password,
+                    password_verify=password,
+                    institution=institution,
+                    website=website,
+                )
+            except Exception as e:
+                return SyftError(message=str(e))
+            response = self.connection.register(new_user=new_user)
+            if isinstance(response, tuple):
+                response = response[0]
+        else:
+            return SyftError(message="Not allowed to register!")
         return response
 
     @property
