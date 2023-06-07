@@ -88,7 +88,15 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.11"]
         node-type: ["python"]
-        notebook-paths: ["tutorials"]
+        notebook-paths:
+          [
+            "tutorials/data-engineer",
+            "tutorials/data-owner",
+            "tutorials/data-scientist",
+            "tutorials/hello-syft",
+            "tutorials/pandas-cookbook",
+            "tutorials/pandas-cookbook-level-2",
+          ]
         include:
           - python-version: "3.9"
             os: "ubuntu-latest"
