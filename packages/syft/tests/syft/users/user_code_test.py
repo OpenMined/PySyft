@@ -7,7 +7,6 @@ from syft.service.user.user import User
 def test_func():
     return 1
 
-# def test_user_code(root_domain_client, guest_client):
 def test_user_code( worker, guest_client: User) -> None:
     test_func()
     x = guest_client.api.services.code.request_code_execution(test_func)
