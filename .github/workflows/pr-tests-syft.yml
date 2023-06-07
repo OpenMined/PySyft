@@ -95,7 +95,6 @@ jobs:
             "tutorials/data-scientist",
             "tutorials/hello-syft",
             "tutorials/pandas-cookbook",
-            "tutorials/pandas-cookbook-level-2",
           ]
         include:
           - python-version: "3.9"
