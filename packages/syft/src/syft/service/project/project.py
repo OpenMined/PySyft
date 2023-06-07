@@ -594,6 +594,35 @@ class DemocraticConsensusModel(ConsensusModel):
         return hash(self.threshold)
 
 
+def add_code_request_to_project(
+    project: Union[ProjectSubmit, Project],
+    code: SubmitUserCode,
+    client: SyftClient,
+):
+    if not isinstance(code, SubmitUserCode):
+        return SyftError(
+            message=f"Currently we are  only support creating requests for SubmitUserCode: {type(code)}"
+        )
+
+    if not isinstance(client, SyftClient):
+        return SyftError(message="Client should be a valid SyftClient")
+
+    submitted_req = client.api.services.code.request_code_execution(code)
+    if isinstance(submitted_req, SyftError):
+        return submitted_req
+
+    request_event = ProjectRequest(request=submitted_req)
+
+    if isinstance(project, ProjectSubmit):
+        project.bootstrap_events.append(request_event)
+    else:
+        result = project.add_event(request_event)
+        if isinstance(result, SyftError):
+            return result
+
+    return SyftSuccess(message="Request added successfully")
+
+
 @serializable()
 class Project(SyftObject):
     __canonical_name__ = "Project"
@@ -817,6 +846,13 @@ class Project(SyftObject):
             if type_check and parent_check and id_check:
                 results.append(event)
         return results
+
+    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+        return add_code_request_to_project(
+            project=self,
+            code=obj,
+            client=client,
+        )
 
     def get_messages(self) -> List[Union[ProjectMessage, ProjectThreadMessage]]:
         messages = []
@@ -1110,23 +1146,11 @@ class ProjectSubmit(SyftObject):
         return SyftSuccess(message="Successfully Exchaged Routes")
 
     def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
-        if not isinstance(obj, SubmitUserCode):
-            return SyftError(
-                message=f"Currently we are  only support creating requests for SbumitUserCode: {type(obj)}"
-            )
-
-        if not isinstance(client, SyftClient):
-            return SyftError(message="Client should be a valid SyftClient")
-
-        submitted_req = client.api.services.code.request_code_execution(obj)
-        if isinstance(submitted_req, SyftError):
-            return submitted_req
-
-        request_event = ProjectRequest(request=submitted_req)
-
-        self.bootstrap_events.append(request_event)
-
-        return SyftSuccess(message="Request added successfully")
+        return add_code_request_to_project(
+            project=self,
+            code=obj,
+            client=client,
+        )
 
     def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders
