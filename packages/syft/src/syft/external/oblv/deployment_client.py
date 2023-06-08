@@ -308,7 +308,7 @@ class DeploymentClient:
         code.enclave_metadata = enclave_metadata
 
         for domain_client in self.domain_clients:
-            domain_client.api.services.code.request_code_execution(code=code)
+            domain_client.code.request_code_execution(code=code)
 
         res = self.api.services.code.request_code_execution(code=code)
 

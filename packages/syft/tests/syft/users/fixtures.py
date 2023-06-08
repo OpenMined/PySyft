@@ -74,12 +74,20 @@ def guest_view_user(guest_user) -> UserView:
 
 
 def admin_user_private_key(admin_user) -> UserPrivateKey:
-    return UserPrivateKey(email=admin_user.email, signing_key=admin_user.signing_key)
+    return UserPrivateKey(
+        email=admin_user.email,
+        signing_key=admin_user.signing_key,
+        role=ServiceRole.DATA_OWNER,
+    )
 
 
 @pytest.fixture
 def guest_user_private_key(guest_user) -> UserPrivateKey:
-    return UserPrivateKey(email=guest_user.email, signing_key=guest_user.signing_key)
+    return UserPrivateKey(
+        email=guest_user.email,
+        signing_key=guest_user.signing_key,
+        role=ServiceRole.GUEST,
+    )
 
 
 @pytest.fixture(autouse=True)
