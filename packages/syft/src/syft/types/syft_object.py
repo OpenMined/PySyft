@@ -285,10 +285,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         else:
             fields = self.__attr_custom_repr__
 
+        fields = set(fields) - set(DYNAMIC_SYFT_ATTRIBUTES)
         _repr_str = f"{s_indent}class {class_name}:\n"
-        for attr in fields.keys():
-            if attr in DYNAMIC_SYFT_ATTRIBUTES:
-                continue
+        for attr in fields:
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")

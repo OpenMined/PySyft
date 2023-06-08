@@ -663,7 +663,6 @@ class Project(SyftObject):
         "description",
         "user_email_address",
         "events",
-        "user_signing_key",
     ]
 
     id: Optional[UID]
