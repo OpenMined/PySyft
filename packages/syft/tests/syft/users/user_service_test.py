@@ -604,3 +604,7 @@ def test_userservice_exchange_credentials_get_email_fails(
     response = user_service.exchange_credentials(unauthed_context)
     assert isinstance(response, SyftError)
     assert response.message == expected_error_msg
+
+
+def test_userservice_toggle_registration() -> None:
+    print("Implementing")

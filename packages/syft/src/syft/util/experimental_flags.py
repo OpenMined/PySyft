@@ -23,7 +23,7 @@ class ExperimentalFlags:
         self._CAN_REGISTER = str_to_bool(
             os.getenv(
                 "ENABLE_SIGNUP",
-                "True",
+                "False",
             )
         )
 
