@@ -280,12 +280,18 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     def _repr_markdown_(self, wrap_as_python=True, indent=0) -> str:
         s_indent = " " * indent * 2
         class_name = get_qualname_for(type(self))
-        if self.__attr_custom_repr__ is None:
-            fields = getattr(self, "__fields__", {}).keys()
-        else:
+        if self.__attr_custom_repr__ is not None:
             fields = self.__attr_custom_repr__
+        elif self.__attr_repr_cols__ is not None:
+            fields = self.__attr_repr_cols__
+        else:
+            fields = list(getattr(self, "__fields__", {}).keys())
 
-        fields = set(fields) - set(DYNAMIC_SYFT_ATTRIBUTES)
+        if "id" not in fields:
+            fields = ["id"] + fields
+
+        dynam_attrs = set(DYNAMIC_SYFT_ATTRIBUTES)
+        fields = [x for x in fields if x not in dynam_attrs]
         _repr_str = f"{s_indent}class {class_name}:\n"
         for attr in fields:
             value = getattr(self, attr, "<Missing>")

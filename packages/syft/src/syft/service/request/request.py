@@ -151,8 +151,7 @@ class Request(SyftObject):
         "approving_user_verify_key",
     ]
     __attr_unique__ = ["request_hash"]
-    __attr_repr_cols__ = ["request_time", "status", "changes"]
-    __attr_custom_repr__ = [
+    __attr_repr_cols__ = [
         "request_time",
         "approval_time",
         "status",
