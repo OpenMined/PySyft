@@ -214,43 +214,44 @@ class Request(SyftObject):
             if not result:
                 return result
             return SyftSuccess(message="Request submitted for updating result.")
+        else:
+            action_object = ActionObject.from_obj(result)
+            result = api.services.action.save(action_object)
+            if not result:
+                return result
+            ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
-        action_object = ActionObject.from_obj(result)
-        result = api.services.action.save(action_object)
-        if not result:
+            state.apply_output(context=ctx, outputs=action_object)
+            policy_state_mutation = ObjectMutation(
+                linked_obj=change.linked_obj,
+                attr_name="output_policy",
+                match_type=True,
+                value=state,
+            )
+
+            action_object_link = LinkedObject.from_obj(
+                action_object, node_uid=self.node_uid
+            )
+            permission_change = ActionStoreChange(
+                linked_obj=action_object_link,
+                apply_permission_type=ActionPermission.READ,
+            )
+
+            submit_request = SubmitRequest(
+                changes=[policy_state_mutation, permission_change],
+                requesting_user_verify_key=self.requesting_user_verify_key,
+            )
+
+            self.status = RequestStatus.APPROVED
+
+            new_request = api.services.request.submit(submit_request)
+            if not new_request:
+                return new_request
+            new_request_result = api.services.request.apply(new_request.id)
+            if not new_request_result:
+                return new_request_result
+            result = api.services.request.apply(self.id)
             return result
-        ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
-
-        state.apply_output(context=ctx, outputs=action_object)
-        policy_state_mutation = ObjectMutation(
-            linked_obj=change.linked_obj,
-            attr_name="output_policy",
-            match_type=True,
-            value=state,
-        )
-
-        action_object_link = LinkedObject.from_obj(
-            action_object, node_uid=self.node_uid
-        )
-        permission_change = ActionStoreChange(
-            linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
-        )
-
-        submit_request = SubmitRequest(
-            changes=[policy_state_mutation, permission_change],
-            requesting_user_verify_key=self.requesting_user_verify_key,
-        )
-
-        self.status = RequestStatus.APPROVED
-
-        new_request = api.services.request.submit(submit_request)
-        if not new_request:
-            return new_request
-        new_request_result = api.services.request.apply(new_request.id)
-        if not new_request_result:
-            return new_request_result
-        result = api.services.request.apply(self.id)
-        return result
 
 
 @serializable()
