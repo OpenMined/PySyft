@@ -10,6 +10,7 @@ from result import Err
 from result import Ok
 
 # syft absolute
+from syft.client.client import SyftClient
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.context import NodeServiceContext
@@ -606,5 +607,10 @@ def test_userservice_exchange_credentials_get_email_fails(
     assert response.message == expected_error_msg
 
 
-def test_userservice_toggle_registration() -> None:
-    print("Implementing")
+def test_userservice_toggle_registration(
+    root_domain_client: SyftClient, guest_client: SyftClient
+) -> None:
+    response_1 = root_domain_client.register(
+        email="a@test.com", password="a123", name="a"
+    )
+    assert isinstance(response_1, SyftError)
