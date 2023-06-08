@@ -568,7 +568,7 @@ class SyftClient:
             return getattr(self.api.lib, name)
         else:
             raise AttributeError(
-                f"{self.__class__.__name__} object has no attribute {name}"
+                f"{self.__class__.__name__} object has no attribute {name}."
             )
 
     def __hash__(self) -> int:
@@ -716,7 +716,7 @@ class SyftClientSessionCache:
     def get_client(
         cls, email: str, password: str, connection: NodeConnection
     ) -> Optional[SyftClient]:
-        # we have some bugs here so lets disable until they are fixed
+        # we have some bugs here so lets disable until they are fixed.
         return None
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         return cls.__credentials_store__.get(hash_key, None)
