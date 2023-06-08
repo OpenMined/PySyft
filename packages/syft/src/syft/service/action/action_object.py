@@ -176,6 +176,7 @@ passthrough_attrs = [
     "send",  # syft
     "_copy_and_set_values",  # pydantic
     "get_from",  # syft
+    "delete_data",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -405,6 +406,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_markdown_",
     "syft_twin_type",
     "_repr_debug_",
+    "as_empty",
 ]
 
 
@@ -509,7 +511,10 @@ class ActionObject(SyftObject):
         from ...client.api import APIRegistry
         from ...client.api import SyftAPICall
 
-        api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
 
         kwargs = {"action": action}
         api_call = SyftAPICall(
@@ -534,7 +539,7 @@ class ActionObject(SyftObject):
         return client.api.services.request.submit(submit_request)
 
     def _syft_try_to_save_to_store(self, obj) -> None:
-        if self.syft_node_uid is None:
+        if self.syft_node_uid is None or self.syft_client_verify_key is None:
             return
         elif obj.syft_node_uid is not None:
             return
@@ -564,8 +569,10 @@ class ActionObject(SyftObject):
             api = TraceResult._client.api
             TraceResult.result += [action]
         else:
-            api = APIRegistry.api_for(node_uid=self.syft_node_uid)
-
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_uid,
+                user_verify_key=self.syft_client_verify_key,
+            )
         api.services.action.execute(action)
 
     def _syft_prepare_obj_uid(self, obj) -> LineageID:
@@ -722,6 +729,13 @@ class ActionObject(SyftObject):
         else:
             return res.syft_action_data
 
+    def as_empty(self):
+        id = self.id
+        # TODO: fix
+        if isinstance(id, LineageID):
+            id = id.id
+        return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id)
+
     @staticmethod
     def from_obj(
         syft_action_data: Any,
@@ -789,6 +803,10 @@ class ActionObject(SyftObject):
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
+
+    def delete_data(self):
+        empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+        self.syft_action_data = empty
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
@@ -945,6 +963,10 @@ class ActionObject(SyftObject):
         # Propagate Syft Node UID
         result.syft_node_uid = context.node_uid
 
+        # Propogate Syft Node Location and Client Verify Key
+        result.syft_node_location = context.syft_node_location
+        result.syft_client_verify_key = context.syft_client_verify_key
+
         # Propagate Result ID
         if context.result_id is not None:
             result.id = context.result_id
@@ -964,7 +986,12 @@ class ActionObject(SyftObject):
             )
 
         debug("[__getattribute__] Handling bool on nonbools")
-        context = PreHookContext(obj=self, op_name=name)
+        context = PreHookContext(
+            obj=self,
+            op_name=name,
+            syft_node_location=self.syft_node_location,
+            syft_client_verify_key=self.syft_client_verify_key,
+        )
         context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
 
         # no input needs to propagate
@@ -987,7 +1014,11 @@ class ActionObject(SyftObject):
         debug(f"[__getattribute__] Handling property {name} ")
 
         context = PreHookContext(
-            obj=self, op_name=name, action_type=ActionType.GETATTRIBUTE
+            obj=self,
+            op_name=name,
+            action_type=ActionType.GETATTRIBUTE,
+            syft_node_location=self.syft_node_location,
+            syft_client_verify_key=self.syft_client_verify_key,
         )
         context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
         # no input needs to propagate
@@ -1017,7 +1048,11 @@ class ActionObject(SyftObject):
 
         def _base_wrapper(*args: Any, **kwargs: Any) -> Any:
             context = PreHookContext(
-                obj=self, op_name=name, action_type=ActionType.METHOD
+                obj=self,
+                op_name=name,
+                action_type=ActionType.METHOD,
+                syft_node_location=self.syft_node_location,
+                syft_client_verify_key=self.syft_client_verify_key,
             )
             context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                 context, name, args, kwargs
@@ -1079,7 +1114,11 @@ class ActionObject(SyftObject):
             local_func = getattr(self.syft_action_data, op_name)
 
         context = PreHookContext(
-            obj=self, op_name=op_name, action_type=ActionType.SETATTRIBUTE
+            obj=self,
+            op_name=op_name,
+            action_type=ActionType.SETATTRIBUTE,
+            syft_node_location=self.syft_node_location,
+            syft_client_verify_key=self.syft_client_verify_key,
         )
         context, pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
             context, "__setattr__", args, kwargs

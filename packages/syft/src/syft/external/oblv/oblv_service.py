@@ -369,7 +369,7 @@ class OblvService(AbstractService):
         obj = deserialize(req.content, from_bytes=True)
         # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
         obj.signing_key = signing_key
-        obj.connection = HTTPConnection(connection_string)
+        obj.connection = HTTPConnection(url=connection_string)
         return cast(SyftAPI, obj)
 
     @service_method(
@@ -413,21 +413,21 @@ class OblvService(AbstractService):
             dict_object.base_dict[str(context.credentials)] = inputs
             action_service.store.set(
                 uid=user_code_id,
-                credentials=user_code.user_verify_key,
+                credentials=context.node.verify_key,
                 syft_object=dict_object,
                 has_result_read_permission=True,
             )
 
         else:
             res = action_service.store.get(
-                uid=user_code_id, credentials=user_code.user_verify_key
+                uid=user_code_id, credentials=context.node.verify_key
             )
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object.base_dict[str(context.credentials)] = inputs
                 action_service.store.set(
                     uid=user_code_id,
-                    credentials=user_code.user_verify_key,
+                    credentials=context.node.verify_key,
                     syft_object=dict_object,
                 )
             else:

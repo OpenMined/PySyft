@@ -108,7 +108,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
 @transform(NodeMetadata, NodeMetadataJSON)
 def metadata_to_json() -> List[Callable]:
     return [
-        drop("__canonical_name__"),
+        drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
         convert_types(["id", "verify_key"], str),
     ]

@@ -29,6 +29,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadata
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -36,6 +37,8 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util.markdown import markdown_as_class_with_fields
+from ..code.user_code import SubmitUserCode
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
@@ -96,10 +99,7 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __hash_exclude_attrs__ = [
-        "event_hash",
-        "signature",
-    ]
+    __hash_exclude_attrs__ = ["event_hash", "signature"]
 
     # 1. Creation attrs
     id: UID
@@ -286,8 +286,39 @@ class ProjectRequest(ProjectEventAddObject):
     __canonical_name__ = "ProjectRequest"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    request: Request
+    linked_request: LinkedObject
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
+
+    @validator("linked_request", pre=True)
+    def _validate_linked_request(cls, v):
+        if isinstance(v, Request):
+            linked_request = LinkedObject.from_obj(v, node_uid=v.node_uid)
+            return linked_request
+        elif isinstance(v, LinkedObject):
+            return v
+        else:
+            raise ValueError(
+                f"linked_request should be either Request or LinkedObject, got {type(v)}"
+            )
+
+    @property
+    def request(self):
+        return self.linked_request.resolve
+
+    __attr_repr_cols__ = [
+        "request.status",
+        "request.changes[-1].link.service_func_name",
+    ]
+
+    def _repr_markdown_(self) -> str:
+        func_name = None
+        if len(self.request.changes) > 0:
+            func_name = self.request.changes[-1].link.service_func_name
+        repr_dict = {
+            "request.status": self.request.status,
+            "request.changes[-1].link.service_func_name": func_name,
+        }
+        return markdown_as_class_with_fields(self, repr_dict)
 
     def approve(self) -> ProjectRequestResponse:
         result = self.request.approve()
@@ -617,6 +648,8 @@ class Project(SyftObject):
     users: List[UserIdentity] = []
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
+    __attr_unique__ = ["name"]
+
     __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
 
     def _broadcast_event(
@@ -928,7 +961,8 @@ class Project(SyftObject):
         self,
         request: Request,
     ):
-        request_event = ProjectRequest(request=request)
+        linked_request = LinkedObject.from_obj(request, node_uid=request.node_uid)
+        request_event = ProjectRequest(linked_request=linked_request)
         result = self.add_event(request_event)
 
         if isinstance(result, SyftSuccess):
@@ -1003,11 +1037,16 @@ class Project(SyftObject):
         return SyftSuccess(message="Synced project  with Leader")
 
 
-@serializable()
+@serializable(without=["bootstrap_events"])
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    # stash rules
+    __attr_repr_cols__ = ["name"]
+    __attr_unique__ = ["name"]
+
+    # init args
     id: Optional[UID]
     name: str
     description: Optional[str]
@@ -1018,6 +1057,7 @@ class ProjectSubmit(SyftObject):
     leader_node_route: Optional[NodeRoute]
     user_email_address: Optional[str] = None
     users: List[UserIdentity] = []
+    bootstrap_events: Optional[List[ProjectEvent]] = []
 
     @root_validator(pre=True)
     def make_shareholders_and_leader_route(cls, values) -> Dict:
@@ -1051,29 +1091,30 @@ class ProjectSubmit(SyftObject):
 
     @root_validator(pre=True)
     def check_user_email_and_users(cls, values) -> Dict:
-        if values["user_email_address"] is not None:
-            users = values["users"]
-            if len(users) == 0:
-                raise SyftException(
-                    "Users cannot be empty if user email address is provided"
-                )
-
-            share_holders = values["shareholders"]
-            if len(share_holders) != len(users):
-                raise SyftException(
-                    "Number of users should be equal to number of shareholders"
-                )
-            users_node_identity = []
-            for user in users:
-                if isinstance(user, SyftClient):
-                    users_node_identity.append(UserIdentity.from_client(user))
-                elif isinstance(user, UserIdentity):
-                    users_node_identity.append(user)
-                else:
+        if "user_email_address" in values:  # avoids KeyError below if no email provided
+            if values["user_email_address"] is not None:
+                users = values["users"]
+                if len(users) == 0:
                     raise SyftException(
-                        "Users should be either SyftClient or UserIdentity"
+                        "Users cannot be empty if user email address is provided"
                     )
-            values["users"] = users_node_identity
+
+                share_holders = values["shareholders"]
+                if len(share_holders) != len(users):
+                    raise SyftException(
+                        "Number of users should be equal to number of shareholders"
+                    )
+                users_node_identity = []
+                for user in users:
+                    if isinstance(user, SyftClient):
+                        users_node_identity.append(UserIdentity.from_client(user))
+                    elif isinstance(user, UserIdentity):
+                        users_node_identity.append(user)
+                    else:
+                        raise SyftException(
+                            "Users should be either SyftClient or UserIdentity"
+                        )
+                values["users"] = users_node_identity
 
         return values
 
@@ -1105,10 +1146,29 @@ class ProjectSubmit(SyftObject):
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
+    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+        if not isinstance(obj, SubmitUserCode):
+            return SyftError(
+                message=f"Currently we are  only support creating requests for SbumitUserCode: {type(obj)}"
+            )
+
+        if not isinstance(client, SyftClient):
+            return SyftError(message="Client should be a valid SyftClient")
+
+        submitted_req = client.api.services.code.request_code_execution(obj)
+        if isinstance(submitted_req, SyftError):
+            return submitted_req
+
+        request_event = ProjectRequest(linked_request=submitted_req)
+
+        self.bootstrap_events.append(request_event)
+
+        return SyftSuccess(message="Request added successfully")
+
     def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders
         project_id = UID()
-        projects = []
+        projects: List[Project] = []
 
         if not self.users:
             # If the Data Owner creates the project
@@ -1135,10 +1195,19 @@ class ProjectSubmit(SyftObject):
             else:
                 projects.append(result)
 
+        if self.bootstrap_events:
+            # TODO: a better way to pick the leader node's project
+            project = projects[0]
+
+            for event in self.bootstrap_events:
+                result = project.add_event(event)
+                if isinstance(result, SyftError):
+                    return result
+
+            self.bootstrap_events.clear()
+
         # as we currently assume that the first shareholder is the leader.
         return projects
-
-    __attr_repr_cols__ = ["name"]
 
 
 def add_shareholders_as_owners(shareholders: List[SyftVerifyKey]) -> Set[str]:

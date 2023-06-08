@@ -38,9 +38,9 @@ def test_api_cache_invalidation(worker):
 
     my_func.code = dedent(my_func.code)
 
-    assert root_domain_client.api.services.code.request_code_execution(my_func)
+    assert root_domain_client.code.request_code_execution(my_func)
     # check that function is added to api without refreshing the api manually
-    assert isinstance(root_domain_client.api.services.code.my_func, Callable)
+    assert isinstance(root_domain_client.code.my_func, Callable)
 
 
 def test_api_cache_invalidation_login(root_verify_key, worker):

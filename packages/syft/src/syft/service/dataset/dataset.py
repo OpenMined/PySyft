@@ -25,6 +25,7 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
+from ...util.markdown import as_markdown_python_code
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
@@ -88,14 +89,17 @@ class Asset(SyftObject):
         _repr_str += f"Contributors: {len(self.contributors)}\n"
         for contributor in self.contributors:
             _repr_str += f"\t{contributor.name}: {contributor.email}\n"
-        return "```python\n" + _repr_str + "\n```"
+        return as_markdown_python_code(_repr_str)
 
     @property
     def pointer(self) -> Any:
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         return api.services.action.get_pointer(self.action_id)
 
     @property
@@ -103,7 +107,10 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         return api.services.action.get_pointer(self.action_id).syft_action_data
 
     @property
@@ -111,7 +118,10 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         return api.services.action.get_pointer(self.action_id)
 
     @property
@@ -119,7 +129,10 @@ class Asset(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         return api.services.action.get(self.action_id)
 
 
@@ -268,7 +281,7 @@ class Dataset(SyftObject):
             _repr_str += f"URL: {self.url}\n"
         if self.description:
             _repr_str += f"Description: {self.description}\n"
-        return "```python\n" + _repr_str + "\n```"
+        return as_markdown_python_code(_repr_str)
 
     @property
     def client(self) -> Optional[Any]:
