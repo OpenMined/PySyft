@@ -40,7 +40,6 @@ class ProjectStash(BaseUIDStoreStash):
         return self.query_all(
             credentials=credentials,
             qks=qks,
-            order_by=NamePartitionKey,
         )
 
     def get_by_uid(
