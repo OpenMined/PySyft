@@ -294,7 +294,7 @@ class Request(SyftObject):
                 requesting_user_verify_key=self.requesting_user_verify_key,
             )
 
-            self.status = RequestStatus.APPROVED
+            self.approve()
 
             new_request = api.services.request.submit(submit_request)
             if not new_request:
