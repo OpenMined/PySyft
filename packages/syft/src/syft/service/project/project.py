@@ -676,7 +676,7 @@ class Project(SyftObject):
     user_email_address: Optional[str] = None
     users: List[UserIdentity] = []
 
-    __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
+    __attr_repr_cols__ = ["name", "description", "user_email_address", "events"]
     __attr_unique__ = ["name"]
 
     __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
@@ -1077,9 +1077,9 @@ class Project(SyftObject):
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    # stash rules
     __attr_repr_cols__ = ["name"]
+    # stash rules
+    __attr_repr_cols__ = ["name", "description", "user_email_address"]
     __attr_unique__ = ["name"]
 
     # init args
