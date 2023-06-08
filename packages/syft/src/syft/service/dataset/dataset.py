@@ -92,6 +92,20 @@ class Asset(SyftObject):
     #     return obj_ptr
 
     def _repr_html_(self) -> Any:
+        # relative
+        from ...service.action.action_object import ActionObject
+
+        uploaded_by_line = ""
+        if len(self.contributors) > 0:
+            uploaded_by_line = (
+                f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+            )
+        if isinstance(self.data, ActionObject):
+            data_table_line = itables.to_html_datatable(
+                df=self.data.syft_action_data, css=itables_css
+            )
+        else:
+            data_table_line = self.data
         return (
             f"""
             <style>
@@ -103,10 +117,10 @@ class Asset(SyftObject):
             + f"<p>{self.description}</p>"
             + f"<p><strong>Asset ID: </strong>{self.id}</p>"
             + f"<p><strong>Action Object ID: </strong>{self.action_id}</p>"
-            + f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+            + uploaded_by_line
             + f"<p><strong>Created on: </strong>{self.created_at}</p>"
             + "<p><strong>Data:</strong></p>"
-            + itables.to_html_datatable(df=self.data.syft_action_data, css=itables_css)
+            + data_table_line
             + "<p><strong>Mock Data:</strong></p>"
             + itables.to_html_datatable(df=self.mock_data, css=itables_css)
             + "</div>"
@@ -323,6 +337,11 @@ class Dataset(SyftObject):
     __attr_repr_cols__ = ["name", "url"]
 
     def _repr_html_(self) -> Any:
+        uploaded_by_line = ""
+        if len(self.contributors) > 0:
+            uploaded_by_line = (
+                f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+            )
         return (
             f"""
             <style>
@@ -332,7 +351,7 @@ class Dataset(SyftObject):
             + "<div class='syft-dataset'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+            + uploaded_by_line
             + f"<p><strong>Created on: </strong>{self.created_at}</p>"
             + f'<p><strong>URL: </strong><a href="{self.url}">{self.url}</a></p>'
             + "<p><strong>Contributors: </strong> to see full details call dataset.contributors</p>"
