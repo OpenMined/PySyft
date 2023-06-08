@@ -537,6 +537,9 @@ class SyftAPI(SyftObject):
             self.generate_endpoints()
         return self.libs
 
+    def has_service(self, service_name: str) -> bool:
+        return hasattr(self.services, service_name)
+
     def __repr__(self) -> str:
         modules = self.services
         _repr_str = "client.api.services\n"

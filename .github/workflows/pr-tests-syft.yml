@@ -18,7 +18,7 @@ on:
 jobs:
   pr-tests-syft-unit:
     strategy:
-      max-parallel: 4
+      max-parallel: 99
       matrix:
         os: [windows, ubuntu-latest, macos-13]
         python-version: ["3.11"]
@@ -93,7 +93,7 @@ jobs:
 
   pr-tests-syft-notebook-python:
     strategy:
-      max-parallel: 4
+      max-parallel: 99
       matrix:
         os: [windows-latest, ubuntu-latest, macos-13]
         python-version: ["3.11"]

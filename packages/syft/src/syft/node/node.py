@@ -37,7 +37,6 @@ from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..external import OBLV
-from ..serde import serialize
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
@@ -621,7 +620,7 @@ class Node(AbstractNode):
             # Publisher system which pushes to a Queue
             worker_settings = WorkerSettings.from_node(node=self)
 
-            message_bytes = serialize._serialize(
+            message_bytes = _serialize(
                 [task_uid, api_call, worker_settings], to_bytes=True
             )
             self.queue_manager.send(message=message_bytes, queue_name="api_call")
