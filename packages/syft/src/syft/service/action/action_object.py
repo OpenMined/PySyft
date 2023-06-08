@@ -232,7 +232,7 @@ class PreHookContext(SyftBaseObject):
 
 
 def make_action_side_effect(
-    context: PreHookContext, *args: List[Any, ...], **kwargs: Dict[str, Any]
+    context: PreHookContext, *args: Any, **kwargs: Any
 ) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
     """Create a new action from context_op_name, and add it to the PreHookContext
 
@@ -1394,11 +1394,9 @@ def debug_original_func(name: str, func: Callable) -> None:
 
 
 def is_action_data_empty(obj: Any) -> bool:
-    if hasattr(obj, "syft_action_data"):
-        obj = obj.syft_action_data
-    if isinstance(obj, ActionDataEmpty):
-        return True
-    return False
+    return isinstance(obj, AnyActionObject) and isinstance(
+        obj.syft_action_data, ActionDataEmpty
+    )
 
 
 def has_action_data_empty(args: Any, kwargs: Any) -> bool:
