@@ -78,6 +78,8 @@ class Asset(SyftObject):
     mock_is_real: bool = False
     shape: Optional[Tuple]
 
+    __attr_repr_cols__ = ["name", "shape"]
+
     # @property
     # def pointer(self) -> ActionObjectPointer:
     #     api = APIRegistry.api_for(node_uid=self.node_uid)
