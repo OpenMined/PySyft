@@ -14,6 +14,7 @@ from typing import Union
 from typing import cast
 
 # third party
+import pydantic
 import requests
 from requests import Response
 from requests import Session
@@ -98,13 +99,9 @@ class HTTPConnection(NodeConnection):
     routes: Type[Routes] = Routes
     session_cache: Optional[Session]
 
-    def __init__(
-        self, url: Union[GridURL, str], proxy_target_uid: Optional[UID] = None
-    ) -> None:
-        url = GridURL.from_url(url).as_container_host()
-
-        proxy_target_uid = proxy_target_uid
-        super().__init__(url=url, proxy_target_uid=proxy_target_uid)
+    @pydantic.validator("url", pre=True, always=True)
+    def make_url(cls, v: Union[GridURL, str]) -> GridURL:
+        return GridURL.from_url(v).as_container_host()
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
@@ -191,7 +188,7 @@ class HTTPConnection(NodeConnection):
             obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
 
-    def login(self, email: str, password: str) -> SyftSigningKey:
+    def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
         credentials = {"email": email, "password": password}
         response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
@@ -361,7 +358,8 @@ class SyftClient:
 
     @property
     def api(self) -> SyftAPI:
-        if self._api is None:
+        # invalidate API
+        if self._api is None or (self._api.signing_key != self.credentials):
             self._fetch_api(self.credentials)
 
         return self._api
@@ -608,7 +606,11 @@ class SyftClient:
             return self._fetch_api(self.credentials)
 
         _api.refresh_api_callback = refresh_callback
-        APIRegistry.set_api_for(node_uid=self.id, api=_api)
+        APIRegistry.set_api_for(
+            node_uid=self.id,
+            user_verify_key=self.credentials.verify_key,
+            api=_api,
+        )
         self._api = _api
 
 

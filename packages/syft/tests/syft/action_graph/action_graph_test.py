@@ -138,8 +138,9 @@ def test_node_action_data_update() -> None:
     # only updated_at is not empty
     assert isinstance(node_action_data_update.updated_at, DateTime)
     assert len(node_action_data_update.to_dict(exclude_empty=True)) == 1
-    assert node_action_data_update.to_dict(exclude_empty=False) == vars(
-        node_action_data_update
+    assert (
+        node_action_data_update.to_dict(exclude_empty=False)
+        == node_action_data_update.dict()
     )
 
 

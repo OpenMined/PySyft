@@ -353,7 +353,7 @@ def check_for_project_request(
     """
     if (
         isinstance(project_event, ProjectRequest)
-        and project_event.request.node_uid == context.node.id
+        and project_event.linked_request.node_uid == context.node.id
     ):
         link = LinkedObject.with_context(project, context=context)
         message = CreateMessage(
