@@ -277,7 +277,7 @@ class Node(AbstractNode):
         if uuid.UUID(name_hash_string).version != 4:
             raise Exception(f"Invalid UID: {name_hash_string} for name: {name}")
         uid = UID(name_hash_string)
-        key = SyftSigningKey(SigningKey(name_hash))
+        key = SyftSigningKey(signing_key=SigningKey(name_hash))
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"

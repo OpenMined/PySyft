@@ -29,6 +29,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadata
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -98,10 +99,7 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __hash_exclude_attrs__ = [
-        "event_hash",
-        "signature",
-    ]
+    __hash_exclude_attrs__ = ["event_hash", "signature"]
 
     # 1. Creation attrs
     id: UID
@@ -288,8 +286,24 @@ class ProjectRequest(ProjectEventAddObject):
     __canonical_name__ = "ProjectRequest"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    request: Request
+    linked_request: LinkedObject
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
+
+    @validator("linked_request", pre=True)
+    def _validate_linked_request(cls, v):
+        if isinstance(v, Request):
+            linked_request = LinkedObject.from_obj(v, node_uid=v.node_uid)
+            return linked_request
+        elif isinstance(v, LinkedObject):
+            return v
+        else:
+            raise ValueError(
+                f"linked_request should be either Request or LinkedObject, got {type(v)}"
+            )
+
+    @property
+    def request(self):
+        return self.linked_request.resolve
 
     __attr_repr_cols__ = [
         "request.status",
@@ -945,7 +959,8 @@ class Project(SyftObject):
         self,
         request: Request,
     ):
-        request_event = ProjectRequest(request=request)
+        linked_request = LinkedObject.from_obj(request, node_uid=request.node_uid)
+        request_event = ProjectRequest(linked_request=linked_request)
         result = self.add_event(request_event)
 
         if isinstance(result, SyftSuccess):
@@ -1138,7 +1153,7 @@ class ProjectSubmit(SyftObject):
         if isinstance(submitted_req, SyftError):
             return submitted_req
 
-        request_event = ProjectRequest(request=submitted_req)
+        request_event = ProjectRequest(linked_request=submitted_req)
 
         self.bootstrap_events.append(request_event)
 

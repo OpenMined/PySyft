@@ -190,8 +190,9 @@ class UserPrivateKey(SyftObject):
 
     email: str
     signing_key: SyftSigningKey
+    role: ServiceRole
 
 
 @transform(User, UserPrivateKey)
 def user_to_user_verify() -> List[Callable]:
-    return [keep(["email", "signing_key", "id"])]
+    return [keep(["email", "signing_key", "id", "role"])]
