@@ -5,12 +5,16 @@ from enum import Enum
 import sys
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
+from pydantic import ValidationError
+from pydantic import root_validator
+from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
@@ -136,23 +140,21 @@ class Asset(SyftObject):
         return api.services.action.get(self.action_id)
 
 
-def is_action_data_empty(mock: Any) -> bool:
-    # relative
-    from ...service.action.action_data_empty import ActionDataEmpty
-    from ...service.action.action_object import AnyActionObject
+def _is_action_data_empty(obj: Any) -> bool:
+    # just a wrapper of action_object.is_action_data_empty
+    # to work around circular import error
 
-    if isinstance(mock, AnyActionObject) and isinstance(
-        mock.syft_action_data, ActionDataEmpty
-    ):
-        return True
-    return False
+    # relative
+    from ...service.action.action_object import is_action_data_empty
+
+    return is_action_data_empty(obj)
 
 
 def check_mock(data: Any, mock: Any) -> bool:
     if type(data) == type(mock):
         return True
 
-    return is_action_data_empty(mock)
+    return _is_action_data_empty(mock)
 
 
 @serializable()
@@ -172,6 +174,27 @@ class CreateAsset(SyftObject):
     mock: Optional[Any]
     shape: Optional[Tuple]
     mock_is_real: bool = False
+
+    class Config:
+        validate_assignment = True
+
+    @root_validator()
+    def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
+        """set mock_is_real to False whenever mock is None or empty"""
+
+        if (mock := values.get("mock")) is None or _is_action_data_empty(mock):
+            values["mock_is_real"] = False
+
+        return values
+
+    @validator("mock_is_real")
+    def __mock_is_real_for_empty_mock_must_be_false(
+        cls, v: bool, values: dict[str, Any], **kwargs: Any
+    ) -> bool:
+        if v and ((mock := values.get("mock")) is None or _is_action_data_empty(mock)):
+            raise ValueError("mock_is_real must be False if mock is not provided")
+
+        return v
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
@@ -198,11 +221,24 @@ class CreateAsset(SyftObject):
             raise SyftException(data)
         self.data = data
 
-    def set_mock(self, mock_data: Any, mock_is_real: bool) -> Any:
+    def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
         if isinstance(mock_data, SyftError):
             raise SyftException(mock_data)
+
+        current_mock = self.mock
         self.mock = mock_data
-        self.mock_is_real = mock_is_real
+
+        try:
+            self.mock_is_real = mock_is_real
+        except ValidationError as e:
+            self.mock = current_mock
+            raise e
+
+    def no_mock(self) -> None:
+        # relative
+        from ..action.action_object import ActionObject
+
+        self.mock = ActionObject.empty()
 
     def set_shape(self, shape: Tuple) -> None:
         self.shape = shape
@@ -212,7 +248,7 @@ class CreateAsset(SyftObject):
             return SyftError(
                 message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
             )
-        if not is_action_data_empty(self.mock):
+        if not _is_action_data_empty(self.mock):
             data_shape = get_shape_or_len(self.data)
             mock_shape = get_shape_or_len(self.mock)
             if data_shape != mock_shape:
@@ -322,6 +358,31 @@ class CreateDataset(Dataset):
 
     id: Optional[UID] = None
 
+    class Config:
+        validate_assignment = True
+
+    @validator("asset_list")
+    def __assets_must_contain_mock(
+        cls, asset_list: List[CreateAsset]
+    ) -> List[CreateAsset]:
+        assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
+        if assets_without_mock:
+            raise ValueError(
+                "".join(
+                    [
+                        "These assets do not contain a mock:\n",
+                        *[f"{asset}\n" for asset in assets_without_mock],
+                        "\n",
+                        "To be included in a Dataset, an asset must either contain a mock, ",
+                        "or have it explicitly set to be empty.\n",
+                        "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or "
+                        "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
+                        "`asset.mock = sy.ActionObject.empty()`.",
+                    ]
+                )
+            )
+        return asset_list
+
     def set_description(self, description: str) -> None:
         self.description = description
 
@@ -401,7 +462,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
 
 def infer_shape(context: TransformContext) -> TransformContext:
     if context.output["shape"] is None:
-        if not is_action_data_empty(context.obj.mock):
+        if not _is_action_data_empty(context.obj.mock):
             context.output["shape"] = get_shape_or_len(context.obj.mock)
     return context
 
