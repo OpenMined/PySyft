@@ -24,7 +24,6 @@ from .project import Project
 from .project import ProjectEvent
 from .project import ProjectRequest
 from .project import ProjectSubmit
-from .project_stash import OrderByNamePartitionKey
 from .project_stash import ProjectStash
 
 
@@ -268,7 +267,6 @@ class ProjectService(AbstractService):
     def get_all(self, context: AuthedServiceContext) -> Union[List[Project], SyftError]:
         result = self.stash.get_all(
             context.credentials,
-            order_by=OrderByNamePartitionKey,
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -282,6 +280,38 @@ class ProjectService(AbstractService):
             projects[idx] = result
 
         return projects
+
+    @service_method(
+        path="project.get_by_name",
+        name="get_by_name",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get_by_name(
+        self, context: AuthedServiceContext, name: str
+    ) -> Union[Project, SyftError]:
+        result = self.stash.get_by_name(context.credentials, project_name=name)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        elif result.ok():
+            project = result.ok()
+            return add_signing_key_to_project(context, project)
+        return SyftError(message=f'Project(name="{name}") does not exist')
+
+    @service_method(
+        path="project.get_by_uid",
+        name="get_by_uid",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get_by_uid(self, context: AuthedServiceContext, uid: UID):
+        result = self.stash.get_by_uid(
+            credentials=context.node.verify_key,
+            uid=uid,
+        )
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        elif result.ok():
+            return result.ok()
+        return SyftError(message=f'Project(id="{uid}") does not exist')
 
 
 def add_signing_key_to_project(
@@ -321,7 +351,7 @@ def check_for_project_request(
     """
     if (
         isinstance(project_event, ProjectRequest)
-        and project_event.request.node_uid == context.node.id
+        and project_event.linked_request.node_uid == context.node.id
     ):
         link = LinkedObject.with_context(project, context=context)
         message = CreateMessage(
