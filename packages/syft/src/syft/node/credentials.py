@@ -55,7 +55,7 @@ class SyftSigningKey(SyftBaseModel):
     signing_key: SigningKey
 
     @pydantic.validator("signing_key", pre=True, always=True)
-    def make_verify_key(cls, v: Union[str, SigningKey]) -> SigningKey:
+    def make_signing_key(cls, v: Union[str, SigningKey]) -> SigningKey:
         return SigningKey(bytes.fromhex(v)) if isinstance(v, str) else v
 
     @property
