@@ -12,19 +12,20 @@ from typing import Tuple
 from typing import Union
 
 # third party
+import itables
 from pydantic import ValidationError
 from pydantic import root_validator
 from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
-import itables
 
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syft_object import itables_css
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -37,7 +38,6 @@ from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftSuccess
-from ...types.syft_object import itables_css
 
 
 @serializable()
@@ -90,18 +90,18 @@ class Asset(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            f'<div class="syft-asset">'
-            + f'<h3>{self.name}</h3>'
-            + f'<p>{self.description}</p>'
-            + f'<p><strong>Asset ID: </strong>{self.id}</p>'
-            + f'<p><strong>Action Object ID: </strong>{self.action_id}</p>'
-            + f'<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>'
-            + f'<p><strong>Created on: </strong>TODO</p>'
-            + f'<p><strong>Data:</strong></p>'
+            '<div class="syft-asset">'
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + f"<p><strong>Asset ID: </strong>{self.id}</p>"
+            + f"<p><strong>Action Object ID: </strong>{self.action_id}</p>"
+            + f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+            + "<p><strong>Created on: </strong>TODO</p>"
+            + "<p><strong>Data:</strong></p>"
             + itables.to_html_datatable(df=self.data.syft_action_data, css=itables_css)
-            + f'<p><strong>Mock Data:</strong></p>'
+            + "<p><strong>Mock Data:</strong></p>"
             + itables.to_html_datatable(df=self.mock_data, css=itables_css)
-            + f'</div>'
+            + "</div>"
         )
 
     def _repr_markdown_(self) -> str:
@@ -314,15 +314,15 @@ class Dataset(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            f'<div class="syft-dataset">'
-            + f'<h3>{self.name}</h3>'
-            + f'<p>{self.description}</p>'
-            + f'<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>'
-            + f'<p><strong>Created on: </strong>TODO</p>'
-            + f'<p><strong>URL: </strong>{self.url}</p>'
-            + f'<p><strong>Contributors: </strong> to see full details call dataset[].contributors</p>'
+            '<div class="syft-dataset">'
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+            + "<p><strong>Created on: </strong>TODO</p>"
+            + f"<p><strong>URL: </strong>{self.url}</p>"
+            + "<p><strong>Contributors: </strong> to see full details call dataset[].contributors</p>"
             + self.asset_list._repr_html_()
-            + f'</div>'
+            + "</div>"
         )
 
     def action_ids(self) -> List[UID]:

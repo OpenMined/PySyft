@@ -78,6 +78,7 @@ itables_css = f"""
 .itables table th {{color: {SURFACE_SURFACE};}}
 """
 
+
 class SyftHashableObject:
     __hash_exclude_attrs__ = []
 
@@ -605,7 +606,7 @@ def list_dict_repr_html(self) -> str:
                 </div>
                 <br>
                 """
-            
+
             html_datatable = itables.to_html_datatable(df=df, css=itables_css)
 
             return html_header + html_datatable
