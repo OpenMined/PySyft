@@ -1,12 +1,8 @@
 # stdlib
-import re
 
 # third party
-import pandas as pd
 
 # syft absolute
-from syft.types.syft_object import SyftObject
-
 
 # def test_list_repr_html():
 #     obj = SyftObject()
