@@ -412,7 +412,7 @@ class SyftAPI(SyftObject):
             lib_endpoints[path] = endpoint
 
         # 🟡 TODO 35: fix root context
-        context = AuthedServiceContext(credentials=user_verify_key)
+        context = AuthedServiceContext(node=node, credentials=user_verify_key)
         method = node.get_method_with_context(UserCodeService.get_all_for_user, context)
         code_items = method()
 
