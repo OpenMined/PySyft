@@ -84,6 +84,19 @@ class Asset(SyftObject):
     #     obj_ptr = api.services.action.get_pointer(uid=self.action_id)
     #     return obj_ptr
 
+    def _repr_html_(self) -> Any:
+        return (
+            f'<div class="syft-asset">'
+            + f'<h3>{self.name}</h3>'
+            + f'<p>{self.description}</p>'
+            + f'<p><strong>Asset ID: </strong>{self.id}</p>'
+            + f'<p><strong>Action Object ID: </strong>{self.action_id}</p>'
+            + f'<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>'
+            + f'<p><strong>Created on: </strong>TODO</p>'
+            + self.data._repr_html_()
+            + f'</div>'
+        )
+
     def _repr_markdown_(self) -> str:
         _repr_str = f"Asset: {self.name}\n"
         _repr_str += f"Pointer Id: {self.action_id}\n"
