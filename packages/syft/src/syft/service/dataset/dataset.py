@@ -23,9 +23,11 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
+from ...types.datetime import DateTime
+from ...types.syft_object import SURFACE_DARK_BRIGHT
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.syft_object import itables_css, SURFACE_DARK_BRIGHT
+from ...types.syft_object import itables_css
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -79,6 +81,7 @@ class Asset(SyftObject):
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
     shape: Optional[Tuple]
+    created_at: DateTime
 
     __attr_repr_cols__ = ["name", "shape"]
 
@@ -90,18 +93,18 @@ class Asset(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            f'''
+            f"""
             <style>
             .syft-asset {{color: {SURFACE_DARK_BRIGHT};}}
             </style>
-            '''
-            +'<div class="syft-asset">'
+            """
+            + '<div class="syft-asset">'
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
             + f"<p><strong>Asset ID: </strong>{self.id}</p>"
             + f"<p><strong>Action Object ID: </strong>{self.action_id}</p>"
             + f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
-            + "<p><strong>Created on: </strong>TODO</p>"
+            + f"<p><strong>Created on: </strong>{self.created_at}</p>"
             + "<p><strong>Data:</strong></p>"
             + itables.to_html_datatable(df=self.data.syft_action_data, css=itables_css)
             + "<p><strong>Mock Data:</strong></p>"
@@ -199,6 +202,7 @@ class CreateAsset(SyftObject):
     mock: Optional[Any]
     shape: Optional[Tuple]
     mock_is_real: bool = False
+    created_at: Optional[DateTime]
 
     class Config:
         validate_assignment = True
@@ -312,6 +316,7 @@ class Dataset(SyftObject):
     updated_at: Optional[str]
     requests: Optional[int] = 0
     mb_size: Optional[int]
+    created_at: DateTime
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
@@ -319,17 +324,17 @@ class Dataset(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            f'''
+            f"""
             <style>
             .syft-dataset {{color: {SURFACE_DARK_BRIGHT};}}
             </style>
-            '''
+            """
             + "<div class='syft-dataset'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
             + f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
-            + "<p><strong>Created on: </strong>TODO</p>"
-            + f"<p><strong>URL: </strong><a href=\"{self.url}\">{self.url}</a></p>"
+            + f"<p><strong>Created on: </strong>{self.created_at}</p>"
+            + f'<p><strong>URL: </strong><a href="{self.url}">{self.url}</a></p>'
             + "<p><strong>Contributors: </strong> to see full details call dataset.contributors</p>"
             + self.asset_list._repr_html_()
             + "</div>"
@@ -400,6 +405,7 @@ class CreateDataset(Dataset):
     asset_list: List[CreateAsset] = []
 
     id: Optional[UID] = None
+    created_at: Optional[DateTime]
 
     class Config:
         validate_assignment = True
@@ -524,9 +530,20 @@ def set_data_subjects(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_msg_creation_time(context: TransformContext) -> TransformContext:
+    context.output["created_at"] = DateTime.now()
+    return context
+
+
 @transform(CreateAsset, Asset)
 def createasset_to_asset() -> List[Callable]:
-    return [generate_id, infer_shape, create_and_store_twin, set_data_subjects]
+    return [
+        generate_id,
+        add_msg_creation_time,
+        infer_shape,
+        create_and_store_twin,
+        set_data_subjects,
+    ]
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
@@ -550,7 +567,13 @@ def add_current_date(context: TransformContext) -> TransformContext:
 
 @transform(CreateDataset, Dataset)
 def createdataset_to_dataset() -> List[Callable]:
-    return [generate_id, validate_url, convert_asset, add_current_date]
+    return [
+        generate_id,
+        add_msg_creation_time,
+        validate_url,
+        convert_asset,
+        add_current_date,
+    ]
 
 
 class DatasetUpdate:
