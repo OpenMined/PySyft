@@ -1273,6 +1273,10 @@ def create_launch_cmd(
         and parsed_kwargs["tag"] not in ["local", "latest", "0.7.0"]
     ):
         template = parsed_kwargs["tag"]
+        # 🟡 TODO: Revert to use tags once, we have tag branches with beta
+        # versions also.
+        if "b" in template:
+            template = "dev"
         # if template == "beta":
         #     template = "dev"
         parsed_kwargs["template"] = template
@@ -1283,6 +1287,7 @@ def create_launch_cmd(
             host_type=host,
             template_location=parsed_kwargs["template"],
             overwrite=parsed_kwargs["template_overwrite"],
+            verbose=kwargs["verbose"],
         )
 
         parsed_kwargs.update(kwargs)
