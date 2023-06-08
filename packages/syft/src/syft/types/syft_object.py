@@ -64,6 +64,19 @@ DYNAMIC_SYFT_ATTRIBUTES = [
     "syft_client_verify_key",
 ]
 
+SURFACE_DARK_BRIGHT = "#464158"
+SURFACE_SURFACE = "#2E2B3B"
+DK_ON_SURFACE_HIGHEST = "#534F64"
+
+# This can be customize however we want
+itables_css = f"""
+.itables table {{
+    margin: 0 auto;
+    float: left;
+    color: {DK_ON_SURFACE_HIGHEST};
+}}
+.itables table th {{color: {SURFACE_SURFACE};}}
+"""
 
 class SyftHashableObject:
     __hash_exclude_attrs__ = []
@@ -583,36 +596,17 @@ def list_dict_repr_html(self) -> str:
             else:
                 cls_name = ""
 
-            # print(f"{self.__class__.__name__}")
-            # from figma
-            # e.g. search bar
-            # e.g. titles
-            Surface_Dark_Bright = "#464158"
-            # e.g. table column header
-            Surface_Surface = "#2E2B3B"
-            # e.g. tables text
-            DK_On_Surface_Highest = "#534F64"
-
             html_header = f"""
-            <style>
-            .collection-header {{color: {Surface_Dark_Bright};}}
-            </style>
-            <div class='collection-header'>
-              <h1>{cls_name} {self.__class__.__name__.capitalize()}</h1>
-            </div>
-            <br>
-            """
-
-            # This can be customize however we want
-            css = f"""
-            .itables table {{
-                margin: 0 auto;
-                float: left;
-                color: {DK_On_Surface_Highest};
-            }}
-            .itables table th {{color: {Surface_Surface};}}
-            """
-            html_datatable = itables.to_html_datatable(df=df, css=css)
+                <style>
+                .collection-header {{color: {SURFACE_DARK_BRIGHT};}}
+                </style>
+                <div class='collection-header'>
+                    <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
+                </div>
+                <br>
+                """
+            
+            html_datatable = itables.to_html_datatable(df=df, css=itables_css)
 
             return html_header + html_datatable
             # return collection_type + df_styled._repr_html_()
