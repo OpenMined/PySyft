@@ -25,7 +25,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.syft_object import itables_css
+from ...types.syft_object import itables_css, SURFACE_DARK_BRIGHT
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -90,7 +90,12 @@ class Asset(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            '<div class="syft-asset">'
+            f'''
+            <style>
+            .syft-asset {{color: {SURFACE_DARK_BRIGHT};}}
+            </style>
+            '''
+            +'<div class="syft-asset">'
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
             + f"<p><strong>Asset ID: </strong>{self.id}</p>"
@@ -314,13 +319,18 @@ class Dataset(SyftObject):
 
     def _repr_html_(self) -> Any:
         return (
-            '<div class="syft-dataset">'
+            f'''
+            <style>
+            .syft-dataset {{color: {SURFACE_DARK_BRIGHT};}}
+            </style>
+            '''
+            + "<div class='syft-dataset'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
             + f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
             + "<p><strong>Created on: </strong>TODO</p>"
-            + f"<p><strong>URL: </strong>{self.url}</p>"
-            + "<p><strong>Contributors: </strong> to see full details call dataset[].contributors</p>"
+            + f"<p><strong>URL: </strong><a href=\"{self.url}\">{self.url}</a></p>"
+            + "<p><strong>Contributors: </strong> to see full details call dataset.contributors</p>"
             + self.asset_list._repr_html_()
             + "</div>"
         )
