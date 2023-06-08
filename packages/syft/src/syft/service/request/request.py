@@ -31,6 +31,7 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ...util.markdown import markdown_as_class_with_fields
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
@@ -454,6 +455,30 @@ class UserCodeStatusChange(Change):
     value: UserCodeStatus
     linked_obj: LinkedObject
     match_type: bool = True
+    __attr_repr_cols__ = [
+        "link.service_func_name",
+        "link.input_policy",
+        "link.output_policy",
+    ]
+
+    def _repr_markdown_(self) -> str:
+        link = self.link
+        input_policy = (
+            link.input_policy._repr_markdown_(wrap_as_python=False, indent=1)
+            if link.input_policy is not None
+            else None
+        )
+        output_policy = (
+            link.input_policy._repr_markdown_(wrap_as_python=False, indent=1)
+            if link.output_policy is not None
+            else None
+        )
+        repr_dict = {
+            "function": link.service_func_name,
+            "input_policy": f"\n{input_policy}",
+            "output_policy": f"\n{output_policy}",
+        }
+        return markdown_as_class_with_fields(self, repr_dict)
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:

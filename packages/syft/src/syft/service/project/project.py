@@ -36,6 +36,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util.markdown import markdown_as_class_with_fields
 from ..code.user_code import SubmitUserCode
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
@@ -289,6 +290,21 @@ class ProjectRequest(ProjectEventAddObject):
 
     request: Request
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
+
+    __attr_repr_cols__ = [
+        "request.status",
+        "request.changes[-1].link.service_func_name",
+    ]
+
+    def _repr_markdown_(self) -> str:
+        func_name = None
+        if len(self.request.changes) > 0:
+            func_name = self.request.changes[-1].link.service_func_name
+        repr_dict = {
+            "request.status": self.request.status,
+            "request.changes[-1].link.service_func_name": func_name,
+        }
+        return markdown_as_class_with_fields(self, repr_dict)
 
     def approve(self) -> ProjectRequestResponse:
         result = self.request.approve()
