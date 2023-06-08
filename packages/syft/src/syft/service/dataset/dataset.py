@@ -81,7 +81,7 @@ class Asset(SyftObject):
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
     shape: Optional[Tuple]
-    created_at: DateTime
+    created_at: DateTime = DateTime.now()
 
     __attr_repr_cols__ = ["name", "shape"]
 
@@ -330,7 +330,7 @@ class Dataset(SyftObject):
     updated_at: Optional[str]
     requests: Optional[int] = 0
     mb_size: Optional[int]
-    created_at: DateTime
+    created_at: DateTime = DateTime.now()
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
