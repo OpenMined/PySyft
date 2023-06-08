@@ -34,9 +34,8 @@ class ProjectService(AbstractService):
     store: DocumentStore
     stash: ProjectStash
 
-    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.node_uid = node_uid
         self.stash = ProjectStash(store=store)
 
     @service_method(

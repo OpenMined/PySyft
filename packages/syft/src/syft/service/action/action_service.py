@@ -42,9 +42,8 @@ from .pandas import PandasSeriesObject  # noqa: F401
 
 @serializable()
 class ActionService(AbstractService):
-    def __init__(self, store: ActionStore, node_uid: UID) -> None:
+    def __init__(self, store: ActionStore) -> None:
         self.store = store
-        self.node_uid = node_uid
 
     @service_method(path="action.np_array", name="np_array")
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:

@@ -415,7 +415,7 @@ class Node(AbstractNode):
         self.service_path_map = {}
 
         for service_klass in self.services:
-            kwargs = {"node_uid": self.id}
+            kwargs = {}
             if service_klass == ActionService:
                 kwargs["store"] = self.action_store
             store_services = [

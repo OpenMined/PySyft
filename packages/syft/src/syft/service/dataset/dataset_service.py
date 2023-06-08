@@ -31,9 +31,8 @@ class DatasetService(AbstractService):
     store: DocumentStore
     stash: DatasetStash
 
-    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.node_uid = node_uid
         self.stash = DatasetStash(store=store)
 
     @service_method(path="dataset.add", name="add", roles=DATA_OWNER_ROLE_LEVEL)

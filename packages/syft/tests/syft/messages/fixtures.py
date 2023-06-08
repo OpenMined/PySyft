@@ -28,8 +28,8 @@ def message_stash(document_store):
 
 
 @pytest.fixture(autouse=True)
-def message_service(document_store, worker):
-    return MessageService(store=document_store, node_uid=worker.id)
+def message_service(document_store):
+    return MessageService(store=document_store)
 
 
 @pytest.fixture(autouse=True)

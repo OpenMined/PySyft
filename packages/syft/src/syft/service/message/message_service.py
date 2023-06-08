@@ -30,9 +30,8 @@ class MessageService(AbstractService):
     store: DocumentStore
     stash: MessageStash
 
-    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.node_uid = node_uid
         self.stash = MessageStash(store=store)
 
     @service_method(path="messages.send", name="send")

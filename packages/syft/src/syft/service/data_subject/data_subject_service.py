@@ -13,7 +13,6 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -61,9 +60,8 @@ class DataSubjectService(AbstractService):
     store: DocumentStore
     stash: DataSubjectStash
 
-    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.node_uid = node_uid
         self.stash = DataSubjectStash(store=store)
 
     @service_method(path="data_subject.add", name="add_data_subject")

@@ -33,9 +33,8 @@ ExecutionStatusPartitionKey = PartitionKey(key="status", type_=ExecutionStatus)
 class ActionGraphService(AbstractService):
     store: ActionGraphStore
 
-    def __init__(self, store: ActionGraphStore, node_uid: UID):
+    def __init__(self, store: ActionGraphStore):
         self.store = store
-        self.node_uid = node_uid
 
     @service_method(path="graph.add_action", name="add_action")
     def add_action(

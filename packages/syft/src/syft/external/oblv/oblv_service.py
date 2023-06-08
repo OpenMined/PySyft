@@ -271,10 +271,9 @@ class OblvService(AbstractService):
     store: DocumentStore
     oblv_keys_stash: OblvKeysStash
 
-    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.oblv_keys_stash = OblvKeysStash(store=store)
-        self.node_uid = node_uid
 
     @service_method(path="oblv.create_key", name="create_key", roles=GUEST_ROLE_LEVEL)
     def create_key(

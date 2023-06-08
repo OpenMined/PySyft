@@ -336,7 +336,7 @@ def service_method(
             context = kwargs.get("context", None)
             context = args[0] if context is None else context
             attrs_to_attach = {
-                "syft_node_location": self.node_uid,
+                "syft_node_location": context.node.id,
                 "syft_client_verify_key": context.credentials,
             }
             return attach_attribute_to_syft_object(

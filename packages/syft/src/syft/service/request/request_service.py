@@ -41,9 +41,8 @@ class RequestService(AbstractService):
     store: DocumentStore
     stash: RequestStash
 
-    def __init__(self, store: DocumentStore, node_uid: UID) -> None:
+    def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.node_uid = node_uid
         self.stash = RequestStash(store=store)
 
     @service_method(path="request.submit", name="submit", roles=GUEST_ROLE_LEVEL)

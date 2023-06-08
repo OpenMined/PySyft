@@ -5,7 +5,6 @@ import pytest
 # syft absolute
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
-from syft.node.worker import Worker
 from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
 from syft.service.action.action_graph import NetworkXBackingStore
@@ -129,6 +128,6 @@ def simple_in_memory_action_graph(
 
 @pytest.fixture
 def in_mem_action_graph_service(
-    in_mem_graph_store: InMemoryActionGraphStore, worker: Worker
+    in_mem_graph_store: InMemoryActionGraphStore,
 ) -> ActionGraphService:
-    return ActionGraphService(store=in_mem_graph_store, node_uid=worker.id)
+    return ActionGraphService(store=in_mem_graph_store)
