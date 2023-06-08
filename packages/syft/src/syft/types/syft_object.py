@@ -495,6 +495,9 @@ def list_dict_repr_html(self) -> str:
         else:
             values = self
 
+        if len(values) == 0:
+            return self.__repr__()
+
         is_homogenous = len(set([type(x) for x in values])) == 1
         for item in iter(self):
             items_checked += 1
@@ -541,11 +544,9 @@ def list_dict_repr_html(self) -> str:
                         t = item.__class__.__name__
                     except Exception:
                         t = item.__repr__()
+                cols["id"].append(id_)
                 if not is_homogenous:
                     cols["type"].append(t)
-                    cols["id"].append(id_)
-                else:
-                    cols[f"{t}  -  id"].append(id_)
 
                 for field in extra_fields:
                     value = item
@@ -570,22 +571,44 @@ def list_dict_repr_html(self) -> str:
                     cols[field].append(value)
 
             df = pd.DataFrame(cols)
-            df_styled = df.style.set_properties(**{"text-align": "left"})
-            df_styled = df_styled.set_table_styles(
-                [dict(selector="th", props=[("text-align", "left")])]
-            )
 
-            collection_type = (
-                f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
-            )
+            if is_homogenous:
+                cls_name = values[0].__class__.__name__
+            else:
+                cls_name = ""
+
+            # print(f"{self.__class__.__name__}")
+            # from figma
+            # e.g. search bar
+            # e.g. titles
+            Surface_Dark_Bright = "#464158"
+            # e.g. table column header
+            Surface_Surface = "#2E2B3B"
+            # e.g. tables text
+            DK_On_Surface_Highest = "#534F64"
+
+            html_header = f"""
+            <style>
+            .collection-header {{color: {Surface_Dark_Bright};}}
+            </style>
+            <div class='collection-header'>
+              <h1>{cls_name} {self.__class__.__name__.capitalize()}</h1>
+            </div>
+            <br>
+            """
 
             # This can be customize however we want
-            css = """
-            .itables table { margin: 0 auto; float: left; }
+            css = f"""
+            .itables table {{
+                margin: 0 auto;
+                float: left;
+                color: {DK_On_Surface_Highest};
+            }}
+            .itables table th {{color: {Surface_Surface};}}
             """
-            html_datatable = itables.to_html_datatable(df=df_styled, css=css)
+            html_datatable = itables.to_html_datatable(df=df, css=css)
 
-            return collection_type + html_datatable
+            return html_header + html_datatable
             # return collection_type + df_styled._repr_html_()
     except Exception as e:
         print(e)
