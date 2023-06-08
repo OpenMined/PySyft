@@ -151,7 +151,13 @@ class Request(SyftObject):
         "approving_user_verify_key",
     ]
     __attr_unique__ = ["request_hash"]
-    __attr_repr_cols__ = ["request_time", "status", "changes"]
+    __attr_repr_cols__ = [
+        "request_time",
+        "approval_time",
+        "status",
+        "changes",
+        "requesting_user_verify_key",
+    ]
 
     @property
     def status(self) -> RequestStatus:
@@ -219,7 +225,7 @@ class Request(SyftObject):
                 return result
         return Ok(SyftSuccess(message=f"Request {self.id} changes reverted"))
 
-    def accept_by_depositing_result(self, result: Any):
+    def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
         change = self.changes[0]
@@ -238,11 +244,7 @@ class Request(SyftObject):
         if not api:
             raise Exception(f"Login to {self.node_uid} first.")
 
-        action_object = ActionObject.from_obj(result)
-
-        result = api.services.action.save(action_object)
-        if not result:
-            return result
+        is_approved = change.approved
 
         permission_request = self.approve()
         if not permission_request:
@@ -250,36 +252,58 @@ class Request(SyftObject):
 
         code = change.linked_obj.resolve
         state = code.output_policy
-        ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
-        state.apply_output(context=ctx, outputs=action_object)
-        policy_state_mutation = ObjectMutation(
-            linked_obj=change.linked_obj,
-            attr_name="output_policy",
-            match_type=True,
-            value=state,
-        )
+        # This weird order is due to the fact that state is None before calling approve
+        # we could fix it in a future release
+        if is_approved:
+            if not force:
+                return SyftError(
+                    message="Already approved, if you want to force updating the result use force=True"
+                )
+            action_obj_id = state.output_history[0].outputs[0]
+            action_object = ActionObject.from_obj(result, id=action_obj_id)
+            result = api.services.action.save(action_object)
+            if not result:
+                return result
+            return SyftSuccess(message="Request submitted for updating result.")
+        else:
+            action_object = ActionObject.from_obj(result)
+            result = api.services.action.save(action_object)
+            if not result:
+                return result
+            ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
-        action_object_link = LinkedObject.from_obj(
-            action_object, node_uid=self.node_uid
-        )
-        permission_change = ActionStoreChange(
-            linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
-        )
+            state.apply_output(context=ctx, outputs=action_object)
+            policy_state_mutation = ObjectMutation(
+                linked_obj=change.linked_obj,
+                attr_name="output_policy",
+                match_type=True,
+                value=state,
+            )
 
-        submit_request = SubmitRequest(
-            changes=[policy_state_mutation, permission_change],
-            requesting_user_verify_key=self.requesting_user_verify_key,
-        )
+            action_object_link = LinkedObject.from_obj(
+                action_object, node_uid=self.node_uid
+            )
+            permission_change = ActionStoreChange(
+                linked_obj=action_object_link,
+                apply_permission_type=ActionPermission.READ,
+            )
 
-        new_request = api.services.request.submit(submit_request)
-        if not new_request:
-            return new_request
-        new_request_result = api.services.request.apply(new_request.id)
-        if not new_request_result:
-            return new_request_result
-        result = api.services.request.apply(self.id)
-        return result
+            submit_request = SubmitRequest(
+                changes=[policy_state_mutation, permission_change],
+                requesting_user_verify_key=self.requesting_user_verify_key,
+            )
+
+            self.approve()
+
+            new_request = api.services.request.submit(submit_request)
+            if not new_request:
+                return new_request
+            new_request_result = api.services.request.apply(new_request.id)
+            if not new_request_result:
+                return new_request_result
+            result = api.services.request.apply(self.id)
+            return result
 
 
 @serializable()
@@ -510,6 +534,10 @@ class UserCodeStatusChange(Change):
             "output_policy": f"\n{output_policy}",
         }
         return markdown_as_class_with_fields(self, repr_dict)
+
+    @property
+    def approved(self) -> bool:
+        return self.linked_obj.resolve.status.approved
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
