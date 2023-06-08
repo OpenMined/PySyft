@@ -29,6 +29,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.metadata.node_metadata import NodeMetadata
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -98,10 +99,7 @@ class ProjectEvent(SyftObject):
     __canonical_name__ = "ProjectEvent"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __hash_exclude_attrs__ = [
-        "event_hash",
-        "signature",
-    ]
+    __hash_exclude_attrs__ = ["event_hash", "signature"]
 
     # 1. Creation attrs
     id: UID
@@ -288,8 +286,24 @@ class ProjectRequest(ProjectEventAddObject):
     __canonical_name__ = "ProjectRequest"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    request: Request
+    linked_request: LinkedObject
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
+
+    @validator("linked_request", pre=True)
+    def _validate_linked_request(cls, v):
+        if isinstance(v, Request):
+            linked_request = LinkedObject.from_obj(v, node_uid=v.node_uid)
+            return linked_request
+        elif isinstance(v, LinkedObject):
+            return v
+        else:
+            raise ValueError(
+                f"linked_request should be either Request or LinkedObject, got {type(v)}"
+            )
+
+    @property
+    def request(self):
+        return self.linked_request.resolve
 
     __attr_repr_cols__ = [
         "request.status",
@@ -610,6 +624,35 @@ class DemocraticConsensusModel(ConsensusModel):
         return hash(self.threshold)
 
 
+def add_code_request_to_project(
+    project: Union[ProjectSubmit, Project],
+    code: SubmitUserCode,
+    client: SyftClient,
+):
+    if not isinstance(code, SubmitUserCode):
+        return SyftError(
+            message=f"Currently we are  only support creating requests for SubmitUserCode: {type(code)}"
+        )
+
+    if not isinstance(client, SyftClient):
+        return SyftError(message="Client should be a valid SyftClient")
+
+    submitted_req = client.api.services.code.request_code_execution(code)
+    if isinstance(submitted_req, SyftError):
+        return submitted_req
+
+    request_event = ProjectRequest(linked_request=submitted_req)
+
+    if isinstance(project, ProjectSubmit):
+        project.bootstrap_events.append(request_event)
+    else:
+        result = project.add_event(request_event)
+        if isinstance(result, SyftError):
+            return result
+
+    return SyftSuccess(message="Request added successfully")
+
+
 @serializable()
 class Project(SyftObject):
     __canonical_name__ = "Project"
@@ -634,6 +677,8 @@ class Project(SyftObject):
     users: List[UserIdentity] = []
 
     __attr_repr_cols__ = ["name", "shareholders", "state_sync_leader"]
+    __attr_unique__ = ["name"]
+
     __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
 
     def _broadcast_event(
@@ -834,6 +879,13 @@ class Project(SyftObject):
                 results.append(event)
         return results
 
+    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+        return add_code_request_to_project(
+            project=self,
+            code=obj,
+            client=client,
+        )
+
     def get_messages(self) -> List[Union[ProjectMessage, ProjectThreadMessage]]:
         messages = []
         for event in self.events:
@@ -945,7 +997,8 @@ class Project(SyftObject):
         self,
         request: Request,
     ):
-        request_event = ProjectRequest(request=request)
+        linked_request = LinkedObject.from_obj(request, node_uid=request.node_uid)
+        request_event = ProjectRequest(linked_request=linked_request)
         result = self.add_event(request_event)
 
         if isinstance(result, SyftSuccess):
@@ -1020,12 +1073,16 @@ class Project(SyftObject):
         return SyftSuccess(message="Synced project  with Leader")
 
 
-@serializable(without="bootstrap_events")
+@serializable(without=["bootstrap_events"])
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_repr_cols__ = ["name"]
 
+    # stash rules
+    __attr_repr_cols__ = ["name"]
+    __attr_unique__ = ["name"]
+
+    # init args
     id: Optional[UID]
     name: str
     description: Optional[str]
@@ -1126,23 +1183,11 @@ class ProjectSubmit(SyftObject):
         return SyftSuccess(message="Successfully Exchaged Routes")
 
     def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
-        if not isinstance(obj, SubmitUserCode):
-            return SyftError(
-                message=f"Currently we are  only support creating requests for SbumitUserCode: {type(obj)}"
-            )
-
-        if not isinstance(client, SyftClient):
-            return SyftError(message="Client should be a valid SyftClient")
-
-        submitted_req = client.api.services.code.request_code_execution(obj)
-        if isinstance(submitted_req, SyftError):
-            return submitted_req
-
-        request_event = ProjectRequest(request=submitted_req)
-
-        self.bootstrap_events.append(request_event)
-
-        return SyftSuccess(message="Request added successfully")
+        return add_code_request_to_project(
+            project=self,
+            code=obj,
+            client=client,
+        )
 
     def start(self) -> Project:
         # Creating a new unique UID to be used by all shareholders
