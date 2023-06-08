@@ -641,7 +641,7 @@ def add_code_request_to_project(
     if isinstance(submitted_req, SyftError):
         return submitted_req
 
-    request_event = ProjectRequest(request=submitted_req)
+    request_event = ProjectRequest(linked_request=submitted_req)
 
     if isinstance(project, ProjectSubmit):
         project.bootstrap_events.append(request_event)
