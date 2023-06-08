@@ -289,6 +289,18 @@ class ProjectRequest(ProjectEventAddObject):
     linked_request: LinkedObject
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
 
+    @validator("linked_request", pre=True)
+    def _validate_linked_request(cls, v):
+        if isinstance(v, Request):
+            linked_request = LinkedObject.from_obj(v, node_uid=v.node_uid)
+            return linked_request
+        elif isinstance(v, LinkedObject):
+            return v
+        else:
+            raise ValueError(
+                f"linked_request should be either Request or LinkedObject, got {type(v)}"
+            )
+
     @property
     def request(self):
         return self.linked_request.resolve
@@ -1141,7 +1153,7 @@ class ProjectSubmit(SyftObject):
         if isinstance(submitted_req, SyftError):
             return submitted_req
 
-        request_event = ProjectRequest(request=submitted_req)
+        request_event = ProjectRequest(linked_request=submitted_req)
 
         self.bootstrap_events.append(request_event)
 
