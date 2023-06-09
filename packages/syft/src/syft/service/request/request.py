@@ -606,3 +606,9 @@ class UserCodeStatusChange(Change):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+    @property
+    def code(self) -> Optional[str]:
+        if self.linked_obj and hasattr(self.link, "code"):
+            return self.link.code
+        return None

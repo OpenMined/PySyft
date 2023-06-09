@@ -79,6 +79,12 @@ class Message(SyftObject):
         )
         return api.services.messages.mark_as_unread(uid=self.id)
 
+    @property
+    def changes(self) -> Optional[List]:
+        if self.linked_obj and hasattr(self.link, "changes"):
+            return self.link.changes
+        return None
+
 
 @serializable()
 class CreateMessage(Message):
