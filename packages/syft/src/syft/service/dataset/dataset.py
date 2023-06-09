@@ -416,6 +416,17 @@ class Dataset(SyftObject):
         return client
 
 
+_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
+    [
+        "To be included in a Dataset, an asset must either contain a mock, ",
+        "or have it explicitly set to be empty.\n",
+        "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or\n"
+        "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
+        "`asset.mock = sy.ActionObject.empty()`.",
+    ]
+)
+
+
 @serializable()
 class CreateDataset(Dataset):
     # version
@@ -441,11 +452,7 @@ class CreateDataset(Dataset):
                         "These assets do not contain a mock:\n",
                         *[f"{asset}\n" for asset in assets_without_mock],
                         "\n",
-                        "To be included in a Dataset, an asset must either contain a mock, ",
-                        "or have it explicitly set to be empty.\n",
-                        "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or "
-                        "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
-                        "`asset.mock = sy.ActionObject.empty()`.",
+                        _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE,
                     ]
                 )
             )
@@ -475,6 +482,9 @@ class CreateDataset(Dataset):
         self.contributors.append(contributor)
 
     def add_asset(self, asset: CreateAsset) -> None:
+        if asset.mock is None:
+            raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
+
         self.asset_list.append(asset)
 
     def remove_asset(self, name: str) -> None:
