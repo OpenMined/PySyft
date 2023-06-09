@@ -678,7 +678,6 @@ class Project(SyftObject):
 
     __attr_repr_cols__ = ["name", "description", "user_email_address", "events"]
     __attr_unique__ = ["name"]
-
     __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
 
     def _broadcast_event(

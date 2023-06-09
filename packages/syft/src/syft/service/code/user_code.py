@@ -106,6 +106,12 @@ class UserCodeStatusContext(SyftHashableObject):
     def __repr__(self):
         return str(self.base_dict)
 
+    def __repr_syft_nested__(self):
+        string = ''
+        for node_view, status in self.base_dict.items():
+            string += f"{node_view.node_name}: {status}<br>"
+        return string
+
     @property
     def approved(self) -> bool:
         # approved for this node only

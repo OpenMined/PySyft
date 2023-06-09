@@ -585,9 +585,14 @@ def list_dict_repr_html(self) -> str:
                             value = getattr(value, attr, None)
                             if isinstance(value, list) and has_index:
                                 value = value[index]
+                                
+                            # If the object has a special representation when nested we will use that instead
+                            if hasattr(value, '__repr_syft_nested__'):
+                                value = value.__repr_syft_nested__()
                     except Exception as e:
                         print(e)
                         value = None
+                    
                     cols[field].append(value)
 
             df = pd.DataFrame(cols)
