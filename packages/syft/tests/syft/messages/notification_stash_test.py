@@ -6,14 +6,16 @@ from result import Err
 # syft absolute
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
-from syft.service.message.message_stash import FromUserVerifyKeyPartitionKey
-from syft.service.message.message_stash import MessageStash
-from syft.service.message.message_stash import OrderByCreatedAtTimeStampPartitionKey
-from syft.service.message.message_stash import StatusPartitionKey
-from syft.service.message.message_stash import ToUserVerifyKeyPartitionKey
-from syft.service.message.messages import Message
-from syft.service.message.messages import MessageExpiryStatus
-from syft.service.message.messages import MessageStatus
+from syft.service.notification.notification_stash import (
+    OrderByCreatedAtTimeStampPartitionKey,
+)
+from syft.service.notification.notification_stash import FromUserVerifyKeyPartitionKey
+from syft.service.notification.notification_stash import NotificationStash
+from syft.service.notification.notification_stash import StatusPartitionKey
+from syft.service.notification.notification_stash import ToUserVerifyKeyPartitionKey
+from syft.service.notification.notifications import Notification
+from syft.service.notification.notifications import NotificationExpiryStatus
+from syft.service.notification.notifications import NotificationStatus
 from syft.types.datetime import DateTime
 from syft.types.uid import UID
 
@@ -28,29 +30,29 @@ test_verify_key_string = (
 test_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
 
 
-def add_mock_message(
+def add_mock_notification(
     root_verify_key,
-    message_stash: MessageStash,
+    notification_stash: NotificationStash,
     from_user_verify_key: SyftVerifyKey,
     to_user_verify_key: SyftVerifyKey,
-) -> Message:
-    # prepare: add mock message
+) -> Notification:
+    # prepare: add mock notification
 
-    mock_message = Message(
-        subject="test_message",
+    mock_notification = Notification(
+        subject="test_notification",
         node_uid=UID(),
         from_user_verify_key=from_user_verify_key,
         to_user_verify_key=to_user_verify_key,
         created_at=DateTime.now(),
-        status=MessageStatus.UNREAD,
+        status=NotificationStatus.UNREAD,
     )
 
-    # print("*******", mock_message._repr_debug_())
+    # print("*******", mock_notification._repr_debug_())
 
-    result = message_stash.set(root_verify_key, mock_message)
+    result = notification_stash.set(root_verify_key, mock_notification)
     assert result.is_ok()
 
-    return mock_message
+    return mock_notification
 
 
 def test_fromuserverifykey_partitionkey() -> None:
@@ -90,22 +92,22 @@ def test_touserverifykey_partitionkey() -> None:
 
 def test_status_partitionkey() -> None:
     assert StatusPartitionKey.key == "status"
-    assert StatusPartitionKey.type_ == MessageStatus
+    assert StatusPartitionKey.type_ == NotificationStatus
 
-    result1 = StatusPartitionKey.with_obj(MessageStatus.UNREAD)
-    result2 = StatusPartitionKey.with_obj(MessageStatus.READ)
+    result1 = StatusPartitionKey.with_obj(NotificationStatus.UNREAD)
+    result2 = StatusPartitionKey.with_obj(NotificationStatus.READ)
 
-    assert result1.type_ == MessageStatus
+    assert result1.type_ == NotificationStatus
     assert result1.key == "status"
-    assert result1.value == MessageStatus.UNREAD
-    assert result2.type_ == MessageStatus
+    assert result1.value == NotificationStatus.UNREAD
+    assert result2.type_ == NotificationStatus
     assert result2.key == "status"
-    assert result2.value == MessageStatus.READ
+    assert result2.value == NotificationStatus.READ
 
-    message_expiry_status_auto = MessageExpiryStatus(0)
+    notification_expiry_status_auto = NotificationExpiryStatus(0)
 
     with pytest.raises(AttributeError):
-        StatusPartitionKey.with_obj(message_expiry_status_auto)
+        StatusPartitionKey.with_obj(notification_expiry_status_auto)
 
 
 def test_orderbycreatedattimestamp_partitionkey() -> None:
@@ -121,12 +123,12 @@ def test_orderbycreatedattimestamp_partitionkey() -> None:
     assert result.value == random_datetime
 
 
-def test_messagestash_get_all_inbox_for_verify_key(
+def test_notificationstash_get_all_inbox_for_verify_key(
     root_verify_key, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_stash = MessageStash(store=document_store)
+    test_stash = NotificationStash(store=document_store)
 
     response = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
@@ -137,16 +139,16 @@ def test_messagestash_get_all_inbox_for_verify_key(
     result = response.ok()
     assert len(result) == 0
 
-    # list of mock messages
-    message_list = []
+    # list of mock notifications
+    notification_list = []
 
     for _ in range(5):
-        mock_message = add_mock_message(
+        mock_notification = add_mock_notification(
             root_verify_key, test_stash, test_verify_key, random_verify_key
         )
-        message_list.append(mock_message)
+        notification_list.append(mock_notification)
 
-    # returned list of messages from stash that's sorted by created_at
+    # returned list of notifications from stash that's sorted by created_at
     response2 = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
     )
@@ -156,24 +158,24 @@ def test_messagestash_get_all_inbox_for_verify_key(
     result = response2.ok()
     assert len(response2.value) == 5
 
-    for message in message_list:
-        # check if all messages are present in the result
-        assert message in result
+    for notification in notification_list:
+        # check if all notifications are present in the result
+        assert notification in result
 
     with pytest.raises(AttributeError):
         test_stash.get_all_inbox_for_verify_key(root_verify_key, random_signing_key)
 
-    # assert that the returned list of messages is sorted by created_at
-    sorted_message_list = sorted(result, key=lambda x: x.created_at)
-    assert result == sorted_message_list
+    # assert that the returned list of notifications is sorted by created_at
+    sorted_notification_list = sorted(result, key=lambda x: x.created_at)
+    assert result == sorted_notification_list
 
 
-def test_messagestash_get_all_sent_for_verify_key(
+def test_notificationstash_get_all_sent_for_verify_key(
     root_verify_key, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_stash = MessageStash(store=document_store)
+    test_stash = NotificationStash(store=document_store)
 
     response = test_stash.get_all_sent_for_verify_key(root_verify_key, test_verify_key)
 
@@ -182,7 +184,7 @@ def test_messagestash_get_all_sent_for_verify_key(
     result = response.ok()
     assert len(result) == 0
 
-    mock_message = add_mock_message(
+    mock_notification = add_mock_notification(
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
@@ -193,17 +195,19 @@ def test_messagestash_get_all_sent_for_verify_key(
     result = response2.ok()
     assert len(response2.value) == 1
 
-    assert result[0] == mock_message
+    assert result[0] == mock_notification
 
     with pytest.raises(AttributeError):
         test_stash.get_all_sent_for_verify_key(root_verify_key, random_signing_key)
 
 
-def test_messagestash_get_all_for_verify_key(root_verify_key, document_store) -> None:
+def test_notificationstash_get_all_for_verify_key(
+    root_verify_key, document_store
+) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     query_key = FromUserVerifyKeyPartitionKey.with_obj(test_verify_key)
-    test_stash = MessageStash(store=document_store)
+    test_stash = NotificationStash(store=document_store)
 
     response = test_stash.get_all_for_verify_key(
         root_verify_key, random_verify_key, query_key
@@ -214,22 +218,22 @@ def test_messagestash_get_all_for_verify_key(root_verify_key, document_store) ->
     result = response.ok()
     assert len(result) == 0
 
-    mock_message = add_mock_message(
+    mock_notification = add_mock_notification(
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
     query_key2 = FromUserVerifyKeyPartitionKey.with_obj(
-        mock_message.from_user_verify_key
+        mock_notification.from_user_verify_key
     )
     response_from_verify_key = test_stash.get_all_for_verify_key(
-        root_verify_key, mock_message.from_user_verify_key, query_key2
+        root_verify_key, mock_notification.from_user_verify_key, query_key2
     )
     assert response_from_verify_key.is_ok()
 
     result = response_from_verify_key.ok()
     assert len(result) == 1
 
-    assert result[0] == mock_message
+    assert result[0] == mock_notification
 
     response_from_verify_key_string = test_stash.get_all_for_verify_key(
         root_verify_key, test_verify_key_string, query_key2
@@ -242,15 +246,15 @@ def test_messagestash_get_all_for_verify_key(root_verify_key, document_store) ->
 
 
 @pytest.mark.xfail
-def test_messagestash_get_all_by_verify_key_for_status(
+def test_notificationstash_get_all_by_verify_key_for_status(
     root_verify_key, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_stash = MessageStash(store=document_store)
+    test_stash = NotificationStash(store=document_store)
 
     response = test_stash.get_all_by_verify_key_for_status(
-        root_verify_key, random_verify_key, MessageStatus.READ
+        root_verify_key, random_verify_key, NotificationStatus.READ
     )
 
     assert response.is_ok()
@@ -258,68 +262,72 @@ def test_messagestash_get_all_by_verify_key_for_status(
     result = response.ok()
     assert len(result) == 0
 
-    mock_message = add_mock_message(
+    mock_notification = add_mock_notification(
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
     response2 = test_stash.get_all_by_verify_key_for_status(
-        root_verify_key, mock_message.to_user_verify_key, MessageStatus.UNREAD
+        root_verify_key, mock_notification.to_user_verify_key, NotificationStatus.UNREAD
     )
     assert response2.is_ok()
 
     result = response2.ok()
     assert len(result) == 1
 
-    assert result[0] == mock_message
+    assert result[0] == mock_notification
 
     with pytest.raises(AttributeError):
         test_stash.get_all_by_verify_key_for_status(
-            root_verify_key, random_signing_key, MessageStatus.UNREAD
+            root_verify_key, random_signing_key, NotificationStatus.UNREAD
         )
 
 
-def test_messagestash_update_message_status(root_verify_key, document_store) -> None:
+def test_notificationstash_update_notification_status(
+    root_verify_key, document_store
+) -> None:
     random_uid = UID()
     random_verify_key = SyftSigningKey.generate().verify_key
-    test_stash = MessageStash(store=document_store)
-    expected_error = Err(f"No message exists for id: {random_uid}")
+    test_stash = NotificationStash(store=document_store)
+    expected_error = Err(f"No notification exists for id: {random_uid}")
 
-    response = test_stash.update_message_status(
-        root_verify_key, uid=random_uid, status=MessageStatus.READ
+    response = test_stash.update_notification_status(
+        root_verify_key, uid=random_uid, status=NotificationStatus.READ
     )
 
     assert response.is_err()
     assert response == expected_error
 
-    mock_message = add_mock_message(
+    mock_notification = add_mock_notification(
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
-    assert mock_message.status == MessageStatus.UNREAD
+    assert mock_notification.status == NotificationStatus.UNREAD
 
-    response2 = test_stash.update_message_status(
-        root_verify_key, uid=mock_message.id, status=MessageStatus.READ
+    response2 = test_stash.update_notification_status(
+        root_verify_key, uid=mock_notification.id, status=NotificationStatus.READ
     )
 
     assert response2.is_ok()
 
     result = response2.ok()
-    assert result.status == MessageStatus.READ
+    assert result.status == NotificationStatus.READ
 
-    message_expiry_status_auto = MessageExpiryStatus(0)
+    notification_expiry_status_auto = NotificationExpiryStatus(0)
     with pytest.raises(AttributeError):
-        test_stash.pdate_message_status(
-            root_verify_key, uid=mock_message.id, status=message_expiry_status_auto
+        test_stash.pdate_notification_status(
+            root_verify_key,
+            uid=mock_notification.id,
+            status=notification_expiry_status_auto,
         )
 
 
-def test_messagestash_update_message_status_error_on_get_by_uid(
+def test_notificationstash_update_notification_status_error_on_get_by_uid(
     root_verify_key, monkeypatch: MonkeyPatch, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     random_uid = UID()
-    test_stash = MessageStash(store=document_store)
+    test_stash = NotificationStash(store=document_store)
 
     def mock_get_by_uid(root_verify_key, uid: random_uid) -> Err:
         return Err(None)
@@ -330,21 +338,23 @@ def test_messagestash_update_message_status_error_on_get_by_uid(
         mock_get_by_uid,
     )
 
-    add_mock_message(root_verify_key, test_stash, test_verify_key, random_verify_key)
+    add_mock_notification(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
 
-    response = test_stash.update_message_status(
-        root_verify_key, random_verify_key, MessageStatus.READ
+    response = test_stash.update_notification_status(
+        root_verify_key, random_verify_key, NotificationStatus.READ
     )
 
     assert response is None
 
 
-def test_messagestash_delete_all_for_verify_key(
+def test_notificationstash_delete_all_for_verify_key(
     root_verify_key, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_stash = MessageStash(store=document_store)
+    test_stash = NotificationStash(store=document_store)
 
     response = test_stash.delete_all_for_verify_key(root_verify_key, test_verify_key)
 
@@ -353,7 +363,9 @@ def test_messagestash_delete_all_for_verify_key(
     result = response.ok()
     assert result is True
 
-    add_mock_message(root_verify_key, test_stash, test_verify_key, random_verify_key)
+    add_mock_notification(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
 
     inbox_before = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
@@ -376,12 +388,12 @@ def test_messagestash_delete_all_for_verify_key(
         test_stash.delete_all_for_verify_key(root_verify_key, random_signing_key)
 
 
-def test_messagestash_delete_all_for_verify_key_error_on_get_all_inbox_for_verify_key(
+def test_notificationstash_delete_all_for_verify_key_error_on_get_all_inbox_for_verify_key(
     root_verify_key, monkeypatch: MonkeyPatch, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_stash = MessageStash(store=document_store)
+    test_stash = NotificationStash(store=document_store)
 
     def mock_get_all_inbox_for_verify_key(
         root_verify_key, verify_key: random_verify_key
@@ -399,17 +411,17 @@ def test_messagestash_delete_all_for_verify_key_error_on_get_all_inbox_for_verif
     assert response == Err(None)
 
 
-def test_messagestash_delete_all_for_verify_key_error_on_delete_by_uid(
+def test_notificationstash_delete_all_for_verify_key_error_on_delete_by_uid(
     root_verify_key, monkeypatch: MonkeyPatch, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_stash = MessageStash(store=document_store)
-    mock_message = add_mock_message(
+    test_stash = NotificationStash(store=document_store)
+    mock_notification = add_mock_notification(
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
-    def mock_delete_by_uid(root_verify_key, uid=mock_message.id) -> Err:
+    def mock_delete_by_uid(root_verify_key, uid=mock_notification.id) -> Err:
         return Err(None)
 
     monkeypatch.setattr(

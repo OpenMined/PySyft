@@ -444,8 +444,8 @@ class SyftClient:
 
     @property
     def notifications(self) -> Optional[APIModule]:
-        if self.api is not None and hasattr(self.api.services, "messages"):
-            return self.api.services.messages
+        if self.api is not None and hasattr(self.api.services, "notifications"):
+            return self.api.services.notifications
         return None
 
     @property

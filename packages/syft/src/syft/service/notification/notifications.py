@@ -20,19 +20,19 @@ from ...types.uid import UID
 
 
 @serializable()
-class MessageStatus(Enum):
+class NotificationStatus(Enum):
     UNREAD = 0
     READ = 1
 
 
-class MessageExpiryStatus(Enum):
+class NotificationExpiryStatus(Enum):
     AUTO = 0
     NEVER = 1
 
 
 @serializable()
-class ReplyMessage(SyftObject):
-    __canonical_name__ = "ReplyMessage"
+class ReplyNotification(SyftObject):
+    __canonical_name__ = "ReplyNotification"
     __version__ = SYFT_OBJECT_VERSION_1
 
     text: str
@@ -42,8 +42,8 @@ class ReplyMessage(SyftObject):
 
 
 @serializable()
-class Message(SyftObject):
-    __canonical_name__ = "Message"
+class Notification(SyftObject):
+    __canonical_name__ = "Notification"
     __version__ = SYFT_OBJECT_VERSION_1
 
     subject: str
@@ -51,9 +51,9 @@ class Message(SyftObject):
     from_user_verify_key: SyftVerifyKey
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
-    status: MessageStatus = MessageStatus.UNREAD
+    status: NotificationStatus = NotificationStatus.UNREAD
     linked_obj: Optional[LinkedObject]
-    replies: Optional[List[ReplyMessage]] = []
+    replies: Optional[List[ReplyNotification]] = []
 
     __attr_searchable__ = [
         "from_user_verify_key",
@@ -70,16 +70,16 @@ class Message(SyftObject):
 
     def mark_read(self) -> None:
         api = APIRegistry.api_for(self.node_uid)
-        return api.services.messages.mark_as_read(uid=self.id)
+        return api.services.notifications.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
         api = APIRegistry.api_for(self.node_uid)
-        return api.services.messages.mark_as_unread(uid=self.id)
+        return api.services.notifications.mark_as_unread(uid=self.id)
 
 
 @serializable()
-class CreateMessage(Message):
-    __canonical_name__ = "CreateMessage"
+class CreateNotification(Notification):
+    __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
@@ -93,8 +93,8 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     return context
 
 
-@transform(CreateMessage, Message)
-def createmessage_to_message():
+@transform(CreateNotification, Notification)
+def createnotification_to_notification():
     return [
         generate_id,
         add_msg_creation_time,

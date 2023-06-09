@@ -16,8 +16,8 @@ from ...store.document_store import QueryKeys
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from .messages import Message
-from .messages import MessageStatus
+from .notifications import Notification
+from .notifications import NotificationStatus
 
 FromUserVerifyKeyPartitionKey = PartitionKey(
     key="from_user_verify_key", type_=SyftVerifyKey
@@ -25,23 +25,23 @@ FromUserVerifyKeyPartitionKey = PartitionKey(
 ToUserVerifyKeyPartitionKey = PartitionKey(
     key="to_user_verify_key", type_=SyftVerifyKey
 )
-StatusPartitionKey = PartitionKey(key="status", type_=MessageStatus)
+StatusPartitionKey = PartitionKey(key="status", type_=NotificationStatus)
 
 OrderByCreatedAtTimeStampPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 
 @instrument
 @serializable()
-class MessageStash(BaseUIDStoreStash):
-    object_type = Message
+class NotificationStash(BaseUIDStoreStash):
+    object_type = Notification
     settings: PartitionSettings = PartitionSettings(
-        name=Message.__canonical_name__,
-        object_type=Message,
+        name=Notification.__canonical_name__,
+        object_type=Notification,
     )
 
     def get_all_inbox_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[List[Message], str]:
+    ) -> Result[List[Notification], str]:
         qks = QueryKeys(
             qks=[
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
@@ -53,7 +53,7 @@ class MessageStash(BaseUIDStoreStash):
 
     def get_all_sent_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[List[Message], str]:
+    ) -> Result[List[Notification], str]:
         qks = QueryKeys(
             qks=[
                 FromUserVerifyKeyPartitionKey.with_obj(verify_key),
@@ -63,7 +63,7 @@ class MessageStash(BaseUIDStoreStash):
 
     def get_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey, qks: QueryKeys
-    ) -> Result[List[Message], str]:
+    ) -> Result[List[Notification], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         return self.query_all(
@@ -76,8 +76,8 @@ class MessageStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         verify_key: SyftVerifyKey,
-        status: MessageStatus,
-    ) -> Result[List[Message], str]:
+        status: NotificationStatus,
+    ) -> Result[List[Notification], str]:
         qks = QueryKeys(
             qks=[
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
@@ -90,18 +90,18 @@ class MessageStash(BaseUIDStoreStash):
             order_by=OrderByCreatedAtTimeStampPartitionKey,
         )
 
-    def update_message_status(
-        self, credentials: SyftVerifyKey, uid: UID, status: MessageStatus
-    ) -> Result[Message, str]:
+    def update_notification_status(
+        self, credentials: SyftVerifyKey, uid: UID, status: NotificationStatus
+    ) -> Result[Notification, str]:
         result = self.get_by_uid(credentials, uid=uid)
         if result.is_err():
             return result.err()
 
-        message = result.ok()
-        if message is None:
-            return Err(f"No message exists for id: {uid}")
-        message.status = status
-        return self.update(credentials, obj=message)
+        notification = result.ok()
+        if notification is None:
+            return Err(f"No notification exists for id: {uid}")
+        notification.status = status
+        return self.update(credentials, obj=notification)
 
     def delete_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
@@ -114,11 +114,11 @@ class MessageStash(BaseUIDStoreStash):
         if result.is_err():
             return result
 
-        # get the list of messages
-        messages = result.ok()
+        # get the list of notifications
+        notifications = result.ok()
 
-        for message in messages:
-            result = self.delete_by_uid(credentials, uid=message.id)
+        for notification in notifications:
+            result = self.delete_by_uid(credentials, uid=notification.id)
             if result.is_err():
                 return result
         return Ok(True)

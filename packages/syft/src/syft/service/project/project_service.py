@@ -9,8 +9,8 @@ from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..message.message_service import CreateMessage
-from ..message.message_service import MessageService
+from ..notification.notification_service import CreateNotification
+from ..notification.notification_service import NotificationService
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -324,13 +324,13 @@ def check_for_project_request(
         and project_event.request.node_uid == context.node.id
     ):
         link = LinkedObject.with_context(project, context=context)
-        message = CreateMessage(
+        message = CreateNotification(
             subject="Project Approval",
             from_user_verify_key=context.credentials,
             to_user_verify_key=context.node.verify_key,
             linked_obj=link,
         )
-        method = context.node.get_service_method(MessageService.send)
+        method = context.node.get_service_method(NotificationService.send)
         result = method(context=context, message=message)
         if isinstance(result, SyftError):
             return result

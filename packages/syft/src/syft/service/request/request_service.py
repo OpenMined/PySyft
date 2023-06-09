@@ -16,9 +16,9 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
-from ..message.message_service import CreateMessage
-from ..message.message_service import Message
-from ..message.message_service import MessageService
+from ..notification.notification_service import CreateNotification
+from ..notification.notification_service import Notification
+from ..notification.notification_service import NotificationService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -75,15 +75,15 @@ class RequestService(AbstractService):
 
                 root_verify_key = admin_verify_key()
                 if send_message:
-                    message = CreateMessage(
+                    message = CreateNotification(
                         subject="Approval Request" if not reason else reason,
                         from_user_verify_key=context.credentials,
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
                     )
-                    method = context.node.get_service_method(MessageService.send)
+                    method = context.node.get_service_method(NotificationService.send)
                     result = method(context=context, message=message)
-                    if isinstance(result, Message):
+                    if isinstance(result, Notification):
                         return Ok(request)
                     else:
                         return Err(result)
@@ -115,7 +115,7 @@ class RequestService(AbstractService):
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         method = context.node.get_service_method(UserService.get_by_verify_key)
-        get_message = context.node.get_service_method(MessageService.filter_by_obj)
+        get_message = context.node.get_service_method(NotificationService.filter_by_obj)
 
         requests = []
         if result.is_ok():

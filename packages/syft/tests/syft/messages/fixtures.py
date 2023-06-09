@@ -6,10 +6,10 @@ from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
-from syft.service.message.message_service import MessageService
-from syft.service.message.message_stash import MessageStash
-from syft.service.message.messages import CreateMessage
-from syft.service.message.messages import Message
+from syft.service.notification.notification_service import NotificationService
+from syft.service.notification.notification_stash import NotificationStash
+from syft.service.notification.notifications import Createnotification
+from syft.service.notification.notifications import Notification
 from syft.service.user.user import User
 from syft.store.linked_obj import LinkedObject
 from syft.types.datetime import DateTime
@@ -23,13 +23,13 @@ test_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
 
 
 @pytest.fixture(autouse=True)
-def message_stash(document_store):
-    return MessageStash(store=document_store)
+def notification_stash(document_store):
+    return NotificationStash(store=document_store)
 
 
 @pytest.fixture(autouse=True)
-def message_service(document_store):
-    return MessageService(store=document_store)
+def notification_service(document_store):
+    return NotificationService(store=document_store)
 
 
 @pytest.fixture(autouse=True)
@@ -41,21 +41,21 @@ def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
 def linked_object():
     return LinkedObject(
         node_uid=UID(),
-        service_type=MessageService,
-        object_type=Message,
+        service_type=NotificationService,
+        object_type=Notification,
         object_uid=UID(),
     )
 
 
 @pytest.fixture(autouse=True)
-def mock_create_message(faker) -> CreateMessage:
+def mock_create_notification(faker) -> Createnotification:
     test_signing_key1 = SyftSigningKey.generate()
     test_verify_key1 = test_signing_key1.verify_key
     test_signing_key2 = SyftSigningKey.generate()
     test_verify_key2 = test_signing_key2.verify_key
 
-    mock_message = CreateMessage(
-        subject="mock_created_message",
+    mock_notification = Createnotification(
+        subject="mock_created_notification",
         id=UID(),
         node_uid=UID(),
         from_user_verify_key=test_verify_key1,
@@ -63,23 +63,23 @@ def mock_create_message(faker) -> CreateMessage:
         created_at=DateTime.now(),
     )
 
-    return mock_message
+    return mock_notification
 
 
 @pytest.fixture(autouse=True)
-def mock_message(
+def mock_notification(
     root_verify_key,
-    message_stash: MessageStash,
-) -> Message:
-    mock_message = Message(
-        subject="mock_message",
+    notification_stash: NotificationStash,
+) -> Notification:
+    mock_notification = Notification(
+        subject="mock_notification",
         node_uid=UID(),
         from_user_verify_key=SyftSigningKey.generate().verify_key,
         to_user_verify_key=SyftSigningKey.generate().verify_key,
         created_at=DateTime.now(),
     )
 
-    result = message_stash.set(root_verify_key, mock_message)
+    result = notification_stash.set(root_verify_key, mock_notification)
     assert result.is_ok()
 
-    return mock_message
+    return mock_notification

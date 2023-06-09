@@ -40,7 +40,7 @@ from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
-from ..message.messages import Message
+from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
@@ -238,7 +238,7 @@ class RequestInfo(SyftObject):
 
     user: UserView
     request: Request
-    message: Message
+    message: Notification
 
 
 @serializable()
