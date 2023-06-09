@@ -40,7 +40,7 @@ test.describe('User Sign Up', () => {
     }
   });
 
-  test('should successfully register a user', async ({ page }) => {
+  test('should successfully register a user', async ({ page, context }) => {
     // NOTE: Until we implement Delete user so that we can clean up created test user accounts
     // this will ensure a new user is created and the test will pass
     const testUserEmail = `test-user-${Math.round(Math.random() * 1000)}@gmail.com`;
@@ -60,16 +60,23 @@ test.describe('User Sign Up', () => {
     }
 
     await page.getByRole('button', { name: /sign up/i }).click();
-
     await page.waitForURL('**/login');
-
     await expect(page.getByTestId('deployed-on')).toBeVisible();
 
     await page.getByTestId('email').fill(testUserEmail);
     await page.getByTestId('password').fill(testUserPassword);
     await page.getByRole('button', { name: /login/i }).click();
 
+    // intercept storageState
+    // get user_id from localStorage
+
     await page.waitForURL('**/datasets');
+
+    const storageState = await context.storageState();
+
+    console.log(`storageState: ${JSON.stringify(storageState, null, 1)}`);
+
+    // call deleteUser(user_id)
   });
 
   test('should fail to create user and notify if account/email already exists', async ({

@@ -41,8 +41,8 @@ test.describe('User Login', () => {
   });
 
   test('should fail to login a non-existing user', async ({ page }) => {
-    await page.getByTestId('email').fill('hacker@gmail.com');
-    await page.getByTestId('password').fill('cyberattack');
+    await page.getByTestId('email').fill('unregistered_user@openmined.org');
+    await page.getByTestId('password').fill('badpass');
 
     await page.getByRole('button', { name: /login/i }).click();
 

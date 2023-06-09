@@ -33,3 +33,7 @@ export async function searchUsersByName(
     }
   });
 }
+
+export async function deleteUser(uid: string) {
+  return await syftCall({ path: 'user.delete', payload: { uid: makeSyftUID(uid) } });
+}
