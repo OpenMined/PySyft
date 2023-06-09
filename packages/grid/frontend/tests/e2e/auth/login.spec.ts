@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('User Login', () => {
-  test.beforeEach(async ({ page, baseURL }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByTestId('deployed-on')).toContainText(/deployed on/i);
   });

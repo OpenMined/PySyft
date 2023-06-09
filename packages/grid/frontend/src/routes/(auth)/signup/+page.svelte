@@ -106,7 +106,9 @@
           data-testid="website"
         />
         <p class="text-center text-green-500" hidden={!signUpSuccess}>{signUpSuccess}</p>
-        <p class="text-center text-rose-500" hidden={!signUpError}>{signUpError}</p>
+        <p class="text-center text-rose-500" hidden={!signUpError} data-testid="signup_error">
+          {signUpError}
+        </p>
         <p class="text-center">
           Already have an account? Sign in <a
             class="text-primary-600 underline hover:opacity-50"

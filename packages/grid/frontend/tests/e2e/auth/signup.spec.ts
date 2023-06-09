@@ -1,16 +1,12 @@
 import { test, expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
 
 test.describe('User Sign Up', () => {
-  let page: Page;
-
-  test.beforeEach(async ({ browser }) => {
-    page = await browser.newPage();
+  test.beforeEach(async ({ page }) => {
     await page.goto('/signup');
     await expect(page.getByTestId('deployed-on')).toBeVisible();
   });
 
-  test('should display the expected form fields for the sign up page', async () => {
+  test('should display the expected form fields for the sign up page', async ({ page }) => {
     const fieldsTestId = [
       'email',
       'password',
@@ -24,7 +20,7 @@ test.describe('User Sign Up', () => {
     }
   });
 
-  test('should have some fields marked as required', async () => {
+  test('should have some fields marked as required', async ({ page }) => {
     const requiredFields = [
       { id: 'fullName', label: 'Full name' },
       { id: 'email', label: 'Email' },
@@ -44,31 +40,60 @@ test.describe('User Sign Up', () => {
     }
   });
 
-  test('should successfully register a user', async () => {
+  test('should successfully register a user', async ({ page }) => {
     // NOTE: Until we implement Delete user so that we can clean up created test user accounts
     // this will ensure a new user is created and the test will pass
-    const testUser = `test-user-${Math.round(Math.random() * 1000)}@gmail.com`;
+    const testUserEmail = `test-user-${Math.round(Math.random() * 1000)}@gmail.com`;
+    const testUserPassword = (Math.random() + 1).toString(36).substring(7);
 
-    const fields = [
+    const testUserCreds = [
       { testid: 'full_name', value: 'Jane Doe' },
       { testid: 'institution', value: 'OpenMined University' },
-      { testid: 'email', value: testUser },
-      { testid: 'password', value: 'changethis' },
-      { testid: 'confirm_password', value: 'changethis' },
+      { testid: 'email', value: testUserEmail },
+      { testid: 'password', value: testUserPassword },
+      { testid: 'confirm_password', value: testUserPassword },
       { testid: 'website', value: 'https://openmined.org' }
     ];
 
-    for (const field of fields) {
+    for (const field of testUserCreds) {
       await page.getByTestId(field.testid).fill(field.value);
     }
 
     await page.getByRole('button', { name: /sign up/i }).click();
 
     await page.waitForURL('**/login');
+
     await expect(page.getByTestId('deployed-on')).toBeVisible();
-    await page.getByTestId('email').fill(testUser);
-    await page.getByTestId('password').fill('changethis');
+
+    await page.getByTestId('email').fill(testUserEmail);
+    await page.getByTestId('password').fill(testUserPassword);
     await page.getByRole('button', { name: /login/i }).click();
+
     await page.waitForURL('**/datasets');
+  });
+
+  test('should fail to create user and notify if account/email already exists', async ({
+    page
+  }) => {
+    const existingEmail = 'info@openmined.org';
+    const expectedErrMsg = `User already exists with email: ${existingEmail}`;
+
+    const testUserCreds = [
+      { testid: 'full_name', value: 'Jane Doe' },
+      { testid: 'institution', value: 'OpenMined University' },
+      { testid: 'email', value: existingEmail },
+      { testid: 'password', value: 'changethis' },
+      { testid: 'confirm_password', value: 'changethis' },
+      { testid: 'website', value: 'https://openmined.org' }
+    ];
+
+    for (const field of testUserCreds) {
+      await page.getByTestId(field.testid).fill(field.value);
+    }
+
+    await page.getByRole('button', { name: /sign up/i }).click();
+
+    await expect(page.getByTestId('signup_error')).toBeVisible();
+    await expect(page.getByTestId('signup_error')).toContainText(expectedErrMsg);
   });
 });
