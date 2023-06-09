@@ -309,8 +309,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         _repr_str = f"{s_indent}class {class_name}:\n"
         for attr in fields:
             value = self
-            for _attr in attr.split("."):  # if compound string
-                value = getattr(value, _attr, "<Missing>")
+            if getattr(value, attr, None) is None:
+                value = getattr(value, attr, "<Missing>")
+            else:
+                for _attr in attr.split("."):  # if compound string
+                    value = getattr(value, _attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
             value = f'"{value}"' if isinstance(value, str) else value
