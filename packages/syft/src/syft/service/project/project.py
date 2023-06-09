@@ -887,7 +887,9 @@ class Project(SyftObject):
                 results.append(event)
         return results
 
-    def create_code_request(self, obj: SubmitUserCode, client: SyftClient, reason: str):
+    def create_code_request(
+        self, obj: SubmitUserCode, client: SyftClient, reason: Optional[str] = None
+    ):
         return add_code_request_to_project(
             project=self,
             code=obj,
@@ -1197,7 +1199,9 @@ class ProjectSubmit(SyftObject):
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
-    def create_code_request(self, obj: SubmitUserCode, client: SyftClient, reason: str):
+    def create_code_request(
+        self, obj: SubmitUserCode, client: SyftClient, reason: Optional[str] = None
+    ):
         return add_code_request_to_project(
             project=self,
             code=obj,
