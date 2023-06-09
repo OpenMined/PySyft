@@ -175,9 +175,8 @@ class Orchestra:
             sy = get_syft_client()
             if port:
                 if port == "auto":
-                    port = find_available_port(
-                        host="localhost", port=default_port, search=True
-                    )
+                    # dont use default port to prevent port clashes in CI
+                    port = find_available_port(host="localhost", port=None, search=True)
                 start, stop = sy.serve_node(  # type: ignore
                     name=name,
                     host=host,
