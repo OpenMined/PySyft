@@ -307,6 +307,7 @@ class SyftClient:
     connection: NodeConnection
     metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
+    __logged_in_user: str = ""
 
     def __init__(
         self,
@@ -329,6 +330,10 @@ class SyftClient:
     @property
     def authed(self) -> bool:
         return bool(self.credentials)
+
+    @property
+    def logged_in_user(self) -> Optional[str]:
+        return self.__logged_in_user
 
     @property
     def verify_key(self) -> SyftVerifyKey:
@@ -366,6 +371,7 @@ class SyftClient:
 
     def guest(self) -> Self:
         self.credentials = SyftSigningKey.generate()
+        self.__logged_in_user = ""
         return self
 
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
@@ -392,7 +398,7 @@ class SyftClient:
                 return tuple(valid.err())
             return valid.err()
 
-    def exchange_route(self, client: Self) -> None:
+    def exchange_route(self, client: Self) -> Union[SyftSuccess, SyftError]:
         # relative
         from ..service.network.routes import connection_to_route
 
@@ -479,6 +485,7 @@ class SyftClient:
         signing_key = self.connection.login(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
+            self.__logged_in_user = email
             self._fetch_api(self.credentials)
             if cache:
                 SyftClientSessionCache.add_client(
@@ -557,17 +564,17 @@ class SyftClient:
         )
         return client
 
-    def __getattr__(self, name):
-        if (
-            hasattr(self, "api")
-            and hasattr(self.api, "lib")
-            and hasattr(self.api.lib, name)
-        ):
-            return getattr(self.api.lib, name)
-        else:
-            raise AttributeError(
-                f"{self.__class__.__name__} object has no attribute {name}."
-            )
+    # def __getattr__(self, name):
+    #     if (
+    #         hasattr(self, "api")
+    #         and hasattr(self.api, "lib")
+    #         and hasattr(self.api.lib, name)
+    #     ):
+    #         return getattr(self.api.lib, name)
+    #     else:
+    #         raise AttributeError(
+    #             f"{self.__class__.__name__} object has no attribute {name}."
+    #         )
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)
