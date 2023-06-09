@@ -33,11 +33,13 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syft_object import short_qual_name
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.markdown import markdown_as_class_with_fields
+from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
@@ -47,8 +49,6 @@ from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
 from ..response import SyftSuccess
-from ...util.util import full_name_with_qualname
-from ...types.syft_object import short_qual_name
 
 
 @serializable()
@@ -118,8 +118,11 @@ class ProjectEvent(SyftObject):
     signature: Optional[bytes]  # dont use in signing
 
     def __repr_syft_nested__(self):
-        return (short_qual_name(full_name_with_qualname(self)), f"{str(self.id)[:4]}...{str(self.id)[-3:]}")
-        
+        return (
+            short_qual_name(full_name_with_qualname(self)),
+            f"{str(self.id)[:4]}...{str(self.id)[-3:]}",
+        )
+
     @pydantic.root_validator(pre=True)
     def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "timestamp" not in values or values["timestamp"] is None:

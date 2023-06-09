@@ -24,8 +24,6 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...util.colors import SURFACE, SURFACE_SURFACE, ON_SURFACE_HIGHEST
-from ...util import options
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -33,6 +31,10 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import ON_SURFACE_HIGHEST
+from ...util.colors import SURFACE
+from ...util.colors import SURFACE_SURFACE
 from ...util.markdown import as_markdown_python_code
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
@@ -100,7 +102,7 @@ class Asset(SyftObject):
         }}
         .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
         """
-        
+
         # relative
         from ...service.action.action_object import ActionObject
 

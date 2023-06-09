@@ -34,13 +34,15 @@ from ..node.credentials import SyftVerifyKey
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..util import options
 from ..util.autoreload import autoreload_enabled
+from ..util.colors import ON_SURFACE_HIGHEST
+from ..util.colors import SURFACE
+from ..util.colors import SURFACE_SURFACE
 from ..util.markdown import as_markdown_python_code
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
-from ..util.colors import SURFACE, ON_SURFACE_HIGHEST, SURFACE_SURFACE
-from ..util import options
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -65,6 +67,7 @@ DYNAMIC_SYFT_ATTRIBUTES = [
     "syft_node_location",
     "syft_client_verify_key",
 ]
+
 
 class SyftHashableObject:
     __hash_exclude_attrs__ = []
@@ -298,11 +301,16 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
-            # If the object has a special representation when nested we will use that instead 
+            # If the object has a special representation when nested we will use that instead
             if hasattr(value, "__repr_syft_nested__"):
                 value = value.__repr_syft_nested__()
             if isinstance(value, list):
-                value = [elem.__repr_syft_nested__() if hasattr(elem, "__repr_syft_nested__") else elem for elem in value ]
+                value = [
+                    elem.__repr_syft_nested__()
+                    if hasattr(elem, "__repr_syft_nested__")
+                    else elem
+                    for elem in value
+                ]
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"{s_indent}  {attr}: {value_type} = {value}\n"
 
@@ -603,7 +611,7 @@ def list_dict_repr_html(self) -> str:
                 </div>
                 <br>
                 """
-                
+
             itables_css = f"""
             .itables table {{
                 margin: 0 auto;
