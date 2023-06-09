@@ -512,8 +512,9 @@ class UserCodeStatusChange(Change):
     match_type: bool = True
     __attr_repr_cols__ = [
         "link.service_func_name",
-        "link.input_policy",
-        "link.output_policy",
+        "link.input_policy_type.__canonical_name__",
+        "link.output_policy_type.__canonical_name__",
+        "link.status.approved",
     ]
 
     def _repr_markdown_(self) -> str:
