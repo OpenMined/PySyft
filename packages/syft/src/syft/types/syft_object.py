@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Set
 from hashlib import sha256
 import inspect
 from inspect import Signature
@@ -11,17 +12,21 @@ from typing import ClassVar
 from typing import Dict
 from typing import KeysView
 from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Type
+from typing import Union
 import warnings
 
 # third party
+import itables
 import pydantic
 from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic.fields import Undefined
+from result import OkErr
 from typeguard import check_type
 
 # relative
@@ -38,6 +43,11 @@ from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
 
+IntStr = Union[int, str]
+AbstractSetIntStr = Set[IntStr]
+MappingIntStrAny = Mapping[IntStr, Any]
+
+
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
 
@@ -47,12 +57,52 @@ HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
 
-class SyftBaseObject(BaseModel):
+# These attributes are dynamically added based on node/client
+# that is interaction with the SyftObject
+DYNAMIC_SYFT_ATTRIBUTES = [
+    "syft_node_location",
+    "syft_client_verify_key",
+]
+
+SURFACE_DARK_BRIGHT = "#464158"
+SURFACE_SURFACE = "#2E2B3B"
+DK_ON_SURFACE_HIGHEST = "#534F64"
+
+# This can be customize however we want
+itables_css = f"""
+.itables table {{
+    margin: 0 auto;
+    float: left;
+    color: {DK_ON_SURFACE_HIGHEST};
+}}
+.itables table th {{color: {SURFACE_SURFACE};}}
+"""
+
+
+class SyftHashableObject:
+    __hash_exclude_attrs__ = []
+
+    def __hash__(self) -> int:
+        return int.from_bytes(self.__sha256__(), byteorder="big")
+
+    def __sha256__(self) -> bytes:
+        self.__hash_exclude_attrs__.extend(DYNAMIC_SYFT_ATTRIBUTES)
+        _bytes = serialize(self, to_bytes=True, for_hashing=True)
+        return sha256(_bytes).digest()
+
+    def hash(self) -> str:
+        return self.__sha256__().hex()
+
+
+class SyftBaseObject(BaseModel, SyftHashableObject):
     class Config:
         arbitrary_types_allowed = True
 
     __canonical_name__: str  # the name which doesn't change even when there are multiple classes
     __version__: int  # data is always versioned
+
+    syft_node_location: Optional[UID]
+    syft_client_verify_key: Optional[SyftVerifyKey]
 
 
 class Context(SyftBaseObject):
@@ -142,21 +192,7 @@ class SyftObjectRegistry:
 print_type_cache = defaultdict(list)
 
 
-class SyftHashableObject:
-    __hash_exclude_attrs__ = []
-
-    def __hash__(self) -> int:
-        return int.from_bytes(self.__sha256__(), byteorder="big")
-
-    def __sha256__(self) -> bytes:
-        _bytes = serialize(self, to_bytes=True, for_hashing=True)
-        return sha256(_bytes).digest()
-
-    def hash(self) -> str:
-        return self.__sha256__().hex()
-
-
-class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
+class SyftObject(SyftBaseObject, SyftObjectRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -185,6 +221,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
     __owner__: str
 
     __attr_repr_cols__: ClassVar[List[str]] = []  # show these in html repr collections
+    __attr_custom_repr__: ClassVar[
+        List[str]
+    ] = None  # show these in html repr of an object
 
     def to_mongo(self) -> Dict[str, Any]:
         warnings.warn(
@@ -243,6 +282,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "__fields__", {})
         for attr in fields.keys():
+            if attr in DYNAMIC_SYFT_ATTRIBUTES:
+                continue
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
@@ -253,9 +294,20 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
     def _repr_markdown_(self, wrap_as_python=True, indent=0) -> str:
         s_indent = " " * indent * 2
         class_name = get_qualname_for(type(self))
+        if self.__attr_custom_repr__ is not None:
+            fields = self.__attr_custom_repr__
+        elif self.__attr_repr_cols__ is not None:
+            fields = self.__attr_repr_cols__
+        else:
+            fields = list(getattr(self, "__fields__", {}).keys())
+
+        if "id" not in fields:
+            fields = ["id"] + fields
+
+        dynam_attrs = set(DYNAMIC_SYFT_ATTRIBUTES)
+        fields = [x for x in fields if x not in dynam_attrs]
         _repr_str = f"{s_indent}class {class_name}:\n"
-        fields = getattr(self, "__fields__", {})
-        for attr in fields.keys():
+        for attr in fields:
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
@@ -333,15 +385,44 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none and not exclude_empty:
-            return dict(self)
+            return self.dict()
         else:
             new_dict = {}
             for k, v in dict(self).items():
+                # exclude dynamically added syft attributes
+                if k in DYNAMIC_SYFT_ATTRIBUTES:
+                    continue
                 if exclude_empty and v is not Empty:
                     new_dict[k] = v
                 if exclude_none and v is not None:
                     new_dict[k] = v
             return new_dict
+
+    def dict(
+        self,
+        *,
+        include: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
+        exclude: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
+        by_alias: bool = False,
+        skip_defaults: Optional[bool] = None,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+    ):
+        if exclude is None:
+            exclude = set()
+
+        for attr in DYNAMIC_SYFT_ATTRIBUTES:
+            exclude.add(attr)
+        return super().dict(
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            skip_defaults=skip_defaults,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+        )
 
     def __post_init__(self) -> None:
         pass
@@ -410,6 +491,19 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftHashableObject):
         return cls._syft_keys_types_dict("__attr_searchable__")
 
 
+def short_qual_name(name: str) -> str:
+    # If the name is a qualname of formax a.b.c.d we will only get d
+    # otherwise this will leave it like it is
+    return name.split(".")[-1]
+
+
+def short_uid(uid: UID) -> str:
+    if uid is None:
+        return uid
+    else:
+        return str(uid)[:6] + "..."
+
+
 def list_dict_repr_html(self) -> str:
     try:
         max_check = 1
@@ -420,6 +514,9 @@ def list_dict_repr_html(self) -> str:
             values = list(self.values())
         else:
             values = self
+
+        if len(values) == 0:
+            return self.__repr__()
 
         is_homogenous = len(set([type(x) for x in values])) == 1
         for item in iter(self):
@@ -445,12 +542,12 @@ def list_dict_repr_html(self) -> str:
             import pandas as pd
 
             cols = defaultdict(list)
-            max_lines = 5
+            # max_lines = 5
             line = 0
             for item in iter(self):
                 line += 1
-                if line > max_lines:
-                    break
+                # if line > max_lines:
+                #     break
                 if isinstance(self, dict):
                     cols["key"].append(item)
                     item = self.__getitem__(item)
@@ -467,11 +564,9 @@ def list_dict_repr_html(self) -> str:
                         t = item.__class__.__name__
                     except Exception:
                         t = item.__repr__()
+                cols["id"].append(id_)
                 if not is_homogenous:
                     cols["type"].append(t)
-                    cols["id"].append(id_)
-                else:
-                    cols[f"{t}  -  id"].append(id_)
 
                 for field in extra_fields:
                     value = item
@@ -496,15 +591,26 @@ def list_dict_repr_html(self) -> str:
                     cols[field].append(value)
 
             df = pd.DataFrame(cols)
-            df_styled = df.style.set_properties(**{"text-align": "left"})
-            df_styled = df_styled.set_table_styles(
-                [dict(selector="th", props=[("text-align", "left")])]
-            )
 
-            collection_type = (
-                f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
-            )
-            return collection_type + df_styled._repr_html_()
+            if is_homogenous:
+                cls_name = values[0].__class__.__name__
+            else:
+                cls_name = ""
+
+            html_header = f"""
+                <style>
+                .collection-header {{color: {SURFACE_DARK_BRIGHT};}}
+                </style>
+                <div class='collection-header'>
+                    <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
+                </div>
+                <br>
+                """
+
+            html_datatable = itables.to_html_datatable(df=df, css=itables_css)
+
+            return html_header + html_datatable
+            # return collection_type + df_styled._repr_html_()
     except Exception as e:
         print(e)
         pass
@@ -575,3 +681,45 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 
 
 recursive_serde_register_type(PartialSyftObject)
+
+
+def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> Any:
+    box_to_result_type = None
+
+    if type(result) in OkErr:
+        box_to_result_type = type(result)
+        result = result.value
+
+    single_entity = False
+    is_tuple = isinstance(result, tuple)
+
+    if isinstance(result, (list, tuple)):
+        iterable_keys = range(len(result))
+        result = list(result)
+    elif isinstance(result, dict):
+        iterable_keys = result.keys()
+    else:
+        iterable_keys = range(1)
+        result = [result]
+        single_entity = True
+
+    for key in iterable_keys:
+        _object = result[key]
+        # if object is SyftBaseObject,
+        # then attach the value to the attribute
+        # on the object
+        if isinstance(_object, SyftBaseObject):
+            for attr_name, attr_value in attr_dict.items():
+                setattr(_object, attr_name, attr_value)
+
+            for field_name, attr in _object.__dict__.items():
+                updated_attr = attach_attribute_to_syft_object(attr, attr_dict)
+                setattr(_object, field_name, updated_attr)
+        result[key] = _object
+
+    wrapped_result = result[0] if single_entity else result
+    wrapped_result = tuple(wrapped_result) if is_tuple else wrapped_result
+    if box_to_result_type is not None:
+        wrapped_result = box_to_result_type(wrapped_result)
+
+    return wrapped_result

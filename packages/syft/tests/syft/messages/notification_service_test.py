@@ -108,8 +108,8 @@ def test_service_get_all_success(
         NotificationStatus.UNREAD,
     )
 
-    def mock_get_all_inbox_for_verify_key() -> Ok:
-        return Ok(expected_message)
+    def mock_get_all_inbox_for_verify_key(*args, **kwargs) -> Ok:
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         notification_service.stash,
@@ -169,7 +169,7 @@ def test_service_get_sent_success(
     )
 
     def mock_get_all_sent_for_verify_key(credentials, verify_key) -> Ok:
-        return Ok(expected_message)
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         notification_service.stash,
@@ -228,8 +228,8 @@ def test_service_get_all_for_status_success(
         NotificationStatus.UNREAD,
     )
 
-    def mock_get_all_by_verify_key_for_status() -> Ok:
-        return Ok(expected_message)
+    def mock_get_all_by_verify_key_for_status(*args, **kwargs) -> Ok:
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         notification_service.stash,
@@ -553,6 +553,7 @@ def test_service_resolve_object_success(
     monkeypatch: MonkeyPatch,
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
+    message_service: NotificationService,
     document_store: DocumentStore,
 ) -> None:
     test_notification_service = NotificationService(document_store)
@@ -587,6 +588,7 @@ def test_service_resolve_object_error_on_resolve_link(
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
     document_store: DocumentStore,
+    message_service: NotificationService,
 ) -> None:
     test_notification_service = NotificationService(document_store)
     expected_error = "Failed to resolve link."

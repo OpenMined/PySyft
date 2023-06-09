@@ -31,7 +31,6 @@ from ..user.user_service import UserService
 from .request import Request
 from .request import RequestInfo
 from .request import RequestInfoFilter
-from .request import RequestStatus
 from .request import SubmitRequest
 from .request_stash import RequestStash
 
@@ -161,16 +160,6 @@ class RequestService(AbstractService):
 
         return requests
 
-    @service_method(path="request.get_all_for_status", name="get_all_for_status")
-    def get_all_for_status(
-        self, context: AuthedServiceContext, status: RequestStatus
-    ) -> Union[List[Request], SyftError]:
-        result = self.stash.get_all_for_status(status=status)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        requests = result.ok()
-        return requests
-
     @service_method(path="request.apply", name="apply")
     def apply(
         self, context: AuthedServiceContext, uid: UID
@@ -191,6 +180,18 @@ class RequestService(AbstractService):
             result = request.ok().revert(context=context)
             return result.value
         return request.value
+
+    def save(
+        self, context: AuthedServiceContext, request: Request
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.update(context.credentials, request)
+        if result.is_ok():
+            return SyftSuccess(
+                message=f"Request: {request.id} updated successfully !!!"
+            )
+        return SyftError(
+            message=f"Failed to update Request: <{request.id}>. Error: {result.err()}"
+        )
 
 
 TYPE_TO_SERVICE[Request] = RequestService
