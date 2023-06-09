@@ -631,6 +631,7 @@ def add_code_request_to_project(
     project: Union[ProjectSubmit, Project],
     code: SubmitUserCode,
     client: SyftClient,
+    reason: Optional[str] = None,
 ):
     if not isinstance(code, SubmitUserCode):
         return SyftError(
@@ -640,7 +641,9 @@ def add_code_request_to_project(
     if not isinstance(client, SyftClient):
         return SyftError(message="Client should be a valid SyftClient")
 
-    submitted_req = client.api.services.code.request_code_execution(code)
+    if reason is None:
+        reason = f'Code Request for Project: {project.name} has been submitted by {project.user_email_address}'
+    submitted_req = client.api.services.code.request_code_execution(code=code, reason=reason)
     if isinstance(submitted_req, SyftError):
         return submitted_req
 
@@ -882,11 +885,12 @@ class Project(SyftObject):
                 results.append(event)
         return results
 
-    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+    def create_code_request(self, obj: SubmitUserCode, client: SyftClient, reason: str):
         return add_code_request_to_project(
             project=self,
             code=obj,
             client=client,
+            reason=reason,
         )
 
     def get_messages(self) -> List[Union[ProjectMessage, ProjectThreadMessage]]:
@@ -1191,11 +1195,12 @@ class ProjectSubmit(SyftObject):
 
         return SyftSuccess(message="Successfully Exchaged Routes")
 
-    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+    def create_code_request(self, obj: SubmitUserCode, client: SyftClient, reason: str):
         return add_code_request_to_project(
             project=self,
             code=obj,
             client=client,
+            reason=reason,
         )
 
     def start(self) -> Project:
