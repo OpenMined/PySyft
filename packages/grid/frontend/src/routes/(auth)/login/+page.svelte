@@ -73,7 +73,9 @@
             required
             data-testid="password"
           />
-          <p class="text-center text-rose-500" hidden={!loginError}>{loginError}</p>
+          <p class="text-center text-rose-500" hidden={!loginError} data-testid="login_error">
+            {loginError}
+          </p>
           <p class="text-center">
             Don't have an account yet? Apply for an account <a
               href="/signup"
