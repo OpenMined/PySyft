@@ -10,7 +10,6 @@ from result import Err
 from result import Ok
 
 # syft absolute
-import syft as sy
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.context import NodeServiceContext
@@ -607,28 +606,35 @@ def test_userservice_exchange_credentials_get_email_fails(
     assert response.message == expected_error_msg
 
 
-def test_userservice_toggle_registration() -> None:
-    node = sy.orchestra.launch(name="test-domain-1", reset=True)
-    root_client = node.login(email="info@openmined.org", password="changethis")
-    response_1 = root_client.register(
-        email="joker@test.com", password="joker123", name="Joker"
+def test_userservice_toggle_registration(
+    faker, guest_domain_client, root_domain_client
+) -> None:
+    email1 = faker.email()
+    email2 = faker.email()
+    response_1 = root_domain_client.register(
+        email=email1, password="joker123", name="Joker"
     )
     assert isinstance(response_1, SyftSuccess)
     # by default, the guest client can't register new user
-    guest_client = node.login(email="joker@test.com", password="joker123")
-    response_2 = guest_client.register(
-        email="harley@test.com", password="harley123", name="Harley"
+    response_2 = guest_domain_client.register(
+        email=email2, password="harley123", name="Harley"
     )
     assert isinstance(response_2, SyftError)
+
+    assert any([user.email == email1 for user in root_domain_client.users])
+
     # only after the root client enable other users to signup, they can
-    root_client.users.toggle_signup(enable=True)
-    response_3 = guest_client.register(
-        email="harley@test.com", password="harley123", name="Harley"
+    root_domain_client.users.toggle_signup(enable=True)
+    response_3 = guest_domain_client.register(
+        email=email2, password="harley123", name="Harley"
     )
     assert isinstance(response_3, SyftSuccess)
+
+    assert any([user.email == email2 for user in root_domain_client.users])
+
     # if the root client turn off the signup option, guest users can't register anymore
-    root_client.users.toggle_signup(enable=False)
-    response_4 = guest_client.register(
+    root_domain_client.users.toggle_signup(enable=False)
+    response_4 = guest_domain_client.register(
         email="batman@test.com", password="batman123", name="Batman"
     )
     assert isinstance(response_4, SyftError)

@@ -365,8 +365,11 @@ class SyftClient:
         return self._api
 
     def guest(self) -> Self:
-        self.credentials = SyftSigningKey.generate()
-        return self
+        return SyftClient(
+            connection=self.connection,
+            credentials=SyftSigningKey.generate(),
+            metadata=self.metadata,
+        )
 
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         # relative
