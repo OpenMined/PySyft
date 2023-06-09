@@ -12,6 +12,7 @@ from typing import Tuple
 from typing import Union
 
 # third party
+import itables
 from pydantic import ValidationError
 from pydantic import root_validator
 from pydantic import validator
@@ -22,8 +23,11 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
+from ...types.datetime import DateTime
+from ...types.syft_object import SURFACE_DARK_BRIGHT
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syft_object import itables_css
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -77,6 +81,7 @@ class Asset(SyftObject):
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
     shape: Optional[Tuple]
+    created_at: DateTime = DateTime.now()
 
     __attr_repr_cols__ = ["name", "shape"]
 
@@ -85,6 +90,41 @@ class Asset(SyftObject):
     #     api = APIRegistry.api_for(node_uid=self.node_uid)
     #     obj_ptr = api.services.action.get_pointer(uid=self.action_id)
     #     return obj_ptr
+
+    def _repr_html_(self) -> Any:
+        # relative
+        from ...service.action.action_object import ActionObject
+
+        uploaded_by_line = ""
+        if len(self.contributors) > 0:
+            uploaded_by_line = (
+                f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+            )
+        if isinstance(self.data, ActionObject):
+            data_table_line = itables.to_html_datatable(
+                df=self.data.syft_action_data, css=itables_css
+            )
+        else:
+            data_table_line = self.data
+        return (
+            f"""
+            <style>
+            .syft-asset {{color: {SURFACE_DARK_BRIGHT};}}
+            </style>
+            """
+            + '<div class="syft-asset">'
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + f"<p><strong>Asset ID: </strong>{self.id}</p>"
+            + f"<p><strong>Action Object ID: </strong>{self.action_id}</p>"
+            + uploaded_by_line
+            + f"<p><strong>Created on: </strong>{self.created_at}</p>"
+            + "<p><strong>Data:</strong></p>"
+            + data_table_line
+            + "<p><strong>Mock Data:</strong></p>"
+            + itables.to_html_datatable(df=self.mock_data, css=itables_css)
+            + "</div>"
+        )
 
     def _repr_markdown_(self) -> str:
         _repr_str = f"Asset: {self.name}\n"
@@ -176,6 +216,7 @@ class CreateAsset(SyftObject):
     mock: Optional[Any]
     shape: Optional[Tuple]
     mock_is_real: bool = False
+    created_at: Optional[DateTime]
 
     class Config:
         validate_assignment = True
@@ -289,10 +330,34 @@ class Dataset(SyftObject):
     updated_at: Optional[str]
     requests: Optional[int] = 0
     mb_size: Optional[int]
+    created_at: DateTime = DateTime.now()
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
     __attr_repr_cols__ = ["name", "url"]
+
+    def _repr_html_(self) -> Any:
+        uploaded_by_line = ""
+        if len(self.contributors) > 0:
+            uploaded_by_line = (
+                f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+            )
+        return (
+            f"""
+            <style>
+            .syft-dataset {{color: {SURFACE_DARK_BRIGHT};}}
+            </style>
+            """
+            + "<div class='syft-dataset'>"
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + uploaded_by_line
+            + f"<p><strong>Created on: </strong>{self.created_at}</p>"
+            + f'<p><strong>URL: </strong><a href="{self.url}">{self.url}</a></p>'
+            + "<p><strong>Contributors: </strong> to see full details call dataset.contributors</p>"
+            + self.asset_list._repr_html_()
+            + "</div>"
+        )
 
     def action_ids(self) -> List[UID]:
         data = []
@@ -359,6 +424,7 @@ class CreateDataset(Dataset):
     asset_list: List[CreateAsset] = []
 
     id: Optional[UID] = None
+    created_at: Optional[DateTime]
 
     class Config:
         validate_assignment = True
@@ -483,9 +549,20 @@ def set_data_subjects(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_msg_creation_time(context: TransformContext) -> TransformContext:
+    context.output["created_at"] = DateTime.now()
+    return context
+
+
 @transform(CreateAsset, Asset)
 def createasset_to_asset() -> List[Callable]:
-    return [generate_id, infer_shape, create_and_store_twin, set_data_subjects]
+    return [
+        generate_id,
+        add_msg_creation_time,
+        infer_shape,
+        create_and_store_twin,
+        set_data_subjects,
+    ]
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
@@ -509,7 +586,13 @@ def add_current_date(context: TransformContext) -> TransformContext:
 
 @transform(CreateDataset, Dataset)
 def createdataset_to_dataset() -> List[Callable]:
-    return [generate_id, validate_url, convert_asset, add_current_date]
+    return [
+        generate_id,
+        add_msg_creation_time,
+        validate_url,
+        convert_asset,
+        add_current_date,
+    ]
 
 
 class DatasetUpdate:
