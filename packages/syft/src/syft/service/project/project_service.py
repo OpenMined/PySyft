@@ -355,7 +355,7 @@ def check_for_project_request(
     ):
         link = LinkedObject.with_context(project, context=context)
         message = CreateMessage(
-            subject="Project Approval",
+            subject=f"A new Request has added to the Project: {project.name}.",
             from_user_verify_key=context.credentials,
             to_user_verify_key=context.node.verify_key,
             linked_obj=link,
