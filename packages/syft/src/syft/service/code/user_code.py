@@ -45,7 +45,7 @@ from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
 from ..policy.policy import Policy
-from ..policy.policy import SingleExecutionExactOutput
+from ..policy.policy import SingleExecutionExactOutput, ExactMatch
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
 from ..policy.policy import init_policy
@@ -393,6 +393,12 @@ def debox_asset(arg: Any) -> Any:
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg
 
+
+def syft_function_single_use(*args: Any, **kwargs: Any):
+    return syft_function(
+        input_policy=ExactMatch(*args, **kwargs), 
+        output_policy=SingleExecutionExactOutput()
+    )
 
 def syft_function(
     input_policy: Union[InputPolicy, UID],
