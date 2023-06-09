@@ -47,6 +47,8 @@ from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ...util.util import full_name_with_qualname
+from ...types.syft_object import short_qual_name
 
 
 @serializable()
@@ -115,6 +117,9 @@ class ProjectEvent(SyftObject):
     creator_verify_key: Optional[SyftVerifyKey]
     signature: Optional[bytes]  # dont use in signing
 
+    def __repr_syft_nested__(self):
+        return (short_qual_name(full_name_with_qualname(self)), f"{str(self.id)[:4]}...{str(self.id)[-3:]}")
+        
     @pydantic.root_validator(pre=True)
     def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "timestamp" not in values or values["timestamp"] is None:

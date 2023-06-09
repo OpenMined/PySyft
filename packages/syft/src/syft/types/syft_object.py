@@ -298,6 +298,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
+            # If the object has a special representation when nested we will use that instead 
+            if hasattr(value, "__repr_syft_nested__"):
+                value = value.__repr_syft_nested__()
+            if isinstance(value, list):
+                value = [elem.__repr_syft_nested__() if hasattr(elem, "__repr_syft_nested__") else elem for elem in value ]
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"{s_indent}  {attr}: {value_type} = {value}\n"
 
