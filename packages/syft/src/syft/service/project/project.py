@@ -642,8 +642,10 @@ def add_code_request_to_project(
         return SyftError(message="Client should be a valid SyftClient")
 
     if reason is None:
-        reason = f'Code Request for Project: {project.name} has been submitted by {project.user_email_address}'
-    submitted_req = client.api.services.code.request_code_execution(code=code, reason=reason)
+        reason = f"Code Request for Project: {project.name} has been submitted by {project.user_email_address}"
+    submitted_req = client.api.services.code.request_code_execution(
+        code=code, reason=reason
+    )
     if isinstance(submitted_req, SyftError):
         return submitted_req
 
