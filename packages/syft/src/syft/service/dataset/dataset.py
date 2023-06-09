@@ -336,6 +336,14 @@ class Dataset(SyftObject):
     __attr_unique__ = ["name"]
     __attr_repr_cols__ = ["name", "url"]
 
+    def build_assets_view(self) -> List[Dict[str,Any]]:
+        assets = []
+        for i, asset in enumerate(self.asset_list):
+            assets.append(
+                {'index': i, 'display_data': 'data', 'id': str(asset.id),'name': asset.name,'shape': str(asset.shape),'created_at': str(asset.created_at)}
+            )
+        return assets
+
     def _repr_html_(self) -> Any:
         uploaded_by_line = ""
         if len(self.contributors) > 0:
