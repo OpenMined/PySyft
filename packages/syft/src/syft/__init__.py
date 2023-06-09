@@ -34,6 +34,8 @@ from .service.action.action_object import ActionObject  # noqa: F401
 from .service.action.plan import Plan  # noqa: F401
 from .service.action.plan import planify  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401; noqa: F401
+from .service.code.user_code import syft_function  # noqa: F401; noqa: F401
+from .service.code.user_code import syft_function_single_use  # noqa: F401; noqa: F401
 from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .service.dataset.dataset import Contributor  # noqa: F401
 from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
@@ -63,6 +65,7 @@ from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
 from .util.version_compare import make_requires
+from .util import options
 
 LATEST_STABLE_SYFT = "0.8"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)

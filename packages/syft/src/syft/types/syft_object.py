@@ -39,6 +39,8 @@ from ..util.markdown import as_markdown_python_code
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from ..util.colors import SURFACE, ON_SURFACE_HIGHEST, SURFACE_SURFACE
+from ..util import options
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -63,21 +65,6 @@ DYNAMIC_SYFT_ATTRIBUTES = [
     "syft_node_location",
     "syft_client_verify_key",
 ]
-
-SURFACE_DARK_BRIGHT = "#464158"
-SURFACE_SURFACE = "#2E2B3B"
-DK_ON_SURFACE_HIGHEST = "#534F64"
-
-# This can be customize however we want
-itables_css = f"""
-.itables table {{
-    margin: 0 auto;
-    float: left;
-    color: {DK_ON_SURFACE_HIGHEST};
-}}
-.itables table th {{color: {SURFACE_SURFACE};}}
-"""
-
 
 class SyftHashableObject:
     __hash_exclude_attrs__ = []
@@ -604,13 +591,22 @@ def list_dict_repr_html(self) -> str:
 
             html_header = f"""
                 <style>
-                .collection-header {{color: {SURFACE_DARK_BRIGHT};}}
+                .collection-header {{color: {SURFACE[options.color_theme]};}}
                 </style>
                 <div class='collection-header'>
                     <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
                 </div>
                 <br>
                 """
+                
+            itables_css = f"""
+            .itables table {{
+                margin: 0 auto;
+                float: left;
+                color: {ON_SURFACE_HIGHEST[options.color_theme]};
+            }}
+            .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+            """
 
             html_datatable = itables.to_html_datatable(df=df, css=itables_css)
 

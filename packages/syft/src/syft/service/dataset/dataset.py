@@ -24,10 +24,10 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SURFACE_DARK_BRIGHT
+from ...util.colors import SURFACE, SURFACE_SURFACE, ON_SURFACE_HIGHEST
+from ...util import options
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.syft_object import itables_css
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -92,6 +92,15 @@ class Asset(SyftObject):
     #     return obj_ptr
 
     def _repr_html_(self) -> Any:
+        itables_css = f"""
+        .itables table {{
+            margin: 0 auto;
+            float: left;
+            color: {ON_SURFACE_HIGHEST[options.color_theme]};
+        }}
+        .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+        """
+        
         # relative
         from ...service.action.action_object import ActionObject
 
@@ -109,7 +118,7 @@ class Asset(SyftObject):
         return (
             f"""
             <style>
-            .syft-asset {{color: {SURFACE_DARK_BRIGHT};}}
+            .syft-asset {{color: {SURFACE[options.color_theme]};}}
             </style>
             """
             + '<div class="syft-asset">'
@@ -345,7 +354,7 @@ class Dataset(SyftObject):
         return (
             f"""
             <style>
-            .syft-dataset {{color: {SURFACE_DARK_BRIGHT};}}
+            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
             </style>
             """
             + "<div class='syft-dataset'>"
