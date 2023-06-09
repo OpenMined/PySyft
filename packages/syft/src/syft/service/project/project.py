@@ -325,6 +325,9 @@ class ProjectRequest(ProjectEventAddObject):
         if isinstance(result, SyftError):
             return result
         return ProjectRequestResponse(response=True, parent_event_id=self.id)
+    
+    def accept_by_depositing_result(self, result: Any, force: bool = False):
+        return self.request.accept_by_depositing_result(result=result, force=force)
 
     # TODO: To add deny requests, when deny functionality is added
 
@@ -1072,6 +1075,9 @@ class Project(SyftObject):
 
         return SyftSuccess(message="Synced project  with Leader")
 
+    @property
+    def requests(self) -> List[Request]:
+        return [event.request for event in self.events if isinstance(event, ProjectRequest)]
 
 @serializable(without=["bootstrap_events"])
 class ProjectSubmit(SyftObject):
