@@ -21,6 +21,7 @@ from typing import Union
 import warnings
 
 # third party
+import itables
 import pydantic
 from pydantic import BaseModel
 from pydantic import EmailStr
@@ -62,6 +63,20 @@ DYNAMIC_SYFT_ATTRIBUTES = [
     "syft_node_location",
     "syft_client_verify_key",
 ]
+
+SURFACE_DARK_BRIGHT = "#464158"
+SURFACE_SURFACE = "#2E2B3B"
+DK_ON_SURFACE_HIGHEST = "#534F64"
+
+# This can be customize however we want
+itables_css = f"""
+.itables table {{
+    margin: 0 auto;
+    float: left;
+    color: {DK_ON_SURFACE_HIGHEST};
+}}
+.itables table th {{color: {SURFACE_SURFACE};}}
+"""
 
 
 class SyftHashableObject:
@@ -206,6 +221,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     __owner__: str
 
     __attr_repr_cols__: ClassVar[List[str]] = []  # show these in html repr collections
+    __attr_custom_repr__: ClassVar[
+        List[str]
+    ] = None  # show these in html repr of an object
 
     def to_mongo(self) -> Dict[str, Any]:
         warnings.warn(
@@ -276,11 +294,20 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     def _repr_markdown_(self, wrap_as_python=True, indent=0) -> str:
         s_indent = " " * indent * 2
         class_name = get_qualname_for(type(self))
+        if self.__attr_custom_repr__ is not None:
+            fields = self.__attr_custom_repr__
+        elif self.__attr_repr_cols__ is not None:
+            fields = self.__attr_repr_cols__
+        else:
+            fields = list(getattr(self, "__fields__", {}).keys())
+
+        if "id" not in fields:
+            fields = ["id"] + fields
+
+        dynam_attrs = set(DYNAMIC_SYFT_ATTRIBUTES)
+        fields = [x for x in fields if x not in dynam_attrs]
         _repr_str = f"{s_indent}class {class_name}:\n"
-        fields = getattr(self, "__fields__", {})
-        for attr in fields.keys():
-            if attr in DYNAMIC_SYFT_ATTRIBUTES:
-                continue
+        for attr in fields:
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
@@ -464,6 +491,19 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return cls._syft_keys_types_dict("__attr_searchable__")
 
 
+def short_qual_name(name: str) -> str:
+    # If the name is a qualname of formax a.b.c.d we will only get d
+    # otherwise this will leave it like it is
+    return name.split(".")[-1]
+
+
+def short_uid(uid: UID) -> str:
+    if uid is None:
+        return uid
+    else:
+        return str(uid)[:6] + "..."
+
+
 def list_dict_repr_html(self) -> str:
     try:
         max_check = 1
@@ -474,6 +514,9 @@ def list_dict_repr_html(self) -> str:
             values = list(self.values())
         else:
             values = self
+
+        if len(values) == 0:
+            return self.__repr__()
 
         is_homogenous = len(set([type(x) for x in values])) == 1
         for item in iter(self):
@@ -499,12 +542,12 @@ def list_dict_repr_html(self) -> str:
             import pandas as pd
 
             cols = defaultdict(list)
-            max_lines = 5
+            # max_lines = 5
             line = 0
             for item in iter(self):
                 line += 1
-                if line > max_lines:
-                    break
+                # if line > max_lines:
+                #     break
                 if isinstance(self, dict):
                     cols["key"].append(item)
                     item = self.__getitem__(item)
@@ -521,11 +564,9 @@ def list_dict_repr_html(self) -> str:
                         t = item.__class__.__name__
                     except Exception:
                         t = item.__repr__()
+                cols["id"].append(id_)
                 if not is_homogenous:
                     cols["type"].append(t)
-                    cols["id"].append(id_)
-                else:
-                    cols[f"{t}  -  id"].append(id_)
 
                 for field in extra_fields:
                     value = item
@@ -550,15 +591,26 @@ def list_dict_repr_html(self) -> str:
                     cols[field].append(value)
 
             df = pd.DataFrame(cols)
-            df_styled = df.style.set_properties(**{"text-align": "left"})
-            df_styled = df_styled.set_table_styles(
-                [dict(selector="th", props=[("text-align", "left")])]
-            )
 
-            collection_type = (
-                f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
-            )
-            return collection_type + df_styled._repr_html_()
+            if is_homogenous:
+                cls_name = values[0].__class__.__name__
+            else:
+                cls_name = ""
+
+            html_header = f"""
+                <style>
+                .collection-header {{color: {SURFACE_DARK_BRIGHT};}}
+                </style>
+                <div class='collection-header'>
+                    <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
+                </div>
+                <br>
+                """
+
+            html_datatable = itables.to_html_datatable(df=df, css=itables_css)
+
+            return html_header + html_datatable
+            # return collection_type + df_styled._repr_html_()
     except Exception as e:
         print(e)
         pass
