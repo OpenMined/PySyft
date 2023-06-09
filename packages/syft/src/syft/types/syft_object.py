@@ -71,13 +71,13 @@ class SyftHashableObject:
     def __hash__(self) -> int:
         return int.from_bytes(self.__sha256__(), byteorder="big")
 
-    def __sha256__(self) -> bytes:
+    def __sha256__(self, debug: bool = False) -> bytes:
         self.__hash_exclude_attrs__.extend(DYNAMIC_SYFT_ATTRIBUTES)
-        _bytes = serialize(self, to_bytes=True, for_hashing=True)
+        _bytes = serialize(self, to_bytes=True, for_hashing=True, debug=debug)
         return sha256(_bytes).digest()
 
-    def hash(self) -> str:
-        return self.__sha256__().hex()
+    def hash(self, debug: bool = False) -> str:
+        return self.__sha256__(debug=debug).hex()
 
 
 class SyftBaseObject(BaseModel, SyftHashableObject):

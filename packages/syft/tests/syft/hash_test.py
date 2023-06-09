@@ -1,11 +1,17 @@
 # stdlib
+from copy import deepcopy
+from typing import Dict
+from typing import List
 from typing import Optional
 from uuid import uuid4
 
 # syft absolute
 from syft.serde.serializable import serializable
+from syft.types.syft_object import SYFT_OBJECT_VERSION_1
 from syft.types.syft_object import SyftBaseObject
 from syft.types.syft_object import SyftHashableObject
+from syft.types.syft_object import SyftObject
+from syft.types.uid import UID
 
 
 @serializable(attrs=["key", "value", "flag"])
@@ -29,6 +35,35 @@ class MockWrapper(SyftBaseObject, SyftHashableObject):
     data: Optional[MockObject]
 
 
+@serializable()
+class MockSyftObject(SyftObject):
+    __canonical_name__ = "MockSyftObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+@serializable()
+class MockNestedList(SyftObject):
+    __canonical_name__ = "TestNestedList"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    classes: List[MockSyftObject]
+
+
+@serializable()
+class MockNestedMap(SyftObject):
+    __canonical_name__ = "TestNestedMap"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    map: Dict[UID, MockSyftObject]
+
+
+MOCK_DATA = [
+    MockSyftObject(id=UID("99328247805c4bd18cb5dc7388b3bef9")),
+    MockSyftObject(id=UID("4e615d65429e4573911346e66cdcd1b6")),
+    MockSyftObject(id=UID("8142ae58cd42408691900d9fe5f998bf")),
+]
+
+
 def test_simple_hashing():
     obj1 = MockObject(key="key", value="value")
     obj2 = MockObject(key="key", value="value")
@@ -47,5 +82,21 @@ def test_nested_hashing():
         id=common_id,
         data=MockObject(key="key", value="value", flag=False),
     )
+
+    assert obj1.hash() == obj2.hash()
+
+
+def test_nested_list():
+    id = UID("572feb9669204a8cbb41a0ab4cbf0093")
+    obj1 = MockNestedList(id=id, classes=deepcopy(MOCK_DATA))
+    obj2 = MockNestedList(id=id, classes=deepcopy(MOCK_DATA))
+
+    assert obj1.hash() == obj2.hash()
+
+
+def test_nested_map():
+    id = UID("090de5e5f39449a08fde75b0c82ec128")
+    obj1 = MockNestedMap(id=id, map={d.id: d for d in deepcopy(MOCK_DATA)})
+    obj2 = MockNestedMap(id=id, map={d.id: d for d in deepcopy(MOCK_DATA)})
 
     assert obj1.hash() == obj2.hash()
