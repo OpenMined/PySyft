@@ -659,7 +659,7 @@ class Project(SyftObject):
     __attr_repr_cols__ = ["name", "description", "created_by", "events"]
     __attr_unique__ = ["name"]
 
-    __hash_exclude_attrs__ = ["user_signing_key", "start_hash", "leader_node_peer"]
+    __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
 
     id: Optional[UID]
     name: str
