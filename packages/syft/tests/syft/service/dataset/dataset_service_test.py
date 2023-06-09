@@ -202,3 +202,17 @@ def test_guest_client_get_empty_mock_as_private_pointer(
     assert mock.is_real
     assert mock.is_pointer
     assert mock.syft_twin_type is TwinMode.PRIVATE
+
+
+def test_domain_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> None:
+    assets = [Asset(**make_asset_with_mock()) for _ in range(10)]
+    dataset = Dataset(name=random_hash(), asset_list=assets)
+
+    dataset.asset_list[0].mock = None
+
+    root_domain_client = worker.root_client
+
+    with pytest.raises(ValueError) as excinfo:
+        root_domain_client.upload_dataset(dataset)
+
+    assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)

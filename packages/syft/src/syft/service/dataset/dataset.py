@@ -427,6 +427,21 @@ _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
 )
 
 
+def _check_asset_must_contain_mock(asset_list: List[CreateAsset]) -> None:
+    assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
+    if assets_without_mock:
+        raise ValueError(
+            "".join(
+                [
+                    "These assets do not contain a mock:\n",
+                    *[f"{asset}\n" for asset in assets_without_mock],
+                    "\n",
+                    _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE,
+                ]
+            )
+        )
+
+
 @serializable()
 class CreateDataset(Dataset):
     # version
@@ -440,22 +455,14 @@ class CreateDataset(Dataset):
     class Config:
         validate_assignment = True
 
+    def _check_asset_must_contain_mock(self) -> None:
+        _check_asset_must_contain_mock(self.asset_list)
+
     @validator("asset_list")
     def __assets_must_contain_mock(
         cls, asset_list: List[CreateAsset]
     ) -> List[CreateAsset]:
-        assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
-        if assets_without_mock:
-            raise ValueError(
-                "".join(
-                    [
-                        "These assets do not contain a mock:\n",
-                        *[f"{asset}\n" for asset in assets_without_mock],
-                        "\n",
-                        _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE,
-                    ]
-                )
-            )
+        _check_asset_must_contain_mock(asset_list)
         return asset_list
 
     def set_description(self, description: str) -> None:

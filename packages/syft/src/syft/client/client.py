@@ -372,6 +372,8 @@ class SyftClient:
         # relative
         from ..types.twin_object import TwinObject
 
+        dataset._check_asset_must_contain_mock()
+
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
             try:
