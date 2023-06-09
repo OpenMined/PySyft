@@ -659,7 +659,15 @@ class Project(SyftObject):
     __attr_repr_cols__ = ["name", "description", "created_by", "events"]
     __attr_unique__ = ["name"]
 
-    __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
+    # TODO: re-add users, members, leader_node_peer
+    __hash_exclude_attrs__ = [
+        "user_signing_key",
+        "start_hash",
+        "users",
+        "members",
+        "leader_node_peer",
+        "event_id_hashmap",
+    ]
 
     id: Optional[UID]
     name: str
@@ -1084,7 +1092,16 @@ class Project(SyftObject):
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_repr_cols__ = ["name"]
+
+    __hash_exclude_attrs__ = [
+        "start_hash",
+        "users",
+        "members",
+        "clients",
+        "leader_node_route",
+        "bootstrap_events",
+    ]
+
     # stash rules
     __attr_repr_cols__ = ["name", "description", "created_by"]
     __attr_unique__ = ["name"]

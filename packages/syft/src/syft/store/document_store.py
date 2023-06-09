@@ -713,6 +713,8 @@ class StoreConfig(SyftBaseObject):
     __canonical_name__ = "StoreConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __hash_exclude_attrs__ = ["store_type", "client_config", "locking_config"]
+
     store_type: Type[DocumentStore]
     client_config: Optional[StoreClientConfig]
     locking_config: LockingConfig = NoLockingConfig()
