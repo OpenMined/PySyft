@@ -151,7 +151,11 @@ class MessageService(AbstractService):
             return SyftError(message=str(result.err()))
         return result.ok()
 
-    @service_method(path="messages.resolve_object", name="resolve_object")
+    @service_method(
+        path="messages.resolve_object",
+        name="resolve_object",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Union[Message, SyftError]:
