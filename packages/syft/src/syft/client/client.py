@@ -566,17 +566,17 @@ class SyftClient:
         )
         return client
 
-    # def __getattr__(self, name):
-    #     if (
-    #         hasattr(self, "api")
-    #         and hasattr(self.api, "lib")
-    #         and hasattr(self.api.lib, name)
-    #     ):
-    #         return getattr(self.api.lib, name)
-    #     else:
-    #         raise AttributeError(
-    #             f"{self.__class__.__name__} object has no attribute {name}."
-    #         )
+    def __getattr__(self, name):
+        if (
+            hasattr(self, "api")
+            and hasattr(self.api, "lib")
+            and hasattr(self.api.lib, name)
+        ):
+            return getattr(self.api.lib, name)
+        else:
+            raise AttributeError(
+                f"{self.__class__.__name__} object has no attribute {name}."
+            )
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)

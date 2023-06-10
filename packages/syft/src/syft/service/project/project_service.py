@@ -77,7 +77,9 @@ class ProjectService(AbstractService):
                 return SyftError(message=f"{project_id_check.err()}")
 
             if project_id_check.ok() is not None:
-                return SyftError(message=f"Project with id{project.id} already exists.")
+                return SyftError(
+                    message=f"Project with id: {project.id} already exists."
+                )
 
             project_obj: Project = project.to(Project, context=context)
 
