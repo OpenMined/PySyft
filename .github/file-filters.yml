@@ -39,7 +39,7 @@ hagrid:
   - packages/hagrid/**/*.sh
 
 syft:
-  - .github/workflows/syft**.yml
+  - .github/workflows/pr-tests-syft.yml
   - packages/syft/**/*.py
   - packages/syft/**/*.capnp
   - packages/syft/**/*.yml
