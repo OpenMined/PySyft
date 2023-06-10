@@ -18,7 +18,6 @@ from ..types.uid import UID
 class WorkerSettings(SyftObject):
     __canonical_name__ = "WorkerSettings"
     __version__ = SYFT_OBJECT_VERSION_1
-    __hash_exclude_attrs__ = ["document_store_config", "action_store_config"]
 
     id: UID
     name: str
