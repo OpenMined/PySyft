@@ -25,6 +25,7 @@ from .project import Project
 from .project import ProjectEvent
 from .project import ProjectRequest
 from .project import ProjectSubmit
+from .project import create_project_hash
 from .project_stash import ProjectStash
 
 
@@ -115,7 +116,7 @@ class ProjectService(AbstractService):
             project_obj.leader_node_peer = leader_node_peer
 
             # This should always be the last call before flushing to DB
-            project_obj.start_hash = project_obj.hash()
+            project_obj.start_hash = create_project_hash(project_obj)[1]
 
             result = self.stash.set(context.credentials, project_obj)
             if result.is_err():

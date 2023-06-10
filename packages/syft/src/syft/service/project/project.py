@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import copy
+import hashlib
 import textwrap
 import time
 from typing import Any
@@ -12,6 +13,7 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -27,6 +29,7 @@ from ...client.client import SyftClientSessionCache
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -143,8 +146,7 @@ class ProjectEvent(SyftObject):
             return SyftError(message="Sign event first")
         try:
             # Recompute hash
-            event_hash_bytes = self.__sha256__()
-            current_hash = event_hash_bytes.hex()
+            event_hash_bytes, current_hash = create_project_event_hash(self)
             if current_hash != self.event_hash:
                 raise Exception(
                     f"Event hash {current_hash} does not match {self.event_hash}"
@@ -210,8 +212,8 @@ class ProjectEvent(SyftObject):
                 f"{signing_key.verify_key}"
             )
         # Calculate Hash
-        event_hash_bytes = self.__sha256__()
-        self.event_hash = event_hash_bytes.hex()
+        event_hash_bytes, event_hash = create_project_event_hash(self)
+        self.event_hash = event_hash
 
         # Sign Hash
         signed_obj = signing_key.signing_key.sign(event_hash_bytes)
@@ -1293,3 +1295,58 @@ def check_permissions(context: TransformContext) -> TransformContext:
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
     return [elect_leader, check_permissions]
+
+
+def hash_object(obj: Any) -> Tuple[bytes, str]:
+    """Hashes an object using sha256
+
+    Args:
+        obj (Any): Object to be hashed
+
+    Returns:
+        str: Hashed value of the object
+    """
+    hash_bytes = _serialize(obj, to_bytes=True, for_hashing=True)
+    hash = hashlib.sha256(hash_bytes)
+    return (hash.digest(), hash.hexdigest())
+
+
+def create_project_hash(project: Project) -> Tuple[bytes, str]:
+    # Creating a custom hash for the project
+    # as the recursive hash is yet to be revamped
+    # for primitives python types
+
+    # hashing is calculated based on the following attributes
+    # attrs = ["name", "description", "created_by", "members", "users"]
+
+    return hash_object(
+        [
+            project.name,
+            project.description,
+            project.created_by,
+            [hash_object(member) for member in project.members],
+            [hash_object(user) for user in project.users],
+        ]
+    )
+
+
+def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
+    # Creating a custom hash for the project
+    # as the recursive hash is yet to be revamped
+    # for primitives python types
+
+    # hashing is calculated based on the following attributes
+    # attrs = ["id", "project_id", "seq no",
+    #  "prev_event_uid", "prev_event_hash", "creator_verify_key"]
+
+    return hash_object(
+        [
+            project_event.id,
+            project_event.project_id,
+            project_event.seq_no,
+            project_event.prev_event_uid,
+            project_event.timestamp.utc_timestamp,
+            project_event.prev_event_hash,
+            hash_object(project_event.creator_verify_key)[1],
+        ]
+    )
