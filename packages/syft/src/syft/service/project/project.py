@@ -695,9 +695,6 @@ class Project(SyftObject):
     # store: Dict[UID, Dict[UID, SyftObject]] = {}
     # permissions: Dict[UID, Dict[UID, Set[str]]] = {}
 
-    def __repr__(self) -> str:
-        return f"Project(id={self.id.short()}, name={self.name})"
-
     def _broadcast_event(
         self, project_event: ProjectEvent
     ) -> Union[SyftSuccess, SyftError]:
