@@ -381,7 +381,7 @@ class ProjectService(AbstractService):
         ):
             link = LinkedObject.with_context(project, context=context)
             message = CreateMessage(
-                subject="Project Approval",
+                subject=f"A new request has been added to the Project: {project.name}.",
                 from_user_verify_key=context.credentials,
                 to_user_verify_key=context.node.verify_key,
                 linked_obj=link,

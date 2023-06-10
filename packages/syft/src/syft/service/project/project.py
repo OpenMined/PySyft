@@ -326,6 +326,9 @@ class ProjectRequest(ProjectEventAddObject):
             return result
         return ProjectRequestResponse(response=True, parent_event_id=self.id)
 
+    def accept_by_depositing_result(self, result: Any, force: bool = False):
+        return self.request.accept_by_depositing_result(result=result, force=force)
+
     # TODO: To add deny requests, when deny functionality is added
 
     def status(self, project: Project) -> Union[Dict, SyftError]:
@@ -628,6 +631,7 @@ def add_code_request_to_project(
     project: Union[ProjectSubmit, Project],
     code: SubmitUserCode,
     client: SyftClient,
+    reason: Optional[str] = None,
 ):
     if not isinstance(code, SubmitUserCode):
         return SyftError(
@@ -637,7 +641,12 @@ def add_code_request_to_project(
     if not isinstance(client, SyftClient):
         return SyftError(message="Client should be a valid SyftClient")
 
-    submitted_req = client.api.services.code.request_code_execution(code)
+    if reason is None:
+        reason = f"Code Request for Project: {project.name} has been submitted by {project.created_by}"
+
+    submitted_req = client.api.services.code.request_code_execution(
+        code=code, reason=reason
+    )
     if isinstance(submitted_req, SyftError):
         return submitted_req
 
@@ -893,11 +902,14 @@ class Project(SyftObject):
                 results.append(event)
         return results
 
-    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+    def create_code_request(
+        self, obj: SubmitUserCode, client: SyftClient, reason: Optional[str] = None
+    ):
         return add_code_request_to_project(
             project=self,
             code=obj,
             client=client,
+            reason=reason,
         )
 
     def get_messages(self) -> List[Union[ProjectMessage, ProjectThreadMessage]]:
@@ -1086,6 +1098,12 @@ class Project(SyftObject):
 
         return SyftSuccess(message="Synced project  with Leader")
 
+    @property
+    def requests(self) -> List[Request]:
+        return [
+            event.request for event in self.events if isinstance(event, ProjectRequest)
+        ]
+
 
 @serializable(without=["bootstrap_events", "clients"])
 class ProjectSubmit(SyftObject):
@@ -1175,11 +1193,14 @@ class ProjectSubmit(SyftObject):
                 f"members must be SyftClient or NodeIdentity. Received: {type(val)}"
             )
 
-    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+    def create_code_request(
+        self, obj: SubmitUserCode, client: SyftClient, reason: Optional[str] = None
+    ):
         return add_code_request_to_project(
             project=self,
             code=obj,
             client=client,
+            reason=reason,
         )
 
     def start(self, return_all_projects=False) -> Project:
