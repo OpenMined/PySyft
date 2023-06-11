@@ -2,7 +2,7 @@ name: CD - HAGrid
 
 on:
   schedule:
-    - cron: "00 03 * * 5" # Thursday
+    - cron: "00 15 * * */2" # At 15:00 on every 2nd day-of-week.
   workflow_dispatch:
     inputs:
       none:
@@ -38,7 +38,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install dependencies
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}

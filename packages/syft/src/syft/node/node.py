@@ -37,7 +37,6 @@ from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..external import OBLV
-from ..serde import serialize
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
@@ -55,7 +54,6 @@ from ..service.message.message_service import MessageService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.policy.policy_service import PolicyService
-from ..service.project.project_service import NewProjectService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
@@ -204,9 +202,8 @@ class Node(AbstractNode):
                 NetworkService,
                 PolicyService,
                 MessageService,
-                ProjectService,
                 DataSubjectMemberService,
-                NewProjectService,
+                ProjectService,
             ]
             if services is None
             else services
@@ -279,7 +276,7 @@ class Node(AbstractNode):
         if uuid.UUID(name_hash_string).version != 4:
             raise Exception(f"Invalid UID: {name_hash_string} for name: {name}")
         uid = UID(name_hash_string)
-        key = SyftSigningKey(SigningKey(name_hash))
+        key = SyftSigningKey(signing_key=SigningKey(name_hash))
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"
@@ -430,9 +427,8 @@ class Node(AbstractNode):
                 NetworkService,
                 PolicyService,
                 MessageService,
-                ProjectService,
                 DataSubjectMemberService,
-                NewProjectService,
+                ProjectService,
             ]
 
             if OBLV:
@@ -624,7 +620,7 @@ class Node(AbstractNode):
             # Publisher system which pushes to a Queue
             worker_settings = WorkerSettings.from_node(node=self)
 
-            message_bytes = serialize._serialize(
+            message_bytes = _serialize(
                 [task_uid, api_call, worker_settings], to_bytes=True
             )
             self.queue_manager.send(message=message_bytes, queue_name="api_call")

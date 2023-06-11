@@ -16,10 +16,15 @@ defaults:
 jobs:
   pr-tests-hagrid:
     strategy:
-      max-parallel: 3
+      max-parallel: 99
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.11"]
+        include:
+          - python-version: "3.9"
+            os: "ubuntu-latest"
+          - python-version: "3.10"
+            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:

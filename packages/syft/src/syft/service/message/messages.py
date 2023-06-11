@@ -1,8 +1,10 @@
 # stdlib
 from enum import Enum
+from typing import List
 from typing import Optional
 
 # relative
+from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
@@ -19,13 +21,24 @@ from ...types.uid import UID
 
 @serializable()
 class MessageStatus(Enum):
-    UNDELIVERED = 0
-    DELIVERED = 1
+    UNREAD = 0
+    READ = 1
 
 
 class MessageExpiryStatus(Enum):
     AUTO = 0
     NEVER = 1
+
+
+@serializable()
+class ReplyMessage(SyftObject):
+    __canonical_name__ = "ReplyMessage"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    text: str
+    target_msg: UID
+    id: Optional[UID]
+    from_user_verify_key: Optional[SyftVerifyKey]
 
 
 @serializable()
@@ -38,8 +51,9 @@ class Message(SyftObject):
     from_user_verify_key: SyftVerifyKey
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
-    status: MessageStatus = MessageStatus.UNDELIVERED
+    status: MessageStatus = MessageStatus.UNREAD
     linked_obj: Optional[LinkedObject]
+    replies: Optional[List[ReplyMessage]] = []
 
     __attr_searchable__ = [
         "from_user_verify_key",
@@ -53,6 +67,17 @@ class Message(SyftObject):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+    def mark_read(self) -> None:
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        return api.services.messages.mark_as_read(uid=self.id)
+
+    def mark_unread(self) -> None:
+        api = APIRegistry.api_for(
+            self.node_uid,
+            self.syft_client_verify_key,
+        )
+        return api.services.messages.mark_as_unread(uid=self.id)
 
 
 @serializable()
