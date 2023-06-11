@@ -126,7 +126,7 @@ def test_settingsservice_update_success(
 
     # get a new settings according to update_settings
     new_settings = deepcopy(settings)
-    update_kwargs = update_settings.to_dict(exclude_none=True).items()
+    update_kwargs = update_settings.to_dict(exclude_empty=True).items()
     for field_name, value in update_kwargs:
         setattr(new_settings, field_name, value)
 
