@@ -55,7 +55,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
         user = [u for u in users if u.verify_key == verify_key][0]
         return user.role
 
-    assert get_role(guest_client.credentials.verify_key) == ServiceRole.GUEST
+    assert get_role(guest_client.credentials.verify_key) == ServiceRole.DATA_SCIENTIST
 
     dataset = sy.Dataset(
         name="test2",

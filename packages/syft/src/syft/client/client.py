@@ -307,6 +307,7 @@ class SyftClient:
     connection: NodeConnection
     metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
+    __logged_in_user: str = ""
 
     def __init__(
         self,
@@ -329,6 +330,10 @@ class SyftClient:
     @property
     def authed(self) -> bool:
         return bool(self.credentials)
+
+    @property
+    def logged_in_user(self) -> Optional[str]:
+        return self.__logged_in_user
 
     @property
     def verify_key(self) -> SyftVerifyKey:
@@ -375,6 +380,8 @@ class SyftClient:
         # relative
         from ..types.twin_object import TwinObject
 
+        dataset._check_asset_must_contain_mock()
+
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
             try:
@@ -395,7 +402,7 @@ class SyftClient:
                 return tuple(valid.err())
             return valid.err()
 
-    def exchange_route(self, client: Self) -> None:
+    def exchange_route(self, client: Self) -> Union[SyftSuccess, SyftError]:
         # relative
         from ..service.network.routes import connection_to_route
 
@@ -482,6 +489,7 @@ class SyftClient:
         signing_key = self.connection.login(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
+            self.__logged_in_user = email
             self._fetch_api(self.credentials)
             if cache:
                 SyftClientSessionCache.add_client(
