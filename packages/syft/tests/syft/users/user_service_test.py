@@ -1,4 +1,5 @@
 # stdlib
+import os
 from typing import List
 from typing import Tuple
 from typing import Type
@@ -28,7 +29,7 @@ from syft.service.user.user_service import UserService
 from syft.types.uid import UID
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def node_with_signup_enabled(worker) -> Type:
     mock_metadata = worker.metadata
     mock_metadata.signup_enabled = True
@@ -630,6 +631,7 @@ def test_userservice_exchange_credentials_get_email_fails(
 def test_userservice_toggle_registration(
     faker, guest_domain_client, root_domain_client
 ) -> None:
+    os.environ.setdefault("ENABLE_SIGNUP", "False")
     email1 = faker.email()
     email2 = faker.email()
     response_1 = root_domain_client.register(
