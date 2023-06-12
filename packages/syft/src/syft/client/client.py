@@ -42,6 +42,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
+from ..types.syft_object import SURFACE_DARK_BRIGHT
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.logger import debug
@@ -601,6 +602,29 @@ class SyftClient:
             uid = proxy_target_uid
             return f"<{client_type} - <{uid}>: via {self.id} {self.connection}>"
         return f"<{client_type} - {self.name} <{uid}>: {self.connection}>"
+
+    @property
+    def _repr_html_class_(self) -> str:
+        return "client"
+
+    def _repr_html_(self) -> str:
+        return f"""
+        <style>
+        .client {{color: {SURFACE_DARK_BRIGHT};}}
+        .code-block {{background-color: #f7f7f7; border: 1px solid #cfcfcf; padding: 0px 2px;}}
+        </style>
+        <div class="{self._repr_html_class_}" style="padding:5px;">
+            <h3>Welcome to {self.name}</h3><br />
+            <strong>Institution:</strong> TODO<br />
+            <strong>Owner:</strong> TODO<br />
+            <strong>URL:</strong> {self.connection.url}<br />
+            <strong>PyGrid Admin:</strong> TODO<br />
+            <h4>Commands to Get Started</h4>
+            <ul style='padding-left: 1em;'>
+                <li><span class='code-block'>node.requests(status='pending')</span> - list pending requests</li>
+            </ul>
+        </div><br />
+        """
 
     def _fetch_node_metadata(self, credentials: SyftSigningKey) -> None:
         metadata = self.connection.get_node_metadata(credentials=credentials)
