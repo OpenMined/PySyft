@@ -184,7 +184,8 @@ def user_create_to_user() -> List[Callable]:
         validate_email,
         hash_password,
         generate_key,
-        default_role(ServiceRole.GUEST),
+        # TODO: Fix this by passing it from client & verifying it at server
+        default_role(ServiceRole.DATA_SCIENTIST),
         drop(["password", "password_verify"]),
     ]
 
