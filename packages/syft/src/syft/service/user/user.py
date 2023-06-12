@@ -1,5 +1,7 @@
 # stdlib
+from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -155,6 +157,15 @@ class UserView(SyftObject):
     website: Optional[str]
 
     __attr_repr_cols__ = ["name", "email"]
+
+    def self_repr(self) -> Dict[str, Any]:
+        return {
+            "Name": self.name,
+            "Email": self.email,
+            "Institute": self.institution,
+            "Website": self.website,
+            "Role": self.role.name(),
+        }
 
 
 @transform(UserUpdate, User)

@@ -34,6 +34,7 @@ from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
+from ...util.notebook_ui.notebook_addons import create_table_template
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
@@ -336,36 +337,47 @@ class Dataset(SyftObject):
     __attr_unique__ = ["name"]
     __attr_repr_cols__ = ["name", "url"]
 
-    def build_assets_view(self) -> List[Dict[str,Any]]:
+    def build_assets_view(self) -> List[Dict[str, Any]]:
         assets = []
-        for i, asset in enumerate(self.asset_list):
+        for _i, asset in enumerate(self.asset_list):
             assets.append(
-                {'index': i, 'display_data': 'data', 'id': str(asset.id),'name': asset.name,'shape': str(asset.shape),'created_at': str(asset.created_at)}
+                {
+                    "display_data": {"value": "data", "type": "badge-gray"},
+                    "id": str(asset.id),
+                    "name": asset.name,
+                    "shape": str(asset.shape),
+                    "created_at": str(asset.created_at),
+                }
             )
         return assets
 
+    def self_repr(self) -> Dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "Name": self.name,
+            "# Assets": len(self.asset_list),
+            "created_on": str(self.created_at),
+        }
+
     def _repr_html_(self) -> Any:
-        uploaded_by_line = ""
         if len(self.contributors) > 0:
             uploaded_by_line = (
-                f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+                "<p class='paragraph-sm'><strong>"
+                + "<span class='pr-8'>Uploaded by:</span></strong>{self.contributors[0].name}</p>"
             )
-        return (
-            f"""
-            <style>
-            .syft-dataset {{color: {SURFACE_DARK_BRIGHT};}}
-            </style>
-            """
-            + "<div class='syft-dataset'>"
-            + f"<h3>{self.name}</h3>"
-            + f"<p>{self.description}</p>"
+        repr_code = (
+            "<div class='syft-dataset repr-cell'>"
+            + f"<p class='header-1'>{self.name}</h3>"
+            + f"<p class='paragraph-sm'>{self.description}</p>"
             + uploaded_by_line
-            + f"<p><strong>Created on: </strong>{self.created_at}</p>"
-            + f'<p><strong>URL: </strong><a href="{self.url}">{self.url}</a></p>'
-            + "<p><strong>Contributors: </strong> to see full details call dataset.contributors</p>"
-            + self.asset_list._repr_html_()
-            + "</div>"
+            + f"<p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>"
+            + "<p class='paragraph-sm'><strong><span class='pr-8'>URL: "
+            + f"</span></strong><a href='{self.url}'>{self.url}</a></p>"
+            + "<p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>"
+            + " to see full details call <strong>dataset.contributors</strong></p>"
+            + create_table_template(self.build_assets_view(), "Asset List")
         )
+        return repr_code
 
     def action_ids(self) -> List[UID]:
         data = []
