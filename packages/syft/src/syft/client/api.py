@@ -341,7 +341,6 @@ class APIModule:
             results = self.get_all()
         return results._repr_html_()
 
-
 @instrument
 @serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
