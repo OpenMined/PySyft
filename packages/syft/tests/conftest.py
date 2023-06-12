@@ -87,4 +87,5 @@ pytest_plugins = [
     "tests.syft.dataset.fixtures",
     "tests.syft.messages.fixtures",
     "tests.syft.action_graph.fixtures",
+    "tests.syft.serde.fixtures",
 ]
