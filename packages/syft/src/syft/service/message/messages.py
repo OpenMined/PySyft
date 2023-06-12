@@ -24,6 +24,12 @@ class MessageStatus(Enum):
     UNREAD = 0
     READ = 1
 
+    def name(self):
+        if self.value == MessageStatus.UNREAD.value:
+            return "Unread"
+        else:
+            return "Read"
+
 
 class MessageExpiryStatus(Enum):
     AUTO = 0
@@ -67,6 +73,14 @@ class Message(SyftObject):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+    def self_repr(self):
+        return {
+            "Id": str(self.id),
+            "Subject": self.subject,
+            "Status": self.status.name(),
+            "Created At": str(self.created_at),
+        }
 
     def mark_read(self) -> None:
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
