@@ -363,7 +363,7 @@ class Dataset(SyftObject):
         if len(self.contributors) > 0:
             uploaded_by_line = (
                 "<p class='paragraph-sm'><strong>"
-                + "<span class='pr-8'>Uploaded by:</span></strong>{self.contributors[0].name}</p>"
+                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.contributors[0].name}</p>"
             )
         repr_code = (
             "<div class='syft-dataset repr-cell'>"
