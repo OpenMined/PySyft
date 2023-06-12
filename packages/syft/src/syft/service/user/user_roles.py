@@ -42,6 +42,18 @@ class ServiceRole(Enum):
             tuples.append((x.value, x))
         return list(reversed(sorted(tuples)))
 
+    def name(self) -> str:
+        if self.value == ServiceRole.NONE.value:
+            return "None"
+        elif self.value == ServiceRole.GUEST.value:
+            return "Guest"
+        elif self.value == ServiceRole.DATA_SCIENTIST.value:
+            return "Data Scientist"
+        elif self.value == ServiceRole.DATA_OWNER.value:
+            return "Data Owner"
+        else:
+            return "Admin"
+
     @staticmethod
     def roles_for_level(level: Union[int, Self]) -> List[Self]:
         if isinstance(level, ServiceRole):
