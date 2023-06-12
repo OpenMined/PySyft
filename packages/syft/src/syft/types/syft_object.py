@@ -36,6 +36,7 @@ from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
+from ..util.notebook_ui.notebook_addons import create_table_template
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
@@ -541,54 +542,60 @@ def list_dict_repr_html(self) -> str:
             # third party
             import pandas as pd
 
+            custom_repr = False
             cols = defaultdict(list)
-            # max_lines = 5
-            line = 0
             for item in iter(self):
-                line += 1
-                # if line > max_lines:
-                #     break
-                if isinstance(self, dict):
-                    cols["key"].append(item)
-                    item = self.__getitem__(item)
-
-                # get id
-                id_ = getattr(item, "id", None)
-                if id is not None:
-                    id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
-
-                if type(item) == type:
-                    t = full_name_with_qualname(item)
+                if hasattr(item, "self_repr"):
+                    custom_repr = True
+                    ret_val = item.self_repr()
+                    for key in ret_val.keys():
+                        cols[key].append(ret_val[key])
                 else:
-                    try:
-                        t = item.__class__.__name__
-                    except Exception:
-                        t = item.__repr__()
-                cols["id"].append(id_)
-                if not is_homogenous:
-                    cols["type"].append(t)
+                    if isinstance(self, dict):
+                        cols["key"].append(item)
+                        item = self.__getitem__(item)
 
-                for field in extra_fields:
-                    value = item
-                    try:
-                        attrs = field.split(".")
-                        for attr in attrs:
-                            # find indexing like abc[1]
-                            res = re.search("\[[+-]?\d+\]", attr)
-                            has_index = False
-                            if res:
-                                has_index = True
-                                index_str = res.group()
-                                index = int(index_str.replace("[", "").replace("]", ""))
-                                attr = attr.replace(index_str, "")
+                    # get id
+                    id_ = getattr(item, "id", None)
+                    if id is not None:
+                        id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
 
-                            value = getattr(value, attr, None)
-                            if isinstance(value, list) and has_index:
-                                value = value[index]
-                    except Exception as e:
-                        print(e)
-                        value = None
-                    cols[field].append(value)
+                    if type(item) == type:
+                        t = full_name_with_qualname(item)
+                    else:
+                        try:
+                            t = item.__class__.__name__
+                        except Exception:
+                            t = item.__repr__()
+
+                    cols["id"].append(id_)
+                    if not is_homogenous:
+                        cols["type"].append(t)
+
+                    for field in extra_fields:
+                        value = item
+                        try:
+                            attrs = field.split(".")
+                            for attr in attrs:
+                                # find indexing like abc[1]
+                                res = re.search("\[[+-]?\d+\]", attr)
+                                has_index = False
+                                if res:
+                                    has_index = True
+                                    index_str = res.group()
+                                    index = int(
+                                        index_str.replace("[", "").replace("]", "")
+                                    )
+                                    attr = attr.replace(index_str, "")
+
+                                value = getattr(value, attr, None)
+                                if isinstance(value, list) and has_index:
+                                    value = value[index]
+                        except Exception as e:
+                            print(e)
+                            value = None
+
+                        cols[field].append(value)
 
             df = pd.DataFrame(cols)
 
@@ -596,6 +603,12 @@ def list_dict_repr_html(self) -> str:
                 cls_name = values[0].__class__.__name__
             else:
                 cls_name = ""
+
+            if custom_repr:
+                return create_table_template(
+                    df.to_dict("records"),
+                    f"{cls_name} {self.__class__.__name__.capitalize()}",
+                )
 
             html_header = f"""
                 <style>
