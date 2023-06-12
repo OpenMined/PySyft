@@ -31,6 +31,7 @@ from ..user.user_service import UserService
 from .request import Request
 from .request import RequestInfo
 from .request import RequestInfoFilter
+from .request import RequestStatus
 from .request import SubmitRequest
 from .request_stash import RequestStash
 
@@ -168,6 +169,34 @@ class RequestService(AbstractService):
         if request.is_ok():
             request = request.ok()
             result = request.apply(context=context)
+
+            filter_by_obj = context.node.get_service_method(
+                NotificationService.filter_by_obj
+            )
+            notification = filter_by_obj(context=context, obj_uid=uid)
+
+            print(notification)
+
+            linked_obj = LinkedObject.with_context(request, context=context)
+            if not request.status == RequestStatus.PENDING:
+                print("testing", notification.status)
+
+                mark_as_read = context.node.get_service_method(
+                    NotificationService.mark_as_read
+                )
+                mark_as_read(context=context, uid=notification.id)
+
+                print("testing", notification.status)
+
+                message = CreateNotification(
+                    subject="Request status updated to: {self.status}",
+                    from_user_verify_key=context.credentials,
+                    to_user_verify_key=request.requesting_user_verify_key,
+                    linked_obj=linked_obj,
+                )
+                send_method = context.node.get_service_method(NotificationService.send)
+                send_method(context=context, message=message)
+
             return result.value
         return request.value
 

@@ -13,6 +13,7 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -28,6 +29,8 @@ ToUserVerifyKeyPartitionKey = PartitionKey(
 StatusPartitionKey = PartitionKey(key="status", type_=NotificationStatus)
 
 OrderByCreatedAtTimeStampPartitionKey = PartitionKey(key="created_at", type_=DateTime)
+
+LinkedObjectPartitionKey = PartitionKey(key="linked_obj", type_=LinkedObject)
 
 
 @instrument
@@ -89,6 +92,18 @@ class NotificationStash(BaseUIDStoreStash):
             qks=qks,
             order_by=OrderByCreatedAtTimeStampPartitionKey,
         )
+
+    def get_notification_for_linked_obj(
+        self,
+        credentials: SyftVerifyKey,
+        linked_obj: LinkedObject,
+    ) -> Result[Notification, str]:
+        qks = QueryKeys(
+            qks=[
+                LinkedObjectPartitionKey.with_obj(linked_obj),
+            ]
+        )
+        return self.query_one(credentials=credentials, qks=qks)
 
     def update_notification_status(
         self, credentials: SyftVerifyKey, uid: UID, status: NotificationStatus
