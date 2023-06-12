@@ -52,6 +52,14 @@ class RequestStatus(Enum):
     REJECTED = 1
     APPROVED = 2
 
+    def name(self) -> str:
+        if self.value == RequestStatus.PENDING.value:
+            return "Pending"
+        elif self.value == RequestStatus.REJECTED.value:
+            return "Rejected"
+        else:
+            return "Approved"
+
 
 @serializable()
 class Change(SyftObject):
@@ -158,6 +166,14 @@ class Request(SyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
+
+    def self_repr(self):
+        return {
+            "ID": str(self.id),
+            "request_type": self.changes.__repr__(),
+            "request_time": str(self.request_time),
+            "status": {"value": self.status.name(), "type": "badge-gray"},
+        }
 
     @property
     def status(self) -> RequestStatus:
@@ -606,3 +622,6 @@ class UserCodeStatusChange(Change):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+    def __repr__(self):
+        return "Code Request"
