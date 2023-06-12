@@ -206,6 +206,7 @@ class Request(SyftObject):
             change_status.applied = True
             self.history.append(change_status)
 
+        self.approval_time = DateTime.now()
         self.save(context=context)
         return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
 
