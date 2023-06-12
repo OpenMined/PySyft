@@ -357,8 +357,8 @@ class UserService(AbstractService):
 
         if not can_user_register:
             return SyftError(
-                message=f"You don't have permission to create an account \
-                on : {context.node.name}. Please contact the Domain Owner."
+                message=f"You don't have permission to create an account "
+                f"on the domain: {context.node.name}. Please contact the Domain Owner."
             )
 
         user = new_user.to(User)
