@@ -186,6 +186,13 @@ class Request(SyftObject):
         )
         return api.services.request.apply(self.id)
 
+    def deny(self):
+        api = APIRegistry.api_for(
+            self.node_uid,
+            self.syft_client_verify_key,
+        )
+        return api.services.request.deny(self.id)
+
     def approve_with_client(self, client):
         return client.api.services.request.apply(self.id)
 

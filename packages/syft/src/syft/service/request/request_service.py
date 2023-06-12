@@ -28,6 +28,7 @@ from ..service import service_method
 from ..user.user import UserView
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
+from .request import ChangeStatus
 from .request import Request
 from .request import RequestInfo
 from .request import RequestInfoFilter
@@ -171,11 +172,42 @@ class RequestService(AbstractService):
             return result.value
         return request.value
 
+    @service_method(path="request.deny", name="deny")
+    def deny(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to update request: {uid} with error: {result.err()}"
+            )
+
+        request = result.ok()
+        if request is None:
+            return SyftError(message=f"Request with uid: {uid} does not exists.")
+
+        for change in request.changes:
+            change_status = ChangeStatus(change_id=change.id, applied=False)
+            request.history.append(change_status)
+        request.save(context=context)
+
+        link = LinkedObject.with_context(request, context=context)
+
+        notification = CreateMessage(
+            subject=f"Your request for uid: {uid} has been denied. Please submit a new request.",
+            to_user_verify_key=request.requesting_user_verify_key,
+            linked_obj=link,
+        )
+        send_notification = context.node.get_service_method(MessageService.send)
+
+        result = send_notification(context=context, message=notification)
+        return SyftSuccess(message=f"Request {uid} successfully denied !")
+
     @service_method(path="request.revert", name="revert")
     def revert(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
-        request = self.stash.get_by_uid(uid)
+        request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
             result = request.ok().revert(context=context)
             return result.value
