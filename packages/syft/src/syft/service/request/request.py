@@ -186,12 +186,17 @@ class Request(SyftObject):
         )
         return api.services.request.apply(self.id)
 
-    def deny(self):
+    def deny(self, reason: str):
+        """Denies the particular request.
+
+        Args:
+            reason (str): Reason for which the request has been denied.
+        """
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
         )
-        return api.services.request.deny(self.id)
+        return api.services.request.deny(uid=self.id, reason=reason)
 
     def approve_with_client(self, client):
         return client.api.services.request.apply(self.id)

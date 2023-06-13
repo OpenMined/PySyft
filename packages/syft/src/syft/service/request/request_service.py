@@ -11,6 +11,7 @@ from result import Ok
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -174,7 +175,7 @@ class RequestService(AbstractService):
 
     @service_method(path="request.deny", name="deny")
     def deny(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID, reason: str
     ) -> Union[SyftSuccess, SyftError]:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
@@ -189,12 +190,17 @@ class RequestService(AbstractService):
         for change in request.changes:
             change_status = ChangeStatus(change_id=change.id, applied=False)
             request.history.append(change_status)
+
+        request.approval_time = DateTime.now()
         request.save(context=context)
 
         link = LinkedObject.with_context(request, context=context)
+        message_subject = (
+            f"Your request for uid: {uid} has been denied.\nReason: {reason}."
+        )
 
         notification = CreateMessage(
-            subject=f"Your request for uid: {uid} has been denied. Please submit a new request.",
+            subject=message_subject,
             to_user_verify_key=request.requesting_user_verify_key,
             linked_obj=link,
         )
