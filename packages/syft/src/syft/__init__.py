@@ -71,6 +71,14 @@ requires = make_requires(LATEST_STABLE_SYFT, __version__)
 sys.path.append(str(Path(__file__)))
 
 logger.start()
+from IPython.display import display, Markdown, Latex
+
+try:
+    get_ipython()
+    display(Markdown("\nWarning: syft is imported in light mode by default. \
+        \nTo switch to dark mode, please run `sy.options.color_theme = \'dark\'`"))
+except:
+    pass
 
 # For server-side, to enable by environment variable
 if OBLV:
