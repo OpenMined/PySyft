@@ -11,7 +11,6 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
-from ...util.experimental_flags import flags
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -24,8 +23,6 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..settings.settings import NodeSettingsUpdate
-from ..settings.settings_service import SettingsService
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -327,23 +324,6 @@ class UserService(AbstractService):
 
         except Exception as e:
             return SyftError(message=str(e))
-
-    @service_method(path="user.toggle_registration", name="toggle_signup")
-    def toggle_registration(
-        self, context: AuthedServiceContext, enable: bool
-    ) -> Union[SyftSuccess, SyftError]:
-        """Enable/Disable Registration for Data Scientist or Guest Users."""
-        flags.CAN_REGISTER = enable
-        method = context.node.get_service_method(SettingsService.update)
-        settings = NodeSettingsUpdate(signup_enabled=enable)
-
-        result = method(context=context, settings=settings)
-
-        if result.is_err():
-            return SyftError(message=f"Failed to update settings: {result.err()}")
-
-        message = "enabled" if enable else "disabled"
-        return SyftSuccess(message=f"Registration feature successfully {message}")
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate

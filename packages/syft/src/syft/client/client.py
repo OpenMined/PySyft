@@ -433,6 +433,12 @@ class SyftClient:
         return None
 
     @property
+    def settings(self) -> Optional[APIModule]:
+        if self.api is not None and self.api.has_service("user"):
+            return self.api.services.settings
+        return None
+
+    @property
     def code(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("code"):
             return self.api.services.code

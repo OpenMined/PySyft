@@ -4,7 +4,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.util.experimental_flags import flags
 
 # relative
 from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
@@ -29,7 +28,6 @@ def faker():
 
 @pytest.fixture(autouse=True)
 def worker(faker):
-    flags.CAN_REGISTER = False
     return sy.Worker.named(name=faker.name())
 
 

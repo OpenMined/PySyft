@@ -2,14 +2,17 @@
 from copy import deepcopy
 
 # third party
+from faker import Faker
 from pytest import MonkeyPatch
 from result import Err
 from result import Ok
 
 # syft absolute
+from syft.client.client import SyftClient
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
@@ -210,3 +213,43 @@ def test_settingsservice_update_fail(
 
     assert isinstance(response, SyftError)
     assert response.message == mock_update_error_message
+
+
+def test_settings_allow_guest_registration(
+    monkeypatch: MonkeyPatch,
+    faker: Faker,
+    guest_domain_client: SyftClient,
+    root_domain_client: SyftClient,
+) -> None:
+    email1 = faker.email()
+    email2 = faker.email()
+
+    monkeypatch.setenv("ENABLE_SIGNUP", "False")
+    response_1 = root_domain_client.register(
+        email=email1, password="joker123", name="Joker"
+    )
+    assert isinstance(response_1, SyftSuccess)
+
+    # by default, the guest client can't register new user
+    response_2 = guest_domain_client.register(
+        email=email2, password="harley123", name="Harley"
+    )
+    assert isinstance(response_2, SyftError)
+
+    assert any([user.email == email1 for user in root_domain_client.users])
+
+    # only after the root client enable other users to signup, they can
+    root_domain_client.settings.allow_guest_signup(enable=True)
+    response_3 = guest_domain_client.register(
+        email=email2, password="harley123", name="Harley"
+    )
+    assert isinstance(response_3, SyftSuccess)
+
+    assert any([user.email == email2 for user in root_domain_client.users])
+
+    # if the root client turn off the signup option, guest users can't register anymore
+    root_domain_client.settings.allow_guest_signup(enable=False)
+    response_4 = guest_domain_client.register(
+        email="batman@test.com", password="batman123", name="Batman"
+    )
+    assert isinstance(response_4, SyftError)
