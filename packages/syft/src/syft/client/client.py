@@ -449,9 +449,11 @@ class SyftClient:
 
     @property
     def notifications(self) -> Optional[APIModule]:
+        print(
+            "WARNING: Notifications is currently is in a beta state, so use carefully!"
+        )
+        print("If possible try using client.requests/client.projects")
         if self.api is not None and self.api.has_service("messages"):
-            # reverse order to have the newer ones on the top of the list
-            #
             messages = self.api.services.messages.get_all()
             return messages
         return None
