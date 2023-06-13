@@ -1,4 +1,4 @@
-__version__ = "0.8.1-beta.5"
+__version__ = "0.8.1-beta.9"
 
 # stdlib
 from pathlib import Path
@@ -36,6 +36,7 @@ from .service.action.plan import planify  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401
 from .service.code.user_code import syft_function  # noqa: F401
 from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
+from .service.dataset.dataset import Contributor  # noqa: F401
 from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
 from .service.dataset.dataset import CreateDataset as Dataset  # noqa: F401
 from .service.message.messages import MessageStatus  # noqa: F401
