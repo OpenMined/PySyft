@@ -612,17 +612,46 @@ class SyftClient:
         <style>
         .client {{color: {SURFACE_DARK_BRIGHT};}}
         .code-block {{background-color: #f7f7f7; border: 1px solid #cfcfcf; padding: 0px 2px;}}
+        .container {{
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 10px;
+            gap: 8px;
+
+            height: 34px;
+            width: fill;
+            /* Secondary/Container */
+
+            background: #C2DEF0;
+            border-radius: 4px;
+
+            /* Inside auto layout */
+
+            flex: none;
+            order: 2;
+            align-self: stretch;
+            flex-grow: 0;}}
+
+
         </style>
-        <div class="{self._repr_html_class_}" style="padding:5px;">
-            <h3>Welcome to {self.name}</h3><br />
-            <strong>Institution:</strong> TODO<br />
-            <strong>Owner:</strong> TODO<br />
+        <div class="{self._repr_html_class_}" style="font-family: 'Open Sans';padding:5px;">
+            <img src="packages/grid/frontend/static/assets/small-grid-symbol-logo.png" alt="Logo"
+            style="width:48px;height:48px;padding:3px;"><br />
+            <h2>Welcome to {self.name}</h2>
+            <!-- <strong>Institution:</strong> TODO<br /> -->
+            <!-- <strong>Owner:</strong> TODO<br /> -->
             <strong>URL:</strong> {self.connection.url}<br />
-            <strong>PyGrid Admin:</strong> TODO<br />
+            <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
+            <div class='container'>
+                &#9432;&nbsp;
+                This domain is run by the library PySyft to learn more about how it works visit
+                <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
+            </div>
             <h4>Commands to Get Started</h4>
             <ul style='padding-left: 1em;'>
                 <li><span class='code-block'>node.requests(status='pending')</span> - list pending requests</li>
-            </ul>
+            </u>
         </div><br />
         """
 
