@@ -6,6 +6,10 @@ import sys
 from typing import Any
 from typing import Callable
 
+# third party
+from IPython.display import Markdown
+from IPython.display import display
+
 # relative
 from . import gevent_patch  # noqa: F401
 from .client.client import connect  # noqa: F401
@@ -71,13 +75,16 @@ requires = make_requires(LATEST_STABLE_SYFT, __version__)
 sys.path.append(str(Path(__file__)))
 
 logger.start()
-from IPython.display import display, Markdown, Latex
 
 try:
-    get_ipython()
-    display(Markdown("\nWarning: syft is imported in light mode by default. \
-        \nTo switch to dark mode, please run `sy.options.color_theme = \'dark\'`"))
-except:
+    get_ipython()  # noqa: F821
+    display(
+        Markdown(
+            "\nWarning: syft is imported in light mode by default. \
+        \nTo switch to dark mode, please run `sy.options.color_theme = 'dark'`"
+        )
+    )
+except:  # noqa: E722
     pass
 
 # For server-side, to enable by environment variable

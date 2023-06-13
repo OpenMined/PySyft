@@ -451,9 +451,11 @@ class SyftClient:
     def notifications(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("messages"):
             # reverse order to have the newer ones on the top of the list
-            # 
+            #
             messages = self.api.services.messages.get_all()
-            messages = list(filter(lambda msg: msg.subject != "Approval Request", messages))
+            messages = list(
+                filter(lambda msg: msg.subject != "Approval Request", messages)
+            )
             messages.sort(key=lambda msg: msg.created_at, reverse=True)
             return messages
         return None
