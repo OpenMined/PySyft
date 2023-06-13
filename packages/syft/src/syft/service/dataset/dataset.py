@@ -85,12 +85,6 @@ class Asset(SyftObject):
 
     __attr_repr_cols__ = ["name", "shape"]
 
-    # @property
-    # def pointer(self) -> ActionObjectPointer:
-    #     api = APIRegistry.api_for(node_uid=self.node_uid)
-    #     obj_ptr = api.services.action.get_pointer(uid=self.action_id)
-    #     return obj_ptr
-
     def _repr_html_(self) -> Any:
         # relative
         from ...service.action.action_object import ActionObject
@@ -158,17 +152,6 @@ class Asset(SyftObject):
             user_verify_key=self.syft_client_verify_key,
         )
         return api.services.action.get_pointer(self.action_id).syft_action_data
-
-    @property
-    def mock(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        return api.services.action.get_pointer(self.action_id)
 
     @property
     def data(self) -> Any:
@@ -428,7 +411,7 @@ _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
 
 
 def _check_asset_must_contain_mock(asset_list: List[CreateAsset]) -> None:
-    assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
+    assets_without_mock = [asset.name for asset in asset_list if asset.pointer is None]
     if assets_without_mock:
         raise ValueError(
             "".join(
