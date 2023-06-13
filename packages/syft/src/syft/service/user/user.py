@@ -128,7 +128,7 @@ class UserCreate(UserUpdate):
     verify_key: Optional[SyftVerifyKey]
     institution: Optional[str]
     website: Optional[str]
-    created_by: Optional[SyftVerifyKey]
+    created_by: Optional[SyftSigningKey]
 
     __attr_repr_cols__ = ["name", "email"]
 

@@ -8,7 +8,7 @@ from result import Err
 from result import Ok
 
 # syft absolute
-from syft.client.client import SyftClient
+import syft
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
@@ -216,15 +216,17 @@ def test_settingsservice_update_fail(
 
 
 def test_settings_allow_guest_registration(
-    monkeypatch: MonkeyPatch,
-    faker: Faker,
-    guest_domain_client: SyftClient,
-    root_domain_client: SyftClient,
+    monkeypatch: MonkeyPatch, faker: Faker
 ) -> None:
+    # Create a new worker
+    monkeypatch.setenv("ENABLE_SIGNUP", "False")
+    worker = syft.Worker.named(name=faker.name())
+    guest_domain_client = worker.guest_client
+    root_domain_client = worker.root_client
+
     email1 = faker.email()
     email2 = faker.email()
 
-    monkeypatch.setenv("ENABLE_SIGNUP", "False")
     response_1 = root_domain_client.register(
         email=email1, password="joker123", name="Joker"
     )

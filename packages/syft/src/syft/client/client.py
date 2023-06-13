@@ -547,7 +547,7 @@ class SyftClient:
                 password_verify=password,
                 institution=institution,
                 website=website,
-                created_by=self.credentials.verify_key,
+                created_by=self.credentials,
             )
         except Exception as e:
             return SyftError(message=str(e))
