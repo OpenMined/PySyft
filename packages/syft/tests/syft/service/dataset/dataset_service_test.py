@@ -85,7 +85,7 @@ def test_mock_always_not_real_after_set_mock_to_empty(
     with pytest.raises(ValidationError):
         asset.mock_is_real = True
 
-    asset.pointer = mock()
+    asset.mock = mock()
     asset.mock_is_real = True
     assert asset.mock_is_real
 
@@ -96,13 +96,13 @@ def test_mock_always_not_real_after_set_to_empty(
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
 
-    asset.pointer = ActionObject.empty()
+    asset.mock = ActionObject.empty()
     assert not asset.mock_is_real
 
     with pytest.raises(ValidationError):
         asset.mock_is_real = True
 
-    asset.pointer = mock()
+    asset.mock = mock()
     asset.mock_is_real = True
     assert asset.mock_is_real
 
@@ -123,7 +123,7 @@ def test_cannot_set_empty_mock_with_true_mock_is_real(
     with pytest.raises(ValidationError):
         asset.set_mock(empty_mock, mock_is_real=True)
 
-    assert asset.pointer is asset_with_mock["mock"]
+    assert asset.mock is asset_with_mock["mock"]
 
 
 def test_dataset_cannot_have_assets_with_none_mock() -> None:
@@ -208,7 +208,7 @@ def test_domain_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> No
     assets = [Asset(**make_asset_with_mock()) for _ in range(10)]
     dataset = Dataset(name=random_hash(), asset_list=assets)
 
-    dataset.asset_list[0].pointer = None
+    dataset.asset_list[0].mock = None
 
     root_domain_client = worker.root_client
 

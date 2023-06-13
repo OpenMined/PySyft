@@ -116,7 +116,7 @@ class Asset(SyftObject):
             + "<p><strong>Data:</strong></p>"
             + data_table_line
             + "<p><strong>Mock Data:</strong></p>"
-            + itables.to_html_datatable(df=self.mock_data, css=itables_css)
+            + itables.to_html_datatable(df=self.mock, css=itables_css)
             + "</div>"
         )
 
@@ -143,7 +143,7 @@ class Asset(SyftObject):
         return api.services.action.get_pointer(self.action_id)
 
     @property
-    def mock_data(self) -> Any:
+    def mock(self) -> Any:
         # relative
         from ...client.api import APIRegistry
 
@@ -411,7 +411,7 @@ _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
 
 
 def _check_asset_must_contain_mock(asset_list: List[CreateAsset]) -> None:
-    assets_without_mock = [asset.name for asset in asset_list if asset.pointer is None]
+    assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
     if assets_without_mock:
         raise ValueError(
             "".join(
