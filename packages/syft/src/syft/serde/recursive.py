@@ -179,6 +179,9 @@ def combine_bytes(capnp_list: List[bytes]) -> bytes:
 
 
 def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuilder:
+    # relative
+    from ..types.syft_object import DYNAMIC_SYFT_ATTRIBUTES
+
     is_type = False
     if isinstance(self, type):
         is_type = True
@@ -213,9 +216,13 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     if attribute_list is None:
         attribute_list = self.__dict__.keys()
 
-    hash_exclude_attrs = hash_exclude_attrs if for_hashing else []
+    hash_exclude_attrs_set = (
+        set(hash_exclude_attrs).union(set(DYNAMIC_SYFT_ATTRIBUTES))
+        if for_hashing
+        else set()
+    )
     attribute_list = (
-        set(attribute_list) - set(exclude_attrs_list) - set(hash_exclude_attrs)
+        set(attribute_list) - set(exclude_attrs_list) - hash_exclude_attrs_set
     )
 
     msg.init("fieldsName", len(attribute_list))
