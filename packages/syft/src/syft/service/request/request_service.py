@@ -196,7 +196,8 @@ class RequestService(AbstractService):
 
         link = LinkedObject.with_context(request, context=context)
         message_subject = (
-            f"Your request for uid: {uid} has been denied.\nReason: {reason}."
+            f"Your request for uid: {uid} has been denied. "
+            f"Reason specified by Data Owner: {reason}."
         )
 
         notification = CreateMessage(
