@@ -651,7 +651,7 @@ class SyftClient:
             <h4>Commands to Get Started</h4>
             <ul style='padding-left: 1em;'>
                 <li><span class='code-block'>node.requests(status='pending')</span> - list pending requests</li>
-            </u>
+            </ul>
         </div><br />
         """
 
