@@ -660,6 +660,7 @@ def login(
         login_credentials = UserLoginCredentials(email=email, password=password)
 
     if login_credentials is None:
+        print(f"Logged into {_client.name} as GUEST")
         return _client.guest()
 
     if cache and login_credentials:
