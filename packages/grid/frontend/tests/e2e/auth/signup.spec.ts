@@ -67,17 +67,34 @@ test.describe('User Sign Up', () => {
     await page.getByTestId('password').fill(testUserPassword);
     await page.getByRole('button', { name: /login/i }).click();
 
-    // intercept storageState
-    // get user_id from localStorage
-
     await page.waitForURL('**/datasets');
 
     const storageState = await context.storageState();
 
-    console.log(`storageState: ${JSON.stringify(storageState, null, 1)}`);
+    expect(storageState).toHaveProperty('origins');
+
+    const userId = extractUserId(storageState);
+
+    expect(userId).not.toBe('');
 
     // call deleteUser(user_id)
   });
+
+  function extractUserId(storageState: any) {
+    if (storageState.origins && storageState.origins.length) {
+      const origin = storageState.origins[0];
+
+      if (origin.localStorage && origin.localStorage.length) {
+        for (let i = 0; i < origin.localStorage.length; i++) {
+          if (origin.localStorage[i]['name'] == 'id') {
+            return origin.localStorage[i]['value'];
+          }
+        }
+      }
+    }
+
+    return '';
+  }
 
   test('should fail to create user and notify if account/email already exists', async ({
     page
