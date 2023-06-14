@@ -454,8 +454,7 @@ class SyftClient:
         )
         print("If possible try using client.requests/client.projects")
         if self.api is not None and self.api.has_service("messages"):
-            messages = self.api.services.messages.get_all()
-            return messages
+            return self.api.services.messages
         return None
 
     @property
