@@ -26,7 +26,7 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
-from ..img.base64 import small_grid_symbol_logo
+from ..img.base64 import base64read
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
@@ -635,8 +635,13 @@ class SyftClient:
             {help_command}
         </ul>
         """
+
+        small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
+
         return f"""
         <style>
+            {{fonts_css}}
+
             .syft-container {{
                 padding: 5px;
                 font-family: 'Open Sans';
@@ -664,7 +669,7 @@ class SyftClient:
             <div class="syft-space">
                 <!-- <strong>Institution:</strong> TODO<br /> -->
                 <!-- <strong>Owner:</strong> TODO<br /> -->
-                <strong>URL:</strong> {self.connection.url}<br />
+                <strong>URL:</strong> {getattr(self.connection, 'url', '')}<br />
                 <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
             </div>
             <div class='syft-alert-info syft-space'>
