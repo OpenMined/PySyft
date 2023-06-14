@@ -541,26 +541,28 @@ class UserCodeStatusChange(Change):
     match_type: bool = True
     __attr_repr_cols__ = [
         "link.service_func_name",
-        "link.input_policy",
-        "link.output_policy",
+        "link.input_policy_type.__canonical_name__",
+        "link.output_policy_type.__canonical_name__",
+        "link.status.approved",
     ]
 
     def _repr_markdown_(self) -> str:
         link = self.link
-        input_policy = (
-            link.input_policy._repr_markdown_(wrap_as_python=False, indent=1)
-            if link.input_policy is not None
+        input_policy_type = (
+            link.input_policy_type.__canonical_name__
+            if link.input_policy_type is not None
             else None
         )
-        output_policy = (
-            link.input_policy._repr_markdown_(wrap_as_python=False, indent=1)
-            if link.output_policy is not None
+        output_policy_type = (
+            link.output_policy_type.__canonical_name__
+            if link.output_policy_type is not None
             else None
         )
         repr_dict = {
             "function": link.service_func_name,
-            "input_policy": f"\n{input_policy}",
-            "output_policy": f"\n{output_policy}",
+            "input_policy_type": f"{input_policy_type}",
+            "output_policy_type": f"{output_policy_type}",
+            "approved": f"{link.status.approved}",
         }
         return markdown_as_class_with_fields(self, repr_dict)
 

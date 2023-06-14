@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import copy
+import hashlib
 import textwrap
 import time
 from typing import Any
@@ -12,12 +13,12 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import Tuple
 from typing import Type
 from typing import Union
 
 # third party
 import pydantic
-from pydantic import root_validator
 from pydantic import validator
 from rich.progress import Progress
 from typing_extensions import Self
@@ -28,6 +29,7 @@ from ...client.client import SyftClientSessionCache
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -65,8 +67,7 @@ class Identity(SyftObject):
 
     def __repr__(self) -> str:
         verify_key_str = f"{self.verify_key}"
-        id_str = f"{self.id}"
-        return f"<🔑 {verify_key_str[0:8]} @ 🟢 {id_str[0:8]}>"
+        return f"<🔑 {verify_key_str[0:8]} @ 🟢 {self.id.short()}>"
 
     @classmethod
     def from_client(cls, client: SyftClient) -> Identity:
@@ -145,8 +146,7 @@ class ProjectEvent(SyftObject):
             return SyftError(message="Sign event first")
         try:
             # Recompute hash
-            event_hash_bytes = self.__sha256__()
-            current_hash = event_hash_bytes.hex()
+            event_hash_bytes, current_hash = create_project_event_hash(self)
             if current_hash != self.event_hash:
                 raise Exception(
                     f"Event hash {current_hash} does not match {self.event_hash}"
@@ -212,8 +212,8 @@ class ProjectEvent(SyftObject):
                 f"{signing_key.verify_key}"
             )
         # Calculate Hash
-        event_hash_bytes = self.__sha256__()
-        self.event_hash = event_hash_bytes.hex()
+        event_hash_bytes, event_hash = create_project_event_hash(self)
+        self.event_hash = event_hash
 
         # Sign Hash
         signed_obj = signing_key.signing_key.sign(event_hash_bytes)
@@ -325,6 +325,9 @@ class ProjectRequest(ProjectEventAddObject):
         if isinstance(result, SyftError):
             return result
         return ProjectRequestResponse(response=True, parent_event_id=self.id)
+
+    def accept_by_depositing_result(self, result: Any, force: bool = False):
+        return self.request.accept_by_depositing_result(result=result, force=force)
 
     # TODO: To add deny requests, when deny functionality is added
 
@@ -628,6 +631,7 @@ def add_code_request_to_project(
     project: Union[ProjectSubmit, Project],
     code: SubmitUserCode,
     client: SyftClient,
+    reason: Optional[str] = None,
 ):
     if not isinstance(code, SubmitUserCode):
         return SyftError(
@@ -637,7 +641,12 @@ def add_code_request_to_project(
     if not isinstance(client, SyftClient):
         return SyftError(message="Client should be a valid SyftClient")
 
-    submitted_req = client.api.services.code.request_code_execution(code)
+    if reason is None:
+        reason = f"Code Request for Project: {project.name} has been submitted by {project.created_by}"
+
+    submitted_req = client.api.services.code.request_code_execution(
+        code=code, reason=reason
+    )
     if isinstance(submitted_req, SyftError):
         return submitted_req
 
@@ -658,28 +667,42 @@ class Project(SyftObject):
     __canonical_name__ = "Project"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __attr_repr_cols__ = ["name", "description", "created_by", "events"]
+    __attr_unique__ = ["name"]
+
+    # TODO: re-add users, members, leader_node_peer
+    __hash_exclude_attrs__ = [
+        "user_signing_key",
+        "start_hash",
+        "users",
+        "members",
+        "leader_node_peer",
+        "event_id_hashmap",
+    ]
+
     id: Optional[UID]
     name: str
     description: Optional[str]
-    shareholders: List[NodeIdentity]
-    project_permissions: Set[str]
-    state_sync_leader: NodeIdentity
-    leader_node_peer: Optional[NodePeer]
-    consensus_model: ConsensusModel
-    store: Dict[UID, Dict[UID, SyftObject]] = {}
-    permissions: Dict[UID, Dict[UID, Set[str]]] = {}
+    members: List[NodeIdentity]
+    users: List[UserIdentity] = []
+    created_by: str
+    start_hash: Optional[str]
+    # WARNING:  Do not add it to hash keys or print directly
+    user_signing_key: Optional[SyftSigningKey] = None
+
+    # Project events
     events: List[ProjectEvent] = []
     event_id_hashmap: Dict[UID, ProjectEvent] = {}
-    start_hash: Optional[str]
-    # WARNING:  Do not add it to hash keys , or print directly
-    user_signing_key: Optional[SyftSigningKey] = None
-    user_email_address: Optional[str] = None
-    users: List[UserIdentity] = []
 
-    __attr_repr_cols__ = ["name", "description", "user_email_address", "events"]
-    __attr_unique__ = ["name"]
+    # Project sync
+    state_sync_leader: NodeIdentity
+    leader_node_peer: Optional[NodePeer]
 
-    __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
+    # Unused
+    consensus_model: ConsensusModel
+    project_permissions: Set[str]
+    # store: Dict[UID, Dict[UID, SyftObject]] = {}
+    # permissions: Dict[UID, Dict[UID, Set[str]]] = {}
 
     def _broadcast_event(
         self, project_event: ProjectEvent
@@ -689,7 +712,7 @@ class Project(SyftObject):
         return leader_client.api.services.project.broadcast_event(project_event)
 
     def get_all_identities(self) -> List[Identity]:
-        return [*self.shareholders, *self.users]
+        return [*self.members, *self.users]
 
     def key_in_project(self, verify_key: SyftVerifyKey) -> bool:
         project_verify_keys = [
@@ -705,7 +728,7 @@ class Project(SyftObject):
         for identity in identities:
             if identity.verify_key == verify_key:
                 return identity
-        return SyftError(message=f"Shareholder with verify key: {verify_key} not found")
+        return SyftError(message=f"Member with verify key: {verify_key} not found")
 
     def get_leader_client(self, signing_key: SyftSigningKey) -> SyftClient:
         if self.leader_node_peer is None:
@@ -879,11 +902,14 @@ class Project(SyftObject):
                 results.append(event)
         return results
 
-    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+    def create_code_request(
+        self, obj: SubmitUserCode, client: SyftClient, reason: Optional[str] = None
+    ):
         return add_code_request_to_project(
             project=self,
             code=obj,
             client=client,
+            reason=reason,
         )
 
     def get_messages(self) -> List[Union[ProjectMessage, ProjectThreadMessage]]:
@@ -1064,7 +1090,7 @@ class Project(SyftObject):
                     self.event_id_hashmap[event.id] = event
                     # for a fancy UI view , deliberately slowing the sync
                     if curr_val <= 7:
-                        time.sleep(0.2)
+                        time.sleep(0.1)
         else:
             for event in unsynced_events:
                 self.events.append(event)
@@ -1072,187 +1098,204 @@ class Project(SyftObject):
 
         return SyftSuccess(message="Synced project  with Leader")
 
+    @property
+    def requests(self) -> List[Request]:
+        return [
+            event.request for event in self.events if isinstance(event, ProjectRequest)
+        ]
 
-@serializable(without=["bootstrap_events"])
+
+@serializable(without=["bootstrap_events", "clients"])
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_repr_cols__ = ["name"]
+
+    __hash_exclude_attrs__ = [
+        "start_hash",
+        "users",
+        "members",
+        "clients",
+        "leader_node_route",
+        "bootstrap_events",
+    ]
+
     # stash rules
-    __attr_repr_cols__ = ["name", "description", "user_email_address"]
+    __attr_repr_cols__ = ["name", "description", "created_by"]
     __attr_unique__ = ["name"]
 
-    # init args
-    id: Optional[UID]
+    id: UID
+
+    # Init args
     name: str
     description: Optional[str]
-    shareholders: List[NodeIdentity]
-    project_permissions: Set[str] = set()
-    state_sync_leader: Optional[NodeIdentity]
-    consensus_model: ConsensusModel = DemocraticConsensusModel()
-    leader_node_route: Optional[NodeRoute]
-    user_email_address: Optional[str] = None
+    members: Union[List[SyftClient], List[NodeIdentity]]
+
+    # These will be automatically populated
     users: List[UserIdentity] = []
+    created_by: Optional[str] = None
+    clients: List[SyftClient] = []  # List of member clients
+    start_hash: str = ""
+
+    # Project sync args
+    leader_node_route: Optional[NodeRoute]
+    state_sync_leader: Optional[NodeIdentity]
     bootstrap_events: Optional[List[ProjectEvent]] = []
 
-    @root_validator(pre=True)
-    def make_shareholders_and_leader_route(cls, values) -> Dict:
-        clients = values["shareholders"]
+    # Unused at the moment
+    project_permissions: Set[str] = set()
+    consensus_model: ConsensusModel = DemocraticConsensusModel()
 
-        if not clients:
-            raise SyftException("Shareholders cannot be empty")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        shareholders = []
-        for client in clients:
-            if isinstance(client, NodeIdentity):
-                shareholders.append(client)
-            elif isinstance(client, SyftClient):
-                metadata = client.metadata.to(NodeMetadata)
-                node_identity = metadata.to(NodeIdentity)
-                shareholders.append(node_identity)
-            else:
-                raise Exception(
-                    f"Shareholders should be either SyftClient or NodeIdentity received: {type(client)}"
+        # Preserve member SyftClients in a private variable clients
+        # self.members will be List[NodeIdentity] on the node i.e. self.clients = []
+        self.clients = self.get_syft_clients(self.members)
+
+        # If ProjectSubmit is being re-created at node side
+        if len(self.clients) == 0:
+            return
+
+        # Populate the created_by
+        self.created_by = self.clients[0].logged_in_user
+
+        # Extract information of logged in user from syft clients
+        self.users = [UserIdentity.from_client(client) for client in self.clients]
+
+        # Convert SyftClients to NodeIdentities
+        self.members = list(map(self.to_node_identity, self.members))
+
+    @validator("members", pre=True)
+    def verify_members(cls, val: Union[List[SyftClient], List[NodeIdentity]]):
+        # SyftClients must be logged in by the same emails
+        clients = cls.get_syft_clients(val)
+        if len(clients) > 0:
+            emails = set([client.logged_in_user for client in clients])
+            if len(emails) > 1:
+                raise SyftException(
+                    f"All clients must be logged in from the same account. Found multiple: {emails}"
                 )
-        if isinstance(clients[0], SyftClient):
-            route_exchange = cls.exchange_routes(clients)
-            if isinstance(route_exchange, SyftError):
-                raise SyftException(route_exchange)
-
-            values["leader_node_route"] = connection_to_route(clients[0].connection)
-
-        values["shareholders"] = shareholders
-
-        return values
-
-    @root_validator(pre=True)
-    def check_user_email_and_users(cls, values) -> Dict:
-        if "user_email_address" in values:  # avoids KeyError below if no email provided
-            if values["user_email_address"] is not None:
-                users = values["users"]
-                if len(users) == 0:
-                    raise SyftException(
-                        "Users cannot be empty if user email address is provided"
-                    )
-
-                share_holders = values["shareholders"]
-                if len(share_holders) != len(users):
-                    raise SyftException(
-                        "Number of users should be equal to number of shareholders"
-                    )
-                users_node_identity = []
-                for user in users:
-                    if isinstance(user, SyftClient):
-                        users_node_identity.append(UserIdentity.from_client(user))
-                    elif isinstance(user, UserIdentity):
-                        users_node_identity.append(user)
-                    else:
-                        raise SyftException(
-                            "Users should be either SyftClient or UserIdentity"
-                        )
-                values["users"] = users_node_identity
-
-        return values
+        return val
 
     @staticmethod
-    def exchange_routes(
-        shareholders: List[SyftClient],
-    ) -> Union[SyftSuccess, SyftError]:
-        # Since we are implementing a leader based system
-        # To be able to optimize exchanging routes.
-        # We require only the leader to exchange routes with all the shareholders
-        # Meaning if we could guarantee, that the leader node is able to reach the shareholders
-        # the project events could be broadcasted to all the shareholders
+    def get_syft_clients(vals: Union[List[SyftClient], List[NodeIdentity]]):
+        return [client for client in vals if isinstance(client, SyftClient)]
 
-        # Currently we are assuming that the first shareholder is the leader
-        # This would be changed in our future leaderless approach
-        leader_client = shareholders[0]
-
-        for follower_client in shareholders[1::]:
-            print()
-            print(
-                f"Exchanging Routes 📡: {leader_client.name} --- {follower_client.name}",
-                end="",
+    @staticmethod
+    def to_node_identity(val: Union[SyftClient, NodeIdentity]):
+        if isinstance(val, NodeIdentity):
+            return val
+        elif isinstance(val, SyftClient):
+            metadata = val.metadata.to(NodeMetadata)
+            return metadata.to(NodeIdentity)
+        else:
+            raise SyftException(
+                f"members must be SyftClient or NodeIdentity. Received: {type(val)}"
             )
-            result = leader_client.exchange_route(follower_client)
-            if isinstance(result, SyftError):
-                return result
-            print(" ✅")
-            print()
 
-        return SyftSuccess(message="Successfully Exchaged Routes")
-
-    def create_code_request(self, obj: SubmitUserCode, client: SyftClient):
+    def create_code_request(
+        self, obj: SubmitUserCode, client: SyftClient, reason: Optional[str] = None
+    ):
         return add_code_request_to_project(
             project=self,
             code=obj,
             client=client,
+            reason=reason,
         )
 
-    def start(self) -> Project:
-        # Creating a new unique UID to be used by all shareholders
-        project_id = UID()
-        projects: List[Project] = []
+    def start(self, return_all_projects=False) -> Project:
+        # Currently we are assuming that the first member is the leader
+        # This would be changed in our future leaderless approach
+        leader = self.clients[0]
+        followers = self.clients[1:]
 
-        if not self.users:
-            # If the Data Owner creates the project
-            node_identities = self.shareholders
-        else:
-            # If the Data Scientist creates the project
-            node_identities = self.users
+        try:
+            # Check for DS role across all members
+            self._pre_submit_checks(self.clients)
 
-        for node_identity in node_identities:
-            client = SyftClientSessionCache.get_client_by_uid_and_verify_key(
-                verify_key=node_identity.verify_key, node_uid=node_identity.id
-            )
-            if client is None:
-                raise SyftException(
-                    f"Client not found for node_identity: {node_identity}"
-                    "Kindly login to the node"
-                )
+            # Exchange route between leaders and followers
+            self._exchange_routes(leader, followers)
 
-            result = client.api.services.project.create_project(
-                project=self, project_id=project_id
-            )
-            if isinstance(result, SyftError):
-                return result
-            else:
-                projects.append(result)
+            # create project for each node
+            projects_map = self._create_projects(self.clients)
 
-        if self.bootstrap_events:
-            # TODO: a better way to pick the leader node's project
-            project = projects[0]
+            # bootstrap project with pending events on leader node's project
+            self._bootstrap_events(projects_map[leader])
 
-            for event in self.bootstrap_events:
-                result = project.add_event(event)
+            if return_all_projects:
+                return list(projects_map.values())
+
+            return projects_map[leader]
+        except SyftException as exp:
+            return SyftError(message=str(exp))
+
+    def _pre_submit_checks(self, clients: List[SyftClient]):
+        try:
+            # Check if the user can create projects
+            for client in clients:
+                result = client.api.services.project.can_create_project()
                 if isinstance(result, SyftError):
-                    return result
+                    raise SyftException(result.message)
+        except Exception:
+            raise SyftException("Only Data Scientists can create projects")
 
-            self.bootstrap_events.clear()
+        return True
 
-        # as we currently assume that the first shareholder is the leader.
+    def _exchange_routes(self, leader: SyftClient, followers: List[SyftClient]):
+        # Since we are implementing a leader based system
+        # To be able to optimize exchanging routes.
+        # We require only the leader to exchange routes with all the members
+        # Meaning if we could guarantee, that the leader node is able to reach the members
+        # the project events could be broadcasted to all the members
+
+        for follower in followers:
+            result = leader.exchange_route(follower)
+            if isinstance(result, SyftError):
+                raise SyftException(result.message)
+
+        self.leader_node_route = connection_to_route(leader.connection)
+
+    def _create_projects(self, clients: List[SyftClient]):
+        projects: Dict[SyftClient, Project] = dict()
+
+        for client in clients:
+            result = client.api.services.project.create_project(project=self)
+            if isinstance(result, SyftError):
+                raise SyftException(result.message)
+            projects[client] = result
+
         return projects
 
+    def _bootstrap_events(self, leader_project: Project):
+        if not self.bootstrap_events:
+            return
 
-def add_shareholders_as_owners(shareholders: List[SyftVerifyKey]) -> Set[str]:
+        while len(self.bootstrap_events) > 0:
+            event = self.bootstrap_events.pop(0)
+            result = leader_project.add_event(event)
+            if isinstance(result, SyftError):
+                raise SyftException(result.message)
+
+
+def add_members_as_owners(members: List[SyftVerifyKey]) -> Set[str]:
     keys = set()
-    for shareholder in shareholders:
-        owner_key = f"OWNER_{shareholder.verify_key}"
+    for member in members:
+        owner_key = f"OWNER_{member.verify_key}"
         keys.add(owner_key)
     return keys
 
 
 def elect_leader(context: TransformContext) -> TransformContext:
-    if len(context.output["shareholders"]) == 0:
-        raise Exception("Project's require at least one shareholder")
+    if len(context.output["members"]) == 0:
+        raise Exception("Project's require at least one member")
 
-    context.output["state_sync_leader"] = context.output["shareholders"][0]
+    context.output["state_sync_leader"] = context.output["members"][0]
 
     return context
 
 
 def check_permissions(context: TransformContext) -> TransformContext:
-    if len(context.output["shareholders"]) > 1:
+    if len(context.output["members"]) > 1:
         # more than 1 node
         pass
 
@@ -1260,7 +1303,7 @@ def check_permissions(context: TransformContext) -> TransformContext:
     if len(context.output["project_permissions"]) == 0:
         project_permissions = context.output["project_permissions"]
         project_permissions = project_permissions.union(
-            add_shareholders_as_owners(context.output["shareholders"])
+            add_members_as_owners(context.output["members"])
         )
         context.output["project_permissions"] = project_permissions
 
@@ -1270,3 +1313,58 @@ def check_permissions(context: TransformContext) -> TransformContext:
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
     return [elect_leader, check_permissions]
+
+
+def hash_object(obj: Any) -> Tuple[bytes, str]:
+    """Hashes an object using sha256
+
+    Args:
+        obj (Any): Object to be hashed
+
+    Returns:
+        str: Hashed value of the object
+    """
+    hash_bytes = _serialize(obj, to_bytes=True, for_hashing=True)
+    hash = hashlib.sha256(hash_bytes)
+    return (hash.digest(), hash.hexdigest())
+
+
+def create_project_hash(project: Project) -> Tuple[bytes, str]:
+    # Creating a custom hash for the project
+    # as the recursive hash is yet to be revamped
+    # for primitives python types
+
+    # hashing is calculated based on the following attributes
+    # attrs = ["name", "description", "created_by", "members", "users"]
+
+    return hash_object(
+        [
+            project.name,
+            project.description,
+            project.created_by,
+            [hash_object(member) for member in project.members],
+            [hash_object(user) for user in project.users],
+        ]
+    )
+
+
+def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
+    # Creating a custom hash for the project
+    # as the recursive hash is yet to be revamped
+    # for primitives python types
+
+    # hashing is calculated based on the following attributes
+    # attrs = ["id", "project_id", "seq no",
+    #  "prev_event_uid", "prev_event_hash", "creator_verify_key"]
+
+    return hash_object(
+        [
+            project_event.id,
+            project_event.project_id,
+            project_event.seq_no,
+            project_event.prev_event_uid,
+            project_event.timestamp.utc_timestamp,
+            project_event.prev_event_hash,
+            hash_object(project_event.creator_verify_key)[1],
+        ]
+    )
