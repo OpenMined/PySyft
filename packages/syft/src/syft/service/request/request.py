@@ -140,6 +140,7 @@ class Request(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     requesting_user_verify_key: SyftVerifyKey
+    requesting_user_name: str
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
     updated_at: Optional[DateTime]
@@ -170,7 +171,7 @@ class Request(SyftObject):
         for change in self.changes:
             str_change = ""
             if isinstance(change, UserCodeStatusChange):
-                str_change += f"User TODO changes {change.link.service_func_name} to permission RequestStatus.APPROVED" 
+                str_change += f"User {self.requesting_user_name} changes {change.link.service_func_name} to permission RequestStatus.APPROVED" 
             else:
                 str_change += "Not implemented"
             str_changes.append(str_change)
@@ -185,7 +186,9 @@ class Request(SyftObject):
             + f"<p><strong>Id: </strong>{self.id}</p>"
             + f"<p><strong>Request time: </strong>{self.request_time}</p>"
             + updated_at_line
+            + f"<p><strong> Changes: </strong>"
             + str(str_changes)
+            + '</p>'
             + f"<p><strong>Status: </strong>{self.status}</p>"
             + "</div>"
         )
@@ -406,6 +409,12 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
         context.output["requesting_user_verify_key"] = context.credentials
     return context
 
+def add_requesting_user_name(context: TransformContext) -> TransformContext:
+    user_key = context.output["requesting_user_verify_key"]
+    user_service = context.node.get_service("UserService")
+    user = user_service.get_by_verify_key(user_key)
+    context.output["requesting_user_name"] = user.name
+    return context
 
 @transform(SubmitRequest, Request)
 def submit_request_to_request() -> List[Callable]:
@@ -414,6 +423,7 @@ def submit_request_to_request() -> List[Callable]:
         add_node_uid_for_key("node_uid"),
         add_request_time,
         check_requesting_user_verify_key,
+        add_requesting_user_name,
         hash_changes,
     ]
 
