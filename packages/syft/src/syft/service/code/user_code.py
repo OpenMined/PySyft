@@ -355,6 +355,17 @@ class UserCode(SyftObject):
         return self.raw_code
 
 
+    def show_code_cell(self):
+        warning_message = """# WARNING: \n# Before you submit
+# change the name of the function \n# for no duplicates\n\n"""
+
+        # third party
+        from IPython import get_ipython
+
+        ip = get_ipython()
+        ip.set_next_input(warning_message + self.raw_code)
+
+
 @serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
