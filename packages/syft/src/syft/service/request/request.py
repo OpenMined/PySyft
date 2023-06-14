@@ -162,6 +162,18 @@ class Request(SyftObject):
     ]
 
     def _repr_html_(self) -> Any:
+        # add changes
+        updated_at_line = ""
+        if self.updated_at is not None:
+            updated_at_line += f"<p><strong>Created by: </strong>{self.created_by}</p>"
+        str_changes = []
+        for change in self.changes:
+            str_change = ""
+            if isinstance(change, UserCodeStatusChange):
+                str_change += f"User TODO changes {change.link.service_func_name} to permission RequestStatus.APPROVED" 
+            else:
+                str_change += "Not implemented"
+            str_changes.append(str_change)
         return (
             f"""
             <style>
@@ -169,12 +181,21 @@ class Request(SyftObject):
             </style>
             """
             + "<div class='syft-request'>"
-            + f"<h3>{self.name}</h3>"
-            + f"<p>{self.description}</p>"
+            + f"<h3>Request</h3>"
+            + f"<p><strong>Id: </strong>{self.id}</p>"
             + f"<p><strong>Request time: </strong>{self.request_time}</p>"
-            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + updated_at_line
+            + str(str_changes)
+            + f"<p><strong>Status: </strong>{self.status}</p>"
             + "</div>"
         )
+
+    @property
+    def code(self) -> Any:
+        if len(self.changes) == 1:
+            if isinstance(self.changes[0], UserCodeStatusChange):
+                return self.changes[0].link
+        return SyftError(msg="This type of request does not have code associated with it.")
 
     @property
     def status(self) -> RequestStatus:
