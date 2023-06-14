@@ -11,7 +11,6 @@ from result import Ok
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
-from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -30,7 +29,6 @@ from ..user.user import UserView
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Change
-from .request import ChangeStatus
 from .request import Request
 from .request import RequestInfo
 from .request import RequestInfoFilter
@@ -194,8 +192,8 @@ class RequestService(AbstractService):
             return result.value
         return request.value
 
-    @service_method(path="request.deny", name="deny")
-    def deny(
+    @service_method(path="request.revert", name="revert")
+    def revert(
         self, context: AuthedServiceContext, uid: UID, reason: str
     ) -> Union[SyftSuccess, SyftError]:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
@@ -208,12 +206,12 @@ class RequestService(AbstractService):
         if request is None:
             return SyftError(message=f"Request with uid: {uid} does not exists.")
 
-        for change in request.changes:
-            change_status = ChangeStatus(change_id=change.id, applied=False)
-            request.history.append(change_status)
+        result = request.revert(context=context)
 
-        request.approval_time = DateTime.now()
-        request.save(context=context)
+        if result.is_err():
+            return SyftError(
+                f"Failed to revert Request: <{uid}> with error: {result.err()}"
+            )
 
         link = LinkedObject.with_context(request, context=context)
         message_subject = (
@@ -230,16 +228,6 @@ class RequestService(AbstractService):
 
         result = send_notification(context=context, message=notification)
         return SyftSuccess(message=f"Request {uid} successfully denied !")
-
-    @service_method(path="request.revert", name="revert")
-    def revert(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
-        request = self.stash.get_by_uid(context.credentials, uid)
-        if request.is_ok():
-            result = request.ok().revert(context=context)
-            return result.value
-        return request.value
 
     def save(
         self, context: AuthedServiceContext, request: Request
