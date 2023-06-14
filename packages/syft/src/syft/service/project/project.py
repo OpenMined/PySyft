@@ -49,6 +49,10 @@ from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ...util.colors import ON_SURFACE_HIGHEST
+from ...util.colors import SURFACE
+from ...util.colors import SURFACE_SURFACE
+from ...util import options
 
 
 @serializable()
@@ -687,6 +691,20 @@ class Project(SyftObject):
     __attr_repr_cols__ = ["name", "description", "user_email_address", "events"]
     __attr_unique__ = ["name"]
     __hash_exclude_attrs__ = ["user_signing_key", "start_hash"]
+
+    def _repr_html_self(self) -> Any:
+        return (
+            f"""
+            <style>
+            .syft-project {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            """
+            + "<div class='syft-project'>"
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + f"<p><strong>Created by: </strong>{self.user_email_address}</p>"
+            + self.requests
+        )
 
     def _broadcast_event(
         self, project_event: ProjectEvent
