@@ -1,34 +1,34 @@
 manifestVersion: 0.1
-hagrid_version: 0.3.20
-syft_version: 0.8.1-beta.8
-dockerTag: 0.8.1-beta.8
+hagrid_version: 0.3.23
+syft_version: 0.8.1-beta.9
+dockerTag: 0.8.1-beta.9
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
-hash: 98f101dd75cb10768385de5612191b84806271ce
+hash: 4f368cc221587646758417acc5144b894bd7f545
 target_dir: ~/.hagrid/PySyft/
 files:
   grid:
     path: packages/grid/
     common:
-    - rabbitmq/rabbitmq.conf
-    - redis/redis.conf
-    - seaweedfs/filer.toml
-    - seaweedfs/s3config.json
-    - vpn/config.yaml
+      - rabbitmq/rabbitmq.conf
+      - redis/redis.conf
+      - seaweedfs/filer.toml
+      - seaweedfs/s3config.json
+      - vpn/config.yaml
     docker:
-    - default.env
-    - docker-compose.build.yml
-    - docker-compose.dev.yml
-    - docker-compose.pull.yml
-    - docker-compose.test.yml
-    - docker-compose.tls.yml
-    - docker-compose.yml
-    - traefik/docker/dynamic-tls.yml
-    - traefik/docker/dynamic.yml
-    - traefik/docker/traefik-tls.template.yml
-    - traefik/docker/traefik.yml
-    - vpn/headscale.dockerfile
-    - vpn/tailscale.dockerfile
+      - default.env
+      - docker-compose.build.yml
+      - docker-compose.dev.yml
+      - docker-compose.pull.yml
+      - docker-compose.test.yml
+      - docker-compose.tls.yml
+      - docker-compose.yml
+      - traefik/docker/dynamic-tls.yml
+      - traefik/docker/dynamic.yml
+      - traefik/docker/traefik-tls.template.yml
+      - traefik/docker/traefik.yml
+      - vpn/headscale.dockerfile
+      - vpn/tailscale.dockerfile
     k8s:
-    - devspace.yaml
-    - traefik/k8s/dynamic.yml
-    - traefik/k8s/traefik.yml
+      - devspace.yaml
+      - traefik/k8s/dynamic.yml
+      - traefik/k8s/traefik.yml
