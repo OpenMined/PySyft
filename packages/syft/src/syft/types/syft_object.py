@@ -605,9 +605,14 @@ def list_dict_repr_html(self) -> str:
                 cls_name = ""
 
             if custom_repr:
+                table_icon = None
+                if hasattr(values[0], "icon"):
+                    table_icon = values[0].icon
+
                 return create_table_template(
                     df.to_dict("records"),
                     f"{cls_name} {self.__class__.__name__.capitalize()}",
+                    table_icon=table_icon,
                 )
 
             html_header = f"""
