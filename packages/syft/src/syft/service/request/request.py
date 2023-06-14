@@ -142,7 +142,7 @@ class Request(SyftObject):
     requesting_user_verify_key: SyftVerifyKey
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
-    approval_time: Optional[DateTime]
+    updated_at: Optional[DateTime]
     node_uid: UID
     request_hash: str
     changes: List[Change]
@@ -155,7 +155,7 @@ class Request(SyftObject):
     __attr_unique__ = ["request_hash"]
     __attr_repr_cols__ = [
         "request_time",
-        "approval_time",
+        "updated_at",
         "status",
         "changes",
         "requesting_user_verify_key",
@@ -224,6 +224,7 @@ class Request(SyftObject):
             change_status.applied = True
             self.history.append(change_status)
 
+        self.updated_at = DateTime.now()
         self.save(context=context)
         return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
 
