@@ -75,14 +75,6 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     protocol: str = "http"
     port: int = 80
 
-    def __hash__(self) -> int:
-        return (
-            hash(self.host_or_ip)
-            + hash(self.private)
-            + hash(self.protocol)
-            + hash(self.port)
-        )
-
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, HTTPNodeRoute):
             return hash(self) == hash(other)
@@ -116,13 +108,6 @@ class PythonNodeRoute(SyftObject, NodeRoute):
     def with_node(self, node: AbstractNode) -> Self:
         worker_settings = WorkerSettings.from_node(node)
         return PythonNodeRoute(id=worker_settings.id, worker_settings=worker_settings)
-
-    def __hash__(self) -> int:
-        return (
-            hash(self.worker_settings.id)
-            + hash(self.worker_settings.name)
-            + hash(self.worker_settings.signing_key)
-        )
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, PythonNodeRoute):

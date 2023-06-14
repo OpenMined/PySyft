@@ -99,7 +99,7 @@ class Policy(SyftObject):
             init_kwargs = deepcopy(kwargs)
             if "id" in init_kwargs:
                 del init_kwargs["id"]
-        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)
+        super().__init__(init_kwargs=init_kwargs, *args, **kwargs)  # noqa: B026
 
     @classmethod
     @property
@@ -199,17 +199,25 @@ def retrieve_from_db(
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
 
+    # When we are retrieving the code from the database, we need to use the node's
+    # verify key as the credentials. This is because when we approve the code, we
+    # we allow the private data to be used only for this specific code.
+    # but we are not modifying the permissions of the private data
+
+    root_context = AuthedServiceContext(
+        node=context.node, credentials=context.node.verify_key
+    )
     if context.node.node_type == NodeType.DOMAIN:
         for var_name, arg_id in allowed_inputs.items():
             kwarg_value = action_service.get(
-                context=context, uid=arg_id, twin_mode=TwinMode.NONE
+                context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if kwarg_value.is_err():
                 return kwarg_value
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type == NodeType.ENCLAVE:
-        dict_object = action_service.get(context=context, uid=code_item_id)
+        dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
             return dict_object
         for value in dict_object.ok().base_dict.values():
@@ -366,7 +374,7 @@ class CustomPolicy(type):
     # capture the init_kwargs transparently
     def __call__(cls, *args: Any, **kwargs: Any) -> None:
         obj = super().__call__(*args, **kwargs)
-        setattr(obj, "init_kwargs", kwargs)
+        obj.init_kwargs = kwargs
         return obj
 
 
@@ -664,10 +672,10 @@ def add_class_to_user_module(klass: type, unique_name: str) -> type:
 
     if not hasattr(sy, "user"):
         user_module = types.ModuleType("user")
-        setattr(sys.modules["syft"], "user", user_module)
+        sys.modules["syft"].user = user_module
     user_module = sy.user
     setattr(user_module, unique_name, klass)
-    setattr(sys.modules["syft"], "user", user_module)
+    sys.modules["syft"].user = user_module
     return klass
 
 

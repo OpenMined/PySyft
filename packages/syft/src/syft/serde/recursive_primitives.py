@@ -361,4 +361,5 @@ if sys.version_info >= (3, 9):
     )
     recursive_serde_register_type(_SpecialGenericAlias)
 
+recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)

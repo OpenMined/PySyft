@@ -15,11 +15,13 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL
 from .message_stash import MessageStash
 from .messages import CreateMessage
 from .messages import LinkedObject
 from .messages import Message
 from .messages import MessageStatus
+from .messages import ReplyMessage
 
 
 @instrument
@@ -43,6 +45,29 @@ class MessageService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()
+
+    @service_method(path="messages.reply", name="reply", roles=GUEST_ROLE_LEVEL)
+    def reply(
+        self,
+        context: AuthedServiceContext,
+        reply: ReplyMessage,
+    ) -> Union[ReplyMessage, SyftError]:
+        msg = self.stash.get_by_uid(
+            credentials=context.credentials, uid=reply.target_msg
+        )
+        if msg.is_ok():
+            msg = msg.ok()
+            reply.from_user_verify_key = context.credentials
+            msg.replies.append(reply)
+            result = self.stash.update(credentials=context.credentials, obj=msg)
+            if result.is_ok():
+                return result.ok()
+            else:
+                SyftError(
+                    message="Couldn't add a new message reply in the target message."
+                )
+        else:
+            SyftError(message="The target message id {reply.target_msg} was not found!")
 
     @service_method(path="messages.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Message], SyftError]:
@@ -126,7 +151,11 @@ class MessageService(AbstractService):
             return SyftError(message=str(result.err()))
         return result.ok()
 
-    @service_method(path="messages.resolve_object", name="resolve_object")
+    @service_method(
+        path="messages.resolve_object",
+        name="resolve_object",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Union[Message, SyftError]:
@@ -144,6 +173,17 @@ class MessageService(AbstractService):
         if result.is_ok():
             return SyftSuccess(message="All messages cleared !!")
         return SyftError(message=str(result.err()))
+
+    def filter_by_obj(
+        self, context: AuthedServiceContext, obj_uid: UID
+    ) -> Union[Message, SyftError]:
+        messages = self.stash.get_all(context.credentials)
+        if messages.is_ok():
+            for message in messages.ok():
+                if message.linked_obj and message.linked_obj.object_uid == obj_uid:
+                    return message
+        else:
+            return SyftError(message="Could not get messages!!")
 
 
 TYPE_TO_SERVICE[Message] = MessageService

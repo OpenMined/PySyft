@@ -1,6 +1,6 @@
-ARG PYTHON_VERSION='3.10.10'
+ARG PYTHON_VERSION='3.11.3'
 
-FROM python:3.10.10-slim as build
+FROM python:3.11.3-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
@@ -21,8 +21,7 @@ RUN --mount=type=cache,target=/root/.cache \
 COPY grid/backend/wheels /wheels
 
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-    pip install --user /wheels/jaxlib-0.3.14-cp310-none-manylinux2014_aarch64.whl; \
-    pip install --user /wheels/tensorstore-0.1.25-cp310-cp310-linux_aarch64.whl; \
+    pip install --user /wheels/jaxlib-0.4.10-cp311-cp311-manylinux2014_aarch64.whl; \
     fi
 
 WORKDIR /app

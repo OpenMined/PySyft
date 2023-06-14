@@ -1273,6 +1273,10 @@ def create_launch_cmd(
         and parsed_kwargs["tag"] not in ["local", "latest", "0.7.0"]
     ):
         template = parsed_kwargs["tag"]
+        # 🟡 TODO: Revert to use tags once, we have tag branches with beta
+        # versions also.
+        if "b" in template:
+            template = "dev"
         # if template == "beta":
         #     template = "dev"
         parsed_kwargs["template"] = template
@@ -1283,6 +1287,7 @@ def create_launch_cmd(
             host_type=host,
             template_location=parsed_kwargs["template"],
             overwrite=parsed_kwargs["template_overwrite"],
+            verbose=kwargs["verbose"],
         )
 
         parsed_kwargs.update(kwargs)
@@ -3370,14 +3375,13 @@ def get_docker_status(
         # If there are worker containers with an internal port
         # fetch the worker container with the launched worker name
         worker_containers = worker_containers_output.split("\n")
-        for idx, worker_container in enumerate(worker_containers):
+        for worker_container in worker_containers:
             container_name = worker_container.split(" ")[0]
             if node_name in container_name:
                 network_container = container_name
                 break
-
-        # If the worker container is not created yet
-        if idx == len(worker_containers):
+        else:
+            # If the worker container is not created yet
             return False, ("", "")
 
     if "proxy" in network_container:

@@ -128,17 +128,20 @@ def serve_node(
                 except SystemExit:
                     os._exit(130)
         else:
-            for _ in range(WAIT_TIME_SECONDS):
+            for i in range(WAIT_TIME_SECONDS):
                 try:
                     req = requests.get(
                         f"http://{host}:{port}{API_PATH}/metadata", timeout=0.5
                     )
                     if req.status_code == 200:
-                        print("Server Started")
+                        print(" Done.")
                         break
                 except Exception:
                     time.sleep(1)
-                    print("Waiting for server to start")
+                    if i == 0:
+                        print("Waiting for server to start", end="")
+                    else:
+                        print(".", end="")
 
     return start, stop
 
