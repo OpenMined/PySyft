@@ -2,7 +2,6 @@
 import pytest
 
 # syft absolute
-from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import UserLoginCredentials
 from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
@@ -37,7 +36,6 @@ def admin_create_user(faker) -> UserCreate:
 
 @pytest.fixture(autouse=True)
 def guest_create_user(faker) -> UserCreate:
-    verify_key = SyftSigningKey.generate().verify_key
     password = faker.password()
     user_create = UserCreate(
         email=faker.company_email(),
@@ -47,7 +45,6 @@ def guest_create_user(faker) -> UserCreate:
         password_verify=password,
         institution=faker.company(),
         website=faker.url(),
-        created_by=verify_key,
     )
     return user_create
 
