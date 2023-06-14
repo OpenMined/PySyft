@@ -604,6 +604,25 @@ class SyftClient:
         return f"<{client_type} - {self.name} <{uid}>: {self.connection}>"
 
     def _repr_html_(self) -> str:
+        ds_commands = """
+        <li><span class='syft-code-block'>client.requests</span> - list requests</li>
+        <li><span class='syft-code-block'>client.datasets</span> - list datasets</li>
+        """
+        # do_commands = """
+        # <li><span class='syft-code-block'>node.requests(status='pending')</span> - list pending requests</li>
+        # """
+        help_command = """
+        <li>
+            <span class='syft-code-block'>help(client.requests)</span>\
+         or <span class='syft-code-block'>client.requests?</span> - display function signature
+        </li>"""
+        commands = ds_commands  # TODO: select ds/do commands
+        command_list = f"""
+        <ul style='padding-left: 1em;'>
+            {commands}
+            {help_command}
+        </ul>
+        """
         return f"""
         <style>
             .syft-container {{
@@ -642,9 +661,7 @@ class SyftClient:
                 <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
             </div>
             <h4>Commands to Get Started</h4>
-            <ul style='padding-left: 1em;'>
-                <li><span class='syft-code-block'>node.requests(status='pending')</span> - list pending requests</li>
-            </ul>
+            {command_list}
         </div><br />
         """
 
