@@ -17,6 +17,10 @@ from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
+from syft.service.user.user_roles import ServiceRole
+
+# relative
+from ..users.user_test import get_mock_client
 
 
 def test_settingsservice_get_success(
@@ -255,3 +259,33 @@ def test_settings_allow_guest_registration(
         email="batman@test.com", password="batman123", name="Batman"
     )
     assert isinstance(response_4, SyftError)
+
+
+def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
+    # Mock patch this env variable to remove race conditions
+    # where signup is enabled.
+    monkeypatch.setenv("ENABLE_SIGNUP", "False")
+    worker = syft.Worker.named(name=faker.name())
+    root_client = worker.root_client
+
+    emails_added = []
+    for role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+        client = get_mock_client(root_client=root_client, role=role)
+        email = faker.email()
+        result = client.register(name=faker.name(), email=email, password="password")
+        assert isinstance(result, SyftSuccess)
+        emails_added.append(email)
+
+    ds_client = get_mock_client(
+        root_client=root_client, role=ServiceRole.DATA_SCIENTIST
+    )
+
+    response = ds_client.register(
+        name=faker.name(), email=faker.email(), password="password"
+    )
+    assert isinstance(response, SyftError)
+
+    users_created_count = sum(
+        [u.email in emails_added for u in root_client.users.get_all()]
+    )
+    assert users_created_count == len(emails_added)
