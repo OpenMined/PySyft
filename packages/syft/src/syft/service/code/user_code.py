@@ -24,6 +24,7 @@ from result import Result
 # relative
 from ...abstract_node import NodeType
 from ...client.api import NodeView
+from ...enclave.metadata import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
@@ -39,7 +40,6 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
-from ..metadata.node_metadata import EnclaveMetadata
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import InputPolicy

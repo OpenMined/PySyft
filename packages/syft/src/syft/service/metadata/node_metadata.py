@@ -120,9 +120,3 @@ def json_to_metadata() -> List[Callable]:
         drop(["metadata_version"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),
     ]
-
-
-class EnclaveMetadata:
-    """Contains metadata to connect to a specific Enclave"""
-
-    pass
