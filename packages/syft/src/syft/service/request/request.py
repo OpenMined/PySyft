@@ -251,10 +251,10 @@ class Request(SyftObject):
             change_status.applied = False
             self.history.append(change_status)
 
-        self.approval_time = DateTime.now()
+        self.updated_at = DateTime.now()
         result = self.save(context=context)
         if isinstance(result, SyftError):
-            return result
+            return Err(result)
         # override object with latest changes.
         self = result
         return Ok(SyftSuccess(message=f"Request {self.id} changes reverted."))
