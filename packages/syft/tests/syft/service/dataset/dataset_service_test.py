@@ -13,6 +13,7 @@ from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
+from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.types.twin_object import TwinMode
 
 
@@ -138,11 +139,13 @@ def test_dataset_cannot_have_assets_with_none_mock() -> None:
     ]
     assets = assets_without_mock + assets_with_mock
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as excinfo:
         Dataset(
             name=random_hash(),
             asset_list=assets,
         )
+
+    assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)
 
     assert Dataset(name=random_hash(), asset_list=assets_with_mock)
 
@@ -164,6 +167,22 @@ def test_dataset_can_have_assets_with_empty_mock() -> None:
     assert Dataset(name=random_hash(), asset_list=assets)
 
 
+def test_cannot_add_assets_with_none_mock_to_dataset(
+    asset_with_mock: dict[str, Any], asset_without_mock: dict[str, Any]
+) -> None:
+    dataset = Dataset(name=random_hash())
+
+    with_mock = Asset(**asset_with_mock)
+    with_none_mock = Asset(**asset_without_mock)
+
+    dataset.add_asset(with_mock)
+
+    with pytest.raises(ValueError) as excinfo:
+        dataset.add_asset(with_none_mock)
+
+    assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)
+
+
 def test_guest_client_get_empty_mock_as_private_pointer(
     worker: Worker,
     asset_with_empty_mock: dict[str, Any],
@@ -183,3 +202,17 @@ def test_guest_client_get_empty_mock_as_private_pointer(
     assert mock.is_real
     assert mock.is_pointer
     assert mock.syft_twin_type is TwinMode.PRIVATE
+
+
+def test_domain_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> None:
+    assets = [Asset(**make_asset_with_mock()) for _ in range(10)]
+    dataset = Dataset(name=random_hash(), asset_list=assets)
+
+    dataset.asset_list[0].mock = None
+
+    root_domain_client = worker.root_client
+
+    with pytest.raises(ValueError) as excinfo:
+        root_domain_client.upload_dataset(dataset)
+
+    assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)

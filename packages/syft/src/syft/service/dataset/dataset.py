@@ -229,6 +229,8 @@ class CreateAsset(SyftObject):
     mock_is_real: bool = False
     created_at: Optional[DateTime]
 
+    __attr_repr_cols__ = ["name"]
+
     class Config:
         validate_assignment = True
 
@@ -427,6 +429,32 @@ class Dataset(SyftObject):
         return client
 
 
+_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
+    [
+        "To be included in a Dataset, an asset must either contain a mock, ",
+        "or have it explicitly set to be empty.\n",
+        "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or\n"
+        "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
+        "`asset.mock = sy.ActionObject.empty()`.",
+    ]
+)
+
+
+def _check_asset_must_contain_mock(asset_list: List[CreateAsset]) -> None:
+    assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
+    if assets_without_mock:
+        raise ValueError(
+            "".join(
+                [
+                    "These assets do not contain a mock:\n",
+                    *[f"{asset}\n" for asset in assets_without_mock],
+                    "\n",
+                    _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE,
+                ]
+            )
+        )
+
+
 @serializable()
 class CreateDataset(Dataset):
     # version
@@ -440,26 +468,14 @@ class CreateDataset(Dataset):
     class Config:
         validate_assignment = True
 
+    def _check_asset_must_contain_mock(self) -> None:
+        _check_asset_must_contain_mock(self.asset_list)
+
     @validator("asset_list")
     def __assets_must_contain_mock(
         cls, asset_list: List[CreateAsset]
     ) -> List[CreateAsset]:
-        assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
-        if assets_without_mock:
-            raise ValueError(
-                "".join(
-                    [
-                        "These assets do not contain a mock:\n",
-                        *[f"{asset}\n" for asset in assets_without_mock],
-                        "\n",
-                        "To be included in a Dataset, an asset must either contain a mock, ",
-                        "or have it explicitly set to be empty.\n",
-                        "You can create an asset without a mock with `sy.Asset(..., mock=sy.ActionObject.empty())` or "
-                        "set the mock of an existing asset to be empty with `asset.no_mock()` or ",
-                        "`asset.mock = sy.ActionObject.empty()`.",
-                    ]
-                )
-            )
+        _check_asset_must_contain_mock(asset_list)
         return asset_list
 
     def set_description(self, description: str) -> None:
@@ -486,6 +502,8 @@ class CreateDataset(Dataset):
         self.contributors.append(contributor)
 
     def add_asset(self, asset: CreateAsset) -> None:
+        if asset.mock is None:
+            raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
         self.asset_list.append(asset)
 
     def remove_asset(self, name: str) -> None:

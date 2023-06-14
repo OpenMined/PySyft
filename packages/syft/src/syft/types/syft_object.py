@@ -559,7 +559,7 @@ def list_dict_repr_html(self) -> str:
 
                 # get id
                 id_ = getattr(item, "id", None)
-                if id is not None:
+                if id_ is not None:
                     id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
 
                 if type(item) == type:
@@ -569,7 +569,9 @@ def list_dict_repr_html(self) -> str:
                         t = item.__class__.__name__
                     except Exception:
                         t = item.__repr__()
-                cols["id"].append(id_)
+                if id_ is not None:
+                    cols["id"].append(id_)
+
                 if not is_homogenous:
                     cols["type"].append(t)
 
