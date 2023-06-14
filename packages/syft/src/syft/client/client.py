@@ -26,6 +26,7 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..img.base64 import small_grid_symbol_logo
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
@@ -40,6 +41,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
+from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
@@ -308,6 +310,7 @@ class SyftClient:
     metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
     __logged_in_user: str = ""
+    __user_role: ServiceRole = ServiceRole.NONE
 
     def __init__(
         self,
@@ -334,6 +337,10 @@ class SyftClient:
     @property
     def logged_in_user(self) -> Optional[str]:
         return self.__logged_in_user
+
+    @property
+    def user_role(self) -> ServiceRole:
+        return self.__user_role
 
     @property
     def verify_key(self) -> SyftVerifyKey:
@@ -488,6 +495,8 @@ class SyftClient:
         if signing_key is not None:
             self.credentials = signing_key
             self.__logged_in_user = email
+            # TODO: How to get the role of the user?
+            # self.__user_role =
             self._fetch_api(self.credentials)
             if cache:
                 SyftClientSessionCache.add_client(
@@ -601,6 +610,72 @@ class SyftClient:
             uid = proxy_target_uid
             return f"<{client_type} - <{uid}>: via {self.id} {self.connection}>"
         return f"<{client_type} - {self.name} <{uid}>: {self.connection}>"
+
+    def _repr_html_(self) -> str:
+        ds_commands = """
+        <li><span class='syft-code-block'>client.datasets</span> - list requests</li>
+        <li><span class='syft-code-block'>client.code</span> - list code</li>
+        <li><span class='syft-code-block'>client.projects</span> - list projects</li>
+        """
+        # do_commands = """
+        # <li><span class='syft-code-block'>node.projects</span> - list projects</li>
+        # <li><span class='syft-code-block'>node.requests</span> - list requests</li>
+        # <li><span class='syft-code-block'>node.users</span> - list users</li>
+        # """
+        help_command = """
+        <li>
+            <span class='syft-code-block'>help(client.requests)</span>\
+         or <span class='syft-code-block'>client.requests?</span> - display function signature
+        </li>"""
+        # TODO: how to select ds/do commands based on self.__user_role
+        commands = ds_commands
+        command_list = f"""
+        <ul style='padding-left: 1em;'>
+            {commands}
+            {help_command}
+        </ul>
+        """
+        return f"""
+        <style>
+            .syft-container {{
+                padding: 5px;
+                font-family: 'Open Sans';
+            }}
+            .syft-alert-info {{
+                color: #1F567A;
+                background-color: #C2DEF0;
+                border-radius: 4px;
+                padding: 5px;
+                padding: 13px 10px
+            }}
+            .syft-code-block {{
+                background-color: #f7f7f7;
+                border: 1px solid #cfcfcf;
+                padding: 0px 2px;
+            }}
+            .syft-space {{
+                margin-top: 1em;
+            }}
+        </style>
+        <div class="syft-client syft-container">
+            <img src="{small_grid_symbol_logo}" alt="Logo"
+            style="width:48px;height:48px;padding:3px;">
+            <h2>Welcome to {self.name}</h2>
+            <div class="syft-space">
+                <!-- <strong>Institution:</strong> TODO<br /> -->
+                <!-- <strong>Owner:</strong> TODO<br /> -->
+                <strong>URL:</strong> {self.connection.url}<br />
+                <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
+            </div>
+            <div class='syft-alert-info syft-space'>
+                &#9432;&nbsp;
+                This domain is run by the library PySyft to learn more about how it works visit
+                <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
+            </div>
+            <h4>Commands to Get Started</h4>
+            {command_list}
+        </div><br />
+        """
 
     def _fetch_node_metadata(self, credentials: SyftSigningKey) -> None:
         metadata = self.connection.get_node_metadata(credentials=credentials)
