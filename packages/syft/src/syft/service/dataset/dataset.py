@@ -201,6 +201,8 @@ class CreateAsset(SyftObject):
     mock_is_real: bool = False
     created_at: Optional[DateTime]
 
+    __attr_repr_cols__ = ["name"]
+
     class Config:
         validate_assignment = True
 
@@ -474,7 +476,6 @@ class CreateDataset(Dataset):
     def add_asset(self, asset: CreateAsset) -> None:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
-
         self.asset_list.append(asset)
 
     def remove_asset(self, name: str) -> None:
