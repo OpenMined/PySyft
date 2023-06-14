@@ -99,6 +99,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
     @property
     def node(self) -> Optional[AbstractNode]:
         # relative
+        print('henlo')
         from ...node.worker import Worker
 
         node = Worker(
