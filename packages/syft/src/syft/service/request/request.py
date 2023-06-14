@@ -414,10 +414,13 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
 
 
 def add_requesting_user_name(context: TransformContext) -> TransformContext:
-    user_key = context.output["requesting_user_verify_key"]
-    user_service = context.node.get_service("UserService")
-    user = user_service.get_by_verify_key(user_key)
-    context.output["requesting_user_name"] = user.name
+    try:
+        user_key = context.output["requesting_user_verify_key"]
+        user_service = context.node.get_service("UserService")
+        user = user_service.get_by_verify_key(user_key)
+        context.output["requesting_user_name"] = user.name
+    except Exception:
+        context.output["requesting_user_name"] = "guest_user"
     return context
 
 
