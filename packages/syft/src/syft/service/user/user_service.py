@@ -5,6 +5,7 @@ from typing import Tuple
 from typing import Union
 
 # relative
+from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
 from ...serde.serializable import serializable
@@ -117,12 +118,18 @@ class UserService(AbstractService):
         return SyftError(message="No users exists")
 
     def get_role_for_credentials(
-        self, credentials: SyftVerifyKey
+        self, credentials: Union[SyftVerifyKey, SyftSigningKey]
     ) -> Union[Optional[ServiceRole], SyftError]:
         # they could be different
-        result = self.stash.get_by_verify_key(
-            credentials=credentials, verify_key=credentials
-        )
+
+        if isinstance(credentials, SyftVerifyKey):
+            result = self.stash.get_by_verify_key(
+                credentials=credentials, verify_key=credentials
+            )
+        else:
+            result = self.stash.get_by_signing_key(
+                credentials=credentials, signing_key=credentials
+            )
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
             user = result.ok()
@@ -333,7 +340,7 @@ class UserService(AbstractService):
         request_user_role = (
             ServiceRole.GUEST
             if new_user.created_by is None
-            else self.get_role_for_credentials(new_user.created_by.verify_key)
+            else self.get_role_for_credentials(new_user.created_by)
         )
         can_user_register = context.node.metadata.signup_enabled or (
             request_user_role in DATA_OWNER_ROLE_LEVEL

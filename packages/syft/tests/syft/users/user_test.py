@@ -5,6 +5,8 @@ import pytest
 # syft absolute
 from syft.client.api import SyftAPICall
 from syft.service.context import AuthedServiceContext
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserUpdate
@@ -112,6 +114,25 @@ def test_user_create(worker, do_client, guest_client, ds_client, root_client):
             ],
         )
         assert isinstance(res, UserView)
+
+
+def test_user_register_for_role(faker, root_client, do_client, ds_client):
+    emails_added = []
+    for client in [root_client, do_client]:
+        email = faker.email()
+        result = client.register(name=faker.name(), email=email, password="password")
+        assert isinstance(result, SyftSuccess)
+        emails_added.append(email)
+
+    users_created_count = sum(
+        [u.email in emails_added for u in root_client.users.get_all()]
+    )
+    assert users_created_count == len(emails_added)
+
+    response = ds_client.register(
+        name=faker.name(), email=faker.email(), password="password"
+    )
+    assert isinstance(response, SyftError)
 
 
 def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
