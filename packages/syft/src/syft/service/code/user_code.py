@@ -354,7 +354,6 @@ class UserCode(SyftObject):
     def code(self) -> str:
         return self.raw_code
 
-
     def show_code_cell(self):
         warning_message = """# WARNING: \n# Before you submit
 # change the name of the function \n# for no duplicates\n\n"""

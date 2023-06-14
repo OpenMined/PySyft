@@ -40,6 +40,8 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
@@ -51,8 +53,6 @@ from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
 from ..response import SyftSuccess
-from ...util.colors import SURFACE
-from ...util import options
 
 
 @serializable()
@@ -1203,7 +1203,6 @@ class ProjectSubmit(SyftObject):
             + f"<p><strong>Created by: </strong>{self.created_by}</p>"
             + "</div>"
         )
-
 
     @validator("members", pre=True)
     def verify_members(cls, val: Union[List[SyftClient], List[NodeIdentity]]):

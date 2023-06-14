@@ -31,6 +31,8 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
@@ -44,8 +46,6 @@ from ..message.messages import Message
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
-from ...util.colors import SURFACE
-from ...util import options
 
 
 @serializable()
@@ -171,7 +171,8 @@ class Request(SyftObject):
         for change in self.changes:
             str_change = ""
             if isinstance(change, UserCodeStatusChange):
-                str_change += f"User {self.requesting_user_name} changes {change.link.service_func_name} to permission RequestStatus.APPROVED" 
+                str_change += f"User {self.requesting_user_name} changes\
+                    {change.link.service_func_name} to permission RequestStatus.APPROVED"
             else:
                 str_change += "Not implemented"
             str_changes.append(str_change)
@@ -182,13 +183,13 @@ class Request(SyftObject):
             </style>
             """
             + "<div class='syft-request'>"
-            + f"<h3>Request</h3>"
+            + "<h3>Request</h3>"
             + f"<p><strong>Id: </strong>{self.id}</p>"
             + f"<p><strong>Request time: </strong>{self.request_time}</p>"
             + updated_at_line
-            + f"<p><strong> Changes: </strong>"
+            + "<p><strong> Changes: </strong>"
             + str(str_changes)
-            + '</p>'
+            + "</p>"
             + f"<p><strong>Status: </strong>{self.status}</p>"
             + "</div>"
         )
@@ -198,7 +199,9 @@ class Request(SyftObject):
         if len(self.changes) == 1:
             if isinstance(self.changes[0], UserCodeStatusChange):
                 return self.changes[0].link
-        return SyftError(msg="This type of request does not have code associated with it.")
+        return SyftError(
+            msg="This type of request does not have code associated with it."
+        )
 
     @property
     def status(self) -> RequestStatus:
@@ -409,12 +412,14 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
         context.output["requesting_user_verify_key"] = context.credentials
     return context
 
+
 def add_requesting_user_name(context: TransformContext) -> TransformContext:
     user_key = context.output["requesting_user_verify_key"]
     user_service = context.node.get_service("UserService")
     user = user_service.get_by_verify_key(user_key)
     context.output["requesting_user_name"] = user.name
     return context
+
 
 @transform(SubmitRequest, Request)
 def submit_request_to_request() -> List[Callable]:
