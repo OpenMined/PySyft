@@ -192,6 +192,24 @@ class UserCode(SyftObject):
         else:
             return super().__setattr__(key, value)
 
+    def self_repr(self) -> Dict[str, Any]:
+        status = list(self.status.base_dict.values())[0].value
+        if status == UserCodeStatus.SUBMITTED.value:
+            badge_color = "badge-purple"
+        elif status == UserCodeStatus.EXECUTE.value:
+            badge_color = "badge-green"
+        else:
+            badge_color = "red"
+
+        status_badge = {"value": status, "type": badge_color}
+        return {
+            "id": {"value": str(self.id), "type": "clipboard"},
+            "Input Policy": self.input_policy_type.__name__,
+            "Output Policy": self.output_policy_type.__name__,
+            "User": {"value": str(self.user_verify_key), "type": "clipboard"},
+            "Status": status_badge,
+        }
+
     @property
     def input_policy(self) -> Optional[InputPolicy]:
         if not self.status.approved:
