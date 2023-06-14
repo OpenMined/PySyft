@@ -85,7 +85,7 @@ try:
         )
     )
 except:  # noqa: E722
-    pass
+    pass # nosec
 
 # For server-side, to enable by environment variable
 if OBLV:
