@@ -663,11 +663,11 @@ def autocache(
     url: str, extension: Optional[str] = None, cache: bool = True
 ) -> Optional[Path]:
     try:
-        print(os.environ.get("SYFT_USE_TEST_DATA", False))
+        print(os.environ.get("SYFT_USE_TEST_DATA", True)) # TODO: remove this default after testing
         data_path = get_root_data_path()
 
         if os.environ.get("SYFT_USE_TEST_DATA", False):
-            
+            print("HERE!")
             filename = url.rsplit('/',1)[-1]
             print("filename", filename)
 

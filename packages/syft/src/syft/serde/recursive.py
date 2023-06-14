@@ -94,17 +94,13 @@ def recursive_serde_register(
     attribute_list: Set[str] = set()
 
     alias_fqn = check_fqn_alias(cls)
-    if not _is_function:
-        cls = type(cls) if not isinstance(cls, type) else cls
-    fqn = f"{cls.__module__}.{cls.__name__}"  # type: ignore
+    cls = type(cls) if not isinstance(cls, type) else cls
+    fqn = f"{cls.__module__}.{cls.__name__}"
 
     nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
     _deserialize = deserialize if nonrecursive else rs_proto2object
-    if _is_function:
-        is_pydantic = False
-    else:
-        is_pydantic = issubclass(cls, BaseModel)
+    is_pydantic = issubclass(cls, BaseModel)
     hash_exclude_attrs = getattr(cls, "__hash_exclude_attrs__", [])
 
     if inherit_attrs and not is_pydantic:
@@ -126,7 +122,7 @@ def recursive_serde_register(
         # If serialize_attrs is provided, append it to our attr list
         attribute_list.update(serialize_attrs)
 
-    if not _is_function and issubclass(cls, Enum):
+    if issubclass(cls, Enum):
         attribute_list.update(["value"])
 
     exclude_attrs = [] if exclude_attrs is None else exclude_attrs
