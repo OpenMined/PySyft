@@ -663,15 +663,15 @@ def autocache(
     url: str, extension: Optional[str] = None, cache: bool = True
 ) -> Optional[Path]:
     try:
-        print(os.environ.get("SYFT_USE_TEST_DATA", True)) # TODO: remove this default after testing
         data_path = get_root_data_path()
 
-        if os.environ.get("SYFT_USE_TEST_DATA", False):
+        if os.environ.get("SYFT_USE_TEST_DATA", True): # TODO: Change back to False after smaller files feature is done
             print("HERE!")
             filename = url.rsplit('/',1)[-1]
             print("filename", filename)
 
             if filename in FILE_TO_TESTFILE:
+                print("filename in FILE_TO_TESTFILE")
                 url = url.replace(filename, FILE_TO_TESTFILE[filename])
 
         file_hash = hashlib.sha256(url.encode("utf8")).hexdigest()
