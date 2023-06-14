@@ -307,7 +307,9 @@ class OblvService(AbstractService):
         "Retrieves the public key present on the Domain Node."
 
         if len(self.oblv_keys_stash):
-            oblv_keys = self.oblv_keys_stash.get_all(context.credentials)
+            # retrieve the public key from the stash using the node's verify key
+            # as the public should be accessible to all the users
+            oblv_keys = self.oblv_keys_stash.get_all(context.node.verify_key)
             if oblv_keys.is_ok():
                 oblv_keys = oblv_keys.ok()[0]
             else:
