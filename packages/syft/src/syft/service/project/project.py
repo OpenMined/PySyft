@@ -51,9 +51,7 @@ from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
 from ..response import SyftSuccess
-from ...util.colors import ON_SURFACE_HIGHEST
 from ...util.colors import SURFACE
-from ...util.colors import SURFACE_SURFACE
 from ...util import options
 
 
@@ -716,7 +714,7 @@ class Project(SyftObject):
     # store: Dict[UID, Dict[UID, SyftObject]] = {}
     # permissions: Dict[UID, Dict[UID, Set[str]]] = {}
 
-    def _repr_html_self(self) -> Any:
+    def _repr_html_(self) -> Any:
         return (
             f"""
             <style>
@@ -726,8 +724,9 @@ class Project(SyftObject):
             + "<div class='syft-project'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + f"<p><strong>Created by: </strong>{self.user_email_address}</p>"
-            + self.requests
+            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + self.requests._repr_html_()
+            + "</div>"
         )
 
     def _broadcast_event(
@@ -1190,6 +1189,21 @@ class ProjectSubmit(SyftObject):
 
         # Convert SyftClients to NodeIdentities
         self.members = list(map(self.to_node_identity, self.members))
+
+    def _repr_html_(self) -> Any:
+        return (
+            f"""
+            <style>
+            .syft-project-create {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            """
+            + "<div class='syft-project-create'>"
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + "</div>"
+        )
+
 
     @validator("members", pre=True)
     def verify_members(cls, val: Union[List[SyftClient], List[NodeIdentity]]):
