@@ -44,6 +44,8 @@ from ..message.messages import Message
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
+from ...util.colors import SURFACE
+from ...util import options
 
 
 @serializable()
@@ -158,6 +160,21 @@ class Request(SyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
+
+    def _repr_html_(self) -> Any:
+        return (
+            f"""
+            <style>
+            .syft-request {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            """
+            + "<div class='syft-request'>"
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + f"<p><strong>Request time: </strong>{self.request_time}</p>"
+            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + "</div>"
+        )
 
     @property
     def status(self) -> RequestStatus:
