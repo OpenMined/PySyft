@@ -34,6 +34,7 @@ from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
+from ...util.notebook_ui.notebook_addons import FOLDER_ICON
 from ...util.notebook_ui.notebook_addons import create_table_template
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
@@ -339,11 +340,16 @@ class Dataset(SyftObject):
 
     def build_assets_view(self) -> List[Dict[str, Any]]:
         assets = []
-        for _i, asset in enumerate(self.asset_list):
+        for asset in self.asset_list:
+            if asset.mock_is_real:
+                data_badge = {"value": "data", "type": "badge-gray"}
+            else:
+                data_badge = {"value": "mock", "type": "badge-purple"}
+
             assets.append(
                 {
-                    "display_data": {"value": "data", "type": "badge-gray"},
-                    "id": str(asset.id),
+                    "display_data": data_badge,
+                    "id": {"value": str(asset.id), "type": "clipboard"},
                     "name": asset.name,
                     "shape": str(asset.shape),
                     "created_at": str(asset.created_at),
@@ -351,11 +357,15 @@ class Dataset(SyftObject):
             )
         return assets
 
+    @property
+    def icon(self):
+        return FOLDER_ICON
+
     def self_repr(self) -> Dict[str, Any]:
         return {
-            "id": str(self.id),
+            "id": {"value": str(self.id), "type": "clipboard"},
             "Name": self.name,
-            "# Assets": len(self.asset_list),
+            "Assets": len(self.asset_list),
             "created_on": str(self.created_at),
         }
 
