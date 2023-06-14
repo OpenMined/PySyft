@@ -4,6 +4,7 @@ import pytest
 
 # syft absolute
 from syft.client.api import SyftAPICall
+from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -116,23 +117,34 @@ def test_user_create(worker, do_client, guest_client, ds_client, root_client):
         assert isinstance(res, UserView)
 
 
-def test_user_register_for_role(faker, root_client, do_client, ds_client):
+def test_user_register_for_role(monkeypatch, faker):
+    # Mock patch this env variable to remove race conditions
+    # where signup is enabled.
+    monkeypatch.setenv("ENABLE_SIGNUP", "False")
+    worker = Worker.named(name=faker.name())
+    root_client = worker.root_client
+
     emails_added = []
-    for client in [root_client, do_client]:
+    for role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+        client = get_mock_client(root_client=root_client, role=role)
         email = faker.email()
         result = client.register(name=faker.name(), email=email, password="password")
         assert isinstance(result, SyftSuccess)
         emails_added.append(email)
 
-    users_created_count = sum(
-        [u.email in emails_added for u in root_client.users.get_all()]
+    ds_client = get_mock_client(
+        root_client=root_client, role=ServiceRole.DATA_SCIENTIST
     )
-    assert users_created_count == len(emails_added)
 
     response = ds_client.register(
         name=faker.name(), email=faker.email(), password="password"
     )
     assert isinstance(response, SyftError)
+
+    users_created_count = sum(
+        [u.email in emails_added for u in root_client.users.get_all()]
+    )
+    assert users_created_count == len(emails_added)
 
 
 def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
