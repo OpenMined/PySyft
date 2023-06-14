@@ -50,6 +50,7 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.enclave.enclave_service import EnclaveService
 from ..service.message.message_service import MessageService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
@@ -204,6 +205,7 @@ class Node(AbstractNode):
                 MessageService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
             ]
             if services is None
             else services
@@ -429,6 +431,7 @@ class Node(AbstractNode):
                 MessageService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
             ]
 
             if OBLV:

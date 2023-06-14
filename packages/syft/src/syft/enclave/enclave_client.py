@@ -11,6 +11,7 @@ from ..client.api import SyftAPI
 from ..client.client import SyftClient
 from ..client.client import login
 from ..node.credentials import SyftSigningKey
+from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
 from ..types.uid import UID
 from .metadata import EnclaveMetadata
@@ -74,7 +75,7 @@ class EnclaveClient(SyftBaseModel):
 
     def request_code_execution(self, code: SubmitUserCode):
         # relative
-        from ..service.code import SubmitUserCode
+        from ..service.code.user_code_service import SubmitUserCode
 
         if not isinstance(code, SubmitUserCode):
             raise Exception(
@@ -87,7 +88,7 @@ class EnclaveClient(SyftBaseModel):
         code.id = code_id
         code.enclave_metadata = enclave_metadata
 
-        for domain_client in self.domain_clients:
+        for domain_client in self.owners:
             domain_client.api.services.code.request_code_execution(code=code)
 
         res = self.api.services.code.request_code_execution(code=code)
@@ -99,6 +100,7 @@ class EnclaveClient(SyftBaseModel):
         return f"{self.__class__.__name__}({data})"
 
 
+@serializable()
 class AzureEnclaveMetadata(EnclaveMetadata):
     url: str
 

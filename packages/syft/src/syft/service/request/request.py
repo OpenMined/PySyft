@@ -17,7 +17,6 @@ from typing_extensions import Self
 
 # relative
 from ...client.api import APIRegistry
-from ...external import OBLV
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -578,15 +577,13 @@ class UserCodeStatusChange(Change):
                 if res.is_err():
                     return res
                 res = res.ok()
-                if OBLV:
-                    # relative
-                    from ...external.oblv.oblv_service import check_enclave_transfer
 
-                    enclave_res = check_enclave_transfer(
-                        user_code=res, value=self.value, context=context
-                    )
-                else:
-                    enclave_res = Ok()
+                # relative
+                from ..enclave.enclave_service import check_enclave_transfer
+
+                enclave_res = check_enclave_transfer(
+                    user_code=res, value=self.value, context=context
+                )
 
                 if enclave_res.is_err():
                     return enclave_res

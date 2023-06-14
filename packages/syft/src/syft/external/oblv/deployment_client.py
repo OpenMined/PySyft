@@ -24,7 +24,7 @@ import requests
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...client.client import login
-from ...enclave.metadata import EnclaveMetaData
+from ...enclave.metadata import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...types.uid import UID
 from ...util.util import bcolors
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 
 @serializable()
-class OblvMetadata(EnclaveMetaData):
+class OblvMetadata(EnclaveMetadata):
     """Contains Metadata to connect to Oblivious Enclave"""
 
     deployment_id: Optional[str]

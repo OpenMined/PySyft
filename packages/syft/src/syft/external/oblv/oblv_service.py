@@ -9,7 +9,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 from typing import cast
 
 # third party
@@ -20,7 +19,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...client.api import NodeView
 from ...client.api import SyftAPI
 from ...client.client import HTTPConnection
 from ...client.client import Routes
@@ -28,17 +26,14 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
-from ...service.code.user_code import UserCode
 from ...service.code.user_code import UserCodeStatus
 from ...service.context import AuthedServiceContext
-from ...service.context import ChangeContext
+from ...service.enclave.enclave_service import DictObject
 from ...service.response import SyftError
 from ...service.service import AbstractService
 from ...service.service import service_method
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
@@ -51,24 +46,6 @@ from .oblv_keys_stash import OblvKeysStash
 
 # caches the connection to Enclave using the deployment ID
 OBLV_PROCESS_CACHE: Dict[str, List] = {}
-
-
-# TODO: 🟡 Duplication of PyPrimitive Dict
-# This is emulated since the action store curently accepts  only SyftObject types
-@serializable()
-class DictObject(SyftObject):
-    # version
-    __canonical_name__ = "Dict"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    base_dict: Dict[Any, Any] = {}
-
-    # serde / storage rules
-    __attr_searchable__ = []
-    __attr_unique__ = ["id"]
-
-    def __repr__(self) -> str:
-        return self.base_dict.__repr__()
 
 
 def connect_to_enclave(
@@ -436,43 +413,3 @@ class OblvService(AbstractService):
                 return res
 
         return Ok(Ok(True))
-
-
-# Checks if the given user code would  propogate value to enclave on acceptance
-def check_enclave_transfer(
-    user_code: UserCode, value: UserCodeStatus, context: ChangeContext
-) -> Union[Any, Ok]:
-    if not context.node or not context.node.signing_key:
-        return Err(f"{type(context)} has no node")
-    signing_key = context.node.signing_key
-    if (
-        isinstance(user_code.enclave_metadata, OblvMetadata)
-        and value == UserCodeStatus.EXECUTE
-    ):
-        method = context.node.get_service_method(OblvService.get_api_for)
-
-        api = method(
-            user_code.enclave_metadata,
-            context.node.signing_key,
-            worker_name=context.node.name,
-        )
-        # send data of the current node to enclave
-        node_view = NodeView(
-            node_name=context.node.name, verify_key=signing_key.verify_key
-        )
-        inputs = user_code.input_policy.inputs[node_view]
-        action_service = context.node.get_service("actionservice")
-        for var_name, uid in inputs.items():
-            action_object = action_service.store.get(
-                uid=uid, credentials=signing_key.verify_key
-            )
-            if action_object.is_err():
-                return action_object
-            inputs[var_name] = action_object.ok()
-
-        res = api.services.oblv.send_user_code_inputs_to_enclave(
-            user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
-        )
-        return res
-    else:
-        return Ok()
