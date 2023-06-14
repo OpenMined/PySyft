@@ -550,57 +550,56 @@ def list_dict_repr_html(self) -> str:
             custom_repr = False
             cols = defaultdict(list)
             for item in iter(self):
+
                 if hasattr(item, "self_repr"):
                     custom_repr = True
                     ret_val = item.self_repr()
                     for key in ret_val.keys():
                         cols[key].append(ret_val[key])
                 else:
-                    if isinstance(self, dict):
-                        cols["key"].append(item)
-                        item = self.__getitem__(item)
+                  if isinstance(self, dict):
+                      cols["key"].append(item)
+                      item = self.__getitem__(item)
 
-                    # get id
-                    id_ = getattr(item, "id", None)
-                    if id is not None:
-                        id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
+                  # get id
+                  id_ = getattr(item, "id", None)
+                  if id_ is not None:
+                      id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
 
-                    if type(item) == type:
-                        t = full_name_with_qualname(item)
-                    else:
-                        try:
-                            t = item.__class__.__name__
-                        except Exception:
-                            t = item.__repr__()
+                  if type(item) == type:
+                      t = full_name_with_qualname(item)
+                  else:
+                      try:
+                          t = item.__class__.__name__
+                      except Exception:
+                          t = item.__repr__()
+                  if id_ is not None:
+                      cols["id"].append(id_)
 
-                    cols["id"].append(id_)
-                    if not is_homogenous:
-                        cols["type"].append(t)
+                  if not is_homogenous:
+                      cols["type"].append(t)
 
-                    for field in extra_fields:
-                        value = item
-                        try:
-                            attrs = field.split(".")
-                            for attr in attrs:
-                                # find indexing like abc[1]
-                                res = re.search("\[[+-]?\d+\]", attr)
-                                has_index = False
-                                if res:
-                                    has_index = True
-                                    index_str = res.group()
-                                    index = int(
-                                        index_str.replace("[", "").replace("]", "")
-                                    )
-                                    attr = attr.replace(index_str, "")
+                  for field in extra_fields:
+                      value = item
+                      try:
+                          attrs = field.split(".")
+                          for attr in attrs:
+                              # find indexing like abc[1]
+                              res = re.search("\[[+-]?\d+\]", attr)
+                              has_index = False
+                              if res:
+                                  has_index = True
+                                  index_str = res.group()
+                                  index = int(index_str.replace("[", "").replace("]", ""))
+                                  attr = attr.replace(index_str, "")
 
-                                value = getattr(value, attr, None)
-                                if isinstance(value, list) and has_index:
-                                    value = value[index]
-                        except Exception as e:
-                            print(e)
-                            value = None
-
-                        cols[field].append(value)
+                              value = getattr(value, attr, None)
+                              if isinstance(value, list) and has_index:
+                                  value = value[index]
+                      except Exception as e:
+                          print(e)
+                          value = None
+                      cols[field].append(value)
 
             df = pd.DataFrame(cols)
 

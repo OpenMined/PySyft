@@ -65,7 +65,8 @@ def read_yml_url(yml_url: str) -> Tuple[Optional[Dict], str]:
 
 
 def git_url_for_file(file_path: str, base_url: str, hash: str) -> str:
-    return os.path.join(base_url, hash, file_path)
+    # url must have unix style slashes
+    return os.path.join(base_url, hash, file_path).replace(os.sep, "/")
 
 
 def get_local_abs_path(target_dir: str, file_path: str) -> str:

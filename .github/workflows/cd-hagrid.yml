@@ -2,7 +2,7 @@ name: CD - HAGrid
 
 on:
   schedule:
-    - cron: "00 15 * * */2" # At 15:00 on every 2nd day-of-week.
+    - cron: "00 15 * * */1" # At 15:00 UTC on every day
   workflow_dispatch:
     inputs:
       none:

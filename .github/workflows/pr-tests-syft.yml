@@ -160,12 +160,16 @@ jobs:
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
+        uses: nick-fields/retry@v2
         if: steps.changes.outputs.syft == 'true'
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
-        run: |
-          tox -e syft.test.notebook
+        with:
+          timeout_seconds: 1800
+          max_attempts: 3
+          retry_on: timeout
+          command: tox -e syft.test.notebook
 
   pr-tests-syft-notebook-container:
     strategy:
