@@ -45,6 +45,7 @@ def test_object_mutation(worker: Worker):
     root_client = worker.root_client
     setting = root_client.api.services.settings.get()
     linked_obj = LinkedObject.from_obj(setting, SettingsService, node_uid=worker.id)
+    original_name = setting.organization
     new_name = "Test Organization"
 
     object_mutation = ObjectMutation(
@@ -71,7 +72,7 @@ def test_object_mutation(worker: Worker):
 
     setting = root_client.api.services.settings.get()
 
-    assert setting.organization is None
+    assert setting.organization == original_name
 
 
 def test_action_store_change(faker: Faker, worker: Worker):

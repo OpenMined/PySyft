@@ -421,6 +421,7 @@ class ObjectMutation(Change):
     attr_name: str
     value: Optional[Any]
     match_type: bool
+    previous_value: Optional[Any]
 
     __attr_repr_cols__ = ["linked_obj", "attr_name"]
 
@@ -429,8 +430,11 @@ class ObjectMutation(Change):
         # this seems necessary for pydantic types
         attr = getattr(type(obj), self.attr_name, None)
         if inspect.isdatadescriptor(attr):
+            self.previous_value = attr.fget(obj)
             attr.fset(obj, value)
+
         else:
+            self.previous_value = getattr(obj, self.attr_name, None)
             setattr(obj, self.attr_name, value)
         return obj
 
@@ -447,7 +451,7 @@ class ObjectMutation(Change):
                 self.linked_obj.update_with_context(context, obj)
             else:
                 # unset the set value
-                obj = self.mutate(obj, value=None)
+                obj = self.mutate(obj, value=self.previous_value)
                 self.linked_obj.update_with_context(context, obj)
 
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
