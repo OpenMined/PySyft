@@ -32,6 +32,7 @@ from ...types.transforms import transform
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.markdown import markdown_as_class_with_fields
+from ...util.notebook_ui.notebook_addons import REQUEST_ICON
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
@@ -167,12 +168,24 @@ class Request(SyftObject):
         "requesting_user_verify_key",
     ]
 
+    @property
+    def icon(self):
+        return REQUEST_ICON
+
     def self_repr(self):
+        if self.status == RequestStatus.APPROVED:
+            badge_color = "badge-green"
+        elif self.status == RequestStatus.PENDING:
+            badge_color = "badge-gray"
+        else:
+            badge_color = "badge-red"
+
+        status_badge = {"value": self.status.name(), "type": badge_color}
         return {
-            "ID": str(self.id),
+            "ID": {"value": str(self.id), "type": "clipboard"},
             "request_type": self.changes.__repr__(),
             "request_time": str(self.request_time),
-            "status": {"value": self.status.name(), "type": "badge-gray"},
+            "status": status_badge,
         }
 
     @property
