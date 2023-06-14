@@ -26,6 +26,7 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..img.base64 import small_grid_symbol_logo
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
@@ -42,7 +43,6 @@ from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
-from ..types.syft_object import SURFACE_DARK_BRIGHT
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.logger import debug
@@ -603,54 +603,47 @@ class SyftClient:
             return f"<{client_type} - <{uid}>: via {self.id} {self.connection}>"
         return f"<{client_type} - {self.name} <{uid}>: {self.connection}>"
 
-    @property
-    def _repr_html_class_(self) -> str:
-        return "client"
-
     def _repr_html_(self) -> str:
         return f"""
         <style>
-        .client {{color: {SURFACE_DARK_BRIGHT};}}
-        .code-block {{background-color: #f7f7f7; border: 1px solid #cfcfcf; padding: 0px 2px;}}
-        .container {{
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            padding: 10px;
-            gap: 8px;
-
-            height: 34px;
-            width: fill;
-            /* Secondary/Container */
-
-            background: #C2DEF0;
-            border-radius: 4px;
-
-            /* Inside auto layout */
-
-            flex: none;
-            order: 2;
-            align-self: stretch;
-            flex-grow: 0;}}
-
-
+            .syft-container {{
+                padding: 5px;
+                font-family: 'Open Sans';
+            }}
+            .syft-alert-info {{
+                color: #1F567A;
+                background-color: #C2DEF0;
+                border-radius: 4px;
+                padding: 5px;
+                padding: 13px 10px
+            }}
+            .syft-code-block {{
+                background-color: #f7f7f7;
+                border: 1px solid #cfcfcf;
+                padding: 0px 2px;
+            }}
+            .syft-space {{
+                margin-top: 1em;
+            }}
         </style>
-        <div class="{self._repr_html_class_}" style="font-family: 'Open Sans';padding:5px;">
-            <img src="packages/grid/frontend/static/assets/small-grid-symbol-logo.png" alt="Logo"
-            style="width:48px;height:48px;padding:3px;"><br />
+        <div class="syft-client syft-container">
+            <img src="{small_grid_symbol_logo}" alt="Logo"
+            style="width:48px;height:48px;padding:3px;">
             <h2>Welcome to {self.name}</h2>
-            <!-- <strong>Institution:</strong> TODO<br /> -->
-            <!-- <strong>Owner:</strong> TODO<br /> -->
-            <strong>URL:</strong> {self.connection.url}<br />
-            <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
-            <div class='container'>
+            <div class="syft-space">
+                <!-- <strong>Institution:</strong> TODO<br /> -->
+                <!-- <strong>Owner:</strong> TODO<br /> -->
+                <strong>URL:</strong> {self.connection.url}<br />
+                <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
+            </div>
+            <div class='syft-alert-info syft-space'>
                 &#9432;&nbsp;
                 This domain is run by the library PySyft to learn more about how it works visit
                 <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
             </div>
             <h4>Commands to Get Started</h4>
             <ul style='padding-left: 1em;'>
-                <li><span class='code-block'>node.requests(status='pending')</span> - list pending requests</li>
+                <li><span class='syft-code-block'>node.requests(status='pending')</span> - list pending requests</li>
             </ul>
         </div><br />
         """
