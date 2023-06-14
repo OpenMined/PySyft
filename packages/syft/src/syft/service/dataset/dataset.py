@@ -87,12 +87,6 @@ class Asset(SyftObject):
 
     __attr_repr_cols__ = ["name", "shape"]
 
-    # @property
-    # def pointer(self) -> ActionObjectPointer:
-    #     api = APIRegistry.api_for(node_uid=self.node_uid)
-    #     obj_ptr = api.services.action.get_pointer(uid=self.action_id)
-    #     return obj_ptr
-
     def _repr_html_(self) -> Any:
         itables_css = f"""
         .itables table {{
@@ -133,7 +127,7 @@ class Asset(SyftObject):
             + "<p><strong>Data:</strong></p>"
             + data_table_line
             + "<p><strong>Mock Data:</strong></p>"
-            + itables.to_html_datatable(df=self.mock_data, css=itables_css)
+            + itables.to_html_datatable(df=self.mock, css=itables_css)
             + "</div>"
         )
 
@@ -160,17 +154,6 @@ class Asset(SyftObject):
         return api.services.action.get_pointer(self.action_id)
 
     @property
-    def mock_data(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        return api.services.action.get_pointer(self.action_id).syft_action_data
-
-    @property
     def mock(self) -> Any:
         # relative
         from ...client.api import APIRegistry
@@ -179,7 +162,7 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.action.get_pointer(self.action_id)
+        return api.services.action.get_pointer(self.action_id).syft_action_data
 
     @property
     def data(self) -> Any:
