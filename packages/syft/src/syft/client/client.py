@@ -41,6 +41,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
+from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
@@ -309,6 +310,7 @@ class SyftClient:
     metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
     __logged_in_user: str = ""
+    __user_role: ServiceRole = ServiceRole.NONE
 
     def __init__(
         self,
@@ -335,6 +337,10 @@ class SyftClient:
     @property
     def logged_in_user(self) -> Optional[str]:
         return self.__logged_in_user
+
+    @property
+    def user_role(self) -> ServiceRole:
+        return self.__user_role
 
     @property
     def verify_key(self) -> SyftVerifyKey:
@@ -489,6 +495,8 @@ class SyftClient:
         if signing_key is not None:
             self.credentials = signing_key
             self.__logged_in_user = email
+            # TODO: How to get the role of the user?
+            # self.__user_role =
             self._fetch_api(self.credentials)
             if cache:
                 SyftClientSessionCache.add_client(
@@ -616,7 +624,8 @@ class SyftClient:
             <span class='syft-code-block'>help(client.requests)</span>\
          or <span class='syft-code-block'>client.requests?</span> - display function signature
         </li>"""
-        commands = ds_commands  # TODO: select ds/do commands
+        # TODO: how to select ds/do commands based on self.__user_role
+        commands = ds_commands
         command_list = f"""
         <ul style='padding-left: 1em;'>
             {commands}
