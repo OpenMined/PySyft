@@ -167,7 +167,7 @@ class Request(SyftObject):
         change_applied_map = {}
         for change_status in self.history:
             # only store the last change
-            change_applied_map[change_status.id] = change_status.applied
+            change_applied_map[change_status.change_id] = change_status.applied
 
         all_changes_applied = all(change_applied_map.values()) and (
             len(change_applied_map) == len(self.changes)
@@ -259,7 +259,7 @@ class Request(SyftObject):
         is_approved = change.approved
 
         permission_request = self.approve()
-        if not permission_request:
+        if isinstance(permission_request, SyftError):
             return permission_request
 
         code = change.linked_obj.resolve
@@ -301,21 +301,13 @@ class Request(SyftObject):
                 apply_permission_type=ActionPermission.READ,
             )
 
-            submit_request = SubmitRequest(
-                changes=[policy_state_mutation, permission_change],
-                requesting_user_verify_key=self.requesting_user_verify_key,
-            )
+            new_changes = [policy_state_mutation, permission_change]
+            result = api.services.request.add_changes(uid=self.id, changes=new_changes)
+            if isinstance(result, SyftError):
+                return result
+            self = result
 
-            self.approve()
-
-            new_request = api.services.request.submit(submit_request)
-            if not new_request:
-                return new_request
-            new_request_result = api.services.request.apply(new_request.id)
-            if not new_request_result:
-                return new_request_result
-            result = api.services.request.apply(self.id)
-            return result
+            return self.approve()
 
 
 @serializable()

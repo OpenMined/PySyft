@@ -29,6 +29,7 @@ from ..service import service_method
 from ..user.user import UserView
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
+from .request import Change
 from .request import ChangeStatus
 from .request import Request
 from .request import RequestInfo
@@ -138,6 +139,26 @@ class RequestService(AbstractService):
 
         return SyftError(message=result.err())
 
+    @service_method(path="request.add_changes", name="add_changes")
+    def add_changes(
+        self, context: AuthedServiceContext, uid: UID, changes: List[Change]
+    ) -> Union[Request, SyftError]:
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to retrieve request with uid: {uid}. Error: {result.err()}"
+            )
+
+        request = result.ok()
+
+        for change in changes:
+            if isinstance(change, Change):
+                pass
+
+        request.changes.extend(changes)
+        return self.save(context=context, request=request)
+
     @service_method(path="request.filter_all_info", name="filter_all_info")
     def filter_all_info(
         self,
@@ -222,12 +243,10 @@ class RequestService(AbstractService):
 
     def save(
         self, context: AuthedServiceContext, request: Request
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[Request, SyftError]:
         result = self.stash.update(context.credentials, request)
         if result.is_ok():
-            return SyftSuccess(
-                message=f"Request: {request.id} updated successfully !!!"
-            )
+            return result.ok()
         return SyftError(
             message=f"Failed to update Request: <{request.id}>. Error: {result.err()}"
         )
