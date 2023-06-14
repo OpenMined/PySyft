@@ -2,7 +2,7 @@ name: CD - Syft
 
 on:
   schedule:
-    - cron: "00 12 * * */2" # At 12:00 on every 2nd day-of-week.
+    - cron: "00 12 * * */1" # At 12:00 UTC on every day
   workflow_dispatch:
     inputs:
       none:
