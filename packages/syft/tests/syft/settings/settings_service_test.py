@@ -2,18 +2,23 @@
 from copy import deepcopy
 
 # third party
+from faker import Faker
 from pytest import MonkeyPatch
 from result import Err
 from result import Ok
 
 # syft absolute
+import syft
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
+from syft.service.user.user import UserCreate
+from syft.service.user.user_roles import ServiceRole
 
 
 def test_settingsservice_get_success(
@@ -126,7 +131,7 @@ def test_settingsservice_update_success(
 
     # get a new settings according to update_settings
     new_settings = deepcopy(settings)
-    update_kwargs = update_settings.to_dict(exclude_none=True).items()
+    update_kwargs = update_settings.to_dict(exclude_empty=True).items()
     for field_name, value in update_kwargs:
         setattr(new_settings, field_name, value)
 
@@ -210,3 +215,90 @@ def test_settingsservice_update_fail(
 
     assert isinstance(response, SyftError)
     assert response.message == mock_update_error_message
+
+
+def test_settings_allow_guest_registration(
+    monkeypatch: MonkeyPatch, faker: Faker
+) -> None:
+    # Create a new worker
+    monkeypatch.setenv("ENABLE_SIGNUP", "False")
+    worker = syft.Worker.named(name=faker.name())
+    guest_domain_client = worker.guest_client
+    root_domain_client = worker.root_client
+
+    email1 = faker.email()
+    email2 = faker.email()
+
+    response_1 = root_domain_client.register(
+        email=email1, password="joker123", name="Joker"
+    )
+    assert isinstance(response_1, SyftSuccess)
+
+    # by default, the guest client can't register new user
+    response_2 = guest_domain_client.register(
+        email=email2, password="harley123", name="Harley"
+    )
+    assert isinstance(response_2, SyftError)
+
+    assert any([user.email == email1 for user in root_domain_client.users])
+
+    # only after the root client enable other users to signup, they can
+    root_domain_client.settings.allow_guest_signup(enable=True)
+    response_3 = guest_domain_client.register(
+        email=email2, password="harley123", name="Harley"
+    )
+    assert isinstance(response_3, SyftSuccess)
+
+    assert any([user.email == email2 for user in root_domain_client.users])
+
+    # if the root client turn off the signup option, guest users can't register anymore
+    root_domain_client.settings.allow_guest_signup(enable=False)
+    response_4 = guest_domain_client.register(
+        email="batman@test.com", password="batman123", name="Batman"
+    )
+    assert isinstance(response_4, SyftError)
+
+
+def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
+    # Mock patch this env variable to remove race conditions
+    # where signup is enabled.
+    def get_mock_client(faker, root_client, role):
+        user_create = UserCreate(
+            name=faker.name(),
+            email=faker.email(),
+            role=role,
+            password="password",
+            password_verify="password",
+        )
+        result = root_client.users.create(user_create=user_create)
+        assert not isinstance(result, SyftError)
+
+        guest_client = root_client.guest()
+        guest_client.login(email=user_create.email, password=user_create.password)
+        return guest_client
+
+    monkeypatch.setenv("ENABLE_SIGNUP", "False")
+    worker = syft.Worker.named(name=faker.name())
+    root_client = worker.root_client
+
+    emails_added = []
+    for role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+        client = get_mock_client(faker=faker, root_client=root_client, role=role)
+        email = faker.email()
+        result = client.register(name=faker.name(), email=email, password="password")
+        assert isinstance(result, SyftSuccess)
+        emails_added.append(email)
+
+    ds_client = get_mock_client(
+        faker=faker, root_client=root_client, role=ServiceRole.DATA_SCIENTIST
+    )
+
+    response = ds_client.register(
+        name=faker.name(), email=faker.email(), password="password"
+    )
+    assert isinstance(response, SyftError)
+
+    users_created_count = sum(
+        [u.email in emails_added for u in root_client.users.get_all()]
+    )
+    assert users_created_count == len(emails_added)
