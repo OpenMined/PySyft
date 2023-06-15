@@ -285,9 +285,9 @@ class DomainRegistry:
 
 
 ENCLAVE_REGISTRY_URL = (
-    "https://raw.githubusercontent.com/rasswanth-s/EnclaveRegistry/main/enclaves.json"
+    "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/enclaves.json"
 )
-ENCLAVE_REGISTRY_REPO = "https://github.com/rasswanth-s/EnclaveRegistry"
+ENCLAVE_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
 
 class EnclaveRegistry:
