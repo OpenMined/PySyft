@@ -63,7 +63,7 @@ class Contributor(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
-    role: str
+    role: Optional[str]
     email: str
     phone: Optional[str]
     note: Optional[str]
@@ -249,7 +249,7 @@ class CreateAsset(SyftObject):
         self,
         name: str,
         email: str,
-        role: Union[Enum, str],
+        role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
@@ -337,7 +337,7 @@ class Dataset(SyftObject):
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
-    __attr_repr_cols__ = ["name", "url"]
+    __attr_repr_cols__ = ["name", "url", "created_at"]
 
     def _repr_html_(self) -> Any:
         uploaded_by_line = ""
@@ -486,7 +486,7 @@ class CreateDataset(Dataset):
         self,
         name: str,
         email: str,
-        role: Union[Enum, str],
+        role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
