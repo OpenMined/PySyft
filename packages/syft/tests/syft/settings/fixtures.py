@@ -28,7 +28,7 @@ def settings(worker, faker) -> NodeSettings:
         on_board=faker.boolean(),
         description=faker.text(),
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
-        signup_enabled=True,
+        signup_enabled=False,
     )
 
 
@@ -51,7 +51,7 @@ def metadata_json(faker) -> NodeMetadataJSON:
         highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
         lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
         syft_version=__version__,
-        signup_enabled=True,
+        signup_enabled=False,
     )
 
 
