@@ -497,6 +497,7 @@ class SyftClient:
             self.credentials = signing_key
             self.__logged_in_user = email
             self._fetch_api(self.credentials)
+            print(f"Logged into {self.name} as <{email}>")
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,
@@ -687,9 +688,7 @@ def login(
             password=login_credentials.password,
             cache=cache,
         )
-        if _client.authed:
-            print(f"Logged into {_client.name} as <{login_credentials.email}>")
-        else:
+        if not _client.authed:
             return SyftError(message=f"Failed to login as {login_credentials.email}")
 
     return _client
