@@ -219,3 +219,96 @@ jobs:
           mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
+
+  pr-tests-stack-k8s:
+    strategy:
+      max-parallel: 99
+      matrix:
+        # os: [ubuntu-latest, macos-latest, windows-latest, windows]
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
+        pytest-modules: ["frontend network"]
+      fail-fast: false
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install -U tox
+
+      - name: Install kubectl
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # cleanup apt version
+          sudo apt remove kubectl || true
+          # install kubectl 1.27
+          curl -LO https://dl.k8s.io/release/v1.27.2/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo install kubectl /usr/local/bin;
+
+      - name: Install k9s
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # install k9s
+          wget https://github.com/derailed/k9s/releases/download/v0.27.4/k9s_Linux_amd64.tar.gz
+          tar -xvf k9s_Linux_x86_64.tar.gz
+          chmod +x k9s
+          sudo install k9s /usr/local/bin;
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        env:
+          HAGRID_ART: false
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+        shell: bash
+        run: |
+          # install k3d
+          wget https://github.com/k3d-io/k3d/releases/download/v5.5.1/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
+          export PATH=`pwd`:$PATH
+          k3d version
+          DEVSPACE_VERSION=v6.3.2
+          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+          chmod +x devspace
+          devspace version
+          tox -e stack.test.integration.k8s

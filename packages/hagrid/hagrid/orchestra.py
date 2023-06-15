@@ -93,6 +93,7 @@ class NodeType(Enum):
     ENCLAVE = "enclave"
     PYTHON = "python"
     VM = "vm"
+    K8S = "k8s"
 
 
 class NodeHandle:
@@ -202,6 +203,15 @@ class Orchestra:
         if node_type_enum == NodeType.VM:
             return NodeHandle(
                 node_type=node_type_enum, name=name, port=80, url="http://192.168.56.2"
+            )
+
+        if node_type_enum == NodeType.K8S:
+            node_port = int(os.environ.get("NODE_PORT", f"{default_port}"))
+            return NodeHandle(
+                node_type=node_type_enum,
+                name=name,
+                port=node_port,
+                url="http://localhost",
             )
 
         if port == "auto" or port is None:
