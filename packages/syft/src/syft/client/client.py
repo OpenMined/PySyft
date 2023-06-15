@@ -46,6 +46,7 @@ from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
+from ..util.fonts import fonts_css
 from ..util.logger import debug
 from ..util.telemetry import instrument
 from ..util.util import thread_ident
@@ -195,7 +196,7 @@ class HTTPConnection(NodeConnection):
         response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
         if isinstance(obj, UserPrivateKey):
-            return obj.signing_key
+            return obj
         return None
 
     def register(self, new_user: UserCreate) -> SyftSigningKey:
@@ -284,7 +285,7 @@ class PythonConnection(NodeConnection):
     def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
         obj = self.exchange_credentials(email=email, password=password)
         if isinstance(obj, UserPrivateKey):
-            return obj.signing_key
+            return obj
         return None
 
     def register(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
@@ -491,7 +492,9 @@ class SyftClient:
         return self.api.services.project.get_all()
 
     def login(self, email: str, password: str, cache: bool = True) -> Self:
-        signing_key = self.connection.login(email=email, password=password)
+        user_private_key = self.connection.login(email=email, password=password)
+        signing_key = user_private_key.signing_key
+        self.__user_role = user_private_key.role
         if signing_key is not None:
             self.credentials = signing_key
             self.__logged_in_user = email
@@ -617,18 +620,25 @@ class SyftClient:
         <li><span class='syft-code-block'>client.code</span> - list code</li>
         <li><span class='syft-code-block'>client.projects</span> - list projects</li>
         """
-        # do_commands = """
-        # <li><span class='syft-code-block'>node.projects</span> - list projects</li>
-        # <li><span class='syft-code-block'>node.requests</span> - list requests</li>
-        # <li><span class='syft-code-block'>node.users</span> - list users</li>
-        # """
+        do_commands = """
+        <li><span class='syft-code-block'>node.projects</span> - list projects</li>
+        <li><span class='syft-code-block'>node.requests</span> - list requests</li>
+        <li><span class='syft-code-block'>node.users</span> - list users</li>
+        """
         help_command = """
         <li>
             <span class='syft-code-block'>help(client.requests)</span>\
          or <span class='syft-code-block'>client.requests?</span> - display function signature
         </li>"""
         # TODO: how to select ds/do commands based on self.__user_role
-        commands = ds_commands
+
+        if (
+            self.user_role is not None
+            and self.user_role.value >= ServiceRole.DATA_OWNER.value
+        ):
+            commands = do_commands
+        else:
+            commands = ds_commands
         command_list = f"""
         <ul style='padding-left: 1em;'>
             {commands}
@@ -640,7 +650,7 @@ class SyftClient:
 
         return f"""
         <style>
-            {{fonts_css}}
+            {fonts_css}
 
             .syft-container {{
                 padding: 5px;
