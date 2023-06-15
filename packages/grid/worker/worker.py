@@ -17,4 +17,11 @@ worker = Worker(
 router = make_routes(worker=worker)
 
 app = FastAPI(title="Worker")
+
+
+@app.get("/")
+async def root() -> str:
+    return "OpenMined Enclave Node Running"
+
+
 app.include_router(router, prefix=API_PATH)

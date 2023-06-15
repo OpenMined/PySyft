@@ -16,6 +16,7 @@ import pandas as pd
 import requests
 
 # relative
+from ..enclave.enclave_client import AzureEnclaveClient
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.network_service import NodePeer
 from ..types.grid_url import GridURL
@@ -280,4 +281,102 @@ class DomainRegistry:
                 if domain.name == key:
                     return self.create_client(self.online_domains[count][0])
                 count += 1
+        raise KeyError(f"Invalid key: {key} for {on}")
+
+
+ENCLAVE_REGISTRY_URL = (
+    "https://raw.githubusercontent.com/rasswanth-s/EnclaveRegistry/main/enclaves.json"
+)
+ENCLAVE_REGISTRY_REPO = "https://github.com/rasswanth-s/EnclaveRegistry"
+
+
+class EnclaveRegistry:
+    def __init__(self) -> None:
+        self.all_enclaves: List[Dict] = []
+        try:
+            response = requests.get(ENCLAVE_REGISTRY_URL)  # nosec
+            enclaves_json = response.json()
+            self.all_enclaves = enclaves_json["2.0.0"]["enclaves"]
+        except Exception as e:
+            warning(
+                f"Failed to get Enclave Registry, go checkout: {ENCLAVE_REGISTRY_REPO}. {e}"
+            )
+
+    @property
+    def online_enclaves(self) -> List[Dict]:
+        enclaves = self.all_enclaves
+
+        def check_enclave(enclave: Dict) -> Optional[Dict[Any, Any]]:
+            url = "http://" + enclave["host_or_ip"] + ":" + str(enclave["port"]) + "/"
+            try:
+                res = requests.get(url, timeout=0.5)  # nosec
+                online = "OpenMined Enclave Node Running" in res.text
+            except Exception:
+                online = False
+
+            if online:
+                version = enclave.get("version", None)
+                # Check if syft version was described in EnclaveRegistry
+                # If it's unknown, try to update it to an available version.
+                if not version or version == "unknown":
+                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
+                    try:
+                        version_url = url + "api/v2/metadata"
+                        res = requests.get(version_url, timeout=0.5)  # nosec
+                        if res.status_code == 200:
+                            enclave["version"] = res.json()["syft_version"]
+                        else:
+                            enclave["version"] = "unknown"
+                    except Exception:
+                        enclave["version"] = "unknown"
+                return enclave
+            return None
+
+        # We can use a with statement to ensure threads are cleaned up promptly
+        with futures.ThreadPoolExecutor(max_workers=20) as executor:
+            # map
+            _online_enclaves = list(
+                executor.map(lambda enclave: check_enclave(enclave), enclaves)
+            )
+
+        online_enclaves = list()
+        for each in _online_enclaves:
+            if each is not None:
+                online_enclaves.append(each)
+        return online_enclaves
+
+    def _repr_html_(self) -> str:
+        on = self.online_enclaves
+        if len(on) == 0:
+            return "(no enclaves online - try syft.enclaves.all_enclaves to see offline enclaves)"
+        return pd.DataFrame(on)._repr_html_()
+
+    def __repr__(self) -> str:
+        on = self.online_enclaves
+        if len(on) == 0:
+            return "(no enclaves online - try syft.enclaves.all_enclaves to see offline enclaves)"
+        return pd.DataFrame(on).to_string()
+
+    @staticmethod
+    def create_client(enclave: Dict[str, Any]) -> Client:  # type: ignore
+        # relative
+
+        try:
+            port = int(enclave["port"])
+            protocol = enclave["protocol"]
+            host_or_ip = enclave["host_or_ip"]
+            grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
+            return AzureEnclaveClient(owners=[], url=grid_url.base_url)
+        except Exception as e:
+            error(f"Failed to login with: {enclave}. {e}")
+            raise e
+
+    def __getitem__(self, key: Union[str, int]) -> AzureEnclaveClient:  # type: ignore
+        if isinstance(key, int):
+            return self.create_client(enclave=self.online_enclaves[key])
+        else:
+            on = self.online_enclaves
+            for enclave in on:
+                if enclave["name"] == key:
+                    return self.create_client(enclave=enclave)
         raise KeyError(f"Invalid key: {key} for {on}")

@@ -12,6 +12,7 @@ from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
 from .client.registry import DomainRegistry  # noqa: F401
+from .client.registry import EnclaveRegistry  # noqa: F401
 from .client.registry import NetworkRegistry  # noqa: F401
 from .client.search import Search  # noqa: F401
 from .client.search import SearchResults  # noqa: F401
@@ -100,6 +101,11 @@ def module_property(func: Any) -> Callable:
 @module_property
 def _gateways() -> NetworkRegistry:
     return NetworkRegistry()
+
+
+@module_property
+def _enclaves() -> EnclaveRegistry:
+    return EnclaveRegistry()
 
 
 @module_property
