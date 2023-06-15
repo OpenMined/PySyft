@@ -383,6 +383,8 @@ class SubmitUserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
 
+    __attr_repr_cols__ = ["func_name", "code"]
+
     @property
     def kwargs(self) -> List[str]:
         return self.input_policy_init_kwargs
