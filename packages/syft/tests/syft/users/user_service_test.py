@@ -1,10 +1,12 @@
 # stdlib
 from typing import List
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 # third party
 from faker import Faker
+import pytest
 from pytest import MonkeyPatch
 from result import Err
 from result import Ok
@@ -24,6 +26,17 @@ from syft.service.user.user import UserView
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_service import UserService
 from syft.types.uid import UID
+
+
+@pytest.fixture()
+def node_with_signup_enabled(worker) -> Type:
+    mock_metadata = worker.metadata
+    mock_metadata.signup_enabled = True
+
+    class NodewithSignupEnabled:
+        metadata = mock_metadata
+
+    return NodewithSignupEnabled
 
 
 def test_userservice_create_when_user_exists(
@@ -459,10 +472,12 @@ def test_userservice_register_user_exists(
     user_service: UserService,
     node_context: NodeServiceContext,
     guest_create_user: UserCreate,
+    node_with_signup_enabled: Type,
 ) -> None:
     def mock_get_by_email(credentials: SyftVerifyKey, email):
         return Ok(guest_create_user)
 
+    monkeypatch.setattr(node_context.node, "__class__", node_with_signup_enabled)
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     expected_error_msg = f"User already exists with email: {guest_create_user.email}"
 
@@ -476,6 +491,7 @@ def test_userservice_register_error_on_get_email(
     user_service: UserService,
     node_context: NodeServiceContext,
     guest_create_user: UserCreate,
+    node_with_signup_enabled: Type,
 ) -> None:
     expected_error_msg = "Failed to get email"
 
@@ -483,6 +499,7 @@ def test_userservice_register_error_on_get_email(
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+    monkeypatch.setattr(node_context.node, "__class__", node_with_signup_enabled)
 
     response = user_service.register(node_context, guest_create_user)
     assert isinstance(response, SyftError)
@@ -495,6 +512,7 @@ def test_userservice_register_success(
     node_context: NodeServiceContext,
     guest_create_user: UserCreate,
     guest_user: User,
+    node_with_signup_enabled: Type,
 ) -> None:
     def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(None)
@@ -507,6 +525,7 @@ def test_userservice_register_success(
     ) -> Ok:
         return Ok(guest_user)
 
+    monkeypatch.setattr(node_context.node, "__class__", node_with_signup_enabled)
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     monkeypatch.setattr(user_service.stash, "set", mock_set)
 
@@ -529,6 +548,7 @@ def test_userservice_register_set_fail(
     user_service: UserService,
     node_context: NodeServiceContext,
     guest_create_user: UserCreate,
+    node_with_signup_enabled: Type,
 ) -> None:
     def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(None)
@@ -543,6 +563,7 @@ def test_userservice_register_set_fail(
     ) -> Err:
         return Err(expected_error_msg)
 
+    monkeypatch.setattr(node_context.node, "__class__", node_with_signup_enabled)
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     monkeypatch.setattr(user_service.stash, "set", mock_set)
 

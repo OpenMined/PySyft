@@ -370,9 +370,11 @@ class SyftClient:
         return self._api
 
     def guest(self) -> Self:
-        self.credentials = SyftSigningKey.generate()
-        self.__logged_in_user = ""
-        return self
+        return SyftClient(
+            connection=self.connection,
+            credentials=SyftSigningKey.generate(),
+            metadata=self.metadata,
+        )
 
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         # relative
@@ -428,6 +430,12 @@ class SyftClient:
     def users(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("user"):
             return self.api.services.user
+        return None
+
+    @property
+    def settings(self) -> Optional[APIModule]:
+        if self.api is not None and self.api.has_service("user"):
+            return self.api.services.settings
         return None
 
     @property
@@ -539,6 +547,7 @@ class SyftClient:
                 password_verify=password,
                 institution=institution,
                 website=website,
+                created_by=self.credentials,
             )
         except Exception as e:
             return SyftError(message=str(e))
@@ -655,6 +664,10 @@ def login(
     login_credentials = None
     if email and password:
         login_credentials = UserLoginCredentials(email=email, password=password)
+
+    if login_credentials is None:
+        print(f"Logged into {_client.name} as GUEST")
+        return _client.guest()
 
     if cache and login_credentials:
         _client_cache = SyftClientSessionCache.get_client(
