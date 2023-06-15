@@ -378,7 +378,7 @@ class Dataset(SyftObject):
                 "<p class='paragraph-sm'><strong>"
                 + f"<span class='pr-8'>Uploaded by:</span></strong>{self.contributors[0].name}</p>"
             )
-        repr_code =  (
+        repr_code = (
             f"""
             <style>
             {fonts_css}
