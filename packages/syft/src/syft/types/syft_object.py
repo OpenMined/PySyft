@@ -622,9 +622,9 @@ def list_dict_repr_html(self) -> str:
 
             html_header = f"""
                 <style>
-                .collection-header {{color: {SURFACE[options.color_theme]};}}
+                .syft-collection-header {{color: {SURFACE[options.color_theme]};}}
                 </style>
-                <div class='collection-header'>
+                <div class='syft-collection-header'>
                     <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
                 </div>
                 <br>

@@ -1,6 +1,7 @@
 __version__ = "0.8.1-beta.9"
 
 # stdlib
+import pathlib
 from pathlib import Path
 import sys
 from typing import Any
@@ -68,6 +69,10 @@ from .util.version_compare import make_requires
 
 LATEST_STABLE_SYFT = "0.8"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
+
+
+# SYFT_PATH = path = os.path.abspath(a_module.__file__)
+SYFT_PATH = pathlib.Path(__file__).parent.resolve()
 
 sys.path.append(str(Path(__file__)))
 

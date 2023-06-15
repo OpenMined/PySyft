@@ -1,3 +1,5 @@
+# stdlib
+
 # third party
 from pytest import MonkeyPatch
 from result import Err
@@ -58,7 +60,7 @@ def test_messageservice_send_success(
 ) -> None:
     expected_message = mock_create_message.to(Message, authed_context)
 
-    def mock_set(credentials: SyftVerifyKey, message: Message) -> Ok:
+    def mock_set(*args, **kwargs) -> Ok:
         return Ok(expected_message)
 
     monkeypatch.setattr(message_service.stash, "set", mock_set)
@@ -73,7 +75,7 @@ def test_messageservice_send_error_on_set(
     authed_context: AuthedServiceContext,
     mock_create_message: CreateMessage,
 ) -> None:
-    def mock_set(credentials: SyftVerifyKey, message_service: MessageService) -> Err:
+    def mock_set(*args, **kwargs) -> Err:
         return Err(expected_error)
 
     test_message_service = message_service

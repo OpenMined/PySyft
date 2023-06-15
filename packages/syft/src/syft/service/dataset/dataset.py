@@ -35,6 +35,8 @@ from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST
 from ...util.colors import SURFACE
 from ...util.colors import SURFACE_SURFACE
+from ...util.fonts import ITABLES_CSS
+from ...util.fonts import fonts_css
 from ...util.markdown import as_markdown_python_code
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
@@ -114,7 +116,12 @@ class Asset(SyftObject):
         return (
             f"""
             <style>
+            {fonts_css}
             .syft-asset {{color: {SURFACE[options.color_theme]};}}
+            .syft-asset h3,
+            .syft-asset p
+              {{font-family: 'Open Sans'}}
+            {ITABLES_CSS}
             </style>
             """
             + '<div class="syft-asset">'
@@ -341,7 +348,12 @@ class Dataset(SyftObject):
         return (
             f"""
             <style>
+            {fonts_css}
             .syft-dataset {{color: {SURFACE[options.color_theme]};}}
+            .syft-dataset h3,
+            .syft-dataset p
+              {{font-family: 'Open Sans';}}
+              {ITABLES_CSS}
             </style>
             """
             + "<div class='syft-dataset'>"
