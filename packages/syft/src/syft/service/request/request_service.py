@@ -149,11 +149,6 @@ class RequestService(AbstractService):
             )
 
         request = result.ok()
-
-        for change in changes:
-            if isinstance(change, Change):
-                pass
-
         request.changes.extend(changes)
         return self.save(context=context, request=request)
 

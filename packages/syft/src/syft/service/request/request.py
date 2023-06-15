@@ -162,7 +162,7 @@ class Request(SyftObject):
     ]
 
     @property
-    def latest_changes(self) -> Dict[UID, bool]:
+    def current_changes_state(self) -> Dict[UID, bool]:
         change_applied_map = {}
         for change_status in self.history:
             # only store the last change
@@ -175,8 +175,8 @@ class Request(SyftObject):
         if len(self.history) == 0:
             return RequestStatus.PENDING
 
-        all_changes_applied = all(self.latest_changes.values()) and (
-            len(self.latest_changes) == len(self.changes)
+        all_changes_applied = all(self.current_changes_state.values()) and (
+            len(self.current_changes_state) == len(self.changes)
         )
 
         request_status = (
@@ -232,14 +232,15 @@ class Request(SyftObject):
         change_context = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
 
-        latest_changes = self.latest_changes
+        current_changes_state = self.current_changes_state
         for change in self.changes:
             # by default change status is not applied
-            is_change_applied = latest_changes.get(change.id, False)
+            is_change_applied = current_changes_state.get(change.id, False)
             change_status = ChangeStatus(
                 change_id=change.id,
                 applied=is_change_applied,
             )
+            # revert here may be deny for certain Changes (UserCodeChange)
             result = change.revert(context=change_context)
             if result.is_err():
                 # add to history and save history to request
