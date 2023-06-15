@@ -61,7 +61,7 @@ class Contributor(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
-    role: str
+    role: Optional[str]
     email: str
     phone: Optional[str]
     note: Optional[str]
