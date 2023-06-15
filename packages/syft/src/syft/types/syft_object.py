@@ -34,7 +34,11 @@ from ..node.credentials import SyftVerifyKey
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..util import options
 from ..util.autoreload import autoreload_enabled
+from ..util.colors import ON_SURFACE_HIGHEST
+from ..util.colors import SURFACE
+from ..util.colors import SURFACE_SURFACE
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.notebook_addons import create_table_template
 from ..util.util import aggressive_set_attr
@@ -64,20 +68,6 @@ DYNAMIC_SYFT_ATTRIBUTES = [
     "syft_node_location",
     "syft_client_verify_key",
 ]
-
-SURFACE_DARK_BRIGHT = "#464158"
-SURFACE_SURFACE = "#2E2B3B"
-DK_ON_SURFACE_HIGHEST = "#534F64"
-
-# This can be customize however we want
-itables_css = f"""
-.itables table {{
-    margin: 0 auto;
-    float: left;
-    color: {DK_ON_SURFACE_HIGHEST};
-}}
-.itables table th {{color: {SURFACE_SURFACE};}}
-"""
 
 
 class SyftHashableObject:
@@ -317,6 +307,16 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
                     value = getattr(value, _attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
+            # If the object has a special representation when nested we will use that instead
+            if hasattr(value, "__repr_syft_nested__"):
+                value = value.__repr_syft_nested__()
+            if isinstance(value, list):
+                value = [
+                    elem.__repr_syft_nested__()
+                    if hasattr(elem, "__repr_syft_nested__")
+                    else elem
+                    for elem in value
+                ]
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"{s_indent}  {attr}: {value_type} = {value}\n"
 
@@ -597,6 +597,21 @@ def list_dict_repr_html(self) -> str:
                                 value = getattr(value, attr, None)
                                 if isinstance(value, list) and has_index:
                                     value = value[index]
+                                # If the object has a special representation when nested we will use that instead
+                                if hasattr(value, "__repr_syft_nested__"):
+                                    value = value.__repr_syft_nested__()
+                                if (
+                                    isinstance(value, list)
+                                    and len(value) > 0
+                                    and hasattr(value[0], "__repr_syft_nested__")
+                                ):
+                                    value = [
+                                        x.__repr_syft_nested__()
+                                        if hasattr(x, "__repr_syft_nested__")
+                                        else x
+                                        for x in value
+                                    ]
+
                         except Exception as e:
                             print(e)
                             value = None
@@ -622,15 +637,32 @@ def list_dict_repr_html(self) -> str:
 
             html_header = f"""
                 <style>
-                .collection-header {{color: {SURFACE_DARK_BRIGHT};}}
+                .syft-collection-header {{color: {SURFACE[options.color_theme]};}}
                 </style>
-                <div class='collection-header'>
+                <div class='syft-collection-header'>
                     <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
                 </div>
                 <br>
                 """
 
-            html_datatable = itables.to_html_datatable(df=df, css=itables_css)
+            itables_css = f"""
+            .itables table {{
+                margin: 0 auto;
+                float: left;
+                color: {ON_SURFACE_HIGHEST[options.color_theme]};
+            }}
+            .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+            """
+
+            try:
+                index = df.columns.get_loc("created_at")
+                order = [[index, "desc"]]
+            except:  # noqa: E722
+                order = []
+
+            html_datatable = itables.to_html_datatable(
+                df=df, css=itables_css, order=order
+            )  # kwargs=kwargs)
 
             return html_header + html_datatable
             # return collection_type + df_styled._repr_html_()
