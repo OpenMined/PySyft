@@ -158,6 +158,7 @@ class Request(SyftObject):
         "request_time",
         "updated_at",
         "status",
+        "changes",
         "requesting_user_verify_key",
     ]
 
@@ -170,28 +171,25 @@ class Request(SyftObject):
         for change in self.changes:
             str_change = ""
             if isinstance(change, UserCodeStatusChange):
-                str_change += f"User {self.requesting_user_name} changes\
-                    {change.link.service_func_name} to permission RequestStatus.APPROVED"
+                str_change += f"User <b>{self.requesting_user_name}</b> requests to change\
+                    <b>{change.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
             else:
-                str_change += "Not implemented"
+                str_change += f"{type(change)}"
             str_changes.append(str_change)
-        return (
-            f"""
+            str_changes = str(str_changes)
+        return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
             </style>
+            <div class='syft-request'>
+                <h3>Request</h3>
+                <p><strong>Id: </strong>{self.id}</p>
+                <p><strong>Request time: </strong>{self.request_time}</p>
+                {updated_at_line}
+                <p><strong> Changes: </strong> {str_changes}</p>
+                <p><strong>Status: </strong>{self.status}</p>
+            </div>
             """
-            + "<div class='syft-request'>"
-            + "<h3>Request</h3>"
-            + f"<p><strong>Id: </strong>{self.id}</p>"
-            + f"<p><strong>Request time: </strong>{self.request_time}</p>"
-            + updated_at_line
-            + "<p><strong> Changes: </strong>"
-            + str(str_changes)
-            + "</p>"
-            + f"<p><strong>Status: </strong>{self.status}</p>"
-            + "</div>"
-        )
 
     @property
     def code(self) -> Any:
@@ -572,6 +570,9 @@ class UserCodeStatusChange(Change):
         "link.output_policy_type.__canonical_name__",
         "link.status.approved",
     ]
+
+    def __repr_syft_nested__(self):
+        return f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
 
     def _repr_markdown_(self) -> str:
         link = self.link

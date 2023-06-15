@@ -596,6 +596,17 @@ def list_dict_repr_html(self) -> str:
                             # If the object has a special representation when nested we will use that instead
                             if hasattr(value, "__repr_syft_nested__"):
                                 value = value.__repr_syft_nested__()
+                            if (
+                                isinstance(value, list)
+                                and len(value) > 0
+                                and hasattr(value[0], "__repr_syft_nested__")
+                            ):
+                                value = [
+                                    x.__repr_syft_nested__()
+                                    if hasattr(x, "__repr_syft_nested__")
+                                    else x
+                                    for x in value
+                                ]
                     except Exception as e:
                         print(e)
                         value = None
