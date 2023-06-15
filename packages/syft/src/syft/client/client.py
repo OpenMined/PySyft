@@ -493,8 +493,10 @@ class SyftClient:
 
     def login(self, email: str, password: str, cache: bool = True) -> Self:
         user_private_key = self.connection.login(email=email, password=password)
-        signing_key = user_private_key.signing_key
-        self.__user_role = user_private_key.role
+        signing_key = None
+        if user_private_key is not None:
+            signing_key = user_private_key.signing_key
+            self.__user_role = user_private_key.role
         if signing_key is not None:
             self.credentials = signing_key
             self.__logged_in_user = email
