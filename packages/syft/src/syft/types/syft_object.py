@@ -614,7 +614,15 @@ def list_dict_repr_html(self) -> str:
                 <br>
                 """
 
-            html_datatable = itables.to_html_datatable(df=df, css=itables_css)
+            try:
+                index = df.columns.get_loc("created_at")
+                order = [[index, "desc"]]
+            except:  # noqa: E722
+                order = []
+
+            html_datatable = itables.to_html_datatable(
+                df=df, css=itables_css, order=order
+            )  # kwargs=kwargs)
 
             return html_header + html_datatable
             # return collection_type + df_styled._repr_html_()
