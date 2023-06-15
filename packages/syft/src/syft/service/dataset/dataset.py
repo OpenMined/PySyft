@@ -475,7 +475,7 @@ class CreateDataset(Dataset):
         self,
         name: str,
         email: str,
-        role: Union[Enum, str],
+        role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
