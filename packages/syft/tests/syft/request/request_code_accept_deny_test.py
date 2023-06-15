@@ -68,7 +68,7 @@ def test_object_mutation(worker: Worker):
 
     assert setting.organization == new_name
 
-    object_mutation.revert(context=change_context)
+    object_mutation.undo(context=change_context)
 
     setting = root_client.api.services.settings.get()
 
@@ -106,7 +106,7 @@ def test_action_store_change(faker: Faker, worker: Worker):
     result = action_obj.get_from(ds_client)
     assert result == dummy_data
 
-    result = permission_change.revert(change_context)
+    result = permission_change.undo(change_context)
     assert result.is_ok()
 
     result = action_obj.get_from(ds_client)
@@ -152,7 +152,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
 
     assert user_code.status.approved
 
-    result = user_code_change.revert(change_context)
+    result = user_code_change.undo(change_context)
     assert result.is_ok()
 
     user_code = ds_client.code.get_all()[0]

@@ -130,7 +130,7 @@ class ActionStoreChange(Change):
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)
 
-    def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
 
@@ -162,7 +162,7 @@ class Request(SyftObject):
     ]
 
     @property
-    def current_changes_state(self) -> Dict[UID, bool]:
+    def current_change_state(self) -> Dict[UID, bool]:
         change_applied_map = {}
         for change_status in self.history:
             # only store the last change
@@ -175,8 +175,8 @@ class Request(SyftObject):
         if len(self.history) == 0:
             return RequestStatus.PENDING
 
-        all_changes_applied = all(self.current_changes_state.values()) and (
-            len(self.current_changes_state) == len(self.changes)
+        all_changes_applied = all(self.current_change_state.values()) and (
+            len(self.current_change_state) == len(self.changes)
         )
 
         request_status = (
@@ -202,7 +202,7 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
-        return api.services.request.revert(uid=self.id, reason=reason)
+        return api.services.request.undo(uid=self.id, reason=reason)
 
     def approve_with_client(self, client):
         return client.api.services.request.apply(self.id)
@@ -228,27 +228,27 @@ class Request(SyftObject):
         self.save(context=context)
         return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
 
-    def revert(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         change_context = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
 
-        current_changes_state = self.current_changes_state
+        current_change_state = self.current_change_state
         for change in self.changes:
             # by default change status is not applied
-            is_change_applied = current_changes_state.get(change.id, False)
+            is_change_applied = current_change_state.get(change.id, False)
             change_status = ChangeStatus(
                 change_id=change.id,
                 applied=is_change_applied,
             )
-            # revert here may be deny for certain Changes (UserCodeChange)
-            result = change.revert(context=change_context)
+            # undo here may be deny for certain Changes (UserCodeChange)
+            result = change.undo(context=change_context)
             if result.is_err():
                 # add to history and save history to request
                 self.history.append(change_status)
                 self.save(context=context)
                 return result
 
-            # If no error, then change successfully reverted.
+            # If no error, then change successfully undoed.
             change_status.applied = False
             self.history.append(change_status)
 
@@ -258,7 +258,7 @@ class Request(SyftObject):
             return Err(result)
         # override object with latest changes.
         self = result
-        return Ok(SyftSuccess(message=f"Request {self.id} changes reverted."))
+        return Ok(SyftSuccess(message=f"Request {self.id} changes undoed."))
 
     def save(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         # relative
@@ -463,7 +463,7 @@ class ObjectMutation(Change):
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)
 
-    def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
 
@@ -536,7 +536,7 @@ class EnumMutation(ObjectMutation):
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)
 
-    def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
     @property
@@ -593,8 +593,8 @@ class UserCodeStatusChange(Change):
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
-    def mutate(self, obj: UserCode, context: ChangeContext, revert: bool) -> Any:
-        if not revert:
+    def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
+        if not undo:
             res = obj.status.mutate(
                 value=self.value,
                 node_name=context.node.name,
@@ -623,7 +623,7 @@ class UserCodeStatusChange(Change):
                 return SyftError(message=obj.err())
             obj = obj.ok()
             if apply:
-                res = self.mutate(obj, context, revert=False)
+                res = self.mutate(obj, context, undo=False)
 
                 if res.is_err():
                     return res
@@ -642,7 +642,7 @@ class UserCodeStatusChange(Change):
                     return enclave_res
                 self.linked_obj.update_with_context(context, res)
             else:
-                res = self.mutate(obj, context, revert=True)
+                res = self.mutate(obj, context, undo=True)
                 if res.is_err():
                     return res
 
@@ -658,7 +658,7 @@ class UserCodeStatusChange(Change):
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)
 
-    def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
     @property

@@ -187,8 +187,8 @@ class RequestService(AbstractService):
             return result.value
         return request.value
 
-    @service_method(path="request.revert", name="revert")
-    def revert(
+    @service_method(path="request.undo", name="undo")
+    def undo(
         self, context: AuthedServiceContext, uid: UID, reason: str
     ) -> Union[SyftSuccess, SyftError]:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
@@ -201,11 +201,11 @@ class RequestService(AbstractService):
         if request is None:
             return SyftError(message=f"Request with uid: {uid} does not exists.")
 
-        result = request.revert(context=context)
+        result = request.undo(context=context)
 
         if result.is_err():
             return SyftError(
-                f"Failed to revert Request: <{uid}> with error: {result.err()}"
+                f"Failed to undo Request: <{uid}> with error: {result.err()}"
             )
 
         link = LinkedObject.with_context(request, context=context)
