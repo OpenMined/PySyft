@@ -24,15 +24,17 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SURFACE_DARK_BRIGHT
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.syft_object import itables_css
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import ON_SURFACE_HIGHEST
+from ...util.colors import SURFACE
+from ...util.colors import SURFACE_SURFACE
 from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ...util.markdown import as_markdown_python_code
@@ -88,6 +90,15 @@ class Asset(SyftObject):
     __attr_repr_cols__ = ["name", "shape"]
 
     def _repr_html_(self) -> Any:
+        itables_css = f"""
+        .itables table {{
+            margin: 0 auto;
+            float: left;
+            color: {ON_SURFACE_HIGHEST[options.color_theme]};
+        }}
+        .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+        """
+
         # relative
         from ...service.action.action_object import ActionObject
 
@@ -106,7 +117,7 @@ class Asset(SyftObject):
             f"""
             <style>
             {fonts_css}
-            .syft-asset {{color: {SURFACE_DARK_BRIGHT};}}
+            .syft-asset {{color: {SURFACE[options.color_theme]};}}
             .syft-asset h3,
             .syft-asset p
               {{font-family: 'Open Sans'}}
@@ -338,7 +349,7 @@ class Dataset(SyftObject):
             f"""
             <style>
             {fonts_css}
-            .syft-dataset {{color: {SURFACE_DARK_BRIGHT};}}
+            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
             .syft-dataset h3,
             .syft-dataset p
               {{font-family: 'Open Sans';}}
