@@ -196,12 +196,17 @@ class Orchestra:
             else:
                 worker = sy.Domain.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
                 return NodeHandle(
-                    node_type=node_type_enum, name=name, python_node=worker
+                    node_type=node_type_enum,
+                    name=name,
+                    python_node=worker,
                 )
 
         if node_type_enum == NodeType.VM:
             return NodeHandle(
-                node_type=node_type_enum, name=name, port=80, url="http://192.168.56.2"
+                node_type=node_type_enum,
+                name=name,
+                port=80,
+                url="http://192.168.56.2",
             )
 
         if port == "auto" or port is None:
@@ -269,7 +274,10 @@ class Orchestra:
 
         if not cmd:
             return NodeHandle(
-                node_type=node_type_enum, name=name, port=port, url="http://localhost"
+                node_type=node_type_enum,
+                name=name,
+                port=port,
+                url="http://localhost",
             )
         return None
 

@@ -33,7 +33,7 @@ def get_mock_client(root_client, role):
     mail = Faker().email()
     name = Faker().name()
     password = "pw"
-    assert client.register(name=name, email=mail, password=password)
+    assert root_client.register(name=name, email=mail, password=password)
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
     assert worker.root_client.api.services.user.update(
         user_id, UserUpdate(user_id=user_id, role=role)
