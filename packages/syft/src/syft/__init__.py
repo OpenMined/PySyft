@@ -7,6 +7,10 @@ import sys
 from typing import Any
 from typing import Callable
 
+# third party
+from IPython.display import Markdown
+from IPython.display import display
+
 # relative
 from . import gevent_patch  # noqa: F401
 from .client.client import connect  # noqa: F401
@@ -77,6 +81,17 @@ SYFT_PATH = pathlib.Path(__file__).parent.resolve()
 sys.path.append(str(Path(__file__)))
 
 logger.start()
+
+try:
+    get_ipython()  # noqa: F821
+    display(
+        Markdown(
+            "\nWarning: syft is imported in light mode by default. \
+        \nTo switch to dark mode, please run `sy.options.color_theme = 'dark'`"
+        )
+    )
+except:  # noqa: E722
+    pass  # nosec
 
 # For server-side, to enable by environment variable
 if OBLV:
