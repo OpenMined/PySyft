@@ -221,8 +221,7 @@ def test_settings_allow_guest_registration(
     monkeypatch: MonkeyPatch, faker: Faker
 ) -> None:
     # Create a new worker
-    monkeypatch.setenv("ENABLE_SIGNUP", "False")
-    worker = syft.Worker.named(name=faker.name())
+    worker = syft.Worker.named(name=faker.name(), reset=True)
     guest_domain_client = worker.guest_client
     root_domain_client = worker.root_client
 
@@ -277,8 +276,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         guest_client.login(email=user_create.email, password=user_create.password)
         return guest_client
 
-    monkeypatch.setenv("ENABLE_SIGNUP", "False")
-    worker = syft.Worker.named(name=faker.name())
+    worker = syft.Worker.named(name=faker.name(), reset=True)
     root_client = worker.root_client
 
     emails_added = []
