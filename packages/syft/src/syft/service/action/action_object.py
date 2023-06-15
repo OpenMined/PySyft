@@ -176,6 +176,7 @@ passthrough_attrs = [
     "send",  # syft
     "_copy_and_set_values",  # pydantic
     "get_from",  # syft
+    "get",  # syft
     "delete_data",  # syft
 ]
 dont_wrap_output_attrs = [
@@ -724,6 +725,22 @@ class ActionObject(SyftObject):
     def get_from(self, client: SyftClient) -> Any:
         """Get the object from a Syft Client"""
         res = client.api.services.action.get(self.id)
+        if not isinstance(res, ActionObject):
+            return Err(res)
+        else:
+            return res.syft_action_data
+
+    def get(self) -> Any:
+        """Get the object from a Syft Client"""
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        res = api.services.action.get(self.id)
+
         if not isinstance(res, ActionObject):
             return Err(res)
         else:

@@ -7,6 +7,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 # relative
+from ..client.api import APIModule
 from ..client.api import SyftAPI
 from ..client.client import SyftClient
 from ..client.client import login
@@ -24,11 +25,11 @@ if TYPE_CHECKING:
 class EnclaveClient(SyftBaseModel):
     """Base EnclaveClient class
     Args:
-        owners (List[SyftClient]): The list of Domain Owners the enclave belongs to
+        domains (List[SyftClient]): List of domain nodes
         url (str): Connection URL to communicate with the enclave.
     """
 
-    owners: List[SyftClient]
+    domains: List[SyftClient]
     url: str
     syft_enclave_client: Optional[SyftClient] = None
 
@@ -55,6 +56,9 @@ class EnclaveClient(SyftBaseModel):
         password: str,
     ) -> None:
         self.syft_enclave_client = login(url=self.url, email=email, password=password)
+
+    def add_domains(self, domains: List[SyftClient]) -> None:
+        self.domains.extend(domains)
 
     @property
     def api(self) -> SyftAPI:
@@ -88,12 +92,20 @@ class EnclaveClient(SyftBaseModel):
         code.id = code_id
         code.enclave_metadata = enclave_metadata
 
-        for domain_client in self.owners:
+        for domain_client in self.domains:
             domain_client.api.services.code.request_code_execution(code=code)
 
         res = self.api.services.code.request_code_execution(code=code)
 
         return res
+
+    @property
+    def code(self) -> Optional[APIModule]:
+        if (
+            self.syft_enclave_client is not None
+            and self.syft_enclave_client.api.has_service("code")
+        ):
+            return self.syft_enclave_client.api.services.code
 
     def __repr__(self):
         data = dict(self.dict(exclude={"syft_enclave_client"}))
@@ -113,10 +125,9 @@ class AzureEnclaveClient(EnclaveClient):
     def from_enclave_metadata(
         enclave_metadata: AzureEnclaveMetadata, signing_key: SyftSigningKey
     ) -> AzureEnclaveClient:
-        # In the context of Domain Owners, who would like to only communicate with enclave, would not provide owners
-        azure_encalve_client = AzureEnclaveClient(
-            owners=[], url=enclave_metadata.url, signing_key=signing_key
-        )
+        # In the context of Domain Owners, who would like to only communicate with enclave,
+        #  would not provide domains to the enclave client.
+        azure_encalve_client = AzureEnclaveClient(domains=[], url=enclave_metadata.url)
 
         azure_encalve_client.login_by_signing_key(signing_key=signing_key)
 
