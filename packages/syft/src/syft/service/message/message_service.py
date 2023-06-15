@@ -7,6 +7,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -41,7 +42,17 @@ class MessageService(AbstractService):
         """Send a new message"""
 
         new_message = message.to(Message, context=context)
-        result = self.stash.set(context.credentials, new_message)
+
+        # Add read permissions to person receiving this message
+        permissions = [
+            ActionObjectREAD(
+                uid=new_message.id, credentials=new_message.to_user_verify_key
+            )
+        ]
+
+        result = self.stash.set(
+            context.credentials, new_message, add_permissions=permissions
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()
@@ -69,10 +80,15 @@ class MessageService(AbstractService):
         else:
             SyftError(message="The target message id {reply.target_msg} was not found!")
 
-    @service_method(path="messages.get_all", name="get_all")
+    @service_method(
+        path="messages.get_all",
+        name="get_all",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def get_all(self, context: AuthedServiceContext) -> Union[List[Message], SyftError]:
         result = self.stash.get_all_inbox_for_verify_key(
-            context.credentials, verify_key=context.credentials
+            credentials=context.credentials,
+            verify_key=context.credentials,
         )
         if result.err():
             return SyftError(message=str(result.err()))
@@ -109,7 +125,11 @@ class MessageService(AbstractService):
         messages = result.ok()
         return messages
 
-    @service_method(path="messages.get_all_read", name="get_all_read")
+    @service_method(
+        path="messages.get_all_read",
+        name="get_all_read",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def get_all_read(
         self,
         context: AuthedServiceContext,
@@ -119,7 +139,11 @@ class MessageService(AbstractService):
             status=MessageStatus.READ,
         )
 
-    @service_method(path="messages.get_all_unread", name="get_all_unread")
+    @service_method(
+        path="messages.get_all_unread",
+        name="get_all_unread",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def get_all_unread(
         self,
         context: AuthedServiceContext,
