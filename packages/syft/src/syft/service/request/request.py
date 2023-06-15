@@ -158,7 +158,6 @@ class Request(SyftObject):
         "request_time",
         "updated_at",
         "status",
-        "changes",
         "requesting_user_verify_key",
     ]
 
