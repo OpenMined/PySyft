@@ -326,7 +326,7 @@ class Dataset(SyftObject):
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
-    __attr_repr_cols__ = ["name", "url"]
+    __attr_repr_cols__ = ["name", "url", "created_at"]
 
     def _repr_html_(self) -> Any:
         uploaded_by_line = ""
