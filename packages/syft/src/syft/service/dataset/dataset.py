@@ -504,7 +504,8 @@ class CreateDataset(Dataset):
         for i, existing_asset in enumerate(self.asset_list):
             if existing_asset.name == asset.name:
                 if not force_replace:
-                    raise ValueError(f"Asset {asset.name} already exists within the dataset. To overwrite the existing asset, please call the `add_asset` function again with `force_replace=True`.")
+                    print(f"WARNING: Asset \"{asset.name}\" already exists within the dataset. \n To overwrite the existing asset, please call the `add_asset` function again with `force_replace=True`.")
+                    return
                 else:
                     self.asset_list[i] = asset 
                     print(f"Asset {asset.name} has been successfully replaced.")
