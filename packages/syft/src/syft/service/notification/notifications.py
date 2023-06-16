@@ -69,11 +69,15 @@ class Notification(SyftObject):
         return None
 
     def mark_read(self) -> None:
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(
+            self.node_uid, user_verify_key=self.syft_client_verify_key
+        )
         return api.services.notifications.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(
+            self.node_uid, user_verify_key=self.syft_client_verify_key
+        )
         return api.services.notifications.mark_as_unread(uid=self.id)
 
 

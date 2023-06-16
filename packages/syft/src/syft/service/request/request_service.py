@@ -193,35 +193,24 @@ class RequestService(AbstractService):
             filter_by_obj = context.node.get_service_method(
                 NotificationService.filter_by_obj
             )
-            notification = filter_by_obj(context=context, obj_uid=uid)
-
-            # # third party
-            # import ipdb
-
-            # ipdb.set_trace()
+            request_notification = filter_by_obj(context=context, obj_uid=uid)
 
             link = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
-                print("testing", notification.status)
-
                 mark_as_read = context.node.get_service_method(
                     NotificationService.mark_as_read
                 )
-                mark_as_read(context=context, uid=notification.id)
+                mark_as_read(context=context, uid=request_notification.id)
 
-                print("testing...............", notification.status)
-
-                new_notification = CreateNotification(
-                    subject="Request status with: {uid} updated to: {self.status}",
+                notification = CreateNotification(
+                    subject=f"{request.changes} for Request id: {uid} has status updated to {request.status}",
                     to_user_verify_key=request.requesting_user_verify_key,
                     linked_obj=link,
                 )
                 send_notification = context.node.get_service_method(
                     NotificationService.send
                 )
-                notification = send_notification(
-                    context=context, notification=new_notification
-                )
+                send_notification(context=context, notification=notification)
 
             return result.value
         return request.value

@@ -183,7 +183,11 @@ class NotificationService(AbstractService):
             return SyftError(message=str(result.err()))
         return result.ok()
 
-    @service_method(path="notifications.resolve_object", name="resolve_object")
+    @service_method(
+        path="notifications.resolve_object",
+        name="resolve_object",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Union[Notification, SyftError]:
