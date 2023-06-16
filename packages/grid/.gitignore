@@ -17,3 +17,6 @@ profile/
 
 credentials.json
 .env
+
+# Ignore DevSpace cache and log folder
+.devspace/
