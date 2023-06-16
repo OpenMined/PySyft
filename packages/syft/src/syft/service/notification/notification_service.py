@@ -7,6 +7,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -41,7 +42,18 @@ class NotificationService(AbstractService):
         """Send a new notification"""
 
         new_notification = notification.to(Notification, context=context)
-        result = self.stash.set(context.credentials, new_notification)
+
+        # Add read permissions to person receiving this message
+        permissions = [
+            ActionObjectREAD(
+                uid=new_notification.id, credentials=new_notification.to_user_verify_key
+            )
+        ]
+
+        result = self.stash.set(
+            context.credentials, new_notification, add_permissions=permissions
+        )
+
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()
@@ -72,14 +84,17 @@ class NotificationService(AbstractService):
             )
 
     @service_method(
-        path="notifications.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
+        path="notifications.get_all",
+        name="get_all",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(
         self,
         context: AuthedServiceContext,
     ) -> Union[List[Notification], SyftError]:
         result = self.stash.get_all_inbox_for_verify_key(
-            context.credentials, verify_key=context.credentials
+            context.credentials,
+            verify_key=context.credentials,
         )
         if result.err():
             return SyftError(message=str(result.err()))
@@ -118,7 +133,11 @@ class NotificationService(AbstractService):
         notifications = result.ok()
         return notifications
 
-    @service_method(path="notifications.get_all_read", name="get_all_read")
+    @service_method(
+        path="notifications.get_all_read",
+        name="get_all_read",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def get_all_read(
         self,
         context: AuthedServiceContext,
@@ -128,7 +147,11 @@ class NotificationService(AbstractService):
             status=NotificationStatus.READ,
         )
 
-    @service_method(path="notifications.get_all_unread", name="get_all_unread")
+    @service_method(
+        path="notifications.get_all_unread",
+        name="get_all_unread",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def get_all_unread(
         self,
         context: AuthedServiceContext,

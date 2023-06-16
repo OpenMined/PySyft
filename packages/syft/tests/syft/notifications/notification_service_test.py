@@ -61,7 +61,7 @@ def test_service_send_success(
 
     expected_message = mock_create_notification.to(Notification, authed_context)
 
-    def mock_set(notification_service: NotificationService) -> Ok:
+    def mock_set(*args, **kwargs) -> Ok:
         return Ok(expected_message)
 
     monkeypatch.setattr(notification_service.stash, "set", mock_set)
@@ -76,7 +76,7 @@ def test_service_send_error_on_set(
     authed_context: AuthedServiceContext,
     mock_create_notification: CreateNotification,
 ) -> None:
-    def mock_set(credentials: SyftVerifyKey, _service: NotificationService) -> Err:
+    def mock_set(*args, **kwargs) -> Err:
         return Err(expected_error)
 
     test_notification_service = notification_service

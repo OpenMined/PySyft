@@ -195,7 +195,12 @@ class RequestService(AbstractService):
             )
             notification = filter_by_obj(context=context, obj_uid=uid)
 
-            linked_obj = LinkedObject.with_context(request, context=context)
+            # # third party
+            # import ipdb
+
+            # ipdb.set_trace()
+
+            link = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
                 print("testing", notification.status)
 
@@ -206,14 +211,17 @@ class RequestService(AbstractService):
 
                 print("testing...............", notification.status)
 
-                message = CreateNotification(
-                    subject="Request status updated to: {self.status}",
-                    from_user_verify_key=context.credentials,
+                new_notification = CreateNotification(
+                    subject="Request status with: {uid} updated to: {self.status}",
                     to_user_verify_key=request.requesting_user_verify_key,
-                    linked_obj=linked_obj,
+                    linked_obj=link,
                 )
-                send_method = context.node.get_service_method(NotificationService.send)
-                send_method(context=context, notification=message)
+                send_notification = context.node.get_service_method(
+                    NotificationService.send
+                )
+                notification = send_notification(
+                    context=context, notification=new_notification
+                )
 
             return result.value
         return request.value
@@ -252,7 +260,7 @@ class RequestService(AbstractService):
         )
         send_notification = context.node.get_service_method(NotificationService.send)
 
-        result = send_notification(context=context, message=notification)
+        result = send_notification(context=context, notification=notification)
         return SyftSuccess(message=f"Request {uid} successfully denied !")
 
     def save(
