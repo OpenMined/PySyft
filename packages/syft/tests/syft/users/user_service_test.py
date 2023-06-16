@@ -3,6 +3,7 @@ from typing import List
 from typing import Tuple
 from typing import Type
 from typing import Union
+from unittest import mock
 
 # third party
 from faker import Faker
@@ -12,6 +13,7 @@ from result import Ok
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
+from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.context import NodeServiceContext
 from syft.service.context import UnauthedServiceContext
@@ -27,14 +29,11 @@ from syft.service.user.user_service import UserService
 from syft.types.uid import UID
 
 
-def node_with_signup_enabled(worker) -> Type:
+def metadata_with_signup_enabled(worker) -> Type:
     mock_metadata = worker.metadata
     mock_metadata.signup_enabled = True
 
-    class NodewithSignupEnabled:
-        metadata = mock_metadata
-
-    return NodewithSignupEnabled
+    return mock_metadata
 
 
 def test_userservice_create_when_user_exists(
@@ -474,9 +473,6 @@ def test_userservice_register_user_exists(
     def mock_get_by_email(credentials: SyftVerifyKey, email):
         return Ok(guest_create_user)
 
-    monkeypatch.setattr(
-        node_context.node, "__class__", node_with_signup_enabled(node_context.node)
-    )
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     expected_error_msg = f"User already exists with email: {guest_create_user.email}"
 
@@ -488,8 +484,8 @@ def test_userservice_register_user_exists(
 def test_userservice_register_error_on_get_email(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
-    node_context: NodeServiceContext,
     guest_create_user: UserCreate,
+    worker: Worker,
 ) -> None:
     expected_error_msg = "Failed to get email"
 
@@ -497,57 +493,65 @@ def test_userservice_register_error_on_get_email(
         return Err(expected_error_msg)
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
-    monkeypatch.setattr(
-        node_context.node, "__class__", node_with_signup_enabled(node_context.node)
-    )
 
-    response = user_service.register(node_context, guest_create_user)
-    assert isinstance(response, SyftError)
-    assert response.message == expected_error_msg
+    # Patch Worker Metadata to enable signup
+    with mock.patch(
+        "syft.Worker.metadata",
+        new_callable=mock.PropertyMock,
+        return_value=metadata_with_signup_enabled(worker),
+    ):
+        mock_worker = Worker.named("mock-node")
+        node_context = NodeServiceContext(node=mock_worker)
+
+        response = user_service.register(node_context, guest_create_user)
+        assert isinstance(response, SyftError)
+        assert response.message == expected_error_msg
 
 
 def test_userservice_register_success(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
-    node_context: NodeServiceContext,
+    worker: Worker,
     guest_create_user: UserCreate,
     guest_user: User,
 ) -> None:
     def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
         return Ok(None)
 
-    def mock_set(
-        credentials: SyftVerifyKey,
-        user: str,
-        has_permission: bool = False,
-        add_permissions=None,
-    ) -> Ok:
+    def mock_set(*args, **kwargs) -> Ok:
         return Ok(guest_user)
 
-    monkeypatch.setattr(
-        node_context.node, "__class__", node_with_signup_enabled(node_context.node)
-    )
-    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
-    monkeypatch.setattr(user_service.stash, "set", mock_set)
+        # Patch Worker Metadata to enable signup
 
-    expected_msg = f"User {guest_create_user.name} successfully registered! To see users, run client.users."
-    expected_private_key = guest_user.to(UserPrivateKey)
+    with mock.patch(
+        "syft.Worker.metadata",
+        new_callable=mock.PropertyMock,
+        return_value=metadata_with_signup_enabled(worker),
+    ):
+        mock_worker = Worker.named("mock-node")
+        node_context = NodeServiceContext(node=mock_worker)
 
-    response = user_service.register(node_context, guest_create_user)
-    assert isinstance(response, Tuple)
+        monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+        monkeypatch.setattr(user_service.stash, "set", mock_set)
 
-    syft_success_response, user_private_key = response
-    assert isinstance(syft_success_response, SyftSuccess)
-    assert syft_success_response.message == expected_msg
+        expected_msg = f"User {guest_create_user.name} successfully registered! To see users, run client.users."
+        expected_private_key = guest_user.to(UserPrivateKey)
 
-    assert isinstance(user_private_key, UserPrivateKey)
-    assert user_private_key == expected_private_key
+        response = user_service.register(node_context, guest_create_user)
+        assert isinstance(response, Tuple)
+
+        syft_success_response, user_private_key = response
+        assert isinstance(syft_success_response, SyftSuccess)
+        assert syft_success_response.message == expected_msg
+
+        assert isinstance(user_private_key, UserPrivateKey)
+        assert user_private_key == expected_private_key
 
 
 def test_userservice_register_set_fail(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
-    node_context: NodeServiceContext,
+    worker: Worker,
     guest_create_user: UserCreate,
 ) -> None:
     def mock_get_by_email(credentials: SyftVerifyKey, email: str) -> Ok:
@@ -563,15 +567,20 @@ def test_userservice_register_set_fail(
     ) -> Err:
         return Err(expected_error_msg)
 
-    monkeypatch.setattr(
-        node_context.node, "__class__", node_with_signup_enabled(node_context.node)
-    )
-    monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
-    monkeypatch.setattr(user_service.stash, "set", mock_set)
+    with mock.patch(
+        "syft.Worker.metadata",
+        new_callable=mock.PropertyMock,
+        return_value=metadata_with_signup_enabled(worker),
+    ):
+        mock_worker = Worker.named("mock-node")
+        node_context = NodeServiceContext(node=mock_worker)
 
-    response = user_service.register(node_context, guest_create_user)
-    assert isinstance(response, SyftError)
-    assert response.message == expected_error_msg
+        monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
+        monkeypatch.setattr(user_service.stash, "set", mock_set)
+
+        response = user_service.register(node_context, guest_create_user)
+        assert isinstance(response, SyftError)
+        assert response.message == expected_error_msg
 
 
 def test_userservice_exchange_credentials(
