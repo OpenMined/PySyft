@@ -32,6 +32,8 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
@@ -140,6 +142,7 @@ class Request(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     requesting_user_verify_key: SyftVerifyKey
+    requesting_user_name: str
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
     updated_at: Optional[DateTime]
@@ -160,6 +163,44 @@ class Request(SyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
+
+    def _repr_html_(self) -> Any:
+        # add changes
+        updated_at_line = ""
+        if self.updated_at is not None:
+            updated_at_line += f"<p><strong>Created by: </strong>{self.created_by}</p>"
+        str_changes = []
+        for change in self.changes:
+            str_change = ""
+            if isinstance(change, UserCodeStatusChange):
+                str_change += f"User <b>{self.requesting_user_name}</b> requests to change\
+                    <b>{change.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
+            else:
+                str_change += f"{type(change)}"
+            str_changes.append(str_change)
+            str_changes = str(str_changes)
+        return f"""
+            <style>
+            .syft-request {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='syft-request'>
+                <h3>Request</h3>
+                <p><strong>Id: </strong>{self.id}</p>
+                <p><strong>Request time: </strong>{self.request_time}</p>
+                {updated_at_line}
+                <p><strong> Changes: </strong> {str_changes}</p>
+                <p><strong>Status: </strong>{self.status}</p>
+            </div>
+            """
+
+    @property
+    def code(self) -> Any:
+        if len(self.changes) == 1:
+            if isinstance(self.changes[0], UserCodeStatusChange):
+                return self.changes[0].link
+        return SyftError(
+            msg="This type of request does not have code associated with it."
+        )
 
     @property
     def current_change_state(self) -> Dict[UID, bool]:
@@ -402,6 +443,17 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
     return context
 
 
+def add_requesting_user_name(context: TransformContext) -> TransformContext:
+    try:
+        user_key = context.output["requesting_user_verify_key"]
+        user_service = context.node.get_service("UserService")
+        user = user_service.get_by_verify_key(user_key)
+        context.output["requesting_user_name"] = user.name
+    except Exception:
+        context.output["requesting_user_name"] = "guest_user"
+    return context
+
+
 @transform(SubmitRequest, Request)
 def submit_request_to_request() -> List[Callable]:
     return [
@@ -409,6 +461,7 @@ def submit_request_to_request() -> List[Callable]:
         add_node_uid_for_key("node_uid"),
         add_request_time,
         check_requesting_user_verify_key,
+        add_requesting_user_name,
         hash_changes,
     ]
 
@@ -560,6 +613,9 @@ class UserCodeStatusChange(Change):
         "link.output_policy_type.__canonical_name__",
         "link.status.approved",
     ]
+
+    def __repr_syft_nested__(self):
+        return f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
 
     def _repr_markdown_(self) -> str:
         link = self.link
