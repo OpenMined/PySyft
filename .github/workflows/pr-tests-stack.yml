@@ -311,5 +311,4 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T AfHc3nCyvlYAxw1JuJ3mbh P78OhIl8q3xg2newLUpGEK au.relay.tunshell.com
-          # tox -e stack.test.integration.k8s
+          tox -e stack.test.integration.k8s

@@ -32,14 +32,14 @@ images:
     tags:
       - dev-latest
       - 0.8.1-beta.10
-  # tailscale:
-  #   image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
-  #   buildKit: {}
-  #   dockerfile: ./vpn/tailscale.dockerfile
-  #   context: ./vpn
-  #   tags:
-  #     - "######"
-  #     - "0.8.1-beta.10"
+  tailscale:
+    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
+    buildKit: {}
+    dockerfile: ./vpn/tailscale.dockerfile
+    context: ./vpn
+    tags:
+      - dev-latest
+      - 0.8.1-beta.10
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
