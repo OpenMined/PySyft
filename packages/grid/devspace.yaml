@@ -9,13 +9,13 @@ pipelines:
       run_dependencies --all       # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all    # 2. Ensure pull secrets
       create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
-      start_dev app                # 4. Start dev mode "app" (see "dev" section)
+      start_dev --all              # 4. Start dev mode "app" (see "dev" section)
   # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
   deploy:
     run: |-
       run_dependencies --all                            # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all                         # 2. Ensure pull secrets
-      build_images --all -t $(git describe --always)    # 3. Build, tag (git commit hash) and push all images (see "images")
+      build_images --all -t $(git rev-parse --short=6 HEAD)    # 3. Build, tag (git commit hash) and push all images (see "images")
       create_deployments --all                          # 4. Deploy Helm charts and manifests specfied as "deployments"
 
 vars:
@@ -30,8 +30,8 @@ images:
     dockerfile: ./backend/backend.dockerfile
     context: ../
     tags:
-      - "######"
-      - "0.8.1-beta.9"
+      - dev-latest
+      - 0.8.1-beta.9
   # tailscale:
   #   image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
   #   buildKit: {}
@@ -144,7 +144,7 @@ deployments:
               - name: HTTPS_PORT
                 value: "${HTTPS_PORT}"
               - name: CONTAINER_HOST
-                value: "${CONTAINER_HOST}"
+                value: "k8s"
               - name: TRACE
                 value: "${TRACE}"
               - name: JAEGER_HOST
@@ -195,47 +195,22 @@ deployments:
           ports:
             - port: "27017"
 
-# This is a list of `dev` containers that are based on the containers created by your deployments
 dev:
+  mongo:
+    imageSelector: "mongo:latest"
+    ports:
+      - port: "27017"
   backend:
-    # Search for the container that runs this image
     imageSelector: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}"
-    # Replace the container image with this dev-optimized image (allows to skip image building during development)
-    # devImage: ghcr.io/loft-sh/devspace-containers/python:3-alpine
-    # Sync files between the local filesystem and the development container
+    env:
+      - name: DEV_MODE
+        value: "True"
+    logs: {}
     sync:
       - path: ./backend/grid:/app/grid
       - path: ../syft:/app/syft
-        # uploadExcludeFile: .dockerignore
-    # Open a terminal and use the following command to start it
-    # terminal:
-    #   command: ./devspace_start.sh
-    # Inject a lightweight SSH server into the container (so your IDE can connect to the remote dev env)
-    ssh:
-      enabled: true
-    # Make the following commands from my local machine available inside the dev container
-    proxyCommands:
-      - command: devspace
-      - command: kubectl
-      - command: helm
-      - gitCredentials: true
-    # Forward the following ports to be able access your application via localhost
-    # ports:
-    #   - port: "80"
-    # # Open the following URLs once they return an HTTP status code other than 502 or 503
-    # open:
-    #   - url: http://localhost:80
-# Use the `commands` section to define repeatable dev workflows for this project
-# commands:
-#   migrate-db:
-#     command: |-
-#       echo 'This is a cross-platform, shared command that can be used to codify any kind of dev task.'
-#       echo 'Anyone using this project can invoke it via "devspace run migrate-db"'
 
-# Define dependencies to other projects with a devspace.yaml
-# dependencies:
-#   api:
-#     git: https://...  # Git-based dependencies
-#     tag: v1.0.0
-#   ui:
-#     path: ./ui        # Path-based dependencies (for monorepos)
+commands:
+  dev:
+    command: |-
+      devspace --var CONTAINER_REGISTRY=k3d-registry.localhost:12345/ dev --config=devspace.yaml
