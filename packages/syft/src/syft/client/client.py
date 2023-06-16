@@ -465,6 +465,10 @@ class SyftClient:
 
     @property
     def notifications(self) -> Optional[APIModule]:
+        print(
+            "WARNING: Notifications is currently is in a beta state, so use carefully!"
+        )
+        print("If possible try using client.requests/client.projects")
         if self.api is not None and self.api.has_service("messages"):
             return self.api.services.messages
         return None
@@ -627,7 +631,7 @@ class SyftClient:
 
     def _repr_html_(self) -> str:
         ds_commands = """
-        <li><span class='syft-code-block'>client.datasets</span> - list requests</li>
+        <li><span class='syft-code-block'>client.datasets</span> - list datasets</li>
         <li><span class='syft-code-block'>client.code</span> - list code</li>
         <li><span class='syft-code-block'>client.projects</span> - list projects</li>
         """

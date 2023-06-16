@@ -42,6 +42,7 @@ from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
+from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
 from ..policy.policy import Policy
@@ -105,6 +106,12 @@ class UserCodeStatusContext(SyftHashableObject):
 
     def __repr__(self):
         return str(self.base_dict)
+
+    def __repr_syft_nested__(self):
+        string = ""
+        for node_view, status in self.base_dict.items():
+            string += f"{node_view.node_name}: {status}<br>"
+        return string
 
     @property
     def approved(self) -> bool:
@@ -347,6 +354,16 @@ class UserCode(SyftObject):
     def code(self) -> str:
         return self.raw_code
 
+    def show_code_cell(self):
+        warning_message = """# WARNING: \n# Before you submit
+# change the name of the function \n# for no duplicates\n\n"""
+
+        # third party
+        from IPython import get_ipython
+
+        ip = get_ipython()
+        ip.set_next_input(warning_message + self.raw_code)
+
 
 @serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
@@ -365,6 +382,8 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+
+    __attr_repr_cols__ = ["func_name", "code"]
 
     @property
     def kwargs(self) -> List[str]:
@@ -392,6 +411,13 @@ def debox_asset(arg: Any) -> Any:
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg
+
+
+def syft_function_single_use(*args: Any, **kwargs: Any):
+    return syft_function(
+        input_policy=ExactMatch(*args, **kwargs),
+        output_policy=SingleExecutionExactOutput(),
+    )
 
 
 def syft_function(
