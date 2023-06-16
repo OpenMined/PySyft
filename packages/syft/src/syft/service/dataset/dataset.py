@@ -504,7 +504,8 @@ class CreateDataset(Dataset):
             if existing_asset.name == asset.name:
                 if not force_replace:
                     print(
-                        f"WARNING: Asset \"{asset.name}\" already exists. To replace it, use add_asset(asset, force_replace=True)"
+                        f'WARNING: Asset "{asset.name}" already exists. To replace it,\
+                            use add_asset(asset, force_replace=True)'
                     )
                     return
                 else:
