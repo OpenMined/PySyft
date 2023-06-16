@@ -31,7 +31,6 @@ from typeguard import check_type
 
 # relative
 from ..node.credentials import SyftVerifyKey
-from ..serde.deserialize import _deserialize as deserialize
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
 from ..util.autoreload import autoreload_enabled
@@ -225,29 +224,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         List[str]
     ] = None  # show these in html repr of an object
 
-    def to_mongo(self) -> Dict[str, Any]:
-        warnings.warn(
-            "`SyftObject.to_mongo` is deprecated and will be removed in a future version",
-            PendingDeprecationWarning,
-        )
-
-        d = {}
-        for k in self.__attr_searchable__:
-            # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
-            # if unsupported, convert to string
-            value = getattr(self, k, "")
-            if isinstance(value, SyftVerifyKey):
-                value = str(value)
-            d[k] = value
-        blob = serialize(dict(self), to_bytes=True)
-        d["_id"] = self.id.value  # type: ignore
-        d["__canonical_name__"] = self.__canonical_name__
-        d["__version__"] = self.__version__
-        d["__blob__"] = blob
-        d["__repr__"] = self.__repr__()
-
-        return d
-
     def __syft_get_funcs__(self) -> List[Tuple[str, Signature]]:
         funcs = print_type_cache[type(self)]
         if len(funcs) > 0:
@@ -333,26 +309,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             return as_markdown_python_code(_repr_str)
         else:
             return _repr_str
-
-    @staticmethod
-    def from_mongo(bson: Any) -> "SyftObject":
-        warnings.warn(
-            "`SyftObject.from_mongo` is deprecated and will be removed in a future version",
-            PendingDeprecationWarning,
-        )
-
-        constructor = SyftObjectRegistry.versioned_class(
-            name=bson["__canonical_name__"], version=bson["__version__"]
-        )
-        if constructor is None:
-            raise ValueError(
-                "Versioned class should not be None for initialization of SyftObject."
-            )
-        de = deserialize(bson["__blob__"], from_bytes=True)
-        for attr, funcs in constructor.__serde_overrides__.items():
-            if attr in de:
-                de[attr] = funcs[1](de[attr])
-        return constructor(**de)
 
     # allows splatting with **
     def keys(self) -> KeysView[str]:

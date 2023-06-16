@@ -783,8 +783,9 @@ class Project(SyftObject):
             # This would be solved in our future leaderless approach
             return self._append_event(event=event, credentials=credentials)
 
-        self.events.append(copy.deepcopy(event))
-        self.event_id_hashmap[event.id] = event
+        event_copy = copy.deepcopy(event)
+        self.events.append(event_copy)
+        self.event_id_hashmap[event.id] = event_copy
         return result
 
     @property
