@@ -54,9 +54,7 @@ class UserService(AbstractService):
         self, context: AuthedServiceContext, user_create: UserCreate
     ) -> Union[UserView, SyftError]:
         """Create a new user"""
-        import sys
         user = user_create.to(User)
-        print(user.hashed_password, file=sys.stderr)
         result = self.stash.get_by_email(
             credentials=context.credentials, email=user.email
         )
