@@ -28,6 +28,7 @@ from ..service import service_method
 from ..user.user import UserView
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
+from .request import Change
 from .request import Request
 from .request import RequestInfo
 from .request import RequestInfoFilter
@@ -75,8 +76,10 @@ class RequestService(AbstractService):
 
                 root_verify_key = admin_verify_key()
                 if send_message:
+                    subject_msg = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\
+                        has been successfully deposited."
                     message = CreateNotification(
-                        subject="Approval Request" if not reason else reason,
+                        subject=subject_msg if not reason else reason,
                         from_user_verify_key=context.credentials,
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
@@ -139,6 +142,21 @@ class RequestService(AbstractService):
 
         return SyftError(message=result.err())
 
+    @service_method(path="request.add_changes", name="add_changes")
+    def add_changes(
+        self, context: AuthedServiceContext, uid: UID, changes: List[Change]
+    ) -> Union[Request, SyftError]:
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to retrieve request with uid: {uid}. Error: {result.err()}"
+            )
+
+        request = result.ok()
+        request.changes.extend(changes)
+        return self.save(context=context, request=request)
+
     @service_method(path="request.filter_all_info", name="filter_all_info")
     def filter_all_info(
         self,
@@ -200,24 +218,49 @@ class RequestService(AbstractService):
             return result.value
         return request.value
 
-    @service_method(path="request.revert", name="revert")
-    def revert(
-        self, context: AuthedServiceContext, uid: UID
+    @service_method(path="request.undo", name="undo")
+    def undo(
+        self, context: AuthedServiceContext, uid: UID, reason: str
     ) -> Union[SyftSuccess, SyftError]:
-        request = self.stash.get_by_uid(uid)
-        if request.is_ok():
-            result = request.ok().revert(context=context)
-            return result.value
-        return request.value
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to update request: {uid} with error: {result.err()}"
+            )
+
+        request = result.ok()
+        if request is None:
+            return SyftError(message=f"Request with uid: {uid} does not exists.")
+
+        result = request.undo(context=context)
+
+        if result.is_err():
+            return SyftError(
+                f"Failed to undo Request: <{uid}> with error: {result.err()}"
+            )
+
+        link = LinkedObject.with_context(request, context=context)
+        message_subject = (
+            f"Your request for uid: {uid} has been denied. "
+            f"Reason specified by Data Owner: {reason}."
+        )
+
+        notification = CreateNotification(
+            subject=message_subject,
+            to_user_verify_key=request.requesting_user_verify_key,
+            linked_obj=link,
+        )
+        send_notification = context.node.get_service_method(NotificationService.send)
+
+        result = send_notification(context=context, message=notification)
+        return SyftSuccess(message=f"Request {uid} successfully denied !")
 
     def save(
         self, context: AuthedServiceContext, request: Request
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[Request, SyftError]:
         result = self.stash.update(context.credentials, request)
         if result.is_ok():
-            return SyftSuccess(
-                message=f"Request: {request.id} updated successfully !!!"
-            )
+            return result.ok()
         return SyftError(
             message=f"Failed to update Request: <{request.id}>. Error: {result.err()}"
         )

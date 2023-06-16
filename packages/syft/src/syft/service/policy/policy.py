@@ -176,7 +176,7 @@ class InputPolicy(Policy):
             init_kwargs = kwargs["init_kwargs"]
             del kwargs["init_kwargs"]
         else:
-            # TODO: remove this tech debt
+            # TODO: remove this tech debt, dont remove the id mapping functionality
             init_kwargs = partition_by_node(kwargs)
         super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
 
