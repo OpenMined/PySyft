@@ -64,8 +64,9 @@ def default_role(role: ServiceRole) -> Callable:
 
 
 def hash_password(context: TransformContext) -> TransformContext:
-    if context.output["password"] is not None and ((context.output["password_verify"] is None) or 
-        context.output["password"] == context.output["password_verify"]
+    if context.output["password"] is not None and (
+        (context.output["password_verify"] is None)
+        or context.output["password"] == context.output["password_verify"]
     ):
         salt, hashed = salt_and_hash_password(context.output["password"], 12)
         context.output["hashed_password"] = hashed

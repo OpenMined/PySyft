@@ -64,12 +64,12 @@ from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
 from .util import jax_settings  # noqa: F401
 from .util import logger  # noqa: F401
+from .util import options  # noqa: F401
 from .util.autoreload import disable_autoreload  # noqa: F401
 from .util.autoreload import enable_autoreload  # noqa: F401
 from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
-from .util import options # noqa: F401
 from .util.version_compare import make_requires
 
 LATEST_STABLE_SYFT = "0.8"
