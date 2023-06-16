@@ -40,10 +40,10 @@ class NotificationService(AbstractService):
     ) -> Union[Notification, SyftError]:
         """Send a new notification"""
 
-        new_notification = notification.to(notification, context=context)
+        new_notification = notification.to(Notification, context=context)
         result = self.stash.set(context.credentials, new_notification)
         if result.is_err():
-            return SyftError(notification=str(result.err()))
+            return SyftError(message=str(result.err()))
         return result.ok()
 
     @service_method(path="notifications.reply", name="reply", roles=GUEST_ROLE_LEVEL)
@@ -64,24 +64,25 @@ class NotificationService(AbstractService):
                 return result.ok()
             else:
                 SyftError(
-                    notification="Couldn't add a new notification reply in the target notification."
+                    message="Couldn't add a new notification reply in the target notification."
                 )
         else:
             SyftError(
-                notification="The target notification id {reply.target_msg} was not found!"
+                message="The target notification id {reply.target_msg} was not found!"
             )
 
     @service_method(
         path="notifications.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
     def get_all(
-        self, context: AuthedServiceContext
+        self,
+        context: AuthedServiceContext,
     ) -> Union[List[Notification], SyftError]:
         result = self.stash.get_all_inbox_for_verify_key(
             context.credentials, verify_key=context.credentials
         )
         if result.err():
-            return SyftError(notification=str(result.err()))
+            return SyftError(message=str(result.err()))
         notifications = result.ok()
         return notifications
 
@@ -97,7 +98,7 @@ class NotificationService(AbstractService):
             context.credentials, context.credentials
         )
         if result.err():
-            return SyftError(notification=str(result.err()))
+            return SyftError(message=str(result.err()))
         notifications = result.ok()
         return notifications
 
@@ -113,7 +114,7 @@ class NotificationService(AbstractService):
             context.credentials, verify_key=context.credentials, status=status
         )
         if result.err():
-            return SyftError(notification=str(result.err()))
+            return SyftError(message=str(result.err()))
         notifications = result.ok()
         return notifications
 
@@ -145,7 +146,7 @@ class NotificationService(AbstractService):
             context.credentials, uid=uid, status=NotificationStatus.READ
         )
         if result.is_err():
-            return SyftError(notification=str(result.err()))
+            return SyftError(message=str(result.err()))
         return result.ok()
 
     @service_method(path="notifications.mark_as_unread", name="mark_as_unread")
@@ -156,7 +157,7 @@ class NotificationService(AbstractService):
             context.credentials, uid=uid, status=NotificationStatus.UNREAD
         )
         if result.is_err():
-            return SyftError(notification=str(result.err()))
+            return SyftError(message=str(result.err()))
         return result.ok()
 
     @service_method(path="notifications.resolve_object", name="resolve_object")
@@ -166,7 +167,7 @@ class NotificationService(AbstractService):
         service = context.node.get_service(linked_obj.service_type)
         result = service.resolve_link(context=context, linked_obj=linked_obj)
         if result.is_err():
-            return SyftError(notification=str(result.err()))
+            return SyftError(message=str(result.err()))
         return result.ok()
 
     @service_method(path="notifications.clear", name="clear")
@@ -175,8 +176,8 @@ class NotificationService(AbstractService):
             credentials=context.credentials, verify_key=context.credentials
         )
         if result.is_ok():
-            return SyftSuccess(notification="All notifications cleared !!")
-        return SyftError(notification=str(result.err()))
+            return SyftSuccess(message="All notifications cleared !!")
+        return SyftError(message=str(result.err()))
 
     def filter_by_obj(
         self, context: AuthedServiceContext, obj_uid: UID
@@ -190,7 +191,7 @@ class NotificationService(AbstractService):
                 ):
                     return notification
         else:
-            return SyftError(notification="Could not get notifications!!")
+            return SyftError(message="Could not get notifications!!")
 
 
 TYPE_TO_SERVICE[Notification] = NotificationService

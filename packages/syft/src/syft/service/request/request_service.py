@@ -17,8 +17,8 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import Notification
 from ..notification.notification_service import NotificationService
+from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -82,7 +82,7 @@ class RequestService(AbstractService):
                         linked_obj=link,
                     )
                     method = context.node.get_service_method(NotificationService.send)
-                    result = method(context=context, message=message)
+                    result = method(context=context, notification=message)
                     if isinstance(result, Notification):
                         return Ok(request)
                     else:
@@ -122,7 +122,9 @@ class RequestService(AbstractService):
             for req in result.ok():
                 user = method(req.requesting_user_verify_key).to(UserView)
                 message = get_message(context=context, obj_uid=req.id)
-                requests.append(RequestInfo(user=user, request=req, message=message))
+                requests.append(
+                    RequestInfo(user=user, request=req, notification=message)
+                )
 
             # If chunk size is defined, then split list into evenly sized chunks
             if page_size:
@@ -175,8 +177,6 @@ class RequestService(AbstractService):
             )
             notification = filter_by_obj(context=context, obj_uid=uid)
 
-            print(notification)
-
             linked_obj = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
                 print("testing", notification.status)
@@ -186,7 +186,7 @@ class RequestService(AbstractService):
                 )
                 mark_as_read(context=context, uid=notification.id)
 
-                print("testing", notification.status)
+                print("testing...............", notification.status)
 
                 message = CreateNotification(
                     subject="Request status updated to: {self.status}",
@@ -195,7 +195,7 @@ class RequestService(AbstractService):
                     linked_obj=linked_obj,
                 )
                 send_method = context.node.get_service_method(NotificationService.send)
-                send_method(context=context, message=message)
+                send_method(context=context, notification=message)
 
             return result.value
         return request.value

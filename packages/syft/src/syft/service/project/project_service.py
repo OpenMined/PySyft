@@ -387,7 +387,7 @@ class ProjectService(AbstractService):
                 linked_obj=link,
             )
             method = context.node.get_service_method(NotificationService.send)
-            result = method(context=context, message=message)
+            result = method(context=context, notification=message)
             if isinstance(result, SyftError):
                 return result
         return SyftSuccess(message="Successfully Validated Project Request")

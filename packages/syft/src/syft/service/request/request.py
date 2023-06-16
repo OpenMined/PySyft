@@ -208,6 +208,7 @@ class Request(SyftObject):
 
         self.updated_at = DateTime.now()
         self.save(context=context)
+
         return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
 
     def save(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
@@ -229,6 +230,7 @@ class Request(SyftObject):
     def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
+
         change = self.changes[0]
         if not change.is_type(UserCode):
             raise Exception(
