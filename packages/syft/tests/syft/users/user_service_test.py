@@ -467,7 +467,7 @@ def test_userservice_admin_verify_key_success(
 def test_userservice_register_user_exists(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
-    node_context: NodeServiceContext,
+    worker: Worker,
     guest_create_user: UserCreate,
 ) -> None:
     def mock_get_by_email(credentials: SyftVerifyKey, email):
@@ -476,9 +476,18 @@ def test_userservice_register_user_exists(
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     expected_error_msg = f"User already exists with email: {guest_create_user.email}"
 
-    response = user_service.register(node_context, guest_create_user)
-    assert isinstance(response, SyftError)
-    assert response.message == expected_error_msg
+    # Patch Worker Metadata to enable signup
+    with mock.patch(
+        "syft.Worker.metadata",
+        new_callable=mock.PropertyMock,
+        return_value=metadata_with_signup_enabled(worker),
+    ):
+        mock_worker = Worker.named("mock-node")
+        node_context = NodeServiceContext(node=mock_worker)
+
+        response = user_service.register(node_context, guest_create_user)
+        assert isinstance(response, SyftError)
+        assert response.message == expected_error_msg
 
 
 def test_userservice_register_error_on_get_email(
