@@ -199,7 +199,7 @@ class UserCode(SyftObject):
         else:
             return super().__setattr__(key, value)
 
-    def self_repr(self) -> Dict[str, Any]:
+    def _self_repr_(self) -> Dict[str, Any]:
         status = list(self.status.base_dict.values())[0].value
         if status == UserCodeStatus.SUBMITTED.value:
             badge_color = "badge-purple"

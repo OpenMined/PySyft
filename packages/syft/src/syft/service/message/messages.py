@@ -24,12 +24,6 @@ class MessageStatus(Enum):
     UNREAD = 0
     READ = 1
 
-    def name(self):
-        if self.value == MessageStatus.UNREAD.value:
-            return "Unread"
-        else:
-            return "Read"
-
 
 class MessageExpiryStatus(Enum):
     AUTO = 0
@@ -74,11 +68,11 @@ class Message(SyftObject):
             return self.linked_obj.resolve
         return None
 
-    def self_repr(self):
+    def _self_repr_(self):
         return {
             "Id": str(self.id),
             "Subject": self.subject,
-            "Status": self.status.name(),
+            "Status": self.status.name.capitalize(),
             "Created At": str(self.created_at),
         }
 

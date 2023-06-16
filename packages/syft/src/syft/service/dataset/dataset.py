@@ -341,7 +341,7 @@ class Dataset(SyftObject):
     __attr_unique__ = ["name"]
     __attr_repr_cols__ = ["name", "url", "created_at"]
 
-    def build_assets_view(self) -> List[Dict[str, Any]]:
+    def _build_assets_view_(self) -> List[Dict[str, Any]]:
         assets = []
         for asset in self.asset_list:
             if asset.mock_is_real:
@@ -364,7 +364,7 @@ class Dataset(SyftObject):
     def icon(self):
         return FOLDER_ICON
 
-    def self_repr(self) -> Dict[str, Any]:
+    def _self_repr_(self) -> Dict[str, Any]:
         return {
             "id": {"value": str(self.id), "type": "clipboard"},
             "Name": self.name,
@@ -398,7 +398,7 @@ class Dataset(SyftObject):
             + f"</span></strong><a href='{self.url}'>{self.url}</a></p>"
             + "<p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>"
             + " to see full details call <strong>dataset.contributors</strong></p>"
-            + create_table_template(self.build_assets_view(), "Asset List")
+            + create_table_template(self._build_assets_view_(), "Asset List")
         )
         return repr_code
 

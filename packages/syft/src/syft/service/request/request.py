@@ -56,14 +56,6 @@ class RequestStatus(Enum):
     REJECTED = 1
     APPROVED = 2
 
-    def name(self) -> str:
-        if self.value == RequestStatus.PENDING.value:
-            return "Pending"
-        elif self.value == RequestStatus.REJECTED.value:
-            return "Rejected"
-        else:
-            return "Approved"
-
 
 @serializable()
 class Change(SyftObject):
@@ -224,7 +216,7 @@ class Request(SyftObject):
     def icon(self):
         return REQUEST_ICON
 
-    def self_repr(self):
+    def _self_repr_(self):
         if self.status == RequestStatus.APPROVED:
             badge_color = "badge-green"
         elif self.status == RequestStatus.PENDING:
@@ -232,7 +224,7 @@ class Request(SyftObject):
         else:
             badge_color = "badge-red"
 
-        status_badge = {"value": self.status.name(), "type": badge_color}
+        status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
         return {
             "ID": {"value": str(self.id), "type": "clipboard"},
             "request_type": self.changes.__repr__(),

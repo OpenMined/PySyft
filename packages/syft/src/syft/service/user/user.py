@@ -159,13 +159,13 @@ class UserView(SyftObject):
 
     __attr_repr_cols__ = ["name", "email"]
 
-    def self_repr(self) -> Dict[str, Any]:
+    def _self_repr_(self) -> Dict[str, Any]:
         return {
             "Name": self.name,
             "Email": self.email,
             "Institute": self.institution,
             "Website": self.website,
-            "Role": self.role.name(),
+            "Role": self.role.name.capitalize(),
         }
 
 

@@ -136,11 +136,11 @@ class Action(SyftObject):
         kwargs_repr = ", ".join(
             [f"{key}={repr_uid(value)}" for key, value in self.kwargs.items()]
         )
-        self_repr = (
+        _self_repr_ = (
             f"[{repr_uid(self.remote_self)}]" if self.remote_self is not None else ""
         )
         return (
-            f"ActionObject {self.path}{self_repr}.{self.op}({arg_repr},{kwargs_repr})"
+            f"ActionObject {self.path}{_self_repr_}.{self.op}({arg_repr},{kwargs_repr})"
         )
 
 

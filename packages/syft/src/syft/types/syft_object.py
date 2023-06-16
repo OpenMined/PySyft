@@ -506,9 +506,9 @@ def list_dict_repr_html(self) -> str:
             custom_repr = False
             cols = defaultdict(list)
             for item in iter(self):
-                if hasattr(item, "self_repr"):
+                if hasattr(item, "_self_repr_"):
                     custom_repr = True
-                    ret_val = item.self_repr()
+                    ret_val = item._self_repr_()
                     for key in ret_val.keys():
                         cols[key].append(ret_val[key])
                 else:
