@@ -505,7 +505,8 @@ class CreateDataset(Dataset):
                 if not force_replace:
                     print(
                         f'WARNING: Asset "{asset.name}" exists.'
-                        ' Use add_asset(asset, force_replace=True) to replace.')
+                        " Use add_asset(asset, force_replace=True) to replace."
+                    )
                     return
                 else:
                     self.asset_list[i] = asset
