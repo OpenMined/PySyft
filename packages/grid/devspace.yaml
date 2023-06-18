@@ -31,7 +31,7 @@ images:
     context: ../
     tags:
       - dev-latest
-      - 0.8.1-beta.10
+      - 0.8.1-beta.11
   tailscale:
     image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
     buildKit: {}
@@ -39,7 +39,7 @@ images:
     context: ./vpn
     tags:
       - dev-latest
-      - 0.8.1-beta.10
+      - 0.8.1-beta.11
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
