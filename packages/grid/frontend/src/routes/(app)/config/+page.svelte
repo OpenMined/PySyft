@@ -67,13 +67,13 @@
       </span>
       <div class="w-full divide-y divide-gray-200">
         <div class="w-full flex flex-col py-4 gap-3">
-          <h3 class="all-caps">Profile information</h3>
+          <h3 class="all-caps" data-testid={`profile-information`}>Profile information</h3>
           {#each profileInformation as { label, id, value }}
             <div class="flex flex-col gap-2 pt-2 pb-4">
-              <h4 class="text-xl capitalize">{label}</h4>
+              <h4 data-test-id={`header-${id}`} class="text-xl capitalize">{label}</h4>
               <p data-test-id={id} class:text-gray-600={!value}>{value ?? 'Empty'}</p>
               <span>
-                <button class="link capitalize" on:click={() => (openModal = id)}>
+                <button class="link capitalize" on:click={() => (openModal = id)} data-testid={`change-${id}`}>
                   Change {label}
                 </button>
               </span>
@@ -81,7 +81,7 @@
           {/each}
         </div>
         <div class="w-full flex flex-col py-4 gap-3">
-          <h3 class="all-caps">System information</h3>
+          <h3 class="all-caps" data-testid={`system-information`}>System information</h3>
           <div class="flex flex-col desktop:flex-row gap-2 items-center">
             <div class="flex gap-2 items-center w-full">
               <span class="block w-16 h-16">
@@ -98,7 +98,7 @@
                 <Badge variant="gray">{$metadata.id.value}</Badge>
               </div>
               <div class="flex gap-1 items-center">
-                <h4 class="text-gray-400 all-caps text-sm">Deployed on:</h4>
+                <h4 class="text-gray-400 all-caps text-sm" data-testid={`domain-deployed-on`}>Deployed on:</h4>
                 <p class="text-gray-800">{$metadata.deployed_on}</p>
               </div>
             </div>
@@ -152,7 +152,7 @@
     <div class="flex w-full justify-end" slot="button-group">
       <div class="w-full justify-end flex px-4 gap-4">
         <ButtonGhost on:click={onClose}>Cancel</ButtonGhost>
-        <Button type="submit" variant="secondary" on:click={handleUpdate}>Save</Button>
+        <Button type="submit" variant="secondary" on:click={handleUpdate} dataTestId={`saveChange`}>Save</Button>
       </div>
     </div>
   </Modal>

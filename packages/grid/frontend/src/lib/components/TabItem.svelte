@@ -16,6 +16,7 @@
 
 <button
   class="min-w-[153px] px-4 py-1 text-gray-300 hover:text-gray-800 transition duration-500 border-b border-gray-100"
+  title={`tab-item-${label}`}
   on:click
   role="tab"
   tabindex={isActive ? 0 : -1}
@@ -27,7 +28,7 @@
     {#if icon}
       <svelte:component this={icon} {...iconClass} />
     {/if}
-    <span>{label}</span>
+    <span data-testid={`tab-item-${label}`}>{label}</span>
     {#if count || count === 0}
       <span class="text-sm">({count})</span>
     {/if}

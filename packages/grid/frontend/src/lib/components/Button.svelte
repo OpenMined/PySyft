@@ -5,14 +5,16 @@
     disabled?: boolean;
     variant?: 'primary' | 'secondary' | 'error';
     type?: 'button' | 'submit' | 'reset';
+    dataTestId?: string;
   }
 
   export let variant = 'primary';
   export let disabled = false;
   export let type: $$Props['type'] = 'button';
+  export let dataTestId: string = '';
 </script>
 
-<button {type} class={variant} aria-disabled={disabled} on:click {...$$props}>
+<button {type} class={variant} aria-disabled={disabled} on:click {...$$props} data-testid={dataTestId}>
   <slot />
 </button>
 

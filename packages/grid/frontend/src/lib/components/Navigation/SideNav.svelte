@@ -17,7 +17,7 @@
     class="relative flex flex-col justify-center items-center pt-6 px-8 pb-[46px] gap-3 flex-shrink-0"
   >
     <div class="absolute top-0.5 right-2 text-primary-500">
-      <a href="/config" class="inline-block w-5 h-5">
+      <a href="/config" class="inline-block w-5 h-5" title="domain-config" data-testid={`domain-config`}>
         <CogIcon />
       </a>
     </div>
@@ -27,7 +27,7 @@
       </div>
       <p class="leading-[1.2] font-bold hidden desktop:inline-block">{$metadata?.name ?? ''}</p>
     </div>
-    <button class="text-sm text-gray-600 underline w-min" on:click={() => goto('/logout')}>
+    <button class="text-sm text-gray-600 underline w-min" on:click={() => goto('/logout')} title="domain-logout" data-testid={`domain-logout`}>
       logout
     </button>
   </section>
