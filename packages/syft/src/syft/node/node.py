@@ -187,9 +187,6 @@ class Node(AbstractNode):
 
         self.processes = processes
         self.is_subprocess = is_subprocess
-
-        if name is None:
-            name = random_name()
         self.name = name
         services = (
             [
@@ -470,20 +467,36 @@ class Node(AbstractNode):
 
     @property
     def metadata(self) -> NodeMetadata:
+        name = ""
+        deployed_on = ""
+        organization = ""
+        on_board = False
+        description = ""
+        signup_enabled = False
+
         settings_stash = SettingsStash(store=self.document_store)
-        settings = settings_stash.get_all(self.signing_key.verify_key).ok()[0]
+        settings = settings_stash.get_all(self.signing_key.verify_key)
+        if settings.is_ok() and len(settings.ok()) > 0:
+            settings_data = settings.ok()[0]
+            name = settings_data.name
+            deployed_on = settings_data.deployed_on
+            organization = settings_data.organization
+            on_board = settings_data.on_board
+            description = settings_data.description
+            signup_enabled = settings_data.signup_enabled
+
         return NodeMetadata(
-            name=settings.name,
+            name=name,
             id=self.id,
             verify_key=self.verify_key,
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
-            deployed_on=settings.deployed_on,
-            description=settings.description,
-            organization=settings.organization,
-            on_board=settings.on_board,
-            signup_enabled=settings.signup_enabled,
+            deployed_on=deployed_on,
+            description=description,
+            organization=organization,
+            on_board=on_board,
+            signup_enabled=signup_enabled,
         )
 
     @property
@@ -645,10 +658,13 @@ class Node(AbstractNode):
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
     def create_initial_settings(self) -> Optional[NodeSettings]:
+        if self.name is None:
+            self.name = random_name()
         try:
             settings_stash = SettingsStash(store=self.document_store)
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
+                self.name = settings_exists[0].name
                 return None
             else:
                 new_settings = NodeSettings(
