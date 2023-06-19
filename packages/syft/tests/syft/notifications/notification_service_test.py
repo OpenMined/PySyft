@@ -50,7 +50,7 @@ def add_mock_notification(
     return mock_notification
 
 
-def test_service_send_success(
+def test_notification_service_send_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -70,7 +70,7 @@ def test_service_send_success(
     assert isinstance(response, Notification)
 
 
-def test_service_send_error_on_set(
+def test_notification_service_send_error_on_set(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -80,16 +80,16 @@ def test_service_send_error_on_set(
         return Err(expected_error)
 
     test_notification_service = notification_service
-    expected_error = "Failed to set ."
+    expected_error = "Failed to set notification."
 
     monkeypatch.setattr(notification_service.stash, "set", mock_set)
     response = test_notification_service.send(authed_context, mock_create_notification)
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
-def test_service_get_all_success(
+def test_notification_service_get_all_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -124,7 +124,7 @@ def test_service_get_all_success(
     assert response[0] == expected_message
 
 
-def test_service_get_all_error_on_get_all_inbox(
+def test_notification_service_get_all_error_on_get_all_inbox(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -145,10 +145,10 @@ def test_service_get_all_error_on_get_all_inbox(
     response = notification_service.get_all(authed_context)
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
-def test_service_get_sent_success(
+def test_notification_service_get_sent_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -184,7 +184,7 @@ def test_service_get_sent_success(
     assert response[0] == expected_message
 
 
-def test_service_get_all_error_on_get_all_sent(
+def test_notification_service_get_all_error_on_get_all_sent(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -205,10 +205,10 @@ def test_service_get_all_error_on_get_all_sent(
     response = notification_service.get_all_sent(authed_context)
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
-def test_service_get_all_for_status_success(
+def test_notification_service_get_all_for_status_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -272,10 +272,10 @@ def test_service_error_on_get_all_for_status(
     )
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
-def test_service_get_all_read_success(
+def test_notification_service_get_all_read_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -311,7 +311,7 @@ def test_service_get_all_read_success(
     assert response[0] == expected_message
 
 
-def test_service_error_on_get_all_read(
+def test_notification_service_error_on_get_all_read(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -334,10 +334,10 @@ def test_service_error_on_get_all_read(
     response = notification_service.get_all_read(authed_context)
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
-def test_service_get_all_unread_success(
+def test_notification_service_get_all_unread_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -373,7 +373,7 @@ def test_service_get_all_unread_success(
     assert response[0] == expected_message
 
 
-def test_service_error_on_get_all_unread(
+def test_notification_service_error_on_get_all_unread(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -396,10 +396,10 @@ def test_service_error_on_get_all_unread(
     response = notification_service.get_all_unread(authed_context)
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
-def test_service_mark_as_read_success(
+def test_notification_service_mark_as_read_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -437,7 +437,7 @@ def test_service_mark_as_read_success(
     assert response.status == NotificationStatus.READ
 
 
-def test_service_mark_as_read_error_on_update__status(
+def test_notification_service_mark_as_read_error_on_update__status(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -455,7 +455,7 @@ def test_service_mark_as_read_error_on_update__status(
         random_verify_key,
         NotificationStatus.UNREAD,
     )
-    expected_error = "Failed to update  status."
+    expected_error = "Failed to update notification status."
 
     def mock_update_notification_status(
         credentials: SyftVerifyKey, uid: UID, status: NotificationStatus
@@ -471,10 +471,10 @@ def test_service_mark_as_read_error_on_update__status(
     response = notification_service.mark_as_read(authed_context, expected_.id)
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
-def test_service_mark_as_unread_success(
+def test_notification_service_mark_as_unread_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -486,7 +486,7 @@ def test_service_mark_as_unread_success(
     test_notification_service = NotificationService(document_store)
     test_stash = NotificationStash(store=document_store)
 
-    expected_ = add_mock_notification(
+    expected_notification = add_mock_notification(
         authed_context.credentials,
         test_stash,
         test_verify_key,
@@ -494,10 +494,10 @@ def test_service_mark_as_unread_success(
         NotificationStatus.READ,
     )
 
-    assert expected_.status == NotificationStatus.READ
+    assert expected_notification.status == NotificationStatus.READ
 
     def mock_update_notification_status() -> Ok:
-        return Ok(expected_)
+        return Ok(expected_notification)
 
     monkeypatch.setattr(
         notification_service.stash,
@@ -505,12 +505,14 @@ def test_service_mark_as_unread_success(
         mock_update_notification_status,
     )
 
-    response = test_notification_service.mark_as_unread(authed_context, expected_.id)
+    response = test_notification_service.mark_as_unread(
+        authed_context, expected_notification.id
+    )
 
     assert response.status == NotificationStatus.UNREAD
 
 
-def test_service_mark_as_unread_error_on_update__status(
+def test_notification_service_mark_as_unread_error_on_update_notification_status(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -521,14 +523,14 @@ def test_service_mark_as_unread_error_on_update__status(
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
 
-    expected_ = add_mock_notification(
+    expected_notification = add_mock_notification(
         root_verify_key,
         test_stash,
         test_verify_key,
         random_verify_key,
         NotificationStatus.READ,
     )
-    expected_error = "Failed to update  status."
+    expected_error = "Failed to update notification status."
 
     def mock_update_notificatiion_status(
         credentials: SyftVerifyKey, uid: UID, status: NotificationStatus
@@ -541,19 +543,21 @@ def test_service_mark_as_unread_error_on_update__status(
         mock_update_notificatiion_status,
     )
 
-    response = notification_service.mark_as_unread(authed_context, expected_.id)
+    response = notification_service.mark_as_unread(
+        authed_context, expected_notification.id
+    )
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
 # TODO: Fix this test - unsure how to return a LinkedObject Notification.
 # Test executes code but does not return a Notification object.
-def test_service_resolve_object_success(
+def test_notification_service_resolve_object_success(
     monkeypatch: MonkeyPatch,
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
-    message_service: NotificationService,
+    notification_service: NotificationService,
     document_store: DocumentStore,
 ) -> None:
     test_notification_service = NotificationService(document_store)
@@ -583,12 +587,12 @@ def test_service_resolve_object_success(
     assert response is None
 
 
-def test_service_resolve_object_error_on_resolve_link(
+def test_notification_service_resolve_object_error_on_resolve_link(
     monkeypatch: MonkeyPatch,
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
     document_store: DocumentStore,
-    message_service: NotificationService,
+    notification_service: NotificationService,
 ) -> None:
     test_notification_service = NotificationService(document_store)
     expected_error = "Failed to resolve link."
@@ -616,10 +620,10 @@ def test_service_resolve_object_error_on_resolve_link(
     response = test_notification_service.resolve_object(authed_context, linked_object)
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
 
 
-def test_service_clear_success(
+def test_notification_service_clear_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -631,7 +635,7 @@ def test_service_clear_success(
     test_notification_service = NotificationService(document_store)
     test_stash = NotificationStash(store=document_store)
 
-    expected_success_ = "All s cleared !!"
+    expected_success_message = "All notifications cleared !!"
     add_mock_notification(
         authed_context.credentials,
         test_stash,
@@ -655,11 +659,11 @@ def test_service_clear_success(
     response = test_notification_service.clear(authed_context)
     inbox_after_delete = test_notification_service.get_all(authed_context)
 
-    assert response.notification == expected_success_
+    assert response.message == expected_success_message
     assert len(inbox_after_delete) == 0
 
 
-def test_service_clear_error_on_delete_all_for_verify_key(
+def test_notification_service_clear_error_on_delete_all_for_verify_key(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -671,7 +675,7 @@ def test_service_clear_error_on_delete_all_for_verify_key(
     test_notification_service = NotificationService(document_store)
     test_stash = NotificationStash(store=document_store)
 
-    expected_error = "Failed to clear s."
+    expected_error = "Failed to clear notifications."
     add_mock_notification(
         authed_context.credentials,
         test_stash,
@@ -696,5 +700,5 @@ def test_service_clear_error_on_delete_all_for_verify_key(
     inbox_after_delete = test_notification_service.get_all(authed_context)
 
     assert isinstance(response, SyftError)
-    assert response.notification == expected_error
+    assert response.message == expected_error
     assert len(inbox_after_delete) == 1

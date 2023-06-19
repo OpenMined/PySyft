@@ -8,7 +8,7 @@ from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.notification.notification_service import NotificationService
 from syft.service.notification.notification_stash import NotificationStash
-from syft.service.notification.notifications import Createnotification
+from syft.service.notification.notifications import CreateNotification
 from syft.service.notification.notifications import Notification
 from syft.service.user.user import User
 from syft.store.linked_obj import LinkedObject
@@ -48,13 +48,13 @@ def linked_object():
 
 
 @pytest.fixture(autouse=True)
-def mock_create_notification(faker) -> Createnotification:
+def mock_create_notification(faker) -> CreateNotification:
     test_signing_key1 = SyftSigningKey.generate()
     test_verify_key1 = test_signing_key1.verify_key
     test_signing_key2 = SyftSigningKey.generate()
     test_verify_key2 = test_signing_key2.verify_key
 
-    mock_notification = Createnotification(
+    mock_notification = CreateNotification(
         subject="mock_created_notification",
         id=UID(),
         node_uid=UID(),
