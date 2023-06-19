@@ -13,13 +13,15 @@ pipelines:
   # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
   deploy:
     run: |-
-      run_dependencies --all                            # 1. Deploy any projects this project needs (see "dependencies")
-      ensure_pull_secrets --all                         # 2. Ensure pull secrets
-      build_images --all -t $(git rev-parse --short=6 HEAD)    # 3. Build, tag (git commit hash) and push all images (see "images")
-      create_deployments --all                          # 4. Deploy Helm charts and manifests specfied as "deployments"
+      run_dependencies --all
+      ensure_pull_secrets --all
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.1-beta.12 -t dev-latest
+      create_deployments --all
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
+  CONTAINER_REGISTRY: "docker.io/"
+  VERSION: "0.8.1-beta.12"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -31,7 +33,7 @@ images:
     context: ../
     tags:
       - dev-latest
-      - 0.8.1-beta.11
+      - "${VERSION}"
   tailscale:
     image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
     buildKit: {}
@@ -39,9 +41,9 @@ images:
     context: ./vpn
     tags:
       - dev-latest
-      - 0.8.1-beta.11
+      - "${VERSION}"
   frontend:
-    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}"
     buildKit:
       args: ["--target", "grid-ui-production"]
     dockerfile: ./frontend/frontend.dockerfile
@@ -49,7 +51,7 @@ images:
     context: ./frontend
     tags:
       - dev-latest
-      - 0.8.1-beta.11
+      - "${VERSION}"
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -65,9 +67,12 @@ deployments:
 
   proxy:
     helm:
+      upgradeArgs:
+        - --dependency-update
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
+        version: "0.9.0"
       values:
         containers:
           - image: "${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}"
@@ -78,7 +83,7 @@ deployments:
             env:
               - name: SERVICE_NAME
                 value: "proxy"
-          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
+          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
             securityContext:
               capabilities:
                 add: ["NET_ADMIN", "SYS_MODULE"]
@@ -110,12 +115,15 @@ deployments:
 
   backend:
     helm:
+      upgradeArgs:
+        - --dependency-update
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
+        version: "0.9.0"
       values:
         containers:
-          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}"
+          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}"
             volumeMounts:
               - containerPath: /storage
                 volume:
@@ -182,9 +190,12 @@ deployments:
             - port: "${HTTP_PORT}"
   mongo:
     helm:
+      upgradeArgs:
+        - --dependency-update
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
+        version: "0.9.0"
       values:
         containers:
           - image: mongo:latest
@@ -203,16 +214,21 @@ deployments:
           - name: mongo-data
             size: "5Gi"
         service:
+          name: mongo
           ports:
             - port: "27017"
+
   frontend:
     helm:
+      upgradeArgs:
+        - --dependency-update
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
+        version: "0.9.0"
       values:
         containers:
-          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}"
+          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}:${VERSION}"
             env:
               - name: VERSION
                 value: "${VERSION}"
@@ -225,7 +241,7 @@ deployments:
         service:
           name: "frontend"
           ports:
-            - port: 80
+            - port: "80"
 
 dev:
   mongo:

@@ -1,0 +1,132 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    helm.sh/chart: component-chart-0.8.6
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: proxy
+  name: proxy
+spec:
+  externalIPs: null
+  ports:
+    - name: proxy
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: api
+      port: 4000
+      protocol: TCP
+      targetPort: 4000
+  selector:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/name: devspace-app
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    helm.sh/chart: component-chart-0.8.6
+  labels:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: devspace-app
+  name: proxy
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: proxy
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: devspace-app
+  serviceName: proxy-headless
+  template:
+    metadata:
+      annotations:
+        helm.sh/chart: component-chart-0.8.6
+      labels:
+        app.kubernetes.io/component: proxy
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devspace-app
+    spec:
+      affinity: null
+      containers:
+        - args: null
+          command: null
+          env:
+            - name: SERVICE_NAME
+              value: proxy
+          envFrom: null
+          image: traefik:v2.8.1
+          lifecycle: null
+          livenessProbe: null
+          name: container-0
+          readinessProbe: null
+          securityContext: null
+          startupProbe: null
+          volumeDevices: null
+          volumeMounts:
+            - mountPath: /etc/traefik
+              name: traefik-conf
+              readOnly: false
+        - args: null
+          command: null
+          env:
+            - name: HOSTNAME
+              value: default_node_name
+            - name: STACK_API_KEY
+              value: changeme
+          envFrom: null
+          image: docker.io/openmined/grid-vpn-tailscale:0.8.1-beta.11
+          lifecycle: null
+          livenessProbe: null
+          name: container-1
+          readinessProbe: null
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_MODULE
+            privileged: true
+          startupProbe: null
+          volumeDevices: null
+          volumeMounts:
+            - mountPath: /var/lib/tailscale
+              name: tailscale-data
+              readOnly: false
+              subPath: tailscale-data
+      dnsConfig: null
+      ephemeralContainers: null
+      hostAliases: null
+      imagePullSecrets: null
+      initContainers: null
+      nodeName: null
+      nodeSelector: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      terminationGracePeriodSeconds: 5
+      tolerations: null
+      topologySpreadConstraints: null
+      volumes:
+        - configMap:
+            name: traefik-main-config
+          name: traefik-conf
+  volumeClaimTemplates:
+    - metadata:
+        annotations:
+          helm.sh/chart: component-chart-0.8.6
+        labels:
+          app.kubernetes.io/component: proxy
+          app.kubernetes.io/managed-by: Helm
+          app.kubernetes.io/name: devspace-app
+        name: tailscale-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Mi
