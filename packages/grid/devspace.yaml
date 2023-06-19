@@ -40,6 +40,16 @@ images:
     tags:
       - dev-latest
       - 0.8.1-beta.11
+  frontend:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+    buildKit:
+      args: ["--target", "grid-ui-production"]
+    dockerfile: ./frontend/frontend.dockerfile
+    target: "grid-ui-production"
+    context: ./frontend
+    tags:
+      - dev-latest
+      - 0.8.1-beta.11
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -167,6 +177,7 @@ deployments:
           - name: credentials-data
             size: "100Mi"
         service:
+          name: "backend"
           ports:
             - port: "${HTTP_PORT}"
   mongo:
@@ -194,6 +205,27 @@ deployments:
         service:
           ports:
             - port: "27017"
+  frontend:
+    helm:
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+      values:
+        containers:
+          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}"
+            env:
+              - name: VERSION
+                value: "${VERSION}"
+              - name: VERSION_HASH
+                value: "${VERSION_HASH}"
+              - name: NODE_TYPE
+                value: "${NODE_TYPE}"
+              - name: NEXT_PUBLIC_API_URL
+                value: "${NEXT_PUBLIC_API_URL}"
+        service:
+          name: "frontend"
+          ports:
+            - port: 80
 
 dev:
   mongo:
