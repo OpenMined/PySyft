@@ -631,7 +631,7 @@ class SyftClient:
 
     def _repr_html_(self) -> str:
         ds_commands = """
-        <li><span class='syft-code-block'>client.datasets</span> - list requests</li>
+        <li><span class='syft-code-block'>client.datasets</span> - list datasets</li>
         <li><span class='syft-code-block'>client.code</span> - list code</li>
         <li><span class='syft-code-block'>client.projects</span> - list projects</li>
         """
