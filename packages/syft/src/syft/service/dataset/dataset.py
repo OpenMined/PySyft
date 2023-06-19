@@ -531,9 +531,22 @@ class CreateDataset(Dataset):
         )
         self.contributors.append(contributor)
 
-    def add_asset(self, asset: CreateAsset) -> None:
+    def add_asset(self, asset: CreateAsset, force_replace=False) -> None:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
+
+        for i, existing_asset in enumerate(self.asset_list):
+            if existing_asset.name == asset.name:
+                if not force_replace:
+                    raise ValueError(
+                        f"""Asset "{asset.name}" already exists for dataset."""
+                        """ Use add_asset(asset, force_replace=True) to replace."""
+                    )
+                else:
+                    self.asset_list[i] = asset
+                    print(f"Asset {asset.name} has been successfully replaced.")
+                    return
+
         self.asset_list.append(asset)
 
     def remove_asset(self, name: str) -> None:

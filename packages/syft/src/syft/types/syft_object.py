@@ -272,11 +272,14 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         _repr_str = f"{s_indent}class {class_name}:\n"
         for attr in fields:
             value = self
-            if getattr(value, attr, None) is None:
-                value = getattr(value, attr, "<Missing>")
-            else:
-                for _attr in attr.split("."):  # if compound string
+            # if it's a compound string
+            if "." in attr:
+                # break it into it's bits & fetch the attr
+                for _attr in attr.split("."):
                     value = getattr(value, _attr, "<Missing>")
+            else:
+                value = getattr(value, attr, "<Missing>")
+
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
             # If the object has a special representation when nested we will use that instead
