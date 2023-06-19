@@ -8,7 +8,7 @@ from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.notification.notification_service import NotificationService
 from syft.service.notification.notification_stash import NotificationStash
-from syft.service.notification.notifications import Createnotification
+from syft.service.notification.notifications import CreateNotification
 from syft.service.notification.notifications import Notification
 from syft.service.user.user import User
 from syft.store.linked_obj import LinkedObject
