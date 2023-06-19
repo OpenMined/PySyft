@@ -136,9 +136,6 @@ class ActionStoreChange(Change):
         return self._run(context=context, apply=False)
 
     def __repr_syft_nested__(self):
-        return self._repr_html_()
-
-    def _repr_html_(self) -> str:
         return f"<b>{self.__canonical_name__}</b>: Apply {self.apply_permission_type} to \
             {self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}"
 
@@ -502,7 +499,7 @@ class ObjectMutation(Change):
         return obj
 
     def __repr_syft_nested__(self):
-        return self._repr_html_()
+        return f"<b>{self.__canonical_name__}</b>: Mutate `{self.attr_name}` to `{self.value}`"
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -530,9 +527,6 @@ class ObjectMutation(Change):
 
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
-
-    def _repr_html_(self) -> str:
-        return f"<b>{self.__canonical_name__}</b>: Mutate `{self.attr_name}` to `{self.value}`"
 
 
 def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
@@ -608,9 +602,6 @@ class EnumMutation(ObjectMutation):
         return self._run(context=context, apply=False)
 
     def __repr_syft_nested__(self):
-        return self._repr_html_()
-
-    def _repr_html_(self) -> str:
         return (
             f"<b>{self.__canonical_name__}</b>: Mutate {self.enum_type} to {self.value}"
         )
