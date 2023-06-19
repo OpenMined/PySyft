@@ -135,6 +135,9 @@ class ActionStoreChange(Change):
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
+    def __repr_syft_nested__(self):
+        return self._repr_html_()
+
     def _repr_html_(self) -> str:
         return f"<b>{self.__canonical_name__}</b>: Apply {self.apply_permission_type} to \
             {self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}"
@@ -498,6 +501,9 @@ class ObjectMutation(Change):
             setattr(obj, self.attr_name, value)
         return obj
 
+    def __repr_syft_nested__(self):
+        return self._repr_html_()
+
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
@@ -600,6 +606,9 @@ class EnumMutation(ObjectMutation):
 
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
+
+    def __repr_syft_nested__(self):
+        return self._repr_html_()
 
     def _repr_html_(self) -> str:
         return (
