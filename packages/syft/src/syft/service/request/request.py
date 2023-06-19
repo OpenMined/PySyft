@@ -135,6 +135,10 @@ class ActionStoreChange(Change):
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
+    def _repr_html_(self) -> str:
+        return f"<b>{self.__canonical_name__}</b>: Apply {self.apply_permission_type} to \
+            {self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}"
+
 
 @serializable()
 class Request(SyftObject):
@@ -168,17 +172,19 @@ class Request(SyftObject):
         # add changes
         updated_at_line = ""
         if self.updated_at is not None:
-            updated_at_line += f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            updated_at_line += (
+                f"<p><strong>Created by: </strong>{self.requesting_user_verify_key}</p>"
+            )
         str_changes = []
         for change in self.changes:
             str_change = ""
             if isinstance(change, UserCodeStatusChange):
                 str_change += f"User <b>{self.requesting_user_name}</b> requests to change\
-                    <b>{change.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
+                    <b>{change.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>,"
             else:
-                str_change += f"{type(change)}"
+                str_change += f"{change._repr_html_()}, "
             str_changes.append(str_change)
-            str_changes = str(str_changes)
+        str_changes = "\n".join(str_changes)
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -519,6 +525,9 @@ class ObjectMutation(Change):
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
+    def _repr_html_(self) -> str:
+        return f"<b>{self.__canonical_name__}</b>: Mutate `{self.attr_name}` to `{self.value}`"
+
 
 def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
     field_type = None
@@ -591,6 +600,11 @@ class EnumMutation(ObjectMutation):
 
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
+
+    def _repr_html_(self) -> str:
+        return (
+            f"<b>{self.__canonical_name__}</b>: Mutate {self.enum_type} to {self.value}"
+        )
 
     @property
     def link(self) -> Optional[SyftObject]:
