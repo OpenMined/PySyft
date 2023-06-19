@@ -50,7 +50,7 @@ def add_mock_notification(
     return mock_notification
 
 
-def test_notification_service_send_success(
+def test_send_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -70,7 +70,7 @@ def test_notification_service_send_success(
     assert isinstance(response, Notification)
 
 
-def test_notification_service_send_error_on_set(
+def test_send_error_on_set(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -89,7 +89,7 @@ def test_notification_service_send_error_on_set(
     assert response.message == expected_error
 
 
-def test_notification_service_get_all_success(
+def test_get_all_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -124,7 +124,7 @@ def test_notification_service_get_all_success(
     assert response[0] == expected_message
 
 
-def test_notification_service_get_all_error_on_get_all_inbox(
+def test_get_all_error_on_get_all_inbox(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -148,7 +148,7 @@ def test_notification_service_get_all_error_on_get_all_inbox(
     assert response.message == expected_error
 
 
-def test_notification_service_get_sent_success(
+def test_get_sent_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -184,7 +184,7 @@ def test_notification_service_get_sent_success(
     assert response[0] == expected_message
 
 
-def test_notification_service_get_all_error_on_get_all_sent(
+def test_get_all_error_on_get_all_sent(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -208,7 +208,7 @@ def test_notification_service_get_all_error_on_get_all_sent(
     assert response.message == expected_error
 
 
-def test_notification_service_get_all_for_status_success(
+def test_get_all_for_status_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -246,7 +246,7 @@ def test_notification_service_get_all_for_status_success(
     assert response[0] == expected_message
 
 
-def test_service_error_on_get_all_for_status(
+def test_error_on_get_all_for_status(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -275,7 +275,7 @@ def test_service_error_on_get_all_for_status(
     assert response.message == expected_error
 
 
-def test_notification_service_get_all_read_success(
+def test_get_all_read_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -311,7 +311,7 @@ def test_notification_service_get_all_read_success(
     assert response[0] == expected_message
 
 
-def test_notification_service_error_on_get_all_read(
+def test_error_on_get_all_read(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -337,7 +337,7 @@ def test_notification_service_error_on_get_all_read(
     assert response.message == expected_error
 
 
-def test_notification_service_get_all_unread_success(
+def test_get_all_unread_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -373,7 +373,7 @@ def test_notification_service_get_all_unread_success(
     assert response[0] == expected_message
 
 
-def test_notification_service_error_on_get_all_unread(
+def test_error_on_get_all_unread(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
@@ -399,7 +399,7 @@ def test_notification_service_error_on_get_all_unread(
     assert response.message == expected_error
 
 
-def test_notification_service_mark_as_read_success(
+def test_mark_as_read_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -437,7 +437,7 @@ def test_notification_service_mark_as_read_success(
     assert response.status == NotificationStatus.READ
 
 
-def test_notification_service_mark_as_read_error_on_update__status(
+def test_mark_as_read_error_on_update_notification_status(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -474,7 +474,7 @@ def test_notification_service_mark_as_read_error_on_update__status(
     assert response.message == expected_error
 
 
-def test_notification_service_mark_as_unread_success(
+def test_mark_as_unread_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -512,7 +512,7 @@ def test_notification_service_mark_as_unread_success(
     assert response.status == NotificationStatus.UNREAD
 
 
-def test_notification_service_mark_as_unread_error_on_update_notification_status(
+def test_mark_as_unread_error_on_update_notification_status(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -553,7 +553,7 @@ def test_notification_service_mark_as_unread_error_on_update_notification_status
 
 # TODO: Fix this test - unsure how to return a LinkedObject Notification.
 # Test executes code but does not return a Notification object.
-def test_notification_service_resolve_object_success(
+def test_resolve_object_success(
     monkeypatch: MonkeyPatch,
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
@@ -587,7 +587,7 @@ def test_notification_service_resolve_object_success(
     assert response is None
 
 
-def test_notification_service_resolve_object_error_on_resolve_link(
+def test_resolve_object_error_on_resolve_link(
     monkeypatch: MonkeyPatch,
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
@@ -623,7 +623,7 @@ def test_notification_service_resolve_object_error_on_resolve_link(
     assert response.message == expected_error
 
 
-def test_notification_service_clear_success(
+def test_clear_success(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
@@ -663,7 +663,7 @@ def test_notification_service_clear_success(
     assert len(inbox_after_delete) == 0
 
 
-def test_notification_service_clear_error_on_delete_all_for_verify_key(
+def test_clear_error_on_delete_all_for_verify_key(
     root_verify_key,
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
