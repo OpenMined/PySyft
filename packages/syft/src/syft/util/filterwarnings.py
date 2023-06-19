@@ -18,3 +18,11 @@ warnings.filterwarnings(
     ".*urllib3.contrib.pyopenssl.*",
     category=DeprecationWarning,
 )
+
+# UserWarning: libuv only supports millisecond timer resolution; all times less will be
+# # set to 1 ms
+warnings.filterwarnings(
+    "ignore",
+    ".*libuv only supports millisecond timer resolution*",
+    category=UserWarning,
+)
