@@ -326,6 +326,7 @@ class Node(AbstractNode):
         from ..client.client import SyftClient
 
         connection = PythonConnection(node=self)
+        print(f"Logged into {self.name} as GUEST")
         return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
