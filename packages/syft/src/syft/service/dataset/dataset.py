@@ -70,7 +70,7 @@ class Contributor(SyftObject):
     phone: Optional[str]
     note: Optional[str]
 
-    __attr_repr_cols__ = ["name", "role", "email"]
+    __repr_attrs__ = ["name", "role", "email"]
 
 
 @serializable()
@@ -89,7 +89,7 @@ class Asset(SyftObject):
     shape: Optional[Tuple]
     created_at: DateTime = DateTime.now()
 
-    __attr_repr_cols__ = ["name", "shape"]
+    __repr_attrs__ = ["name", "shape"]
 
     def _repr_html_(self) -> Any:
         itables_css = f"""
@@ -221,7 +221,7 @@ class CreateAsset(SyftObject):
     mock_is_real: bool = False
     created_at: Optional[DateTime]
 
-    __attr_repr_cols__ = ["name"]
+    __repr_attrs__ = ["name"]
 
     class Config:
         validate_assignment = True
@@ -339,7 +339,7 @@ class Dataset(SyftObject):
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
-    __attr_repr_cols__ = ["name", "url", "created_at"]
+    __repr_attrs__ = ["name", "url", "created_at"]
 
     def _build_assets_view_(self) -> List[Dict[str, Any]]:
         assets = []
@@ -364,12 +364,13 @@ class Dataset(SyftObject):
     def icon(self):
         return FOLDER_ICON
 
-    def _self_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> Dict[str, Any]:
         return {
-            "id": {"value": str(self.id), "type": "clipboard"},
             "Name": self.name,
             "Assets": len(self.asset_list),
-            "created_on": str(self.created_at),
+            "Size": f"{self.mb_size} (MB)",
+            "Url": self.url,
+            "created at": str(self.created_at),
         }
 
     def _repr_html_(self) -> Any:
@@ -378,8 +379,7 @@ class Dataset(SyftObject):
                 "<p class='paragraph-sm'><strong>"
                 + f"<span class='pr-8'>Uploaded by:</span></strong>{self.contributors[0].name}</p>"
             )
-        repr_code = (
-            f"""
+        return f"""
             <style>
             {fonts_css}
             .syft-dataset {{color: {SURFACE[options.color_theme]};}}
@@ -388,19 +388,17 @@ class Dataset(SyftObject):
               {{font-family: 'Open Sans';}}
               {ITABLES_CSS}
             </style>
+            <div class='syft-dataset'>
+            "<h3>{self.name}</h3>
+            "<p>{self.description}</p>
+            {uploaded_by_line}
+            <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
+            <p class='paragraph-sm'><strong><span class='pr-8'>URL:
+            </span></strong><a href='{self.url}'>{self.url}</a></p>
+            <p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>
+            to see full details call <strong>dataset.contributors</strong></p>
+            {create_table_template(self._build_assets_view_(), 'Asset List')}
             """
-            + "<div class='syft-dataset'>"
-            + f"<h3>{self.name}</h3>"
-            + f"<p>{self.description}</p>"
-            + uploaded_by_line
-            + f"<p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>"
-            + "<p class='paragraph-sm'><strong><span class='pr-8'>URL: "
-            + f"</span></strong><a href='{self.url}'>{self.url}</a></p>"
-            + "<p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>"
-            + " to see full details call <strong>dataset.contributors</strong></p>"
-            + create_table_template(self._build_assets_view_(), "Asset List")
-        )
-        return repr_code
 
     def action_ids(self) -> List[UID]:
         data = []
@@ -491,6 +489,8 @@ class CreateDataset(Dataset):
     __canonical_name__ = "CreateDataset"
     __version__ = SYFT_OBJECT_VERSION_1
     asset_list: List[CreateAsset] = []
+
+    __repr_attrs__ = ["name", "url"]
 
     id: Optional[UID] = None
     created_at: Optional[DateTime]

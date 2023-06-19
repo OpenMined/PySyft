@@ -190,7 +190,7 @@ class UserCode(SyftObject):
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
-    __attr_repr_cols__ = ["status.approved", "service_func_name"]
+    __repr_attrs__ = ["status.approved", "service_func_name"]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -199,7 +199,7 @@ class UserCode(SyftObject):
         else:
             return super().__setattr__(key, value)
 
-    def _self_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> Dict[str, Any]:
         status = list(self.status.base_dict.values())[0].value
         if status == UserCodeStatus.SUBMITTED.value:
             badge_color = "badge-purple"
@@ -210,10 +210,13 @@ class UserCode(SyftObject):
 
         status_badge = {"value": status, "type": badge_color}
         return {
-            "id": {"value": str(self.id), "type": "clipboard"},
             "Input Policy": self.input_policy_type.__name__,
             "Output Policy": self.output_policy_type.__name__,
-            "User": {"value": str(self.user_verify_key), "type": "clipboard"},
+            "Function name": self.service_func_name,
+            "User verify key": {
+                "value": str(self.user_verify_key),
+                "type": "clipboard",
+            },
             "Status": status_badge,
         }
 
@@ -401,7 +404,7 @@ class SubmitUserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
 
-    __attr_repr_cols__ = ["func_name", "code"]
+    __repr_attrs__ = ["func_name", "code"]
 
     @property
     def kwargs(self) -> List[str]:

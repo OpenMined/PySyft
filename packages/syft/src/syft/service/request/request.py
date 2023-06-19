@@ -90,7 +90,7 @@ class ActionStoreChange(Change):
     linked_obj: LinkedObject
     apply_permission_type: ActionPermission
 
-    __attr_repr_cols__ = ["linked_obj", "apply_permission_type"]
+    __repr_attrs__ = ["linked_obj", "apply_permission_type"]
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -157,7 +157,7 @@ class Request(SyftObject):
         "approving_user_verify_key",
     ]
     __attr_unique__ = ["request_hash"]
-    __attr_repr_cols__ = [
+    __repr_attrs__ = [
         "request_time",
         "updated_at",
         "status",
@@ -194,6 +194,26 @@ class Request(SyftObject):
             </div>
             """
 
+    def _coll_repr_(self):
+        if self.status == RequestStatus.APPROVED:
+            badge_color = "badge-green"
+        elif self.status == RequestStatus.PENDING:
+            badge_color = "badge-gray"
+        else:
+            badge_color = "badge-red"
+
+        status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+        return {
+            "changes": " ".join([x.__repr_syft_nested__() for x in self.changes]),
+            "request time": str(self.request_time),
+            "status": status_badge,
+            "requesting user": {
+                "value": str(self.requesting_user_verify_key),
+                "type": "clipboard",
+            },
+            "updated_at": str(self.updated_at),
+        }
+
     @property
     def code(self) -> Any:
         if len(self.changes) == 1:
@@ -215,22 +235,6 @@ class Request(SyftObject):
     @property
     def icon(self):
         return REQUEST_ICON
-
-    def _self_repr_(self):
-        if self.status == RequestStatus.APPROVED:
-            badge_color = "badge-green"
-        elif self.status == RequestStatus.PENDING:
-            badge_color = "badge-gray"
-        else:
-            badge_color = "badge-red"
-
-        status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
-        return {
-            "ID": {"value": str(self.id), "type": "clipboard"},
-            "request_type": self.changes.__repr__(),
-            "request_time": str(self.request_time),
-            "status": status_badge,
-        }
 
     @property
     def status(self) -> RequestStatus:
@@ -498,7 +502,7 @@ class ObjectMutation(Change):
     match_type: bool
     previous_value: Optional[Any]
 
-    __attr_repr_cols__ = ["linked_obj", "attr_name"]
+    __repr_attrs__ = ["linked_obj", "attr_name"]
 
     def mutate(self, obj: Any, value: Optional[Any]) -> Any:
         # check if attribute is a property setter first
@@ -562,7 +566,7 @@ class EnumMutation(ObjectMutation):
     value: Optional[Enum]
     match_type: bool = True
 
-    __attr_repr_cols__ = ["linked_obj", "attr_name", "value"]
+    __repr_attrs__ = ["linked_obj", "attr_name", "value"]
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
@@ -628,7 +632,7 @@ class UserCodeStatusChange(Change):
     value: UserCodeStatus
     linked_obj: LinkedObject
     match_type: bool = True
-    __attr_repr_cols__ = [
+    __repr_attrs__ = [
         "link.service_func_name",
         "link.input_policy_type.__canonical_name__",
         "link.output_policy_type.__canonical_name__",
@@ -743,6 +747,3 @@ class UserCodeStatusChange(Change):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
-
-    def __repr__(self):
-        return "Code Request"

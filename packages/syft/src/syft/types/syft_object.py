@@ -206,7 +206,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     ] = {}  # List of attributes names which require a serde override.
     __owner__: str
 
-    __attr_repr_cols__: ClassVar[List[str]] = []  # show these in html repr collections
+    __repr_attrs__: ClassVar[List[str]] = []  # show these in html repr collections
     __attr_custom_repr__: ClassVar[
         List[str]
     ] = None  # show these in html repr of an object
@@ -259,8 +259,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         class_name = get_qualname_for(type(self))
         if self.__attr_custom_repr__ is not None:
             fields = self.__attr_custom_repr__
-        elif self.__attr_repr_cols__ is not None:
-            fields = self.__attr_repr_cols__
+        elif self.__repr_attrs__ is not None:
+            fields = self.__repr_attrs__
         else:
             fields = list(getattr(self, "__fields__", {}).keys())
 
@@ -493,7 +493,7 @@ def list_dict_repr_html(self) -> str:
 
             if "syft" in str(mro).lower():
                 has_syft = True
-                extra_fields = getattr(item, "__attr_repr_cols__", [])
+                extra_fields = getattr(item, "__repr_attrs__", [])
                 break
         if has_syft:
             # third party
@@ -528,9 +528,9 @@ def list_dict_repr_html(self) -> str:
                 if not is_homogenous:
                     cols["type"].append(t)
 
-                # if has _self_repr_
-                if hasattr(item, "_self_repr_"):
-                    ret_val = item._self_repr_()
+                # if has _coll_repr_
+                if hasattr(item, "_coll_repr_"):
+                    ret_val = item._coll_repr_()
                     if "id" in ret_val:
                         del ret_val["id"]
                     for key in ret_val.keys():
@@ -569,11 +569,13 @@ def list_dict_repr_html(self) -> str:
                                         else x
                                         for x in value
                                     ]
+                                if value is None:
+                                    value = "undefined"
 
                         except Exception as e:
                             print(e)
                             value = None
-                        cols[field].append(value)
+                        cols[field].append(str(value))
                 df = pd.DataFrame(cols)
 
                 # try:

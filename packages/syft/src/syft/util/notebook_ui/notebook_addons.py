@@ -595,7 +595,7 @@ custom_code = """
                                                 } else {
                                                     text = item[attr]
                                                 }
-                                                div.innerText = text;
+                                                div.innerHTML = text;
                                             }
                                             grid.appendChild(div);
                                         }
@@ -649,7 +649,11 @@ def create_table_template(items, list_name, rows=5, table_icon=None):
     items_dict = json.dumps(items)
     code = CSS_CODE + custom_code
     template = Template(code)
-    cols = (len(items[0].keys())) * 4
+    rows = min(len(items), rows)
+    if len(items) == 0:
+        cols = 0
+    else:
+        cols = (len(items[0].keys())) * 4
     return template.substitute(
         uid=str(UID()),
         element=items_dict,
