@@ -19,7 +19,7 @@ repos:
         exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
       - id: check-yaml
         always_run: true
-        exclude: ^(packages/grid/k8s/rendered/)
+        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/)
       - id: check-merge-conflict
         always_run: true
         args: ["--assume-in-merge"]
