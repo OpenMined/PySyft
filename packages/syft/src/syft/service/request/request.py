@@ -189,7 +189,7 @@ class Request(SyftObject):
                 <p><strong>Id: </strong>{self.id}</p>
                 <p><strong>Request time: </strong>{self.request_time}</p>
                 {updated_at_line}
-                <p><strong> Changes: </strong> {str_changes}</p>
+                <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
             </div>
             """
@@ -211,7 +211,7 @@ class Request(SyftObject):
                 "value": str(self.requesting_user_verify_key),
                 "type": "clipboard",
             },
-            "updated_at": str(self.updated_at),
+            "reviewed_at": str(self.updated_at),
         }
 
     @property

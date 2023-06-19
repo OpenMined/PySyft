@@ -192,6 +192,9 @@ CSS_CODE = """
     }
     .grid-index-cells {
         grid-column: span 1;
+        background: #ECEBEF;
+        /* tmp fix to make left col stand out (fix with font-family) */
+        font-weight: 600;
     }
 
     .grid-header {
@@ -205,9 +208,13 @@ CSS_CODE = """
         background: #ECEBEF;
         /* Lt On Surface/High */
         border: 1px solid #CFCDD6;
+        color: #2E2B3B;
+        /* tmp fix to make header stand out (fix with font-family) */
+        font-weight: 600;
     }
 
     .grid-row {
+        color: #5E5A72;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
@@ -575,7 +582,12 @@ custom_code = """
                                                     clipboard_div.style.justifyContent = "space-between";
 
                                                     let id_text = document.createElement('div');
-                                                    id_text.innerText = item[attr].value. slice(0,5) + "...";
+                                                    if (item[attr].value == "None"){
+                                                        id_text.innerText = "None";
+                                                    }
+                                                    else{
+                                                        id_text.innerText = item[attr].value.slice(0,5) + "...";
+                                                    }
 
                                                     clipboard_div.appendChild(id_text);
                                                     let clipboard_img = document.createElement('div');

@@ -543,7 +543,7 @@ def list_dict_repr_html(self) -> str:
                         value = item
                         try:
                             attrs = field.split(".")
-                            for attr in attrs:
+                            for i, attr in enumerate(attrs):
                                 # find indexing like abc[1]
                                 res = re.search("\[[+-]?\d+\]", attr)
                                 has_index = False
@@ -559,10 +559,14 @@ def list_dict_repr_html(self) -> str:
                                 if isinstance(value, list) and has_index:
                                     value = value[index]
                                 # If the object has a special representation when nested we will use that instead
-                                if hasattr(value, "__repr_syft_nested__"):
+                                if (
+                                    hasattr(value, "__repr_syft_nested__")
+                                    and i == len(attrs) - 1
+                                ):
                                     value = value.__repr_syft_nested__()
                                 if (
                                     isinstance(value, list)
+                                    and i == len(attrs) - 1
                                     and len(value) > 0
                                     and hasattr(value[0], "__repr_syft_nested__")
                                 ):
@@ -572,8 +576,8 @@ def list_dict_repr_html(self) -> str:
                                         else x
                                         for x in value
                                     ]
-                                if value is None:
-                                    value = "undefined"
+                            if value is None:
+                                value = "undefined"
 
                         except Exception as e:
                             print(e)
@@ -594,7 +598,6 @@ def list_dict_repr_html(self) -> str:
                 table_icon = None
                 if hasattr(values[0], "icon"):
                     table_icon = values[0].icon
-
                 # this is a list of dicts
                 return create_table_template(
                     df.to_dict("records"),

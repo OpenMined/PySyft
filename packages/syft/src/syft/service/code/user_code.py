@@ -207,7 +207,6 @@ class UserCode(SyftObject):
             badge_color = "badge-green"
         else:
             badge_color = "red"
-
         status_badge = {"value": status, "type": badge_color}
         return {
             "Input Policy": self.input_policy_type.__name__,
