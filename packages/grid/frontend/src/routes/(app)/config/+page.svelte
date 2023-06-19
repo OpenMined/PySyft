@@ -142,11 +142,11 @@
     </div>
     <div slot="body">
       {#if openModal === 'domain_name'}
-        <Input label="Domain name" required bind:value={name} id="name" />
+        <Input label="Domain name" required bind:value={name} id="name" data-testid="domain-name" />
       {:else if openModal === 'organization'}
-        <Input label="Organization" bind:value={organization} id="institution" />
+        <Input label="Organization" bind:value={organization} id="institution" data-testid="domain-organization" />
       {:else if openModal === 'description'}
-        <TextArea label="Description" bind:value={description} id="description" />
+        <TextArea label="Description" bind:value={description} id="description" data-testid="domain-description" />
       {/if}
     </div>
     <div class="flex w-full justify-end" slot="button-group">
