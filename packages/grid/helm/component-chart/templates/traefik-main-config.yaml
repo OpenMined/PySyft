@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+data:
+  dynamic.yml:
+    "http:\n  services:\n    frontend:\n      loadBalancer:\n        servers:\n\
+    \          - url: \"http://frontend\"\n    backend:\n      loadBalancer:\n   \
+    \     servers:\n          - url: \"http://backend\"\n    seaweedfs:\n      loadBalancer:\n\
+    \        servers:\n          - url: \"http://seaweedfs:8333\"\n  routers:\n  \
+    \  frontend:\n      rule: \"PathPrefix(`/`)\"\n      entryPoints:\n        - \"\
+    web\"\n      service: \"frontend\"\n    backend:\n      rule: \"PathPrefix(`/api`)\
+    \ || PathPrefix(`/docs`) || PathPrefix(`/redoc`)\"\n      entryPoints:\n     \
+    \   - \"web\"\n      service: \"backend\"\n    blob-storage:\n      rule: \"PathPrefix(`/blob`)\"\
+    \n      entryPoints:\n        - \"web\"\n      service: \"seaweedfs\"\n      middlewares:\n\
+    \        - \"blob-storage-url\"\n        - \"blob-storage-host\"\n  middlewares:\n\
+    \    blob-storage-host:\n      headers:\n        customrequestheaders:\n     \
+    \     Host: seaweedfs:8333\n    blob-storage-url:\n      stripprefix:\n      \
+    \  prefixes: /blob\n        forceslash: true\n"
+  traefik.yml:
+    "global:\n  checkNewVersion: false\n  sendAnonymousUsage: false\n\n\
+    log:\n  level: INFO\n\nentryPoints:\n  web:\n    address: :80\n  ping:\n    address:\
+    \ :8082\n\nping:\n  entryPoint: \"ping\"\n\nproviders:\n  file:\n    filename:\
+    \ /etc/traefik/dynamic.yml\n"
+kind: ConfigMap
+metadata:
+  name: traefik-main-config
