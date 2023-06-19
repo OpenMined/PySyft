@@ -21,7 +21,7 @@ from typing import Union
 import warnings
 
 # third party
-import itables
+import pandas as pd
 import pydantic
 from pydantic import BaseModel
 from pydantic import EmailStr
@@ -33,11 +33,7 @@ from typeguard import check_type
 from ..node.credentials import SyftVerifyKey
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
-from ..util import options
 from ..util.autoreload import autoreload_enabled
-from ..util.colors import ON_SURFACE_HIGHEST
-from ..util.colors import SURFACE
-from ..util.colors import SURFACE_SURFACE
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.notebook_addons import create_table_template
 from ..util.util import aggressive_set_attr
@@ -501,39 +497,45 @@ def list_dict_repr_html(self) -> str:
                 break
         if has_syft:
             # third party
-            import pandas as pd
+            first_value = values[0]
+            if is_homogenous:
+                cls_name = first_value.__class__.__name__
+            else:
+                cls_name = ""
 
-            custom_repr = False
             cols = defaultdict(list)
             for item in iter(self):
+                # unpack dict
+                if isinstance(self, dict):
+                    cols["key"].append(item)
+                    item = self.__getitem__(item)
+
+                # get id
+                id_ = str(getattr(item, "id", None))
+                # if id_ is not None:
+                #     id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
+                if id_ is not None:
+                    cols["id"].append({"value": id_, "type": "clipboard"})
+
+                if type(item) == type:
+                    t = full_name_with_qualname(item)
+                else:
+                    try:
+                        t = item.__class__.__name__
+                    except Exception:
+                        t = item.__repr__()
+
+                if not is_homogenous:
+                    cols["type"].append(t)
+
+                # if has _self_repr_
                 if hasattr(item, "_self_repr_"):
-                    custom_repr = True
                     ret_val = item._self_repr_()
+                    if "id" in ret_val:
+                        del ret_val["id"]
                     for key in ret_val.keys():
                         cols[key].append(ret_val[key])
                 else:
-                    if isinstance(self, dict):
-                        cols["key"].append(item)
-                        item = self.__getitem__(item)
-
-                    # get id
-                    id_ = getattr(item, "id", None)
-                    if id_ is not None:
-                        id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
-
-                    if type(item) == type:
-                        t = full_name_with_qualname(item)
-                    else:
-                        try:
-                            t = item.__class__.__name__
-                        except Exception:
-                            t = item.__repr__()
-                    if id_ is not None:
-                        cols["id"].append(id_)
-
-                    if not is_homogenous:
-                        cols["type"].append(t)
-
                     for field in extra_fields:
                         value = item
                         try:
@@ -572,58 +574,56 @@ def list_dict_repr_html(self) -> str:
                             print(e)
                             value = None
                         cols[field].append(value)
+                df = pd.DataFrame(cols)
 
-            df = pd.DataFrame(cols)
+                # try:
+                #     index = df.columns.get_loc("created_at")
+                #     order = [[index, "desc"]]
+                # except:  # noqa: E722
+                #     order = []
 
-            if is_homogenous:
-                cls_name = values[0].__class__.__name__
-            else:
-                cls_name = ""
+                if "created_at" in df.columns:
+                    df.sort_values(by="created_at", ascending=False, inplace=True)
 
-            if custom_repr:
+                # if custom_repr:
                 table_icon = None
                 if hasattr(values[0], "icon"):
                     table_icon = values[0].icon
 
+                # this is a list of dicts
                 return create_table_template(
                     df.to_dict("records"),
                     f"{cls_name} {self.__class__.__name__.capitalize()}",
                     table_icon=table_icon,
                 )
 
-            html_header = f"""
-                <style>
-                .syft-collection-header {{color: {SURFACE[options.color_theme]};}}
-                </style>
-                <div class='syft-collection-header'>
-                    <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
-                </div>
-                <br>
-                """
+                # html_header = f"""
+                #     <style>
+                #     .syft-collection-header {{color: {SURFACE[options.color_theme]};}}
+                #     </style>
+                #     <div class='syft-collection-header'>
+                #         <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
+                #     </div>
+                #     <br>
+                #     """
 
-            itables_css = f"""
-            .itables table {{
-                margin: 0 auto;
-                float: left;
-                color: {ON_SURFACE_HIGHEST[options.color_theme]};
-            }}
-            .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
-            """
+                # itables_css = f"""
+                # .itables table {{
+                #     margin: 0 auto;
+                #     float: left;
+                #     color: {ON_SURFACE_HIGHEST[options.color_theme]};
+                # }}
+                # .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+                # """
 
-            try:
-                index = df.columns.get_loc("created_at")
-                order = [[index, "desc"]]
-            except:  # noqa: E722
-                order = []
+                # html_datatable = itables.to_html_datatable(
+                #     df=df, css=itables_css, order=order
+                # )  # kwargs=kwargs)
 
-            html_datatable = itables.to_html_datatable(
-                df=df, css=itables_css, order=order
-            )  # kwargs=kwargs)
-
-            return html_header + html_datatable
-            # return collection_type + df_styled._repr_html_()
+                # return html_header + html_datatable
+                # return collection_type + df_styled._repr_html_()
     except Exception as e:
-        print(e)
+        print(f"error representing {type(self)} of objects. {e}")
         pass
 
     # stdlib
