@@ -87,16 +87,26 @@ def test_nested_hashing():
 
 
 def test_nested_list():
-    id = UID("572feb9669204a8cbb41a0ab4cbf0093")
-    obj1 = MockNestedList(id=id, classes=deepcopy(MOCK_DATA))
-    obj2 = MockNestedList(id=id, classes=deepcopy(MOCK_DATA))
+    obj1 = MockNestedList(
+        id=UID("572feb9669204a8cbb41a0ab4cbf0093"),
+        classes=deepcopy(MOCK_DATA),
+    )
+    obj2 = MockNestedList(
+        id=UID("572feb9669204a8cbb41a0ab4cbf0093"),
+        classes=deepcopy(MOCK_DATA),
+    )
 
     assert obj1.hash() == obj2.hash()
 
 
 def test_nested_map():
-    id = UID("090de5e5f39449a08fde75b0c82ec128")
-    obj1 = MockNestedMap(id=id, map={d.id: d for d in deepcopy(MOCK_DATA)})
-    obj2 = MockNestedMap(id=id, map={d.id: d for d in deepcopy(MOCK_DATA)})
+    obj1 = MockNestedMap(
+        id=UID("090de5e5f39449a08fde75b0c82ec128"),
+        map={d.id: d for d in deepcopy(MOCK_DATA)},
+    )
+    obj2 = MockNestedMap(
+        id=UID("090de5e5f39449a08fde75b0c82ec128"),
+        map={d.id: d for d in deepcopy(MOCK_DATA)},
+    )
 
     assert obj1.hash() == obj2.hash()

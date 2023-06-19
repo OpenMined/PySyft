@@ -9,28 +9,31 @@ def recursive_serialize_kwargs(func: Callable) -> Callable:
 
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Callable:
-        if not kwargs.get("for_hashing", None):
-            return func(*args, **kwargs)
+        recurse_step = getattr(wrapper, "recurse_step", 0)
 
-        if getattr(wrapper, "depth", 0) > 0:
-            # in recursion, carry forward the cached args
-            kwargs["for_hashing"] = wrapper.for_hashing
-            wrapper.depth += 1
-        else:
+        # We want to preserve the `for_hashing` flag during recursive _serialize() calls..
+        # ..skip if not being called for first call
+        if recurse_step == 0 and not kwargs.get("for_hashing", None):
+            return func(*args, **kwargs)
+        elif recurse_step == 0:
             # cache kwargs
             wrapper.for_hashing = kwargs["for_hashing"]
             wrapper.debug = kwargs.get("debug", False)
-            wrapper.depth = 1
+            wrapper.recurse_step = 1
+        else:
+            # carry forward the cached args during recursive _serialize() call
+            kwargs["for_hashing"] = wrapper.for_hashing
+            wrapper.recurse_step += 1
 
         if wrapper.debug:
-            print(f'{"-" * wrapper.depth}>', args, kwargs)
+            print(f'{"-" * wrapper.recurse_step}>', args, kwargs)
 
         result = func(*args, **kwargs)
 
-        wrapper.depth -= 1
+        wrapper.recurse_step -= 1
 
-        if wrapper.depth == 0:
-            delattr(wrapper, "depth")
+        if wrapper.recurse_step == 0:
+            delattr(wrapper, "recurse_step")
             delattr(wrapper, "for_hashing")
             delattr(wrapper, "debug")
 
