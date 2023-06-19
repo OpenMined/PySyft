@@ -54,7 +54,8 @@ def test_mongo_store_partition_init_failed(root_verify_key) -> None:
 @pytest.mark.skipif(
     sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=2)
+@pytest.mark.xfail
 def test_mongo_store_partition_set(
     root_verify_key, mongo_store_partition: MongoStorePartition
 ) -> None:

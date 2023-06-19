@@ -35,11 +35,15 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syft_object import short_qual_name
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
+from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
 from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
@@ -115,6 +119,12 @@ class ProjectEvent(SyftObject):
     # 3. Signature attrs
     creator_verify_key: Optional[SyftVerifyKey]
     signature: Optional[bytes]  # dont use in signing
+
+    def __repr_syft_nested__(self):
+        return (
+            short_qual_name(full_name_with_qualname(self)),
+            f"{str(self.id)[:4]}...{str(self.id)[-3:]}",
+        )
 
     @pydantic.root_validator(pre=True)
     def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -704,6 +714,21 @@ class Project(SyftObject):
     # store: Dict[UID, Dict[UID, SyftObject]] = {}
     # permissions: Dict[UID, Dict[UID, Set[str]]] = {}
 
+    def _repr_html_(self) -> Any:
+        return (
+            f"""
+            <style>
+            .syft-project {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            """
+            + "<div class='syft-project'>"
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + self.requests._repr_html_()
+            + "</div>"
+        )
+
     def _broadcast_event(
         self, project_event: ProjectEvent
     ) -> Union[SyftSuccess, SyftError]:
@@ -783,8 +808,9 @@ class Project(SyftObject):
             # This would be solved in our future leaderless approach
             return self._append_event(event=event, credentials=credentials)
 
-        self.events.append(copy.deepcopy(event))
-        self.event_id_hashmap[event.id] = event
+        event_copy = copy.deepcopy(event)
+        self.events.append(event_copy)
+        self.event_id_hashmap[event.id] = event_copy
         return result
 
     @property
@@ -1164,6 +1190,20 @@ class ProjectSubmit(SyftObject):
 
         # Convert SyftClients to NodeIdentities
         self.members = list(map(self.to_node_identity, self.members))
+
+    def _repr_html_(self) -> Any:
+        return (
+            f"""
+            <style>
+            .syft-project-create {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            """
+            + "<div class='syft-project-create'>"
+            + f"<h3>{self.name}</h3>"
+            + f"<p>{self.description}</p>"
+            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + "</div>"
+        )
 
     @validator("members", pre=True)
     def verify_members(cls, val: Union[List[SyftClient], List[NodeIdentity]]):

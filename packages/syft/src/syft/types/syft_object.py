@@ -31,10 +31,13 @@ from typeguard import check_type
 
 # relative
 from ..node.credentials import SyftVerifyKey
-from ..serde.deserialize import _deserialize as deserialize
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..util import options
 from ..util.autoreload import autoreload_enabled
+from ..util.colors import ON_SURFACE_HIGHEST
+from ..util.colors import SURFACE
+from ..util.colors import SURFACE_SURFACE
 from ..util.markdown import as_markdown_python_code
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
@@ -63,20 +66,6 @@ DYNAMIC_SYFT_ATTRIBUTES = [
     "syft_node_location",
     "syft_client_verify_key",
 ]
-
-SURFACE_DARK_BRIGHT = "#464158"
-SURFACE_SURFACE = "#2E2B3B"
-DK_ON_SURFACE_HIGHEST = "#534F64"
-
-# This can be customize however we want
-itables_css = f"""
-.itables table {{
-    margin: 0 auto;
-    float: left;
-    color: {DK_ON_SURFACE_HIGHEST};
-}}
-.itables table th {{color: {SURFACE_SURFACE};}}
-"""
 
 
 class SyftHashableObject:
@@ -225,29 +214,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         List[str]
     ] = None  # show these in html repr of an object
 
-    def to_mongo(self) -> Dict[str, Any]:
-        warnings.warn(
-            "`SyftObject.to_mongo` is deprecated and will be removed in a future version",
-            PendingDeprecationWarning,
-        )
-
-        d = {}
-        for k in self.__attr_searchable__:
-            # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
-            # if unsupported, convert to string
-            value = getattr(self, k, "")
-            if isinstance(value, SyftVerifyKey):
-                value = str(value)
-            d[k] = value
-        blob = serialize(dict(self), to_bytes=True)
-        d["_id"] = self.id.value  # type: ignore
-        d["__canonical_name__"] = self.__canonical_name__
-        d["__version__"] = self.__version__
-        d["__blob__"] = blob
-        d["__repr__"] = self.__repr__()
-
-        return d
-
     def __syft_get_funcs__(self) -> List[Tuple[str, Signature]]:
         funcs = print_type_cache[type(self)]
         if len(funcs) > 0:
@@ -316,6 +282,16 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
                     value = getattr(value, _attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
+            # If the object has a special representation when nested we will use that instead
+            if hasattr(value, "__repr_syft_nested__"):
+                value = value.__repr_syft_nested__()
+            if isinstance(value, list):
+                value = [
+                    elem.__repr_syft_nested__()
+                    if hasattr(elem, "__repr_syft_nested__")
+                    else elem
+                    for elem in value
+                ]
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"{s_indent}  {attr}: {value_type} = {value}\n"
 
@@ -333,26 +309,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             return as_markdown_python_code(_repr_str)
         else:
             return _repr_str
-
-    @staticmethod
-    def from_mongo(bson: Any) -> "SyftObject":
-        warnings.warn(
-            "`SyftObject.from_mongo` is deprecated and will be removed in a future version",
-            PendingDeprecationWarning,
-        )
-
-        constructor = SyftObjectRegistry.versioned_class(
-            name=bson["__canonical_name__"], version=bson["__version__"]
-        )
-        if constructor is None:
-            raise ValueError(
-                "Versioned class should not be None for initialization of SyftObject."
-            )
-        de = deserialize(bson["__blob__"], from_bytes=True)
-        for attr, funcs in constructor.__serde_overrides__.items():
-            if attr in de:
-                de[attr] = funcs[1](de[attr])
-        return constructor(**de)
 
     # allows splatting with **
     def keys(self) -> KeysView[str]:
@@ -559,7 +515,7 @@ def list_dict_repr_html(self) -> str:
 
                 # get id
                 id_ = getattr(item, "id", None)
-                if id is not None:
+                if id_ is not None:
                     id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
 
                 if type(item) == type:
@@ -569,7 +525,9 @@ def list_dict_repr_html(self) -> str:
                         t = item.__class__.__name__
                     except Exception:
                         t = item.__repr__()
-                cols["id"].append(id_)
+                if id_ is not None:
+                    cols["id"].append(id_)
+
                 if not is_homogenous:
                     cols["type"].append(t)
 
@@ -590,9 +548,25 @@ def list_dict_repr_html(self) -> str:
                             value = getattr(value, attr, None)
                             if isinstance(value, list) and has_index:
                                 value = value[index]
+
+                            # If the object has a special representation when nested we will use that instead
+                            if hasattr(value, "__repr_syft_nested__"):
+                                value = value.__repr_syft_nested__()
+                            if (
+                                isinstance(value, list)
+                                and len(value) > 0
+                                and hasattr(value[0], "__repr_syft_nested__")
+                            ):
+                                value = [
+                                    x.__repr_syft_nested__()
+                                    if hasattr(x, "__repr_syft_nested__")
+                                    else x
+                                    for x in value
+                                ]
                     except Exception as e:
                         print(e)
                         value = None
+
                     cols[field].append(value)
 
             df = pd.DataFrame(cols)
@@ -604,15 +578,32 @@ def list_dict_repr_html(self) -> str:
 
             html_header = f"""
                 <style>
-                .collection-header {{color: {SURFACE_DARK_BRIGHT};}}
+                .syft-collection-header {{color: {SURFACE[options.color_theme]};}}
                 </style>
-                <div class='collection-header'>
+                <div class='syft-collection-header'>
                     <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
                 </div>
                 <br>
                 """
 
-            html_datatable = itables.to_html_datatable(df=df, css=itables_css)
+            itables_css = f"""
+            .itables table {{
+                margin: 0 auto;
+                float: left;
+                color: {ON_SURFACE_HIGHEST[options.color_theme]};
+            }}
+            .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+            """
+
+            try:
+                index = df.columns.get_loc("created_at")
+                order = [[index, "desc"]]
+            except:  # noqa: E722
+                order = []
+
+            html_datatable = itables.to_html_datatable(
+                df=df, css=itables_css, order=order
+            )  # kwargs=kwargs)
 
             return html_header + html_datatable
             # return collection_type + df_styled._repr_html_()
