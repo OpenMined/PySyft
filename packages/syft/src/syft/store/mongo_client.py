@@ -101,10 +101,10 @@ class MongoStoreClientConfig(StoreClientConfig):
     hostname: Optional[str] = "127.0.0.1"
     port: Optional[int] = None
     directConnection: bool = False
-    maxPoolSize: int = 100
+    maxPoolSize: int = 200
     minPoolSize: int = 0
     maxIdleTimeMS: Optional[int] = None
-    maxConnecting: int = 2
+    maxConnecting: int = 3
     timeoutMS: int = 0
     socketTimeoutMS: int = 0
     connectTimeoutMS: int = 20000
