@@ -54,9 +54,9 @@ spec:
           command: null
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
-              value: root
+              value: { { .Values.secrets.db.mongo.mongoInitdbRootUsername } }
             - name: MONGO_INITDB_ROOT_PASSWORD
-              value: example
+              value: { { .Values.secrets.db.mongo.mongoInitdbRootPassword } }
           envFrom: null
           image: mongo:latest
           lifecycle: null
