@@ -407,6 +407,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_twin_type",
     "_repr_debug_",
     "as_empty",
+    "get",
 ]
 
 
