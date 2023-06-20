@@ -49,6 +49,9 @@ def replace_variables(d: Any) -> None:
         camel_case_name = to_lower_camel_case(variable_name)
         d["value"] = f"{{{{ .Values.{path}.{camel_case_name} }}}}"
 
+    if "kubernetes.io/ingress.class" in d:
+        d["kubernetes.io/ingress.class"] = "{{ .Values.ingress.ingressClass }}"
+
 
 # parse whole tree
 def fix_devspace_yaml(d: Any) -> None:
