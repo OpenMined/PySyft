@@ -28,5 +28,6 @@ node:
     versionHash: "abc"
 
 ingress:
-  ingressClass: "azure/application-gateway"
+  ingressClass: ""
+  # ingressClass: "azure/application-gateway"
   # ingressClass: "gce"
