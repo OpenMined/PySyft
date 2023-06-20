@@ -42,6 +42,13 @@ sy.requires(">=0.8,<0.8.1")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
 ```
 
+## Deploy Kubernetes Helm Chart
+
+```
+$ kubectl create namespace syft
+$ helm install my-domain syft --namespace syft --version 0.8.1-beta.12 --repo https://openmined.github.io/PySyft/helm
+```
+
 ## Deploy to a Container Engine or Cloud
 
 1. Install our handy 🛵 cli tool which makes deploying a Domain or Gateway server a one-liner:  
@@ -55,7 +62,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
    `PyGrid` = our 🐳 `docker` / 🐧 `vm` `Domain` & `Gateway` Servers where `private data` lives
 
-4. During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `podman` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
+4. During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
 
 ## Docs and Support
 
@@ -71,7 +78,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 - PySyft 0.8 Requires: 🐍 `python 3.9 - 3.11` - Run: `pip install -U syft`  
   \*`macOS` Apple Silicon users might need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html`
-- PyGrid Requires: 🐳 `docker` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
+- PyGrid Requires: 🐳 `docker`, ☸️ `kubernetes` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions
 
