@@ -47,6 +47,7 @@ class DataSubject(SyftObject):
         return members
 
     __attr_searchable__ = ["name", "description"]
+    __repr_attrs__ = ["name", "description"]
     __attr_unique__ = ["name"]
 
     def __hash__(self) -> int:
