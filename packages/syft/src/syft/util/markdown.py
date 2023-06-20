@@ -17,8 +17,8 @@ def markdown_as_class_with_fields(obj, fields, set_defaults=True):
 
 class CodeMarkdown:
     def __init__(self, code, lang="python"):
-        self.code = code
-        self.lang = lang
+        self._code = code
+        self._lang = lang
 
     def _repr_markdown_(self) -> str:
-        return as_markdown_code(self.code, self.lang)
+        return as_markdown_code(self._code, self._lang)
