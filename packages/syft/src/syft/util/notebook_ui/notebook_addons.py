@@ -571,7 +571,6 @@ custom_code = """
                                                     badge_div.innerText = item[attr].value.toUpperCase();
                                                     div.appendChild(badge_div);
                                                     div.classList.add('grid-row','grid-std-cells');
-                                                    div.style.justifyContent = 'center';
                                                 } else if (item[attr].type === "clipboard") {
                                                     div.classList.add('grid-row','grid-std-cells');
 
@@ -607,6 +606,10 @@ custom_code = """
                                                 } else {
                                                     text = item[attr]
                                                 }
+                                                if (text.length > 150){
+                                                    text = text.slice(0,150) + "...";
+                                                }
+                                                text = text.replaceAll("\\n", "</br>");
                                                 div.innerHTML = text;
                                             }
                                             grid.appendChild(div);

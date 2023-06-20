@@ -39,7 +39,6 @@ from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ...util.markdown import as_markdown_python_code
 from ...util.notebook_ui.notebook_addons import FOLDER_ICON
-from ...util.notebook_ui.notebook_addons import create_table_template
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
@@ -341,25 +340,6 @@ class Dataset(SyftObject):
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
 
-    def _build_assets_view_(self) -> List[Dict[str, Any]]:
-        assets = []
-        for asset in self.asset_list:
-            if asset.mock_is_real:
-                data_badge = {"value": "data", "type": "badge-gray"}
-            else:
-                data_badge = {"value": "mock", "type": "badge-purple"}
-
-            assets.append(
-                {
-                    "display_data": data_badge,
-                    "id": {"value": str(asset.id), "type": "clipboard"},
-                    "name": asset.name,
-                    "shape": str(asset.shape),
-                    "created_at": str(asset.created_at),
-                }
-            )
-        return assets
-
     @property
     def icon(self):
         return FOLDER_ICON
@@ -389,15 +369,15 @@ class Dataset(SyftObject):
               {ITABLES_CSS}
             </style>
             <div class='syft-dataset'>
-            "<h3>{self.name}</h3>
-            "<p>{self.description}</p>
+            <h3>{self.name}</h3>
+            <p>{self.description}</p>
             {uploaded_by_line}
             <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
             <p class='paragraph-sm'><strong><span class='pr-8'>URL:
             </span></strong><a href='{self.url}'>{self.url}</a></p>
             <p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>
             to see full details call <strong>dataset.contributors</strong></p>
-            {create_table_template(self._build_assets_view_(), 'Asset List')}
+            {self.assets._repr_html_()}
             """
 
     def action_ids(self) -> List[UID]:
