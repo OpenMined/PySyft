@@ -49,6 +49,13 @@ $ kubectl create namespace syft
 $ helm install my-domain syft --namespace syft --version 0.8.1-beta.12 --repo https://openmined.github.io/PySyft/helm
 ```
 
+# Azure or GKE Ingress
+
+```
+$ helm install ... --set ingress.ingressClass="azure/application-gateway"
+$ helm install ... --set ingress.ingressClass="gce"
+```
+
 ## Deploy to a Container Engine or Cloud
 
 1. Install our handy 🛵 cli tool which makes deploying a Domain or Gateway server a one-liner:  

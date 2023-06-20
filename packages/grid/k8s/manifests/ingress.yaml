@@ -2,9 +2,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: nginx
   name: grid-stack-ingress
 spec:
+  defaultBackend:
+    service:
+      name: proxy
+      port:
+        number: 80
   rules:
     - http:
         paths:

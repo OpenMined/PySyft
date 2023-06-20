@@ -11,8 +11,8 @@ metadata:
 spec:
   clusterIP: None
   ports:
-    - name: web
-      port: 80
+  - name: web
+    port: 80
   selector:
     app.kubernetes.io/component: mongo
     app.kubernetes.io/managed-by: Helm

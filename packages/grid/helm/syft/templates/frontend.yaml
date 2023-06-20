@@ -11,10 +11,10 @@ metadata:
 spec:
   externalIPs: null
   ports:
-    - name: port-0
-      port: 80
-      protocol: TCP
-      targetPort: 80
+  - name: port-0
+    port: 80
+    protocol: TCP
+    targetPort: 80
   selector:
     app.kubernetes.io/component: frontend
     app.kubernetes.io/name: devspace-app
@@ -50,27 +50,27 @@ spec:
     spec:
       affinity: null
       containers:
-        - args: null
-          command: null
-          env:
-            - name: VERSION
-              value: 0.8.1-beta.12
-            - name: VERSION_HASH
-              value: { { .Values.node.settings.versionHash } }
-            - name: NODE_TYPE
-              value: { { .Values.node.settings.nodeType } }
-            - name: NEXT_PUBLIC_API_URL
-              value: ${NEXT_PUBLIC_API_URL}
-          envFrom: null
-          image: docker.io/openmined/grid-frontend:0.8.1-beta.12
-          lifecycle: null
-          livenessProbe: null
-          name: container-0
-          readinessProbe: null
-          securityContext: null
-          startupProbe: null
-          volumeDevices: null
-          volumeMounts: null
+      - args: null
+        command: null
+        env:
+        - name: VERSION
+          value: 0.8.1-beta.12
+        - name: VERSION_HASH
+          value: {{ .Values.node.settings.versionHash }}
+        - name: NODE_TYPE
+          value: {{ .Values.node.settings.nodeType }}
+        - name: NEXT_PUBLIC_API_URL
+          value: ${NEXT_PUBLIC_API_URL}
+        envFrom: null
+        image: docker.io/openmined/grid-frontend:0.8.1-beta.12
+        lifecycle: null
+        livenessProbe: null
+        name: container-0
+        readinessProbe: null
+        securityContext: null
+        startupProbe: null
+        volumeDevices: null
+        volumeMounts: null
       dnsConfig: null
       ephemeralContainers: null
       hostAliases: null

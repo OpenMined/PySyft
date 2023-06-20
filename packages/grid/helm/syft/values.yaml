@@ -26,3 +26,7 @@ node:
     nodeName: "mynode"
     nodeType: "domain"
     versionHash: "abc"
+
+ingress:
+  ingressClass: "azure/application-gateway"
+  # ingressClass: "gce"
