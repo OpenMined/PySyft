@@ -6,17 +6,17 @@ metadata:
     helm.sh/chart: component-chart-0.8.6
   labels:
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: frontend
-  name: frontend
+    app.kubernetes.io/name: proxy
+  name: proxy
 spec:
   externalIPs: null
   ports:
-    - name: port-0
-      port: 80
-      protocol: TCP
-      targetPort: 80
+  - name: proxy
+    port: 80
+    protocol: TCP
+    targetPort: 80
   selector:
-    app.kubernetes.io/component: frontend
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/name: devspace-app
   type: ClusterIP
 ---
@@ -26,15 +26,15 @@ metadata:
   annotations:
     helm.sh/chart: component-chart-0.8.6
   labels:
-    app.kubernetes.io/component: frontend
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: devspace-app
-  name: frontend
+  name: proxy
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/component: frontend
+      app.kubernetes.io/component: proxy
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/name: devspace-app
   strategy:
@@ -44,33 +44,30 @@ spec:
       annotations:
         helm.sh/chart: component-chart-0.8.6
       labels:
-        app.kubernetes.io/component: frontend
+        app.kubernetes.io/component: proxy
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: devspace-app
     spec:
       affinity: null
       containers:
-        - args: null
-          command: null
-          env:
-            - name: VERSION
-              value: 0.8.1-beta.11
-            - name: VERSION_HASH
-              value: unknown
-            - name: NODE_TYPE
-              value: domain
-            - name: NEXT_PUBLIC_API_URL
-              value: ${NEXT_PUBLIC_API_URL}
-          envFrom: null
-          image: docker.io/openmined/grid-frontend:0.8.1-beta.11
-          lifecycle: null
-          livenessProbe: null
-          name: container-0
-          readinessProbe: null
-          securityContext: null
-          startupProbe: null
-          volumeDevices: null
-          volumeMounts: null
+      - args: null
+        command: null
+        env:
+        - name: SERVICE_NAME
+          value: proxy
+        envFrom: null
+        image: traefik:v2.8.1
+        lifecycle: null
+        livenessProbe: null
+        name: container-0
+        readinessProbe: null
+        securityContext: null
+        startupProbe: null
+        volumeDevices: null
+        volumeMounts:
+        - mountPath: /etc/traefik
+          name: traefik-conf
+          readOnly: false
       dnsConfig: null
       ephemeralContainers: null
       hostAliases: null
@@ -84,4 +81,7 @@ spec:
       terminationGracePeriodSeconds: 5
       tolerations: null
       topologySpreadConstraints: null
-      volumes: null
+      volumes:
+      - configMap:
+          name: traefik-main-config
+        name: traefik-conf
