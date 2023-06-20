@@ -631,33 +631,50 @@ class SyftClient:
         return f"<{client_type} - {self.name} <{uid}>: {self.connection}>"
 
     def _repr_html_(self) -> str:
-        ds_commands = """
-        <li><span class='syft-code-block'>&lt;client_name&gt;.datasets</span> - list datasets</li>
-        <li><span class='syft-code-block'>&lt;client_name&gt;.code</span> - list code</li>
-        <li><span class='syft-code-block'>&lt;client_name&gt;.projects</span> - list projects</li>
-        """
-        do_commands = """
-        <li><span class='syft-code-block'>&lt;client_name&gt;.projects</span> - list projects</li>
-        <li><span class='syft-code-block'>&lt;client_name&gt;.requests</span> - list requests</li>
-        <li><span class='syft-code-block'>&lt;client_name&gt;.users</span> - list users</li>
-        """
-        help_command = """
+        guest_commands = """
+        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.login</span> - list projects</li>
         <li>
-            <span class='syft-code-block'>&lt;client_name&gt;.requests?</span> - display function signature
+            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
         </li>"""
+        ds_commands = """
+        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
+        <li>
+            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
+        </li>"""
+
+        do_commands = """
+        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.requests</span> - list requests</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.users</span> - list users</li>
+        <li>
+            <span class='syft-code-block'>&lt;your_client&gt;.requests.submit?</span> - display function signature
+        </li>"""
+
         # TODO: how to select ds/do commands based on self.__user_role
 
         if (
+            self.user_role.value == ServiceRole.NONE.value
+            or self.user_role.value == ServiceRole.GUEST.value
+        ):
+            commands = guest_commands
+        elif (
+            self.user_role is not None
+            and self.user_role.value == ServiceRole.DATA_SCIENTIST.value
+        ):
+            commands = ds_commands
+        elif (
             self.user_role is not None
             and self.user_role.value >= ServiceRole.DATA_OWNER.value
         ):
             commands = do_commands
-        else:
-            commands = ds_commands
+
         command_list = f"""
         <ul style='padding-left: 1em;'>
             {commands}
-            {help_command}
         </ul>
         """
 
