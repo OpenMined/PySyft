@@ -191,7 +191,7 @@ class UserCode(SyftObject):
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
-    __attr_repr_cols__ = ["status.approved", "service_func_name"]
+    __repr_attrs__ = ["status.approved", "service_func_name"]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -199,6 +199,26 @@ class UserCode(SyftObject):
             attr.fset(self, value)
         else:
             return super().__setattr__(key, value)
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        status = list(self.status.base_dict.values())[0].value
+        if status == UserCodeStatus.SUBMITTED.value:
+            badge_color = "badge-purple"
+        elif status == UserCodeStatus.EXECUTE.value:
+            badge_color = "badge-green"
+        else:
+            badge_color = "red"
+        status_badge = {"value": status, "type": badge_color}
+        return {
+            "Input Policy": self.input_policy_type.__name__,
+            "Output Policy": self.output_policy_type.__name__,
+            "Function name": self.service_func_name,
+            "User verify key": {
+                "value": str(self.user_verify_key),
+                "type": "clipboard",
+            },
+            "Status": status_badge,
+        }
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:
@@ -385,7 +405,7 @@ class SubmitUserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
 
-    __attr_repr_cols__ = ["func_name", "code"]
+    __repr_attrs__ = ["func_name", "code"]
 
     @property
     def kwargs(self) -> List[str]:
