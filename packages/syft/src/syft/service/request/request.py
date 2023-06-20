@@ -174,7 +174,7 @@ class Request(SyftObject):
         updated_at_line = ""
         if self.updated_at is not None:
             updated_at_line += (
-                f"<p><strong>Created by: </strong>{self.requesting_user_verify_key}</p>"
+                f"<p><strong>Created by: </strong>{self.requesting_user_name}</p>"
             )
         str_changes = []
         for change in self.changes:
