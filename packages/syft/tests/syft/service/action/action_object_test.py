@@ -496,6 +496,7 @@ def test_actionobject_syft_get_path(testcase):
 )
 def test_actionobject_syft_send_get(worker, testcase):
     root_domain_client = worker.root_client
+    root_domain_client._fetch_api(root_domain_client.credentials)
     action_store = worker.get_service("actionservice").store
 
     orig_obj = testcase
@@ -503,10 +504,9 @@ def test_actionobject_syft_send_get(worker, testcase):
 
     assert len(action_store.data) == 0
 
-    obj.send(root_domain_client)
+    ptr = obj.send(root_domain_client)
     assert len(action_store.data) == 1
-
-    retrieved = obj.get()
+    retrieved = ptr.get()
 
     assert obj.syft_action_data == retrieved
 
@@ -782,7 +782,7 @@ def test_actionobject_syft_getattr_dict(worker, scenario):
     obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
-    assert obj.get("a") == 1
+    assert obj["a"] == 1
     assert obj.update({"c": 3}) == {"a": 1, "b": 2, "c": 3}
     assert "a" in obj
     assert obj["a"] == 1

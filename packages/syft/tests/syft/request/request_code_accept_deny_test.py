@@ -103,13 +103,15 @@ def test_action_store_change(faker: Faker, worker: Worker):
 
     assert result.is_ok()
 
-    result = action_obj.get()
+    action_obj_ptr = ds_client.api.services.action.get_pointer(action_obj.id)
+
+    result = action_obj_ptr.get()
     assert result == dummy_data
 
     result = permission_change.undo(change_context)
     assert result.is_ok()
 
-    result = action_obj.get()
+    result = action_obj_ptr.get()
     assert result.is_err()
 
 

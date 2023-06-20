@@ -476,7 +476,6 @@ class ActionObject(SyftObject):
     def syft_point_to(self, node_uid: UID) -> "ActionObject":
         """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
-
         return self
 
     def syft_get_property(self, obj: Any, method: str) -> Any:
@@ -719,8 +718,10 @@ class ActionObject(SyftObject):
 
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
-
-        return client.api.services.action.set(self)
+        res = client.api.services.action.set(self)
+        res.syft_node_location = client.id
+        res.syft_client_verify_key = client.verify_key
+        return res
 
     def get_from(self, client: SyftClient) -> Any:
         """Get the object from a Syft Client"""
