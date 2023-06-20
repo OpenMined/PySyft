@@ -52,7 +52,10 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Dataset Added")
+        return SyftSuccess(
+            message=f"Dataset uploaded to {context.node.name}."
+            f"To see datasets on this node use command `client.api.services.dataset.get_all()`"
+        )
 
     @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
