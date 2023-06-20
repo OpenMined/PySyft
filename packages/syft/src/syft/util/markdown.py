@@ -1,5 +1,9 @@
+def as_markdown_code(str, lang="python") -> str:
+    return f"```{lang}\n{str}\n```"
+
+
 def as_markdown_python_code(str) -> str:
-    return f"```python\n{str}\n```"
+    return as_markdown_code(str, lang="python")
 
 
 def markdown_as_class_with_fields(obj, fields, set_defaults=True):
@@ -9,3 +13,12 @@ def markdown_as_class_with_fields(obj, fields, set_defaults=True):
     _repr_str = f"class {obj.__class__.__name__}:\n  "
     _repr_str += "\n  ".join([f"{k}: {v}" for k, v in fields.items()])
     return as_markdown_python_code(_repr_str)
+
+
+class CodeMarkdown:
+    def __init__(self, code, lang="python"):
+        self.code = code
+        self.lang = lang
+
+    def _repr_markdown_(self) -> str:
+        return as_markdown_code(self.code, self.lang)
