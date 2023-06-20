@@ -6,14 +6,14 @@ metadata:
     helm.sh/chart: component-chart-0.8.6
   labels:
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: proxy
-  name: proxy-headless
+    app.kubernetes.io/name: mongo
+  name: mongo-headless
 spec:
   clusterIP: None
   ports:
-    - name: web
-      port: 80
+  - name: web
+    port: 80
   selector:
-    app.kubernetes.io/component: proxy
+    app.kubernetes.io/component: mongo
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: devspace-app
