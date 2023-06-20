@@ -18,6 +18,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .dataset import Asset
 from .dataset import CreateDataset
@@ -137,7 +138,9 @@ class DatasetService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
-        path="dataset.get_assets_by_action_id", name="get_assets_by_action_id"
+        path="dataset.get_assets_by_action_id",
+        name="get_assets_by_action_id",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_assets_by_action_id(
         self, context: AuthedServiceContext, uid: UID
