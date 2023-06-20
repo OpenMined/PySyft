@@ -252,12 +252,19 @@ class CreateAsset(SyftObject):
         role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
-    ) -> None:
-        _role_str = role.value if isinstance(role, Enum) else role
-        contributor = Contributor(
-            name=name, role=_role_str, email=email, phone=phone, note=note
-        )
-        self.contributors.append(contributor)
+    ) -> Union[SyftSuccess, SyftError]:
+        try:
+            _role_str = role.value if isinstance(role, Enum) else role
+            contributor = Contributor(
+                name=name, role=_role_str, email=email, phone=phone, note=note
+            )
+            self.contributors.append(contributor)
+            return SyftSuccess(
+                message=f"Added contributor with name '{name}'. "
+                f"To see the list of contributors, use `dataset.contributors`"
+            )
+        except Exception:
+            return SyftError(message="Cannot add contributor")
 
     def set_description(self, description: str) -> None:
         self.description = description
@@ -489,12 +496,19 @@ class CreateDataset(Dataset):
         role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
-    ) -> None:
-        _role_str = role.value if isinstance(role, Enum) else role
-        contributor = Contributor(
-            name=name, role=_role_str, email=email, phone=phone, note=note
-        )
-        self.contributors.append(contributor)
+    ) -> Union[SyftSuccess, SyftError]:
+        try:
+            _role_str = role.value if isinstance(role, Enum) else role
+            contributor = Contributor(
+                name=name, role=_role_str, email=email, phone=phone, note=note
+            )
+            self.contributors.append(contributor)
+            return SyftSuccess(
+                message=f"Added contributor with name '{name}'. "
+                f"To see the list of contributors, use `dataset.contributors`"
+            )
+        except Exception:
+            return SyftError(message="Cannot add contributor")
 
     def add_asset(
         self, asset: CreateAsset, force_replace=False
@@ -518,8 +532,8 @@ class CreateDataset(Dataset):
         self.asset_list.append(asset)
 
         return SyftSuccess(
-            message=f"Asset added to the dataset '{self.name}'. "
-            f"To see the added assets, use command `dataset.assets`."
+            message=f"Asset '{asset.name}' added to the dataset '{self.name}'. "
+            f"To see the added assets, use command `dataset.assets`"
         )
 
     def remove_asset(self, name: str) -> None:

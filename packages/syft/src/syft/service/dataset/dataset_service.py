@@ -53,7 +53,7 @@ class DatasetService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"Dataset uploaded to {context.node.name}. "
+            message=f"Dataset uploaded to '{context.node.name}'. "
             f"To see the datasets uploaded by a client on this node, use command `client.datasets`"
         )
 

@@ -374,7 +374,7 @@ class UserService(AbstractService):
 
         user = result.ok()
         msg = SyftSuccess(
-            message=f"User {user.name} successfully registered! To see users, run client.users."
+            message=f"User '{user.name}' successfully registered! To see users, run `client.users`"
         )
         return tuple([msg, user.to(UserPrivateKey)])
 
