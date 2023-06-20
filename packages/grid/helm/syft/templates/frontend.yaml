@@ -1,0 +1,87 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    helm.sh/chart: component-chart-0.8.6
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: frontend
+  name: frontend
+spec:
+  externalIPs: null
+  ports:
+    - name: port-0
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/name: devspace-app
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    helm.sh/chart: component-chart-0.8.6
+  labels:
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: devspace-app
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: frontend
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: devspace-app
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        helm.sh/chart: component-chart-0.8.6
+      labels:
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devspace-app
+    spec:
+      affinity: null
+      containers:
+        - args: null
+          command: null
+          env:
+            - name: VERSION
+              value: 0.8.1-beta.12
+            - name: VERSION_HASH
+              value: { { .Values.node.settings.versionHash } }
+            - name: NODE_TYPE
+              value: { { .Values.node.settings.nodeType } }
+            - name: NEXT_PUBLIC_API_URL
+              value: ${NEXT_PUBLIC_API_URL}
+          envFrom: null
+          image: docker.io/openmined/grid-frontend:0.8.1-beta.12
+          lifecycle: null
+          livenessProbe: null
+          name: container-0
+          readinessProbe: null
+          securityContext: null
+          startupProbe: null
+          volumeDevices: null
+          volumeMounts: null
+      dnsConfig: null
+      ephemeralContainers: null
+      hostAliases: null
+      imagePullSecrets: null
+      initContainers: null
+      nodeName: null
+      nodeSelector: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      terminationGracePeriodSeconds: 5
+      tolerations: null
+      topologySpreadConstraints: null
+      volumes: null

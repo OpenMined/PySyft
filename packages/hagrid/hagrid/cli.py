@@ -216,6 +216,11 @@ def clean(location: str) -> None:
     help="Enable Jupyter Notebooks",
 )
 @click.option(
+    "--enable-signup",
+    is_flag=True,
+    help="Enable Signup for Node",
+)
+@click.option(
     "--build",
     is_flag=True,
     help="Disable forcing re-build",
@@ -1266,6 +1271,8 @@ def create_launch_cmd(
 
     parsed_kwargs["compose_src_path"] = kwargs["compose_src_path"]
 
+    parsed_kwargs["enable_signup"] = str_to_bool(cast(str, kwargs["enable_signup"]))
+
     # Override template tag with user input tag
     if (
         parsed_kwargs["tag"] is not None
@@ -2108,6 +2115,9 @@ def create_launch_docker_cmd(
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
+
+    if "enable_signup" in kwargs:
+        envs["ENABLE_SIGNUP"] = kwargs["enable_signup"]
 
     cmd = ""
     args = []

@@ -24,15 +24,19 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SURFACE_DARK_BRIGHT
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.syft_object import itables_css
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import ON_SURFACE_HIGHEST
+from ...util.colors import SURFACE
+from ...util.colors import SURFACE_SURFACE
+from ...util.fonts import ITABLES_CSS
+from ...util.fonts import fonts_css
 from ...util.markdown import as_markdown_python_code
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
@@ -59,7 +63,7 @@ class Contributor(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
-    role: str
+    role: Optional[str]
     email: str
     phone: Optional[str]
     note: Optional[str]
@@ -86,6 +90,15 @@ class Asset(SyftObject):
     __attr_repr_cols__ = ["name", "shape"]
 
     def _repr_html_(self) -> Any:
+        itables_css = f"""
+        .itables table {{
+            margin: 0 auto;
+            float: left;
+            color: {ON_SURFACE_HIGHEST[options.color_theme]};
+        }}
+        .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+        """
+
         # relative
         from ...service.action.action_object import ActionObject
 
@@ -103,7 +116,12 @@ class Asset(SyftObject):
         return (
             f"""
             <style>
-            .syft-asset {{color: {SURFACE_DARK_BRIGHT};}}
+            {fonts_css}
+            .syft-asset {{color: {SURFACE[options.color_theme]};}}
+            .syft-asset h3,
+            .syft-asset p
+              {{font-family: 'Open Sans'}}
+            {ITABLES_CSS}
             </style>
             """
             + '<div class="syft-asset">'
@@ -231,7 +249,7 @@ class CreateAsset(SyftObject):
         self,
         name: str,
         email: str,
-        role: Union[Enum, str],
+        role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
@@ -319,7 +337,7 @@ class Dataset(SyftObject):
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
-    __attr_repr_cols__ = ["name", "url"]
+    __attr_repr_cols__ = ["name", "url", "created_at"]
 
     def _repr_html_(self) -> Any:
         uploaded_by_line = ""
@@ -330,7 +348,12 @@ class Dataset(SyftObject):
         return (
             f"""
             <style>
-            .syft-dataset {{color: {SURFACE_DARK_BRIGHT};}}
+            {fonts_css}
+            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
+            .syft-dataset h3,
+            .syft-dataset p
+              {{font-family: 'Open Sans';}}
+              {ITABLES_CSS}
             </style>
             """
             + "<div class='syft-dataset'>"
@@ -463,7 +486,7 @@ class CreateDataset(Dataset):
         self,
         name: str,
         email: str,
-        role: Union[Enum, str],
+        role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
@@ -473,9 +496,22 @@ class CreateDataset(Dataset):
         )
         self.contributors.append(contributor)
 
-    def add_asset(self, asset: CreateAsset) -> None:
+    def add_asset(self, asset: CreateAsset, force_replace=False) -> None:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
+
+        for i, existing_asset in enumerate(self.asset_list):
+            if existing_asset.name == asset.name:
+                if not force_replace:
+                    raise ValueError(
+                        f"""Asset "{asset.name}" already exists for dataset."""
+                        """ Use add_asset(asset, force_replace=True) to replace."""
+                    )
+                else:
+                    self.asset_list[i] = asset
+                    print(f"Asset {asset.name} has been successfully replaced.")
+                    return
+
         self.asset_list.append(asset)
 
     def remove_asset(self, name: str) -> None:
