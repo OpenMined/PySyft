@@ -3,7 +3,7 @@ entries:
   syft:
     - apiVersion: v2
       appVersion: 0.8.1-beta.12
-      created: "2023-06-20T12:59:37.023452+10:00"
+      created: "2023-06-20T13:31:15.907423+10:00"
       dependencies:
         - name: component-chart
           repository: https://charts.devspace.sh
@@ -16,6 +16,6 @@ entries:
       name: syft
       type: application
       urls:
-        - syft-0.8.1-beta.12.tgz
+        - https://openmined.github.io/PySyft/helm/syft-0.8.1-beta.12.tgz
       version: 0.8.1-beta.12
-generated: "2023-06-20T12:59:37.022798+10:00"
+generated: "2023-06-20T13:31:15.906808+10:00"
