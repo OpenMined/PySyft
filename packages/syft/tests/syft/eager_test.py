@@ -26,7 +26,7 @@ def test_eager_permissions(worker, guest_client):
 
     res_guest = guest_client.api.services.action.get(flat_ptr.id)
     assert not isinstance(res_guest, ActionObject)
-    res_root = flat_ptr.get_from(root_domain_client)
+    res_root = flat_ptr.get()
     assert all(res_root == [3, 3, 3, 3, 3, 3])
 
 
@@ -56,10 +56,7 @@ def test_plan(worker, guest_client):
     )
 
     # root can access result
-    assert (
-        res_ptr.get_from(root_domain_client)
-        == np.array([[3, 3, 3], [3, 3, 3]]).flatten().prod()
-    )
+    assert res_ptr.get() == np.array([[3, 3, 3], [3, 3, 3]]).flatten().prod()
 
     # guest can request result
     res_ptr.request(guest_client)
@@ -67,7 +64,7 @@ def test_plan(worker, guest_client):
     # root approves result
     root_domain_client.api.services.request[0].approve_with_client(root_domain_client)
 
-    assert res_ptr.get_from(guest_client) == 729
+    assert res_ptr.get() == 729
 
 
 def test_plan_with_function_call(worker, guest_client):
@@ -90,7 +87,7 @@ def test_plan_with_function_call(worker, guest_client):
     pointer = guest_client.api.services.action.get_pointer(input_obj.id)
     res_ptr = plan_ptr(x=pointer)
 
-    assert res_ptr.get_from(root_domain_client) == 18
+    assert res_ptr.get() == 18
 
 
 def test_plan_with_object_instantiation(worker, guest_client):
@@ -111,7 +108,7 @@ def test_plan_with_object_instantiation(worker, guest_client):
 
     res_ptr = plan_ptr(x=pointer)
 
-    assert all(res_ptr.get_from(root_domain_client) == np.array([2, 3, 4, 5, 6, 7]))
+    assert all(res_ptr.get() == np.array([2, 3, 4, 5, 6, 7]))
 
 
 def test_setattribute(worker, guest_client):
@@ -137,7 +134,7 @@ def test_setattribute(worker, guest_client):
     assert obj_pointer.id.id in worker.action_store.data
     assert obj_pointer.id != original_id
 
-    res = obj_pointer.get_from(root_domain_client)
+    res = obj_pointer.get()
 
     # check if updated
     assert res.dtype == np.int32
@@ -163,7 +160,7 @@ def test_getattribute(worker, guest_client):
 
     # check result
     assert size_pointer.id.id in worker.action_store.data
-    assert size_pointer.get_from(root_domain_client) == 6
+    assert size_pointer.get() == 6
 
 
 def test_eager_method(worker, guest_client):
@@ -181,9 +178,7 @@ def test_eager_method(worker, guest_client):
 
     assert flat_pointer.id.id in worker.action_store.data
     # check result
-    assert all(
-        flat_pointer.get_from(root_domain_client) == np.array([1, 2, 3, 4, 5, 6])
-    )
+    assert all(flat_pointer.get() == np.array([1, 2, 3, 4, 5, 6]))
 
 
 def test_eager_dunder_method(worker, guest_client):
@@ -201,4 +196,4 @@ def test_eager_dunder_method(worker, guest_client):
 
     assert first_row_pointer.id.id in worker.action_store.data
     # check result
-    assert all(first_row_pointer.get_from(root_domain_client) == np.array([1, 2, 3]))
+    assert all(first_row_pointer.get() == np.array([1, 2, 3]))

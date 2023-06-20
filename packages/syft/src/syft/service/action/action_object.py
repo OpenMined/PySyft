@@ -729,6 +729,22 @@ class ActionObject(SyftObject):
         else:
             return res.syft_action_data
 
+    def get(self) -> Any:
+        """Get the object from a Syft Client"""
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        res = api.services.action.get(self.id)
+
+        if not isinstance(res, ActionObject):
+            return Err(res)
+        else:
+            return res.syft_action_data
+
     def as_empty(self):
         id = self.id
         # TODO: fix

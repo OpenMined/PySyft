@@ -81,7 +81,7 @@ def test_action_store_change(faker: Faker, worker: Worker):
     data = ActionObject.from_obj(dummy_data)
     action_obj = root_client.api.services.action.set(data)
 
-    assert action_obj.get_from(root_client) == dummy_data
+    assert action_obj.get() == dummy_data
 
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
@@ -103,13 +103,13 @@ def test_action_store_change(faker: Faker, worker: Worker):
 
     assert result.is_ok()
 
-    result = action_obj.get_from(ds_client)
+    result = action_obj.get()
     assert result == dummy_data
 
     result = permission_change.undo(change_context)
     assert result.is_ok()
 
-    result = action_obj.get_from(ds_client)
+    result = action_obj.get()
     assert result.is_err()
 
 
@@ -187,7 +187,7 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     request = root_client.requests.get_all()[0]
     assert request.status == RequestStatus.APPROVED
     result = ds_client.code.simple_function(data=action_obj)
-    assert result.get_from(ds_client) == 10
+    assert result.get() == 10
 
     result = request.deny(reason="Function output needs differential privacy !!")
     assert isinstance(result, SyftSuccess)

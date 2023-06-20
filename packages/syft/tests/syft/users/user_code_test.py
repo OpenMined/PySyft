@@ -25,5 +25,5 @@ def test_user_code(worker, guest_client: User) -> None:
     result = guest_client.api.services.code.test_func()
     assert isinstance(result, ActionObject)
 
-    real_result = result.get_from(guest_client)
+    real_result = result.get()
     assert isinstance(real_result, int)

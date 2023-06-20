@@ -506,7 +506,7 @@ def test_actionobject_syft_send_get(worker, testcase):
     obj.send(root_domain_client)
     assert len(action_store.data) == 1
 
-    retrieved = obj.get_from(root_domain_client)
+    retrieved = obj.get()
 
     assert obj.syft_action_data == retrieved
 
