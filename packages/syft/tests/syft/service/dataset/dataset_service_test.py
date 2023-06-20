@@ -197,7 +197,7 @@ def test_guest_client_get_empty_mock_as_private_pointer(
     guest_datasets = guest_domain_client.api.services.dataset.get_all()
     guest_dataset = guest_datasets[0]
 
-    mock = guest_dataset.assets[0].mock
+    mock = guest_dataset.assets[0].pointer
 
     assert mock.is_real
     assert mock.is_pointer

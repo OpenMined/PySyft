@@ -1,0 +1,28 @@
+# Default values for syft.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+secrets:
+  syft:
+    stackApiKey: "changeme"
+    defaultRootEmail: "info@openmined.org"
+    defaultRootPassword: "changethis"
+  db:
+    mongo:
+      mongoPassword: "example"
+      mongoInitdbRootPassword: "example"
+      mongoUsername: "root"
+      mongoInitdbRootUsername: "root"
+
+db:
+  mongo:
+    settings:
+      mongoPort: "'27017'"
+      mongoHost: "mongo"
+
+node:
+  settings:
+    hostname: "mynode"
+    nodeName: "mynode"
+    nodeType: "domain"
+    versionHash: "abc"

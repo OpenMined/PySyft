@@ -45,6 +45,7 @@ def test_api_cache_invalidation(worker):
 
 def test_api_cache_invalidation_login(root_verify_key, worker):
     guest_client = worker.guest_client
+    worker.root_client.settings.allow_guest_signup(enable=True)
     assert guest_client.register(name="q", email="a@b.org", password="aaa")
     guest_client.login(email="a@b.org", password="aaa")
     user_id = worker.document_store.partitions["User"].all(root_verify_key).value[-1].id
