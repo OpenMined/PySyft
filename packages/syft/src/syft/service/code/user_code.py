@@ -38,6 +38,7 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util.markdown import CodeMarkdown
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..metadata.node_metadata import EnclaveMetadata
@@ -373,8 +374,8 @@ class UserCode(SyftObject):
         return wrapper
 
     @property
-    def code(self) -> str:
-        return self.raw_code
+    def code(self) -> CodeMarkdown:
+        return CodeMarkdown(self.raw_code)
 
     def show_code_cell(self):
         warning_message = """# WARNING: \n# Before you submit
