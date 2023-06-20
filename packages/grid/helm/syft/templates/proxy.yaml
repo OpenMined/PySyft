@@ -76,11 +76,11 @@ spec:
           command: null
           env:
             - name: HOSTNAME
-              value: default_node_name
+              value: { { .Values.node.settings.hostname } }
             - name: STACK_API_KEY
-              value: changeme
+              value: { { .Values.secrets.syft.stackApiKey } }
           envFrom: null
-          image: docker.io/openmined/grid-vpn-tailscale:0.8.1-beta.11
+          image: docker.io/openmined/grid-vpn-tailscale:0.8.1-beta.12
           lifecycle: null
           livenessProbe: null
           name: container-1
