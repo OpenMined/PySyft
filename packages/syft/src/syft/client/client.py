@@ -632,19 +632,18 @@ class SyftClient:
 
     def _repr_html_(self) -> str:
         ds_commands = """
-        <li><span class='syft-code-block'>client.datasets</span> - list datasets</li>
-        <li><span class='syft-code-block'>client.code</span> - list code</li>
-        <li><span class='syft-code-block'>client.projects</span> - list projects</li>
+        <li><span class='syft-code-block'>&lt;client_name&gt;.datasets</span> - list datasets</li>
+        <li><span class='syft-code-block'>&lt;client_name&gt;.code</span> - list code</li>
+        <li><span class='syft-code-block'>&lt;client_name&gt;.projects</span> - list projects</li>
         """
         do_commands = """
-        <li><span class='syft-code-block'>node.projects</span> - list projects</li>
-        <li><span class='syft-code-block'>node.requests</span> - list requests</li>
-        <li><span class='syft-code-block'>node.users</span> - list users</li>
+        <li><span class='syft-code-block'>&lt;client_name&gt;.projects</span> - list projects</li>
+        <li><span class='syft-code-block'>&lt;client_name&gt;.requests</span> - list requests</li>
+        <li><span class='syft-code-block'>&lt;client_name&gt;.users</span> - list users</li>
         """
         help_command = """
         <li>
-            <span class='syft-code-block'>help(client.requests)</span>\
-         or <span class='syft-code-block'>client.requests?</span> - display function signature
+            <span class='syft-code-block'>&lt;client_name&gt;.requests?</span> - display function signature
         </li>"""
         # TODO: how to select ds/do commands based on self.__user_role
 
