@@ -71,6 +71,19 @@ class Contributor(SyftObject):
 
     __repr_attrs__ = ["name", "role", "email"]
 
+    def _repr_html_(self) -> Any:
+        return f"""
+            <style>
+            .syft-contributor {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='syft-contributor' style="line-height:25%">
+                <h3>Contributor</h3>
+                <p><strong>Name: </strong>{self.name}</p>
+                <p><strong>Role: </strong>{self.role}</p>
+                <p><strong>Email: </strong>{self.email}</p>
+            </div>
+            """
+
 
 @serializable()
 class Asset(SyftObject):

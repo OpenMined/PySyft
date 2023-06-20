@@ -136,6 +136,10 @@ class ActionStoreChange(Change):
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
+    def __repr_syft_nested__(self):
+        return f"Apply <b>{self.apply_permission_type}</b> to \
+            <i>{self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}</i>"
+
 
 @serializable()
 class Request(SyftObject):
@@ -169,17 +173,20 @@ class Request(SyftObject):
         # add changes
         updated_at_line = ""
         if self.updated_at is not None:
-            updated_at_line += f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            updated_at_line += (
+                f"<p><strong>Created by: </strong>{self.requesting_user_name}</p>"
+            )
         str_changes = []
         for change in self.changes:
-            str_change = ""
-            if isinstance(change, UserCodeStatusChange):
-                str_change += f"User <b>{self.requesting_user_name}</b> requests to change\
-                    <b>{change.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
-            else:
-                str_change += f"{type(change)}"
-            str_changes.append(str_change)
-            str_changes = str(str_changes)
+            if change.id in self.current_change_state:
+                str_change = (
+                    change.__repr_syft_nested__()
+                    if hasattr(change, "__repr_syft_nested__")
+                    else type(change)
+                )
+                str_change = f"{str_change}. "
+                str_changes.append(str_change)
+        str_changes = "\n".join(str_changes)
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -517,6 +524,9 @@ class ObjectMutation(Change):
             setattr(obj, self.attr_name, value)
         return obj
 
+    def __repr_syft_nested__(self):
+        return f"Mutate <b>{self.attr_name}</b> to <b>{self.value}</b>"
+
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
@@ -616,6 +626,9 @@ class EnumMutation(ObjectMutation):
 
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
+
+    def __repr_syft_nested__(self):
+        return f"Mutate <b>{self.enum_type}</b> to <b>{self.value}</b>"
 
     @property
     def link(self) -> Optional[SyftObject]:
