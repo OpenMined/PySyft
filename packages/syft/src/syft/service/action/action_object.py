@@ -407,6 +407,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_twin_type",
     "_repr_debug_",
     "as_empty",
+    "get",
 ]
 
 
@@ -475,7 +476,6 @@ class ActionObject(SyftObject):
     def syft_point_to(self, node_uid: UID) -> "ActionObject":
         """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
-
         return self
 
     def syft_get_property(self, obj: Any, method: str) -> Any:
@@ -718,12 +718,30 @@ class ActionObject(SyftObject):
 
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
-
-        return client.api.services.action.set(self)
+        res = client.api.services.action.set(self)
+        res.syft_node_location = client.id
+        res.syft_client_verify_key = client.verify_key
+        return res
 
     def get_from(self, client: SyftClient) -> Any:
         """Get the object from a Syft Client"""
         res = client.api.services.action.get(self.id)
+        if not isinstance(res, ActionObject):
+            return Err(res)
+        else:
+            return res.syft_action_data
+
+    def get(self) -> Any:
+        """Get the object from a Syft Client"""
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        res = api.services.action.get(self.id)
+
         if not isinstance(res, ActionObject):
             return Err(res)
         else:
