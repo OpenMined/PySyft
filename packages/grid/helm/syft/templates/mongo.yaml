@@ -11,10 +11,10 @@ metadata:
 spec:
   externalIPs: null
   ports:
-    - name: port-0
-      port: 27017
-      protocol: TCP
-      targetPort: 27017
+  - name: port-0
+    port: 27017
+    protocol: TCP
+    targetPort: 27017
   selector:
     app.kubernetes.io/component: mongo
     app.kubernetes.io/name: devspace-app
@@ -50,27 +50,27 @@ spec:
     spec:
       affinity: null
       containers:
-        - args: null
-          command: null
-          env:
-            - name: MONGO_INITDB_ROOT_USERNAME
-              value: { { .Values.secrets.db.mongo.mongoInitdbRootUsername } }
-            - name: MONGO_INITDB_ROOT_PASSWORD
-              value: { { .Values.secrets.db.mongo.mongoInitdbRootPassword } }
-          envFrom: null
-          image: mongo:latest
-          lifecycle: null
-          livenessProbe: null
-          name: container-0
-          readinessProbe: null
-          securityContext: null
-          startupProbe: null
-          volumeDevices: null
-          volumeMounts:
-            - mountPath: /data/db
-              name: mongo-data
-              readOnly: false
-              subPath: ""
+      - args: null
+        command: null
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: {{ .Values.secrets.db.mongo.mongoInitdbRootUsername }}
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: {{ .Values.secrets.db.mongo.mongoInitdbRootPassword }}
+        envFrom: null
+        image: mongo:latest
+        lifecycle: null
+        livenessProbe: null
+        name: container-0
+        readinessProbe: null
+        securityContext: null
+        startupProbe: null
+        volumeDevices: null
+        volumeMounts:
+        - mountPath: /data/db
+          name: mongo-data
+          readOnly: false
+          subPath: ''
       dnsConfig: null
       ephemeralContainers: null
       hostAliases: null
@@ -86,17 +86,17 @@ spec:
       topologySpreadConstraints: null
       volumes: null
   volumeClaimTemplates:
-    - metadata:
-        annotations:
-          helm.sh/chart: component-chart-0.8.6
-        labels:
-          app.kubernetes.io/component: mongo
-          app.kubernetes.io/managed-by: Helm
-          app.kubernetes.io/name: devspace-app
-        name: mongo-data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 5Gi
+  - metadata:
+      annotations:
+        helm.sh/chart: component-chart-0.8.6
+      labels:
+        app.kubernetes.io/component: mongo
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devspace-app
+      name: mongo-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi
