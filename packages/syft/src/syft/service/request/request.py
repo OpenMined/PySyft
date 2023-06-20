@@ -137,8 +137,8 @@ class ActionStoreChange(Change):
         return self._run(context=context, apply=False)
 
     def __repr_syft_nested__(self):
-        return f"<b>{self.__canonical_name__}</b>: Apply {self.apply_permission_type} to \
-            {self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}"
+        return f"Apply <b>{self.apply_permission_type}</b> to \
+            <i>{self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}</i>"
 
 
 @serializable()
@@ -178,13 +178,14 @@ class Request(SyftObject):
             )
         str_changes = []
         for change in self.changes:
-            str_change = ""
-            if isinstance(change, UserCodeStatusChange):
-                str_change += f"User <b>{self.requesting_user_name}</b> requests to change\
-                    <b>{change.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>,"
-            else:
-                str_change += f"{change._repr_html_()}, "
-            str_changes.append(str_change)
+            if change.id in self.current_change_state:
+                str_change = (
+                    change.__repr_syft_nested__()
+                    if hasattr(change, "__repr_syft_nested__")
+                    else type(change)
+                )
+                str_change = f"{str_change}. "
+                str_changes.append(str_change)
         str_changes = "\n".join(str_changes)
         return f"""
             <style>
@@ -524,7 +525,7 @@ class ObjectMutation(Change):
         return obj
 
     def __repr_syft_nested__(self):
-        return f"<b>{self.__canonical_name__}</b>: Mutate `{self.attr_name}` to `{self.value}`"
+        return f"Mutate <b>{self.attr_name}</b> to <b>{self.value}</b>"
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -627,9 +628,7 @@ class EnumMutation(ObjectMutation):
         return self._run(context=context, apply=False)
 
     def __repr_syft_nested__(self):
-        return (
-            f"<b>{self.__canonical_name__}</b>: Mutate {self.enum_type} to {self.value}"
-        )
+        return f"Mutate <b>{self.enum_type}</b> to <b>{self.value}</b>"
 
     @property
     def link(self) -> Optional[SyftObject]:
