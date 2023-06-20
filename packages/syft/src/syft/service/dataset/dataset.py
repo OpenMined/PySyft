@@ -24,16 +24,21 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SURFACE_DARK_BRIGHT
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.syft_object import itables_css
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import ON_SURFACE_HIGHEST
+from ...util.colors import SURFACE
+from ...util.colors import SURFACE_SURFACE
+from ...util.fonts import ITABLES_CSS
+from ...util.fonts import fonts_css
 from ...util.markdown import as_markdown_python_code
+from ...util.notebook_ui.notebook_addons import FOLDER_ICON
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
@@ -59,12 +64,12 @@ class Contributor(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
-    role: str
+    role: Optional[str]
     email: str
     phone: Optional[str]
     note: Optional[str]
 
-    __attr_repr_cols__ = ["name", "role", "email"]
+    __repr_attrs__ = ["name", "role", "email"]
 
 
 @serializable()
@@ -83,15 +88,18 @@ class Asset(SyftObject):
     shape: Optional[Tuple]
     created_at: DateTime = DateTime.now()
 
-    __attr_repr_cols__ = ["name", "shape"]
-
-    # @property
-    # def pointer(self) -> ActionObjectPointer:
-    #     api = APIRegistry.api_for(node_uid=self.node_uid)
-    #     obj_ptr = api.services.action.get_pointer(uid=self.action_id)
-    #     return obj_ptr
+    __repr_attrs__ = ["name", "shape"]
 
     def _repr_html_(self) -> Any:
+        itables_css = f"""
+        .itables table {{
+            margin: 0 auto;
+            float: left;
+            color: {ON_SURFACE_HIGHEST[options.color_theme]};
+        }}
+        .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
+        """
+
         # relative
         from ...service.action.action_object import ActionObject
 
@@ -109,7 +117,12 @@ class Asset(SyftObject):
         return (
             f"""
             <style>
-            .syft-asset {{color: {SURFACE_DARK_BRIGHT};}}
+            {fonts_css}
+            .syft-asset {{color: {SURFACE[options.color_theme]};}}
+            .syft-asset h3,
+            .syft-asset p
+              {{font-family: 'Open Sans'}}
+            {ITABLES_CSS}
             </style>
             """
             + '<div class="syft-asset">'
@@ -122,7 +135,7 @@ class Asset(SyftObject):
             + "<p><strong>Data:</strong></p>"
             + data_table_line
             + "<p><strong>Mock Data:</strong></p>"
-            + itables.to_html_datatable(df=self.mock_data, css=itables_css)
+            + itables.to_html_datatable(df=self.mock, css=itables_css)
             + "</div>"
         )
 
@@ -149,17 +162,6 @@ class Asset(SyftObject):
         return api.services.action.get_pointer(self.action_id)
 
     @property
-    def mock_data(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        return api.services.action.get_pointer(self.action_id).syft_action_data
-
-    @property
     def mock(self) -> Any:
         # relative
         from ...client.api import APIRegistry
@@ -168,7 +170,7 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.action.get_pointer(self.action_id)
+        return api.services.action.get_pointer(self.action_id).syft_action_data
 
     @property
     def data(self) -> Any:
@@ -218,7 +220,7 @@ class CreateAsset(SyftObject):
     mock_is_real: bool = False
     created_at: Optional[DateTime]
 
-    __attr_repr_cols__ = ["name"]
+    __repr_attrs__ = ["name"]
 
     class Config:
         validate_assignment = True
@@ -248,7 +250,7 @@ class CreateAsset(SyftObject):
         self,
         name: str,
         email: str,
-        role: Union[Enum, str],
+        role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
@@ -336,30 +338,47 @@ class Dataset(SyftObject):
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
-    __attr_repr_cols__ = ["name", "url"]
+    __repr_attrs__ = ["name", "url", "created_at"]
+
+    @property
+    def icon(self):
+        return FOLDER_ICON
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "Name": self.name,
+            "Assets": len(self.asset_list),
+            "Size": f"{self.mb_size} (MB)",
+            "Url": self.url,
+            "created at": str(self.created_at),
+        }
 
     def _repr_html_(self) -> Any:
-        uploaded_by_line = ""
         if len(self.contributors) > 0:
             uploaded_by_line = (
-                f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+                "<p class='paragraph-sm'><strong>"
+                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.contributors[0].name}</p>"
             )
-        return (
-            f"""
+        return f"""
             <style>
-            .syft-dataset {{color: {SURFACE_DARK_BRIGHT};}}
+            {fonts_css}
+            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
+            .syft-dataset h3,
+            .syft-dataset p
+              {{font-family: 'Open Sans';}}
+              {ITABLES_CSS}
             </style>
+            <div class='syft-dataset'>
+            <h3>{self.name}</h3>
+            <p>{self.description}</p>
+            {uploaded_by_line}
+            <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
+            <p class='paragraph-sm'><strong><span class='pr-8'>URL:
+            </span></strong><a href='{self.url}'>{self.url}</a></p>
+            <p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>
+            to see full details call <strong>dataset.contributors</strong></p>
+            {self.assets._repr_html_()}
             """
-            + "<div class='syft-dataset'>"
-            + f"<h3>{self.name}</h3>"
-            + f"<p>{self.description}</p>"
-            + uploaded_by_line
-            + f"<p><strong>Created on: </strong>{self.created_at}</p>"
-            + f'<p><strong>URL: </strong><a href="{self.url}">{self.url}</a></p>'
-            + "<p><strong>Contributors: </strong> to see full details call dataset.contributors</p>"
-            + self.asset_list._repr_html_()
-            + "</div>"
-        )
 
     def action_ids(self) -> List[UID]:
         data = []
@@ -451,6 +470,8 @@ class CreateDataset(Dataset):
     __version__ = SYFT_OBJECT_VERSION_1
     asset_list: List[CreateAsset] = []
 
+    __repr_attrs__ = ["name", "url"]
+
     id: Optional[UID] = None
     created_at: Optional[DateTime]
 
@@ -480,7 +501,7 @@ class CreateDataset(Dataset):
         self,
         name: str,
         email: str,
-        role: Union[Enum, str],
+        role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
@@ -490,9 +511,22 @@ class CreateDataset(Dataset):
         )
         self.contributors.append(contributor)
 
-    def add_asset(self, asset: CreateAsset) -> None:
+    def add_asset(self, asset: CreateAsset, force_replace=False) -> None:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
+
+        for i, existing_asset in enumerate(self.asset_list):
+            if existing_asset.name == asset.name:
+                if not force_replace:
+                    raise ValueError(
+                        f"""Asset "{asset.name}" already exists for dataset."""
+                        """ Use add_asset(asset, force_replace=True) to replace."""
+                    )
+                else:
+                    self.asset_list[i] = asset
+                    print(f"Asset {asset.name} has been successfully replaced.")
+                    return
+
         self.asset_list.append(asset)
 
     def remove_asset(self, name: str) -> None:
