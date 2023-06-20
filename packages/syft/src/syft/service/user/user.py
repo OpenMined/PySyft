@@ -1,5 +1,7 @@
 # stdlib
+from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -56,7 +58,7 @@ class User(SyftObject):
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email"]
 
 
 def default_role(role: ServiceRole) -> Callable:
@@ -130,7 +132,7 @@ class UserCreate(UserUpdate):
     website: Optional[str]
     created_by: Optional[SyftSigningKey]
 
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email"]
 
 
 @serializable()
@@ -155,7 +157,16 @@ class UserView(SyftObject):
     institution: Optional[str]
     website: Optional[str]
 
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email", "institute", "website", "role"]
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "Name": self.name,
+            "Email": self.email,
+            "Institute": self.institution,
+            "Website": self.website,
+            "Role": self.role.name.capitalize(),
+        }
 
 
 @transform(UserUpdate, User)
