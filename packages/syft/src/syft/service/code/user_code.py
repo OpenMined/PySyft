@@ -7,6 +7,7 @@ from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
+import itertools
 import sys
 from typing import Any
 from typing import Callable
@@ -308,12 +309,13 @@ class UserCode(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
-        node_view = NodeView(
-            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        inputs = (
+            uids
+            for node_view, uids in self.input_policy_init_kwargs.items()
+            if node_view.node_name == api.node_name
         )
-        inputs = self.input_policy_init_kwargs[node_view]
         all_assets = []
-        for uid in inputs.values():
+        for uid in itertools.chain.from_iterable(x.values() for x in inputs):
             if isinstance(uid, UID):
                 assets = api.services.dataset.get_assets_by_action_id(uid)
                 if not isinstance(assets, list):
