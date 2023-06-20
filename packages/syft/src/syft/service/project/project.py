@@ -67,7 +67,7 @@ class Identity(SyftObject):
     id: UID
     verify_key: SyftVerifyKey
 
-    __attr_repr_cols__ = ["id", "verify_key"]
+    __repr_attrs__ = ["id", "verify_key"]
 
     def __repr__(self) -> str:
         verify_key_str = f"{self.verify_key}"
@@ -315,7 +315,7 @@ class ProjectRequest(ProjectEventAddObject):
     def request(self):
         return self.linked_request.resolve
 
-    __attr_repr_cols__ = [
+    __repr_attrs__ = [
         "request.status",
         "request.changes[-1].link.service_func_name",
     ]
@@ -677,7 +677,7 @@ class Project(SyftObject):
     __canonical_name__ = "Project"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_repr_cols__ = ["name", "description", "created_by", "events"]
+    __repr_attrs__ = ["name", "description", "created_by"]
     __attr_unique__ = ["name"]
 
     # TODO: re-add users, members, leader_node_peer
@@ -713,6 +713,13 @@ class Project(SyftObject):
     project_permissions: Set[str]
     # store: Dict[UID, Dict[UID, SyftObject]] = {}
     # permissions: Dict[UID, Dict[UID, Set[str]]] = {}
+
+    def _coll_repr_(self):
+        return {
+            "Name": self.name,
+            "description": self.description,
+            "created by": self.created_by,
+        }
 
     def _repr_html_(self) -> Any:
         return (
@@ -1146,7 +1153,7 @@ class ProjectSubmit(SyftObject):
     ]
 
     # stash rules
-    __attr_repr_cols__ = ["name", "description", "created_by"]
+    __repr_attrs__ = ["name", "description", "created_by"]
     __attr_unique__ = ["name"]
 
     id: UID
