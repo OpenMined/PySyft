@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: grid-stack-ingress
   annotations:
-    kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: ""
 spec:
   defaultBackend:
     service:
