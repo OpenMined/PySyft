@@ -1,4 +1,4 @@
-__version__ = "0.8.1-beta.14"
+__version__ = "0.8.1-beta.15"
 
 # stdlib
 import pathlib
@@ -11,6 +11,7 @@ from typing import Callable
 from . import gevent_patch  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
+from .client.client import register  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
 from .client.registry import DomainRegistry  # noqa: F401
 from .client.registry import NetworkRegistry  # noqa: F401

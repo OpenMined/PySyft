@@ -763,6 +763,26 @@ def connect(
 
 
 @instrument
+def register(
+    url: Union[str, GridURL],
+    port: int,
+    name: str,
+    email: str,
+    password: str,
+    institution: Optional[str] = None,
+    website: Optional[str] = None,
+):
+    guest_client = connect(url=url, port=port)
+    return guest_client.register(
+        name=name,
+        email=email,
+        password=password,
+        institution=institution,
+        website=website,
+    )
+
+
+@instrument
 def login(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
