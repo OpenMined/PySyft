@@ -583,21 +583,16 @@ def list_dict_repr_html(self) -> str:
                             print(e)
                             value = None
                         cols[field].append(str(value))
-                df = pd.DataFrame(cols)
 
-                # try:
-                #     index = df.columns.get_loc("created_at")
-                #     order = [[index, "desc"]]
-                # except:  # noqa: E722
-                #     order = []
+            df = pd.DataFrame(cols)
 
-                if "created_at" in df.columns:
-                    df.sort_values(by="created_at", ascending=False, inplace=True)
+            if "created_at" in df.columns:
+                df.sort_values(by="created_at", ascending=False, inplace=True)
 
-                # if custom_repr:
-                table_icon = None
-                if hasattr(values[0], "icon"):
-                    table_icon = values[0].icon
+            # if custom_repr:
+            table_icon = None
+            if hasattr(values[0], "icon"):
+                table_icon = values[0].icon
             # this is a list of dicts
             return create_table_template(
                 df.to_dict("records"),
@@ -605,31 +600,6 @@ def list_dict_repr_html(self) -> str:
                 table_icon=table_icon,
             )
 
-            # html_header = f"""
-            #     <style>
-            #     .syft-collection-header {{color: {SURFACE[options.color_theme]};}}
-            #     </style>
-            #     <div class='syft-collection-header'>
-            #         <h3>{cls_name} {self.__class__.__name__.capitalize()}</h3>
-            #     </div>
-            #     <br>
-            #     """
-
-            # itables_css = f"""
-            # .itables table {{
-            #     margin: 0 auto;
-            #     float: left;
-            #     color: {ON_SURFACE_HIGHEST[options.color_theme]};
-            # }}
-            # .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
-            # """
-
-            # html_datatable = itables.to_html_datatable(
-            #     df=df, css=itables_css, order=order
-            # )  # kwargs=kwargs)
-
-            # return html_header + html_datatable
-            # return collection_type + df_styled._repr_html_()
     except Exception as e:
         print(f"error representing {type(self)} of objects. {e}")
         pass
