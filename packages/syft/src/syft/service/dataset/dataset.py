@@ -274,11 +274,10 @@ class CreateAsset(SyftObject):
             )
             self.contributors.append(contributor)
             return SyftSuccess(
-                message=f"Added contributor with name '{name}'. "
-                f"To see the list of contributors, use `dataset.contributors`"
+                message=f"Contributor '{name}' added to '{self.name}' Asset."
             )
-        except Exception:
-            return SyftError(message="Cannot add contributor")
+        except Exception as e:
+            return SyftError(message=f"Failed to add contributor. Error: {e}")
 
     def set_description(self, description: str) -> None:
         self.description = description
@@ -532,11 +531,10 @@ class CreateDataset(Dataset):
             )
             self.contributors.append(contributor)
             return SyftSuccess(
-                message=f"Added contributor with name '{name}'. "
-                f"To see the list of contributors, use `dataset.contributors`"
+                message=f"Contributor '{name}' added to '{self.name}' Dataset."
             )
-        except Exception:
-            return SyftError(message="Cannot add contributor")
+        except Exception as e:
+            return SyftError(message=f"Failed to add contributor. Error: {e}")
 
     def add_asset(
         self, asset: CreateAsset, force_replace=False
@@ -548,7 +546,7 @@ class CreateDataset(Dataset):
             if existing_asset.name == asset.name:
                 if not force_replace:
                     return SyftError(
-                        message=f"""Asset "{asset.name}" already exists for dataset."""
+                        message=f"""Asset "{asset.name}" already exists in '{self.name}' Dataset."""
                         """ Use add_asset(asset, force_replace=True) to replace."""
                     )
                 else:
@@ -560,8 +558,7 @@ class CreateDataset(Dataset):
         self.asset_list.append(asset)
 
         return SyftSuccess(
-            message=f"Asset '{asset.name}' added to the dataset '{self.name}'. "
-            f"To see the added assets, use command `dataset.assets`"
+            message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
         )
 
     def remove_asset(self, name: str) -> None:
@@ -572,8 +569,11 @@ class CreateDataset(Dataset):
                 break
 
         if asset_to_remove is None:
-            print(f"No asset exists with name: {name}")
+            return SyftError(message=f"No asset exists with name: {name}")
         self.asset_list.remove(asset_to_remove)
+        return SyftSuccess(
+            message=f"Asset '{self.name}' removed from '{self.name}' Dataset."
+        )
 
     def check(self) -> Result[SyftSuccess, List[SyftError]]:
         errors = []

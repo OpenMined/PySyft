@@ -373,9 +373,11 @@ class UserService(AbstractService):
             return SyftError(message=str(result.err()))
 
         user = result.ok()
-        msg = SyftSuccess(
-            message=f"User '{user.name}' successfully registered! To see users, run `client.users`"
-        )
+
+        success_message = f"User '{user.name}' successfully registered!"
+        if request_user_role in DATA_OWNER_ROLE_LEVEL:
+            success_message += " To see users, run `[your_client].users`"
+        msg = SyftSuccess(message=success_message)
         return tuple([msg, user.to(UserPrivateKey)])
 
     def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:

@@ -670,8 +670,8 @@ def add_code_request_to_project(
             return result
 
     return SyftSuccess(
-        message=f"Code request '{code.func_name}' added successfully. "
-        f"To see code requests by a client, run `client.code`"
+        message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project."
+        f"To see code requests by a client, run `[your_client].code`"
     )
 
 
@@ -736,7 +736,7 @@ class Project(SyftObject):
             + f"<p>{self.description}</p>"
             + f"<p><strong>Created by: </strong>{self.created_by}</p>"
             + self.requests._repr_html_()
-            + "<p>To see a list of projects, use command `client.projects`</p>"
+            + "<p>To see a list of projects, use command `&lt;your_client&gt;.projects`</p>"
             + "</div>"
         )
 

@@ -462,8 +462,9 @@ def syft_function(
 
     def decorator(f):
         print(
-            f"Successfully making the syft function '{f.__name__}' for submit. "
-            f"To submit a code request, please create a project then use command `project.create_code_request`"
+            f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
         )
         return SubmitUserCode(
             code=inspect.getsource(f),

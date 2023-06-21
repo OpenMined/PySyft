@@ -55,7 +55,7 @@ class DatasetService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(
             message=f"Dataset uploaded to '{context.node.name}'. "
-            f"To see the datasets uploaded by a client on this node, use command `client.datasets`"
+            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
         )
 
     @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
