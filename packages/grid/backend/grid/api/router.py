@@ -12,4 +12,4 @@ from fastapi import APIRouter
 from grid.api.new.new import router as new_router
 
 api_router = APIRouter()
-api_router.include_router(new_router, prefix="/new", tags=["new"])
+api_router.include_router(new_router)

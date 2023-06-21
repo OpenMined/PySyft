@@ -30,3 +30,12 @@ class DateTime(SyftObject):
 
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)
+
+    def __eq__(self, other: Self) -> bool:
+        return self.utc_timestamp == other.utc_timestamp
+
+    def __lt__(self, other: Self) -> bool:
+        return self.utc_timestamp < other.utc_timestamp
+
+    def __gt__(self, other: Self) -> bool:
+        return self.utc_timestamp > other.utc_timestamp

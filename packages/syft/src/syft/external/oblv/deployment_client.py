@@ -73,7 +73,7 @@ class OblvMetadata(EnclaveMetadata, BaseModel):
 class DeploymentClient:
     deployment_id: str
     key_name: str
-    domain_clients: List[SyftClient] = []  # List of domain client objects
+    domain_clients: List[SyftClient]  # List of domain client objects
     oblv_client: OblvClient = None
     __conn_string: str
     __logs: Any
@@ -82,7 +82,7 @@ class DeploymentClient:
 
     def __init__(
         self,
-        domain_clients: List[Any],
+        domain_clients: List[SyftClient],
         deployment_id: str,
         oblv_client: Optional[OblvClient] = None,
         key_name: Optional[str] = None,
@@ -308,7 +308,7 @@ class DeploymentClient:
         code.enclave_metadata = enclave_metadata
 
         for domain_client in self.domain_clients:
-            domain_client.api.services.code.request_code_execution(code=code)
+            domain_client.code.request_code_execution(code=code)
 
         res = self.api.services.code.request_code_execution(code=code)
 

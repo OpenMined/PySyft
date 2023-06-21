@@ -7,6 +7,7 @@ from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
+import itertools
 import sys
 from typing import Any
 from typing import Callable
@@ -30,23 +31,29 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util.markdown import CodeMarkdown
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..metadata.node_metadata import EnclaveMetadata
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
+from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
 from ..policy.policy import Policy
+from ..policy.policy import SingleExecutionExactOutput
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
 from ..policy.policy import VariableInput
 from ..policy.policy import init_policy
+from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from .code_parse import GlobalsVisitor
@@ -94,7 +101,7 @@ class UserCodeStatus(Enum):
 # To make nested dicts hashable for mongodb
 # as status is in attr_searchable
 @serializable(attrs=["base_dict"])
-class UserCodeStatusContext:
+class UserCodeStatusContext(SyftHashableObject):
     base_dict: Dict = {}
 
     def __init__(self, base_dict: Dict):
@@ -103,11 +110,11 @@ class UserCodeStatusContext:
     def __repr__(self):
         return str(self.base_dict)
 
-    def __hash__(self) -> int:
-        hash_sum = 0
-        for k, v in self.base_dict.items():
-            hash_sum = hash(k) + hash(v)
-        return hash_sum
+    def __repr_syft_nested__(self):
+        string = ""
+        for node_view, status in self.base_dict.items():
+            string += f"{node_view.node_name}: {status}<br>"
+        return string
 
     @property
     def approved(self) -> bool:
@@ -150,7 +157,7 @@ class UserCodeStatusContext:
         base_dict = self.base_dict
         if node_view in base_dict:
             base_dict[node_view] = value
-            setattr(self, "base_dict", base_dict)
+            self.base_dict = base_dict
             return Ok(self)
         else:
             return Err(
@@ -186,7 +193,7 @@ class UserCode(SyftObject):
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
-    __attr_repr_cols__ = ["status", "service_func_name"]
+    __repr_attrs__ = ["status.approved", "service_func_name"]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -194,6 +201,26 @@ class UserCode(SyftObject):
             attr.fset(self, value)
         else:
             return super().__setattr__(key, value)
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        status = list(self.status.base_dict.values())[0].value
+        if status == UserCodeStatus.SUBMITTED.value:
+            badge_color = "badge-purple"
+        elif status == UserCodeStatus.EXECUTE.value:
+            badge_color = "badge-green"
+        else:
+            badge_color = "red"
+        status_badge = {"value": status, "type": badge_color}
+        return {
+            "Input Policy": self.input_policy_type.__name__,
+            "Output Policy": self.output_policy_type.__name__,
+            "Function name": self.service_func_name,
+            "User verify key": {
+                "value": str(self.user_verify_key),
+                "type": "clipboard",
+            },
+            "Status": status_badge,
+        }
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:
@@ -300,16 +327,17 @@ class UserCode(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
-        node_view = NodeView(
-            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        inputs = (
+            uids
+            for node_view, uids in self.input_policy_init_kwargs.items()
+            if node_view.node_name == api.node_name
         )
-        inputs = self.input_policy_init_kwargs[node_view]
         all_assets = []
-        for k, uid in inputs.items():
+        for uid in itertools.chain.from_iterable(x.values() for x in inputs):
             if isinstance(uid, UID):
                 assets = api.services.dataset.get_assets_by_action_id(uid)
                 if not isinstance(assets, list):
@@ -347,8 +375,18 @@ class UserCode(SyftObject):
         return wrapper
 
     @property
-    def code(self) -> str:
-        return self.raw_code
+    def code(self) -> CodeMarkdown:
+        return CodeMarkdown(self.raw_code)
+
+    def show_code_cell(self):
+        warning_message = """# WARNING: \n# Before you submit
+# change the name of the function \n# for no duplicates\n\n"""
+
+        # third party
+        from IPython import get_ipython
+
+        ip = get_ipython()
+        ip.set_next_input(warning_message + self.raw_code)
 
 
 @serializable(without=["local_function"])
@@ -368,6 +406,8 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+
+    __repr_attrs__ = ["func_name", "code"]
 
     @property
     def kwargs(self) -> List[str]:
@@ -391,20 +431,30 @@ class SubmitUserCode(SyftObject):
 def debox_asset(arg: Any) -> Any:
     deboxed_arg = arg
     if isinstance(deboxed_arg, Asset):
-        deboxed_arg = arg.mock
+        deboxed_arg = arg.pointer
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg
 
 
+def syft_function_single_use(*args: Any, **kwargs: Any):
+    return syft_function(
+        input_policy=ExactMatch(*args, **kwargs),
+        output_policy=SingleExecutionExactOutput(),
+    )
+
+
 def syft_function(
     input_policy: Union[InputPolicy, UID],
-    output_policy: Union[OutputPolicy, UID],
+    output_policy: Optional[Union[OutputPolicy, UID]] = None,
 ) -> SubmitUserCode:
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
     else:
         input_policy_type = type(input_policy)
+
+    if output_policy is None:
+        output_policy = SingleExecutionExactOutput()
 
     if isinstance(output_policy, CustomOutputPolicy):
         output_policy_type = SubmitUserPolicy.from_obj(output_policy)
@@ -412,6 +462,11 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
+        print(
+            f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
+        )
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -481,7 +536,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
     # TODO remove this tech debt hack
     input_kwargs = context.output["input_policy_init_kwargs"]
     node_view_workaround = False
-    for k, v in input_kwargs.items():
+    for k in input_kwargs.keys():
         if isinstance(k, NodeView):
             node_view_workaround = True
 
@@ -573,7 +628,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.verify_key
         )
-        if node_view in input_keys:
+        if node_view in input_keys or len(input_keys) == 0:
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
@@ -599,6 +654,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
+        add_node_uid_for_key("node_uid"),
     ]
 
 
@@ -650,3 +706,16 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+
+def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
+    """Reload the policy code in memory for user code that is approved."""
+    try:
+        for user_code in user_code_items:
+            if user_code.status.approved:
+                if isinstance(user_code.input_policy_type, UserPolicy):
+                    load_policy_code(user_code.input_policy_type)
+                if isinstance(user_code.output_policy_type, UserPolicy):
+                    load_policy_code(user_code.output_policy_type)
+    except Exception as e:
+        raise Exception(f"Failed to load code: {user_code}: {e}")

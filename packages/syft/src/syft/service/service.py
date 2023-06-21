@@ -33,6 +33,7 @@ from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
+from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
 from .context import AuthedServiceContext
 from .context import ChangeContext
@@ -259,11 +260,13 @@ def reconstruct_args_kwargs(
         autosplat_objs[autosplat_key] = autosplat_type(**init_kwargs)
 
     final_kwargs = {}
-    for param_key, _ in signature.parameters.items():
+    for param_key, param in signature.parameters.items():
         if param_key in kwargs:
             final_kwargs[param_key] = kwargs[param_key]
         elif param_key in autosplat_objs:
             final_kwargs[param_key] = autosplat_objs[param_key]
+        elif not isinstance(param.default, type(Parameter.empty)):
+            final_kwargs[param_key] = param.default
         else:
             raise Exception(f"Missing {param_key} not in kwargs.")
     return (args, final_kwargs)
@@ -329,7 +332,16 @@ def service_method(
                     args=args,
                     kwargs=kwargs,
                 )
-            return func(self, *args, **kwargs)
+            result = func(self, *args, **kwargs)
+            context = kwargs.get("context", None)
+            context = args[0] if context is None else context
+            attrs_to_attach = {
+                "syft_node_location": context.node.id,
+                "syft_client_verify_key": context.credentials,
+            }
+            return attach_attribute_to_syft_object(
+                result=result, attr_dict=attrs_to_attach
+            )
 
         if autosplat is not None and len(autosplat) > 0:
             signature = expand_signature(signature=input_signature, autosplat=autosplat)
