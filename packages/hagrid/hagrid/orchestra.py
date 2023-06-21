@@ -129,6 +129,23 @@ class NodeHandle:
             return client.login(email=email, password=password)
         return None
 
+    def register(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        institution: Optional[str] = None,
+        website: Optional[str] = None,
+    ) -> Any:
+        client = self.client
+        return client.register(
+            name=name,
+            email=email,
+            password=password,
+            institution=institution,
+            website=website,
+        )
+
     def land(self) -> None:
         if self.node_type == NodeType.PYTHON:
             if self.shutdown:
@@ -165,6 +182,8 @@ class Orchestra:
         tag: Optional[str] = "latest",
         verbose: bool = False,
     ) -> Optional[NodeHandle]:
+        if dev_mode is True:
+            os.environ["DEV_MODE"] = "True"
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
         default_port = 8080

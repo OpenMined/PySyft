@@ -85,6 +85,7 @@ from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
 from ..util.util import random_name
+from ..util.util import str_to_bool
 from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
@@ -134,6 +135,12 @@ def get_default_root_email() -> Optional[str]:
 def get_default_root_password() -> Optional[str]:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
+
+def get_dev_mode() -> bool:
+    return str_to_bool(get_env("DEV_MODE", "False"))
+
+
+dev_mode = get_dev_mode()
 
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
@@ -375,9 +382,10 @@ class Node(AbstractNode):
             and document_store_config.client_config.filename is None
         ):
             document_store_config.client_config.filename = f"{self.id}.sqlite"
-            print(
-                f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
-            )
+            if dev_mode:
+                print(
+                    f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
+                )
         document_store = document_store_config.store_type
         self.document_store_config = document_store_config
 
