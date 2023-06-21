@@ -2,201 +2,6 @@
 [1;36minfo [0mUsing kube context '[1;37mk3d-build[0m'
 
 ---
-# Source: component-chart/templates/deployment.yaml
-# Create headless service for StatefulSet
-apiVersion: v1
-kind: Service
-metadata:
-  name: "backend-headless"
-  labels:
-    "app.kubernetes.io/name": "backend"
-    "app.kubernetes.io/managed-by": "Helm"
-  annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
-spec:
-  ports:
-  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
-  - port: 80
-    name: web
-  clusterIP: None
-  selector:
-    "app.kubernetes.io/name": "devspace-app"
-    "app.kubernetes.io/component": "backend"
-    "app.kubernetes.io/managed-by": "Helm"
----
-# Source: component-chart/templates/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: "backend"
-  labels:
-    "app.kubernetes.io/name": "backend"
-    "app.kubernetes.io/managed-by": "Helm"
-  annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
-spec:
-  externalIPs:
-  ports:
-    - name: "port-0"
-      port: 80
-      targetPort: 80
-      protocol: "TCP"
-  selector:
-    "app.kubernetes.io/name": "devspace-app"
-    "app.kubernetes.io/component": "backend"
-  type: "ClusterIP"
----
-# Source: component-chart/templates/deployment.yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: "backend"
-  labels:
-    "app.kubernetes.io/name": "devspace-app"
-    "app.kubernetes.io/component": "backend"
-    "app.kubernetes.io/managed-by": "Helm"
-  annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
-spec:
-  replicas: 1
-  podManagementPolicy: "OrderedReady"
-  serviceName: "backend-headless"
-  selector:
-    matchLabels:
-      "app.kubernetes.io/name": "devspace-app"
-      "app.kubernetes.io/component": "backend"
-      "app.kubernetes.io/managed-by": "Helm"
-  template:
-    metadata:
-      labels:
-        "app.kubernetes.io/name": "devspace-app"
-        "app.kubernetes.io/component": "backend"
-        "app.kubernetes.io/managed-by": "Helm"
-      annotations:
-        "helm.sh/chart": "component-chart-0.8.6"
-    spec:
-      imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
-      terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
-      containers:
-        - image: "docker.io/openmined/grid-backend:0.8.1-beta.12"
-          name: "container-0"
-          command:
-          args:
-          env:
-            - name: MONGO_PORT
-              value: "27017"
-            - name: MONGO_HOST
-              value: mongo
-            - name: MONGO_USERNAME
-              value: root
-            - name: MONGO_PASSWORD
-              value: example
-            - name: SERVICE_NAME
-              value: backend
-            - name: RELEASE
-              value: production
-            - name: VERSION
-              value: 0.8.1-beta.12
-            - name: VERSION_HASH
-              value: unknown
-            - name: NODE_TYPE
-              value: domain
-            - name: NODE_NAME
-              value: default_node_name
-            - name: STACK_API_KEY
-              value: changeme
-            - name: PORT
-              value: "80"
-            - name: IGNORE_TLS_ERRORS
-              value: "False"
-            - name: HTTP_PORT
-              value: "80"
-            - name: HTTPS_PORT
-              value: "443"
-            - name: CONTAINER_HOST
-              value: k8s
-            - name: TRACE
-              value: "False"
-            - name: JAEGER_HOST
-              value: localhost
-            - name: JAEGER_PORT
-              value: "14268"
-            - name: DEV_MODE
-              value: "False"
-            - name: DOMAIN_CONNECTION_PORT
-              value: "3030"
-            - name: ENABLE_OBLV
-              value: "false"
-            - name: DEFAULT_ROOT_EMAIL
-              value: info@openmined.org
-            - name: DEFAULT_ROOT_PASSWORD
-              value: changethis
-            - name: BACKEND_STORAGE_PATH
-              value: /storage
-          envFrom:
-            null
-          securityContext:
-            null
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
-          volumeMounts:
-            - mountPath: "/storage"
-              name: "credentials-data"
-              subPath: "credentials-data"
-              readOnly: false
-      initContainers:
-      volumes:
-  volumeClaimTemplates:
-  - metadata:
-      name: "credentials-data"
-      labels:
-        "app.kubernetes.io/name": "devspace-app"
-        "app.kubernetes.io/component": "backend"
-        "app.kubernetes.io/managed-by": "Helm"
-      annotations:
-        "helm.sh/chart": "component-chart-0.8.6"
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: "100Mi"
----
-# Source: component-chart/templates/ingress.yaml
-#
-
-
----
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -273,13 +78,13 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-frontend:0.8.1-beta.12"
+        - image: "docker.io/openmined/grid-frontend:0.8.1-beta.14"
           name: "container-0"
           command:
           args:
           env:
             - name: VERSION
-              value: 0.8.1-beta.12
+              value: 0.8.1-beta.14
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE
@@ -315,7 +120,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: ""
   name: grid-stack-ingress
   namespace: default
 spec:
@@ -672,3 +477,198 @@ metadata:
   namespace: default
 
 ---
+
+---
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: "backend-headless"
+  labels:
+    "app.kubernetes.io/name": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  ports:
+  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+---
+# Source: component-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "backend"
+  labels:
+    "app.kubernetes.io/name": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  externalIPs:
+  ports:
+    - name: "port-0"
+      port: 80
+      targetPort: 80
+      protocol: "TCP"
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "backend"
+  type: "ClusterIP"
+---
+# Source: component-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "backend"
+  labels:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  replicas: 1
+  podManagementPolicy: "OrderedReady"
+  serviceName: "backend-headless"
+  selector:
+    matchLabels:
+      "app.kubernetes.io/name": "devspace-app"
+      "app.kubernetes.io/component": "backend"
+      "app.kubernetes.io/managed-by": "Helm"
+  template:
+    metadata:
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "backend"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.8.6"
+    spec:
+      imagePullSecrets:
+      nodeSelector:
+        null
+      nodeName:
+        null
+      affinity:
+        null
+      tolerations:
+        null
+      dnsConfig:
+        null
+      hostAliases:
+        null
+      overhead:
+        null
+      readinessGates:
+        null
+      securityContext:
+        null
+      topologySpreadConstraints:
+        null
+      terminationGracePeriodSeconds: 5
+      ephemeralContainers:
+        null
+      containers:
+        - image: "docker.io/openmined/grid-backend:0.8.1-beta.14"
+          name: "container-0"
+          command:
+          args:
+          env:
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MONGO_HOST
+              value: mongo
+            - name: MONGO_USERNAME
+              value: root
+            - name: MONGO_PASSWORD
+              value: example
+            - name: SERVICE_NAME
+              value: backend
+            - name: RELEASE
+              value: production
+            - name: VERSION
+              value: 0.8.1-beta.14
+            - name: VERSION_HASH
+              value: unknown
+            - name: NODE_TYPE
+              value: domain
+            - name: NODE_NAME
+              value: default_node_name
+            - name: STACK_API_KEY
+              value: changeme
+            - name: PORT
+              value: "80"
+            - name: IGNORE_TLS_ERRORS
+              value: "False"
+            - name: HTTP_PORT
+              value: "80"
+            - name: HTTPS_PORT
+              value: "443"
+            - name: CONTAINER_HOST
+              value: k8s
+            - name: TRACE
+              value: "False"
+            - name: JAEGER_HOST
+              value: localhost
+            - name: JAEGER_PORT
+              value: "14268"
+            - name: DEV_MODE
+              value: "False"
+            - name: DOMAIN_CONNECTION_PORT
+              value: "3030"
+            - name: ENABLE_OBLV
+              value: "false"
+            - name: DEFAULT_ROOT_EMAIL
+              value: info@openmined.org
+            - name: DEFAULT_ROOT_PASSWORD
+              value: changethis
+            - name: BACKEND_STORAGE_PATH
+              value: /storage
+          envFrom:
+            null
+          securityContext:
+            null
+          lifecycle:
+            null
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          startupProbe:
+            null
+          volumeDevices:
+            null
+          volumeMounts:
+            - mountPath: "/storage"
+              name: "credentials-data"
+              subPath: "credentials-data"
+              readOnly: false
+      initContainers:
+      volumes:
+  volumeClaimTemplates:
+  - metadata:
+      name: "credentials-data"
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "backend"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.8.6"
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: "100Mi"
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
