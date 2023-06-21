@@ -168,7 +168,6 @@ jobs:
         with:
           timeout_seconds: 1800
           max_attempts: 3
-          retry_on: timeout
           command: tox -e syft.test.notebook
 
   pr-tests-syft-notebook-container:
