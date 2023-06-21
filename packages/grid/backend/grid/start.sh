@@ -16,6 +16,7 @@ then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
     # install dev dependencies
+    apt update && apt install gcc python3-dev -y
     pip install -e "/app/syft[dev]"
 fi
 
