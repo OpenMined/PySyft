@@ -1148,7 +1148,7 @@ class ActionObject(SyftObject):
         context = PreHookContext(
             obj=self,
             op_name=op_name,
-            action_type=ActionType.INPLACE_METHOD,  # TODO: Make sure this is correct!
+            action_type=ActionType.INPLACE_METHOD,
             syft_node_location=self.syft_node_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )

@@ -81,8 +81,8 @@ def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
         log_level = "critical"
         if dev_mode:
             log_level = "info"
-            logging.getLogger("uvicorn").setLevel(logging.DEBUG)  # TODO: REMOVE
-            logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
+            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
         config = uvicorn.Config(
             app, host=host, port=port, log_level=log_level, reload=dev_mode
         )
