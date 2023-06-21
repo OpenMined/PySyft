@@ -116,7 +116,7 @@ class Asset(SyftObject):
         # relative
         from ...service.action.action_object import ActionObject
 
-        uploaded_by_line = ""
+        uploaded_by_line = "n/a"
         if len(self.contributors) > 0:
             uploaded_by_line = (
                 f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
@@ -373,6 +373,7 @@ class Dataset(SyftObject):
         }
 
     def _repr_html_(self) -> Any:
+        uploaded_by_line = "n/a"
         if len(self.contributors) > 0:
             uploaded_by_line = (
                 "<p class='paragraph-sm'><strong>"
