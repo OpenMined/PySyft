@@ -430,7 +430,11 @@ class SubmitUserCode(SyftObject):
 def debox_asset(arg: Any) -> Any:
     deboxed_arg = arg
     if isinstance(deboxed_arg, Asset):
-        deboxed_arg = arg.pointer
+        asset = deboxed_arg
+        if asset.has_data_permission():
+            return asset.data
+        else:
+            return asset.mock
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg

@@ -185,6 +185,15 @@ class Asset(SyftObject):
         )
         return api.services.action.get_pointer(self.action_id).syft_action_data
 
+    def has_data_permission(self):
+        data = self.data
+        # TODO, fix this better
+        return not (
+            isinstance(data, str)
+            and data.startswith("Permission")
+            and data.endswith("denied")
+        )
+
     @property
     def data(self) -> Any:
         # relative
