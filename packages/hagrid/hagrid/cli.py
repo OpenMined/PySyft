@@ -48,6 +48,8 @@ from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
 from .cache import arg_cache
 from .deps import DEPENDENCIES
+from .deps import LATEST_BETA_SYFT
+from .deps import LATEST_STABLE_SYFT
 from .deps import allowed_hosts
 from .deps import check_docker_service_status
 from .deps import check_docker_version
@@ -411,6 +413,11 @@ def clean(location: str) -> None:
     type=str,
     help="Azure Source Branch",
 )
+@click.option(
+    "--render",
+    is_flag=True,
+    help="Render Docker Files",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -446,6 +453,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     dry_run = bool(kwargs["cmd"])
 
     health_checks = not bool(kwargs["no_health_checks"])
+    render_only = bool(kwargs["render"])
 
     try:
         tail = bool(kwargs["tail"])
@@ -453,6 +461,12 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         silent = not verbose
         if tail:
             silent = False
+
+        if render_only:
+            print(
+                "Docker Compose Files Rendered: {}".format(kwargs["compose_src_path"])
+            )
+            return
 
         execute_commands(
             cmds,
@@ -1277,16 +1291,25 @@ def create_launch_cmd(
     if (
         parsed_kwargs["tag"] is not None
         and parsed_kwargs["template"] is None
-        and parsed_kwargs["tag"] not in ["local", "latest", "0.7.0"]
+        and parsed_kwargs["tag"] not in ["local", "0.7.0"]
     ):
-        template = parsed_kwargs["tag"]
-        # 🟡 TODO: Revert to use tags once, we have tag branches with beta
-        # versions also.
-        if "b" in template:
-            template = "dev"
-        # if template == "beta":
-        #     template = "dev"
-        parsed_kwargs["template"] = template
+        # TODO: we need to redo this so that pypi and docker mappings are in a single
+        # file inside dev
+        if parsed_kwargs["tag"] == "latest":
+            parsed_kwargs["template"] = LATEST_STABLE_SYFT
+            parsed_kwargs["tag"] = LATEST_STABLE_SYFT
+        elif parsed_kwargs["tag"] == "beta":
+            parsed_kwargs["template"] = "dev"
+            parsed_kwargs["tag"] = LATEST_BETA_SYFT
+        else:
+            template = parsed_kwargs["tag"]
+            # 🟡 TODO: Revert to use tags once, we have tag branches with beta
+            # versions also.
+            if "b" in template:
+                template = "dev"
+            # if template == "beta":
+            #     template = "dev"
+            parsed_kwargs["template"] = template
 
     if parsed_kwargs["template"] and host is not None:
         # Setup the files from the manifest_template.yml
