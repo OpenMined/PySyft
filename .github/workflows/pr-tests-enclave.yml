@@ -15,10 +15,6 @@ on:
         description: "Run Tests Manually"
         required: false
 
-concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.run_number) || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   pr-tests-enclave-oblv:
     strategy:
