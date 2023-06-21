@@ -466,6 +466,11 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
+        print(
+            f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
+        )
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,

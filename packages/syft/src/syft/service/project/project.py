@@ -642,7 +642,7 @@ def add_code_request_to_project(
     code: SubmitUserCode,
     client: SyftClient,
     reason: Optional[str] = None,
-):
+) -> Union[SyftError, SyftSuccess]:
     if not isinstance(code, SubmitUserCode):
         return SyftError(
             message=f"Currently we are  only support creating requests for SubmitUserCode: {type(code)}"
@@ -669,7 +669,10 @@ def add_code_request_to_project(
         if isinstance(result, SyftError):
             return result
 
-    return SyftSuccess(message="Request added successfully")
+    return SyftSuccess(
+        message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project."
+        f"To see code requests by a client, run `[your_client].code`"
+    )
 
 
 @serializable()
@@ -733,6 +736,7 @@ class Project(SyftObject):
             + f"<p>{self.description}</p>"
             + f"<p><strong>Created by: </strong>{self.created_by}</p>"
             + self.requests._repr_html_()
+            + "<p>To see a list of projects, use command `&lt;your_client&gt;.projects`</p>"
             + "</div>"
         )
 
@@ -1398,7 +1402,7 @@ def create_project_hash(project: Project) -> Tuple[bytes, str]:
 def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
     # Creating a custom hash for the project
     # as the recursive hash is yet to be revamped
-    # for primitives python types
+    # for primitives python types.
 
     # hashing is calculated based on the following attributes
     # attrs = ["id", "project_id", "seq no",

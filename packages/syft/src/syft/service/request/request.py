@@ -211,7 +211,13 @@ class Request(SyftObject):
 
         status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
         return {
-            "changes": " ".join([x.__repr_syft_nested__() for x in self.changes]),
+            "changes": " ".join(
+                [
+                    x.__repr_syft_nested__()
+                    for x in self.changes
+                    if x in self.current_change_state
+                ]
+            ),
             "request time": str(self.request_time),
             "status": status_badge,
             "requesting user": {
