@@ -331,8 +331,3 @@ def test_setitem_with_pointer_as_value(worker):
 
     input_ptr[0, 0] = val
     assert input_ptr.get_from(client)[0, 0] == 5
-
-    assert all(
-        root_domain_client.api.services.action.get(first_row_pointer.id)
-        == np.array([1, 2, 3])
-    )

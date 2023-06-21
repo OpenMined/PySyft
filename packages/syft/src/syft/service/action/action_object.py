@@ -826,13 +826,6 @@ class ActionObject(SyftObject):
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
 
-    def as_empty(self):
-        id = self.id
-        # TODO: fix
-        if isinstance(id, LineageID):
-            id = id.id
-        return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id)
-
     def delete_data(self):
         empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
         self.syft_action_data = empty

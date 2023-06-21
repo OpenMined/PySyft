@@ -21,7 +21,6 @@ import syft as sy
 # relative
 from ..util.util import get_fully_qualified_name
 from ..util.util import index_syft_by_module_name
-from ..util.util import is_function
 from .capnp import get_capnp_schema
 
 TYPE_BANK = {}
