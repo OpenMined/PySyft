@@ -21,7 +21,6 @@ from ...types.transforms import drop
 from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
-from ...util.util import recursive_hash
 
 
 def check_version(
@@ -74,6 +73,7 @@ class NodeMetadata(SyftObject):
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "Text"
+    signup_enabled: bool
 
     def check_version(self, client_version: str) -> None:
         return check_version(
@@ -81,20 +81,6 @@ class NodeMetadata(SyftObject):
             server_version=self.syft_version,
             server_name=self.name,
         )
-
-    def __hash__(self) -> int:
-        hashes = 0
-        hashes += recursive_hash(self.id)
-        hashes += recursive_hash(self.name)
-        hashes += recursive_hash(self.verify_key)
-        hashes += recursive_hash(self.highest_object_version)
-        hashes += recursive_hash(self.lowest_object_version)
-        hashes += recursive_hash(self.node_type)
-        hashes += recursive_hash(self.deployed_on)
-        hashes += recursive_hash(self.organization)
-        hashes += recursive_hash(self.on_board)
-        hashes += recursive_hash(self.description)
-        return hashes
 
 
 @serializable()
@@ -111,6 +97,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "My cool domain"
+    signup_enabled: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -123,7 +110,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
 @transform(NodeMetadata, NodeMetadataJSON)
 def metadata_to_json() -> List[Callable]:
     return [
-        drop("__canonical_name__"),
+        drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
         convert_types(["id", "verify_key"], str),
     ]

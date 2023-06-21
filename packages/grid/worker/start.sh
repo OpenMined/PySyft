@@ -4,13 +4,12 @@ set -e
 echo "Running start.sh with RELEASE=${RELEASE}"
 
 RELOAD=""
-# RUST_BACKTRACE=0
 if [[ ${DEV_MODE} == "True" ]];
 then
     echo "DEV_MODE Enabled"
-    # RELOAD="--dev"
-    # RUST_BACKTRACE="full"
     RELOAD="--reload"
+    # install dev dependencies
+    pip install -e "/app/syft[dev]"
 fi
 
 export RUST_BACKTRACE=$RUST_BACKTRACE
@@ -25,9 +24,6 @@ echo "NODE_UID=$NODE_UID"
 
 export NODE_UID=$NODE_UID
 export NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY
-
-# add back robyn
-# python worker.py $RELOAD
 
 APP_MODULE=worker:app
 LOG_LEVEL=${LOG_LEVEL:-info}

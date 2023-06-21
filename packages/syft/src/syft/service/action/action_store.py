@@ -24,6 +24,7 @@ from ...types.uid import UID
 from ..response import SyftSuccess
 from .action_object import ActionObject
 from .action_object import TwinMode
+from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
 from .action_permissions import ActionObjectOWNER
 from .action_permissions import ActionObjectPermission
@@ -67,8 +68,6 @@ class KeyValueActionStore(ActionStore):
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
-        # TODO 🟣 Temporarily added skip permission argument for enclave
-        # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         if has_permission or self.has_permission(read_permission):
@@ -94,8 +93,9 @@ class KeyValueActionStore(ActionStore):
             if uid in self.data:
                 obj = self.data[uid]
                 if isinstance(obj, TwinObject):
-                    obj = obj.mock
-                    obj.syft_twin_type = TwinMode.MOCK
+                    obj = (
+                        obj.mock if not is_action_data_empty(obj.mock) else obj.private
+                    )
                     # we patch the real id on it so we can keep using the twin
                     obj.id = uid
                 else:
