@@ -563,7 +563,6 @@ custom_code = """
 
                                         // Iterate over the actual obj
                                         for (const attr in item) {
-                                            console.log(attr);
                                             let div = document.createElement("div");
                                             if (typeof item[attr] === 'object'
                                                 && item[attr] !== null
@@ -571,7 +570,6 @@ custom_code = """
                                                 if (item[attr].type.includes('badge')){
                                                     let badge_div = document.createElement("div");
                                                     badge_div.classList.add('badge',item[attr].type)
-                                                    console.log(String(item[attr].value));
                                                     badge_div.innerText = String(item[attr].value).toUpperCase();
                                                     div.appendChild(badge_div);
                                                     div.classList.add('grid-row','grid-std-cells');
