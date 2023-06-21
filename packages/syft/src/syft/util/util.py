@@ -671,8 +671,8 @@ def autocache(
         data_path = get_root_data_path()
 
         if os.environ.get(
-            "SYFT_USE_TEST_DATA", True
-        ):  # TODO: Change back to False after smaller files feature is done
+            "SYFT_USE_TEST_DATA", False
+        ): 
             filename = url.rsplit("/", 1)[-1]
 
             if filename in FILE_TO_TESTFILE:

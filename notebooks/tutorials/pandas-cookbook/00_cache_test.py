@@ -19,6 +19,9 @@ def test_cache_download() -> None:
         "popularity-contest": 2898,
     }
 
+    if os.environ.get("SYFT_USE_TEST_DATA", False):
+         pandas_csvs = {x: 99 for x in pandas_csvs}
+         
     for cache_file, size in pandas_csvs.items():
         f = autocache(f"{PANDAS_DATA}/{cache_file}")
         assert os.path.exists(f)
