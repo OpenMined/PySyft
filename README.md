@@ -8,6 +8,13 @@
 
 Perform data science on `data` that remains in `someone else's` server
 
+# Latest Tutorial
+
+How to audit an AI Model owned by someone else <br />
+<a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/dev/notebooks/tutorials/model-auditing/colab/01-user-log.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a> <a href=""><img src="https://img.shields.io/badge/read-blog-yellow?logo=readme" /></a>
+
+<a href=""><img src="docs/img/audit_post.png" width="200px" /></a>
+
 # Quickstart
 
 ✅ `Linux` ✅ `macOS` ✅ `Windows`\* ✅ `Docker` ✅ `Kubernetes`
