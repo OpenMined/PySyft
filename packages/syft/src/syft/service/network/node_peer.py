@@ -35,7 +35,7 @@ class NodePeer(SyftObject):
 
     __attr_searchable__ = ["name"]
     __attr_unique__ = ["verify_key"]
-    __attr_repr_cols__ = ["name"]
+    __repr_attrs__ = ["name"]
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []

@@ -177,7 +177,7 @@ class UserCodeService(AbstractService):
                         message=f"{type(code_item)} Your code is waiting for approval: {status}"
                     )
                 return SyftError(
-                    message=f"{type(code_item)} Your code cannot be run: {status}"
+                    message=f"{type(code_item)} Your code cannot be run: {status.for_context(context)}"
                 )
 
             output_policy = code_item.output_policy

@@ -2,7 +2,7 @@ name: CD - Syft
 
 on:
   schedule:
-    - cron: "00 12 * * */2" # At 12:00 on every 2nd day-of-week.
+    - cron: "00 12 * * */1" # At 12:00 UTC on every day
   workflow_dispatch:
     inputs:
       none:
@@ -56,7 +56,7 @@ jobs:
           author_email: madhava@openmined.org
           message: "bump version"
           add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml']"
-          pull_strategy: NO-PULL
+          pull: NO-PULL
 
       - name: Build and publish
         env:
