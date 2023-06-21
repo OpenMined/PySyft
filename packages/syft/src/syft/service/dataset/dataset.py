@@ -184,7 +184,7 @@ class Asset(SyftObject):
         return api.services.action.get_pointer(self.action_id).syft_action_data
 
     def has_data_permission(self):
-        return self.has_permission(self.data)
+        return self.data is not None
 
     def has_permission(self, data_result):
         # TODO: implement in a better way

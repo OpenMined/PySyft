@@ -39,6 +39,7 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.markdown import CodeMarkdown
+from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..metadata.node_metadata import EnclaveMetadata
@@ -373,6 +374,16 @@ class UserCode(SyftObject):
                 print(f"Failed to run unsafe_function. {e}")
 
         return wrapper
+
+    def _repr_markdown_(self):
+        md = f"""class UserCode
+    id: str = {self.id}
+    status.approved: str = {self.status.approved}
+    service_func_name: str = {self.service_func_name}
+    code:
+
+{self.raw_code}"""
+        return as_markdown_code(md)
 
     @property
     def code(self) -> CodeMarkdown:
