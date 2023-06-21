@@ -50,10 +50,12 @@ from .logger import traceback_and_raise
 
 DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
 PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
-FILE_TO_TESTFILE = {'bikes.csv': 'bikes_small.csv',
-    '311-service-requests.csv': '311-service-requests_small.csv',
-    'popularity-contest': 'popularity-contest_small',
-    'weather_2012.csv': 'weather_2012_small.csv'}
+FILE_TO_TESTFILE = {
+    "bikes.csv": "bikes_small.csv",
+    "311-service-requests.csv": "311-service-requests_small.csv",
+    "popularity-contest": "popularity-contest_small",
+    "weather_2012.csv": "weather_2012_small.csv",
+}
 
 
 def full_name_with_qualname(klass: type) -> str:
@@ -668,8 +670,10 @@ def autocache(
     try:
         data_path = get_root_data_path()
 
-        if os.environ.get("SYFT_USE_TEST_DATA", True): # TODO: Change back to False after smaller files feature is done
-            filename = url.rsplit('/',1)[-1]
+        if os.environ.get(
+            "SYFT_USE_TEST_DATA", True
+        ):  # TODO: Change back to False after smaller files feature is done
+            filename = url.rsplit("/", 1)[-1]
 
             if filename in FILE_TO_TESTFILE:
                 url = url.replace(filename, FILE_TO_TESTFILE[filename])

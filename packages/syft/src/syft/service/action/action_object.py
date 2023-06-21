@@ -818,7 +818,7 @@ class ActionObject(SyftObject):
     def delete_data(self):
         empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
         self.syft_action_data = empty
-    
+
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
         if HOOK_ALWAYS not in self._syft_pre_hooks__:
@@ -1148,7 +1148,7 @@ class ActionObject(SyftObject):
         context = PreHookContext(
             obj=self,
             op_name=op_name,
-            action_type=ActionType.INPLACE_METHOD, # TODO: Make sure this is correct!
+            action_type=ActionType.INPLACE_METHOD,  # TODO: Make sure this is correct!
             syft_node_location=self.syft_node_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
