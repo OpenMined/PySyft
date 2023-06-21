@@ -514,11 +514,9 @@ def list_dict_repr_html(self) -> str:
                     item = self.__getitem__(item)
 
                 # get id
-                id_ = str(getattr(item, "id", None))
-                # if id_ is not None:
-                #     id_ = f"{str(id_)[:4]}...{str(id_)[-3:]}"
+                id_ = getattr(item, "id", None)
                 if id_ is not None:
-                    cols["id"].append({"value": id_, "type": "clipboard"})
+                    cols["id"].append({"value": str(id_), "type": "clipboard"})
 
                 if type(item) == type:
                     t = full_name_with_qualname(item)
@@ -577,7 +575,7 @@ def list_dict_repr_html(self) -> str:
                                         for x in value
                                     ]
                             if value is None:
-                                value = "undefined"
+                                value = "n/a"
 
                         except Exception as e:
                             print(e)

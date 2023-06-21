@@ -78,6 +78,8 @@ CSS_CODE = """
         color: #2E2B3B;
     }
 
+    .numbering-entry { display: none }
+
     /* Tooltip container */
     .tooltip {
         position: relative;
@@ -561,6 +563,7 @@ custom_code = """
 
                                         // Iterate over the actual obj
                                         for (const attr in item) {
+                                            console.log(attr);
                                             let div = document.createElement("div");
                                             if (typeof item[attr] === 'object'
                                                 && item[attr] !== null
@@ -568,7 +571,8 @@ custom_code = """
                                                 if (item[attr].type.includes('badge')){
                                                     let badge_div = document.createElement("div");
                                                     badge_div.classList.add('badge',item[attr].type)
-                                                    badge_div.innerText = item[attr].value.toUpperCase();
+                                                    console.log(String(item[attr].value));
+                                                    badge_div.innerText = String(item[attr].value).toUpperCase();
                                                     div.appendChild(badge_div);
                                                     div.classList.add('grid-row','grid-std-cells');
                                                 } else if (item[attr].type === "clipboard") {
@@ -604,7 +608,7 @@ custom_code = """
                                                 if (item[attr] == null) {
                                                     text = ' '
                                                 } else {
-                                                    text = item[attr]
+                                                    text = String(item[attr])
                                                 }
                                                 if (text.length > 150){
                                                     text = text.slice(0,150) + "...";
