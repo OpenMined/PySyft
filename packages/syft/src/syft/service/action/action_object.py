@@ -138,11 +138,11 @@ class Action(SyftObject):
         kwargs_repr = ", ".join(
             [f"{key}={repr_uid(value)}" for key, value in self.kwargs.items()]
         )
-        self_repr = (
+        _coll_repr_ = (
             f"[{repr_uid(self.remote_self)}]" if self.remote_self is not None else ""
         )
         return (
-            f"ActionObject {self.path}{self_repr}.{self.op}({arg_repr},{kwargs_repr})"
+            f"ActionObject {self.path}{_coll_repr_}.{self.op}({arg_repr},{kwargs_repr})"
         )
 
 
@@ -410,6 +410,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_debug_",
     "as_empty",
     "process_args_and_kwargs",
+    "get",
 ]
 
 
@@ -478,7 +479,6 @@ class ActionObject(SyftObject):
     def syft_point_to(self, node_uid: UID) -> "ActionObject":
         """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
-
         return self
 
     def syft_get_property(self, obj: Any, method: str) -> Any:
@@ -721,12 +721,30 @@ class ActionObject(SyftObject):
 
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
-
-        return client.api.services.action.set(self)
+        res = client.api.services.action.set(self)
+        res.syft_node_location = client.id
+        res.syft_client_verify_key = client.verify_key
+        return res
 
     def get_from(self, client: SyftClient) -> Any:
         """Get the object from a Syft Client"""
         res = client.api.services.action.get(self.id)
+        if not isinstance(res, ActionObject):
+            return Err(res)
+        else:
+            return res.syft_action_data
+
+    def get(self) -> Any:
+        """Get the object from a Syft Client"""
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        res = api.services.action.get(self.id)
+
         if not isinstance(res, ActionObject):
             return Err(res)
         else:
