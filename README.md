@@ -6,19 +6,19 @@
   <img alt="Syft Logo" src="docs/img/title_syft_light.png" width="200px" />
 </picture>
 
-Perform `numpy`-like analysis on `data` that remains in `someone else's` server
+Perform data science on `data` that remains in `someone else's` server
 
 # Quickstart
 
-✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
+✅ `Linux` ✅ `macOS` ✅ `Windows`\* ✅ `Docker` ✅ `Kubernetes`
 
-## Install syft on Python 3.9 - 3.11
+## Install Client
 
 ```bash
 $ pip install -U syft -f https://whls.blob.core.windows.net/unstable/index.html
 ```
 
-## Launch a python dev Domain
+## Launch Server
 
 ```python
 # from Jupyter / Python
@@ -34,13 +34,26 @@ $ syft launch --name=my-domain --port=8080 --reset=True
 Starting syft-node server on 0.0.0.0:8080
 ```
 
-## Connect with our Python Client
+## Launch Client
 
 ```python
 import syft as sy
 sy.requires(">=0.8,<0.8.1")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
 ```
+
+## PySyft in 10 minutes
+
+📝 <a href="/notebooks/api">API Example Notebooks</a>
+
+- <a href="/notebooks/api/0.8/00-load-data.ipynb">00-load-data.ipynb</a>
+- <a href="/notebooks/api/0.8/01-submit-code.ipynb">01-submit-code.ipynb</a>
+- <a href="/notebooks/api/0.8/02-review-code-and-approve.ipynb">02-review-code-and-approve.ipynb</a>
+- <a href="/notebooks/api/0.8/03-data-scientist-download-result.ipynb">03-data-scientist-download-result.ipynb</a>
+- <a href="/notebooks/api/0.8/04-jax-example.ipynb">04-jax-example.ipynb</a>
+- <a href="/notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
+- <a href="/notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
+- <a href="/notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
 
 ## Deploy Kubernetes Helm Chart
 
@@ -49,7 +62,7 @@ $ kubectl create namespace syft
 $ helm install my-domain syft --namespace syft --version 0.8.1-beta.12 --repo https://openmined.github.io/PySyft/helm
 ```
 
-# Azure or GKE Ingress
+### Azure or GCP Ingress
 
 ```
 $ helm install ... --set ingress.ingressClass="azure/application-gateway"
@@ -58,7 +71,7 @@ $ helm install ... --set ingress.ingressClass="gce"
 
 ## Deploy to a Container Engine or Cloud
 
-1. Install our handy 🛵 cli tool which makes deploying a Domain or Gateway server a one-liner:  
+1. Install our handy 🛵 cli tool which makes deploying a Domain or Gateway server to Docker or VM a one-liner:  
    `pip install -U hagrid`
 
 2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
@@ -69,22 +82,17 @@ $ helm install ... --set ingress.ingressClass="gce"
 
    `PyGrid` = our 🐳 `docker` / 🐧 `vm` `Domain` & `Gateway` Servers where `private data` lives
 
-4. During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
-
 ## Docs and Support
 
-- 📝 <a href="/notebooks/api">API Example Notebooks</a>
 - 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
 - `#support` on <a href="https://slack.openmined.org/">Slack</a>
 
 # Install Notes
 
 - HAGrid 0.3 Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
-- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
-  †`Windows` does not support `ansible`, preventing some remote deployment targets
+- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`
 - PySyft 0.8 Requires: 🐍 `python 3.9 - 3.11` - Run: `pip install -U syft`  
-  \*`macOS` Apple Silicon users might need cmake: `brew install cmake`  
-  ‡`Windows` users must run this first: `pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html`
+  \*`Windows` users must run this first: `pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker`, ☸️ `kubernetes` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions
@@ -124,6 +132,7 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
+<!--
 # Tutorials
 
 <table border="5" bordercolor="grey">
@@ -180,6 +189,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 </td>
 </tr>
 </table>
+-->
 
 # Terminology
 
@@ -336,30 +346,45 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 <a href="https://pytorch.org/"><img src="docs/img/logo_torch.png" /></a>
 </th>
 <th align="center">
+<a href="https://www.dpmc.govt.nz/">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_nz_dark.png">
+  <img src="docs/img/logo_nz_light.png" />
+</picture>
+</a>
+</th>
+<th align="center">
+<a href="https://twitter.com/"><img src="docs/img/logo_twitter.png" /></a>
+</th>
+<th align="center">
+<a href="https://google.com/"><img src="docs/img/logo_google.png" /></a>
+</th>
+<th align="center">
+<a href="https://microsoft.com/"><img src="docs/img/logo_microsoft.png" /></a>
+</th>
+<th align="center">
+<a href="https://omidyar.com/"><img src="docs/img/logo_on.png" /></a>
+</th>
+<th align="center">
 <a href="https://www.udacity.com/"><img src="docs/img/logo_udacity.png" /></a>
 </th>
 <th align="center">
-<a href="https://summerofcode.withgoogle.com/"><img src="docs/img/logo_gsoc.png" /></a>
-</th>
-<th align="center">
-<a href="https://developers.google.com/season-of-docs"><img src="docs/img/logo_gsod.png" /></a>
-</th>
-<th align="center">
+<a href="https://www.centerfordigitalhealthinnovation.org/">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_cdhi_dark.png">
+  <img src="docs/img/logo_cdhi_light.png" />
+</picture>
+
+</a>
+</th>
+<th align="center">
+<a href="https://arkhn.org/">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_arkhn.png">
   <img src="docs/img/logo_arkhn_light.png" />
 </picture>
-
-</th>
-<th align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_cape.png">
-  <img src="docs/img/logo_cape_light.png" />
-</picture>
-</th>
-<th align="center">
-<a href="https://begin.ai/"><img src="docs/img/logo_begin.png" /></a>
+</a>
 </th>
 </tr>
 </table>

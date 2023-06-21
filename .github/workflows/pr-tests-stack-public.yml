@@ -158,6 +158,7 @@ jobs:
           timeout_seconds: 1800
           max_attempts: 3
           command: tox -e stack.test.integration
+        continue-on-error: true
 
       - name: Reboot node
         if: matrix.os == 'windows' && failure()

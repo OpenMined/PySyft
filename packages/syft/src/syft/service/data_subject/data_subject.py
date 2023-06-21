@@ -56,6 +56,9 @@ class DataSubject(SyftObject):
     def __eq__(self, other) -> bool:
         return hash(self) == hash(other)
 
+    def __repr_syft_nested__(self):
+        return f"DataSubject({self.name})"
+
     def __repr__(self) -> str:
         return f"<DataSubject: {self.name}>"
 
@@ -81,12 +84,20 @@ class DataSubjectCreate(SyftObject):
 
     __attr_searchable__ = ["name", "description"]
     __attr_unique__ = ["name"]
+    __repr_attrs__ = ["name", "member_count"]
+
+    @property
+    def member_count(self):
+        return len(self.members)
 
     def __hash__(self) -> int:
         return hash(self.name)
 
     def __eq__(self, other) -> bool:
         return hash(self) == hash(other)
+
+    def __repr_syft_nested__(self):
+        return f"DataSubject({self.name})"
 
     def _create_member_relationship(self, data_subject, _relationship_set):
         for member in data_subject.members.values():
