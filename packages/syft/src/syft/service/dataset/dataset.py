@@ -266,12 +266,18 @@ class CreateAsset(SyftObject):
         role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
-    ) -> None:
-        _role_str = role.value if isinstance(role, Enum) else role
-        contributor = Contributor(
-            name=name, role=_role_str, email=email, phone=phone, note=note
-        )
-        self.contributors.append(contributor)
+    ) -> Union[SyftSuccess, SyftError]:
+        try:
+            _role_str = role.value if isinstance(role, Enum) else role
+            contributor = Contributor(
+                name=name, role=_role_str, email=email, phone=phone, note=note
+            )
+            self.contributors.append(contributor)
+            return SyftSuccess(
+                message=f"Contributor '{name}' added to '{self.name}' Asset."
+            )
+        except Exception as e:
+            return SyftError(message=f"Failed to add contributor. Error: {e}")
 
     def set_description(self, description: str) -> None:
         self.description = description
@@ -517,30 +523,43 @@ class CreateDataset(Dataset):
         role: Optional[Union[Enum, str]] = None,
         phone: Optional[str] = None,
         note: Optional[str] = None,
-    ) -> None:
-        _role_str = role.value if isinstance(role, Enum) else role
-        contributor = Contributor(
-            name=name, role=_role_str, email=email, phone=phone, note=note
-        )
-        self.contributors.append(contributor)
+    ) -> Union[SyftSuccess, SyftError]:
+        try:
+            _role_str = role.value if isinstance(role, Enum) else role
+            contributor = Contributor(
+                name=name, role=_role_str, email=email, phone=phone, note=note
+            )
+            self.contributors.append(contributor)
+            return SyftSuccess(
+                message=f"Contributor '{name}' added to '{self.name}' Dataset."
+            )
+        except Exception as e:
+            return SyftError(message=f"Failed to add contributor. Error: {e}")
 
-    def add_asset(self, asset: CreateAsset, force_replace=False) -> None:
+    def add_asset(
+        self, asset: CreateAsset, force_replace=False
+    ) -> Union[SyftSuccess, SyftError]:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
 
         for i, existing_asset in enumerate(self.asset_list):
             if existing_asset.name == asset.name:
                 if not force_replace:
-                    raise ValueError(
-                        f"""Asset "{asset.name}" already exists for dataset."""
+                    return SyftError(
+                        message=f"""Asset "{asset.name}" already exists in '{self.name}' Dataset."""
                         """ Use add_asset(asset, force_replace=True) to replace."""
                     )
                 else:
                     self.asset_list[i] = asset
-                    print(f"Asset {asset.name} has been successfully replaced.")
-                    return
+                    return SyftSuccess(
+                        f"Asset {asset.name} has been successfully replaced."
+                    )
 
         self.asset_list.append(asset)
+
+        return SyftSuccess(
+            message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
+        )
 
     def remove_asset(self, name: str) -> None:
         asset_to_remove = None
@@ -550,8 +569,11 @@ class CreateDataset(Dataset):
                 break
 
         if asset_to_remove is None:
-            print(f"No asset exists with name: {name}")
+            return SyftError(message=f"No asset exists with name: {name}")
         self.asset_list.remove(asset_to_remove)
+        return SyftSuccess(
+            message=f"Asset '{self.name}' removed from '{self.name}' Dataset."
+        )
 
     def check(self) -> Result[SyftSuccess, List[SyftError]]:
         errors = []
