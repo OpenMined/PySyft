@@ -355,6 +355,7 @@ class UserCode(SyftObject):
                 filtered_kwargs = {}
                 for k, v in kwargs.items():
                     filtered_kwargs[k] = debox_asset(v)
+                # third party
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
