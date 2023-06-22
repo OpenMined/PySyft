@@ -1,10 +1,7 @@
 <div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml/badge.svg?branch=dev" /></a> <a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
 <br /><br /></div>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/title_syft_dark.png">
-  <img alt="Syft Logo" src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/title_syft_light.png" width="200px" />
-</picture>
+<img alt="Syft Logo" src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/title_syft_light.png" width="200px" />
 
 Perform data science on `data` that remains in `someone else's` server
 
@@ -119,10 +116,7 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 
 # What is Syft?
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_big_dark.png">
-  <img align="right" src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_big.png" alt="Syft" height="250" style="padding-left:30px;">
-</picture>
+<img align="right" src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_big.png" alt="Syft" height="250" style="padding-left:30px;">
 
 `Syft` is OpenMined's `open source` stack that provides `secure` and `private` Data Science in Python. Syft decouples `private data` from model training, using techniques like [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and [Encrypted Computation](https://en.wikipedia.org/wiki/Homomorphic_encryption). This is done with a `numpy`-like interface and integration with `Deep Learning` frameworks, so that you as a `Data Scientist` can maintain your current workflow while using these new `privacy-enhancing techniques`.
 
@@ -252,10 +246,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <img width="441" height="1">
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_slack_title_dark.png">
-  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_slack_title_light.png" alt="" width="100%" align="center" />
-</picture>
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_slack_title_light.png" alt="" width="100%" align="center" />
 
 <a href="https://slack.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_slack.png" alt="" width="100%" align="center" /></a>
 
@@ -265,10 +256,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <img width="441" height="1">
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_title_videos_papers.png">
-  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_title_videos_papers_light.png" alt="" width="100%" align="center" />
-</picture>
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_title_videos_papers_light.png" alt="" width="100%" align="center" />
 
 <p align="left"><sub><sup>
 🎥 <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />
@@ -287,10 +275,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <img width="441" height="1">
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_padawan_title_dark.png">
-  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_padawan_title_light.png" alt="" width="100%" align="center" />
-</picture>
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_padawan_title_light.png" alt="" width="100%" align="center" />
 
 <a href="https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_padawan.png" alt="" width="100%" align="center"></a>
 
@@ -327,10 +312,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 
 OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br />
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/contributors_dark.jpg">
-  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
-</picture>
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
 
 # Supporters
 
@@ -347,10 +329,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 </th>
 <th align="center">
 <a href="https://www.dpmc.govt.nz/">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_nz_dark.png">
-  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_nz_light.png" />
-</picture>
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_nz_light.png" />
 </a>
 </th>
 <th align="center">
@@ -371,19 +350,15 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 <th align="center">
 <a href="https://www.centerfordigitalhealthinnovation.org/">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_cdhi_dark.png">
-  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_cdhi_light.png" />
-</picture>
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_cdhi_light.png" />
 
 </a>
 </th>
 <th align="center">
 <a href="https://arkhn.org/">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_arkhn.png">
-  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_arkhn_light.png" />
-</picture>
+
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_arkhn_light.png" />
+
 </a>
 </th>
 </tr>
@@ -393,10 +368,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 
 `OpenMined` is a fiscally sponsored `501(c)(3)` in the USA. We are funded by our generous supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/opencollective_dark.png">
-  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/opencollective_light.png" alt="Contributors" width="100%" />
-</picture>
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/opencollective_light.png" alt="Contributors" width="100%" />
 
 # Disclaimer
 
