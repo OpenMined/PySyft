@@ -10,6 +10,16 @@ on:
         required: false
         default: "false"
 
+      release_platform:
+        description: "Release Platform"
+        required: true
+        default: "REAL_PYPI"
+        type: choice
+        options:
+          - REAL_PYPI
+          - TEST_PYPI
+          - REAL_AND_TEST_PYPI
+
 jobs:
   call-pr-tests-linting:
     if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
@@ -61,12 +71,18 @@ jobs:
           pull: NO-PULL
 
       - name: Build and publish
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.SYFT_PYPI_TOKEN }}
         run: |
           tox -e syft.publish
-          twine upload packages/syft/dist/*
+          if [ "${{ github.event.inputs.release_platform }}" = "REAL_PYPI" ]; then
+            twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+          fi
+          if [ "${{ github.event.inputs.release_platform }}" = "TEST_PYPI" ]; then
+            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TEST_TOKEN }} packages/syft/dist/*
+          fi
+          if [ "${{ github.event.inputs.release_platform }}" = "REAL_AND_TEST_PYPI" ]; then
+            twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TEST_TOKEN }} packages/syft/dist/*
+          fi
 
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
