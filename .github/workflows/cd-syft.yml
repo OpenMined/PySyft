@@ -61,13 +61,18 @@ jobs:
           cat packages/grid/devspace.yaml | grep '0\.'
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
 
+      - name: Build Helm Chart
+        run: |
+          tox -e syft.build.helm
+          tox -e syft.package.helm
+
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
           author_name: Madhava Jay
           author_email: madhava@openmined.org
           message: "bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml']"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml', 'packages/grid/helm/repo']"
           pull: NO-PULL
 
       - name: Build and publish

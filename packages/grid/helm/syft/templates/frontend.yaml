@@ -54,7 +54,7 @@ spec:
         command: null
         env:
         - name: VERSION
-          value: 0.8.1-beta.12
+          value: 0.8.1-beta.15
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
@@ -62,7 +62,7 @@ spec:
         - name: NEXT_PUBLIC_API_URL
           value: ${NEXT_PUBLIC_API_URL}
         envFrom: null
-        image: docker.io/openmined/grid-frontend:0.8.1-beta.12
+        image: docker.io/openmined/grid-frontend:0.8.1-beta.15
         lifecycle: null
         livenessProbe: null
         name: container-0
