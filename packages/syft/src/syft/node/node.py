@@ -328,12 +328,16 @@ class Node(AbstractNode):
 
     @property
     def guest_client(self):
+        return self.get_guest_client()
+
+    def get_guest_client(self, verbose: bool = True):
         # relative
         from ..client.client import PythonConnection
         from ..client.client import SyftClient
 
         connection = PythonConnection(node=self)
-        print(f"Logged into {self.name} as GUEST")
+        if verbose:
+            print(f"Logged into {self.name} as GUEST")
         return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
