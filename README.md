@@ -2,7 +2,7 @@
 <br /><br /></div>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/title_syft_dark.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/title_syft_dark.png">
   <img alt="Syft Logo" src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/title_syft_light.png" width="200px" />
 </picture>
 
@@ -120,7 +120,7 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 # What is Syft?
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_big_dark.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_big_dark.png">
   <img align="right" src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_big.png" alt="Syft" height="250" style="padding-left:30px;">
 </picture>
 
@@ -253,7 +253,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/panel_slack_title_dark.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_slack_title_dark.png">
   <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_slack_title_light.png" alt="" width="100%" align="center" />
 </picture>
 
@@ -266,7 +266,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/panel_title_videos_papers.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_title_videos_papers.png">
   <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_title_videos_papers_light.png" alt="" width="100%" align="center" />
 </picture>
 
@@ -288,7 +288,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/panel_padawan_title_dark.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_padawan_title_dark.png">
   <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/panel_padawan_title_light.png" alt="" width="100%" align="center" />
 </picture>
 
@@ -328,7 +328,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br />
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/contributors_dark.jpg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/contributors_dark.jpg">
   <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
 </picture>
 
@@ -348,7 +348,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 <th align="center">
 <a href="https://www.dpmc.govt.nz/">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_nz_dark.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_nz_dark.png">
   <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_nz_light.png" />
 </picture>
 </a>
@@ -372,7 +372,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 <a href="https://www.centerfordigitalhealthinnovation.org/">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_cdhi_dark.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_cdhi_dark.png">
   <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_cdhi_light.png" />
 </picture>
 
@@ -381,7 +381,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 <th align="center">
 <a href="https://arkhn.org/">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_arkhn.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_arkhn.png">
   <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/logo_arkhn_light.png" />
 </picture>
 </a>
@@ -394,7 +394,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 `OpenMined` is a fiscally sponsored `501(c)(3)` in the USA. We are funded by our generous supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/opencollective_dark.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/opencollective_dark.png">
   <img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.8.1/docs/img/opencollective_light.png" alt="Contributors" width="100%" />
 </picture>
 
