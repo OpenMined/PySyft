@@ -222,9 +222,10 @@ class Request(SyftObject):
 
     @property
     def code(self) -> Any:
-        if len(self.changes) == 1:
-            if isinstance(self.changes[0], UserCodeStatusChange):
-                return self.changes[0].link
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.link
+
         return SyftError(
             message="This type of request does not have code associated with it."
         )
