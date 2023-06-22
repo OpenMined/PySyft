@@ -600,7 +600,11 @@ custom_code = """
 
                                                     clipboard_div.appendChild(clipboard_img);
                                                     div.appendChild(clipboard_div);
+                                                } else{
+                                                    console.log("unrecognized type");
+                                                    console.log(item[attr]);
                                                 }
+
                                             } else{
                                                 div.classList.add('grid-row','grid-std-cells');
                                                 if (item[attr] == null) {

@@ -209,7 +209,7 @@ class UserCode(SyftObject):
         elif status == UserCodeStatus.EXECUTE.value:
             badge_color = "badge-green"
         else:
-            badge_color = "red"
+            badge_color = "badge-red"
         status_badge = {"value": status, "type": badge_color}
         return {
             "Input Policy": self.input_policy_type.__name__,
