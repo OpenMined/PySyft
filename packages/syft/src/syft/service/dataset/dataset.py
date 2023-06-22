@@ -2,7 +2,6 @@
 from collections import OrderedDict
 from datetime import datetime
 from enum import Enum
-import sys
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -39,12 +38,15 @@ from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ...util.markdown import as_markdown_python_code
 from ...util.notebook_ui.notebook_addons import FOLDER_ICON
+from ...util.util import get_mb_size
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftSuccess
+
+DATA_SIZE_WARNING_LIMIT = 512
 
 
 @serializable()
@@ -334,6 +336,13 @@ class CreateAsset(SyftObject):
                 return SyftError(
                     message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
                 )
+        total_size_mb = get_mb_size(self.data) + get_mb_size(self.mock)
+        if total_size_mb > DATA_SIZE_WARNING_LIMIT:
+            print(
+                f"**WARNING**: The total size for asset: '{self.name}' exceeds '{DATA_SIZE_WARNING_LIMIT} MB'. "
+                "This might result in failure to upload dataset. "
+                "Please contact #support on OpenMined slack for further assistance.",
+            )
 
         return SyftSuccess(message="Dataset is Valid")
 
@@ -668,13 +677,10 @@ def createasset_to_asset() -> List[Callable]:
 
 def convert_asset(context: TransformContext) -> TransformContext:
     assets = context.output.pop("asset_list", [])
-    dataset_size = 0
     for idx, create_asset in enumerate(assets):
-        dataset_size += sys.getsizeof(assets) / 1024
         asset_context = TransformContext.from_context(obj=create_asset, context=context)
         assets[idx] = create_asset.to(Asset, context=asset_context)
     context.output["asset_list"] = assets
-    context.output["mb_size"] = dataset_size
     return context
 
 

@@ -87,6 +87,10 @@ def get_name_for(klass: type):
     return klass_name
 
 
+def get_mb_size(data: Any) -> float:
+    return sys.getsizeof(data) / (1024 * 1024)
+
+
 def extract_name(klass: type):
     name_regex = r".+class.+?([\w\._]+).+"
     regex2 = r"([\w\.]+)"
