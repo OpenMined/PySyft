@@ -311,6 +311,7 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
+          tox -e stack.test.integration.k8s
           tox -e syft.build.helm
           tox -e syft.package.helm
-          tox -e syft.test.helm
+          # tox -e syft.test.helm
