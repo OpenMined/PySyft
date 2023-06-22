@@ -20,6 +20,8 @@ import yaml
 # relative
 from .cache import DEFAULT_REPO
 from .cache import STABLE_BRANCH
+from .grammar import GrammarTerm
+from .grammar import HostGrammarTerm
 from .lib import hagrid_cache_dir
 from .lib import manifest_template_path
 from .lib import repo_src_path
@@ -137,6 +139,7 @@ def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], 
 
 def setup_from_manifest_template(
     host_type: str,
+    node_type: Union[GrammarTerm, HostGrammarTerm],
     template_location: Optional[str] = None,
     overwrite: bool = False,
     verbose: bool = False,
@@ -167,8 +170,13 @@ def setup_from_manifest_template(
             os.path.join(package_path, f) for f in template_files["common"]
         ]
 
+        # enclave
+        if node_type.input == "enclave" and host_type in ["docker"]:
+            files_to_download += [
+                os.path.join(package_path, f) for f in template_files["enclave"]
+            ]
         # docker related files
-        if host_type in ["docker"]:
+        elif host_type in ["docker"]:
             files_to_download += [
                 os.path.join(package_path, f) for f in template_files["docker"]
             ]

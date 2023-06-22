@@ -1194,6 +1194,7 @@ def create_launch_cmd(
 ) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
+    node_type = verb.get_named_term_type(name="node_type")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
@@ -1315,6 +1316,7 @@ def create_launch_cmd(
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(
             host_type=host,
+            node_type=node_type,
             template_location=parsed_kwargs["template"],
             overwrite=parsed_kwargs["template_overwrite"],
             verbose=kwargs["verbose"],
