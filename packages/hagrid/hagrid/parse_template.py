@@ -119,7 +119,6 @@ def url_from_repo(template_location: Optional[str]) -> Optional[str]:
 
 def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], str]:
     if template_location:
-        template_location = "fix-hagrid"
         if is_url(template_location):
             template, template_hash = read_yml_url(template_location)
         elif is_path(template_location):
