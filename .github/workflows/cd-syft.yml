@@ -1,8 +1,8 @@
 name: CD - Syft
 
 on:
-  schedule:
-    - cron: "00 12 * * */1" # At 12:00 UTC on every day
+  # schedule:
+  #   - cron: "00 12 * * */1" # At 12:00 UTC on every day
   workflow_dispatch:
     inputs:
       skip_tests:
