@@ -77,11 +77,11 @@ jobs:
             twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
           fi
           if [ "${{ github.event.inputs.release_platform }}" = "TEST_PYPI" ]; then
-            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TEST_TOKEN }} packages/syft/dist/*
+            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
           fi
           if [ "${{ github.event.inputs.release_platform }}" = "REAL_AND_TEST_PYPI" ]; then
             twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
-            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TEST_TOKEN }} packages/syft/dist/*
+            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
           fi
 
       - name: Set Grid package version
