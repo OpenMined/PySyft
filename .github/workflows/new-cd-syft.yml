@@ -1,4 +1,4 @@
-name: CD - Syft
+name: New CD - Syft
 
 on:
   schedule:
