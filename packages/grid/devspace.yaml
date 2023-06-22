@@ -15,13 +15,13 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.1-beta.20 -t dev-latest
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.1-beta.21 -t dev-latest
       create_deployments --all
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io/"
-  VERSION: "0.8.1-beta.20"
+  VERSION: "0.8.1-beta.21"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
