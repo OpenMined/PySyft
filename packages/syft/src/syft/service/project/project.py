@@ -670,7 +670,7 @@ def add_code_request_to_project(
             return result
 
     return SyftSuccess(
-        message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project."
+        message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project. "
         f"To see code requests by a client, run `[your_client].code`"
     )
 
