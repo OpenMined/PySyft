@@ -33,6 +33,7 @@ files:
     - traefik/k8s/dynamic.yml
     - traefik/k8s/traefik.yml
     enclave:
+    - default.env
     - worker/docker-compose.yml
     - worker/docker-compose.dev.yml
     - worker/docker-compose.pull.yml
