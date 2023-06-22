@@ -226,7 +226,7 @@ class Request(SyftObject):
             if isinstance(self.changes[0], UserCodeStatusChange):
                 return self.changes[0].link
         return SyftError(
-            msg="This type of request does not have code associated with it."
+            message="This type of request does not have code associated with it."
         )
 
     @property
