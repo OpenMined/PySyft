@@ -39,6 +39,7 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.markdown import CodeMarkdown
+from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..metadata.node_metadata import EnclaveMetadata
@@ -355,6 +356,7 @@ class UserCode(SyftObject):
                 filtered_kwargs = {}
                 for k, v in kwargs.items():
                     filtered_kwargs[k] = debox_asset(v)
+                # third party
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
@@ -372,6 +374,16 @@ class UserCode(SyftObject):
                 print(f"Failed to run unsafe_function. {e}")
 
         return wrapper
+
+    def _repr_markdown_(self):
+        md = f"""class UserCode
+    id: str = {self.id}
+    status.approved: str = {self.status.approved}
+    service_func_name: str = {self.service_func_name}
+    code:
+
+{self.raw_code}"""
+        return as_markdown_code(md)
 
     @property
     def code(self) -> CodeMarkdown:
@@ -430,7 +442,11 @@ class SubmitUserCode(SyftObject):
 def debox_asset(arg: Any) -> Any:
     deboxed_arg = arg
     if isinstance(deboxed_arg, Asset):
-        deboxed_arg = arg.pointer
+        asset = deboxed_arg
+        if asset.has_data_permission():
+            return asset.data
+        else:
+            return asset.mock
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg
@@ -461,6 +477,11 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
+        print(
+            f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
+        )
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
