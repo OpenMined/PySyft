@@ -12,6 +12,7 @@ from typing import Union
 
 # third party
 import itables
+import pandas as pd
 from pydantic import ValidationError
 from pydantic import root_validator
 from pydantic import validator
@@ -127,6 +128,8 @@ class Asset(SyftObject):
             data_table_line = itables.to_html_datatable(
                 df=self.data.syft_action_data, css=itables_css
             )
+        elif isinstance(self.data, pd.DataFrame):
+            data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
         else:
             data_table_line = self.data
         return f"""
