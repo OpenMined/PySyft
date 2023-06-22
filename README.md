@@ -20,7 +20,7 @@ $ pip install -U syft -f https://whls.blob.core.windows.net/unstable/index.html
 ```python
 # from Jupyter / Python
 import syft as sy
-sy.requires(">=0.8,<0.8.1")
+sy.requires(">=0.8.1,<0.8.2")
 node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
 ```
 
@@ -35,7 +35,7 @@ Starting syft-node server on 0.0.0.0:8080
 
 ```python
 import syft as sy
-sy.requires(">=0.8,<0.8.1")
+sy.requires(">=0.8.1,<0.8.2")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
 ```
 
@@ -56,7 +56,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
 ```
 $ kubectl create namespace syft
-$ helm install my-domain syft --namespace syft --version 0.8.1-beta.12 --repo https://openmined.github.io/PySyft/helm
+$ helm install my-domain syft --namespace syft --version 0.8.1 --repo https://openmined.github.io/PySyft/helm
 ```
 
 ### Azure or GCP Ingress
