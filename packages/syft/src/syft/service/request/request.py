@@ -35,6 +35,7 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
+from ...util.notebook_ui.notebook_addons import REQUEST_ICON
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
@@ -89,7 +90,7 @@ class ActionStoreChange(Change):
     linked_obj: LinkedObject
     apply_permission_type: ActionPermission
 
-    __attr_repr_cols__ = ["linked_obj", "apply_permission_type"]
+    __repr_attrs__ = ["linked_obj", "apply_permission_type"]
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -135,6 +136,10 @@ class ActionStoreChange(Change):
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
+    def __repr_syft_nested__(self):
+        return f"Apply <b>{self.apply_permission_type}</b> to \
+            <i>{self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}</i>"
+
 
 @serializable()
 class Request(SyftObject):
@@ -156,7 +161,7 @@ class Request(SyftObject):
         "approving_user_verify_key",
     ]
     __attr_unique__ = ["request_hash"]
-    __attr_repr_cols__ = [
+    __repr_attrs__ = [
         "request_time",
         "updated_at",
         "status",
@@ -168,17 +173,19 @@ class Request(SyftObject):
         # add changes
         updated_at_line = ""
         if self.updated_at is not None:
-            updated_at_line += f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            updated_at_line += (
+                f"<p><strong>Created by: </strong>{self.requesting_user_name}</p>"
+            )
         str_changes = []
         for change in self.changes:
-            str_change = ""
-            if isinstance(change, UserCodeStatusChange):
-                str_change += f"User <b>{self.requesting_user_name}</b> requests to change\
-                    <b>{change.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
-            else:
-                str_change += f"{type(change)}"
+            str_change = (
+                change.__repr_syft_nested__()
+                if hasattr(change, "__repr_syft_nested__")
+                else type(change)
+            )
+            str_change = f"{str_change}. "
             str_changes.append(str_change)
-            str_changes = str(str_changes)
+        str_changes = "\n".join(str_changes)
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -188,10 +195,30 @@ class Request(SyftObject):
                 <p><strong>Id: </strong>{self.id}</p>
                 <p><strong>Request time: </strong>{self.request_time}</p>
                 {updated_at_line}
-                <p><strong> Changes: </strong> {str_changes}</p>
+                <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
             </div>
             """
+
+    def _coll_repr_(self):
+        if self.status == RequestStatus.APPROVED:
+            badge_color = "badge-green"
+        elif self.status == RequestStatus.PENDING:
+            badge_color = "badge-gray"
+        else:
+            badge_color = "badge-red"
+
+        status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+        return {
+            "changes": " ".join([x.__repr_syft_nested__() for x in self.changes]),
+            "request time": str(self.request_time),
+            "status": status_badge,
+            "requesting user": {
+                "value": str(self.requesting_user_verify_key),
+                "type": "clipboard",
+            },
+            "reviewed_at": str(self.updated_at),
+        }
 
     @property
     def code(self) -> Any:
@@ -210,6 +237,10 @@ class Request(SyftObject):
             change_applied_map[change_status.change_id] = change_status.applied
 
         return change_applied_map
+
+    @property
+    def icon(self):
+        return REQUEST_ICON
 
     @property
     def status(self) -> RequestStatus:
@@ -477,7 +508,7 @@ class ObjectMutation(Change):
     match_type: bool
     previous_value: Optional[Any]
 
-    __attr_repr_cols__ = ["linked_obj", "attr_name"]
+    __repr_attrs__ = ["linked_obj", "attr_name"]
 
     def mutate(self, obj: Any, value: Optional[Any]) -> Any:
         # check if attribute is a property setter first
@@ -491,6 +522,9 @@ class ObjectMutation(Change):
             self.previous_value = getattr(obj, self.attr_name, None)
             setattr(obj, self.attr_name, value)
         return obj
+
+    def __repr_syft_nested__(self):
+        return f"Mutate <b>{self.attr_name}</b> to <b>{self.value}</b>"
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -541,7 +575,7 @@ class EnumMutation(ObjectMutation):
     value: Optional[Enum]
     match_type: bool = True
 
-    __attr_repr_cols__ = ["linked_obj", "attr_name", "value"]
+    __repr_attrs__ = ["linked_obj", "attr_name", "value"]
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
@@ -592,6 +626,9 @@ class EnumMutation(ObjectMutation):
     def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
+    def __repr_syft_nested__(self):
+        return f"Mutate <b>{self.enum_type}</b> to <b>{self.value}</b>"
+
     @property
     def link(self) -> Optional[SyftObject]:
         if self.linked_obj:
@@ -607,7 +644,7 @@ class UserCodeStatusChange(Change):
     value: UserCodeStatus
     linked_obj: LinkedObject
     match_type: bool = True
-    __attr_repr_cols__ = [
+    __repr_attrs__ = [
         "link.service_func_name",
         "link.input_policy_type.__canonical_name__",
         "link.output_policy_type.__canonical_name__",

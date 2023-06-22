@@ -67,7 +67,7 @@ class Identity(SyftObject):
     id: UID
     verify_key: SyftVerifyKey
 
-    __attr_repr_cols__ = ["id", "verify_key"]
+    __repr_attrs__ = ["id", "verify_key"]
 
     def __repr__(self) -> str:
         verify_key_str = f"{self.verify_key}"
@@ -315,7 +315,7 @@ class ProjectRequest(ProjectEventAddObject):
     def request(self):
         return self.linked_request.resolve
 
-    __attr_repr_cols__ = [
+    __repr_attrs__ = [
         "request.status",
         "request.changes[-1].link.service_func_name",
     ]
@@ -642,7 +642,7 @@ def add_code_request_to_project(
     code: SubmitUserCode,
     client: SyftClient,
     reason: Optional[str] = None,
-):
+) -> Union[SyftError, SyftSuccess]:
     if not isinstance(code, SubmitUserCode):
         return SyftError(
             message=f"Currently we are  only support creating requests for SubmitUserCode: {type(code)}"
@@ -669,7 +669,10 @@ def add_code_request_to_project(
         if isinstance(result, SyftError):
             return result
 
-    return SyftSuccess(message="Request added successfully")
+    return SyftSuccess(
+        message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project."
+        f"To see code requests by a client, run `[your_client].code`"
+    )
 
 
 @serializable()
@@ -677,7 +680,7 @@ class Project(SyftObject):
     __canonical_name__ = "Project"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_repr_cols__ = ["name", "description", "created_by", "events"]
+    __repr_attrs__ = ["name", "description", "created_by"]
     __attr_unique__ = ["name"]
 
     # TODO: re-add users, members, leader_node_peer
@@ -714,6 +717,13 @@ class Project(SyftObject):
     # store: Dict[UID, Dict[UID, SyftObject]] = {}
     # permissions: Dict[UID, Dict[UID, Set[str]]] = {}
 
+    def _coll_repr_(self):
+        return {
+            "Name": self.name,
+            "description": self.description,
+            "created by": self.created_by,
+        }
+
     def _repr_html_(self) -> Any:
         return (
             f"""
@@ -726,6 +736,7 @@ class Project(SyftObject):
             + f"<p>{self.description}</p>"
             + f"<p><strong>Created by: </strong>{self.created_by}</p>"
             + self.requests._repr_html_()
+            + "<p>To see a list of projects, use command `&lt;your_client&gt;.projects`</p>"
             + "</div>"
         )
 
@@ -1146,7 +1157,7 @@ class ProjectSubmit(SyftObject):
     ]
 
     # stash rules
-    __attr_repr_cols__ = ["name", "description", "created_by"]
+    __repr_attrs__ = ["name", "description", "created_by"]
     __attr_unique__ = ["name"]
 
     id: UID
@@ -1391,7 +1402,7 @@ def create_project_hash(project: Project) -> Tuple[bytes, str]:
 def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
     # Creating a custom hash for the project
     # as the recursive hash is yet to be revamped
-    # for primitives python types
+    # for primitives python types.
 
     # hashing is calculated based on the following attributes
     # attrs = ["id", "project_id", "seq no",

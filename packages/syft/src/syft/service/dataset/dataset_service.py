@@ -18,6 +18,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .dataset import Asset
 from .dataset import CreateDataset
@@ -52,7 +53,10 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Dataset Added")
+        return SyftSuccess(
+            message=f"Dataset uploaded to '{context.node.name}'. "
+            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+        )
 
     @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
@@ -134,7 +138,9 @@ class DatasetService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
-        path="dataset.get_assets_by_action_id", name="get_assets_by_action_id"
+        path="dataset.get_assets_by_action_id",
+        name="get_assets_by_action_id",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_assets_by_action_id(
         self, context: AuthedServiceContext, uid: UID

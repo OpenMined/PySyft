@@ -15,13 +15,13 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.1-beta.12 -t dev-latest
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.1-beta.15 -t dev-latest
       create_deployments --all
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io/"
-  VERSION: "0.8.1-beta.12"
+  VERSION: "0.8.1-beta.15"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -83,25 +83,25 @@ deployments:
             env:
               - name: SERVICE_NAME
                 value: "proxy"
-          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
-            securityContext:
-              capabilities:
-                add: ["NET_ADMIN", "SYS_MODULE"]
-              privileged: true
-            env:
-              - name: HOSTNAME
-                value: "${NODE_NAME}"
-              - name: STACK_API_KEY
-                value: "changeme"
-            volumeMounts:
-              - containerPath: /var/lib/tailscale
-                volume:
-                  name: tailscale-data
-                  subPath: /tailscale-data
-                  readOnly: false
+          # - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
+          #   securityContext:
+          #     capabilities:
+          #       add: ["NET_ADMIN", "SYS_MODULE"]
+          #     privileged: true
+          #   env:
+          #     - name: HOSTNAME
+          #       value: "${NODE_NAME}"
+          #     - name: STACK_API_KEY
+          #       value: "changeme"
+          #   volumeMounts:
+          #     - containerPath: /var/lib/tailscale
+          #       volume:
+          #         name: tailscale-data
+          #         subPath: /tailscale-data
+          #         readOnly: false
         volumes:
-          - name: tailscale-data
-            size: "100Mi"
+          # - name: tailscale-data
+          #   size: "100Mi"
           - name: traefik-conf
             configMap:
               name: traefik-main-config
@@ -110,8 +110,8 @@ deployments:
           ports:
             - name: proxy
               port: 80
-            - name: api
-              port: 4000
+            # - name: api
+            #   port: 4000
 
   backend:
     helm:

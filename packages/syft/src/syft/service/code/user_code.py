@@ -7,6 +7,7 @@ from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
+import itertools
 import sys
 from typing import Any
 from typing import Callable
@@ -37,6 +38,8 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util.markdown import CodeMarkdown
+from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..metadata.node_metadata import EnclaveMetadata
@@ -190,7 +193,7 @@ class UserCode(SyftObject):
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
-    __attr_repr_cols__ = ["status.approved", "service_func_name"]
+    __repr_attrs__ = ["status.approved", "service_func_name"]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -198,6 +201,26 @@ class UserCode(SyftObject):
             attr.fset(self, value)
         else:
             return super().__setattr__(key, value)
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        status = list(self.status.base_dict.values())[0].value
+        if status == UserCodeStatus.SUBMITTED.value:
+            badge_color = "badge-purple"
+        elif status == UserCodeStatus.EXECUTE.value:
+            badge_color = "badge-green"
+        else:
+            badge_color = "red"
+        status_badge = {"value": status, "type": badge_color}
+        return {
+            "Input Policy": self.input_policy_type.__name__,
+            "Output Policy": self.output_policy_type.__name__,
+            "Function name": self.service_func_name,
+            "User verify key": {
+                "value": str(self.user_verify_key),
+                "type": "clipboard",
+            },
+            "Status": status_badge,
+        }
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:
@@ -308,12 +331,13 @@ class UserCode(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
-        node_view = NodeView(
-            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        inputs = (
+            uids
+            for node_view, uids in self.input_policy_init_kwargs.items()
+            if node_view.node_name == api.node_name
         )
-        inputs = self.input_policy_init_kwargs[node_view]
         all_assets = []
-        for uid in inputs.values():
+        for uid in itertools.chain.from_iterable(x.values() for x in inputs):
             if isinstance(uid, UID):
                 assets = api.services.dataset.get_assets_by_action_id(uid)
                 if not isinstance(assets, list):
@@ -332,6 +356,7 @@ class UserCode(SyftObject):
                 filtered_kwargs = {}
                 for k, v in kwargs.items():
                     filtered_kwargs[k] = debox_asset(v)
+                # third party
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
@@ -350,9 +375,19 @@ class UserCode(SyftObject):
 
         return wrapper
 
+    def _repr_markdown_(self):
+        md = f"""class UserCode
+    id: str = {self.id}
+    status.approved: str = {self.status.approved}
+    service_func_name: str = {self.service_func_name}
+    code:
+
+{self.raw_code}"""
+        return as_markdown_code(md)
+
     @property
-    def code(self) -> str:
-        return self.raw_code
+    def code(self) -> CodeMarkdown:
+        return CodeMarkdown(self.raw_code)
 
     def show_code_cell(self):
         warning_message = """# WARNING: \n# Before you submit
@@ -383,7 +418,7 @@ class SubmitUserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
 
-    __attr_repr_cols__ = ["func_name", "code"]
+    __repr_attrs__ = ["func_name", "code"]
 
     @property
     def kwargs(self) -> List[str]:
@@ -407,7 +442,11 @@ class SubmitUserCode(SyftObject):
 def debox_asset(arg: Any) -> Any:
     deboxed_arg = arg
     if isinstance(deboxed_arg, Asset):
-        deboxed_arg = arg.pointer
+        asset = deboxed_arg
+        if asset.has_data_permission():
+            return asset.data
+        else:
+            return asset.mock
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg
@@ -438,6 +477,11 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
+        print(
+            f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
+        )
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
