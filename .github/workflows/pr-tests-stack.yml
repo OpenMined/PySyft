@@ -312,4 +312,5 @@ jobs:
           chmod +x devspace
           devspace version
           tox -e syft.build.helm
-          # tox -e syft.test.helm
+          tox -e syft.package.helm
+          tox -e syft.test.helm
