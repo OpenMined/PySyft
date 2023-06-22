@@ -790,6 +790,7 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     cache: bool = True,
+    verbose: bool = True,
 ) -> SyftClient:
     _client = connect(url=url, node=node, port=port)
     connection = _client.connection
@@ -799,7 +800,8 @@ def login(
         login_credentials = UserLoginCredentials(email=email, password=password)
 
     if login_credentials is None:
-        print(f"Logged into {_client.name} as GUEST")
+        if verbose:
+            print(f"Logged into {_client.name} as GUEST")
         return _client.guest()
 
     if cache and login_credentials:
