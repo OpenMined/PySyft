@@ -6,12 +6,12 @@ from io import BytesIO
 
 # third party
 from dateutil import parser
-import flax
-from flax.core.frozen_dict import FrozenDict
 from jax import numpy as jnp
-from jaxlib.xla_extension import DeviceArray
+from jaxlib.xla_extension import ArrayImpl
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import networkx as nx
+from networkx import DiGraph
 import numpy as np
 from pandas import DataFrame
 from pandas import Series
@@ -23,6 +23,7 @@ from pymongo.collection import Collection
 from result import Err
 from result import Ok
 from result import Result
+import zmq.green as zmq
 
 # relative
 from .deserialize import _deserialize as deserialize
@@ -146,19 +147,48 @@ except Exception:  # nosec
 
 # jax
 recursive_serde_register(
-    DeviceArray,
+    ArrayImpl,
     serialize=lambda x: serialize(np.array(x), to_bytes=True),
     deserialize=lambda x: jnp.array(deserialize(x, from_bytes=True)),
 )
 
 
+# unsure why we have to register the object not the type but this works
+recursive_serde_register(np.core._ufunc_config._unspecified())
+
 recursive_serde_register(
-    FrozenDict,
-    serialize=lambda x: serialize(flax.serialization.to_state_dict(x), to_bytes=True),
-    deserialize=lambda x: FrozenDict(
-        flax.serialization.from_state_dict(FrozenDict, deserialize(x, from_bytes=True))
-    ),
+    pydantic.networks.EmailStr,
+    serialize=lambda x: x.encode(),
+    deserialize=lambda x: pydantic.networks.EmailStr(x.decode()),
 )
+
+recursive_serde_register(
+    zmq._Socket,
+    serialize_attrs=[
+        "_shadow",
+        "_monitor_socket",
+        "_type_name",
+    ],
+)
+recursive_serde_register(zmq._Context)
 
 # how else do you import a relative file to execute it?
 NOTHING = None
+
+
+# TODO: debug serializing after updating a node
+def serialize_networkx_graph(graph: DiGraph) -> bytes:
+    graph_dict: dict = nx.node_link_data(graph)
+    return serialize(graph_dict, to_bytes=True)
+
+
+def deserialize_networkx_graph(buf: bytes) -> DiGraph:
+    graph_dict: dict = deserialize(buf, from_bytes=True)
+    return nx.node_link_graph(graph_dict)
+
+
+recursive_serde_register(
+    DiGraph,
+    serialize=serialize_networkx_graph,
+    deserialize=deserialize_networkx_graph,
+)

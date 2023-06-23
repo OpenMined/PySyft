@@ -65,11 +65,9 @@ class UID:
         # if value is not set - create a novel and unique ID.
         if isinstance(value, str):
             value = uuid.UUID(value)
-
-        if isinstance(value, bytes):
+        elif isinstance(value, bytes):
             value = uuid.UUID(bytes=value)
-
-        if isinstance(value, UID):
+        elif isinstance(value, UID):
             value = value.value
 
         self.value = uuid.uuid4() if value is None else value
@@ -175,14 +173,18 @@ class UID:
     def emoji(self) -> str:
         return f"<UID:{self.string_emoji(string=str(self.value), length=8, chunk=4)}>"
 
-    def repr_short(self) -> str:
+    def short(self) -> str:
         """Returns a SHORT human-readable version of the ID
 
         Return a SHORT human-readable version of the ID which
         makes it print nicer when embedded (often alongside other
         UID objects) within other object __repr__ methods."""
 
-        return f"..{str(self.value)[-5:]}"
+        return str(self.value)[:8]
+
+    @property
+    def id(self) -> "UID":
+        return self
 
     @staticmethod
     def _check_or_convert(value: Union[str, "UID", uuid.UUID]) -> "UID":
@@ -201,6 +203,8 @@ class UID:
 
 @serializable(attrs=["syft_history_hash"])
 class LineageID(UID):
+    """Extended UID containing a history hash as well, which is used for comparisons."""
+
     syft_history_hash: int
 
     def __init__(
@@ -212,10 +216,7 @@ class LineageID(UID):
             syft_history_hash = value.syft_history_hash
             value = value.value
 
-        if isinstance(value, UID):
-            self.value = value.value
-        else:
-            super().__init__(value)
+        super().__init__(value)
 
         if syft_history_hash is None:
             syft_history_hash = hash(self.value)
@@ -225,13 +226,19 @@ class LineageID(UID):
     def id(self) -> UID:
         return UID(self.value)
 
+    def __hash__(self):
+        return hash((self.syft_history_hash, self.value))
+
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, LineageID):
             return (
                 self.id == other.id
                 and self.syft_history_hash == other.syft_history_hash
             )
-        return self == other
+        elif isinstance(other, UID):
+            return hash(self) == hash(other)
+        else:
+            raise ValueError(f"Unsupported comparison: LineageID with {type(other)}")
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.no_dash} - {self.syft_history_hash}>"

@@ -5,12 +5,12 @@ from typing import List
 from typing import Optional
 
 # third party
-from oblv import OblvClient
-from oblv.models import CreateDeploymentInput
+from oblv_ctl import OblvClient
+from oblv_ctl.models import CreateDeploymentInput
 import yaml
 
 # relative
-from ...util import bcolors
+from ...util.util import bcolors
 from .auth import login
 from .constants import INFRA
 from .constants import REF

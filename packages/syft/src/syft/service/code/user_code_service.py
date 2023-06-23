@@ -2,10 +2,12 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
 from result import OkErr
+from result import Result
 
 # relative
 from ...serde.serializable import serializable
@@ -14,10 +16,9 @@ from ...store.linked_obj import LinkedObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..policy.policy import OutputHistory
-from ..policy.policy import UserPolicy
-from ..policy.policy import load_policy_code
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
@@ -32,6 +33,7 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
+from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
 
@@ -45,7 +47,7 @@ class UserCodeService(AbstractService):
         self.store = store
         self.stash = UserCodeStash(store=store)
 
-    @service_method(path="code.submit", name="submit")
+    @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
@@ -59,6 +61,7 @@ class UserCodeService(AbstractService):
         self,
         context: AuthedServiceContext,
         code: SubmitUserCode,
+        reason: Optional[str] = "",
     ):
         user_code = code.to(UserCode, context=context)
         result = self.stash.set(context.credentials, user_code)
@@ -74,7 +77,7 @@ class UserCodeService(AbstractService):
 
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
-        result = method(context=context, request=request)
+        result = method(context=context, request=request, reason=reason)
 
         # The Request service already returns either a SyftSuccess or SyftError
         return result
@@ -85,10 +88,13 @@ class UserCodeService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def request_code_execution(
-        self, context: AuthedServiceContext, code: SubmitUserCode
+        self,
+        context: AuthedServiceContext,
+        code: SubmitUserCode,
+        reason: Optional[str] = "",
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
-        return self._code_execution(context=context, code=code)
+        return self._code_execution(context=context, code=code, reason=reason)
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
@@ -137,12 +143,7 @@ class UserCodeService(AbstractService):
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_ok():
             user_code_items = result.ok()
-            for user_code in user_code_items:
-                if user_code.status.approved:
-                    if isinstance(user_code.input_policy_type, UserPolicy):
-                        load_policy_code(user_code.input_policy_type)
-                    if isinstance(user_code.output_policy_type, UserPolicy):
-                        load_policy_code(user_code.output_policy_type)
+            load_approved_policy_code(user_code_items=user_code_items)
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -159,14 +160,24 @@ class UserCodeService(AbstractService):
             code_item = result.ok()
             status = code_item.status
 
-            # Check if we are allowed to execute the code
+            # Check if the user has permission to execute the code
+            # They can execute if they are root user or if they are the user who submitted the code
+            if not (
+                context.credentials == context.node.verify_key
+                or context.credentials == code_item.user_verify_key
+            ):
+                return SyftError(
+                    message=f"Code Execution Permission: {context.credentials} denied"
+                )
+
+            # Check if the code is approved
             if status.for_context(context) != UserCodeStatus.EXECUTE:
                 if status.for_context(context) == UserCodeStatus.SUBMITTED:
                     return SyftNotReady(
                         message=f"{type(code_item)} Your code is waiting for approval: {status}"
                     )
                 return SyftError(
-                    message=f"{type(code_item)} Your code cannot be run: {status}"
+                    message=f"{type(code_item)} Your code cannot be run: {status.for_context(context)}"
                 )
 
             output_policy = code_item.output_policy
@@ -178,37 +189,41 @@ class UserCodeService(AbstractService):
 
             if not is_valid:
                 if len(output_policy.output_history) > 0:
-                    return get_outputs(
+                    result = get_outputs(
                         context=context,
                         output_history=output_policy.output_history[-1],
                     )
+                    return result.as_empty()
                 return is_valid
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
-            result = action_service._user_code_execute(
+            result: Result = action_service._user_code_execute(
                 context, code_item, filtered_kwargs
             )
             if isinstance(result, str):
                 return SyftError(message=result)
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            final_results = result.ok()
-            output_policy.apply_output(context=context, outputs=final_results)
+            result: Union[ActionObject, TwinObject] = result.ok()
+            output_policy.apply_output(context=context, outputs=result)
             code_item.output_policy = output_policy
-            state_result = self.update_code_state(context=context, code_item=code_item)
-            if not state_result:
-                return state_result
-            if isinstance(final_results, TwinObject):
-                return final_results.private
-            return final_results
+            update_success = self.update_code_state(
+                context=context, code_item=code_item
+            )
+            if not update_success:
+                return update_success
+            if isinstance(result, TwinObject):
+                return result.mock
+            else:
+                return result.as_empty()
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
 
 
 def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) -> Any:
     # relative
-    from ...service.action.action_service import TwinMode
+    from ...service.action.action_object import TwinMode
 
     if isinstance(output_history.outputs, list):
         if len(output_history.outputs) == 0:

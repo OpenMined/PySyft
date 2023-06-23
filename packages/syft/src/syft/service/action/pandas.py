@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import ClassVar
+from typing import Optional
 from typing import Type
 
 # third party
@@ -11,6 +12,7 @@ from pandas import Series
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from .action_object import ActionObject
+from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
 
@@ -20,7 +22,8 @@ class PandasDataFrameObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[Type[Any]] = DataFrame
-    syft_passthrough_attrs = []
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    # this is added for instance checks for dataframes
     # syft_dont_wrap_attrs = ["shape"]
 
     def __dataframe__(self, *args: Any, **kwargs: Any) -> Any:
@@ -45,7 +48,9 @@ class PandasSeriesObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type = Series
-    syft_passthrough_attrs = []
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+
+    name: Optional[str] = None
     # syft_dont_wrap_attrs = ["shape"]
 
     def __getattribute__(self, name: str) -> Any:

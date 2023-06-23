@@ -6,6 +6,7 @@ from typing import Dict
 from nacl.exceptions import BadSignatureError
 import numpy as np
 import pytest
+from result import Ok
 
 # syft absolute
 import syft as sy
@@ -83,7 +84,10 @@ def test_action_store() -> None:
     test_object = ActionObject.from_obj(raw_data)
 
     set_result = action_store.set(
-        uid=uid, credentials=test_signing_key, syft_object=test_object
+        uid=uid,
+        credentials=test_signing_key,
+        syft_object=test_object,
+        has_result_read_permission=True,
     )
     assert set_result.is_ok()
     test_object_result = action_store.get(uid=uid, credentials=test_signing_key)
@@ -200,11 +204,11 @@ def test_action_object_hooks() -> None:
         # double it
         new_value = args[0]
         new_value.syft_action_data = new_value.syft_action_data * 2
-        return context, (new_value,), kwargs
+        return Ok((context, (new_value,), kwargs))
 
     def post_add(context: Any, name: str, new_result: Any) -> Any:
         # change return type to sum
-        return sum(new_result)
+        return Ok(sum(new_result))
 
     action_object._syft_pre_hooks__["__add__"] = [pre_add]
     action_object._syft_post_hooks__["__add__"] = [post_add]

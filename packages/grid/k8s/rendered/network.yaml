@@ -2186,9 +2186,9 @@ metadata:
     "helm.sh/chart": "component-chart-0.8.4"
 spec:
   ports:
-  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
-  - port: 80
-    name: web
+    # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+    - port: 80
+      name: web
   clusterIP: None
   selector:
     "app.kubernetes.io/name": "devspace-app"
@@ -2251,29 +2251,18 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "traefik:v2.5"
           name: "container-0"
@@ -2282,20 +2271,13 @@ spec:
           env:
             - name: SERVICE_NAME
               value: proxy
-          envFrom:
-            null
-          securityContext:
-            null
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          envFrom: null
+          securityContext: null
+          lifecycle: null
+          livenessProbe: null
+          readinessProbe: null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
             - mountPath: "/etc/traefik"
               name: "traefik-conf"
@@ -2309,24 +2291,18 @@ spec:
               value: node
             - name: STACK_API_KEY
               value: w9N59fxaSrb6Vl64mVHR3WVRTMZZQ7XYYTfiJ9GEUkPviQTq
-          envFrom:
-            null
+          envFrom: null
           securityContext:
             capabilities:
               add:
-              - NET_ADMIN
-              - SYS_MODULE
+                - NET_ADMIN
+                - SYS_MODULE
             privileged: true
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          lifecycle: null
+          livenessProbe: null
+          readinessProbe: null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
             - mountPath: "/var/lib/tailscale"
               name: "tailscale-data"
@@ -2338,21 +2314,20 @@ spec:
           configMap:
             name: traefik-main-config
   volumeClaimTemplates:
-  - metadata:
-      name: "tailscale-data"
-      labels:
-        "app.kubernetes.io/name": "devspace-app"
-        "app.kubernetes.io/component": "tailscale"
-        "app.kubernetes.io/managed-by": "Helm"
-      annotations:
-        "helm.sh/chart": "component-chart-0.8.4"
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: "100Mi"
-
+    - metadata:
+        name: "tailscale-data"
+        labels:
+          "app.kubernetes.io/name": "devspace-app"
+          "app.kubernetes.io/component": "tailscale"
+          "app.kubernetes.io/managed-by": "Helm"
+        annotations:
+          "helm.sh/chart": "component-chart-0.8.4"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "100Mi"
 
 ---
 # Source: component-chart/templates/service.yaml
@@ -2411,50 +2386,31 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "rabbitmq:3"
           name: "container-0"
           command:
           args:
-          env:
-            null
-          envFrom:
-            null
-          securityContext:
-            null
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          env: null
+          envFrom: null
+          securityContext: null
+          lifecycle: null
+          livenessProbe: null
+          readinessProbe: null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
       initContainers:
       volumes:
@@ -2462,7 +2418,6 @@ spec:
 ---
 # Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
-
 
 ---
 # Source: component-chart/templates/deployment.yaml
@@ -2478,9 +2433,9 @@ metadata:
     "helm.sh/chart": "component-chart-0.8.4"
 spec:
   ports:
-  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
-  - port: 80
-    name: web
+    # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+    - port: 80
+      name: web
   clusterIP: None
   selector:
     "app.kubernetes.io/name": "devspace-app"
@@ -2539,29 +2494,18 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "redis:6.2"
           name: "container-0"
@@ -2572,20 +2516,13 @@ spec:
               value: redis
             - name: RELEASE
               value: production
-          envFrom:
-            null
-          securityContext:
-            null
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          envFrom: null
+          securityContext: null
+          lifecycle: null
+          livenessProbe: null
+          readinessProbe: null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
             - mountPath: "/data"
               name: "app-redis-data"
@@ -2600,21 +2537,20 @@ spec:
           configMap:
             name: redis-config
   volumeClaimTemplates:
-  - metadata:
-      name: "app-redis-data"
-      labels:
-        "app.kubernetes.io/name": "devspace-app"
-        "app.kubernetes.io/component": "redis"
-        "app.kubernetes.io/managed-by": "Helm"
-      annotations:
-        "helm.sh/chart": "component-chart-0.8.4"
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: "5Gi"
-
+    - metadata:
+        name: "app-redis-data"
+        labels:
+          "app.kubernetes.io/name": "devspace-app"
+          "app.kubernetes.io/component": "redis"
+          "app.kubernetes.io/managed-by": "Helm"
+        annotations:
+          "helm.sh/chart": "component-chart-0.8.4"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "5Gi"
 
 ---
 # Source: component-chart/templates/deployment.yaml
@@ -2630,9 +2566,9 @@ metadata:
     "helm.sh/chart": "component-chart-0.8.4"
 spec:
   ports:
-  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
-  - port: 80
-    name: web
+    # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+    - port: 80
+      name: web
   clusterIP: None
   selector:
     "app.kubernetes.io/name": "devspace-app"
@@ -2691,29 +2627,18 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "postgres:12"
           name: "container-0"
@@ -2726,20 +2651,13 @@ spec:
               value: postgres
             - name: POSTGRES_PASSWORD
               value: changethis
-          envFrom:
-            null
-          securityContext:
-            null
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          envFrom: null
+          securityContext: null
+          lifecycle: null
+          livenessProbe: null
+          readinessProbe: null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
             - mountPath: "/var/lib/postgresql/data"
               name: "app-db-data"
@@ -2748,21 +2666,20 @@ spec:
       initContainers:
       volumes:
   volumeClaimTemplates:
-  - metadata:
-      name: "app-db-data"
-      labels:
-        "app.kubernetes.io/name": "devspace-app"
-        "app.kubernetes.io/component": "db"
-        "app.kubernetes.io/managed-by": "Helm"
-      annotations:
-        "helm.sh/chart": "component-chart-0.8.4"
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: "5Gi"
-
+    - metadata:
+        name: "app-db-data"
+        labels:
+          "app.kubernetes.io/name": "devspace-app"
+          "app.kubernetes.io/component": "db"
+          "app.kubernetes.io/managed-by": "Helm"
+        annotations:
+          "helm.sh/chart": "component-chart-0.8.4"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "5Gi"
 
 ---
 # Source: component-chart/templates/service.yaml
@@ -2817,29 +2734,18 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "openmined/grid-backend:latest"
           name: "container-0"
@@ -2901,15 +2807,13 @@ spec:
               value: "False"
             - name: SERVICE_NAME
               value: backend
-          envFrom:
-            null
+          envFrom: null
           securityContext:
             capabilities:
               add:
-              - NET_ADMIN
+                - NET_ADMIN
             privileged: true
-          lifecycle:
-            null
+          lifecycle: null
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -2926,10 +2830,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
             successThreshold: 1
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
       initContainers:
       volumes:
@@ -2937,7 +2839,6 @@ spec:
 ---
 # Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
-
 
 ---
 # Source: component-chart/templates/service.yaml
@@ -2992,29 +2893,18 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "openmined/grid-backend:latest"
           name: "container-0"
@@ -3075,15 +2965,13 @@ spec:
               value: production
             - name: USE_BLOB_STORAGE
               value: "False"
-          envFrom:
-            null
+          envFrom: null
           securityContext:
             capabilities:
               add:
-              - NET_ADMIN
+                - NET_ADMIN
             privileged: true
-          lifecycle:
-            null
+          lifecycle: null
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -3100,10 +2988,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
             successThreshold: 1
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
       initContainers:
       volumes:
@@ -3111,7 +2997,6 @@ spec:
 ---
 # Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
-
 
 ---
 # Source: component-chart/templates/deployment.yaml
@@ -3144,29 +3029,18 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "openmined/grid-backend:latest"
           name: "container-0"
@@ -3231,23 +3105,17 @@ spec:
               value: "60"
             - name: USE_BLOB_STORAGE
               value: "False"
-          envFrom:
-            null
+          envFrom: null
           securityContext:
             capabilities:
               add:
-              - NET_ADMIN
+                - NET_ADMIN
             privileged: true
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          lifecycle: null
+          livenessProbe: null
+          readinessProbe: null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
       initContainers:
       volumes:
@@ -3255,7 +3123,6 @@ spec:
 ---
 # Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
-
 
 ---
 # Source: component-chart/templates/deployment.yaml
@@ -3271,9 +3138,9 @@ metadata:
     "helm.sh/chart": "component-chart-0.8.4"
 spec:
   ports:
-  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
-  - port: 80
-    name: web
+    # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+    - port: 80
+      name: web
   clusterIP: None
   selector:
     "app.kubernetes.io/name": "devspace-app"
@@ -3336,29 +3203,18 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "openmined/grid-vpn-headscale:latest"
           name: "container-0"
@@ -3369,20 +3225,13 @@ spec:
               value: omnet
             - name: STACK_API_KEY
               value: w9N59fxaSrb6Vl64mVHR3WVRTMZZQ7XYYTfiJ9GEUkPviQTq
-          envFrom:
-            null
-          securityContext:
-            null
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          envFrom: null
+          securityContext: null
+          lifecycle: null
+          livenessProbe: null
+          readinessProbe: null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
             - mountPath: "/headscale/data"
               name: "headscale-data"
@@ -3391,21 +3240,20 @@ spec:
       initContainers:
       volumes:
   volumeClaimTemplates:
-  - metadata:
-      name: "headscale-data"
-      labels:
-        "app.kubernetes.io/name": "devspace-app"
-        "app.kubernetes.io/component": "headscale"
-        "app.kubernetes.io/managed-by": "Helm"
-      annotations:
-        "helm.sh/chart": "component-chart-0.8.4"
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: "100Mi"
-
+    - metadata:
+        name: "headscale-data"
+        labels:
+          "app.kubernetes.io/name": "devspace-app"
+          "app.kubernetes.io/component": "headscale"
+          "app.kubernetes.io/managed-by": "Helm"
+        annotations:
+          "helm.sh/chart": "component-chart-0.8.4"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "100Mi"
 
 ---
 # Source: component-chart/templates/deployment.yaml
@@ -3438,30 +3286,19 @@ spec:
         "helm.sh/chart": "component-chart-0.8.4"
     spec:
       imagePullSecrets:
-      nodeSelector:
-        null
-      nodeName:
-        null
-      affinity:
-        null
-      tolerations:
-        null
-      dnsConfig:
-        null
-      hostAliases:
-        null
-      overhead:
-        null
-      readinessGates:
-        null
-      securityContext:
-        null
-      topologySpreadConstraints:
-        null
+      nodeSelector: null
+      nodeName: null
+      affinity: null
+      tolerations: null
+      dnsConfig: null
+      hostAliases: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      topologySpreadConstraints: null
       hostNetwork: true
       terminationGracePeriodSeconds: 5
-      ephemeralContainers:
-        null
+      ephemeralContainers: null
       containers:
         - image: "openmined/grid-vpn-iptables:latest"
           name: "container-0"
@@ -3470,26 +3307,19 @@ spec:
             - "-c"
             - "/iptables.sh"
           args:
-          env:
-            null
-          envFrom:
-            null
+          env: null
+          envFrom: null
           securityContext:
             capabilities:
               add:
-              - NET_ADMIN
-              - SYS_MODULE
+                - NET_ADMIN
+                - SYS_MODULE
             privileged: true
-          lifecycle:
-            null
-          livenessProbe:
-            null
-          readinessProbe:
-            null
-          startupProbe:
-            null
-          volumeDevices:
-            null
+          lifecycle: null
+          livenessProbe: null
+          readinessProbe: null
+          startupProbe: null
+          volumeDevices: null
           volumeMounts:
           resources:
             requests:
@@ -3511,14 +3341,15 @@ metadata:
   namespace: default
 spec:
   rules:
-  - http:
-      paths:
-      - backend:
-          service:
-            name: tailscale
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
+    - http:
+        paths:
+          - backend:
+              service:
+                name: tailscale
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
 
 ---
+

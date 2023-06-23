@@ -42,8 +42,6 @@ def load_dataset(domain_client) -> None:
 
 
 def test_manual_code_submission_enclave() -> None:
-    print("enable_oblv", os.environ.get("ENABLE_OBLV"))
-    print("local_enclave_port", os.environ.get("LOCAL_ENCLAVE_PORT"))
     # Step1: Login Phase
     canada_root = sy.Worker.named(name="canada", local_db=True, reset=True).root_client
 
@@ -66,6 +64,15 @@ def test_manual_code_submission_enclave() -> None:
     )  # connection_port key can be added to set the port on which oblv_proxy will run
 
     depl.initiate_connection(LOCAL_ENCLAVE_PORT)
+
+    depl.register(
+        name="Jane Doe",
+        email="jane@caltech.edu",
+        password="abc123",
+        institution="Caltech",
+        website="https://www.caltech.edu/",
+    )
+    depl.login(email="jane@caltech.edu", password="abc123")
 
     # Step 4: Manual code  preparation Phase
     canada_data = canada_root.datasets[-1]
@@ -94,9 +101,6 @@ def test_manual_code_submission_enclave() -> None:
     italy_requests = italy_root.api.services.request.get_all()
     assert len(italy_requests) == 1
     assert italy_requests[0].approve()
-
-    # Step 7: Result Retrieval Phase
-    depl.refresh()
 
     assert hasattr(depl.api.services.code, "simple_function")
     res = depl.api.services.code.simple_function(

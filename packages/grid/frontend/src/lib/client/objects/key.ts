@@ -1,4 +1,4 @@
-class VerifyKey {
+export class VerifyKey {
   key: Uint8Array;
   fqn: string;
 

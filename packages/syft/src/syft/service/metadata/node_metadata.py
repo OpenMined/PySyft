@@ -73,6 +73,7 @@ class NodeMetadata(SyftObject):
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "Text"
+    signup_enabled: bool
 
     def check_version(self, client_version: str) -> None:
         return check_version(
@@ -96,6 +97,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "My cool domain"
+    signup_enabled: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -108,7 +110,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
 @transform(NodeMetadata, NodeMetadataJSON)
 def metadata_to_json() -> List[Callable]:
     return [
-        drop("__canonical_name__"),
+        drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
         convert_types(["id", "verify_key"], str),
     ]

@@ -5,6 +5,7 @@ from typing import Tuple
 from typing import Union
 
 # relative
+from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
 from ...serde.serializable import serializable
@@ -93,22 +94,42 @@ class UserService(AbstractService):
 
     @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
     def get_all(
-        self, context: AuthedServiceContext
+        self,
+        context: AuthedServiceContext,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
     ) -> Union[Optional[UserView], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
-            return [user.to(UserView) for user in result.ok()]
+            results = [user.to(UserView) for user in result.ok()]
+
+            # If chunk size is defined, then split list into evenly sized chunks
+            if page_size:
+                results = [
+                    results[i : i + page_size]
+                    for i in range(0, len(results), page_size)
+                ]
+                # Return the proper slice using chunk_index
+                results = results[page_index]
+
+            return results
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
         return SyftError(message="No users exists")
 
     def get_role_for_credentials(
-        self, credentials: SyftVerifyKey
+        self, credentials: Union[SyftVerifyKey, SyftSigningKey]
     ) -> Union[Optional[ServiceRole], SyftError]:
         # they could be different
-        result = self.stash.get_by_verify_key(
-            credentials=credentials, verify_key=credentials
-        )
+
+        if isinstance(credentials, SyftVerifyKey):
+            result = self.stash.get_by_verify_key(
+                credentials=credentials, verify_key=credentials
+            )
+        else:
+            result = self.stash.get_by_signing_key(
+                credentials=credentials, signing_key=credentials
+            )
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
             user = result.ok()
@@ -121,6 +142,8 @@ class UserService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_search: UserSearch,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
     ) -> Union[List[UserView], SyftError]:
         kwargs = user_search.to_dict(exclude_empty=True)
 
@@ -131,10 +154,21 @@ class UserService(AbstractService):
                 Allowed params: {valid_search_params}"
             )
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
+
         if result.is_err():
             return SyftError(message=str(result.err()))
         users = result.ok()
-        return [user.to(UserView) for user in users] if users is not None else []
+        results = [user.to(UserView) for user in users] if users is not None else []
+
+        # If page size is defined, then split list into evenly sized chunks
+        if page_size:
+            results = [
+                results[i : i + page_size] for i in range(0, len(results), page_size)
+            ]
+            # Return the proper slice using page_index
+            results = results[page_index]
+
+        return results
 
     @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
     def update(
@@ -182,7 +216,7 @@ class UserService(AbstractService):
         edits_non_role_attrs = any(
             [
                 getattr(user_update, attr) is not Empty
-                for attr in dict(user_update)
+                for attr in user_update.dict()
                 if attr != "role"
             ]
         )
@@ -303,6 +337,21 @@ class UserService(AbstractService):
     ) -> Union[Tuple[SyftSuccess, UserPrivateKey], SyftError]:
         """Register new user"""
 
+        request_user_role = (
+            ServiceRole.GUEST
+            if new_user.created_by is None
+            else self.get_role_for_credentials(new_user.created_by)
+        )
+        can_user_register = context.node.metadata.signup_enabled or (
+            request_user_role in DATA_OWNER_ROLE_LEVEL
+        )
+
+        if not can_user_register:
+            return SyftError(
+                message=f"You don't have permission to create an account "
+                f"on the domain: {context.node.name}. Please contact the Domain Owner."
+            )
+
         user = new_user.to(User)
         result = self.stash.get_by_email(credentials=user.verify_key, email=user.email)
         if result.is_err():
@@ -324,7 +373,11 @@ class UserService(AbstractService):
             return SyftError(message=str(result.err()))
 
         user = result.ok()
-        msg = SyftSuccess(message=f"{user.email} User successfully registered !!!")
+
+        success_message = f"User '{user.name}' successfully registered!"
+        if request_user_role in DATA_OWNER_ROLE_LEVEL:
+            success_message += " To see users, run `[your_client].users`"
+        msg = SyftSuccess(message=success_message)
         return tuple([msg, user.to(UserPrivateKey)])
 
     def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:
@@ -334,6 +387,18 @@ class UserService(AbstractService):
         if result.is_ok():
             return result.ok().verify_key
         return SyftError(message=f"No user with email: {email}")
+
+    def get_by_verify_key(
+        self, verify_key: SyftVerifyKey
+    ) -> Union[UserView, SyftError]:
+        # we are bypassing permissions here, so dont use to return a result directly to the user
+        credentials = self.admin_verify_key()
+        result = self.stash.get_by_verify_key(
+            credentials=credentials, verify_key=verify_key
+        )
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=f"No User with verify_key: {verify_key}")
 
 
 TYPE_TO_SERVICE[User] = UserService

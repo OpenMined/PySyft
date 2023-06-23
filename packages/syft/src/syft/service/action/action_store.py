@@ -19,8 +19,11 @@ from ...store.document_store import BasePartitionSettings
 from ...store.document_store import StoreConfig
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
+from ...types.uid import LineageID
 from ...types.uid import UID
 from ..response import SyftSuccess
+from .action_object import TwinMode
+from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
 from .action_permissions import ActionObjectOWNER
 from .action_permissions import ActionObjectPermission
@@ -59,62 +62,103 @@ class KeyValueActionStore(ActionStore):
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
 
-    def get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
-        # TODO 🟣 Temporarily added skip permission argument for enclave
-        # until permissions are fully integrated
+    def get(
+        self, uid: UID, credentials: SyftVerifyKey, has_permission=False
+    ) -> Result[SyftObject, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        # if True:
-        if self.has_permission(read_permission):
-            syft_object = self.data[uid]
-            return Ok(syft_object)
+        if has_permission or self.has_permission(read_permission):
+            try:
+                if isinstance(uid, LineageID):
+                    syft_object = self.data[uid.id]
+                elif isinstance(uid, UID):
+                    syft_object = self.data[uid]
+                else:
+                    raise Exception(f"Unrecognized UID type: {type(uid)}")
+                return Ok(syft_object)
+            except Exception as e:
+                return Err(f"Could not find item with uid {uid}, {e}")
         return Err(f"Permission: {read_permission} denied")
 
     def get_pointer(
         self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
     ) -> Result[SyftObject, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         try:
             # 🟡 TODO 34: do we want pointer read permissions?
             if uid in self.data:
                 obj = self.data[uid]
                 if isinstance(obj, TwinObject):
-                    obj = obj.mock
+                    obj = (
+                        obj.mock if not is_action_data_empty(obj.mock) else obj.private
+                    )
+                    # we patch the real id on it so we can keep using the twin
+                    obj.id = uid
+                else:
+                    obj.syft_twin_type = TwinMode.NONE
                 obj.syft_point_to(node_uid)
                 return Ok(obj)
+            # third party
             return Err("Permission denied")
         except Exception as e:
             return Err(str(e))
 
     def exists(self, uid: UID) -> bool:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         return uid in self.data
 
     def set(
-        self, uid: UID, credentials: SyftVerifyKey, syft_object: SyftObject
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        syft_object: SyftObject,
+        has_result_read_permission: bool = False,
     ) -> Result[SyftSuccess, Err]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         # if you set something you need WRITE permission
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
         can_write = self.has_permission(write_permission)
 
         if not self.exists(uid=uid):
             # attempt to claim it for writing
-            ownership_result = self.take_ownership(uid=uid, credentials=credentials)
-            can_write = True if ownership_result.is_ok() else False
+            if has_result_read_permission:
+                ownership_result = self.take_ownership(uid=uid, credentials=credentials)
+                can_write = True if ownership_result.is_ok() else False
+            else:
+                # root takes owneship, but you can still write
+                ownership_result = self.take_ownership(
+                    uid=uid, credentials=self.root_verify_key
+                )
+                can_write = True if ownership_result.is_ok() else False
 
         if can_write:
             self.data[uid] = syft_object
-            if uid not in self.permissions:
-                # create default permissions
-                self.permissions[uid] = set()
-            permission = f"{credentials.verify}_READ"
-            permissions = self.permissions[uid]
-            permissions.add(permission)
-            self.permissions[uid] = permissions
+            if has_result_read_permission:
+                if uid not in self.permissions:
+                    # create default permissions
+                    self.permissions[uid] = set()
+                self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
+            else:
+                self.add_permissions(
+                    [
+                        ActionObjectWRITE(uid=uid, credentials=credentials),
+                        ActionObjectEXECUTE(uid=uid, credentials=credentials),
+                    ]
+                )
+
             return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
         return Err(f"Permission: {write_permission} denied")
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         # first person using this UID can claim ownership
         if uid not in self.permissions and uid not in self.data:
             self.add_permissions(
@@ -129,6 +173,8 @@ class KeyValueActionStore(ActionStore):
         return Err(f"UID: {uid} already owned.")
 
     def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
         # if you delete something you need OWNER permission
         # is it bad to evict a key and have someone else reuse it?
         # perhaps we should keep permissions but no data?
@@ -165,6 +211,9 @@ class KeyValueActionStore(ActionStore):
             pass
 
         return False
+
+    def has_permissions(self, permissions: List[ActionObjectPermission]) -> bool:
+        return all([self.has_permission(p) for p in permissions])
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]

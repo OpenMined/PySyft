@@ -43,7 +43,7 @@ def fix_windows_virtualenv_api(cls: type) -> None:
             return os.path.join(self.path, "Scripts", "python.exe")
         return os.path.join("bin", "python")
 
-    setattr(cls, "_python_rpath", property(_python_rpath))
+    cls._python_rpath = property(_python_rpath)
 
 
 def shell(command: str) -> str:

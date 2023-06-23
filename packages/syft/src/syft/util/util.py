@@ -20,6 +20,7 @@ import re
 from secrets import randbelow
 import socket
 import sys
+import threading
 import time
 from types import ModuleType
 from typing import Any
@@ -44,6 +45,9 @@ from .logger import critical
 from .logger import debug
 from .logger import error
 from .logger import traceback_and_raise
+
+DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
+PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
 
 
 def full_name_with_qualname(klass: type) -> str:
@@ -81,6 +85,10 @@ def get_name_for(klass: type):
     if klass_name is None:
         klass_name = extract_name(klass)
     return klass_name
+
+
+def get_mb_size(data: Any) -> float:
+    return sys.getsizeof(data) / (1024 * 1024)
 
 
 def extract_name(klass: type):
@@ -827,3 +835,13 @@ def get_interpreter_module() -> str:
         return shell
     except NameError:
         return "StandardInterpreter"  # not sure
+
+
+if os_name() == "macOS":
+    # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+    # progress in another thread when fork() was called.
+    multiprocessing.set_start_method("spawn", True)
+
+
+def thread_ident() -> int:
+    return threading.current_thread().ident

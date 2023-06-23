@@ -3,11 +3,16 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import Optional
+
+# third party
+import pydantic
 
 # relative
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
+from ..service.action.action_object import TwinMode
 from ..service.action.action_types import action_types
 from .syft_object import SyftObject
 from .uid import UID
@@ -29,40 +34,33 @@ class TwinObject(SyftObject):
 
     __attr_searchable__ = []
 
+    id: UID
     private_obj: ActionObject
-    private_obj_id: UID
+    private_obj_id: UID = None  # type: ignore
     mock_obj: ActionObject
-    mock_obj_id: UID
+    mock_obj_id: UID = None  # type: ignore
 
-    def __init__(
-        self,
-        private_obj: ActionObject,
-        mock_obj: ActionObject,
-        private_obj_id: Optional[UID] = None,
-        mock_obj_id: Optional[UID] = None,
-        id: Optional[UID] = None,
-    ) -> None:
-        private_obj = to_action_object(private_obj)
-        mock_obj = to_action_object(mock_obj)
+    @pydantic.validator("private_obj", pre=True, always=True)
+    def make_private_obj(cls, v: ActionObject) -> ActionObject:
+        return to_action_object(v)
 
-        if private_obj_id is None:
-            private_obj_id = private_obj.id
-        if mock_obj_id is None:
-            mock_obj_id = mock_obj.id
-        if id is None:
-            id = UID()
-        super().__init__(
-            private_obj=private_obj,
-            private_obj_id=private_obj_id,
-            mock_obj=mock_obj,
-            mock_obj_id=mock_obj_id,
-            id=id,
-        )
+    @pydantic.validator("private_obj_id", pre=True, always=True)
+    def make_private_obj_id(cls, v: Optional[UID], values: Dict) -> UID:
+        return values["private_obj"].id if v is None else v
+
+    @pydantic.validator("mock_obj", pre=True, always=True)
+    def make_mock_obj(cls, v: ActionObject):
+        return to_action_object(v)
+
+    @pydantic.validator("mock_obj_id", pre=True, always=True)
+    def make_mock_obj_id(cls, v: Optional[UID], values: Dict) -> UID:
+        return values["mock_obj"].id if v is None else v
 
     @property
     def private(self) -> ActionObject:
         twin_id = self.id
         private = self.private_obj
+        private.syft_twin_type = TwinMode.PRIVATE
         private.id = twin_id
         return private
 
@@ -70,5 +68,6 @@ class TwinObject(SyftObject):
     def mock(self) -> ActionObject:
         twin_id = self.id
         mock = self.mock_obj
+        mock.syft_twin_type = TwinMode.MOCK
         mock.id = twin_id
         return mock

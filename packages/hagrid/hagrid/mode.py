@@ -2,6 +2,15 @@
 import os
 from pathlib import Path
 import site
+from typing import Optional
+
+
+def str_to_bool(bool_str: Optional[str]) -> bool:
+    result = False
+    bool_str = str(bool_str).lower()
+    if bool_str == "true" or bool_str == "1":
+        result = True
+    return result
 
 
 def hagrid_root() -> str:
@@ -9,6 +18,12 @@ def hagrid_root() -> str:
 
 
 def is_editable_mode() -> bool:
+    disable_editable_mode = str_to_bool(
+        os.environ.get("DISABLE_EDITABLE_MODE", "False")
+    )
+    if disable_editable_mode:
+        print("🚨 Editable Mode DISABLED")
+        return False
     current_package_root = hagrid_root()
 
     installed_as_editable = False

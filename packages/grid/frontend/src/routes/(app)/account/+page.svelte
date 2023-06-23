@@ -90,9 +90,9 @@
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
-          <Button variant="delete" action={() => (showDeleteAccountModal = true)}
-            >Delete Account</Button
-          >
+          <Button variant="delete" action={() => (showDeleteAccountModal = true)}>
+            Delete Account
+          </Button>
         </div>
       </div>
     </form>
@@ -116,10 +116,13 @@
           action={() => {
             showDeleteAccountModal = false;
             showDeleteConfirmModal = true;
-          }}>Delete Account</Button
+          }}
         >
-        <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">Cancel</a
-        >
+          Delete Account
+        </Button>
+        <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">
+          Cancel
+        </a>
       </div>
     </Modal>
   {/if}
@@ -142,10 +145,13 @@
           action={() => {
             showDeleteNodeModal = false;
             showDeleteConfirmModal = true;
-          }}>Delete Node</Button
+          }}
         >
-        <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">Cancel</a
-        >
+          Delete Node
+        </Button>
+        <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">
+          Cancel
+        </a>
       </div>
     </Modal>
   {/if}
@@ -186,8 +192,10 @@
           variant="delete"
           action={() => {
             showDeleteConfirmModal = false;
-          }}>Submit Response</Button
+          }}
         >
+          Submit Response
+        </Button>
         <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
       </div>
     </Modal>

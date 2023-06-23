@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Union
 
 # relative
@@ -17,6 +18,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .dataset import Asset
 from .dataset import CreateDataset
@@ -51,10 +53,18 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Dataset Added")
+        return SyftSuccess(
+            message=f"Dataset uploaded to '{context.node.name}'. "
+            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+        )
 
     @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Dataset], SyftError]:
+    def get_all(
+        self,
+        context: AuthedServiceContext,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
+    ) -> Union[List[Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -63,21 +73,44 @@ class DatasetService(AbstractService):
             for dataset in datasets:
                 dataset.node_uid = context.node.id
                 results.append(dataset)
+
+            # If chunk size is defined, then split list into evenly sized chunks
+            if page_size:
+                results = [
+                    results[i : i + page_size]
+                    for i in range(0, len(results), page_size)
+                ]
+                # Return the proper slice using chunk_index
+                results = results[page_index]
+
             return results
         return SyftError(message=result.err())
 
     @service_method(path="dataset.search", name="search")
     def search(
-        self, context: AuthedServiceContext, name: str
+        self,
+        context: AuthedServiceContext,
+        name: str,
+        page_size: Optional[int] = 0,
+        page_index: Optional[int] = 0,
     ) -> Union[List[Dataset], SyftError]:
         """Search a Dataset by name"""
         results = self.get_all(context)
 
-        return (
-            results
-            if isinstance(results, SyftError)
-            else [dataset for dataset in results if name in dataset.name]
-        )
+        if not isinstance(results, SyftError):
+            results = [dataset for dataset in results if name in dataset.name]
+
+            # If chunk size is defined, then split list into evenly sized chunks
+
+            if page_size:
+                results = [
+                    results[i : i + page_size]
+                    for i in range(0, len(results), page_size)
+                ]
+                # Return the proper slice using chunk_index
+                results = results[page_index]
+
+        return results
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(
@@ -105,7 +138,9 @@ class DatasetService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(
-        path="dataset.get_assets_by_action_id", name="get_assets_by_action_id"
+        path="dataset.get_assets_by_action_id",
+        name="get_assets_by_action_id",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_assets_by_action_id(
         self, context: AuthedServiceContext, uid: UID

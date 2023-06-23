@@ -1,5 +1,5 @@
 stack:
-  - .github/workflows/stack-integration_tests.yml
+  - .github/workflows/pr-tests-stack.yml
   - "**.py"
   - "**.cfg"
   - "**.yml"
@@ -14,7 +14,7 @@ stack:
   - "**.json"
 
 backend:
-  - .github/workflows/grid-backend_tests.yml
+  - .github/workflows/pr-tests-stack.yml
   - packages/syft/**/*.py
   - packages/syft/**/*.cfg
   - packages/grid/backend/**/*.py
@@ -28,7 +28,7 @@ backend:
   - packages/grid/backend/**/*.mako
 
 hagrid:
-  - .github/workflows/hagrid-pr_tests.yml
+  - .github/workflows/pr-tests-hagrid.yml
   - packages/hagrid/**/*.py
   - packages/hagrid/**/*.cfg
   - packages/hagrid/**/*.yml
@@ -39,7 +39,7 @@ hagrid:
   - packages/hagrid/**/*.sh
 
 syft:
-  - .github/workflows/syft**.yml
+  - .github/workflows/pr-tests-syft.yml
   - packages/syft/**/*.py
   - packages/syft/**/*.capnp
   - packages/syft/**/*.yml
@@ -52,7 +52,7 @@ syft:
   - packages/syft/**/*.mako
 
 frontend:
-  - .github/workflows/grid-frontend_tests.yml
+  - .github/workflows/pr-tests-frontend.yml
   - "**.py"
   - "**.cfg"
   - "**.yml"
@@ -66,6 +66,7 @@ frontend:
   - "**.lock"
   - "**.json"
   - packages/grid/frontend/**/*.eslintrc
+  - packages/grid/frontend/**/*.svelte
   - packages/grid/frontend/**/*.js
   - packages/grid/frontend/**/*.json
   - packages/grid/frontend/**/*.lock
@@ -73,7 +74,7 @@ frontend:
   - packages/grid/frontend/**/*.tsx
 
 notebooks:
-  - .github/workflows/syft-notebook-tests.yml
+  - .github/workflows/pr-tests-syft.yml
   - notebooks/api/**/*.ipynb
   - packages/syft/**/*.py
   - packages/syft/**/*.capnp
