@@ -123,7 +123,7 @@ jobs:
           images: openmined/grid-backend
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-backend` image to DockerHub
         uses: docker/build-push-action@v3
@@ -142,7 +142,7 @@ jobs:
           images: openmined/grid-enclave
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-enclave` image to DockerHub
         uses: docker/build-push-action@v3
@@ -161,7 +161,7 @@ jobs:
           images: openmined/grid-frontend
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-frontend` image to DockerHub
         uses: docker/build-push-action@v3
@@ -180,7 +180,7 @@ jobs:
           images: openmined/grid-vpn-headscale
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-headscale` image to DockerHub
         uses: docker/build-push-action@v3
@@ -198,7 +198,7 @@ jobs:
           images: openmined/grid-vpn-tailscale
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-tailscale` image to DockerHub
         uses: docker/build-push-action@v3
@@ -216,7 +216,7 @@ jobs:
           images: openmined/grid-vpn-iptables
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-vpn-iptables` image to DockerHub
         uses: docker/build-push-action@v2
