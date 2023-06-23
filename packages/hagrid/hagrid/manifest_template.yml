@@ -1,9 +1,9 @@
 manifestVersion: 0.1
-hagrid_version: 0.3.33
+hagrid_version: 0.3.34
 syft_version: 0.8.1
 dockerTag: 0.8.1
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
-hash: 6fbc318b86de0c5aa34997110cafd230e2236c10
+hash: 1b1d68202604cc1f412658b5ca8964e9b2559b14
 target_dir: ~/.hagrid/PySyft/
 files:
   grid:
@@ -14,6 +14,7 @@ files:
     - seaweedfs/filer.toml
     - seaweedfs/s3config.json
     - vpn/config.yaml
+    - default.env
     docker:
     - default.env
     - docker-compose.build.yml
@@ -32,3 +33,8 @@ files:
     - devspace.yaml
     - traefik/k8s/dynamic.yml
     - traefik/k8s/traefik.yml
+    enclave:
+    - worker/docker-compose.yml
+    - worker/docker-compose.dev.yml
+    - worker/docker-compose.pull.yml
+    - worker/docker-compose.build.yml
