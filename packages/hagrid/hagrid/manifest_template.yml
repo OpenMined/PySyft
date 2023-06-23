@@ -14,6 +14,7 @@ files:
     - seaweedfs/filer.toml
     - seaweedfs/s3config.json
     - vpn/config.yaml
+    - default.env
     docker:
     - default.env
     - docker-compose.build.yml
@@ -32,3 +33,8 @@ files:
     - devspace.yaml
     - traefik/k8s/dynamic.yml
     - traefik/k8s/traefik.yml
+    enclave:
+    - worker/docker-compose.yml
+    - worker/docker-compose.dev.yml
+    - worker/docker-compose.pull.yml
+    - worker/docker-compose.build.yml
