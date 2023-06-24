@@ -66,7 +66,7 @@ spec:
         - name: RELEASE
           value: production
         - name: VERSION
-          value: 0.8.1-beta.15
+          value: 0.8.1
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
@@ -104,7 +104,7 @@ spec:
         - name: BACKEND_STORAGE_PATH
           value: /storage
         envFrom: null
-        image: docker.io/openmined/grid-backend:0.8.1-beta.15
+        image: docker.io/openmined/grid-backend:0.8.1
         lifecycle: null
         livenessProbe: null
         name: container-0
