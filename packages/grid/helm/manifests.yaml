@@ -1,28 +1,52 @@
-[1;36minfo [0mUsing namespace '[1;37mdefault[0m'
+---
 [1;36minfo [0mUsing kube context '[1;37mk3d-build[0m'
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: ""
+  name: grid-stack-ingress
+  namespace: default
+spec:
+  defaultBackend:
+    service:
+      name: proxy
+      port:
+        number: 80
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: proxy
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+
+---
+
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
 
 ---
 # Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
-apiVersion: v1
-kind: Service
-metadata:
-  name: "backend-headless"
-  labels:
-    "app.kubernetes.io/name": "backend"
-    "app.kubernetes.io/managed-by": "Helm"
-  annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
-spec:
-  ports:
-  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
-  - port: 80
-    name: web
-  clusterIP: None
-  selector:
-    "app.kubernetes.io/name": "devspace-app"
-    "app.kubernetes.io/component": "backend"
-    "app.kubernetes.io/managed-by": "Helm"
+---
+
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+
+---
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+---
+# Source: component-chart/templates/ingress.yaml
+#
 ---
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
@@ -100,7 +124,7 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-backend:0.8.1-beta.12"
+        - image: "docker.io/openmined/grid-backend:0.8.1-beta.15"
           name: "container-0"
           command:
           args:
@@ -118,7 +142,7 @@ spec:
             - name: RELEASE
               value: production
             - name: VERSION
-              value: 0.8.1-beta.12
+              value: 0.8.1-beta.15
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE
@@ -192,10 +216,27 @@ spec:
         requests:
           storage: "100Mi"
 ---
-# Source: component-chart/templates/ingress.yaml
-#
-
-
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: "backend-headless"
+  labels:
+    "app.kubernetes.io/name": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  ports:
+  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
 ---
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
@@ -273,13 +314,13 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-frontend:0.8.1-beta.12"
+        - image: "docker.io/openmined/grid-frontend:0.8.1-beta.15"
           name: "container-0"
           command:
           args:
           env:
             - name: VERSION
-              value: 0.8.1-beta.12
+              value: 0.8.1-beta.15
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE
@@ -304,61 +345,6 @@ spec:
       initContainers:
       volumes:
   volumeClaimTemplates:
----
-# Source: component-chart/templates/deployment.yaml
-# Create headless service for StatefulSet
----
-# Source: component-chart/templates/ingress.yaml
-#
-
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    kubernetes.io/ingress.class: nginx
-  name: grid-stack-ingress
-  namespace: default
-spec:
-  defaultBackend:
-    service:
-      name: proxy
-      port:
-        number: 80
-  rules:
-  - http:
-      paths:
-      - backend:
-          service:
-            name: proxy
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
-
----
-
----
-# Source: component-chart/templates/deployment.yaml
-# Create headless service for StatefulSet
-apiVersion: v1
-kind: Service
-metadata:
-  name: "mongo-headless"
-  labels:
-    "app.kubernetes.io/name": "mongo"
-    "app.kubernetes.io/managed-by": "Helm"
-  annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
-spec:
-  ports:
-  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
-  - port: 80
-    name: web
-  clusterIP: None
-  selector:
-    "app.kubernetes.io/name": "devspace-app"
-    "app.kubernetes.io/component": "mongo"
-    "app.kubernetes.io/managed-by": "Helm"
 ---
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
@@ -482,10 +468,27 @@ spec:
         requests:
           storage: "5Gi"
 ---
-# Source: component-chart/templates/ingress.yaml
-#
-
-
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: "mongo-headless"
+  labels:
+    "app.kubernetes.io/name": "mongo"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  ports:
+  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "mongo"
+    "app.kubernetes.io/managed-by": "Helm"
 ---
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
@@ -595,9 +598,6 @@ spec:
             name: traefik-main-config
   volumeClaimTemplates:
 ---
-# Source: component-chart/templates/deployment.yaml
-# Create headless service for StatefulSet
----
 # Source: component-chart/templates/ingress.yaml
 #
 
@@ -671,4 +671,3 @@ metadata:
   name: traefik-main-config
   namespace: default
 
----

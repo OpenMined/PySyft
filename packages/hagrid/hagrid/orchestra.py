@@ -17,7 +17,6 @@ import gevent
 
 # relative
 from .cli import str_to_bool
-from .deps import LATEST_STABLE_SYFT
 from .grammar import find_available_port
 from .names import random_name
 from .util import shell
@@ -117,9 +116,9 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port)  # type: ignore
+            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
         elif self.node_type == NodeType.PYTHON:
-            return self.python_node.guest_client  # type: ignore
+            return self.python_node.get_guest_client(verbose=False)  # type: ignore
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None
@@ -181,6 +180,7 @@ class Orchestra:
         local_db: bool = False,
         tag: Optional[str] = "latest",
         verbose: bool = False,
+        render: bool = False,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
@@ -281,10 +281,9 @@ class Orchestra:
 
         if tag:
             commands.append(f"--tag={tag}")
-            if tag == "beta":
-                commands.append("--build-src=dev")
-            if tag == "latest":
-                commands.append(f"--build-src={LATEST_STABLE_SYFT}")
+
+        if render:
+            commands.append("--render")
 
         # needed for building containers
         USER = os.environ.get("USER", getpass.getuser())

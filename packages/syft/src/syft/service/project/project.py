@@ -670,7 +670,7 @@ def add_code_request_to_project(
             return result
 
     return SyftSuccess(
-        message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project."
+        message=f"Code request for '{code.func_name}' successfully added to '{project.name}' Project. "
         f"To see code requests by a client, run `[your_client].code`"
     )
 
@@ -1402,7 +1402,7 @@ def create_project_hash(project: Project) -> Tuple[bytes, str]:
 def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
     # Creating a custom hash for the project
     # as the recursive hash is yet to be revamped
-    # for primitives python types
+    # for primitives python types.
 
     # hashing is calculated based on the following attributes
     # attrs = ["id", "project_id", "seq no",

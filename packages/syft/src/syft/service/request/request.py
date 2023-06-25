@@ -178,14 +178,13 @@ class Request(SyftObject):
             )
         str_changes = []
         for change in self.changes:
-            if change.id in self.current_change_state:
-                str_change = (
-                    change.__repr_syft_nested__()
-                    if hasattr(change, "__repr_syft_nested__")
-                    else type(change)
-                )
-                str_change = f"{str_change}. "
-                str_changes.append(str_change)
+            str_change = (
+                change.__repr_syft_nested__()
+                if hasattr(change, "__repr_syft_nested__")
+                else type(change)
+            )
+            str_change = f"{str_change}. "
+            str_changes.append(str_change)
         str_changes = "\n".join(str_changes)
         return f"""
             <style>
@@ -223,11 +222,12 @@ class Request(SyftObject):
 
     @property
     def code(self) -> Any:
-        if len(self.changes) == 1:
-            if isinstance(self.changes[0], UserCodeStatusChange):
-                return self.changes[0].link
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.link
+
         return SyftError(
-            msg="This type of request does not have code associated with it."
+            message="This type of request does not have code associated with it."
         )
 
     @property

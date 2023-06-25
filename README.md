@@ -23,7 +23,7 @@ $ pip install -U syft -f https://whls.blob.core.windows.net/unstable/index.html
 ```python
 # from Jupyter / Python
 import syft as sy
-sy.requires(">=0.8,<0.8.1")
+sy.requires(">=0.8.1,<0.8.2")
 node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
 ```
 
@@ -38,7 +38,7 @@ Starting syft-node server on 0.0.0.0:8080
 
 ```python
 import syft as sy
-sy.requires(">=0.8,<0.8.1")
+sy.requires(">=0.8.1,<0.8.2")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
 ```
 
@@ -59,7 +59,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
 ```
 $ kubectl create namespace syft
-$ helm install my-domain syft --namespace syft --version 0.8.1-beta.12 --repo https://openmined.github.io/PySyft/helm
+$ helm install my-domain syft --namespace syft --version 0.8.1 --repo https://openmined.github.io/PySyft/helm
 ```
 
 ### Azure or GCP Ingress
@@ -91,17 +91,19 @@ $ helm install ... --set ingress.ingressClass="gce"
 
 - HAGrid 0.3 Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`
-- PySyft 0.8 Requires: 🐍 `python 3.9 - 3.11` - Run: `pip install -U syft`  
+- PySyft 0.8.1 Requires: 🐍 `python 3.9 - 3.11` - Run: `pip install -U syft`  
   \*`Windows` users must run this first: `pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker`, ☸️ `kubernetes` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions
 
-`0.8.1` (Beta) - `dev` branch 👈🏽 <a href="/notebooks/api/0.8">API</a>  
-`0.8.0` (Stable) - <a href="/notebooks/api/0.8">API</a>
+`0.9.0` - Coming soon...  
+`0.8.2` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
+`0.8.1` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.1/notebooks/api/0.8">API</a>
 
 Deprecated:
 
+- `0.8.0` - <a href="https://github.com/OpenMined/PySyft/tree/0.8/notebooks/api/0.8">API</a>
 - `0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>
 - `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>
 - `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix

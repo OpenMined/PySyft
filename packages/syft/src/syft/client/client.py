@@ -49,6 +49,7 @@ from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.logger import debug
 from ..util.telemetry import instrument
+from ..util.util import get_mb_size
 from ..util.util import thread_ident
 from ..util.util import verify_tls
 from .api import APIModule
@@ -389,6 +390,7 @@ class SyftClient:
         from ..types.twin_object import TwinObject
 
         dataset._check_asset_must_contain_mock()
+        dataset_size = 0
 
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
@@ -402,6 +404,8 @@ class SyftClient:
                 return response
             asset.action_id = twin.id
             asset.node_uid = self.id
+            dataset_size += get_mb_size(asset.data)
+        dataset.mb_size = dataset_size
         valid = dataset.check()
         if valid.ok():
             return self.api.services.dataset.add(dataset=dataset)
@@ -763,6 +767,26 @@ def connect(
 
 
 @instrument
+def register(
+    url: Union[str, GridURL],
+    port: int,
+    name: str,
+    email: str,
+    password: str,
+    institution: Optional[str] = None,
+    website: Optional[str] = None,
+):
+    guest_client = connect(url=url, port=port)
+    return guest_client.register(
+        name=name,
+        email=email,
+        password=password,
+        institution=institution,
+        website=website,
+    )
+
+
+@instrument
 def login(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
@@ -770,6 +794,7 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     cache: bool = True,
+    verbose: bool = True,
 ) -> SyftClient:
     _client = connect(url=url, node=node, port=port)
     connection = _client.connection
@@ -779,7 +804,8 @@ def login(
         login_credentials = UserLoginCredentials(email=email, password=password)
 
     if login_credentials is None:
-        print(f"Logged into {_client.name} as GUEST")
+        if verbose:
+            print(f"Logged into {_client.name} as GUEST")
         return _client.guest()
 
     if cache and login_credentials:
