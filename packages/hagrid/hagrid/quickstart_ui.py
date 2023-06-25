@@ -29,7 +29,8 @@ def quickstart_download_notebook(
 ) -> Tuple[str, bool, bool]:
     os.makedirs(directory, exist_ok=True)
     file_name = os.path.basename(url).replace("%20", "_").replace(" ", "_")
-    file_path = os.path.abspath(directory + file_name)
+    file_path = directory + os.sep + file_name
+    file_path = os.path.abspath(file_path)
 
     file_exists = os.path.isfile(file_path)
     if overwrite_all:
@@ -75,8 +76,16 @@ def fetch_notebooks_for_url(
     # relative mode
     if url_scheme not in allowed_schemes_as_url:
         notebooks = get_urls_from_dir(repo=repo, branch=branch, commit=commit, url=url)
-
-        url_dir = os.path.dirname(url) if os.path.dirname(url) else url
+        if url.endswith(".ipynb"):
+            file_name = os.path.basename(url)
+            url_parts = url.split("notebooks")
+            if len(url_parts) > 1:
+                url_dir = url_parts[-1]
+            else:
+                url_dir = url
+            url_dir = url_dir.replace(file_name, "")
+        else:
+            url_dir = url
         notebook_files = []
         existing_count = 0
         for notebook_url in notebooks:
@@ -102,7 +111,7 @@ def fetch_notebooks_for_url(
         for notebook_url in tqdm(notebooks):
             file_path, _, overwrite_all = quickstart_download_notebook(
                 url=notebook_url,
-                directory=directory + os.sep + url_dir + os.sep,
+                directory=os.path.abspath(directory + os.sep + str(url_dir) + os.sep),
                 reset=reset,
                 overwrite_all=overwrite_all,
             )
@@ -202,11 +211,36 @@ class Tutorial:
 REPO_RAW_PATH = "https://raw.githubusercontent.com/OpenMined/PySyft"
 
 TUTORIALS = {
+    "api/0.8": Tutorial(
+        filename="api/0.8",
+        description="0.8 API Notebooks",
+        url="api/0.8",
+    ),
+    "hello-syft": Tutorial(
+        filename="tutorials/hello-syft",
+        description="Hello Syft",
+        url="tutorials/hello-syft",
+    ),
+    "data-engineer": Tutorial(
+        filename="tutorials/data-engineer",
+        description="Data Engineer",
+        url="tutorials/data-engineer",
+    ),
     "data-owner": Tutorial(
-        filename="data-owner",
-        description="Deploying a Test Domain and Uploading Data",
-        url="data-owner",
-    )
+        filename="tutorials/data-owner",
+        description="Data Owner",
+        url="tutorials/data-owner",
+    ),
+    "data-scientist": Tutorial(
+        filename="tutorials/data-scientist",
+        description="Data Scientist",
+        url="tutorials/data-scientist",
+    ),
+    "pandas-cookbook": Tutorial(
+        filename="tutorials/pandas-cookbook",
+        description="Pandas Cookbook",
+        url="tutorials/pandas-cookbook",
+    ),
 }
 
 
@@ -215,16 +249,17 @@ class QuickstartUI:
     def tutorials(self) -> Dict[str, Tutorial]:
         return TUTORIALS
 
-    def download(self, tutorial_name: str, reset: bool = False) -> NBOutput:
+    def download(
+        self, tutorial_name: str, reset: bool = False, branch: str = "dev"
+    ) -> NBOutput:
         if tutorial_name not in TUTORIALS.keys():
             return NBOutput(
                 f'<div class="alert alert-danger">{tutorial_name} is not a valid tutorial name.</div>'
             )
         else:
             tutorial = TUTORIALS[tutorial_name]
-
             downloaded_files = fetch_notebooks_for_url(
-                url=tutorial.url, directory=directory
+                url=tutorial.url, directory=directory, branch=branch
             )
             html = ""
             if len(downloaded_files) == 0:
@@ -297,7 +332,9 @@ def get_urls_from_dir(
     res = r.json()
 
     for file in res["tree"]:
-        if file["path"].startswith("notebooks/quickstart/" + url):
+        if file["path"].startswith("notebooks/quickstart/" + url) or file[
+            "path"
+        ].startswith("notebooks/" + url):
             if file["path"].endswith(".ipynb"):
                 temp_url = (
                     "https://raw.githubusercontent.com/"
