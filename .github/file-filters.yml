@@ -12,7 +12,6 @@ stack:
   - "**.mako"
   - "**.lock"
   - "**.json"
-  - notebooks/api/**.ipynb
 
 backend:
   - .github/workflows/pr-tests-stack.yml
@@ -76,7 +75,7 @@ frontend:
 
 notebooks:
   - .github/workflows/pr-tests-syft.yml
-  - notebooks/api/**/*.ipynb
+  - "notebooks/api/**.ipynb"
   - packages/syft/**/*.py
   - packages/syft/**/*.capnp
   - packages/syft/**/*.yml
