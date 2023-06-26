@@ -12,6 +12,10 @@ on:
     branches: [dev]
     paths: [docs/]
 
+concurrency:
+  group: ${{ github.workflow_ref }}
+  cancel-in-progress: true
+
 jobs:
   cd-docs:
     strategy:
