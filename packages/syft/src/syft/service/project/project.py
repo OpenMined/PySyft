@@ -1404,7 +1404,7 @@ def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
     # as the recursive hash is yet to be revamped
     # for primitives python types.
 
-    # hashing is calculated based on the following attributes
+    # hashing is calculated based on the following attributes,
     # attrs = ["id", "project_id", "seq no",
     # "prev_event_uid", "prev_event_hash", "creator_verify_key"]
 
