@@ -209,11 +209,11 @@ class UserCode(SyftObject):
         elif status == UserCodeStatus.EXECUTE.value:
             badge_color = "badge-green"
         else:
-            badge_color = "red"
+            badge_color = "badge-red"
         status_badge = {"value": status, "type": badge_color}
         return {
-            "Input Policy": self.input_policy_type.__name__,
-            "Output Policy": self.output_policy_type.__name__,
+            "Input Policy": self.input_policy_type.__canonical_name__,
+            "Output Policy": self.output_policy_type.__canonical_name__,
             "Function name": self.service_func_name,
             "User verify key": {
                 "value": str(self.user_verify_key),

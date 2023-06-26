@@ -127,12 +127,14 @@ def get_compose_src_path(
     grid_path = GRID_SRC_PATH()
     tag = kwargs.get("tag", None)
     if EDITABLE_MODE and template_location is None or tag == "0.7.0":  # type: ignore
-        if node_type.input == "enclave":
-            return grid_path + "/worker"
-        else:
-            return grid_path
+        path = grid_path
     else:
-        return deployment_dir(node_name)
+        path = deployment_dir(node_name)
+
+    if node_type.input == "enclave":
+        return path + "/worker"
+    else:
+        return path
 
 
 @click.command(
@@ -1194,6 +1196,7 @@ def create_launch_cmd(
 ) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
+    node_type = verb.get_named_term_type(name="node_type")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
@@ -1258,7 +1261,7 @@ def create_launch_cmd(
     if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
         parsed_kwargs["tag"] = kwargs["tag"]
     else:
-        parsed_kwargs["tag"] = None
+        parsed_kwargs["tag"] = "latest"
 
     if "jupyter" in kwargs and kwargs["jupyter"] is not None:
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
@@ -1315,6 +1318,7 @@ def create_launch_cmd(
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(
             host_type=host,
+            node_type=node_type,
             template_location=parsed_kwargs["template"],
             overwrite=parsed_kwargs["template_overwrite"],
             verbose=kwargs["verbose"],
@@ -2189,6 +2193,7 @@ def create_launch_docker_cmd(
 
         render_templates(
             node_name=snake_name,
+            node_type=node_type,
             template_location=kwargs["template"],
             env_vars=default_envs,
             host_type=host_term.host,
