@@ -133,24 +133,24 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v3
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -158,14 +158,14 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
         uses: nick-fields/retry@v2
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
@@ -199,24 +199,24 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v3
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -224,13 +224,13 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker Compose on Linux
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'ubuntu-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
@@ -240,11 +240,11 @@ jobs:
           docker compose version
 
       - name: Docker on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
       - name: Docker Compose on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
         shell: bash
         run: |
           brew install docker-compose
@@ -253,7 +253,7 @@ jobs:
           docker compose version
 
       - name: Docker on Windows
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -265,7 +265,7 @@ jobs:
           docker compose version
 
       - name: Run unit tests
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         env:
           ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
           DEV_MODE: "True" # force orchestra --build
