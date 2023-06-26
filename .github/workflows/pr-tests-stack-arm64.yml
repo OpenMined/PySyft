@@ -9,6 +9,10 @@ on:
         description: "Run Version Tests Manually"
         required: false
 
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   pr-tests-stack-arm64:
     strategy:
