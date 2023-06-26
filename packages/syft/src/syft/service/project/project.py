@@ -1400,7 +1400,7 @@ def create_project_hash(project: Project) -> Tuple[bytes, str]:
 
 
 def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
-    # Creating a custom hash for the project
+    # Creating a custom hash  for the project
     # as the recursive hash is yet to be revamped
     # for primitives python types.
 
