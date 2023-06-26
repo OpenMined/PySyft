@@ -2,7 +2,6 @@
 from collections import OrderedDict
 from datetime import datetime
 from enum import Enum
-import sys
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -13,6 +12,7 @@ from typing import Union
 
 # third party
 import itables
+import pandas as pd
 from pydantic import ValidationError
 from pydantic import root_validator
 from pydantic import validator
@@ -39,12 +39,15 @@ from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ...util.markdown import as_markdown_python_code
 from ...util.notebook_ui.notebook_addons import FOLDER_ICON
+from ...util.util import get_mb_size
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftSuccess
+
+DATA_SIZE_WARNING_LIMIT = 512
 
 
 @serializable()
@@ -125,10 +128,11 @@ class Asset(SyftObject):
             data_table_line = itables.to_html_datatable(
                 df=self.data.syft_action_data, css=itables_css
             )
+        elif isinstance(self.data, pd.DataFrame):
+            data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
         else:
             data_table_line = self.data
-        return (
-            f"""
+        return f"""
             <style>
             {fonts_css}
             .syft-asset {{color: {SURFACE[options.color_theme]};}}
@@ -137,20 +141,19 @@ class Asset(SyftObject):
               {{font-family: 'Open Sans'}}
             {ITABLES_CSS}
             </style>
-            """
-            + '<div class="syft-asset">'
-            + f"<h3>{self.name}</h3>"
-            + f"<p>{self.description}</p>"
-            + f"<p><strong>Asset ID: </strong>{self.id}</p>"
-            + f"<p><strong>Action Object ID: </strong>{self.action_id}</p>"
-            + uploaded_by_line
-            + f"<p><strong>Created on: </strong>{self.created_at}</p>"
-            + "<p><strong>Data:</strong></p>"
-            + data_table_line
-            + "<p><strong>Mock Data:</strong></p>"
-            + itables.to_html_datatable(df=self.mock, css=itables_css)
-            + "</div>"
-        )
+
+            <div class="syft-asset">
+            <h3>{self.name}</h3>
+            <p>{self.description}</p>
+            <p><strong>Asset ID: </strong>{self.id}</p>
+            <p><strong>Action Object ID: </strong>{self.action_id}</p>
+            {uploaded_by_line}
+            <p><strong>Created on: </strong>{self.created_at}</p>
+            <p><strong>Data:</strong></p>
+            {data_table_line}
+            <p><strong>Mock Data:</strong></p>
+            {itables.to_html_datatable(df=self.mock, css=itables_css)}
+            </div>"""
 
     def _repr_markdown_(self) -> str:
         _repr_str = f"Asset: {self.name}\n"
@@ -185,6 +188,17 @@ class Asset(SyftObject):
         )
         return api.services.action.get_pointer(self.action_id).syft_action_data
 
+    def has_data_permission(self):
+        return self.data is not None
+
+    def has_permission(self, data_result):
+        # TODO: implement in a better way
+        return not (
+            isinstance(data_result, str)
+            and data_result.startswith("Permission")
+            and data_result.endswith("denied")
+        )
+
     @property
     def data(self) -> Any:
         # relative
@@ -194,7 +208,11 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.action.get(self.action_id)
+        res = api.services.action.get(self.action_id)
+        if self.has_permission(res):
+            return res.syft_action_data
+        else:
+            return None
 
 
 def _is_action_data_empty(obj: Any) -> bool:
@@ -321,6 +339,13 @@ class CreateAsset(SyftObject):
                 return SyftError(
                     message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
                 )
+        total_size_mb = get_mb_size(self.data) + get_mb_size(self.mock)
+        if total_size_mb > DATA_SIZE_WARNING_LIMIT:
+            print(
+                f"**WARNING**: The total size for asset: '{self.name}' exceeds '{DATA_SIZE_WARNING_LIMIT} MB'. "
+                "This might result in failure to upload dataset. "
+                "Please contact #support on OpenMined slack for further assistance.",
+            )
 
         return SyftSuccess(message="Dataset is Valid")
 
@@ -655,13 +680,10 @@ def createasset_to_asset() -> List[Callable]:
 
 def convert_asset(context: TransformContext) -> TransformContext:
     assets = context.output.pop("asset_list", [])
-    dataset_size = 0
     for idx, create_asset in enumerate(assets):
-        dataset_size += sys.getsizeof(assets) / 1024
         asset_context = TransformContext.from_context(obj=create_asset, context=context)
         assets[idx] = create_asset.to(Asset, context=asset_context)
     context.output["asset_list"] = assets
-    context.output["mb_size"] = dataset_size
     return context
 
 
