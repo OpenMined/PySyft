@@ -1,0 +1,67 @@
+name: Render Tutorial Notebooks
+on:
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Render Notebooks Manually"
+        required: false
+
+jobs:
+  tutorial-notebooks:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
+        node-type: ["python"]
+        notebook-paths: ["tutorials"]
+        rendered-notebooks-paths: ["tutorials-rendered"]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade tox packaging wheel --default-timeout=60
+          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Render notebooks
+        uses: nick-fields/retry@v2
+        env:
+          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
+          RENDERED_NOTEBOOK_PATHS: "${{ matrix.rendered-notebooks-paths }}"
+        with:
+          timeout_seconds: 1800
+          max_attempts: 3
+          command: tox -e syft.render.notebook
+
+      - name: Commit Rendered Notebooks
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Render notebooks"
+          push: true
