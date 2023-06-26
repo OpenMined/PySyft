@@ -9,6 +9,10 @@ on:
         description: "Run hagrid cd manually"
         required: false
 
+concurrency:
+  group: ${{ github.workflow_ref }}
+  cancel-in-progress: true
+
 jobs:
   call-hagrid-tests:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
