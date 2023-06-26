@@ -1406,7 +1406,7 @@ def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
 
     # hashing is calculated based on the following attributes
     # attrs = ["id", "project_id", "seq no",
-    #  "prev_event_uid", "prev_event_hash", "creator_verify_key"]
+    # "prev_event_uid", "prev_event_hash", "creator_verify_key"]
 
     return hash_object(
         [
