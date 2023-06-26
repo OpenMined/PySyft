@@ -12,6 +12,7 @@ stack:
   - "**.mako"
   - "**.lock"
   - "**.json"
+  - notebooks/api/**.ipynb
 
 backend:
   - .github/workflows/pr-tests-stack.yml
