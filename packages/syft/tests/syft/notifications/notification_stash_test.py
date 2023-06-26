@@ -123,9 +123,7 @@ def test_orderbycreatedattimestamp_partitionkey() -> None:
     assert result.value == random_datetime
 
 
-def test_notificationstash_get_all_inbox_for_verify_key(
-    root_verify_key, document_store
-) -> None:
+def test_get_all_inbox_for_verify_key(root_verify_key, document_store) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
@@ -170,9 +168,7 @@ def test_notificationstash_get_all_inbox_for_verify_key(
     assert result == sorted_notification_list
 
 
-def test_notificationstash_get_all_sent_for_verify_key(
-    root_verify_key, document_store
-) -> None:
+def test_get_all_sent_for_verify_key(root_verify_key, document_store) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
@@ -201,9 +197,7 @@ def test_notificationstash_get_all_sent_for_verify_key(
         test_stash.get_all_sent_for_verify_key(root_verify_key, random_signing_key)
 
 
-def test_notificationstash_get_all_for_verify_key(
-    root_verify_key, document_store
-) -> None:
+def test_get_all_for_verify_key(root_verify_key, document_store) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     query_key = FromUserVerifyKeyPartitionKey.with_obj(test_verify_key)
@@ -246,9 +240,7 @@ def test_notificationstash_get_all_for_verify_key(
 
 
 @pytest.mark.xfail
-def test_notificationstash_get_all_by_verify_key_for_status(
-    root_verify_key, document_store
-) -> None:
+def test_get_all_by_verify_key_for_status(root_verify_key, document_store) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
@@ -282,9 +274,7 @@ def test_notificationstash_get_all_by_verify_key_for_status(
         )
 
 
-def test_notificationstash_update_notification_status(
-    root_verify_key, document_store
-) -> None:
+def test_update_notification_status(root_verify_key, document_store) -> None:
     random_uid = UID()
     random_verify_key = SyftSigningKey.generate().verify_key
     test_stash = NotificationStash(store=document_store)
@@ -321,7 +311,7 @@ def test_notificationstash_update_notification_status(
         )
 
 
-def test_notificationstash_update_notification_status_error_on_get_by_uid(
+def test_update_notification_status_error_on_get_by_uid(
     root_verify_key, monkeypatch: MonkeyPatch, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
@@ -349,9 +339,7 @@ def test_notificationstash_update_notification_status_error_on_get_by_uid(
     assert response is None
 
 
-def test_notificationstash_delete_all_for_verify_key(
-    root_verify_key, document_store
-) -> None:
+def test_delete_all_for_verify_key(root_verify_key, document_store) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
@@ -388,7 +376,7 @@ def test_notificationstash_delete_all_for_verify_key(
         test_stash.delete_all_for_verify_key(root_verify_key, random_signing_key)
 
 
-def test_notificationstash_delete_all_for_verify_key_error_on_get_all_inbox_for_verify_key(
+def test_delete_all_for_verify_key_error_on_get_all_inbox_for_verify_key(
     root_verify_key, monkeypatch: MonkeyPatch, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
@@ -411,7 +399,7 @@ def test_notificationstash_delete_all_for_verify_key_error_on_get_all_inbox_for_
     assert response == Err(None)
 
 
-def test_notificationstash_delete_all_for_verify_key_error_on_delete_by_uid(
+def test_delete_all_for_verify_key_error_on_delete_by_uid(
     root_verify_key, monkeypatch: MonkeyPatch, document_store
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
