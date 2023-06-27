@@ -665,7 +665,9 @@ class ActionObject(SyftObject):
             from ...client.api import APIRegistry
 
             # saving the action graph node
-            api = APIRegistry.api_for(node_uid=self.syft_node_uid)
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_uid, user_verify_key=self.syft_client_verify_key
+            )
             api.services.graph.add_action(action)
 
         return action
@@ -734,6 +736,7 @@ class ActionObject(SyftObject):
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
         res = client.api.services.action.set(self)
+        client.api.services.graph.add_action_obj(self)
         res.syft_node_location = client.id
         res.syft_client_verify_key = client.verify_key
         return res
