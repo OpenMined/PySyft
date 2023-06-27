@@ -586,7 +586,7 @@ class CreateDataset(Dataset):
         return SyftSuccess(
             message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
         )
-        
+
     def replace_asset(self, asset: CreateAsset):
         return self.add_asset(asset=asset, force_replace=True)
 
