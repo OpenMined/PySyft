@@ -1,32 +1,4 @@
 ---
-[1;36minfo [0mUsing kube context '[1;37mk3d-build[0m'
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    kubernetes.io/ingress.class: ""
-  name: grid-stack-ingress
-  namespace: default
-spec:
-  defaultBackend:
-    service:
-      name: proxy
-      port:
-        number: 80
-  rules:
-  - http:
-      paths:
-      - backend:
-          service:
-            name: proxy
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
-
----
-
----
 # Source: component-chart/templates/ingress.yaml
 #
 
@@ -44,10 +16,7 @@ spec:
 ---
 # Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
----
-# Source: component-chart/templates/ingress.yaml
-#
----
+------
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -124,7 +93,7 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-backend:0.8.1-beta.15"
+        - image: "docker.io/openmined/grid-backend:0.8.2-beta.1"
           name: "container-0"
           command:
           args:
@@ -142,7 +111,7 @@ spec:
             - name: RELEASE
               value: production
             - name: VERSION
-              value: 0.8.1-beta.15
+              value: 0.8.2-beta.1
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE
@@ -216,7 +185,6 @@ spec:
         requests:
           storage: "100Mi"
 ---
-# Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
 apiVersion: v1
 kind: Service
@@ -314,13 +282,13 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-frontend:0.8.1-beta.15"
+        - image: "docker.io/openmined/grid-frontend:0.8.2-beta.1"
           name: "container-0"
           command:
           args:
           env:
             - name: VERSION
-              value: 0.8.1-beta.15
+              value: 0.8.2-beta.1
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE
@@ -345,6 +313,34 @@ spec:
       initContainers:
       volumes:
   volumeClaimTemplates:
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: ""
+  name: grid-stack-ingress
+  namespace: default
+spec:
+  defaultBackend:
+    service:
+      name: proxy
+      port:
+        number: 80
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: proxy
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+
 ---
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
