@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from typing import List
 from typing import Optional
 
 # relative
@@ -30,6 +31,17 @@ class MessageExpiryStatus(Enum):
 
 
 @serializable()
+class ReplyMessage(SyftObject):
+    __canonical_name__ = "ReplyMessage"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    text: str
+    target_msg: UID
+    id: Optional[UID]
+    from_user_verify_key: Optional[SyftVerifyKey]
+
+
+@serializable()
 class Message(SyftObject):
     __canonical_name__ = "Message"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -41,13 +53,14 @@ class Message(SyftObject):
     created_at: DateTime
     status: MessageStatus = MessageStatus.UNREAD
     linked_obj: Optional[LinkedObject]
+    replies: Optional[List[ReplyMessage]] = []
 
     __attr_searchable__ = [
         "from_user_verify_key",
         "to_user_verify_key",
         "status",
     ]
-    __attr_repr_cols__ = ["subject", "status", "created_at", "linked_obj"]
+    __repr_attrs__ = ["subject", "status", "created_at", "linked_obj"]
 
     @property
     def link(self) -> Optional[SyftObject]:
@@ -55,12 +68,23 @@ class Message(SyftObject):
             return self.linked_obj.resolve
         return None
 
+    def _coll_repr_(self):
+        return {
+            "Subject": self.subject,
+            "Status": self.status.name.capitalize(),
+            "Created At": str(self.created_at),
+            "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
+        }
+
     def mark_read(self) -> None:
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         return api.services.messages.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(
+            self.node_uid,
+            self.syft_client_verify_key,
+        )
         return api.services.messages.mark_as_unread(uid=self.id)
 
 

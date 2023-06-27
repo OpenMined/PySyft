@@ -210,6 +210,7 @@ class ActionService(AbstractService):
             uid=result_id,
             credentials=context.credentials,
             syft_object=result_action_object,
+            has_result_read_permission=True,
         )
         if set_result.is_err():
             return set_result.err()
@@ -286,7 +287,7 @@ class ActionService(AbstractService):
             # depending on permisisons?
             public_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
             public_val = public_args[0]
-            setattr(resolved_self.mock.syft_action_data, name, public_val)
+            setattr(resolved_self.mock, name, public_val)
             return Ok(
                 TwinObject(
                     id=action.result_id,

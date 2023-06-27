@@ -38,13 +38,14 @@ def test_api_cache_invalidation(worker):
 
     my_func.code = dedent(my_func.code)
 
-    assert root_domain_client.api.services.code.request_code_execution(my_func)
+    assert root_domain_client.code.request_code_execution(my_func)
     # check that function is added to api without refreshing the api manually
-    assert isinstance(root_domain_client.api.services.code.my_func, Callable)
+    assert isinstance(root_domain_client.code.my_func, Callable)
 
 
 def test_api_cache_invalidation_login(root_verify_key, worker):
     guest_client = worker.guest_client
+    worker.root_client.settings.allow_guest_signup(enable=True)
     assert guest_client.register(name="q", email="a@b.org", password="aaa")
     guest_client.login(email="a@b.org", password="aaa")
     user_id = worker.document_store.partitions["User"].all(root_verify_key).value[-1].id
@@ -54,7 +55,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
         user = [u for u in users if u.verify_key == verify_key][0]
         return user.role
 
-    assert get_role(guest_client.credentials.verify_key) == ServiceRole.GUEST
+    assert get_role(guest_client.credentials.verify_key) == ServiceRole.DATA_SCIENTIST
 
     dataset = sy.Dataset(
         name="test2",

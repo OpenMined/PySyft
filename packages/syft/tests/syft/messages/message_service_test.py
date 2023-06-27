@@ -1,3 +1,5 @@
+# stdlib
+
 # third party
 from pytest import MonkeyPatch
 from result import Err
@@ -13,7 +15,6 @@ from syft.service.message.messages import CreateMessage
 from syft.service.message.messages import Message
 from syft.service.message.messages import MessageStatus
 from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
 from syft.store.document_store import DocumentStore
 from syft.store.linked_obj import LinkedObject
 from syft.types.datetime import DateTime
@@ -57,15 +58,13 @@ def test_messageservice_send_success(
     mock_create_message: CreateMessage,
     document_store,
 ) -> None:
-    test_message_service = MessageService(store=document_store)
-
     expected_message = mock_create_message.to(Message, authed_context)
 
-    def mock_set(message_service: MessageService) -> Ok:
+    def mock_set(*args, **kwargs) -> Ok:
         return Ok(expected_message)
 
     monkeypatch.setattr(message_service.stash, "set", mock_set)
-    response = test_message_service.send(authed_context, mock_create_message)
+    response = message_service.send(authed_context, mock_create_message)
 
     assert isinstance(response, Message)
 
@@ -76,7 +75,7 @@ def test_messageservice_send_error_on_set(
     authed_context: AuthedServiceContext,
     mock_create_message: CreateMessage,
 ) -> None:
-    def mock_set(credentials: SyftVerifyKey, message_service: MessageService) -> Err:
+    def mock_set(*args, **kwargs) -> Err:
         return Err(expected_error)
 
     test_message_service = message_service
@@ -97,7 +96,7 @@ def test_messageservice_get_all_success(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
@@ -108,8 +107,8 @@ def test_messageservice_get_all_success(
         MessageStatus.UNREAD,
     )
 
-    def mock_get_all_inbox_for_verify_key() -> Ok:
-        return Ok(expected_message)
+    def mock_get_all_inbox_for_verify_key(*args, **kwargs) -> Ok:
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         message_service.stash,
@@ -157,7 +156,7 @@ def test_messageservice_get_sent_success(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
@@ -169,7 +168,7 @@ def test_messageservice_get_sent_success(
     )
 
     def mock_get_all_sent_for_verify_key(credentials, verify_key) -> Ok:
-        return Ok(expected_message)
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         message_service.stash,
@@ -217,7 +216,7 @@ def test_messageservice_get_all_for_status_success(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
@@ -228,8 +227,8 @@ def test_messageservice_get_all_for_status_success(
         MessageStatus.UNREAD,
     )
 
-    def mock_get_all_by_verify_key_for_status() -> Ok:
-        return Ok(expected_message)
+    def mock_get_all_by_verify_key_for_status(*args, **kwargs) -> Ok:
+        return Ok([expected_message])
 
     monkeypatch.setattr(
         message_service.stash,
@@ -282,7 +281,7 @@ def test_messageservice_get_all_read_success(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
@@ -291,15 +290,6 @@ def test_messageservice_get_all_read_success(
         random_verify_key,
         test_verify_key,
         MessageStatus.READ,
-    )
-
-    def mock_get_all_by_verify_key_for_status() -> Ok:
-        return Ok(expected_message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "get_all_by_verify_key_for_status",
-        mock_get_all_by_verify_key_for_status,
     )
 
     response = test_message_service.get_all_read(authed_context)
@@ -342,7 +332,7 @@ def test_messageservice_get_all_unread_success(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
@@ -351,15 +341,6 @@ def test_messageservice_get_all_unread_success(
         random_verify_key,
         test_verify_key,
         MessageStatus.UNREAD,
-    )
-
-    def mock_get_all_by_verify_key_for_status() -> Ok:
-        return Ok(expected_message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "get_all_by_verify_key_for_status",
-        mock_get_all_by_verify_key_for_status,
     )
 
     response = test_message_service.get_all_unread(authed_context)
@@ -402,7 +383,7 @@ def test_messageservice_mark_as_read_success(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
@@ -414,15 +395,6 @@ def test_messageservice_mark_as_read_success(
     )
 
     assert expected_message.status == MessageStatus.UNREAD
-
-    def mock_update_message_status() -> Ok:
-        return Ok(expected_message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "update_message_status",
-        mock_update_message_status,
-    )
 
     response = test_message_service.mark_as_read(authed_context, expected_message.id)
 
@@ -475,7 +447,7 @@ def test_messageservice_mark_as_unread_success(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_message = add_mock_message(
@@ -487,15 +459,6 @@ def test_messageservice_mark_as_unread_success(
     )
 
     assert expected_message.status == MessageStatus.READ
-
-    def mock_update_message_status() -> Ok:
-        return Ok(expected_message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "update_message_status",
-        mock_update_message_status,
-    )
 
     response = test_message_service.mark_as_unread(authed_context, expected_message.id)
 
@@ -545,9 +508,9 @@ def test_messageservice_resolve_object_success(
     monkeypatch: MonkeyPatch,
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
-    document_store: DocumentStore,
+    message_service: MessageService,
 ) -> None:
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
 
     def mock_get_service(linked_obj: LinkedObject) -> MessageService:
         return test_message_service
@@ -579,9 +542,11 @@ def test_messageservice_resolve_object_error_on_resolve_link(
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
     document_store: DocumentStore,
+    message_service: MessageService,
 ) -> None:
-    test_message_service = MessageService(document_store)
     expected_error = "Failed to resolve link."
+
+    test_message_service = message_service
 
     def mock_get_service(linked_obj: LinkedObject) -> MessageService:
         return test_message_service
@@ -618,7 +583,7 @@ def test_messageservice_clear_success(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_success_message = "All messages cleared !!"
@@ -632,15 +597,6 @@ def test_messageservice_clear_success(
     inbox_before_delete = test_message_service.get_all(authed_context)
 
     assert len(inbox_before_delete) == 1
-
-    def mock_delete_all_for_verify_key(credentials, verify_key) -> Ok:
-        return Ok(SyftSuccess.message)
-
-    monkeypatch.setattr(
-        message_service.stash,
-        "delete_all_for_verify_key",
-        mock_delete_all_for_verify_key,
-    )
 
     response = test_message_service.clear(authed_context)
     inbox_after_delete = test_message_service.get_all(authed_context)
@@ -658,7 +614,7 @@ def test_messageservice_clear_error_on_delete_all_for_verify_key(
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    test_message_service = MessageService(document_store)
+    test_message_service = message_service
     test_stash = MessageStash(store=document_store)
 
     expected_error = "Failed to clear messages."

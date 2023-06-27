@@ -10,6 +10,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 from typing import _GenericAlias
 
@@ -49,17 +50,29 @@ from .connection import NodeConnection
 
 
 class APIRegistry:
-    __api_registry__: Dict[str, SyftAPI] = {}
+    __api_registry__: Dict[Tuple, SyftAPI] = {}
 
     @classmethod
-    def set_api_for(cls, node_uid: Union[UID, str], api: SyftAPI) -> None:
+    def set_api_for(
+        cls,
+        node_uid: Union[UID, str],
+        user_verify_key: Union[SyftVerifyKey, str],
+        api: SyftAPI,
+    ) -> None:
         if isinstance(node_uid, str):
             node_uid = UID.from_string(node_uid)
-        cls.__api_registry__[node_uid] = api
+
+        if isinstance(user_verify_key, str):
+            user_verify_key = SyftVerifyKey.from_string(user_verify_key)
+
+        key = (node_uid, user_verify_key)
+
+        cls.__api_registry__[key] = api
 
     @classmethod
-    def api_for(cls, node_uid: UID) -> SyftAPI:
-        return cls.__api_registry__.get(node_uid, None)
+    def api_for(cls, node_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI:
+        key = (node_uid, user_verify_key)
+        return cls.__api_registry__.get(key, None)
 
     @classmethod
     def get_all_api(cls) -> List[SyftAPI]:
@@ -401,7 +414,7 @@ class SyftAPI(SyftObject):
             lib_endpoints[path] = endpoint
 
         # 🟡 TODO 35: fix root context
-        context = AuthedServiceContext(credentials=user_verify_key)
+        context = AuthedServiceContext(node=node, credentials=user_verify_key)
         method = node.get_method_with_context(UserCodeService.get_all_for_user, context)
         code_items = method()
 
@@ -525,6 +538,9 @@ class SyftAPI(SyftObject):
         if self.libs is None:
             self.generate_endpoints()
         return self.libs
+
+    def has_service(self, service_name: str) -> bool:
+        return hasattr(self.services, service_name)
 
     def __repr__(self) -> str:
         modules = self.services

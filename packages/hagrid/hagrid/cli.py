@@ -48,6 +48,8 @@ from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
 from .cache import arg_cache
 from .deps import DEPENDENCIES
+from .deps import LATEST_BETA_SYFT
+from .deps import LATEST_STABLE_SYFT
 from .deps import allowed_hosts
 from .deps import check_docker_service_status
 from .deps import check_docker_version
@@ -125,12 +127,14 @@ def get_compose_src_path(
     grid_path = GRID_SRC_PATH()
     tag = kwargs.get("tag", None)
     if EDITABLE_MODE and template_location is None or tag == "0.7.0":  # type: ignore
-        if node_type.input == "enclave":
-            return grid_path + "/worker"
-        else:
-            return grid_path
+        path = grid_path
     else:
-        return deployment_dir(node_name)
+        path = deployment_dir(node_name)
+
+    if node_type.input == "enclave":
+        return path + "/worker"
+    else:
+        return path
 
 
 @click.command(
@@ -214,6 +218,11 @@ def clean(location: str) -> None:
     "--jupyter",
     is_flag=True,
     help="Enable Jupyter Notebooks",
+)
+@click.option(
+    "--enable-signup",
+    is_flag=True,
+    help="Enable Signup for Node",
 )
 @click.option(
     "--build",
@@ -406,6 +415,11 @@ def clean(location: str) -> None:
     type=str,
     help="Azure Source Branch",
 )
+@click.option(
+    "--render",
+    is_flag=True,
+    help="Render Docker Files",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -441,6 +455,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     dry_run = bool(kwargs["cmd"])
 
     health_checks = not bool(kwargs["no_health_checks"])
+    render_only = bool(kwargs["render"])
 
     try:
         tail = bool(kwargs["tail"])
@@ -448,6 +463,12 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         silent = not verbose
         if tail:
             silent = False
+
+        if render_only:
+            print(
+                "Docker Compose Files Rendered: {}".format(kwargs["compose_src_path"])
+            )
+            return
 
         execute_commands(
             cmds,
@@ -1175,6 +1196,7 @@ def create_launch_cmd(
 ) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
+    node_type = verb.get_named_term_type(name="node_type")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
@@ -1239,7 +1261,7 @@ def create_launch_cmd(
     if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
         parsed_kwargs["tag"] = kwargs["tag"]
     else:
-        parsed_kwargs["tag"] = None
+        parsed_kwargs["tag"] = "latest"
 
     if "jupyter" in kwargs and kwargs["jupyter"] is not None:
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
@@ -1266,23 +1288,40 @@ def create_launch_cmd(
 
     parsed_kwargs["compose_src_path"] = kwargs["compose_src_path"]
 
+    parsed_kwargs["enable_signup"] = str_to_bool(cast(str, kwargs["enable_signup"]))
+
     # Override template tag with user input tag
     if (
         parsed_kwargs["tag"] is not None
         and parsed_kwargs["template"] is None
-        and parsed_kwargs["tag"] not in ["local", "latest", "0.7.0"]
+        and parsed_kwargs["tag"] not in ["local", "0.7.0"]
     ):
-        template = parsed_kwargs["tag"]
-        # if template == "beta":
-        #     template = "dev"
-        parsed_kwargs["template"] = template
+        # TODO: we need to redo this so that pypi and docker mappings are in a single
+        # file inside dev
+        if parsed_kwargs["tag"] == "latest":
+            parsed_kwargs["template"] = LATEST_STABLE_SYFT
+            parsed_kwargs["tag"] = LATEST_STABLE_SYFT
+        elif parsed_kwargs["tag"] == "beta":
+            parsed_kwargs["template"] = "dev"
+            parsed_kwargs["tag"] = LATEST_BETA_SYFT
+        else:
+            template = parsed_kwargs["tag"]
+            # 🟡 TODO: Revert to use tags once, we have tag branches with beta
+            # versions also.
+            if "b" in template:
+                template = "dev"
+            # if template == "beta":
+            #     template = "dev"
+            parsed_kwargs["template"] = template
 
     if parsed_kwargs["template"] and host is not None:
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(
             host_type=host,
+            node_type=node_type,
             template_location=parsed_kwargs["template"],
             overwrite=parsed_kwargs["template_overwrite"],
+            verbose=kwargs["verbose"],
         )
 
         parsed_kwargs.update(kwargs)
@@ -2104,6 +2143,9 @@ def create_launch_docker_cmd(
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
 
+    if "enable_signup" in kwargs:
+        envs["ENABLE_SIGNUP"] = kwargs["enable_signup"]
+
     cmd = ""
     args = []
     for k, v in envs.items():
@@ -2151,6 +2193,7 @@ def create_launch_docker_cmd(
 
         render_templates(
             node_name=snake_name,
+            node_type=node_type,
             template_location=kwargs["template"],
             env_vars=default_envs,
             host_type=host_term.host,

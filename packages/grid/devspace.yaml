@@ -1,351 +1,209 @@
-version: v1beta11
+version: v2beta1
+name: syft
+
+# This is a list of `pipelines` that DevSpace can execute (you can define your own)
+pipelines:
+  # This is the pipeline for the main command: `devspace dev` (or `devspace run-pipeline dev`)
+  dev:
+    run: |-
+      run_dependencies --all       # 1. Deploy any projects this project needs (see "dependencies")
+      ensure_pull_secrets --all    # 2. Ensure pull secrets
+      create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
+      start_dev --all              # 4. Start dev mode "app" (see "dev" section)
+  # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
+  deploy:
+    run: |-
+      run_dependencies --all
+      ensure_pull_secrets --all
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.2-beta.1 -t dev-latest
+      create_deployments --all
 
 vars:
-  - name: CONTAINER_REGISTRY
-    value: ""
-  - name: DOCKER_IMAGE_QUEUE
-    value: rabbitmq:3
-  - name: SERVICE_NAME_DB
-    value: db
-  - name: SERVICE_NAME_QUEUE
-    value: queue
-  - name: SERVICE_NAME_BACKEND
-    value: backend
-  - name: SERVICE_NAME_BACKEND_STREAM
-    value: backend-stream
-  - name: SERVICE_NAME_BACKEND_WORKER
-    value: backend-worker
-  - name: SERVICE_NAME_FRONTEND
-    value: frontend
-  - name: FRONTEND_TARGET
-    value: grid-ui-production
-  - name: SERVICE_NAME_HEADSCALE
-    value: headscale
-  - name: SERVICE_NAME_TAILSCALE
-    value: tailscale
-  - name: SERVICE_NAME_REDIS
-    value: redis
-  - name: SERVICE_NAME_MONGO
-    value: mongo
-  - name: SERVICE_NAME_PROXY
-    value: proxy
-  - name: SERVICE_NAME_SEAWEEDFS
-    value: seaweedfs
-  - name: VERSION
-    command: "python3 ../../VERSION"
-  - name: VERSION_HASH
-    command: "python3 ../../VERSION hash"
-  - name: STACK_API_KEY
-    command: "python3 ../hagrid/hagrid/rand_sec.py"
-  - name: NODE_TYPE
-    value: "network"
-  - name: RELEASE
-    value: production
-  - name: CONTAINER_HOST
-    value: kubernetes
-  - name: DOCKER_IMAGE_TRAEFIK
-    value: traefik
-  - name: TRAEFIK_VERSION
-    value: "v2.5"
-  - name: DOCKER_IMAGE_REDIS
-    value: redis
-  - name: REDIS_STORE_DB_ID
-    value: "0"
-  - name: REDIS_LEDGER_DB_ID
-    value: "1"
-  - name: REDIS_HOST
-    value: redis
-  - name: REDIS_PORT
-    value: "6379"
-  - name: JAX_ENABLE_X64
-    value: "True"
-  - name: VITE_PUBLIC_API_BASE_URL
-    value: "/api/v2"
-  - name: USE_NEW_SERVICE
-    value: "True"
-  - name: DOCKER_IMAGE_SEAWEEDFS
-    value: "chrislusf/seaweedfs:latest"
-  - name: S3_ENDPOINT
-    value: seaweedfs
-  - name: S3_PORT
-    value: "8333"
-  - name: S3_ROOT_USER
-    value: admin
-  - name: S3_ROOT_PWD
-    value: admin
-  - name: S3_REGION
-    value: "us-east-1"
-  - name: S3_PRESIGNED_TIMEOUT_SECS
-    value: "1800"
-  - name: S3_VOLUME_SIZE_MB
-    value: "1024"
-  - name: USE_BLOB_STORAGE
-    value: "True"
-  - name: NODE_NAME
-    value: node
-  - name: TRAEFIK_CONFIG_FILE
-    value: traefik-domain.yaml
-  - name: NETWORK_CHECK_INTERVAL
-    value: "60"
-  - name: DOMAIN_CHECK_INTERVAL
-    value: "60"
-  - name: ASSOCIATION_TIMEOUT
-    value: "10"
-  - name: TEST_MODE
-    value: "0"
-  - name: MONGO_USERNAME
-    value: root
-  - name: MONGO_PORT
-    value: "27017"
-  - name: MONGO_HOST
-    value: mongo
-  - name: MONGO_PASSWORD
-    value: example
+  DEVSPACE_ENV_FILE: "default.env"
+  CONTAINER_REGISTRY: "docker.io/"
+  VERSION: "0.8.2-beta.1"
 
+# This is a list of `images` that DevSpace can build for this project
+# We recommend to skip image building during development (devspace dev) as much as possible
 images:
   backend:
-    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
-    # rebuildStrategy: ignoreContextChanges
-    tags:
-      - "######"
-      - latest
-      - "0.8.1-beta.6"
-    createPullSecret: true
+    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}"
+    buildKit: {}
     dockerfile: ./backend/backend.dockerfile
     context: ../
-    build:
-      buildKit: {}
-  frontend:
-    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
-    # rebuildStrategy: ignoreContextChanges
     tags:
-      - "######"
-      - latest
-      - "0.8.1-beta.6"
-    createPullSecret: true
-    dockerfile: ./frontend/frontend.dockerfile
-    context: ./frontend
-    build:
-      docker:
-        options:
-          target: "grid-ui-production"
-      buildKit:
-        args: ["--target", "grid-ui-production"]
-  headscale:
-    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
-    # rebuildStrategy: ignoreContextChanges
-    tags:
-      - "######"
-      - latest
-      - "0.8.1-beta.6"
-    createPullSecret: true
-    dockerfile: ./vpn/headscale.dockerfile
-    context: ./vpn
-    build:
-      buildKit: {}
+      - dev-latest
+      - "${VERSION}"
   tailscale:
-    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
-    # rebuildStrategy: ignoreContextChanges
-    tags:
-      - "######"
-      - latest
-      - "0.8.1-beta.6"
-    createPullSecret: true
+    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
+    buildKit: {}
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
-    build:
-      buildKit: {}
-  vpn-iptables:
-    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
-    # rebuildStrategy: ignoreContextChanges
     tags:
-      - "######"
-      - latest
-      - "0.8.1-beta.6"
-    createPullSecret: true
-    dockerfile: ./vpn/iptables.dockerfile
-    context: ./vpn
-    build:
-      buildKit: {}
+      - dev-latest
+      - "${VERSION}"
+  frontend:
+    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}"
+    buildKit:
+      args: ["--target", "grid-ui-production"]
+    dockerfile: ./frontend/frontend.dockerfile
+    target: "grid-ui-production"
+    context: ./frontend
+    tags:
+      - dev-latest
+      - "${VERSION}"
 
+# This is a list of `deployments` that DevSpace can create for this project
 deployments:
-  # config maps
-  - name: traefik-main-config
+  grid-stack-ingress:
     kubectl:
       manifests:
-        - k8s/manifests/${TRAEFIK_CONFIG_FILE}
+        - k8s/manifests/ingress.yaml
 
-  - name: redis-config
+  traefik-main-config:
     kubectl:
       manifests:
-        - k8s/manifests/redis.yaml
+        - "k8s/manifests/traefik-domain.yaml"
 
-  - name: seaweed-config-filer
-    kubectl:
-      manifests:
-        - k8s/manifests/seaweed-filer.yaml
-
-  - name: seaweed-config-s3
-    kubectl:
-      manifests:
-        - k8s/manifests/seaweed-s3.yaml
-
-  # - name: vpn-iptables
-  #   kubectl:
-  #     kustomize: true
-  #     manifests:
-  #       - k8s/manifests/vpn-iptables
-
-  # containers
-  - name: proxy
+  proxy:
     helm:
-      componentChart: true
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
       values:
         containers:
-          - image: ${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}
+          - image: "${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}"
             volumeMounts:
               - containerPath: /etc/traefik
                 volume:
                   name: traefik-conf
             env:
               - name: SERVICE_NAME
-                value: ${SERVICE_NAME_PROXY}
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
-            securityContext:
-              capabilities:
-                add: ["NET_ADMIN", "SYS_MODULE"]
-              privileged: true
-            env:
-              - name: HOSTNAME
-                value: ${NODE_NAME}
-              - name: STACK_API_KEY
-                value: ${STACK_API_KEY}
-            volumeMounts:
-              - containerPath: /var/lib/tailscale
-                volume:
-                  name: tailscale-data
-                  subPath: /tailscale-data
-                  readOnly: false
+                value: "proxy"
+          # - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
+          #   securityContext:
+          #     capabilities:
+          #       add: ["NET_ADMIN", "SYS_MODULE"]
+          #     privileged: true
+          #   env:
+          #     - name: HOSTNAME
+          #       value: "${NODE_NAME}"
+          #     - name: STACK_API_KEY
+          #       value: "changeme"
+          #   volumeMounts:
+          #     - containerPath: /var/lib/tailscale
+          #       volume:
+          #         name: tailscale-data
+          #         subPath: /tailscale-data
+          #         readOnly: false
         volumes:
-          - name: tailscale-data
-            size: "100Mi"
+          # - name: tailscale-data
+          #   size: "100Mi"
           - name: traefik-conf
             configMap:
               name: traefik-main-config
         service:
-          name: ${SERVICE_NAME_PROXY}
+          name: "proxy"
           ports:
             - name: proxy
               port: 80
-            - name: api
-              port: 4000
+            # - name: api
+            #   port: 4000
 
-  - name: queue
+  backend:
     helm:
-      componentChart: true
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
       values:
         containers:
-          - image: ${DOCKER_IMAGE_QUEUE}
-        service:
-          name: ${SERVICE_NAME_QUEUE}
-          ports:
-            - name: ampq
-              port: 5672
-            - name: management
-              port: 15672
-
-  - name: redis
-    helm:
-      componentChart: true
-      values:
-        containers:
-          - image: ${DOCKER_IMAGE_REDIS}:${REDIS_VERSION}
-            env:
-              - name: SERVICE_NAME
-                value: redis
-              - name: RELEASE
-                value: ${RELEASE}
+          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}"
             volumeMounts:
-              - containerPath: /data
+              - containerPath: /storage
                 volume:
-                  name: app-redis-data
-                  subPath: /
+                  name: credentials-data
+                  subPath: /credentials-data
                   readOnly: false
-              - containerPath: /usr/local/etc/redis
-                volume:
-                  name: redis-conf
-        volumes:
-          - name: app-redis-data
-            size: "5Gi"
-          - name: redis-conf
-            configMap:
-              name: redis-config
-        service:
-          name: ${SERVICE_NAME_REDIS}
-          ports:
-            - port: 6379
-
-  - name: seaweedfs
-    helm:
-      componentChart: true
-      values:
-        containers:
-          - image: ${DOCKER_IMAGE_SEAWEEDFS}
-            command:
-              - weed
-            args:
-              [
-                "server",
-                "-s3",
-                "-s3.config=/etc/s3config.json",
-                "-master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}",
-              ]
             env:
+              - name: MONGO_PORT
+                value: "${MONGO_PORT}"
+              - name: MONGO_HOST
+                value: "${MONGO_HOST}"
+              - name: MONGO_USERNAME
+                value: "${MONGO_USERNAME}"
+              - name: MONGO_PASSWORD
+                value: "${MONGO_PASSWORD}"
               - name: SERVICE_NAME
-                value: ${SERVICE_NAME_SEAWEEDFS}
+                value: "backend"
               - name: RELEASE
-                value: ${RELEASE}
-              - name: S3_VOLUME_SIZE_MB
-                value: ${S3_VOLUME_SIZE_MB}
-            volumeMounts:
-              - containerPath: /data
-                volume:
-                  name: seaweedfs-data
-                  subPath: /
-                  readOnly: false
-              - containerPath: /etc/s3config.json
-                volume:
-                  name: seaweed-conf-s3
-                  subPath: /s3config.json
-              - containerPath: /etc/seaweedfs/filer.toml
-                volume:
-                  name: seaweed-conf-filer
-                  subPath: /filer.toml
+                value: "${RELEASE}"
+              - name: VERSION
+                value: "${VERSION}"
+              - name: VERSION_HASH
+                value: "${VERSION_HASH}"
+              - name: NODE_TYPE
+                value: "${NODE_TYPE}"
+              - name: NODE_NAME
+                value: "${NODE_NAME}"
+              - name: STACK_API_KEY
+                value: "changeme"
+              - name: PORT
+                value: "${HTTP_PORT}"
+              - name: IGNORE_TLS_ERRORS
+                value: "${IGNORE_TLS_ERRORS}"
+              - name: HTTP_PORT
+                value: "${HTTP_PORT}"
+              - name: HTTPS_PORT
+                value: "${HTTPS_PORT}"
+              - name: CONTAINER_HOST
+                value: "k8s"
+              - name: TRACE
+                value: "${TRACE}"
+              - name: JAEGER_HOST
+                value: "${JAEGER_HOST}"
+              - name: JAEGER_PORT
+                value: "${JAEGER_PORT}"
+              - name: DEV_MODE
+                value: "${DEV_MODE}"
+              - name: DOMAIN_CONNECTION_PORT
+                value: "${DOMAIN_CONNECTION_PORT}"
+              - name: ENABLE_OBLV
+                value: "${ENABLE_OBLV}"
+              - name: DEFAULT_ROOT_EMAIL
+                value: "${DEFAULT_ROOT_EMAIL}"
+              - name: DEFAULT_ROOT_PASSWORD
+                value: "${DEFAULT_ROOT_PASSWORD}"
+              - name: BACKEND_STORAGE_PATH
+                value: "/storage"
         volumes:
-          - name: seaweedfs-data
-            size: "20Gi"
-          - name: seaweed-conf-s3
-            configMap:
-              name: seaweed-config-s3
-          - name: seaweed-conf-filer
-            configMap:
-              name: seaweed-config-filer
+          - name: credentials-data
+            size: "100Mi"
         service:
-          name: ${SERVICE_NAME_SEAWEEDFS}
+          name: "backend"
           ports:
-            - port: 8333
-
-  - name: mongo
+            - port: "${HTTP_PORT}"
+  mongo:
     helm:
-      componentChart: true
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
       values:
         containers:
           - image: mongo:latest
             env:
               - name: MONGO_INITDB_ROOT_USERNAME
-                value: ${MONGO_USERNAME}
+                value: "${MONGO_USERNAME}"
               - name: MONGO_INITDB_ROOT_PASSWORD
-                value: ${MONGO_PASSWORD}
+                value: "${MONGO_PASSWORD}"
             volumeMounts:
               - containerPath: /data/db
                 volume:
@@ -356,522 +214,51 @@ deployments:
           - name: mongo-data
             size: "5Gi"
         service:
-          name: ${SERVICE_NAME_MONGO}
+          name: mongo
           ports:
-            - port: 27017
+            - port: "27017"
 
-  - name: backend
+  frontend:
     helm:
-      componentChart: true
-      values:
-        volumes:
-          - name: credentials-data
-            secret:
-              secretName: backend-credentials
-        containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
-            command:
-              - /app/grid/start.sh
-            volumeMounts:
-              - containerPath: /storage
-                volume:
-                  name: credentials-data
-                  readOnly: true
-            securityContext:
-              capabilities:
-                add: ["NET_ADMIN"]
-              privileged: true
-            livenessProbe:
-              httpGet:
-                path: /api/v1/status
-                port: 80
-              initialDelaySeconds: 5
-              periodSeconds: 60
-              successThreshold: 1
-              failureThreshold: 3
-            readinessProbe:
-              httpGet:
-                path: /api/v1/status
-                port: 80
-              initialDelaySeconds: 5
-              periodSeconds: 60
-              successThreshold: 1
-              failureThreshold: 3
-            env:
-              - name: NODE_NAME
-                value: ${NODE_NAME}
-              - name: VERSION
-                value: ${VERSION}
-              - name: VERSION_HASH
-                value: ${VERSION_HASH}
-              - name: SERVER_HOST
-                value: ${SERVER_HOST}
-              - name: LOG_LEVEL
-                value: debug
-              - name: NODE_TYPE
-                value: ${NODE_TYPE}
-              - name: STACK_API_KEY
-                value: ${STACK_API_KEY}
-              - name: CONTAINER_HOST
-                value: ${CONTAINER_HOST}
-              - name: JAX_ENABLE_X64
-                value: ${JAX_ENABLE_X64}
-              - name: USE_NEW_SERVICE
-                value: ${USE_NEW_SERVICE}
-              - name: REDIS_STORE_DB_ID
-                value: ${REDIS_STORE_DB_ID}
-              - name: REDIS_LEDGER_DB_ID
-                value: ${REDIS_LEDGER_DB_ID}
-              - name: REDIS_HOST
-                value: ${REDIS_HOST}
-              - name: REDIS_PORT
-                value: ${REDIS_PORT}
-              - name: SERVICE_NAME
-                value: ${SERVICE_NAME_BACKEND}
-              - name: S3_ENDPOINT
-                value: ${S3_ENDPOINT}
-              - name: S3_PORT
-                value: ${S3_PORT}
-              - name: S3_ROOT_USER
-                value: ${S3_ROOT_USER}
-              - name: S3_ROOT_PWD
-                value: ${S3_ROOT_PWD}
-              - name: S3_REGION
-                value: ${S3_REGION}
-              - name: S3_PRESIGNED_TIMEOUT_SECS
-                value: ${S3_PRESIGNED_TIMEOUT_SECS}
-              - name: RELEASE
-                value: ${RELEASE}
-              - name: USE_BLOB_STORAGE
-                value: ${USE_BLOB_STORAGE}
-              - name: TEST_MODE
-                value: $!{TEST_MODE}
-              - name: MONGO_USERNAME
-                value: ${MONGO_USERNAME}
-              - name: MONGO_PASSWORD
-                value: ${MONGO_PASSWORD}
-              - name: MONGO_HOST
-                value: ${MONGO_HOST}
-              - name: MONGO_PORT
-                value: ${MONGO_PORT}
-              - name: ASSOCIATION_TIMEOUT
-                value: $!{ASSOCIATION_TIMEOUT}
-        service:
-          name: ${SERVICE_NAME_BACKEND}
-          ports:
-            - port: 80
-
-  - name: backend-stream
-    helm:
-      componentChart: true
-      values:
-        volumes:
-          - name: credentials-data
-            secret:
-              secretName: backend-credentials
-        containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
-            command:
-              - /app/grid/start.sh
-            volumeMounts:
-              - containerPath: /storage
-                volume:
-                  name: credentials-data
-                  readOnly: true
-            securityContext:
-              capabilities:
-                add: ["NET_ADMIN"]
-              privileged: true
-            livenessProbe:
-              httpGet:
-                path: /api/v1/status
-                port: 80
-              initialDelaySeconds: 5
-              periodSeconds: 60
-              successThreshold: 1
-              failureThreshold: 3
-            readinessProbe:
-              httpGet:
-                path: /api/v1/status
-                port: 80
-              initialDelaySeconds: 5
-              periodSeconds: 60
-              successThreshold: 1
-              failureThreshold: 3
-            env:
-              - name: NODE_NAME
-                value: ${NODE_NAME}
-              - name: SERVICE_NAME
-                value: ${SERVICE_NAME_BACKEND_STREAM}
-              - name: VERSION
-                value: ${VERSION}
-              - name: VERSION_HASH
-                value: ${VERSION_HASH}
-              - name: SERVER_HOST
-                value: ${SERVER_HOST}
-              - name: LOG_LEVEL
-                value: debug
-              - name: STREAM_QUEUE
-                value: "1"
-              - name: NODE_TYPE
-                value: ${NODE_TYPE}
-              - name: STACK_API_KEY
-                value: ${STACK_API_KEY}
-              - name: CONTAINER_HOST
-                value: ${CONTAINER_HOST}
-              - name: JAX_ENABLE_X64
-                value: ${JAX_ENABLE_X64}
-              - name: USE_NEW_SERVICE
-                value: ${USE_NEW_SERVICE}
-              - name: REDIS_STORE_DB_ID
-                value: ${REDIS_STORE_DB_ID}
-              - name: REDIS_LEDGER_DB_ID
-                value: ${REDIS_LEDGER_DB_ID}
-              - name: REDIS_HOST
-                value: ${REDIS_HOST}
-              - name: REDIS_PORT
-                value: ${REDIS_PORT}
-              - name: S3_ENDPOINT
-                value: ${S3_ENDPOINT}
-              - name: S3_PORT
-                value: ${S3_PORT}
-              - name: S3_ROOT_USER
-                value: ${S3_ROOT_USER}
-              - name: S3_ROOT_PWD
-                value: ${S3_ROOT_PWD}
-              - name: S3_REGION
-                value: ${S3_REGION}
-              - name: S3_PRESIGNED_TIMEOUT_SECS
-                value: ${S3_PRESIGNED_TIMEOUT_SECS}
-              - name: RELEASE
-                value: ${RELEASE}
-              - name: USE_BLOB_STORAGE
-                value: ${USE_BLOB_STORAGE}
-              - name: TEST_MODE
-                value: $!{TEST_MODE}
-              - name: MONGO_USERNAME
-                value: ${MONGO_USERNAME}
-              - name: MONGO_PASSWORD
-                value: ${MONGO_PASSWORD}
-              - name: MONGO_HOST
-                value: ${MONGO_HOST}
-              - name: MONGO_PORT
-                value: ${MONGO_PORT}
-        service:
-          name: ${SERVICE_NAME_BACKEND_STREAM}
-          ports:
-            - port: 80
-
-  - name: backend-worker
-    helm:
-      componentChart: true
-      values:
-        volumes:
-          - name: credentials-data
-            secret:
-              secretName: backend-credentials
-        containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
-            command:
-              - /app/grid/worker-start.sh
-            volumeMounts:
-              - containerPath: /storage
-                volume:
-                  name: credentials-data
-                  readOnly: true
-            securityContext:
-              capabilities:
-                add: ["NET_ADMIN"]
-              privileged: true
-            env:
-              - name: NODE_NAME
-                value: ${NODE_NAME}
-              - name: VERSION
-                value: ${VERSION}
-              - name: VERSION_HASH
-                value: ${VERSION_HASH}
-              - name: SERVER_HOST
-                value: ${SERVER_HOST}
-              - name: CELERY_WORKER
-                value: "true"
-              - name: RUN
-                value: "celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500"
-              - name: NODE_TYPE
-                value: ${NODE_TYPE}
-              - name: C_FORCE_ROOT
-                value: "1"
-              - name: STACK_API_KEY
-                value: ${STACK_API_KEY}
-              - name: CONTAINER_HOST
-                value: ${CONTAINER_HOST}
-              - name: JAX_ENABLE_X64
-                value: ${JAX_ENABLE_X64}
-              - name: USE_NEW_SERVICE
-                value: ${USE_NEW_SERVICE}
-              - name: REDIS_STORE_DB_ID
-                value: ${REDIS_STORE_DB_ID}
-              - name: REDIS_LEDGER_DB_ID
-                value: ${REDIS_LEDGER_DB_ID}
-              - name: REDIS_HOST
-                value: ${REDIS_HOST}
-              - name: REDIS_PORT
-                value: ${REDIS_PORT}
-              - name: S3_ENDPOINT
-                value: ${S3_ENDPOINT}
-              - name: S3_PORT
-                value: ${S3_PORT}
-              - name: S3_ROOT_USER
-                value: ${S3_ROOT_USER}
-              - name: S3_ROOT_PWD
-                value: ${S3_ROOT_PWD}
-              - name: S3_REGION
-                value: ${S3_REGION}
-              - name: S3_PRESIGNED_TIMEOUT_SECS
-                value: ${S3_PRESIGNED_TIMEOUT_SECS}
-              - name: RELEASE
-                value: ${RELEASE}
-              - name: NETWORK_CHECK_INTERVAL
-                value: $!{NETWORK_CHECK_INTERVAL}
-              - name: DOMAIN_CHECK_INTERVAL
-                value: $!{DOMAIN_CHECK_INTERVAL}
-              - name: USE_BLOB_STORAGE
-                value: ${USE_BLOB_STORAGE}
-              - name: TEST_MODE
-                value: $!{TEST_MODE}
-              - name: MONGO_USERNAME
-                value: ${MONGO_USERNAME}
-              - name: MONGO_PASSWORD
-                value: ${MONGO_PASSWORD}
-              - name: MONGO_HOST
-                value: ${MONGO_HOST}
-              - name: MONGO_PORT
-                value: ${MONGO_PORT}
-
-  - name: frontend
-    helm:
-      componentChart: true
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}:${VERSION}"
             env:
               - name: VERSION
-                value: ${VERSION}
+                value: "${VERSION}"
               - name: VERSION_HASH
-                value: ${VERSION_HASH}
+                value: "${VERSION_HASH}"
               - name: NODE_TYPE
-                value: ${NODE_TYPE}
-              - name: VITE_PUBLIC_API_BASE_URL
-                value: ${VITE_PUBLIC_API_BASE_URL}
+                value: "${NODE_TYPE}"
+              - name: NEXT_PUBLIC_API_URL
+                value: "${NEXT_PUBLIC_API_URL}"
         service:
-          name: ${SERVICE_NAME_FRONTEND}
+          name: "frontend"
           ports:
-            - port: 80
-
-  - name: headscale
-    helm:
-      componentChart: true
-      values:
-        containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
-            env:
-              - name: NETWORK_NAME
-                value: ${NETWORK_NAME}
-              - name: STACK_API_KEY
-                value: ${STACK_API_KEY}
-            volumeMounts:
-              - containerPath: /headscale/data
-                volume:
-                  name: headscale-data
-                  subPath: /headscale-data
-                  readOnly: false
-        volumes:
-          - name: headscale-data
-            size: "100Mi"
-        service:
-          name: ${SERVICE_NAME_HEADSCALE}
-          ports:
-            - name: vpn
-              port: 8080
-            - name: api
-              port: 4000
-
-  - name: vpn-iptables
-    helm:
-      componentChart: true
-      values:
-        hostNetwork: true
-        containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
-            command: ["sh", "-c", "/iptables.sh"]
-            resources:
-              requests:
-                cpu: 5m
-                memory: 10Mi
-            securityContext:
-              capabilities:
-                add: ["NET_ADMIN", "SYS_MODULE"]
-              privileged: true
-
-  # ingress
-  - name: grid-stack-ingress
-    kubectl:
-      manifests:
-        - k8s/manifests/ingress.yaml
+            - port: "80"
 
 dev:
-  ports:
-    # - name: backend
-    #   labelSelector:
-    #     app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
-    #   forward:
-    #     - port: 8082
-    #       remotePort: 80
-    # - name: backend-stream
-    #   labelSelector:
-    #     app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
-    #   forward:
-    #     - port: 8083
-    #       remotePort: 80
-    # - name: db
-    #   labelSelector:
-    #     app.kubernetes.io/component: ${SERVICE_NAME_DB}
-    #   forward:
-    #     - port: 5432
-    #       remotePort: 5432
-    # - name: queue
-    #   labelSelector:
-    #     app.kubernetes.io/component: ${SERVICE_NAME_QUEUE}
-    #   forward:
-    #     - port: 15672
-    # - name: frontend
-    #   labelSelector:
-    #     app.kubernetes.io/component: ${SERVICE_NAME_FRONTEND}
-    #   forward:
-    #     - port: 8085
-    #       remotePort: 80
-    # - name: headscale
-    #   labelSelector:
-    #     app.kubernetes.io/component: ${SERVICE_NAME_HEADSCALE}
-    #   forward:
-    #     - port: 8086
-    #       remotePort: 8080
-    # - name: headscale-api
-    #   labelSelector:
-    #     app.kubernetes.io/component: ${SERVICE_NAME_HEADSCALE}
-    #   forward:
-    #     - port: 8087
-    #       remotePort: 4000
-    # - name: tailscale-api
-    #   labelSelector:
-    #     app.kubernetes.io/component: ${SERVICE_NAME_TAILSCALE}
-    #   forward:
-    #     - port: 8088
-    #       remotePort: 4000
+  mongo:
+    imageSelector: "mongo:latest"
+    ports:
+      - port: "27017"
+  backend:
+    imageSelector: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}"
+    env:
+      - name: DEV_MODE
+        value: "True"
+    logs: {}
+    sync:
+      - path: ./backend/grid:/app/grid
+      - path: ../syft:/app/syft
 
-  # sync:
-  # - name: traefik
-  #   disableDownload: true
-  #   labelSelector:
-  #     app.kubernetes.io/component: ${SERVICE_NAME_TAILSCALE}
-  #   localSubPath: traefik/k8s
-  #   containerPath: /etc/traefik
-  #   - name: backendsyft
-  #     disableDownload: true
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
-  #     localSubPath: ../syft
-  #     containerPath: /app/syft
-  #     excludePaths: ["../syft/examples", "../syft/tests"]
-  #   - name: backendapp
-  #     disableDownload: true
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
-  #     localSubPath: ./backend/grid
-  #     containerPath: /app/grid
-  #     excludePaths: []
-  #   - name: backendcache
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
-  #     localSubPath: ./data/package-cache
-  #     containerPath: /root/.cache
-  #     excludePaths: []
-  #   - name: backend-streamsyft
-  #     disableDownload: true
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
-  #     localSubPath: ../syft
-  #     containerPath: /app/syft
-  #     excludePaths: ["../syft/examples", "../syft/tests"]
-  #   - name: backend-streamapp
-  #     disableDownload: true
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
-  #     localSubPath: ./backend/grid
-  #     containerPath: /app/grid
-  #     excludePaths: []
-  #   - name: backend-streamcache
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
-  #     localSubPath: ./data/package-cache
-  #     containerPath: /root/.cache
-  #     excludePaths: []
-  #   - name: backend-workersyft
-  #     disableDownload: true
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
-  #     localSubPath: ../syft
-  #     containerPath: /app/syft
-  #     excludePaths: ["../syft/examples", "../syft/tests"]
-  #   - name: backend-workerapp
-  #     disableDownload: true
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
-  #     localSubPath: ./backend/grid
-  #     containerPath: /app/grid
-  #     excludePaths: []
-  #   - name: backend-workercache
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
-  #     localSubPath: ./data/package-cache
-  #     containerPath: /root/.cache
-  #     excludePaths: []
-  #   - name: frontend
-  #     disableDownload: true
-  #     labelSelector:
-  #       app.kubernetes.io/component: ${SERVICE_NAME_FRONTEND}
-  #     localSubPath: ./frontend/src
-  #     containerPath: /app/src
-  #     excludePaths: []
-profiles:
-  - name: domain
-    patches:
-      - op: replace
-        path: vars.name=NODE_TYPE.value
-        value: domain
-      - op: remove
-        path: dev.ports.name=headscale-api
-      - op: remove
-        path: deployments.name=headscale
-      - op: remove
-        path: images.name=headscale
-      - op: remove
-        path: deployments.name=grid-vpn-ingress
-
-  - name: network
-    patches:
-      - op: replace
-        path: vars.name=NODE_TYPE.value
-        value: network
-      - op: replace
-        path: vars.name=USE_BLOB_STORAGE.value
-        value: "False"
-      - op: remove
-        path: deployments.name=seaweedfs
-      - op: remove
-        path: deployments.name=grid-blob-storage-ingress
-      - op: replace
-        path: vars.name=FRONTEND_TARGET.value
-        value: grid-ui-production
-      - op: replace
-        path: vars.name=TRAEFIK_CONFIG_FILE.value
-        value: traefik-network.yaml
+commands:
+  dev:
+    command: |-
+      devspace --var CONTAINER_REGISTRY=k3d-registry.localhost:12345/ dev --config=devspace.yaml
