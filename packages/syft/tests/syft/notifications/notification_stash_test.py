@@ -239,7 +239,6 @@ def test_get_all_for_verify_key(root_verify_key, document_store) -> None:
     assert len(result) == 1
 
 
-@pytest.mark.xfail
 def test_get_all_by_verify_key_for_status(root_verify_key, document_store) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
