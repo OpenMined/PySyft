@@ -152,6 +152,7 @@ def check_enclave_transfer(
         api = method(
             user_code.enclave_metadata,
             context.node.signing_key,
+            worker_name=context.node.name,
         )
         # send data of the current node to enclave
         user_node_view = NodeView(
