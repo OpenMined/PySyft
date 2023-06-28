@@ -129,14 +129,24 @@ class EnclaveService(AbstractService):
 def check_enclave_transfer(
     user_code: UserCode, value: UserCodeStatus, context: ChangeContext
 ):
-    # relative
-    from ...external.oblv.deployment_client import OblvMetadata
-    from ...external.oblv.oblv_service import OblvService
-
     if (
-        isinstance(user_code.enclave_metadata, OblvMetadata)
+        type(user_code.enclave_metadata).__name__ == "OblvMetadata"
         and value == UserCodeStatus.EXECUTE
     ):
+        # relative
+        from ...external import OBLV
+
+        if OBLV:
+            # relative
+            from ...external.oblv.oblv_service import OblvService
+        else:
+            return SyftError(
+                message="Oblivious is not enabled."
+                "To enable oblivious package, set sy.enable_external_lib('oblv') "
+                "on the client side"
+                "Or add --oblv when launching by hagrid"
+            )
+
         method = context.node.get_service_method(OblvService.get_api_for)
 
         api = method(
