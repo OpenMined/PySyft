@@ -86,6 +86,7 @@ from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
 from ..util.util import random_name
+from ..util.util import str_to_bool
 from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
@@ -135,6 +136,12 @@ def get_default_root_email() -> Optional[str]:
 def get_default_root_password() -> Optional[str]:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
+
+def get_dev_mode() -> bool:
+    return str_to_bool(get_env("DEV_MODE", "False"))
+
+
+dev_mode = get_dev_mode()
 
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
@@ -188,9 +195,6 @@ class Node(AbstractNode):
 
         self.processes = processes
         self.is_subprocess = is_subprocess
-
-        if name is None:
-            name = random_name()
         self.name = name
         services = (
             [
@@ -326,11 +330,16 @@ class Node(AbstractNode):
 
     @property
     def guest_client(self):
+        return self.get_guest_client()
+
+    def get_guest_client(self, verbose: bool = True):
         # relative
         from ..client.client import PythonConnection
         from ..client.client import SyftClient
 
         connection = PythonConnection(node=self)
+        if verbose:
+            print(f"Logged into {self.name} as GUEST")
         return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
@@ -379,9 +388,10 @@ class Node(AbstractNode):
             and document_store_config.client_config.filename is None
         ):
             document_store_config.client_config.filename = f"{self.id}.sqlite"
-            print(
-                f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
-            )
+            if dev_mode:
+                print(
+                    f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
+                )
         document_store = document_store_config.store_type
         self.document_store_config = document_store_config
 
@@ -473,20 +483,36 @@ class Node(AbstractNode):
 
     @property
     def metadata(self) -> NodeMetadata:
+        name = ""
+        deployed_on = ""
+        organization = ""
+        on_board = False
+        description = ""
+        signup_enabled = False
+
         settings_stash = SettingsStash(store=self.document_store)
-        settings = settings_stash.get_all(self.signing_key.verify_key).ok()[0]
+        settings = settings_stash.get_all(self.signing_key.verify_key)
+        if settings.is_ok() and len(settings.ok()) > 0:
+            settings_data = settings.ok()[0]
+            name = settings_data.name
+            deployed_on = settings_data.deployed_on
+            organization = settings_data.organization
+            on_board = settings_data.on_board
+            description = settings_data.description
+            signup_enabled = settings_data.signup_enabled
+
         return NodeMetadata(
-            name=settings.name,
+            name=name,
             id=self.id,
             verify_key=self.verify_key,
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
-            deployed_on=settings.deployed_on,
-            description=settings.description,
-            organization=settings.organization,
-            on_board=settings.on_board,
-            signup_enabled=settings.signup_enabled,
+            deployed_on=deployed_on,
+            description=description,
+            organization=organization,
+            on_board=on_board,
+            signup_enabled=signup_enabled,
         )
 
     @property
@@ -648,10 +674,13 @@ class Node(AbstractNode):
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
     def create_initial_settings(self) -> Optional[NodeSettings]:
+        if self.name is None:
+            self.name = random_name()
         try:
             settings_stash = SettingsStash(store=self.document_store)
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
+                self.name = settings_exists[0].name
                 return None
             else:
                 new_settings = NodeSettings(

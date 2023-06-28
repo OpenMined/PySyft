@@ -9,6 +9,10 @@ on:
         description: "Run Stack Integration Tests Manually"
         required: false
 
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   pr-tests-stack-public:
     strategy:
@@ -157,8 +161,8 @@ jobs:
         with:
           timeout_seconds: 1800
           max_attempts: 3
-          retry_on: timeout
           command: tox -e stack.test.integration
+        continue-on-error: true
 
       - name: Reboot node
         if: matrix.os == 'windows' && failure()

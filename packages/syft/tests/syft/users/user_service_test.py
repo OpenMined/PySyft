@@ -543,7 +543,7 @@ def test_userservice_register_success(
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
         monkeypatch.setattr(user_service.stash, "set", mock_set)
 
-        expected_msg = f"User {guest_create_user.name} successfully registered! To see users, run client.users."
+        expected_msg = f"User '{guest_create_user.name}' successfully registered!"
         expected_private_key = guest_user.to(UserPrivateKey)
 
         response = user_service.register(node_context, guest_create_user)

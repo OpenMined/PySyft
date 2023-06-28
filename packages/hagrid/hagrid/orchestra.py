@@ -17,7 +17,6 @@ import gevent
 
 # relative
 from .cli import str_to_bool
-from .deps import LATEST_STABLE_SYFT
 from .grammar import find_available_port
 from .names import random_name
 from .util import shell
@@ -93,6 +92,7 @@ class NodeType(Enum):
     ENCLAVE = "enclave"
     PYTHON = "python"
     VM = "vm"
+    K8S = "k8s"
 
 
 class NodeHandle:
@@ -116,9 +116,9 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port)  # type: ignore
+            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
         elif self.node_type == NodeType.PYTHON:
-            return self.python_node.guest_client  # type: ignore
+            return self.python_node.get_guest_client(verbose=False)  # type: ignore
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None
@@ -127,6 +127,23 @@ class NodeHandle:
         if email and password:
             return client.login(email=email, password=password)
         return None
+
+    def register(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        institution: Optional[str] = None,
+        website: Optional[str] = None,
+    ) -> Any:
+        client = self.client
+        return client.register(
+            name=name,
+            email=email,
+            password=password,
+            institution=institution,
+            website=website,
+        )
 
     def land(self) -> None:
         if self.node_type == NodeType.PYTHON:
@@ -163,7 +180,10 @@ class Orchestra:
         local_db: bool = False,
         tag: Optional[str] = "latest",
         verbose: bool = False,
+        render: bool = False,
     ) -> Optional[NodeHandle]:
+        if dev_mode is True:
+            os.environ["DEV_MODE"] = "True"
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
         default_port = 8080
@@ -209,6 +229,15 @@ class Orchestra:
                 url="http://192.168.56.2",
             )
 
+        if node_type_enum == NodeType.K8S:
+            node_port = int(os.environ.get("NODE_PORT", f"{default_port}"))
+            return NodeHandle(
+                node_type=node_type_enum,
+                name=name,
+                port=node_port,
+                url="http://localhost",
+            )
+
         if port == "auto" or port is None:
             if container_exists(name=name):
                 port = port_from_container(name=name)
@@ -252,10 +281,9 @@ class Orchestra:
 
         if tag:
             commands.append(f"--tag={tag}")
-            if tag == "beta":
-                commands.append("--build-src=dev")
-            if tag == "latest":
-                commands.append(f"--build-src={LATEST_STABLE_SYFT}")
+
+        if render:
+            commands.append("--render")
 
         # needed for building containers
         USER = os.environ.get("USER", getpass.getuser())

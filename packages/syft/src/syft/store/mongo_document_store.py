@@ -17,7 +17,9 @@ from typing_extensions import Self
 
 # relative
 from ..node.credentials import SyftVerifyKey
+from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
+from ..serde.serialize import _serialize
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
@@ -25,7 +27,6 @@ from ..service.response import SyftSuccess
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
-from ..types.syft_object import SyftObjectRegistry
 from ..types.transforms import TransformContext
 from ..types.transforms import transform
 from ..types.transforms import transform_method
@@ -86,8 +87,7 @@ def to_mongo(context: TransformContext) -> TransformContext:
         output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
-    mongo_dict = MongoDict.from_dict(context.obj.to_dict())
-    output["__obj__"] = mongo_dict
+    output["__blob__"] = _serialize(context.obj, to_bytes=True)
     output["__arepr__"] = _repr_debug_(context.obj)  # a comes first in alphabet
     context.output = output
     return context
@@ -102,19 +102,7 @@ def syft_obj_to_mongo():
 def from_mongo(
     storage_obj: Dict, context: Optional[TransformContext] = None
 ) -> SyftObject:
-    constructor = SyftObjectRegistry.versioned_class(
-        name=storage_obj["__canonical_name__"], version=storage_obj["__version__"]
-    )
-    if constructor is None:
-        raise ValueError(
-            "Versioned class should not be None for initialization of SyftObject."
-        )
-    mongo_dict = storage_obj["__obj__"]
-    output = mongo_dict.dict
-    for attr, funcs in constructor.__serde_overrides__.items():
-        if attr in output:
-            output[attr] = funcs[1](output[attr])
-    return constructor(**output)
+    return _deserialize(storage_obj["__blob__"], from_bytes=True)
 
 
 @serializable(attrs=["storage_type"])

@@ -15,6 +15,7 @@ if [[ ${DEV_MODE} == "True" ]];
 then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
+    pip install -e "/app/syft[telemetry]"
 fi
 
 set +e
