@@ -22,6 +22,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from tqdm import tqdm
 from typing_extensions import Self
+import subprocess
 
 # relative
 from .. import __version__
@@ -52,6 +53,7 @@ from ..util.telemetry import instrument
 from ..util.util import get_mb_size
 from ..util.util import thread_ident
 from ..util.util import verify_tls
+from ..util.env import Env
 from .api import APIModule
 from .api import APIRegistry
 from .api import SignedSyftAPICall
@@ -327,6 +329,21 @@ class SyftClient:
         self._api = api
 
         self.post_init()
+
+    def get_env(self) -> Env:
+        res = subprocess.run("pip list | tail -n +3 | awk '{print $1,$2}'",
+                             shell=True, check=True, executable='/bin/bash',
+                             capture_output=True)
+        packages_dict = {}
+        for line in res.stdout.decode().split('\n')[:-1]:
+            print(line)
+            elems = line.split(" ")
+            package_name = elems[0]
+            version = elems[1]
+            if len(elems) == 3:
+                print(f"Warning, package {package_name} is installed in editable mode so errors might occur!!!")
+            packages_dict[package_name] = version
+        return Env(packages_dict=packages_dict)
 
     def post_init(self) -> None:
         if self.metadata is None:
