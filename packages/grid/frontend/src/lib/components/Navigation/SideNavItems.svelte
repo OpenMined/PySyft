@@ -10,15 +10,7 @@
   const items = [
     {
       title: 'Governance',
-      sections: [
-        {
-          icon: TrayIcon,
-          iconFill: TrayFillIcon,
-          label: 'Requests',
-          href: '/requests',
-          disabled: true
-        }
-      ]
+      sections: [{ icon: TrayIcon, iconFill: TrayFillIcon, label: 'Requests', href: '/requests' }]
     },
     {
       title: 'Assets',
