@@ -34,6 +34,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
       - name: "clean .git/config"
         if: matrix.os == 'windows'
         continue-on-error: true
@@ -113,6 +116,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
       - name: "clean .git/config"
         if: matrix.os == 'windows'
         continue-on-error: true
@@ -187,8 +193,10 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
-
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -282,8 +290,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
-
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
