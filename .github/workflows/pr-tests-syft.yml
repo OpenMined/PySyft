@@ -28,9 +28,9 @@ jobs:
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
-            os: "ubuntu-latest"
+            os: "om-ci-16vcpu-ubuntu2204"
           - python-version: "3.10"
-            os: "ubuntu-latest"
+            os: "om-ci-16vcpu-ubuntu2204"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -103,11 +103,11 @@ jobs:
         notebook-paths: ["tutorials"]
         include:
           - python-version: "3.9"
-            os: "ubuntu-latest"
+            os: "om-ci-16vcpu-ubuntu2204"
             node-type: "python"
             notebook-paths: "tutorials"
           - python-version: "3.10"
-            os: "ubuntu-latest"
+            os: "om-ci-16vcpu-ubuntu2204"
             node-type: "python"
             notebook-paths: "tutorials"
 
@@ -230,7 +230,7 @@ jobs:
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker Compose on Linux
-        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'om-ci-16vcpu-ubuntu2204'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
