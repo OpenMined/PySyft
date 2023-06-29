@@ -240,9 +240,9 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: Permission to home directory
-        run: |
-          sudo chown -R $USER:$USER $HOME
+      # - name: Permission to home directory
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
       - name: Check for file changes
         uses: dorny/paths-filter@v2
