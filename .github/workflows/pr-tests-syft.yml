@@ -24,7 +24,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-13]
+        os: [om-ci-16vcpu-ubuntu2204, macos-13]
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
@@ -97,7 +97,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-13]
+        os: [om-ci-16vcpu-ubuntu2204, macos-13]
         python-version: ["3.11"]
         node-type: ["python"]
         notebook-paths: ["tutorials"]
@@ -178,7 +178,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest]
+        os: [om-ci-16vcpu-ubuntu2204]
         python-version: ["3.9", "3.10", "3.11"]
         node-type: ["enclave"]
         notebook-paths: ["api/0.8"]
@@ -277,7 +277,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        os: [ubuntu-latest]
+        os: [om-ci-16vcpu-ubuntu2204]
         python-version: ["3.11"]
 
     runs-on: ${{ matrix.os }}
