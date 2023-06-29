@@ -27,7 +27,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [ubuntu-latest]
+        os: [self-hosted]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -229,7 +229,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [ubuntu-latest]
+        os: [self-hosted]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
