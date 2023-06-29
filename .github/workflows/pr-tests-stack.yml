@@ -27,7 +27,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [self-hosted, Linux]
+        os: [Linux]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -69,7 +69,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: buildjet/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -232,7 +232,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [self-hosted, Linux]
+        os: [Linux]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -265,7 +265,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: buildjet/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
