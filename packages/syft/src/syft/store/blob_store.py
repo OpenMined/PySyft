@@ -45,7 +45,7 @@ class OnDiskFileClientConnection(FileClientConnection):
         return Path(fp.path).read_bytes()
 
     def write(self, fp: SecureFilePathLocation, data: bytes) -> None:
-        return Path(fp.path).write_bytes(data)
+        Path(fp.path).write_bytes(data)
 
 
 class FileClient:
