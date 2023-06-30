@@ -16,6 +16,7 @@ from ...types.uid import UID
 from ..context import NodeServiceContext
 from ..metadata.node_metadata import NodeMetadata
 from .routes import NodeRoute
+from .routes import NodeRouteType
 from .routes import connection_to_route
 from .routes import route_to_connection
 
@@ -31,7 +32,7 @@ class NodePeer(SyftObject):
     verify_key: SyftVerifyKey
     is_vpn: bool = False
     vpn_auth_key: Optional[str] = None
-    node_routes: List[NodeRoute] = []
+    node_routes: List[NodeRouteType] = []
 
     __attr_searchable__ = ["name"]
     __attr_unique__ = ["verify_key"]

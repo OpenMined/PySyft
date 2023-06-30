@@ -119,7 +119,6 @@ def cli() -> None:
 
 
 def get_compose_src_path(
-    node_type: str,
     node_name: str,
     template_location: Optional[str] = None,
     **kwargs: TypeDict[str, Any],
@@ -131,7 +130,7 @@ def get_compose_src_path(
     else:
         path = deployment_dir(node_name)
 
-    if node_type.input == "enclave":
+    if kwargs["deployment_type"] == "single_container":  # type: ignore
         return path + "/worker"
     else:
         return path
@@ -260,6 +259,13 @@ def clean(location: str) -> None:
     required=False,
     type=click.Choice(["production", "development"], case_sensitive=False),
     help="Choose between production and development release",
+)
+@click.option(
+    "--deployment_type",
+    default="container_stack",
+    required=False,
+    type=click.Choice(["container_stack", "single_container"], case_sensitive=False),
+    help="Choose between container_stack and single_container deployment",
 )
 @click.option(
     "--cert-store-path",
@@ -432,6 +438,11 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
     node_type = verb.get_named_term_type(name="node_type")
+
+    # For enclave currently it is only a single container deployment
+    # This would change when we have side car containers to enclave
+    if node_type.input == "enclave":
+        kwargs["deployment_type"] = "single_container"
 
     compose_src_path = get_compose_src_path(
         node_type=node_type,
@@ -1196,7 +1207,7 @@ def create_launch_cmd(
 ) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
-    node_type = verb.get_named_term_type(name="node_type")
+
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
@@ -1243,6 +1254,11 @@ def create_launch_cmd(
     # if we use --dev override it
     if parsed_kwargs["dev"] is True:
         parsed_kwargs["release"] = "development"
+
+    # choosing deployment type
+    parsed_kwargs["deployment_type"] = "container_stack"
+    if "deployment_type" in kwargs and kwargs["deployment_type"] is not None:
+        parsed_kwargs["deployment_type"] = kwargs["deployment_type"]
 
     if "cert_store_path" in kwargs:
         parsed_kwargs["cert_store_path"] = kwargs["cert_store_path"]
@@ -1318,7 +1334,7 @@ def create_launch_cmd(
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(
             host_type=host,
-            node_type=node_type,
+            deployment_type=parsed_kwargs["deployment_type"],
             template_location=parsed_kwargs["template"],
             overwrite=parsed_kwargs["template_overwrite"],
             verbose=kwargs["verbose"],
@@ -2048,6 +2064,7 @@ def create_launch_docker_cmd(
     if compose_src_path:
         print("  - COMPOSE SOURCE: " + compose_src_path)
     print("  - RELEASE: " + kwargs["release"])
+    print("  - DEPLOYMENT:", kwargs["deployment_type"])
     print("  - ARCH: " + docker_platform)
     print("  - TYPE: " + str(node_type.input))
     print("  - DOCKER_TAG: " + version_string)
@@ -2193,7 +2210,7 @@ def create_launch_docker_cmd(
 
         render_templates(
             node_name=snake_name,
-            node_type=node_type,
+            deployment_type=kwargs["deployment_type"],
             template_location=kwargs["template"],
             env_vars=default_envs,
             host_type=host_term.host,
@@ -2211,8 +2228,8 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
-    if node_type.input == "enclave":
-        return create_launch_enclave_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
+    if kwargs["deployment_type"] == "single_container":
+        return create_launch_worker_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
 
     if bool(kwargs["vpn"]):
         cmd += " --profile vpn"
@@ -2249,7 +2266,7 @@ def create_launch_docker_cmd(
     return final_commands
 
 
-def create_launch_enclave_cmd(
+def create_launch_worker_cmd(
     cmd: str,
     kwargs: TypeDict[str, Any],
     build: bool,
@@ -3445,12 +3462,12 @@ def get_docker_status(
         node_type = "Domain"
         for container in headscale_containers:
             if host_name in container:
-                node_type = "Network"
+                node_type = "Gateway"
                 break
 
         return True, (host_name, node_type)
     else:
-        # health check for enclave node type
+        # health check for worker node
         host_name = get_host_name(network_container, by_suffix="worker")
         return True, (host_name, "Worker")
 

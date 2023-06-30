@@ -15,6 +15,7 @@ from .queue_stash import QueueItem
 from .queue_stash import Status
 
 
+@serializable()
 class QueueManager(BaseQueueManager):
     config: QueueConfig
 
