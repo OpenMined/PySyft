@@ -104,7 +104,7 @@ class ProxyActionObjectWithClient(ProxyActionObject):
 
 
 def add_file_client(context: TransformContext) -> TransformContext:
-    context.output["client"] = context.node.file_system_type(context.node.file_system_config)
+    context.output["file_client"] = context.node.file_system_type(context.node.file_system_config)
     return context
 
 
