@@ -341,7 +341,7 @@ class RedisStoreConfig(StoreConfig):
             Defaults to FileLockingConfig.
     """
 
-    client_config: SQLiteStoreClientConfig
-    store_type: Type[DocumentStore] = SQLiteDocumentStore
+    client_config: RedisStoreClientConfig
+    store_type: Type[DocumentStore] = RedisDocumentStore
     backing_store: Type[KeyValueBackingStore] = RedisBackingStore
     locking_config: LockingConfig = FileLockingConfig()
