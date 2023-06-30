@@ -187,8 +187,6 @@ class NodeHandle:
         if self.deployment_type == DeploymentType.PYTHON:
             if self.shutdown:
                 self.shutdown()
-        elif self.deployment_type == DeploymentType.VM:
-            pass
         else:
             Orchestra.land(self.name, deployment_type=self.deployment_type)
 
@@ -242,19 +240,6 @@ def deploy_to_python(
             name=name,
             python_node=worker,
         )
-
-
-def deploy_to_vm(
-    node_type_enum: NodeType, deployment_type_enum: DeploymentType, name: str
-) -> NodeHandle:
-    # Q: Ask Madhava, on why we have a fixed IP address for VM.
-    return NodeHandle(
-        node_type=node_type_enum,
-        deployment_type=deployment_type_enum,
-        name=name,
-        port=80,
-        url="http://192.168.56.2",
-    )
 
 
 def deploy_to_k8s(
@@ -406,13 +391,6 @@ class Orchestra:
                 dev_mode=dev_mode,
                 processes=processes,
                 local_db=local_db,
-            )
-
-        elif deployment_type_enum == DeploymentType.VM:
-            return deploy_to_vm(
-                node_type_enum=node_type_enum,
-                deployment_type_enum=deployment_type_enum,
-                name=name,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
