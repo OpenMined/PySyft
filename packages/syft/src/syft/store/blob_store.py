@@ -64,7 +64,7 @@ class FileClient:
 class OnDiskFileClient(FileClient):
     _config: OnDiskClientConfig
 
-    def __init__(self, config: OnDiskClientConfig):
+    def __init__(self, config: OnDiskClientConfig = OnDiskClientConfig()):
         pass
 
     def __enter__(self) -> FileClientConnection:
@@ -77,20 +77,13 @@ class OnDiskFileClient(FileClient):
 class SeaweedFSClient(FileClient):
     _config: SeaweedClientConfig
 
+    def __init__(self, config: SeaweedClientConfig):
+        pass
+
     def __enter__(self) -> FileClientConnection:
         pass
 
     def __exit__(self) -> None:
-        pass
-
-
-class SeaweedFSFilePathLocation(SecureFilePathLocation):
-    _client: SeaweedFSClient
-
-    def read():
-        pass
-
-    def write():
         pass
 
 
@@ -120,23 +113,7 @@ def attach_client() -> List[callable]:
     return [add_file_client]
 
 
-
-
-
-proxy_obj = proxy_action_obj.to(ProxyActionObjectWithClient)
-
-obj = proxy_obj.read()
-
-# Database -> SyftFile
-# Database -> ProxyActionObject
-# class SeaweedFSFile(SyftFile):
-#     pass
-
-
-# ProxyActionObject -> ProxyActionObjectWithClient -> ActionObject
-
 class ActionObject:
-
     @property
     def syft_action_data(self):
         proxy_obj = ProxyActionObject -> ProxyActionObjectWithClient
