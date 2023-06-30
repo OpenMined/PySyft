@@ -85,14 +85,51 @@ def container_exists_with(name: str, port: int) -> bool:
     return len(output) > 0
 
 
+def get_node_type(node_type: Optional[str]) -> Optional[NodeType]:
+    if node_type is None:
+        node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
+    try:
+        return NodeType(node_type)
+    except ValueError:
+        print(f"node_type: {node_type} is not a valid NodeType: {NodeType}")
+    return None
+
+
+def get_deployment_type(deployment_type: Optional[str]) -> Optional[DeploymentType]:
+    if deployment_type is None:
+        deployment_type = os.environ.get(
+            "ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON
+        )
+
+    # provide shorthands
+    if deployment_type == "container":
+        deployment_type = "container_stack"
+
+    try:
+        return DeploymentType(deployment_type)
+    except ValueError:
+        print(
+            f"deployment_type: {deployment_type} is not a valid DeploymentType: {DeploymentType}"
+        )
+    return None
+
+
+# Can also be specified by the environment variable
+# ORCHESTRA_NODE_TYPE
 class NodeType(Enum):
     GATEWAY = "gateway"
     DOMAIN = "domain"
-    WORKER = "worker"
     ENCLAVE = "enclave"
+
+
+# Can also be specified by the environment variable
+# ORCHESTRA_DEPLOYMENT_TYPE
+class DeploymentType(Enum):
     PYTHON = "python"
-    VM = "vm"
+    SINGLE_CONTAINER = "single_container"
+    CONTAINER_STACK = "container_stack"
     K8S = "k8s"
+    VM = "vm"
 
 
 class NodeHandle:
@@ -155,73 +192,104 @@ class NodeHandle:
             Orchestra.land(self.name, node_type=self.node_type.value)
 
 
-def get_node_type(node_type: Optional[str]) -> Optional[NodeType]:
-    if node_type is None:
-        node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.PYTHON)
-    try:
-        return NodeType(node_type)
-    except ValueError:
-        print(f"node_type: {node_type} is not a valid NodeType: {NodeType}")
-    return None
+def deploy_to_python(
+    node_type_enum: NodeType,
+    port: Union[int, str],
+    name: str,
+    host: str,
+    reset: bool,
+    tail: bool,
+    dev_mode: bool,
+    processes: int,
+    local_db: bool,
+) -> NodeHandle:
+    sy = get_syft_client()
+    if port:
+        if port == "auto":
+            # dont use default port to prevent port clashes in CI
+            port = find_available_port(host="localhost", port=None, search=True)
+        start, stop = sy.serve_node(  # type: ignore
+            name=name,
+            host=host,
+            port=port,
+            reset=reset,
+            dev_mode=dev_mode,
+            tail=tail,
+        )
+        start()
+        return NodeHandle(
+            node_type=node_type_enum,
+            name=name,
+            port=port,
+            url="http://localhost",
+            shutdown=stop,
+        )
+    else:
+        worker = sy.Worker.named(  # type: ignore
+            name=name,
+            processes=processes,
+            reset=reset,
+            local_db=local_db,
+            node_type=node_type_enum,
+        )
+        return NodeHandle(
+            node_type=node_type_enum,
+            name=name,
+            python_node=worker,
+        )
 
 
 class Orchestra:
     @staticmethod
     def launch(
+        # node information and deployment
         name: Optional[str] = None,
         node_type: Optional[str] = None,
+        deploy_to: Optional[str] = None,
+        # worker related inputs
+        port: Optional[Union[int, str]] = None,
+        processes: int = 1,  # temporary work around for jax in subprocess
+        local_db: bool = False,
         dev_mode: bool = False,
         cmd: bool = False,
         reset: bool = False,
         tail: bool = False,
-        port: Optional[Union[int, str]] = None,
         host: Optional[str] = "0.0.0.0",  # nosec
-        processes: int = 1,  # temporary work around for jax in subprocess
-        local_db: bool = False,
         tag: Optional[str] = "latest",
         verbose: bool = False,
         render: bool = False,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
+
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
         default_port = 8080
+
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
         if not node_type_enum:
             return None
 
-        if node_type_enum == NodeType.PYTHON:
-            sy = get_syft_client()
-            if port:
-                if port == "auto":
-                    # dont use default port to prevent port clashes in CI
-                    port = find_available_port(host="localhost", port=None, search=True)
-                start, stop = sy.serve_node(  # type: ignore
-                    name=name,
-                    host=host,
-                    port=port,
-                    reset=reset,
-                    dev_mode=dev_mode,
-                    tail=tail,
-                )
-                start()
-                return NodeHandle(
-                    node_type=node_type_enum,
-                    name=name,
-                    port=port,
-                    url="http://localhost",
-                    shutdown=stop,
-                )
-            else:
-                worker = sy.Domain.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
-                return NodeHandle(
-                    node_type=node_type_enum,
-                    name=name,
-                    python_node=worker,
-                )
+        deployment_type_enum: Optional[DeploymentType] = get_deployment_type(
+            deployment_type=deploy_to
+        )
+        if not deployment_type_enum:
+            return None
 
-        if node_type_enum == NodeType.VM:
+        if deployment_type_enum == DeploymentType.PYTHON:
+            return deploy_to_python(
+                node_type_enum=node_type_enum,
+                port=port,
+                name=name,
+                host=host,
+                reset=reset,
+                tail=tail,
+                dev_mode=dev_mode,
+                processes=processes,
+                local_db=local_db,
+            )
+
+        if deployment_type_enum == NodeType.VM:
             return NodeHandle(
                 node_type=node_type_enum,
                 name=name,
