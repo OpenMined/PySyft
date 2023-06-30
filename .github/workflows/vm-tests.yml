@@ -72,6 +72,6 @@ jobs:
       - name: Run notebook tests
         if: steps.changes.outputs.stack == 'true'
         env:
-          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.node-type }}"
         run: |
           tox -e stack.test.vm
