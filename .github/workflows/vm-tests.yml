@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [macos-12]
         python-version: ["3.11"]
-        node-type: ["vm"]
+        deployment-type: ["vm"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -72,6 +72,6 @@ jobs:
       - name: Run notebook tests
         if: steps.changes.outputs.stack == 'true'
         env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.node-type }}"
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
         run: |
           tox -e stack.test.vm

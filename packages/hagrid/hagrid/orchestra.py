@@ -21,6 +21,13 @@ from .grammar import find_available_port
 from .names import random_name
 from .util import shell
 
+try:
+    # syft absolute
+    from syft.abstract_node import NodeType
+except Exception:
+    print("Please install syft with `pip install syft`")
+    pass
+
 DEFAULT_PORT = 8080
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
@@ -116,14 +123,6 @@ def get_deployment_type(deployment_type: Optional[str]) -> Optional[DeploymentTy
 
 
 # Can also be specified by the environment variable
-# ORCHESTRA_NODE_TYPE
-class NodeType(Enum):
-    GATEWAY = "gateway"
-    DOMAIN = "domain"
-    ENCLAVE = "enclave"
-
-
-# Can also be specified by the environment variable
 # ORCHESTRA_DEPLOYMENT_TYPE
 class DeploymentType(Enum):
     PYTHON = "python"
@@ -137,6 +136,7 @@ class NodeHandle:
     def __init__(
         self,
         node_type: NodeType,
+        deployment_type: DeploymentType,
         name: str,
         port: Optional[int] = None,
         url: Optional[str] = None,
@@ -149,13 +149,14 @@ class NodeHandle:
         self.url = url
         self.python_node = python_node
         self.shutdown = shutdown
+        self.deployment_type = deployment_type
 
     @property
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
             return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
-        elif self.node_type == NodeType.PYTHON:
+        elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
 
     def login(
@@ -184,10 +185,10 @@ class NodeHandle:
         )
 
     def land(self) -> None:
-        if self.node_type == NodeType.PYTHON:
+        if self.deployment_type == DeploymentType.PYTHON:
             if self.shutdown:
                 self.shutdown()
-        elif self.node_type == NodeType.VM:
+        elif self.deployment_type == DeploymentType.VM:
             pass
         else:
             Orchestra.land(self.name, node_type=self.node_type.value)
@@ -195,6 +196,7 @@ class NodeHandle:
 
 def deploy_to_python(
     node_type_enum: NodeType,
+    deployment_type_enum: DeploymentType,
     port: Union[int, str],
     name: str,
     host: str,
@@ -221,6 +223,7 @@ def deploy_to_python(
         start()
         return NodeHandle(
             node_type=node_type_enum,
+            deployment_type=deployment_type_enum,
             name=name,
             port=port,
             url="http://localhost",
@@ -236,25 +239,32 @@ def deploy_to_python(
         )
         return NodeHandle(
             node_type=node_type_enum,
+            deployment_type=deployment_type_enum,
             name=name,
             python_node=worker,
         )
 
 
-def deploy_to_vm(node_type: NodeType, name: str) -> NodeHandle:
+def deploy_to_vm(
+    node_type_enum: NodeType, deployment_type_enum: DeploymentType, name: str
+) -> NodeHandle:
     # Q: Ask Madhava, on why we have a fixed IP address for VM.
     return NodeHandle(
-        node_type=node_type,
+        node_type=node_type_enum,
+        deployment_type=deployment_type_enum,
         name=name,
         port=80,
         url="http://192.168.56.2",
     )
 
 
-def deploy_to_k8s(node_type: NodeType, name: str) -> NodeHandle:
+def deploy_to_k8s(
+    node_type_enum: NodeType, deployment_type_enum: DeploymentType, name: str
+) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
     return NodeHandle(
-        node_type=node_type,
+        node_type=node_type_enum,
+        deployment_type=deployment_type_enum,
         name=name,
         port=node_port,
         url="http://localhost",
@@ -287,6 +297,7 @@ def deploy_to_container(
         if container_exists_with(name=name, port=port):
             return NodeHandle(
                 node_type=node_type_enum,
+                deployment_type=deployment_type_enum,
                 name=name,
                 port=port,
                 url="http://localhost",
@@ -341,6 +352,7 @@ def deploy_to_container(
     if not cmd:
         return NodeHandle(
             node_type=node_type_enum,
+            deployment_type=deployment_type_enum,
             name=name,
             port=port,
             url="http://localhost",
@@ -386,6 +398,7 @@ class Orchestra:
         if deployment_type_enum == DeploymentType.PYTHON:
             return deploy_to_python(
                 node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
                 port=port,
                 name=name,
                 host=host,
@@ -398,13 +411,15 @@ class Orchestra:
 
         elif deployment_type_enum == DeploymentType.VM:
             return deploy_to_vm(
-                node_type=node_type_enum,
+                node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
                 name=name,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
             return deploy_to_k8s(
-                node_type=node_type_enum,
+                node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
                 name=name,
             )
 
