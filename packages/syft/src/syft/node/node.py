@@ -513,6 +513,7 @@ class Node(AbstractNode):
             description=description,
             organization=organization,
             on_board=on_board,
+            node_type=self.node_type.value,
             signup_enabled=signup_enabled,
         )
 

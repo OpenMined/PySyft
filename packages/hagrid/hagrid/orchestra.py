@@ -215,6 +215,7 @@ def deploy_to_python(
             reset=reset,
             dev_mode=dev_mode,
             tail=tail,
+            node_type=node_type_enum,
         )
         start()
         return NodeHandle(

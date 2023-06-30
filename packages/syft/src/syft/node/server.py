@@ -1,5 +1,6 @@
 # stdlib
 import asyncio
+from enum import Enum
 import logging
 import multiprocessing
 import os
@@ -21,8 +22,8 @@ import uvicorn
 # relative
 from ..client.client import API_PATH
 from ..util.util import os_name
-from .domain import Domain
 from .routes import make_routes
+from .worker import Worker
 
 if os_name() == "macOS":
     # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
@@ -53,18 +54,31 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     return app
 
 
-def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
+def run_uvicorn(
+    name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
+):
     async def _run_uvicorn(
-        name: str, host: str, port: int, reset: bool, dev_mode: bool
+        name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
     ):
         if dev_mode:
             print(
                 f"\nWARNING: private key is based on node name: {name} in dev_mode. "
                 "Don't run this in production."
             )
-            worker = Domain.named(name=name, processes=0, local_db=True, reset=reset)
+            worker = Worker.named(  # type: ignore
+                name=name,
+                processes=0,
+                reset=reset,
+                local_db=True,
+                node_type=node_type,
+            )
         else:
-            worker = Domain(name=name, processes=0, local_db=True)
+            worker = Worker(  # type: ignore
+                name=name,
+                processes=0,
+                local_db=True,
+                node_type=node_type,
+            )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
 
@@ -93,12 +107,13 @@ def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(_run_uvicorn(name, host, port, reset, dev_mode))
+    loop.run_until_complete(_run_uvicorn(name, node_type, host, port, reset, dev_mode))
     loop.close()
 
 
 def serve_node(
     name: str,
+    node_type: Enum,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
     reset: bool = False,
@@ -106,7 +121,7 @@ def serve_node(
     tail: bool = False,
 ) -> Tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
-        target=run_uvicorn, args=(name, host, port, reset, dev_mode)
+        target=run_uvicorn, args=(name, node_type, host, port, reset, dev_mode)
     )
 
     def stop():
