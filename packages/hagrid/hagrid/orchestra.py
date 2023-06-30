@@ -5,6 +5,7 @@ from __future__ import annotations
 # stdlib
 from enum import Enum
 import getpass
+import inspect
 import os
 import subprocess  # nosec
 from typing import Any
@@ -206,11 +207,14 @@ def deploy_to_python(
     sy = get_syft_client()
     if sy is None:
         return sy
-    worker_classes = {
-        NodeType.DOMAIN: sy.Domain,
-        NodeType.GATEWAY: sy.Gateway,
-        NodeType.ENCLAVE: sy.Enclave,
-    }
+    worker_classes = {NodeType.DOMAIN: sy.Domain, NodeType.NETWORK: sy.Gateway}
+
+    # syft >= 0.8.2
+    if hasattr(sy, "Enclave"):
+        worker_classes[NodeType.ENCLAVE] = sy.Enclave
+    if hasattr(NodeType, "GATEWAY"):
+        worker_classes[NodeType.GATEWAY] = sy.Gateway
+
     if port:
         if port == "auto":
             # dont use default port to prevent port clashes in CI
@@ -236,13 +240,23 @@ def deploy_to_python(
     else:
         if node_type_enum in worker_classes:
             worker_class = worker_classes[node_type_enum]
-            worker = worker_class.named(
-                name=name,
-                processes=processes,
-                reset=reset,
-                local_db=local_db,
-                node_type=node_type_enum,
-            )
+            sig = inspect.signature(worker_class.named)
+            if "node_type" in sig.parameters.keys():
+                worker = worker_class.named(
+                    name=name,
+                    processes=processes,
+                    reset=reset,
+                    local_db=local_db,
+                    node_type=node_type_enum,
+                )
+            else:
+                # syft <= 0.8.1
+                worker = worker_class.named(
+                    name=name,
+                    processes=processes,
+                    reset=reset,
+                    local_db=local_db,
+                )
         else:
             raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
         return NodeHandle(
