@@ -191,7 +191,7 @@ class NodeHandle:
         elif self.deployment_type == DeploymentType.VM:
             pass
         else:
-            Orchestra.land(self.name, node_type=self.node_type.value)
+            Orchestra.land(self.name, deployment_type=self.deployment_type)
 
 
 def deploy_to_python(
@@ -292,7 +292,7 @@ def deploy_to_container(
 
     # Currently by default we launch in dev mode
     if reset:
-        Orchestra.reset(name, node_type_enum)
+        Orchestra.reset(name, deployment_type_enum)
     else:
         if container_exists_with(name=name, port=port):
             return NodeHandle(
@@ -445,15 +445,17 @@ class Orchestra:
             return None
 
     @staticmethod
-    def land(name: str, node_type: Optional[str] = None, reset: bool = False) -> None:
-        node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
-        Orchestra.shutdown(name=name, node_type_enum=node_type_enum)
+    def land(
+        name: str, deployment_type: Union[str, DeploymentType], reset: bool = False
+    ) -> None:
+        deployment_type_enum = DeploymentType(deployment_type)
+        Orchestra.shutdown(name=name, deployment_type_enum=deployment_type_enum)
         if reset:
-            Orchestra.reset(name, node_type_enum=node_type_enum)
+            Orchestra.reset(name, deployment_type_enum=deployment_type_enum)
 
     @staticmethod
-    def shutdown(name: str, node_type_enum: NodeType) -> None:
-        if node_type_enum != NodeType.PYTHON:
+    def shutdown(name: str, deployment_type_enum: DeploymentType) -> None:
+        if deployment_type_enum != DeploymentType.PYTHON:
             snake_name = to_snake_case(name)
 
             land_output = shell(f"hagrid land {snake_name} --force")
@@ -463,13 +465,16 @@ class Orchestra:
                 print(f"❌ Unable to remove container: {snake_name} :{land_output}")
 
     @staticmethod
-    def reset(name: str, node_type_enum: NodeType) -> None:
-        if node_type_enum == NodeType.PYTHON:
+    def reset(name: str, deployment_type_enum: DeploymentType) -> None:
+        if deployment_type_enum == DeploymentType.PYTHON:
             sy = get_syft_client()
-            _ = sy.Domain.named(name, processes=1, reset=True)  # type: ignore
-        else:
+            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+        elif (
+            deployment_type_enum == DeploymentType.CONTAINER_STACK
+            or deployment_type_enum == DeploymentType.SINGLE_CONTAINER
+        ):
             if container_exists(name=name):
-                Orchestra.shutdown(name=name, node_type_enum=node_type_enum)
+                Orchestra.shutdown(name=name, deployment_type_enum=deployment_type_enum)
 
             snake_name = to_snake_case(name)
 
@@ -483,3 +488,7 @@ class Orchestra:
                 print(
                     f"❌ Unable to remove container volume: {snake_name} :{volume_output}"
                 )
+        else:
+            raise NotImplementedError(
+                f"Reset not implemented for the deployment type:{deployment_type_enum}"
+            )

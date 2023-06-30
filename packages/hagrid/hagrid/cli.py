@@ -1255,7 +1255,7 @@ def create_launch_cmd(
     if parsed_kwargs["dev"] is True:
         parsed_kwargs["release"] = "development"
 
-    # choosind deployment type
+    # choosing deployment type
     parsed_kwargs["deploy"] = "container_stack"
     if "deploy" in kwargs and kwargs["deploy"] is not None:
         parsed_kwargs["deploy"] = kwargs["deploy"]
