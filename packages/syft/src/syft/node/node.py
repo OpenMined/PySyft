@@ -76,6 +76,8 @@ from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.file_store import FileStoreConfig
+from ..store.file_store import OnDiskFileStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
@@ -170,7 +172,8 @@ class Node(AbstractNode):
         node_type: NodeType = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-        queue_config: QueueConfig = ZMQQueueConfig,
+        queue_config: Type[QueueConfig] = ZMQQueueConfig,
+        file_store_config: Type[FileStoreConfig] = OnDiskFileStoreConfig,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
