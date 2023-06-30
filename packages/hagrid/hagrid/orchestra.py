@@ -261,6 +261,93 @@ def deploy_to_k8s(node_type: NodeType, name: str) -> NodeHandle:
     )
 
 
+def deploy_to_container(
+    node_type_enum: NodeType,
+    deployment_type_enum: DeploymentType,
+    reset: bool,
+    cmd: bool,
+    tail: bool,
+    verbose: bool,
+    tag: str,
+    render: bool,
+    dev_mode: bool,
+    port: Union[int, str],
+    name: str,
+) -> Optional[NodeHandle]:
+    if port == "auto" or port is None:
+        if container_exists(name=name):
+            port = port_from_container(name=name)  # type: ignore
+        else:
+            port = find_available_port(host="localhost", port=DEFAULT_PORT, search=True)
+
+    # Currently by default we launch in dev mode
+    if reset:
+        Orchestra.reset(name, node_type_enum)
+    else:
+        if container_exists_with(name=name, port=port):
+            return NodeHandle(
+                node_type=node_type_enum,
+                name=name,
+                port=port,
+                url="http://localhost",
+            )
+
+    # Start a subprocess and capture its output
+    commands = ["hagrid", "launch"]
+
+    name = random_name() if not name else name
+    commands.extend([name, node_type_enum.value])
+
+    commands.append("to")
+    commands.append(f"docker:{port}")
+
+    if dev_mode:
+        commands.append("--dev")
+
+    # by default , we deploy as container stack
+    if deployment_type_enum == DeploymentType.SINGLE_CONTAINER:
+        commands.append("--deploy=single_container")
+
+    if cmd:
+        commands.append("--cmd")
+
+    if tail:
+        commands.append("--tail")
+
+    if verbose:
+        commands.append("--verbose")
+
+    if tag:
+        commands.append(f"--tag={tag}")
+
+    if render:
+        commands.append("--render")
+
+    # needed for building containers
+    USER = os.environ.get("USER", getpass.getuser())
+    env = os.environ.copy()
+    env["USER"] = USER
+
+    process = subprocess.Popen(  # nosec
+        commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+    )
+    # Start gevent threads to read and print the output and error streams
+    stdout_thread = gevent.spawn(read_stream, process.stdout)
+    stderr_thread = gevent.spawn(read_stream, process.stderr)
+
+    # Wait for the threads to finish
+    gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
+
+    if not cmd:
+        return NodeHandle(
+            node_type=node_type_enum,
+            name=name,
+            port=port,
+            url="http://localhost",
+        )
+    return None
+
+
 class Orchestra:
     @staticmethod
     def launch(
@@ -309,88 +396,38 @@ class Orchestra:
                 local_db=local_db,
             )
 
-        if deployment_type_enum == DeploymentType.VM:
+        elif deployment_type_enum == DeploymentType.VM:
             return deploy_to_vm(
                 node_type=node_type_enum,
                 name=name,
             )
 
-        if deployment_type_enum == DeploymentType.K8S:
+        elif deployment_type_enum == DeploymentType.K8S:
             return deploy_to_k8s(
                 node_type=node_type_enum,
                 name=name,
             )
 
-        if port == "auto" or port is None:
-            if container_exists(name=name):
-                port = port_from_container(name=name)
-            else:
-                port = find_available_port(
-                    host="localhost", port=DEFAULT_PORT, search=True
-                )
-
-        # Currently by default we launch in dev mode
-        if reset:
-            Orchestra.reset(name, node_type)
-        else:
-            if container_exists_with(name=name, port=port):
-                return NodeHandle(
-                    node_type=node_type_enum,
-                    name=name,
-                    port=port,
-                    url="http://localhost",
-                )
-
-        # Start a subprocess and capture its output
-        commands = ["hagrid", "launch"]
-
-        name = random_name() if not name else name
-        commands.extend([name, node_type_enum.value])
-
-        commands.append("to")
-        commands.append(f"docker:{port}")
-
-        if dev_mode:
-            commands.append("--dev")
-
-        if cmd:
-            commands.append("--cmd")
-
-        if tail:
-            commands.append("--tail")
-
-        if verbose:
-            commands.append("--verbose")
-
-        if tag:
-            commands.append(f"--tag={tag}")
-
-        if render:
-            commands.append("--render")
-
-        # needed for building containers
-        USER = os.environ.get("USER", getpass.getuser())
-        env = os.environ.copy()
-        env["USER"] = USER
-
-        process = subprocess.Popen(  # nosec
-            commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
-        )
-        # Start gevent threads to read and print the output and error streams
-        stdout_thread = gevent.spawn(read_stream, process.stdout)
-        stderr_thread = gevent.spawn(read_stream, process.stderr)
-
-        # Wait for the threads to finish
-        gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
-
-        if not cmd:
-            return NodeHandle(
-                node_type=node_type_enum,
-                name=name,
+        elif (
+            deployment_type_enum == DeploymentType.CONTAINER_STACK
+            or deployment_type_enum == DeploymentType.SINGLE_CONTAINER
+        ):
+            return deploy_to_container(
+                node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
+                reset=reset,
+                cmd=cmd,
+                tail=tail,
+                verbose=verbose,
+                tag=tag,
+                render=render,
+                dev_mode=dev_mode,
                 port=port,
-                url="http://localhost",
+                name=name,
             )
-        return None
+        else:
+            print(f"deployment_type: {deployment_type_enum} is not supported")
+            return None
 
     @staticmethod
     def land(name: str, node_type: Optional[str] = None, reset: bool = False) -> None:
