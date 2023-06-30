@@ -271,7 +271,7 @@ class Node(AbstractNode):
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-        node_type: NodeType = NodeType.DOMAIN,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
