@@ -326,7 +326,7 @@ def deploy_to_container(
 
     # by default , we deploy as container stack
     if deployment_type_enum == DeploymentType.SINGLE_CONTAINER:
-        commands.append("--deploy=single_container")
+        commands.append("--deployment-type=single_container")
 
     if cmd:
         commands.append("--cmd")

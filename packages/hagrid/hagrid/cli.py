@@ -261,7 +261,7 @@ def clean(location: str) -> None:
     help="Choose between production and development release",
 )
 @click.option(
-    "--deployment_type",
+    "--deployment-type",
     default="container_stack",
     required=False,
     type=click.Choice(["container_stack", "single_container"], case_sensitive=False),
