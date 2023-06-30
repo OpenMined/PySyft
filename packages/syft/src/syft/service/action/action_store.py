@@ -130,7 +130,7 @@ class KeyValueActionStore(ActionStore):
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
                 can_write = True if ownership_result.is_ok() else False
             else:
-                # root takes owneship, but you can still write
+                # root takes ownership, but you can still write
                 ownership_result = self.take_ownership(
                     uid=uid, credentials=self.root_verify_key
                 )
