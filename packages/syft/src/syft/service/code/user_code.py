@@ -109,6 +109,9 @@ class UserCodeStatusContext(SyftHashableObject):
     def __init__(self, base_dict: Dict):
         self.base_dict = base_dict
 
+    def __repr__(self):
+        return str(self.base_dict)
+
     def _repr_html_(self):
         node_name_str = ""
         verify_key_str = ""
