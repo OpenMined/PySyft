@@ -138,7 +138,7 @@ def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], 
 
 def setup_from_manifest_template(
     host_type: str,
-    deployment: str,
+    deployment_type: str,
     template_location: Optional[str] = None,
     overwrite: bool = False,
     verbose: bool = False,
@@ -170,7 +170,7 @@ def setup_from_manifest_template(
         ]
 
         # worker
-        if deployment == "single_container" and host_type in ["docker"]:
+        if deployment_type == "single_container" and host_type in ["docker"]:
             # change to worker , after the merging the PR and upating 0.8.1
             files_to_download += [
                 os.path.join(package_path, f) for f in template_files["enclave"]
@@ -242,7 +242,7 @@ def download_files(
 
 def render_templates(
     node_name: str,
-    deployment: str,
+    deployment_type: str,
     template_location: Optional[str],
     env_vars: dict,
     host_type: str,
@@ -268,7 +268,7 @@ def render_templates(
         files_to_render += template_files["common"]
 
         # worker
-        if deployment == "single_container" and host_type in ["docker"]:
+        if deployment_type == "single_container" and host_type in ["docker"]:
             # change to worker , after the merging the PR and upating 0.8.1
             for template_file in template_files["enclave"]:
                 if "default.env" not in template_file:

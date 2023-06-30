@@ -130,7 +130,7 @@ def get_compose_src_path(
     else:
         path = deployment_dir(node_name)
 
-    if kwargs["deploy"] == "single_container":  # type: ignore
+    if kwargs["deployment_type"] == "single_container":  # type: ignore
         return path + "/worker"
     else:
         return path
@@ -261,7 +261,7 @@ def clean(location: str) -> None:
     help="Choose between production and development release",
 )
 @click.option(
-    "--deploy",
+    "--deployment_type",
     default="container_stack",
     required=False,
     type=click.Choice(["container_stack", "single_container"], case_sensitive=False),
@@ -442,7 +442,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     # For enclave currently it is only a single container deployment
     # This would change when we have side car containers to enclave
     if node_type.input == "enclave":
-        kwargs["deploy"] = "single_container"
+        kwargs["deployment_type"] = "single_container"
 
     compose_src_path = get_compose_src_path(
         node_type=node_type,
@@ -1256,9 +1256,9 @@ def create_launch_cmd(
         parsed_kwargs["release"] = "development"
 
     # choosing deployment type
-    parsed_kwargs["deploy"] = "container_stack"
-    if "deploy" in kwargs and kwargs["deploy"] is not None:
-        parsed_kwargs["deploy"] = kwargs["deploy"]
+    parsed_kwargs["deployment_type"] = "container_stack"
+    if "deployment_type" in kwargs and kwargs["deployment_type"] is not None:
+        parsed_kwargs["deployment_type"] = kwargs["deployment_type"]
 
     if "cert_store_path" in kwargs:
         parsed_kwargs["cert_store_path"] = kwargs["cert_store_path"]
@@ -1334,7 +1334,7 @@ def create_launch_cmd(
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(
             host_type=host,
-            deployment=parsed_kwargs["deploy"],
+            deployment_type=parsed_kwargs["deployment_type"],
             template_location=parsed_kwargs["template"],
             overwrite=parsed_kwargs["template_overwrite"],
             verbose=kwargs["verbose"],
@@ -2064,7 +2064,7 @@ def create_launch_docker_cmd(
     if compose_src_path:
         print("  - COMPOSE SOURCE: " + compose_src_path)
     print("  - RELEASE: " + kwargs["release"])
-    print("  - DEPLOYMENT:", kwargs["deploy"])
+    print("  - DEPLOYMENT:", kwargs["deployment_type"])
     print("  - ARCH: " + docker_platform)
     print("  - TYPE: " + str(node_type.input))
     print("  - DOCKER_TAG: " + version_string)
@@ -2210,7 +2210,7 @@ def create_launch_docker_cmd(
 
         render_templates(
             node_name=snake_name,
-            deployment=kwargs["deploy"],
+            deployment_type=kwargs["deployment_type"],
             template_location=kwargs["template"],
             env_vars=default_envs,
             host_type=host_term.host,
@@ -2228,7 +2228,7 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
-    if kwargs["deploy"] == "single_container":
+    if kwargs["deployment_type"] == "single_container":
         return create_launch_worker_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
 
     if bool(kwargs["vpn"]):
