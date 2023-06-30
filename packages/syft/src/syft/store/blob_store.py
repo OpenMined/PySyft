@@ -1,27 +1,23 @@
 # stdlib
-from enum import Enum
+from pathlib import Path
+from typing import List
 from typing import Type
-from typing import Union
 
 # relative
+from ..serde.serializable import serializable
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
+from ..types.transforms import TransformContext
+from ..types.transforms import transform
 from ..types.uid import UID
 
 
-class SyftFile:  # (location of the file)
-    filename: str
-    file_size: int
+@serializable()
+class SecureFilePathLocation(SyftObject):
+    __canonical_name__ = "SecureFilePathLocation"
+    __version__ = SYFT_OBJECT_VERSION_1
+    id: UID
     path: str
-
-
-class SecureFilePathLocation:
-    file_id: UID
-
-    # def read():
-    #     raise NotImplemented
-
-    # def write():
-    #     raise NotImplemented
 
 
 class FileClientConfig:
@@ -36,41 +32,56 @@ class SeaweedClientConfig(FileClientConfig):
     pass
 
 
+class FileClientConnection:
+    def read(self, fp: SecureFilePathLocation) -> bytes:
+        raise NotImplemented
+
+    def write(fp: SecureFilePathLocation, data: bytes) -> None:
+        raise NotImplemented
+
+
+class OnDiskFileClientConnection(FileClientConnection):
+    def read(self, fp: SecureFilePathLocation) -> bytes:
+        return Path(fp.path).read_bytes()
+
+    def write(self, fp: SecureFilePathLocation, data: bytes) -> None:
+        return Path(fp.path).write_bytes(data)
+
+
 class FileClient:
     _config: FileClientConfig
 
     def __init__(self, config: FileClientConfig):
         pass
 
-    def read(self, fp: SecureFilePathLocation):
+    def __enter__(self) -> FileClientConnection:
         raise NotImplemented
 
-    def write(self, fp: SecureFilePathLocation):
+    def __exit__(self) -> None:
         raise NotImplemented
 
 
 class OnDiskFileClient(FileClient):
     _config: OnDiskClientConfig
 
-    def read(fp: SecureFilePathLocation):
+    def __init__(self, config: OnDiskClientConfig):
         pass
 
-    def write(fp: SecureFilePathLocation):
+    def __enter__(self) -> FileClientConnection:
+        return OnDiskFileClientConnection()
+
+    def __exit__(self) -> None:
         pass
 
 
-class OnDiskFilePathLocation(FileClient):
+class SeaweedFSClient(FileClient):
     _config: SeaweedClientConfig
 
-    def read(fp: SecureFilePathLocation):
+    def __enter__(self) -> FileClientConnection:
         pass
 
-    def write(fp: SecureFilePathLocation):
+    def __exit__(self) -> None:
         pass
-
-
-class SeaweedFSClient:
-    pass
 
 
 class SeaweedFSFilePathLocation(SecureFilePathLocation):
@@ -92,20 +103,24 @@ class ProxyActionObject:
 
 
 class ProxyActionObjectWithClient(ProxyActionObject):
-    file_system_type: Type[FileClient]
-    file_system_config: FileClientConfig
+    file_client: FileClient
 
     def read(self):
-        with self.file_system_type(self.file_system_config) as client:
-            return client.read(self.location)
+        with self.file_client as fp:
+            fp.read(self.location)
 
 
-def add_file_system_type(context):
-    # context.output["FileSystemType"] = context.node.file_system_type
-
-    context.output["file_system_type"] = context.node.file_system_type
-    context.output["file_system_config"] = context.node.file_system_config
+def add_file_client(context: TransformContext) -> TransformContext:
+    context.output["client"] = context.node.file_system_type(context.node.file_system_config)
     return context
+
+
+@transform(ProxyActionObject, ProxyActionObjectWithClient)
+def attach_client() -> List[callable]:
+    return [add_file_client]
+
+
+
 
 
 proxy_obj = proxy_action_obj.to(ProxyActionObjectWithClient)
