@@ -21,6 +21,7 @@ from .grammar import find_available_port
 from .names import random_name
 from .util import shell
 
+DEFAULT_PORT = 8080
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
 
@@ -240,6 +241,26 @@ def deploy_to_python(
         )
 
 
+def deploy_to_vm(node_type: NodeType, name: str) -> NodeHandle:
+    # Q: Ask Madhava, on why we have a fixed IP address for VM.
+    return NodeHandle(
+        node_type=node_type,
+        name=name,
+        port=80,
+        url="http://192.168.56.2",
+    )
+
+
+def deploy_to_k8s(node_type: NodeType, name: str) -> NodeHandle:
+    node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
+    return NodeHandle(
+        node_type=node_type,
+        name=name,
+        port=node_port,
+        url="http://localhost",
+    )
+
+
 class Orchestra:
     @staticmethod
     def launch(
@@ -265,8 +286,6 @@ class Orchestra:
 
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
-        default_port = 8080
-
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
         if not node_type_enum:
             return None
@@ -290,21 +309,16 @@ class Orchestra:
                 local_db=local_db,
             )
 
-        if deployment_type_enum == NodeType.VM:
-            return NodeHandle(
+        if deployment_type_enum == DeploymentType.VM:
+            return deploy_to_vm(
                 node_type=node_type_enum,
                 name=name,
-                port=80,
-                url="http://192.168.56.2",
             )
 
-        if node_type_enum == NodeType.K8S:
-            node_port = int(os.environ.get("NODE_PORT", f"{default_port}"))
-            return NodeHandle(
+        if deployment_type_enum == DeploymentType.K8S:
+            return deploy_to_k8s(
                 node_type=node_type_enum,
                 name=name,
-                port=node_port,
-                url="http://localhost",
             )
 
         if port == "auto" or port is None:
@@ -312,7 +326,7 @@ class Orchestra:
                 port = port_from_container(name=name)
             else:
                 port = find_available_port(
-                    host="localhost", port=default_port, search=True
+                    host="localhost", port=DEFAULT_PORT, search=True
                 )
 
         # Currently by default we launch in dev mode
