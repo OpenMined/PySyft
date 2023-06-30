@@ -129,7 +129,6 @@ class DeploymentType(Enum):
     SINGLE_CONTAINER = "single_container"
     CONTAINER_STACK = "container_stack"
     K8S = "k8s"
-    VM = "vm"
 
 
 class NodeHandle:
