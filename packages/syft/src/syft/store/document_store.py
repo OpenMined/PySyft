@@ -681,6 +681,7 @@ class BaseUIDStoreStash(BaseStash):
         ignore_duplicates: bool = False,
     ) -> Result[BaseUIDStoreStash.object_type, str]:
         res = self.check_type(obj, self.object_type)
+        
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res

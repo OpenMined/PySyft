@@ -17,7 +17,8 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
-# third party
+# third partyßß
+from pydantic import Field
 from result import Err
 from result import Ok
 from result import Result
@@ -190,6 +191,7 @@ class UserCode(SyftObject):
     status: UserCodeStatusContext
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+    version: Optional[int] = Field(None, gt=0)
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
@@ -417,7 +419,7 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-
+    version: Optional[int] = Field(None, gt=0)
     __repr_attrs__ = ["func_name", "code"]
 
     @property
@@ -482,6 +484,7 @@ def syft_function(
             f"To add a code request, please create a project using `project = syft.Project(...)`, "
             f"then use command `project.create_code_request`."
         )
+
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -500,6 +503,8 @@ def syft_function(
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
     code_hash = context.output["code_hash"]
     service_func_name = context.output["func_name"]
+    # version = context.output["version"]
+    # context.output["service_func_name"] = f"{service_func_name}_v{version}"
     context.output["service_func_name"] = service_func_name
     func_name = f"user_func_{service_func_name}_{context.credentials}_{code_hash}"
     user_unique_func_name = f"user_func_{service_func_name}_{context.credentials}"

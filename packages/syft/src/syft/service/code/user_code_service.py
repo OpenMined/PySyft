@@ -52,6 +52,14 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
+
+        # Get the current latest version
+        current_version = self.get_latest_version(context, code.func_name)
+        if current_version is None:
+            return SyftError(message="Error retrieving the latest version of the function.")
+        # Increment the version
+        code.version = current_version + 1
+
         result = self.stash.set(context.credentials, code.to(UserCode, context=context))
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -220,7 +228,14 @@ class UserCodeService(AbstractService):
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
 
-
+    def get_latest_version(self, context: AuthedServiceContext, func_name: str) -> Optional[int]:
+        result = self.stash.get_all(context.credentials)
+        if result.is_err():
+            return None
+        all_codes = result.ok()
+        versions = [code.version for code in all_codes if code.func_name == func_name]
+        return max(versions) if versions else 0
+    
 def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) -> Any:
     # relative
     from ...service.action.action_object import TwinMode
