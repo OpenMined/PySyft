@@ -14,7 +14,6 @@ node_type = os.environ.get("NODE_TYPE", "domain")
 worker = Worker(
     name=node_name, local_db=True, sqlite_path="/storage/", node_type=node_type
 )
-print(f"Worker: {worker.name} - {worker.node_type}")
 router = make_routes(worker=worker)
 
 app = FastAPI(title="Worker")
