@@ -22,8 +22,11 @@ import uvicorn
 # relative
 from ..client.client import API_PATH
 from ..util.util import os_name
+from .domain import Domain
+from .enclave import Enclave
+from .gateway import Gateway
+from .node import NodeType
 from .routes import make_routes
-from .worker import Worker
 
 if os_name() == "macOS":
     # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
@@ -54,18 +57,29 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     return app
 
 
+worker_classes = {
+    NodeType.DOMAIN: Domain,
+    NodeType.GATEWAY: Gateway,
+    NodeType.ENCLAVE: Enclave,
+}
+
+
 def run_uvicorn(
     name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
 ):
     async def _run_uvicorn(
         name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
     ):
+        if node_type not in worker_classes:
+            raise NotImplementedError(f"node_type: {node_type} is not supported")
+        worker_class = worker_classes[node_type]
         if dev_mode:
             print(
                 f"\nWARNING: private key is based on node name: {name} in dev_mode. "
                 "Don't run this in production."
             )
-            worker = Worker.named(  # type: ignore
+
+            worker = worker_class.named(
                 name=name,
                 processes=0,
                 reset=reset,
@@ -73,7 +87,7 @@ def run_uvicorn(
                 node_type=node_type,
             )
         else:
-            worker = Worker(  # type: ignore
+            worker = worker_class(
                 name=name,
                 processes=0,
                 local_db=True,

@@ -202,13 +202,20 @@ def deploy_to_python(
     dev_mode: bool,
     processes: int,
     local_db: bool,
-) -> NodeHandle:
+) -> Optional[NodeHandle]:
     sy = get_syft_client()
+    if sy is None:
+        return sy
+    worker_classes = {
+        NodeType.DOMAIN: sy.Domain,
+        NodeType.GATEWAY: sy.Gateway,
+        NodeType.ENCLAVE: sy.Enclave,
+    }
     if port:
         if port == "auto":
             # dont use default port to prevent port clashes in CI
             port = find_available_port(host="localhost", port=None, search=True)
-        start, stop = sy.serve_node(  # type: ignore
+        start, stop = sy.serve_node(
             name=name,
             host=host,
             port=port,
@@ -227,13 +234,17 @@ def deploy_to_python(
             shutdown=stop,
         )
     else:
-        worker = sy.Worker.named(  # type: ignore
-            name=name,
-            processes=processes,
-            reset=reset,
-            local_db=local_db,
-            node_type=node_type_enum,
-        )
+        if node_type_enum in worker_classes:
+            worker_class = worker_classes[node_type_enum]
+            worker = worker_class.named(
+                name=name,
+                processes=processes,
+                reset=reset,
+                local_db=local_db,
+                node_type=node_type_enum,
+            )
+        else:
+            raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
         return NodeHandle(
             node_type=node_type_enum,
             deployment_type=deployment_type_enum,

@@ -6,12 +6,24 @@ from fastapi import FastAPI
 
 # syft absolute
 from syft.client.client import API_PATH
+from syft.node.domain import Domain
+from syft.node.enclave import Enclave
+from syft.node.gateway import Gateway
+from syft.node.node import NodeType
 from syft.node.routes import make_routes
-from syft.node.worker import Worker
+
+worker_classes = {
+    NodeType.DOMAIN: Domain,
+    NodeType.GATEWAY: Gateway,
+    NodeType.ENCLAVE: Enclave,
+}
 
 node_name = os.environ.get("NODE_NAME", "default_node_name")
-node_type = os.environ.get("NODE_TYPE", "domain")
-worker = Worker(
+node_type = NodeType(os.environ.get("NODE_TYPE", "domain"))
+if node_type not in worker_classes:
+    raise NotImplementedError(f"node_type: {node_type} is not supported")
+worker_class = worker_classes[node_type]
+worker = worker_class(
     name=node_name, local_db=True, sqlite_path="/storage/", node_type=node_type
 )
 router = make_routes(worker=worker)
