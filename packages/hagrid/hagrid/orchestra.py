@@ -219,15 +219,27 @@ def deploy_to_python(
         if port == "auto":
             # dont use default port to prevent port clashes in CI
             port = find_available_port(host="localhost", port=None, search=True)
-        start, stop = sy.serve_node(
-            name=name,
-            host=host,
-            port=port,
-            reset=reset,
-            dev_mode=dev_mode,
-            tail=tail,
-            node_type=node_type_enum,
-        )
+        sig = inspect.signature(sy.serve_node)
+        if "node_type" in sig.parameters.keys():
+            start, stop = sy.serve_node(
+                name=name,
+                host=host,
+                port=port,
+                reset=reset,
+                dev_mode=dev_mode,
+                tail=tail,
+                node_type=node_type_enum,
+            )
+        else:
+            # syft <= 0.8.1
+            start, stop = sy.serve_node(
+                name=name,
+                host=host,
+                port=port,
+                reset=reset,
+                dev_mode=dev_mode,
+                tail=tail,
+            )
         start()
         return NodeHandle(
             node_type=node_type_enum,
@@ -391,6 +403,12 @@ class Orchestra:
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
+
+        # syft 0.8.1
+        if node_type == "python":
+            node_type = "domain"
+            if deploy_to is None:
+                deploy_to = "python"
 
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
