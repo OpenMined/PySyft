@@ -28,7 +28,7 @@
     </div>
     <slot />
     <div>
-      <select bind:value={filter} on:change={onChange}>
+      <select class={variant} bind:value={filter} on:change={onChange}>
         {#each filters as filter (filter)}
           <option value={filter}>{ filter }</option>
         {/each} 
