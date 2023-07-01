@@ -171,9 +171,8 @@ def setup_from_manifest_template(
 
         # worker
         if deployment_type == "single_container" and host_type in ["docker"]:
-            # change to worker , after the merging the PR and upating 0.8.1
             files_to_download += [
-                os.path.join(package_path, f) for f in template_files["enclave"]
+                os.path.join(package_path, f) for f in template_files["worker"]
             ]
         # docker related files
         elif host_type in ["docker"]:
@@ -269,8 +268,7 @@ def render_templates(
 
         # worker
         if deployment_type == "single_container" and host_type in ["docker"]:
-            # change to worker , after the merging the PR and upating 0.8.1
-            for template_file in template_files["enclave"]:
+            for template_file in template_files["worker"]:
                 if "default.env" not in template_file:
                     files_to_render.append(template_file)
 
