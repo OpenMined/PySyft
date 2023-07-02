@@ -1,9 +1,3 @@
-# stdlib
-from typing import List
-
-# third party
-from result import Result
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
