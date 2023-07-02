@@ -36,7 +36,6 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
 from ..file_object.file_object import FileObject
-from ..file_object.file_object import FileObjectWithClient
 from ..response import SyftException
 from .action_data_empty import ActionDataEmpty
 from .action_permissions import ActionPermission
@@ -454,8 +453,10 @@ class ActionObject(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        file_obj = api.services.file.read(uid=self.syft_action_proxy_reference.id)
-        return file_obj.data
+        syft_object_resource = api.services.file.read(
+            uid=self.syft_action_proxy_reference.id
+        )
+        return syft_object_resource.read()
 
     @property
     def is_pointer(self) -> bool:
