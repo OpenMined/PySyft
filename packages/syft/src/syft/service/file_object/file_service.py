@@ -12,8 +12,8 @@ from ..response import SyftError
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from .file_stash import FileObjectStash
 from .file_object import FileObject
+from .file_stash import FileObjectStash
 
 
 @serializable()
@@ -51,5 +51,6 @@ class FileObjectService(AbstractService):
         file_client = context.node.file_system_client(context.node.file_system_config)
         with file_client as conn:
             return conn.read(file_object.location)
+
 
 TYPE_TO_SERVICE[FileObject] = FileObject

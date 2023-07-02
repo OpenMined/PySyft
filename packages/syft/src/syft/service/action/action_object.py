@@ -439,7 +439,11 @@ class ActionObject(SyftObject):
 
     @property
     def syft_action_proxy(self) -> Optional[FileObject]:
-        return self.syft_action_proxy_reference.resolve if self.syft_action_proxy_reference is not None else None
+        return (
+            self.syft_action_proxy_reference.resolve
+            if self.syft_action_proxy_reference is not None
+            else None
+        )
 
     @property
     def syft_action_data(self) -> Any:

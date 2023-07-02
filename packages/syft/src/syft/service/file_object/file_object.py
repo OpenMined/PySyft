@@ -2,9 +2,9 @@
 from typing import Type
 
 # relative
-from ...store.file_store import SecureFilePathLocation
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...store.file_store import SecureFilePathLocation
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject

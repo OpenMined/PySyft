@@ -1,9 +1,8 @@
 # stdlib
 from pathlib import Path
+from tempfile import gettempdir
 from typing import Optional
 from typing import Type
-
-from tempfile import gettempdir
 
 # relative
 from ..serde.deserialize import _deserialize as deserialize
@@ -52,7 +51,7 @@ class SyftURLResource(SyftObject):
         pass
 
 
-class FileClientConfig():
+class FileClientConfig:
     pass
 
 
@@ -60,7 +59,9 @@ class OnDiskFileClientConfig(FileClientConfig):
     base_directory: Path
 
     def __init__(self, base_directory: Optional[Path]) -> None:
-        self.base_directory = Path(gettempdir()) if base_directory is None else base_directory
+        self.base_directory = (
+            Path(gettempdir()) if base_directory is None else base_directory
+        )
 
 
 class SeaweedClientConfig(FileClientConfig):
@@ -69,10 +70,10 @@ class SeaweedClientConfig(FileClientConfig):
 
 class FileClientConnection:
     def read(self, fp: SecureFilePathLocation) -> SyftResource:
-        raise NotImplemented
+        raise NotImplementedError
 
     def write(fp: SecureFilePathLocation, data: bytes) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class OnDiskFileClientConnection(FileClientConnection):
@@ -82,7 +83,9 @@ class OnDiskFileClientConnection(FileClientConnection):
         self._base_directory = base_directory
 
     def read(self, fp: SecureFilePathLocation) -> SyftResource:
-        return SyftObjectResource(syft_object=(self._base_directory / fp.path).read_bytes())
+        return SyftObjectResource(
+            syft_object=(self._base_directory / fp.path).read_bytes()
+        )
 
     def write(self, fp: SecureFilePathLocation, data: bytes) -> None:
         (self._base_directory / fp.path).write_bytes(data)
@@ -91,21 +94,21 @@ class OnDiskFileClientConnection(FileClientConnection):
 class FileClient:
     _config: FileClientConfig
 
-    def __init__(self, config: FileClientConfig):
+    def __init__(self, config: Optional[FileClientConfig]):
         pass
 
     def __enter__(self) -> FileClientConnection:
-        raise NotImplemented
+        raise NotImplementedError
 
     def __exit__(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class OnDiskFileClient(FileClient):
     _config: OnDiskFileClientConfig
 
-    def __init__(self, config: OnDiskFileClientConfig = OnDiskFileClientConfig()):
-        self._config = config
+    def __init__(self, config: Optional[OnDiskFileClientConfig] = None):
+        self._config = OnDiskFileClientConfig() if config is None else config
         self._connection = OnDiskFileClientConnection(self._config.base_directory)
 
     def __enter__(self) -> FileClientConnection:
@@ -118,7 +121,7 @@ class OnDiskFileClient(FileClient):
 class SeaweedFSClient(FileClient):
     _config: SeaweedClientConfig
 
-    def __init__(self, config: SeaweedClientConfig):
+    def __init__(self, config: Optional[SeaweedClientConfig]):
         pass
 
     def __enter__(self) -> FileClientConnection:
@@ -130,14 +133,13 @@ class SeaweedFSClient(FileClient):
 
 class FileStoreConfig:
     file_client: Type[FileClient]
-    file_client_config: FileClientConfig
+    file_client_config: Optional[FileClientConfig]
 
 
 class OnDiskFileStoreConfig(FileStoreConfig):
     file_client = OnDiskFileClient
-    file_client_config = OnDiskFileClientConfig()
+    file_client_config: Optional[FileClientConfig] = OnDiskFileClientConfig()
 
 
 class SeaweedFileStoreConfig(FileStoreConfig):
     file_client = SeaweedFSClient
-    file_client_config = SeaweedClientConfig
