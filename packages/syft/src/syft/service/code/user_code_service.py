@@ -158,7 +158,7 @@ class UserCodeService(AbstractService):
 
             # Unroll variables
             code_item = result.ok()
-            status = code_item.status
+            code_status = code_item.status
 
             # Check if the user has permission to execute the code
             # They can execute if they are root user or if they are the user who submitted the code
@@ -171,13 +171,16 @@ class UserCodeService(AbstractService):
                 )
 
             # Check if the code is approved
-            if status.for_context(context) != UserCodeStatus.EXECUTE:
-                if status.for_context(context) == UserCodeStatus.SUBMITTED:
+            if code_status.for_context(context) != UserCodeStatus.EXECUTE:
+                if code_status.for_context(context) == UserCodeStatus.SUBMITTED:
+                    string = ""
+                    for node_view, status in code_status.base_dict.items():
+                        string += f"Node name: '{node_view.node_name}', Status: '{status.value}'"
                     return SyftNotReady(
-                        message=f"{type(code_item)} Your code is waiting for approval: {status}"
+                        message=f"{type(code_item)} Your code is waiting for approval: {string}"
                     )
                 return SyftError(
-                    message=f"{type(code_item)} Your code cannot be run: {status.for_context(context)}"
+                    message=f"{type(code_item)} Your code cannot be run: {code_status.for_context(context)}"
                 )
 
             output_policy = code_item.output_policy
