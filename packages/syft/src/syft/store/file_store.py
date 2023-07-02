@@ -2,7 +2,6 @@
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
-from typing import Optional
 from typing import Type
 
 # third party
@@ -56,17 +55,12 @@ class SyftURLResource(SyftObject):
         pass
 
 
-class FileClientConfig:
+class FileClientConfig(BaseModel):
     pass
 
 
 class OnDiskFileClientConfig(FileClientConfig):
-    base_directory: Path
-
-    def __init__(self, base_directory: Optional[Path]) -> None:
-        self.base_directory = (
-            Path(gettempdir()) if base_directory is None else base_directory
-        )
+    base_directory: Path = Path(gettempdir())
 
 
 class SeaweedClientConfig(FileClientConfig):
