@@ -1,8 +1,13 @@
 # stdlib
 from pathlib import Path
 from tempfile import gettempdir
+from typing import Any
 from typing import Optional
 from typing import Type
+
+# third party
+from pydantic import BaseModel
+from pydantic import PrivateAttr
 
 # relative
 from ..serde.deserialize import _deserialize as deserialize
@@ -91,11 +96,8 @@ class OnDiskFileClientConnection(FileClientConnection):
         (self._base_directory / fp.path).write_bytes(data)
 
 
-class FileClient:
-    _config: FileClientConfig
-
-    def __init__(self, config: Optional[FileClientConfig]):
-        pass
+class FileClient(BaseModel):
+    config: FileClientConfig
 
     def __enter__(self) -> FileClientConnection:
         raise NotImplementedError
@@ -105,11 +107,12 @@ class FileClient:
 
 
 class OnDiskFileClient(FileClient):
-    _config: OnDiskFileClientConfig
+    config: OnDiskFileClientConfig
+    _connection: PrivateAttr[OnDiskFileClientConnection]
 
-    def __init__(self, config: Optional[OnDiskFileClientConfig] = None):
-        self._config = OnDiskFileClientConfig() if config is None else config
-        self._connection = OnDiskFileClientConnection(self._config.base_directory)
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        self._connection = OnDiskFileClientConnection(self.config.base_directory)
 
     def __enter__(self) -> FileClientConnection:
         return self._connection
@@ -119,10 +122,7 @@ class OnDiskFileClient(FileClient):
 
 
 class SeaweedFSClient(FileClient):
-    _config: SeaweedClientConfig
-
-    def __init__(self, config: Optional[SeaweedClientConfig]):
-        pass
+    config: SeaweedClientConfig
 
     def __enter__(self) -> FileClientConnection:
         pass
@@ -133,12 +133,12 @@ class SeaweedFSClient(FileClient):
 
 class FileStoreConfig:
     file_client: Type[FileClient]
-    file_client_config: Optional[FileClientConfig]
+    file_client_config: FileClientConfig
 
 
 class OnDiskFileStoreConfig(FileStoreConfig):
     file_client = OnDiskFileClient
-    file_client_config: Optional[FileClientConfig] = OnDiskFileClientConfig()
+    file_client_config = OnDiskFileClientConfig()
 
 
 class SeaweedFileStoreConfig(FileStoreConfig):
