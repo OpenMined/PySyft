@@ -169,7 +169,7 @@ class Node(AbstractNode):
         root_password: str = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
-        node_type: NodeType = NodeType.DOMAIN,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: Type[QueueConfig] = ZMQQueueConfig,
@@ -243,6 +243,8 @@ class Node(AbstractNode):
         )
 
         self.client_cache = {}
+        if isinstance(node_type, str):
+            node_type = NodeType(node_type)
         self.node_type = node_type
 
         self.post_init()
@@ -267,11 +269,13 @@ class Node(AbstractNode):
     @classmethod
     def named(
         cls,
+        *,  # Trasterisk
         name: str,
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -315,6 +319,7 @@ class Node(AbstractNode):
             processes=processes,
             local_db=local_db,
             sqlite_path=sqlite_path,
+            node_type=node_type,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -512,6 +517,7 @@ class Node(AbstractNode):
             description=description,
             organization=organization,
             on_board=on_board,
+            node_type=self.node_type.value,
             signup_enabled=signup_enabled,
         )
 

@@ -266,7 +266,7 @@ def find_available_port(
     host: str, port: Optional[int] = None, search: bool = False
 ) -> int:
     if port is None:
-        port = random.randint(3000, 9000)  # nosec
+        port = random.randint(1500, 65000)  # nosec
     port_available = False
     while not port_available:
         try:
