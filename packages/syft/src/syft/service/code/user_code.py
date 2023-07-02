@@ -667,13 +667,14 @@ def add_custom_status(context: TransformContext) -> TransformContext:
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
-            raise NotImplementedError
+            raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
     else:
-        # Consult with Madhava, on propogating errors from transforms
-        raise NotImplementedError
+        raise NotImplementedError(
+            f"Invalid node type:{context.node.node_type} for code submission"
+        )
     return context
 
 
