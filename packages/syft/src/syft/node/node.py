@@ -647,7 +647,12 @@ class Node(AbstractNode):
                 )
         else:
             task_uid = UID()
-            item = QueueItem(id=task_uid, node_uid=self.id)
+            # we need a queue service for queue
+            item = QueueItem(
+                id=task_uid,
+                node_uid=self.id,
+                syft_client_verify_key=api_call.credentials,
+            )
             # 🟡 TODO 36: Needs distributed lock
             self.queue_stash.set_placeholder(self.verify_key, item)
 
