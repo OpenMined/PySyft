@@ -58,10 +58,33 @@ from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
 from .connection import NodeConnection
+from ..service.user.roles import Roles
+from ..service.dataset.dataset import Contributor, CreateAsset, CreateDataset
 
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
 # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
+
+
+def add_default_uploader(
+        user, 
+        obj: Union[CreateDataset, CreateAsset]
+    ) -> Union[CreateDataset, CreateAsset]:
+    uploader = None
+    for contributor in obj.contributors:
+        if contributor.role == str(Roles.UPLOADER):
+            uploader = contributor
+            break
+
+    if uploader is None:
+        uploader = Contributor(
+            role=str(Roles.UPLOADER),
+            name=user.name,
+            email=user.email,
+        )
+        obj.contributors.append(uploader) 
+    obj.uploader = uploader
+    return obj
 
 if TYPE_CHECKING:
     # relative
@@ -404,6 +427,13 @@ class SyftClient:
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         # relative
         from ..types.twin_object import TwinObject
+
+        # # TODO: get user from client
+        user = self.users.get_current_user()
+        dataset = add_default_uploader(user, dataset)
+        for i in range(len(dataset.assets)):
+            asset = dataset.assets[i]
+            dataset.assets[i] = add_default_uploader(user, asset)
 
         dataset._check_asset_must_contain_mock()
         dataset_size = 0
