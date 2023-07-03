@@ -9,9 +9,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...client.api import NodeView
-from ...enclave.enclave_client import AzureEnclaveClient
-from ...enclave.enclave_client import AzureEnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
@@ -66,6 +63,7 @@ class EnclaveService(AbstractService):
         user_code_id: UID,
         inputs: Dict,
         node_name: str,
+        node_id: UID,
     ) -> Result[Ok, Err]:
         if not context.node or not context.node.signing_key:
             return Err(f"{type(context)} has no node")
@@ -84,6 +82,7 @@ class EnclaveService(AbstractService):
         res = user_code.status.mutate(
             value=UserCodeStatus.EXECUTE,
             node_name=node_name,
+            node_id=node_id,
             verify_key=context.credentials,
         )
         if res.is_err():
@@ -126,73 +125,51 @@ class EnclaveService(AbstractService):
 
 
 # Checks if the given user code would  propogate value to enclave on acceptance
-def check_enclave_transfer(
-    user_code: UserCode, value: UserCodeStatus, context: ChangeContext
-):
+def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     # relative
+    from ...enclave.enclave_client import AzureEnclaveClient
+    from ...enclave.enclave_client import AzureEnclaveMetadata
     from ...external.oblv.deployment_client import OblvMetadata
     from ...external.oblv.oblv_service import OblvService
 
-    if (
-        isinstance(user_code.enclave_metadata, OblvMetadata)
-        and value == UserCodeStatus.EXECUTE
-    ):
+    if isinstance(user_code.enclave_metadata, OblvMetadata):
         method = context.node.get_service_method(OblvService.get_api_for)
 
         api = method(
             user_code.enclave_metadata,
             context.node.signing_key,
         )
-        # send data of the current node to enclave
-        user_node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-        )
-        inputs = user_code.input_policy.inputs[user_node_view]
-        action_service = context.node.get_service("actionservice")
-        for var_name, uid in inputs.items():
-            action_object = action_service.store.get(
-                uid=uid, credentials=context.node.signing_key.verify_key
-            )
-            if action_object.is_err():
-                return action_object
-            inputs[var_name] = action_object.ok()
+        send_method = api.services.oblv.send_user_code_inputs_to_enclave
 
-        res = api.services.oblv.send_user_code_inputs_to_enclave(
-            user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
-        )
-
-        return res
-
-    elif (
-        isinstance(user_code.enclave_metadata, AzureEnclaveMetadata)
-        and value == UserCodeStatus.EXECUTE
-    ):
+        inputs = user_code.input_policy._inputs_for_context(context)
+        if inputs.is_err():
+            return inputs
+        else:
+            inputs = inputs.ok()
+    elif isinstance(user_code.enclave_metadata, AzureEnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
+
         azure_enclave_client = AzureEnclaveClient.from_enclave_metadata(
             enclave_metadata=user_code.enclave_metadata,
             signing_key=context.node.signing_key,
         )
 
         # send data of the current node to enclave
-        user_node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        inputs = user_code.input_policy._inputs_for_context(context)
+        if inputs.is_err():
+            return inputs
+        else:
+            inputs = inputs.ok()
+        send_method = (
+            azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave
         )
-        inputs = user_code.input_policy.inputs[user_node_view]
-        action_service = context.node.get_service("actionservice")
-        for var_name, uid in inputs.items():
-            action_object = action_service.store.get(
-                uid=uid, credentials=context.node.signing_key.verify_key
-            )
-            if action_object.is_err():
-                return action_object
-            inputs[var_name] = action_object.ok()
-
-        res = (
-            azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave(
-                user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
-            )
-        )
-
-        return res
     else:
         return Ok()
+
+    res = send_method(
+        user_code_id=user_code.id,
+        inputs=inputs,
+        node_name=context.node.name,
+        node_id=context.node.id,
+    )
+    return res

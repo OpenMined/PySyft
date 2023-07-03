@@ -92,6 +92,7 @@ class NodeType(Enum):
     WORKER = "worker"
     ENCLAVE = "enclave"
     PYTHON = "python"
+    PYTHON_ENCLAVE = "python_enclave"
     VM = "vm"
 
 
@@ -119,13 +120,22 @@ class NodeHandle:
             return sy.login(url=self.url, port=self.port)  # type: ignore
         elif self.node_type == NodeType.PYTHON:
             return self.python_node.guest_client  # type: ignore
+        elif self.node_type == NodeType.PYTHON_ENCLAVE:
+            # syft absolute
+            from syft.enclave.enclave_client import AzureEnclaveClient
+
+            return AzureEnclaveClient(
+                url="", domains=[], syft_enclave_client=self.python_node.guest_client  # type: ignore
+            )
+        else:
+            raise ValueError("Unknown type")
 
     def login(
-        self, email: Optional[str] = None, password: Optional[str] = None
+        self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
         client = self.client
         if email and password:
-            return client.login(email=email, password=password)
+            return client.login(email=email, password=password, **kwargs)
         return None
 
     def land(self) -> None:
@@ -195,6 +205,44 @@ class Orchestra:
                 )
             else:
                 worker = sy.Domain.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
+                return NodeHandle(
+                    node_type=node_type_enum,
+                    name=name,
+                    python_node=worker,
+                )
+
+        if node_type in [NodeType.PYTHON_ENCLAVE, NodeType.PYTHON_ENCLAVE.value]:
+            sy = get_syft_client()
+            if port:
+                if port == "auto":
+                    # dont use default port to prevent port clashes in CI
+                    port = find_available_port(host="localhost", port=None, search=True)
+                start, stop = sy.serve_node(  # type: ignore
+                    name=name,
+                    host=host,
+                    port=port,
+                    reset=reset,
+                    dev_mode=dev_mode,
+                    tail=tail,
+                )
+                start()
+                return NodeHandle(
+                    node_type=node_type_enum,
+                    name=name,
+                    port=port,
+                    url="http://localhost",
+                    shutdown=stop,
+                )
+            else:
+                # syft absolute
+
+                worker = sy.Enclave.named(  # type: ignore
+                    name,
+                    node_type=NodeType.ENCLAVE,
+                    processes=processes,
+                    reset=reset,
+                    local_db=local_db,
+                )
                 return NodeHandle(
                     node_type=node_type_enum,
                     name=name,

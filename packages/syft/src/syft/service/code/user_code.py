@@ -120,7 +120,7 @@ class UserCodeStatusContext(SyftHashableObject):
         return len(statuses) == 1 and UserCodeStatus.EXECUTE in statuses
 
     def for_context(self, context: AuthedServiceContext) -> UserCodeStatus:
-        if context.node.node_type == NodeType.ENCLAVE:
+        if context.node.node_type.value == NodeType.ENCLAVE.value:
             keys = set(self.base_dict.values())
             if len(keys) == 1 and UserCodeStatus.EXECUTE in keys:
                 return UserCodeStatus.EXECUTE
@@ -131,9 +131,10 @@ class UserCodeStatusContext(SyftHashableObject):
             else:
                 return Exception(f"Invalid types in {keys} for Code Submission")
 
-        elif context.node.node_type == NodeType.DOMAIN:
+        elif context.node.node_type.value == NodeType.DOMAIN.value:
             node_view = NodeView(
                 node_name=context.node.name,
+                node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
             if node_view in self.base_dict:
@@ -148,9 +149,11 @@ class UserCodeStatusContext(SyftHashableObject):
             )
 
     def mutate(
-        self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
+        self, value: UserCodeStatus, node_name: str, node_id, verify_key: SyftVerifyKey
     ) -> Result[Ok, Err]:
-        node_view = NodeView(node_name=node_name, verify_key=verify_key)
+        node_view = NodeView(
+            node_name=node_name, node_id=node_id, verify_key=verify_key
+        )
         base_dict = self.base_dict
         if node_view in base_dict:
             base_dict[node_view] = value
@@ -309,7 +312,9 @@ class UserCode(SyftObject):
             return SyftError(message=f"You must login to {self.node_uid}")
 
         node_view = NodeView(
-            node_name=api.node_name, verify_key=api.signing_key.verify_key
+            node_name=api.node_name,
+            node_id=api.node_uid,
+            verify_key=api.signing_key.verify_key,
         )
         inputs = self.input_policy_init_kwargs[node_view]
         all_assets = []
@@ -594,7 +599,9 @@ def add_custom_status(context: TransformContext) -> TransformContext:
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
         )
         if node_view in input_keys or len(input_keys) == 0:
             context.output["status"] = UserCodeStatusContext(
@@ -602,7 +609,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
             )
         else:
             raise NotImplementedError
-    elif context.node.node_type == NodeType.ENCLAVE:
+    elif context.node.node_type.value == NodeType.ENCLAVE.value:
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
     else:

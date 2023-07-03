@@ -179,7 +179,7 @@ class HTTPConnection(NodeConnection):
         else:
             response = self._make_get(self.routes.ROUTE_METADATA.value)
             metadata_json = json.loads(response)
-            return NodeMetadataJSON(**metadata_json)
+            return NodeMetadataJSON(**metadata_json, signup_enabled=False)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         params = {"verify_key": str(credentials.verify_key)}

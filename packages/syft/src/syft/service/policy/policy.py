@@ -43,6 +43,7 @@ from ..action.action_object import ActionObject
 from ..code.code_parse import GlobalsVisitor
 from ..code.unparse import unparse
 from ..context import AuthedServiceContext
+from ..context import ChangeContext
 from ..context import NodeServiceContext
 from ..dataset.dataset import Asset
 from ..response import SyftError
@@ -189,6 +190,20 @@ class InputPolicy(Policy):
     def inputs(self) -> Dict[NodeView, Any]:
         return self.init_kwargs
 
+    def _inputs_for_context(self, context: ChangeContext):
+        user_node_view = NodeView.from_change_context(context)
+        inputs = self.inputs[user_node_view]
+
+        action_service = context.node.get_service("actionservice")
+        for var_name, uid in inputs.items():
+            action_object = action_service.store.get(
+                uid=uid, credentials=context.node.signing_key.verify_key
+            )
+            if action_object.is_err():
+                return action_object
+            inputs[var_name] = action_object.ok()
+        return Ok(inputs)
+
 
 def retrieve_from_db(
     code_item_id: UID, allowed_inputs: Dict[str, UID], context: AuthedServiceContext
@@ -207,7 +222,7 @@ def retrieve_from_db(
     root_context = AuthedServiceContext(
         node=context.node, credentials=context.node.verify_key
     )
-    if context.node.node_type == NodeType.DOMAIN:
+    if context.node.node_type.value == NodeType.DOMAIN.value:
         for var_name, arg_id in allowed_inputs.items():
             kwarg_value = action_service.get(
                 context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
@@ -216,7 +231,7 @@ def retrieve_from_db(
                 return kwarg_value
             code_inputs[var_name] = kwarg_value.ok()
 
-    elif context.node.node_type == NodeType.ENCLAVE:
+    elif context.node.node_type.value == NodeType.ENCLAVE.value:
         dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
             return dict_object
@@ -235,12 +250,14 @@ def allowed_ids_only(
     kwargs: Dict[str, Any],
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
-    if context.node.node_type == NodeType.DOMAIN:
+    if context.node.node_type.value == NodeType.DOMAIN.value:
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
         )
         allowed_inputs = allowed_inputs[node_view]
-    elif context.node.node_type == NodeType.ENCLAVE:
+    elif context.node.node_type.value == NodeType.ENCLAVE.value:
         base_dict = {}
         for key in allowed_inputs.values():
             base_dict.update(key)
