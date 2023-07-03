@@ -551,7 +551,7 @@ class Node(AbstractNode):
         self,
         path: str,
         node_uid: UID,
-        content: Union[SyftVerifyKey, SyftAPICall, SignedSyftAPICall],
+        content: Union[SyftVerifyKey, SyftAPICall, SignedSyftAPICall, Dict],
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if NetworkService not in self.services:
             return SyftError(
@@ -583,6 +583,8 @@ class Node(AbstractNode):
             )
         elif path == "api_call":
             return client.connection.make_call(content)
+        elif path == "login":
+            return client.connection.login(**content)
         else:
             return SyftError(message="Invalid Path for Forward Message")
 

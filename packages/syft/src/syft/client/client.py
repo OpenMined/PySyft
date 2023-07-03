@@ -216,7 +216,11 @@ class HTTPConnection(NodeConnection):
         return cast(SyftAPI, obj)
 
     def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
-        credentials = {"email": email, "password": password}
+        credentials = {
+            "email": email,
+            "password": password,
+            "proxy_target_uid": str(self.proxy_target_uid),
+        }
         response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
         if isinstance(obj, UserPrivateKey):
@@ -326,6 +330,12 @@ class PythonConnection(NodeConnection):
         return result
 
     def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
+        if self.proxy_target_uid is not None:
+            return self.node.forward_message(
+                path="login",
+                node_uid=self.proxy_target_uid,
+                content={"email": email, "password": password},
+            )
         obj = self.exchange_credentials(email=email, password=password)
         if isinstance(obj, UserPrivateKey):
             return obj

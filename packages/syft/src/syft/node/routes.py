@@ -124,11 +124,25 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_new_api_call(data)
 
-    def handle_login(email: str, password: str, node: AbstractNode) -> Response:
+    def handle_login(
+        email: str, password: str, proxy_target_uid: str, node: AbstractNode
+    ) -> Response:
         try:
             login_credentials = UserLoginCredentials(email=email, password=password)
         except ValidationError as e:
             return {"Error": e.json()}
+
+        if proxy_target_uid != "None":
+            proxy_target_uid = UID(proxy_target_uid)
+            proxy_reponse = worker.forward_message(
+                path="login",
+                node_uid=proxy_target_uid,
+                content={"email": email, "password": password},
+            )
+            return Response(
+                serialize(proxy_reponse, to_bytes=True),
+                media_type="application/octet-stream",
+            )
 
         method = node.get_service_method(UserService.exchange_credentials)
         context = UnauthedServiceContext(node=node, login_credentials=login_credentials)
@@ -176,6 +190,7 @@ def make_routes(worker: Worker) -> APIRouter:
         request: Request,
         email: Annotated[str, Body(example="info@openmined.org")],
         password: Annotated[str, Body(example="changethis")],
+        proxy_target_uid: Annotated[str, Body(example="None")],
     ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(login.__module__).start_as_current_span(
@@ -183,9 +198,9 @@ def make_routes(worker: Worker) -> APIRouter:
                 context=extract(request.headers),
                 kind=trace.SpanKind.SERVER,
             ):
-                return handle_login(email, password, worker)
+                return handle_login(email, password, proxy_target_uid, worker)
         else:
-            return handle_login(email, password, worker)
+            return handle_login(email, password, proxy_target_uid, worker)
 
     @router.post("/register", name="register", status_code=200)
     def register(
