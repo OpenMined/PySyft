@@ -14,6 +14,7 @@ class NodeType(Enum):
     DOMAIN = "domain"
     NETWORK = "network"
     ENCLAVE = "enclave"
+    GATEWAY = "gateway"
 
 
 class AbstractNode:
