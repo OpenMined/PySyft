@@ -6,6 +6,7 @@ import secrets
 from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -112,6 +113,9 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         if isinstance(other, PythonNodeRoute):
             return hash(self) == hash(other)
         return self == other
+
+
+NodeRouteType = Union[HTTPNodeRoute, PythonNodeRoute]
 
 
 def route_to_connection(
