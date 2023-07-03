@@ -12,6 +12,7 @@ from typing import Type
 
 # third party
 import OpenSSL
+import redis
 from redis import ConnectionPool
 from result import Err
 from result import Ok
@@ -40,14 +41,14 @@ def _repr_debug_(value: Any) -> str:
 
 @serializable(attrs=["index_name", "settings", "store_config"])
 class RedisBackingStore(KeyValueBackingStore):
-    """Core Store logic for the SQLite stores.
+    """Core Store logic for the Redis stores.
 
     Parameters:
         `index_name`: str
             Index name
         `settings`: PartitionSettings
             Syft specific settings
-        `store_config`: SQLiteStoreConfig
+        `store_config`: RedisStoreConfig
             Connection Configuration
         `ddtype`: Type
             Class used as fallback on `get` errors
@@ -65,10 +66,10 @@ class RedisBackingStore(KeyValueBackingStore):
         self.store_config = store_config
         self._ddtype = ddtype
         self._db: Dict[int, sqlite3.Connection] = {}
-        self._cur: Dict[int, sqlite3.Cursor] = {}
+        # self._cur: Dict[int, sqlite3.Cursor] = {}
 
     @property
-    def table_name(self) -> str:
+    def db_name(self) -> str:
         return f"{self.settings.name}_{self.index_name}"
 
     def _connect(self) -> None:
@@ -77,16 +78,37 @@ class RedisBackingStore(KeyValueBackingStore):
         # there will be many threads handling incoming requests so we need to ensure
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
-        self.file_path = self.store_config.client_config.file_path
-        self._db[thread_ident()] = sqlite3.connect(
-            self.file_path,
-            timeout=self.store_config.client_config.timeout,
-            check_same_thread=self.store_config.client_config.check_same_thread,
+        redis_config: RedisStoreClientConfig = self.store_config.client_config
+        self._db[thread_ident()] = redis.Redis(
+            host=redis_config.host,
+            port=redis_config.port,
+            db=self.db_name,
+            username=redis_config.username,
+            password=redis_config.password,
+            client_name=redis_config.client_name,
+            socket_timeout=redis_config.socket_timeout,
+            socket_connect_timeout=redis_config.socket_connect_timeout,
+            socket_keepalive=redis_config.socket_keepalive,
+            retry=redis_config.retry,
+            max_connections=redis_config.max_connections,
+            connection_pool=redis_config.connection_pool,
+            health_check_interval=redis_config.health_check_interval,
+            encoding=redis_config.encoding,
+            ssl=redis_config.ssl,
+            ssl_keyfile=redis_config.ssl_keyfile,
+            ssl_certfile=redis_config.ssl_certfile,
+            ssl_cert_reqs=redis_config.ssl_cert_reqs,
+            ssl_ca_certs=redis_config.ssl_ca_certs,
+            ssl_ca_path=redis_config.ssl_ca_path,
+            ssl_ca_data=redis_config.ssl_ca_data,
+            ssl_check_hostname=redis_config.ssl_check_hostname,
+            ssl_password=redis_config.ssl_password,
+            ssl_validate_ocsp=redis_config.ssl_validate_ocsp,
+            ssl_validate_ocsp_stapled=redis_config.ssl_validate_ocsp_stapled,
+            ssl_ocsp_context=redis_config.ssl_ocsp_context,
+            ssl_ocsp_expected_cert=redis_config.ssl_ocsp_expected_cert,
+            single_connection_client=redis_config.single_connection_client,
         )
-
-        # TODO: Review OSX compatibility.
-        # Set journal mode to WAL.
-        # self._db[thread_ident()].execute("pragma journal_mode=wal")
 
     def create_table(self):
         try:
