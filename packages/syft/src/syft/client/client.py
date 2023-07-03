@@ -331,19 +331,20 @@ class SyftClient:
         self.post_init()
 
     def get_env(self) -> Env:
-        res = subprocess.run("pip list | tail -n +3 | awk '{print $1,$2}'",
+        res = subprocess.run("pip list --format=freeze",
                              shell=True, check=True, executable='/bin/bash',
                              capture_output=True)
-        packages_dict = {}
-        for line in res.stdout.decode().split('\n')[:-1]:
-            print(line)
-            elems = line.split(" ")
-            package_name = elems[0]
-            version = elems[1]
-            if len(elems) == 3:
-                print(f"Warning, package {package_name} is installed in editable mode so errors might occur!!!")
-            packages_dict[package_name] = version
-        return Env(packages_dict=packages_dict)
+        return res.stdout.decode()
+        # packages_dict = {}
+        # for line in res.stdout.decode().split('\n')[:-1]:
+        #     print(line)
+        #     elems = line.split(" ")
+        #     package_name = elems[0]
+        #     version = elems[1]
+        #     if len(elems) == 3:
+        #         print(f"Warning, package {package_name} is installed in editable mode so errors might occur!!!")
+        #     packages_dict[package_name] = version
+        # return Env(packages_dict=packages_dict)
 
     def post_init(self) -> None:
         if self.metadata is None:
