@@ -1,4 +1,4 @@
-__version__ = "0.8.2-beta.1"
+__version__ = "0.8.2-beta.2"
 
 # stdlib
 import pathlib
@@ -23,6 +23,7 @@ from .external import OBLV  # noqa: F401
 from .external import enable_external_lib  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
 from .node.domain import Domain  # noqa: F401
+from .node.enclave import Enclave  # noqa: F401
 from .node.gateway import Gateway  # noqa: F401
 from .node.server import serve_node  # noqa: F401
 from .node.server import serve_node as bind_worker  # noqa: F401

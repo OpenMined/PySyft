@@ -220,7 +220,7 @@ class TailscaleClient(BaseVPNClient):
         command_result = result.ok()
 
         if command_result.error:
-            return SyftError(message=result.error)
+            return SyftError(message=command_result.error)
 
         return SyftSuccess(message="Disconnected Successfully !")
 
