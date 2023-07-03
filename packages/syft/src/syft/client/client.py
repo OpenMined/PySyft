@@ -176,7 +176,19 @@ class HTTPConnection(NodeConnection):
             response = self.make_call(signed_call)
             if isinstance(response, SyftError):
                 return response
-            return response.to(NodeMetadataJSON)
+
+            # SECURITY: Currently,we do not check the author of the signature of
+            # the returned result, we only check if the signature is valid
+            # Currently, implemented the same methodolgy as in api.py:make_call
+            if not isinstance(response, SignedSyftAPICall):
+                return SyftError(message="The result is not signed")  # type: ignore
+
+            if not response.is_valid:
+                return SyftError(message="The result signature is invalid")  # type: ignore
+
+            metadata_response = response.message.data
+
+            return metadata_response.to(NodeMetadataJSON)
         else:
             response = self._make_get(self.routes.ROUTE_METADATA.value)
             metadata_json = json.loads(response)
@@ -255,7 +267,19 @@ class PythonConnection(NodeConnection):
             response = self.make_call(signed_call)
             if isinstance(response, SyftError):
                 return response
-            return response.to(NodeMetadataJSON)
+
+            # SECURITY: Currently,we do not check the author of the signature of
+            # the returned result, we only check if the signature is valid
+            # Currently, implemented the same methodolgy as in api.py:make_call
+            if not isinstance(response, SignedSyftAPICall):
+                return SyftError(message="The result is not signed")  # type: ignore
+
+            if not response.is_valid:
+                return SyftError(message="The result signature is invalid")  # type: ignore
+
+            metadata_response = response.message.data
+
+            return metadata_response.to(NodeMetadataJSON)
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 

@@ -605,7 +605,20 @@ class Node(AbstractNode):
                 return SyftError(message="Your message signature is invalid")  # type: ignore
 
         if api_call.message.node_uid != self.id:
-            return self.forward_message(api_call=api_call)
+            # SECURITY: Currently,we do not check the author of the signature of
+            # the returned result, we only check if the signature is valid
+            # Currently, implemented the same methodolgy as in api.py:make_call
+            # Should we preserve the signed result and send it  back?
+            # This would result in double sign unboxing at client side.
+            forward_response = self.forward_message(api_call=api_call)
+            if not isinstance(forward_response, SignedSyftAPICall):
+                return SyftError(message="Forward Message Response is not signed")  # type: ignore
+
+            if not forward_response.is_valid:
+                return SyftError(message="Forward Message response signature is invalid")  # type: ignore
+
+            return forward_response.message.data
+
         if api_call.message.path == "queue":
             return self.resolve_future(
                 credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]
