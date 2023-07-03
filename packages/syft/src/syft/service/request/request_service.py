@@ -16,9 +16,9 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
-from ..message.message_service import CreateMessage
-from ..message.message_service import Message
-from ..message.message_service import MessageService
+from ..notification.notification_service import CreateNotification
+from ..notification.notification_service import NotificationService
+from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -32,6 +32,7 @@ from .request import Change
 from .request import Request
 from .request import RequestInfo
 from .request import RequestInfoFilter
+from .request import RequestStatus
 from .request import SubmitRequest
 from .request_stash import RequestStash
 
@@ -77,15 +78,15 @@ class RequestService(AbstractService):
                 if send_message:
                     subject_msg = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\
                         has been successfully deposited."
-                    message = CreateMessage(
+                    message = CreateNotification(
                         subject=subject_msg if not reason else reason,
                         from_user_verify_key=context.credentials,
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
                     )
-                    method = context.node.get_service_method(MessageService.send)
-                    result = method(context=context, message=message)
-                    if isinstance(result, Message):
+                    method = context.node.get_service_method(NotificationService.send)
+                    result = method(context=context, notification=message)
+                    if isinstance(result, Notification):
                         return Ok(request)
                     else:
                         return Err(result)
@@ -117,14 +118,16 @@ class RequestService(AbstractService):
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         method = context.node.get_service_method(UserService.get_by_verify_key)
-        get_message = context.node.get_service_method(MessageService.filter_by_obj)
+        get_message = context.node.get_service_method(NotificationService.filter_by_obj)
 
         requests = []
         if result.is_ok():
             for req in result.ok():
                 user = method(req.requesting_user_verify_key).to(UserView)
                 message = get_message(context=context, obj_uid=req.id)
-                requests.append(RequestInfo(user=user, request=req, message=message))
+                requests.append(
+                    RequestInfo(user=user, request=req, notification=message)
+                )
 
             # If chunk size is defined, then split list into evenly sized chunks
             if page_size:
@@ -186,6 +189,29 @@ class RequestService(AbstractService):
         if request.is_ok():
             request = request.ok()
             result = request.apply(context=context)
+
+            filter_by_obj = context.node.get_service_method(
+                NotificationService.filter_by_obj
+            )
+            request_notification = filter_by_obj(context=context, obj_uid=uid)
+
+            link = LinkedObject.with_context(request, context=context)
+            if not request.status == RequestStatus.PENDING:
+                mark_as_read = context.node.get_service_method(
+                    NotificationService.mark_as_read
+                )
+                mark_as_read(context=context, uid=request_notification.id)
+
+                notification = CreateNotification(
+                    subject=f"{request.changes} for Request id: {uid} has status updated to {request.status}",
+                    to_user_verify_key=request.requesting_user_verify_key,
+                    linked_obj=link,
+                )
+                send_notification = context.node.get_service_method(
+                    NotificationService.send
+                )
+                send_notification(context=context, notification=notification)
+
             return result.value
         return request.value
 
@@ -216,14 +242,14 @@ class RequestService(AbstractService):
             f"Reason specified by Data Owner: {reason}."
         )
 
-        notification = CreateMessage(
+        notification = CreateNotification(
             subject=message_subject,
             to_user_verify_key=request.requesting_user_verify_key,
             linked_obj=link,
         )
-        send_notification = context.node.get_service_method(MessageService.send)
+        send_notification = context.node.get_service_method(NotificationService.send)
 
-        result = send_notification(context=context, message=notification)
+        result = send_notification(context=context, notification=notification)
         return SyftSuccess(message=f"Request {uid} successfully denied !")
 
     def save(

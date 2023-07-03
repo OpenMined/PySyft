@@ -43,7 +43,7 @@ from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .service.dataset.dataset import Contributor  # noqa: F401
 from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
 from .service.dataset.dataset import CreateDataset as Dataset  # noqa: F401
-from .service.message.messages import MessageStatus  # noqa: F401
+from .service.notification.notifications import NotificationStatus  # noqa: F401
 from .service.policy.policy import CustomInputPolicy  # noqa: F401
 from .service.policy.policy import CustomOutputPolicy  # noqa: F401
 from .service.policy.policy import ExactMatch  # noqa: F401
