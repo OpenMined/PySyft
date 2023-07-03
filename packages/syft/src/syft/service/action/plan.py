@@ -58,7 +58,7 @@ class Plan(SyftObject):
 def planify(func):
     TraceResult.reset()
     ActionObject.add_trace_hook()
-    worker = Worker.named("plan_building", reset=True, processes=0)
+    worker = Worker.named(name="plan_building", reset=True, processes=0)
     client = worker.root_client
     TraceResult._client = client
     plan_kwargs = build_plan_inputs(func, client)
