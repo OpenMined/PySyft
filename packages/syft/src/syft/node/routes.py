@@ -23,6 +23,7 @@ from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
+from ..types.uid import UID
 from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
@@ -68,15 +69,27 @@ def make_routes(worker: Worker) -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    def handle_syft_new_api(user_verify_key: SyftVerifyKey) -> Response:
-        return Response(
-            serialize(worker.get_api(user_verify_key), to_bytes=True),
-            media_type="application/octet-stream",
-        )
+    def handle_syft_new_api(
+        user_verify_key: SyftVerifyKey, proxy_target_uid: str
+    ) -> Response:
+        if proxy_target_uid != "None":
+            proxy_target_uid = UID(proxy_target_uid)
+            return Response(
+                worker.forward_message(
+                    path="get_api", node_uid=proxy_target_uid, content=user_verify_key
+                )
+            )
+        else:
+            return Response(
+                serialize(worker.get_api(user_verify_key), to_bytes=True),
+                media_type="application/octet-stream",
+            )
 
     # get the SyftAPI object
     @router.get("/api")
-    def syft_new_api(request: Request, verify_key: str) -> Response:
+    def syft_new_api(
+        request: Request, verify_key: str, proxy_target_uid: str
+    ) -> Response:
         user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api.__module__).start_as_current_span(
@@ -84,9 +97,9 @@ def make_routes(worker: Worker) -> APIRouter:
                 context=extract(request.headers),
                 kind=trace.SpanKind.SERVER,
             ):
-                return handle_syft_new_api(user_verify_key)
+                return handle_syft_new_api(user_verify_key, proxy_target_uid)
         else:
-            return handle_syft_new_api(user_verify_key)
+            return handle_syft_new_api(user_verify_key, proxy_target_uid)
 
     def handle_new_api_call(data: bytes) -> Response:
         obj_msg = deserialize(blob=data, from_bytes=True)

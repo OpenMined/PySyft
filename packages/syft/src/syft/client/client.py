@@ -194,14 +194,25 @@ class HTTPConnection(NodeConnection):
             metadata_json = json.loads(response)
             return NodeMetadataJSON(**metadata_json)
 
-    def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        params = {"verify_key": str(credentials.verify_key)}
+    def get_api_for_verify_key(
+        self, verify_key: SyftVerifyKey, **kwargs
+    ) -> Union[SyftAPI, bytes]:
+        params = {
+            "verify_key": str(verify_key),
+            "proxy_target_uid": str(self.proxy_target_uid),
+        }
         content = self._make_get(self.routes.ROUTE_API.value, params=params)
+
+        # Optimization to prevent doulbe serde during message forwarding
+        if "to_bytes" in kwargs and kwargs["to_bytes"] is True:
+            return content
         obj = _deserialize(content, from_bytes=True)
+        return obj
+
+    def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
+        obj = self.get_api_for_verify_key(credentials.verify_key)
         obj.connection = self
         obj.signing_key = credentials
-        if self.proxy_target_uid:
-            obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
 
     def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
@@ -283,13 +294,20 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
+    def get_api_for_verify_key(self, verify_key: SyftVerifyKey, **kwargs) -> SyftAPI:
+        if self.proxy_target_uid is not None:
+            obj = self.node.forward_message(
+                path="get_api", node_uid=self.proxy_target_uid, content=verify_key
+            )
+        else:
+            obj = self.node.get_api(for_user=verify_key)
+        return obj
+
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
-        obj = self.node.get_api(for_user=credentials.verify_key)
+        obj = self.get_api_for_verify_key(credentials.verify_key)
         obj.connection = self
         obj.signing_key = credentials
-        if self.proxy_target_uid:
-            obj.node_uid = self.proxy_target_uid
         return obj
 
     def get_cache_key(self) -> str:

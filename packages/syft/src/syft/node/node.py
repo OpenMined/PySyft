@@ -548,9 +548,11 @@ class Node(AbstractNode):
         return result.err()
 
     def forward_message(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+        self,
+        path: str,
+        node_uid: UID,
+        content: Union[SyftVerifyKey, SyftAPICall, SignedSyftAPICall],
     ) -> Result[Union[QueueItem, SyftObject], Err]:
-        node_uid = api_call.message.node_uid
         if NetworkService not in self.services:
             return SyftError(
                 message=(
@@ -572,10 +574,17 @@ class Node(AbstractNode):
                 client = peer.client_with_context(context=context)
                 self.client_cache[node_uid] = client
 
-        if client:
-            return client.connection.make_call(api_call)
+        if not client:
+            return SyftError(message=(f"Node has no route to {node_uid}"))
 
-        return SyftError(message=(f"Node has no route to {node_uid}"))
+        if path == "get_api":
+            return client.connection.get_api_for_verify_key(
+                verify_key=content, to_bytes=True
+            )
+        elif path == "api_call":
+            return client.connection.make_call(content)
+        else:
+            return SyftError(message="Invalid Path for Forward Message")
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
         role = self.get_service("userservice").get_role_for_credentials(
@@ -610,7 +619,9 @@ class Node(AbstractNode):
             # Currently, implemented the same methodolgy as in api.py:make_call
             # Should we preserve the signed result and send it  back?
             # This would result in double sign unboxing at client side.
-            forward_response = self.forward_message(api_call=api_call)
+            forward_response = self.forward_message(
+                path="api_call", node_uid=api_call.message.node_uid, content=api_call
+            )
             if not isinstance(forward_response, SignedSyftAPICall):
                 return SyftError(message="Forward Message Response is not signed")  # type: ignore
 
