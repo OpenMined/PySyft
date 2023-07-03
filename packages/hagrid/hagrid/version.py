@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # HAGrid Version
-__version__ = "0.3.46"
+__version__ = "0.3.49"
 
 if __name__ == "__main__":
     print(__version__)
