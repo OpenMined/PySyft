@@ -11,7 +11,7 @@
     "typescript",
     "PySyft",
     "PyGrid",
-    "SyftJS",
+    "SyftJS"
   ],
   "scripts": {
     "build": "rollup -c",
@@ -21,7 +21,7 @@
     "test": "run-s build test:*",
     "test:lint": "eslint src --ext .ts",
     "test:prettier": "prettier \"src/**/*.ts\" --list-different",
-    "test:unit": "nyc --silent ava",
+    "test:unit": "vitest run -vvv",
     "watch:build": "tsc -p tsconfig.json -w",
     "watch:test": "nyc --silent ava --watch",
     "cov": "run-s build test:unit cov:html cov:lcov && open-cli coverage/index.html",
@@ -55,7 +55,8 @@
     "rollup": "^3.26.0",
     "ts-node": "^10.9.1",
     "typedoc": "^0.22.9",
-    "typescript": "^4.2.4"
+    "typescript": "^4.2.4",
+    "vitest": "^0.32.4"
   },
   "files": [
     "lib/main",
