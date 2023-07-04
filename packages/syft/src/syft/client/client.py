@@ -473,8 +473,8 @@ class SyftClient:
             "WARNING: Notifications is currently is in a beta state, so use carefully!"
         )
         print("If possible try using client.requests/client.projects")
-        if self.api is not None and self.api.has_service("messages"):
-            return self.api.services.messages
+        if self.api is not None and self.api.has_service("notifications"):
+            return self.api.services.notifications
         return None
 
     @property
