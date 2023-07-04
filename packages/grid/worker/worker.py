@@ -33,7 +33,7 @@ app = FastAPI(title="Worker")
 
 @app.get("/")
 async def root() -> str:
-    return "OpenMined Enclave Node Running"
+    return f"OpenMined {node_type.value} Node Running"
 
 
 app.include_router(router, prefix=API_PATH)
