@@ -14,6 +14,7 @@ from typing import Tuple
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
+from hagrid.orchestra import NodeType
 import requests
 from starlette.middleware.cors import CORSMiddleware
 import uvicorn
@@ -53,7 +54,9 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     return app
 
 
-def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
+def run_uvicorn(
+    name: str, host: str, port: int, reset: bool, dev_mode: bool, node_type: NodeType
+):
     async def _run_uvicorn(
         name: str, host: str, port: int, reset: bool, dev_mode: bool
     ):
@@ -62,9 +65,11 @@ def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
                 f"\nWARNING: private key is based on node name: {name} in dev_mode. "
                 "Don't run this in production."
             )
-            worker = Domain.named(name=name, processes=0, local_db=True, reset=reset)
+            worker = Domain.named(
+                name=name, processes=0, local_db=True, reset=reset, node_type=node_type
+            )
         else:
-            worker = Domain(name=name, processes=0, local_db=True)
+            worker = Domain(name=name, processes=0, local_db=True, node_type=node_type)
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
 
@@ -104,9 +109,10 @@ def serve_node(
     reset: bool = False,
     dev_mode: bool = False,
     tail: bool = False,
+    node_type: NodeType = NodeType.DOMAIN,
 ) -> Tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
-        target=run_uvicorn, args=(name, host, port, reset, dev_mode)
+        target=run_uvicorn, args=(name, host, port, reset, dev_mode, node_type)
     )
 
     def stop():

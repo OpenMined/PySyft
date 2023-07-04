@@ -115,6 +115,15 @@ class NodeHandle:
 
     @property
     def client(self) -> Any:
+        if self.node_type == NodeType.ENCLAVE:
+            # syft absolute
+            from syft.enclave.enclave_client import AzureEnclaveClient
+
+            sy = get_syft_client()
+            enclave_client = sy.login(url=self.url, port=self.port)  # type: ignore
+            return AzureEnclaveClient(
+                url=self.url, port=self.port, syft_enclave_client=enclave_client
+            )
         if self.port:
             sy = get_syft_client()
             return sy.login(url=self.url, port=self.port)  # type: ignore
@@ -124,9 +133,7 @@ class NodeHandle:
             # syft absolute
             from syft.enclave.enclave_client import AzureEnclaveClient
 
-            return AzureEnclaveClient(
-                url="", domains=[], syft_enclave_client=self.python_node.guest_client  # type: ignore
-            )
+            return AzureEnclaveClient(syft_enclave_client=self.python_node.guest_client)  # type: ignore
         else:
             raise ValueError("Unknown type")
 
@@ -213,29 +220,7 @@ class Orchestra:
 
         if node_type in [NodeType.PYTHON_ENCLAVE, NodeType.PYTHON_ENCLAVE.value]:
             sy = get_syft_client()
-            if port:
-                if port == "auto":
-                    # dont use default port to prevent port clashes in CI
-                    port = find_available_port(host="localhost", port=None, search=True)
-                start, stop = sy.serve_node(  # type: ignore
-                    name=name,
-                    host=host,
-                    port=port,
-                    reset=reset,
-                    dev_mode=dev_mode,
-                    tail=tail,
-                )
-                start()
-                return NodeHandle(
-                    node_type=node_type_enum,
-                    name=name,
-                    port=port,
-                    url="http://localhost",
-                    shutdown=stop,
-                )
-            else:
-                # syft absolute
-
+            if not port:
                 worker = sy.Enclave.named(  # type: ignore
                     name,
                     node_type=NodeType.ENCLAVE,
@@ -248,6 +233,37 @@ class Orchestra:
                     name=name,
                     python_node=worker,
                 )
+            else:
+                raise ValueError(
+                    "python enclaves are not networked and cannot have a port"
+                )
+
+        if node_type in [NodeType.ENCLAVE, NodeType.ENCLAVE.value]:
+            sy = get_syft_client()
+            if port == "auto":
+                # dont use default port to prevent port clashes in CI
+                port = find_available_port(host="localhost", port=None, search=True)
+                # worker = Worker(
+                # node_type=NodeType.ENCLAVE, name=node_name, local_db=True, sqlite_path="/storage/"
+                # )
+            start, stop = sy.serve_node(  # type: ignore
+                name=name,
+                host=host,
+                port=port,
+                reset=reset,
+                dev_mode=dev_mode,
+                tail=tail,
+                node_type=node_type_enum,
+            )
+            start()
+            return NodeHandle(
+                node_type=node_type_enum,
+                name=name,
+                port=port,
+                url="http://localhost",
+                shutdown=stop,
+            )
+            # syft absolute
 
         if node_type_enum == NodeType.VM:
             return NodeHandle(

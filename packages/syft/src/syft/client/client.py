@@ -179,7 +179,9 @@ class HTTPConnection(NodeConnection):
         else:
             response = self._make_get(self.routes.ROUTE_METADATA.value)
             metadata_json = json.loads(response)
-            return NodeMetadataJSON(**metadata_json, signup_enabled=False)
+            if "signup_enabled" not in metadata_json:
+                metadata_json["signup_enabled"] = False
+            return NodeMetadataJSON(**metadata_json)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         params = {"verify_key": str(credentials.verify_key)}
@@ -503,7 +505,11 @@ class SyftClient:
 
         return self.api.services.project.get_all()
 
-    def login(self, email: str, password: str, cache: bool = True) -> Self:
+    def login(
+        self, email: str, password: str, cache: bool = True, register=False, **kwargs
+    ) -> Self:
+        if register:
+            self.register(email=email, password=password, **kwargs)
         user_private_key = self.connection.login(email=email, password=password)
         signing_key = None
         if user_private_key is not None:
@@ -556,6 +562,7 @@ class SyftClient:
         password: str,
         institution: Optional[str] = None,
         website: Optional[str] = None,
+        **kwargs,
     ):
         try:
             new_user = UserCreate(

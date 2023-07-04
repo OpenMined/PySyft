@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -31,8 +30,8 @@ class EnclaveClient(SyftBaseModel):
         url (str): Connection URL to communicate with the enclave.
     """
 
-    domains: List[SyftClient]
-    url: Optional[str]
+    url: Optional[str] = None
+    port: Optional[str] = None
     syft_enclave_client: Optional[SyftClient] = None
 
     def register(
@@ -142,6 +141,7 @@ class EnclaveClient(SyftBaseModel):
 @serializable()
 class AzureEnclaveMetadata(EnclaveMetadata):
     url: Optional[str]
+    port: Optional[str]
     worker_id: Optional[UID]
 
 
@@ -152,7 +152,7 @@ class AzureEnclaveClient(EnclaveClient):
             self.syft_enclave_client.connection, PythonConnection
         ):
             worker_id = self.syft_enclave_client.connection.node.id
-        return AzureEnclaveMetadata(url=self.url, worker_id=worker_id)
+        return AzureEnclaveMetadata(url=self.url, port=self.port, worker_id=worker_id)
 
     @staticmethod
     def from_enclave_metadata(
@@ -163,18 +163,29 @@ class AzureEnclaveClient(EnclaveClient):
         syft_enclave_client = None
 
         # python connection
+
         if enclave_metadata.worker_id is not None:
             # relative
             from ..node.node import NodeRegistry
 
             worker = NodeRegistry.node_for(enclave_metadata.worker_id)
             syft_enclave_client = worker.guest_client
-        azure_encalve_client = AzureEnclaveClient(
-            domains=[],
+        else:
+            # syft absolute
+            import syft as sy
+
+            syft_enclave_client = sy.login(
+                url=enclave_metadata.url, port=enclave_metadata.port
+            )  # type: ignore
+        # import ipdb
+        # ipdb.set_trace()
+
+        azure_enclave_client = AzureEnclaveClient(
             url=enclave_metadata.url,
+            port=enclave_metadata.port,
             syft_enclave_client=syft_enclave_client,
         )
 
-        azure_encalve_client.login_by_signing_key(signing_key=signing_key)
+        azure_enclave_client.login_by_signing_key(signing_key=signing_key)
 
-        return azure_encalve_client
+        return azure_enclave_client
