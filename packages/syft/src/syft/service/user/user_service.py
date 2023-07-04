@@ -5,6 +5,7 @@ from typing import Tuple
 from typing import Union
 
 # relative
+from ...abstract_node import NodeType
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -342,8 +343,12 @@ class UserService(AbstractService):
             if new_user.created_by is None
             else self.get_role_for_credentials(new_user.created_by)
         )
-        can_user_register = context.node.metadata.signup_enabled or (
-            request_user_role in DATA_OWNER_ROLE_LEVEL
+        can_user_register = (
+            context.node.metadata.signup_enabled
+            or request_user_role in DATA_OWNER_ROLE_LEVEL
+            # We by default allow automatic registration on enclave
+            # as we do not have a notion of superuser in encalves
+            or context.node.node_type == NodeType.ENCLAVE
         )
 
         if not can_user_register:
