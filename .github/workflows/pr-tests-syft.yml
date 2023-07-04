@@ -24,20 +24,20 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [om-ci-16vcpu-ubuntu2204, macos-13]
+        os: [ubuntu-latest, macos-13]
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
-            os: "om-ci-16vcpu-ubuntu2204"
+            os: "ubuntu-latest"
           - python-version: "3.10"
-            os: "om-ci-16vcpu-ubuntu2204"
+            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Permission to home directory
-        if: matrix.os == 'om-ci-16vcpu-ubuntu2204'
-        run: |
-          sudo chown -R $USER:$USER $HOME
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - name: "clean .git/config"
         if: matrix.os == 'windows'
         continue-on-error: true
@@ -101,26 +101,26 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [om-ci-16vcpu-ubuntu2204, macos-13]
+        os: [ubuntu-latest, macos-13]
         python-version: ["3.11"]
         deployment-type: ["python"]
         notebook-paths: ["tutorials"]
         include:
           - python-version: "3.9"
-            os: "om-ci-16vcpu-ubuntu2204"
+            os: "ubuntu-latest"
             deployment-type: "python"
             notebook-paths: "tutorials"
           - python-version: "3.10"
-            os: "om-ci-16vcpu-ubuntu2204"
+            os: "ubuntu-latest"
             deployment-type: "python"
             notebook-paths: "tutorials"
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Permission to home directory
-        if: matrix.os == 'om-ci-16vcpu-ubuntu2204'
-        run: |
-          sudo chown -R $USER:$USER $HOME
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - name: "clean .git/config"
         if: matrix.os == 'windows'
         continue-on-error: true
@@ -186,7 +186,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [om-ci-16vcpu-ubuntu2204]
+        os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11"]
         deployment-type: ["single_container"]
         notebook-paths: ["api/0.8"]
@@ -195,10 +195,10 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: Permission to home directory
-        if: matrix.os == 'om-ci-16vcpu-ubuntu2204'
-        run: |
-          sudo chown -R $USER:$USER $HOME
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -241,7 +241,7 @@ jobs:
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker Compose on Linux
-        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'om-ci-16vcpu-ubuntu2204'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
@@ -288,15 +288,15 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        os: [om-ci-16vcpu-ubuntu2204]
+        os: [ubuntu-latest]
         python-version: ["3.11"]
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Permission to home directory
-        if: matrix.os == 'om-ci-16vcpu-ubuntu2204'
-        run: |
-          sudo chown -R $USER:$USER $HOME
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
       - name: Check for file changes
         uses: dorny/paths-filter@v2
