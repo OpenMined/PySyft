@@ -8,7 +8,7 @@ exports.RecursiveSerde = exports._capnpFileId = void 0;
 const capnp = require("capnp-ts");
 const capnp_ts_1 = require("capnp-ts");
 exports._capnpFileId = BigInt("0xd7dd27f3820d22ee");
-class RecursiveSerde extends capnp_ts_1.Struct {
+export class RecursiveSerde extends capnp_ts_1.Struct {
     adoptFieldsName(value) { capnp_ts_1.Struct.adopt(value, capnp_ts_1.Struct.getPointer(0, this)); }
     disownFieldsName() { return capnp_ts_1.Struct.disown(this.getFieldsName()); }
     getFieldsName() { return capnp_ts_1.Struct.getList(0, capnp.TextList, this); }
