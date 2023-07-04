@@ -113,7 +113,9 @@ class ActionService(AbstractService):
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
-        if result.is_ok():
+        if isinstance(result, SyftError):
+            return result
+        elif result.is_ok():
             obj = result.ok()
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
