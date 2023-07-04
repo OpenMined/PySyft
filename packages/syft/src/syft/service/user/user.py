@@ -170,15 +170,6 @@ class UserView(SyftObject):
         }
 
 
-@serializable()
-class UserViewPage(SyftObject):
-    __canonical_name__ = "UserViewPage"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    users: List[UserView]
-    total: int
-
-
 @transform(UserUpdate, User)
 def user_update_to_user() -> List[Callable]:
     return [
