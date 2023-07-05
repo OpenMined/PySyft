@@ -37,15 +37,6 @@ jobs:
         run: DOCKER_BUILDKIT=1 docker build -f packages/grid/backend/backend.dockerfile packages -t backend:${{ github.sha }}
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
-      - name: Snyk Container monitor
-        run: snyk container monitor backend:${{ github.sha }} --file=packages/grid/backend/backend.dockerfile
-
-        # Push the Snyk Code results into GitHub Code Scanning tab
-      - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: snyk-code.sarif
-
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
         with:
@@ -59,6 +50,15 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: "trivy-results.sarif"
+
+      - name: Snyk Container monitor
+        run: snyk container monitor backend:${{ github.sha }} --file=packages/grid/backend/backend.dockerfile
+
+        # Push the Snyk Code results into GitHub Code Scanning tab
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk-code.sarif
 
   scan-frontend:
     permissions:
