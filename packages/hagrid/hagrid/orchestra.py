@@ -25,8 +25,8 @@ from .util import shell
 try:
     # syft absolute
     from syft.abstract_node import NodeType
-except Exception:
-    print("Please install syft with `pip install syft`")
+except Exception:  # nosec
+    # print("Please install syft with `pip install syft`")
     pass
 
 DEFAULT_PORT = 8080
@@ -54,8 +54,8 @@ def get_syft_client() -> Optional[Any]:
         import syft as sy
 
         return sy
-    except Exception:
-        print("Please install syft with `pip install syft`")
+    except Exception:  # nosec
+        # print("Please install syft with `pip install syft`")
         pass
     return None
 
