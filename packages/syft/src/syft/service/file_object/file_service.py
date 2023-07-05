@@ -48,8 +48,7 @@ class FileObjectService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftResource, SyftError]:
         file_object = self.stash.get_by_uid(context.credentials, uid=uid)
-        file_client = context.node.file_system_client(context.node.file_system_config)
-        with file_client as conn:
+        with context.node.file_client as conn:
             return conn.read(file_object.location)
 
 

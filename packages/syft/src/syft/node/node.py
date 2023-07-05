@@ -174,7 +174,7 @@ class Node(AbstractNode):
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: Type[QueueConfig] = ZMQQueueConfig,
-        file_store_config: Type[FileStoreConfig] = OnDiskFileStoreConfig,
+        file_store_config: Optional[FileStoreConfig] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -254,7 +254,13 @@ class Node(AbstractNode):
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
 
-    def init_queue_manager(self, queue_config: QueueConfig):
+        self.init_file_store(config=file_store_config)
+
+    def init_file_store(self, config: Optional[FileStoreConfig] = None) -> None:
+        config_ = OnDiskFileStoreConfig() if config is None else config
+        self.file_client = config_.file_client(config_.file_client_config)
+
+    def init_queue_manager(self, queue_config: QueueConfig) -> None:
         MessageHandlers = [APICallMessageHandler]
 
         self.queue_manager = QueueManager(queue_config)

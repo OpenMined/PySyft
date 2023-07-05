@@ -125,14 +125,14 @@ class SeaweedFSClient(FileClient):
         pass
 
 
-class FileStoreConfig:
+class FileStoreConfig(BaseModel):
     file_client: Type[FileClient]
     file_client_config: FileClientConfig
 
 
 class OnDiskFileStoreConfig(FileStoreConfig):
-    file_client = OnDiskFileClient
-    file_client_config = OnDiskFileClientConfig()
+    file_client: Type[FileClient] = OnDiskFileClient
+    file_client_config: OnDiskFileClientConfig = OnDiskFileClientConfig()
 
 
 class SeaweedFileStoreConfig(FileStoreConfig):
