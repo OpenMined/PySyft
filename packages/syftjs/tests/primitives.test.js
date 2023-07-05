@@ -13,7 +13,7 @@ it('Testing string serialization', () => {
   expectTypeOf(serializedEmptyString).toMatchTypeOf(Uint8Array);
   expectTypeOf(serializedcomplexStringStructure).toMatchTypeOf(Uint8Array);
 
-  //expect(deserialize(serializedEmptyString)).toBe(emptyString);
-  //expect(deserialize(serializedcomplexStringStructure)).toBe(complexStringStructure);
+  expect(deserialize(serializedEmptyString)).toBe(emptyString);
+  expect(deserialize(serializedcomplexStringStructure)).toBe(complexStringStructure);
 });
 
