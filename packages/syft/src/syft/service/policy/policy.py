@@ -213,14 +213,14 @@ def retrieve_from_db(
                 context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if kwarg_value.is_err():
-                return kwarg_value
+                return SyftError(message=kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type == NodeType.ENCLAVE:
         dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
-            return dict_object
-        for value in dict_object.ok().base_dict.values():
+            return SyftError(message=dict_object.err())
+        for value in dict_object.ok().syft_action_data.values():
             code_inputs.update(value)
 
     else:
