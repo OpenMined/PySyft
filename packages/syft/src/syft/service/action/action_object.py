@@ -176,6 +176,7 @@ passthrough_attrs = [
     "send",  # syft
     "_copy_and_set_values",  # pydantic
     "get_from",  # syft
+    "get",  # syft
     "delete_data",  # syft
 ]
 dont_wrap_output_attrs = [
