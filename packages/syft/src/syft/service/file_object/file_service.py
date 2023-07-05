@@ -6,12 +6,14 @@ from typing import Union
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.file_store import SyftResource
+from ...store.file_store import SyftWriteResource
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from .file_object import CreateFileObject
 from .file_object import FileObject
 from .file_stash import FileObjectStash
 
@@ -52,6 +54,13 @@ class FileObjectService(AbstractService):
             with context.node.file_client as conn:
                 return conn.read(result.ok().location)
         return SyftError(message=result.err())
+
+    @service_method(path="file.save", name="save")
+    def save(
+        self, context: AuthedServiceContext, obj: CreateFileObject
+    ) -> Union[SyftWriteResource, SyftError]:
+        with context.node.file_client as conn:
+            return conn.write(obj)
 
 
 TYPE_TO_SERVICE[FileObject] = FileObject
