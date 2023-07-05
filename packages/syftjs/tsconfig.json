@@ -6,7 +6,6 @@
     "rootDir": "src",
     "moduleResolution": "node",
     "declaration": true,
-    "inlineSourceMap": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "allowJs": true,
