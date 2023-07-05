@@ -5,6 +5,7 @@ from __future__ import annotations
 # stdlib
 from enum import Enum
 import getpass
+import inspect
 import os
 import subprocess  # nosec
 from typing import Any
@@ -21,6 +22,14 @@ from .grammar import find_available_port
 from .names import random_name
 from .util import shell
 
+try:
+    # syft absolute
+    from syft.abstract_node import NodeType
+except Exception:  # nosec
+    # print("Please install syft with `pip install syft`")
+    pass
+
+DEFAULT_PORT = 8080
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
 
@@ -45,8 +54,8 @@ def get_syft_client() -> Optional[Any]:
         import syft as sy
 
         return sy
-    except Exception:
-        print("Please install syft with `pip install syft`")
+    except Exception:  # nosec
+        # print("Please install syft with `pip install syft`")
         pass
     return None
 
@@ -85,13 +94,41 @@ def container_exists_with(name: str, port: int) -> bool:
     return len(output) > 0
 
 
-class NodeType(Enum):
-    GATEWAY = "gateway"
-    DOMAIN = "domain"
-    WORKER = "worker"
-    ENCLAVE = "enclave"
+def get_node_type(node_type: Optional[str]) -> Optional[NodeType]:
+    if node_type is None:
+        node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
+    try:
+        return NodeType(node_type)
+    except ValueError:
+        print(f"node_type: {node_type} is not a valid NodeType: {NodeType}")
+    return None
+
+
+def get_deployment_type(deployment_type: Optional[str]) -> Optional[DeploymentType]:
+    if deployment_type is None:
+        deployment_type = os.environ.get(
+            "ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON
+        )
+
+    # provide shorthands
+    if deployment_type == "container":
+        deployment_type = "container_stack"
+
+    try:
+        return DeploymentType(deployment_type)
+    except ValueError:
+        print(
+            f"deployment_type: {deployment_type} is not a valid DeploymentType: {DeploymentType}"
+        )
+    return None
+
+
+# Can also be specified by the environment variable
+# ORCHESTRA_DEPLOYMENT_TYPE
+class DeploymentType(Enum):
     PYTHON = "python"
-    VM = "vm"
+    SINGLE_CONTAINER = "single_container"
+    CONTAINER_STACK = "container_stack"
     K8S = "k8s"
 
 
@@ -99,6 +136,7 @@ class NodeHandle:
     def __init__(
         self,
         node_type: NodeType,
+        deployment_type: DeploymentType,
         name: str,
         port: Optional[int] = None,
         url: Optional[str] = None,
@@ -111,21 +149,36 @@ class NodeHandle:
         self.url = url
         self.python_node = python_node
         self.shutdown = shutdown
+        self.deployment_type = deployment_type
 
     @property
     def client(self) -> Any:
+        # TODO: Refactor this on client seggregation PR
+        # syft absolute
+        from syft.enclave.enclave_client import AzureEnclaveClient
+
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
-        elif self.node_type == NodeType.PYTHON:
-            return self.python_node.get_guest_client(verbose=False)  # type: ignore
+            guest_client = sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
+            if self.node_type == NodeType.ENCLAVE:
+                return AzureEnclaveClient(
+                    url=self.url, port=self.port, syft_enclave_client=guest_client
+                )
+            else:
+                return guest_client
+        elif self.deployment_type == DeploymentType.PYTHON:
+            guest_client = self.python_node.get_guest_client(verbose=False)  # type: ignore
+            if self.node_type == NodeType.ENCLAVE:
+                return AzureEnclaveClient(syft_enclave_client=guest_client)
+            else:
+                return guest_client
 
     def login(
-        self, email: Optional[str] = None, password: Optional[str] = None
+        self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
         client = self.client
         if email and password:
-            return client.login(email=email, password=password)
+            return client.login(email=email, password=password, **kwargs)
         return None
 
     def register(
@@ -146,179 +199,297 @@ class NodeHandle:
         )
 
     def land(self) -> None:
-        if self.node_type == NodeType.PYTHON:
+        if self.deployment_type == DeploymentType.PYTHON:
             if self.shutdown:
                 self.shutdown()
-        elif self.node_type == NodeType.VM:
-            pass
         else:
-            Orchestra.land(self.name, node_type=self.node_type.value)
+            Orchestra.land(self.name, deployment_type=self.deployment_type)
 
 
-def get_node_type(node_type: Optional[str]) -> Optional[NodeType]:
-    if node_type is None:
-        node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.PYTHON)
-    try:
-        return NodeType(node_type)
-    except ValueError:
-        print(f"node_type: {node_type} is not a valid NodeType: {NodeType}")
+def deploy_to_python(
+    node_type_enum: NodeType,
+    deployment_type_enum: DeploymentType,
+    port: Union[int, str],
+    name: str,
+    host: str,
+    reset: bool,
+    tail: bool,
+    dev_mode: bool,
+    processes: int,
+    local_db: bool,
+) -> Optional[NodeHandle]:
+    sy = get_syft_client()
+    if sy is None:
+        return sy
+    worker_classes = {NodeType.DOMAIN: sy.Domain, NodeType.NETWORK: sy.Gateway}
+
+    # syft >= 0.8.2
+    if hasattr(sy, "Enclave"):
+        worker_classes[NodeType.ENCLAVE] = sy.Enclave
+    if hasattr(NodeType, "GATEWAY"):
+        worker_classes[NodeType.GATEWAY] = sy.Gateway
+
+    if port:
+        if port == "auto":
+            # dont use default port to prevent port clashes in CI
+            port = find_available_port(host="localhost", port=None, search=True)
+        sig = inspect.signature(sy.serve_node)
+        if "node_type" in sig.parameters.keys():
+            start, stop = sy.serve_node(
+                name=name,
+                host=host,
+                port=port,
+                reset=reset,
+                dev_mode=dev_mode,
+                tail=tail,
+                node_type=node_type_enum,
+            )
+        else:
+            # syft <= 0.8.1
+            start, stop = sy.serve_node(
+                name=name,
+                host=host,
+                port=port,
+                reset=reset,
+                dev_mode=dev_mode,
+                tail=tail,
+            )
+        start()
+        return NodeHandle(
+            node_type=node_type_enum,
+            deployment_type=deployment_type_enum,
+            name=name,
+            port=port,
+            url="http://localhost",
+            shutdown=stop,
+        )
+    else:
+        if node_type_enum in worker_classes:
+            worker_class = worker_classes[node_type_enum]
+            sig = inspect.signature(worker_class.named)
+            if "node_type" in sig.parameters.keys():
+                worker = worker_class.named(
+                    name=name,
+                    processes=processes,
+                    reset=reset,
+                    local_db=local_db,
+                    node_type=node_type_enum,
+                )
+            else:
+                # syft <= 0.8.1
+                worker = worker_class.named(
+                    name=name,
+                    processes=processes,
+                    reset=reset,
+                    local_db=local_db,
+                )
+        else:
+            raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
+        return NodeHandle(
+            node_type=node_type_enum,
+            deployment_type=deployment_type_enum,
+            name=name,
+            python_node=worker,
+        )
+
+
+def deploy_to_k8s(
+    node_type_enum: NodeType, deployment_type_enum: DeploymentType, name: str
+) -> NodeHandle:
+    node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
+    return NodeHandle(
+        node_type=node_type_enum,
+        deployment_type=deployment_type_enum,
+        name=name,
+        port=node_port,
+        url="http://localhost",
+    )
+
+
+def deploy_to_container(
+    node_type_enum: NodeType,
+    deployment_type_enum: DeploymentType,
+    reset: bool,
+    cmd: bool,
+    tail: bool,
+    verbose: bool,
+    tag: str,
+    render: bool,
+    dev_mode: bool,
+    port: Union[int, str],
+    name: str,
+) -> Optional[NodeHandle]:
+    if port == "auto" or port is None:
+        if container_exists(name=name):
+            port = port_from_container(name=name)  # type: ignore
+        else:
+            port = find_available_port(host="localhost", port=DEFAULT_PORT, search=True)
+
+    # Currently by default we launch in dev mode
+    if reset:
+        Orchestra.reset(name, deployment_type_enum)
+    else:
+        if container_exists_with(name=name, port=port):
+            return NodeHandle(
+                node_type=node_type_enum,
+                deployment_type=deployment_type_enum,
+                name=name,
+                port=port,
+                url="http://localhost",
+            )
+
+    # Start a subprocess and capture its output
+    commands = ["hagrid", "launch"]
+
+    name = random_name() if not name else name
+    commands.extend([name, node_type_enum.value])
+
+    commands.append("to")
+    commands.append(f"docker:{port}")
+
+    if dev_mode:
+        commands.append("--dev")
+
+    # by default , we deploy as container stack
+    if deployment_type_enum == DeploymentType.SINGLE_CONTAINER:
+        commands.append("--deployment-type=single_container")
+
+    if cmd:
+        commands.append("--cmd")
+
+    if tail:
+        commands.append("--tail")
+
+    if verbose:
+        commands.append("--verbose")
+
+    if tag:
+        commands.append(f"--tag={tag}")
+
+    if render:
+        commands.append("--render")
+
+    # needed for building containers
+    USER = os.environ.get("USER", getpass.getuser())
+    env = os.environ.copy()
+    env["USER"] = USER
+
+    process = subprocess.Popen(  # nosec
+        commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+    )
+    # Start gevent threads to read and print the output and error streams
+    stdout_thread = gevent.spawn(read_stream, process.stdout)
+    stderr_thread = gevent.spawn(read_stream, process.stderr)
+
+    # Wait for the threads to finish
+    gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
+
+    if not cmd:
+        return NodeHandle(
+            node_type=node_type_enum,
+            deployment_type=deployment_type_enum,
+            name=name,
+            port=port,
+            url="http://localhost",
+        )
     return None
 
 
 class Orchestra:
     @staticmethod
     def launch(
+        # node information and deployment
         name: Optional[str] = None,
         node_type: Optional[str] = None,
+        deploy_to: Optional[str] = None,
+        # worker related inputs
+        port: Optional[Union[int, str]] = None,
+        processes: int = 1,  # temporary work around for jax in subprocess
+        local_db: bool = False,
         dev_mode: bool = False,
         cmd: bool = False,
         reset: bool = False,
         tail: bool = False,
-        port: Optional[Union[int, str]] = None,
         host: Optional[str] = "0.0.0.0",  # nosec
-        processes: int = 1,  # temporary work around for jax in subprocess
-        local_db: bool = False,
         tag: Optional[str] = "latest",
         verbose: bool = False,
         render: bool = False,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
+
+        # syft 0.8.1
+        if node_type == "python":
+            node_type = "domain"
+            if deploy_to is None:
+                deploy_to = "python"
+
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
-        default_port = 8080
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
         if not node_type_enum:
             return None
 
-        if node_type_enum == NodeType.PYTHON:
-            sy = get_syft_client()
-            if port:
-                if port == "auto":
-                    # dont use default port to prevent port clashes in CI
-                    port = find_available_port(host="localhost", port=None, search=True)
-                start, stop = sy.serve_node(  # type: ignore
-                    name=name,
-                    host=host,
-                    port=port,
-                    reset=reset,
-                    dev_mode=dev_mode,
-                    tail=tail,
-                )
-                start()
-                return NodeHandle(
-                    node_type=node_type_enum,
-                    name=name,
-                    port=port,
-                    url="http://localhost",
-                    shutdown=stop,
-                )
-            else:
-                worker = sy.Domain.named(name, processes=processes, reset=reset, local_db=local_db)  # type: ignore
-                return NodeHandle(
-                    node_type=node_type_enum,
-                    name=name,
-                    python_node=worker,
-                )
-
-        if node_type_enum == NodeType.VM:
-            return NodeHandle(
-                node_type=node_type_enum,
-                name=name,
-                port=80,
-                url="http://192.168.56.2",
-            )
-
-        if node_type_enum == NodeType.K8S:
-            node_port = int(os.environ.get("NODE_PORT", f"{default_port}"))
-            return NodeHandle(
-                node_type=node_type_enum,
-                name=name,
-                port=node_port,
-                url="http://localhost",
-            )
-
-        if port == "auto" or port is None:
-            if container_exists(name=name):
-                port = port_from_container(name=name)
-            else:
-                port = find_available_port(
-                    host="localhost", port=default_port, search=True
-                )
-
-        # Currently by default we launch in dev mode
-        if reset:
-            Orchestra.reset(name, node_type)
-        else:
-            if container_exists_with(name=name, port=port):
-                return NodeHandle(
-                    node_type=node_type_enum,
-                    name=name,
-                    port=port,
-                    url="http://localhost",
-                )
-
-        # Start a subprocess and capture its output
-        commands = ["hagrid", "launch"]
-
-        name = random_name() if not name else name
-        commands.extend([name, node_type_enum.value])
-
-        commands.append("to")
-        commands.append(f"docker:{port}")
-
-        if dev_mode:
-            commands.append("--dev")
-
-        if cmd:
-            commands.append("--cmd")
-
-        if tail:
-            commands.append("--tail")
-
-        if verbose:
-            commands.append("--verbose")
-
-        if tag:
-            commands.append(f"--tag={tag}")
-
-        if render:
-            commands.append("--render")
-
-        # needed for building containers
-        USER = os.environ.get("USER", getpass.getuser())
-        env = os.environ.copy()
-        env["USER"] = USER
-
-        process = subprocess.Popen(  # nosec
-            commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+        deployment_type_enum: Optional[DeploymentType] = get_deployment_type(
+            deployment_type=deploy_to
         )
-        # Start gevent threads to read and print the output and error streams
-        stdout_thread = gevent.spawn(read_stream, process.stdout)
-        stderr_thread = gevent.spawn(read_stream, process.stderr)
+        if not deployment_type_enum:
+            return None
 
-        # Wait for the threads to finish
-        gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
-
-        if not cmd:
-            return NodeHandle(
-                node_type=node_type_enum,
-                name=name,
+        if deployment_type_enum == DeploymentType.PYTHON:
+            return deploy_to_python(
+                node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
                 port=port,
-                url="http://localhost",
+                name=name,
+                host=host,
+                reset=reset,
+                tail=tail,
+                dev_mode=dev_mode,
+                processes=processes,
+                local_db=local_db,
             )
-        return None
+
+        elif deployment_type_enum == DeploymentType.K8S:
+            return deploy_to_k8s(
+                node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
+                name=name,
+            )
+
+        elif (
+            deployment_type_enum == DeploymentType.CONTAINER_STACK
+            or deployment_type_enum == DeploymentType.SINGLE_CONTAINER
+        ):
+            return deploy_to_container(
+                node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
+                reset=reset,
+                cmd=cmd,
+                tail=tail,
+                verbose=verbose,
+                tag=tag,
+                render=render,
+                dev_mode=dev_mode,
+                port=port,
+                name=name,
+            )
+        else:
+            print(f"deployment_type: {deployment_type_enum} is not supported")
+            return None
 
     @staticmethod
-    def land(name: str, node_type: Optional[str] = None, reset: bool = False) -> None:
-        node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
-        Orchestra.shutdown(name=name, node_type_enum=node_type_enum)
+    def land(
+        name: str, deployment_type: Union[str, DeploymentType], reset: bool = False
+    ) -> None:
+        deployment_type_enum = DeploymentType(deployment_type)
+        Orchestra.shutdown(name=name, deployment_type_enum=deployment_type_enum)
         if reset:
-            Orchestra.reset(name, node_type_enum=node_type_enum)
+            Orchestra.reset(name, deployment_type_enum=deployment_type_enum)
 
     @staticmethod
-    def shutdown(name: str, node_type_enum: NodeType) -> None:
-        if node_type_enum != NodeType.PYTHON:
+    def shutdown(name: str, deployment_type_enum: DeploymentType) -> None:
+        if deployment_type_enum != DeploymentType.PYTHON:
             snake_name = to_snake_case(name)
 
             land_output = shell(f"hagrid land {snake_name} --force")
@@ -328,13 +499,16 @@ class Orchestra:
                 print(f"❌ Unable to remove container: {snake_name} :{land_output}")
 
     @staticmethod
-    def reset(name: str, node_type_enum: NodeType) -> None:
-        if node_type_enum == NodeType.PYTHON:
+    def reset(name: str, deployment_type_enum: DeploymentType) -> None:
+        if deployment_type_enum == DeploymentType.PYTHON:
             sy = get_syft_client()
-            _ = sy.Domain.named(name, processes=1, reset=True)  # type: ignore
-        else:
+            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+        elif (
+            deployment_type_enum == DeploymentType.CONTAINER_STACK
+            or deployment_type_enum == DeploymentType.SINGLE_CONTAINER
+        ):
             if container_exists(name=name):
-                Orchestra.shutdown(name=name, node_type_enum=node_type_enum)
+                Orchestra.shutdown(name=name, deployment_type_enum=deployment_type_enum)
 
             snake_name = to_snake_case(name)
 
@@ -348,3 +522,7 @@ class Orchestra:
                 print(
                     f"❌ Unable to remove container volume: {snake_name} :{volume_output}"
                 )
+        else:
+            raise NotImplementedError(
+                f"Reset not implemented for the deployment type:{deployment_type_enum}"
+            )

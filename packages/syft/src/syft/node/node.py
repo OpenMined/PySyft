@@ -50,9 +50,10 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
-from ..service.message.message_service import MessageService
+from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
+from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
@@ -167,7 +168,7 @@ class Node(AbstractNode):
         root_password: str = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
-        node_type: NodeType = NodeType.DOMAIN,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: QueueConfig = ZMQQueueConfig,
@@ -206,9 +207,10 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
-                MessageService,
+                NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
             ]
             if services is None
             else services
@@ -240,12 +242,16 @@ class Node(AbstractNode):
         )
 
         self.client_cache = {}
+        if isinstance(node_type, str):
+            node_type = NodeType(node_type)
         self.node_type = node_type
 
         self.post_init()
         self.create_initial_settings()
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
+
+        NodeRegistry.set_node_for(self.id, self)
 
     def init_queue_manager(self, queue_config: QueueConfig):
         MessageHandlers = [APICallMessageHandler]
@@ -264,11 +270,13 @@ class Node(AbstractNode):
     @classmethod
     def named(
         cls,
+        *,  # Trasterisk
         name: str,
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -312,6 +320,7 @@ class Node(AbstractNode):
             processes=processes,
             local_db=local_db,
             sqlite_path=sqlite_path,
+            node_type=node_type,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -437,9 +446,10 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
-                MessageService,
+                NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
             ]
 
             if OBLV:
@@ -509,6 +519,7 @@ class Node(AbstractNode):
             description=description,
             organization=organization,
             on_board=on_board,
+            node_type=self.node_type.value,
             signup_enabled=signup_enabled,
         )
 
@@ -680,6 +691,10 @@ class Node(AbstractNode):
                 self.name = settings_exists[0].name
                 return None
             else:
+                # Currently we allow automatic user registration on enclaves,
+                # as enclaves do not have superusers
+                if self.node_type == NodeType.ENCLAVE:
+                    flags.CAN_REGISTER = True
                 new_settings = NodeSettings(
                     name=self.name,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
@@ -833,3 +848,26 @@ def create_oblv_key_pair(
             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
     except Exception as e:
         print("Unable to create Oblv Keys.", e)
+
+
+class NodeRegistry:
+    __node_registry__: Dict[UID, Node] = {}
+
+    @classmethod
+    def set_node_for(
+        cls,
+        node_uid: Union[UID, str],
+        node: Node,
+    ) -> None:
+        if isinstance(node_uid, str):
+            node_uid = UID.from_string(node_uid)
+
+        cls.__node_registry__[node_uid] = node
+
+    @classmethod
+    def node_for(cls, node_uid: UID) -> Node:
+        return cls.__node_registry__.get(node_uid, None)
+
+    @classmethod
+    def get_all_nodes(cls) -> List[Node]:
+        return list(cls.__node_registry__.values())

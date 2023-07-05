@@ -1,5 +1,6 @@
 # stdlib
 import asyncio
+from enum import Enum
 import logging
 import multiprocessing
 import os
@@ -20,8 +21,12 @@ import uvicorn
 
 # relative
 from ..client.client import API_PATH
+from ..util.constants import DEFAULT_TIMEOUT
 from ..util.util import os_name
 from .domain import Domain
+from .enclave import Enclave
+from .gateway import Gateway
+from .node import NodeType
 from .routes import make_routes
 
 if os_name() == "macOS":
@@ -53,18 +58,42 @@ def make_app(name: str, router: APIRouter) -> FastAPI:
     return app
 
 
-def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
+worker_classes = {
+    NodeType.DOMAIN: Domain,
+    NodeType.GATEWAY: Gateway,
+    NodeType.ENCLAVE: Enclave,
+}
+
+
+def run_uvicorn(
+    name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
+):
     async def _run_uvicorn(
-        name: str, host: str, port: int, reset: bool, dev_mode: bool
+        name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
     ):
+        if node_type not in worker_classes:
+            raise NotImplementedError(f"node_type: {node_type} is not supported")
+        worker_class = worker_classes[node_type]
         if dev_mode:
             print(
                 f"\nWARNING: private key is based on node name: {name} in dev_mode. "
                 "Don't run this in production."
             )
-            worker = Domain.named(name=name, processes=0, local_db=True, reset=reset)
+
+            worker = worker_class.named(
+                name=name,
+                processes=0,
+                reset=reset,
+                local_db=True,
+                node_type=node_type,
+            )
         else:
-            worker = Domain(name=name, processes=0, local_db=True)
+            worker = worker_class(
+                name=name,
+                processes=0,
+                local_db=True,
+                node_type=node_type,
+            )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
 
@@ -93,12 +122,13 @@ def run_uvicorn(name: str, host: str, port: int, reset: bool, dev_mode: bool):
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(_run_uvicorn(name, host, port, reset, dev_mode))
+    loop.run_until_complete(_run_uvicorn(name, node_type, host, port, reset, dev_mode))
     loop.close()
 
 
 def serve_node(
     name: str,
+    node_type: NodeType = NodeType.DOMAIN,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
     reset: bool = False,
@@ -106,7 +136,7 @@ def serve_node(
     tail: bool = False,
 ) -> Tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
-        target=run_uvicorn, args=(name, host, port, reset, dev_mode)
+        target=run_uvicorn, args=(name, node_type, host, port, reset, dev_mode)
     )
 
     def stop():
@@ -131,7 +161,8 @@ def serve_node(
             for i in range(WAIT_TIME_SECONDS):
                 try:
                     req = requests.get(
-                        f"http://{host}:{port}{API_PATH}/metadata", timeout=0.5
+                        f"http://{host}:{port}{API_PATH}/metadata",
+                        timeout=DEFAULT_TIMEOUT,
                     )
                     if req.status_code == 200:
                         print(" Done.")

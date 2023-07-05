@@ -473,8 +473,8 @@ class SyftClient:
             "WARNING: Notifications is currently is in a beta state, so use carefully!"
         )
         print("If possible try using client.requests/client.projects")
-        if self.api is not None and self.api.has_service("messages"):
-            return self.api.services.messages
+        if self.api is not None and self.api.has_service("notifications"):
+            return self.api.services.notifications
         return None
 
     @property
@@ -507,7 +507,11 @@ class SyftClient:
 
         return self.api.services.project.get_all()
 
-    def login(self, email: str, password: str, cache: bool = True) -> Self:
+    def login(
+        self, email: str, password: str, cache: bool = True, register=False, **kwargs
+    ) -> Self:
+        if register:
+            self.register(email=email, password=password, **kwargs)
         user_private_key = self.connection.login(email=email, password=password)
         signing_key = None
         if user_private_key is not None:
