@@ -1,4 +1,5 @@
 export interface SerializableInterface {
-  serialize: (obj: SerializableInterface) => Uint8Array;
-  deserialize: (buffer: ArrayBuffer) => SerializableInterface;
+  serialize: (obj: any) => ArrayBuffer;
+  deserialize: (buffer: ArrayBuffer) => any;
+  fqn: string;
 }
