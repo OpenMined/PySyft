@@ -19,6 +19,7 @@ import requests
 from ..enclave.enclave_client import AzureEnclaveClient
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.network_service import NodePeer
+from ..service.response import SyftException
 from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
@@ -126,7 +127,7 @@ class NetworkRegistry:
             return client.guest()
         except Exception as e:
             error(f"Failed to login with: {network}. {e}")
-            raise e
+            raise SyftException(f"Failed to login with: {network}. {e}")
 
     def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
@@ -272,7 +273,7 @@ class DomainRegistry:
             return peer.guest_client
         except Exception as e:
             error(f"Failed to login to: {peer}. {e}")
-            raise e
+            raise SyftException(f"Failed to login to: {peer}. {e}")
 
     def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
@@ -374,7 +375,7 @@ class EnclaveRegistry:
             return AzureEnclaveClient(domains=[], url=grid_url.base_url)
         except Exception as e:
             error(f"Failed to login with: {enclave}. {e}")
-            raise e
+            raise SyftException(f"Failed to login with: {enclave}. {e}")
 
     def __getitem__(self, key: Union[str, int]) -> AzureEnclaveClient:  # type: ignore
         if isinstance(key, int):
