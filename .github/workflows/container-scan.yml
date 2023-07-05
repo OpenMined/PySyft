@@ -32,20 +32,6 @@ jobs:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-        # Use || true to not fail the pipeline
-      - name: Snyk Code test
-        run: snyk code test --sarif > snyk-code.sarif # || true
-
-        # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
-      - name: Snyk Open Source monitor
-        run: snyk monitor --all-projects
-
-        # Runs Snyk Infrastructure as Code (IaC) analysis and uploads result to Snyk.
-        # Use || true to not fail the pipeline.
-      - name: Snyk IaC test and report
-        run: snyk iac test --report # || true
-
         # Build the docker image for testing
       - name: Build a Docker image
         run: docker build -f packages/grid/backend/backend.dockerfile packages -t backend:${{ github.sha }}
@@ -90,20 +76,6 @@ jobs:
         env:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-        # Use || true to not fail the pipeline
-      - name: Snyk Code test
-        run: snyk code test --sarif > snyk-code.sarif # || true
-
-        # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
-      - name: Snyk Open Source monitor
-        run: snyk monitor --all-projects
-
-        # Runs Snyk Infrastructure as Code (IaC) analysis and uploads result to Snyk.
-        # Use || true to not fail the pipeline.
-      - name: Snyk IaC test and report
-        run: snyk iac test --report # || true
 
         # Build the docker image for testing
       - name: Build a Docker image
@@ -150,20 +122,6 @@ jobs:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-        # Use || true to not fail the pipeline
-      - name: Snyk Code test
-        run: snyk code test --sarif > snyk-code.sarif # || true
-
-        # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
-      - name: Snyk Open Source monitor
-        run: snyk monitor --all-projects
-
-        # Runs Snyk Infrastructure as Code (IaC) analysis and uploads result to Snyk.
-        # Use || true to not fail the pipeline.
-      - name: Snyk IaC test and report
-        run: snyk iac test --report # || true
-
         # Build the docker image for testing
       - name: Build a Docker image
         run: docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }}
@@ -208,20 +166,6 @@ jobs:
         env:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-        # Use || true to not fail the pipeline
-      - name: Snyk Code test
-        run: snyk code test --sarif > snyk-code.sarif # || true
-
-        # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
-      - name: Snyk Open Source monitor
-        run: snyk monitor --all-projects
-
-        # Runs Snyk Infrastructure as Code (IaC) analysis and uploads result to Snyk.
-        # Use || true to not fail the pipeline.
-      - name: Snyk IaC test and report
-        run: snyk iac test --report # || true
 
         # Build the docker image for testing
       - name: Build a Docker image
