@@ -165,7 +165,7 @@ const PRIMITIVES: Record<string, SerializableInterface> = {
           values.set(count, chunkList);
 
           count += 1;
-        }
+        },
       );
       return message.toArrayBuffer();
     },

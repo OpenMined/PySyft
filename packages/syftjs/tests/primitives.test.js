@@ -1,6 +1,6 @@
 import { expect, it, expectTypeOf } from 'vitest';
-import {serialize} from './lib/index.js'
-import {deserialize} from './lib/index.js'
+import { serialize } from './lib/index.js';
+import { deserialize } from './lib/index.js';
 
 it('Testing string serialization', () => {
   const emptyString = '';
@@ -9,12 +9,13 @@ it('Testing string serialization', () => {
   const serializedEmptyString = serialize(emptyString);
   const serializedcomplexStringStructure = serialize(complexStringStructure);
 
-  
   expectTypeOf(serializedEmptyString).toMatchTypeOf(Uint8Array);
   expectTypeOf(serializedcomplexStringStructure).toMatchTypeOf(Uint8Array);
 
   expect(deserialize(serializedEmptyString)).toBe(emptyString);
-  expect(deserialize(serializedcomplexStringStructure)).toBe(complexStringStructure);
+  expect(deserialize(serializedcomplexStringStructure)).toBe(
+    complexStringStructure,
+  );
 });
 
 it('Testing boolean serialization and deserialization', () => {
@@ -29,13 +30,15 @@ it('Testing boolean serialization and deserialization', () => {
 });
 
 it('Testing bytes serialization and deserialization', () => {
-  const serializedBytesSample = serialize(new Uint8Array([16,12,13,14,15]));
+  const serializedBytesSample = serialize(new Uint8Array([16, 12, 13, 14, 15]));
   const serializedEmptySample = serialize(new Uint8Array([]));
 
   expectTypeOf(serializedBytesSample).toMatchTypeOf(Uint8Array);
   expectTypeOf(serializedEmptySample).toMatchTypeOf(Uint8Array);
 
-  expect(deserialize(serializedBytesSample)).toStrictEqual(new Uint8Array([16,12,13,14,15]));
+  expect(deserialize(serializedBytesSample)).toStrictEqual(
+    new Uint8Array([16, 12, 13, 14, 15]),
+  );
   expect(deserialize(serializedEmptySample)).toStrictEqual(new Uint8Array([]));
 });
 
@@ -66,24 +69,32 @@ it('Test Float primitive serialization/deserialization', () => {
 
   const serializedpositiveBigFloat = serialize(positiveBigFloat);
   const serializednegativeBigFloat = serialize(negativeBigFloat);
-  const serializedPositiveMultipleDecimalFloat = serialize(positiveMultipleDecimalFloat);
-  const serializedNegativeMultipleDecimalFloat = serialize(negativeMultipleDecimalFloat);
+  const serializedPositiveMultipleDecimalFloat = serialize(
+    positiveMultipleDecimalFloat,
+  );
+  const serializedNegativeMultipleDecimalFloat = serialize(
+    negativeMultipleDecimalFloat,
+  );
   const serializedzeroFloat = serialize(zeroFloat);
 
   expectTypeOf(serializedpositiveBigFloat).toMatchTypeOf(Uint8Array);
   expectTypeOf(serializednegativeBigFloat).toMatchTypeOf(Uint8Array);
   expectTypeOf(serializedzeroFloat).toMatchTypeOf(Uint8Array);
-  expectTypeOf(serializedPositiveMultipleDecimalFloat).toMatchTypeOf(Uint8Array);
-  expectTypeOf(serializedNegativeMultipleDecimalFloat).toMatchTypeOf(Uint8Array);
+  expectTypeOf(serializedPositiveMultipleDecimalFloat).toMatchTypeOf(
+    Uint8Array,
+  );
+  expectTypeOf(serializedNegativeMultipleDecimalFloat).toMatchTypeOf(
+    Uint8Array,
+  );
 
   expect(deserialize(serializedpositiveBigFloat)).toBe(positiveBigFloat);
   expect(deserialize(serializednegativeBigFloat)).toBe(negativeBigFloat);
   expect(deserialize(serializedzeroFloat)).toBe(zeroFloat);
   expect(deserialize(serializedPositiveMultipleDecimalFloat)).toBe(
-    positiveMultipleDecimalFloat
+    positiveMultipleDecimalFloat,
   );
   expect(deserialize(serializedNegativeMultipleDecimalFloat)).toBe(
-    negativeMultipleDecimalFloat
+    negativeMultipleDecimalFloat,
   );
 });
 
@@ -116,7 +127,13 @@ it('Test List/Array primitive serialization/deserialization', () => {
 it('Test JS Map/Python Dictionary primitive serialization/deserialization', () => {
   const emptyMap = new Map();
   const composedMap = new Map(
-    Object.entries({ string: 'Test', bool: true, float: 3.5, int: 42, array: [1, 2, 3, 4] })
+    Object.entries({
+      string: 'Test',
+      bool: true,
+      float: 3.5,
+      int: 42,
+      array: [1, 2, 3, 4],
+    }),
   );
 
   const serializedEmptyMap = serialize(emptyMap);
@@ -126,9 +143,9 @@ it('Test JS Map/Python Dictionary primitive serialization/deserialization', () =
   expectTypeOf(serializedComposedMap).toMatchTypeOf(Uint8Array);
 
   expect(deserialize(serializedEmptyMap)).toStrictEqual(
-    Object.fromEntries(emptyMap.entries())
+    Object.fromEntries(emptyMap.entries()),
   );
   expect(deserialize(serializedComposedMap)).toStrictEqual(
-    Object.fromEntries(composedMap.entries())
+    Object.fromEntries(composedMap.entries()),
   );
 });

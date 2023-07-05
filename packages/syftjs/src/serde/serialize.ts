@@ -60,7 +60,7 @@ export function serializeChunks(chunks: ArrayBuffer[]) {
 function serializePrimitive(
   obj: SerializableInterface,
   rs: RecursiveSerde,
-  serializer: (obj: SerializableInterface) => ArrayBuffer
+  serializer: (obj: SerializableInterface) => ArrayBuffer,
 ) {
   // Serialize the object using the specified serializer function
   const serializedObj = serializer(obj);

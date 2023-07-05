@@ -18,7 +18,7 @@ export declare class RecursiveSerde extends __S {
   initFieldsName(length: number): capnp.List<string>;
   setFieldsName(value: capnp.List<string>): void;
   adoptFieldsData(
-    value: capnp.Orphan<capnp.List<capnp.List<capnp.Data>>>
+    value: capnp.Orphan<capnp.List<capnp.List<capnp.Data>>>,
   ): void;
   disownFieldsData(): capnp.Orphan<capnp.List<capnp.List<capnp.Data>>>;
   getFieldsData(): capnp.List<capnp.List<capnp.Data>>;
