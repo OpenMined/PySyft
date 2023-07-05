@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import Dict
-from typing import Optional
 
 # third party
 from result import Err
@@ -50,7 +49,6 @@ class DictObject(SyftObject):
 @serializable()
 class EnclaveService(AbstractService):
     store: DocumentStore
-    service_name: Optional[str]
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
@@ -100,6 +98,8 @@ class EnclaveService(AbstractService):
         if not action_service.exists(context=context, obj_id=user_code_id):
             dict_object = DictObject(id=user_code_id)
             dict_object.base_dict[str(context.credentials)] = inputs
+            # TODO: Instead of using the action store, modify to
+            # use the action service directly to store objects
             action_service.store.set(
                 uid=user_code_id,
                 credentials=context.node.verify_key,
