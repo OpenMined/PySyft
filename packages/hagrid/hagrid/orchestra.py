@@ -126,7 +126,6 @@ def get_deployment_type(deployment_type: Optional[str]) -> Optional[DeploymentTy
 # Can also be specified by the environment variable
 # ORCHESTRA_DEPLOYMENT_TYPE
 class DeploymentType(Enum):
-    PYTHON_NO_NETWORK = "python_no_network"
     PYTHON = "python"
     SINGLE_CONTAINER = "single_container"
     CONTAINER_STACK = "container_stack"
@@ -154,27 +153,25 @@ class NodeHandle:
 
     @property
     def client(self) -> Any:
-        if self.node_type == NodeType.ENCLAVE:
-            # syft absolute
-            from syft.enclave.enclave_client import AzureEnclaveClient
+        # TODO: Refactor this on client seggregation PR
+        # syft absolute
+        from syft.enclave.enclave_client import AzureEnclaveClient
 
-            if self.deployment_type == DeploymentType.PYTHON_NO_NETWORK:
-                # syft absolute
-                return AzureEnclaveClient(syft_enclave_client=self.python_node.guest_client)  # type: ignore
-            else:
-                sy = get_syft_client()
-                enclave_client = sy.login(url=self.url, port=self.port)  # type: ignore
+        if self.port:
+            sy = get_syft_client()
+            guest_client = sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
+            if self.node_type == NodeType.ENCLAVE:
                 return AzureEnclaveClient(
-                    url=self.url, port=self.port, syft_enclave_client=enclave_client
+                    url=self.url, port=self.port, syft_enclave_client=guest_client
                 )
-        else:
-            if self.port:
-                sy = get_syft_client()
-                return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
-            elif self.deployment_type == DeploymentType.PYTHON_NO_NETWORK:
-                return self.python_node.get_guest_client(verbose=False)  # type: ignore
             else:
-                raise ValueError("Unknown type")
+                return guest_client
+        elif self.deployment_type == DeploymentType.PYTHON:
+            guest_client = self.python_node.get_guest_client(verbose=False)  # type: ignore
+            if self.node_type == NodeType.ENCLAVE:
+                return AzureEnclaveClient(syft_enclave_client=guest_client)
+            else:
+                return guest_client
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
@@ -232,38 +229,7 @@ def deploy_to_python(
     if hasattr(NodeType, "GATEWAY"):
         worker_classes[NodeType.GATEWAY] = sy.Gateway
 
-    if not port:
-        deployment_type_enum = DeploymentType.PYTHON_NO_NETWORK
-
-    if deployment_type_enum == DeploymentType.PYTHON_NO_NETWORK:
-        if node_type_enum in worker_classes:
-            worker_class = worker_classes[node_type_enum]
-            sig = inspect.signature(worker_class.named)
-            if "node_type" in sig.parameters.keys():
-                worker = worker_class.named(
-                    name=name,
-                    processes=processes,
-                    reset=reset,
-                    local_db=local_db,
-                    node_type=node_type_enum,
-                )
-            else:
-                # syft <= 0.8.1
-                worker = worker_class.named(
-                    name=name,
-                    processes=processes,
-                    reset=reset,
-                    local_db=local_db,
-                )
-            return NodeHandle(
-                node_type=node_type_enum,
-                deployment_type=deployment_type_enum,
-                name=name,
-                python_node=worker,
-            )
-        else:
-            raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
-    else:
+    if port:
         if port == "auto":
             # dont use default port to prevent port clashes in CI
             port = find_available_port(host="localhost", port=None, search=True)
@@ -296,6 +262,34 @@ def deploy_to_python(
             port=port,
             url="http://localhost",
             shutdown=stop,
+        )
+    else:
+        if node_type_enum in worker_classes:
+            worker_class = worker_classes[node_type_enum]
+            sig = inspect.signature(worker_class.named)
+            if "node_type" in sig.parameters.keys():
+                worker = worker_class.named(
+                    name=name,
+                    processes=processes,
+                    reset=reset,
+                    local_db=local_db,
+                    node_type=node_type_enum,
+                )
+            else:
+                # syft <= 0.8.1
+                worker = worker_class.named(
+                    name=name,
+                    processes=processes,
+                    reset=reset,
+                    local_db=local_db,
+                )
+        else:
+            raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
+        return NodeHandle(
+            node_type=node_type_enum,
+            deployment_type=deployment_type_enum,
+            name=name,
+            python_node=worker,
         )
 
 
@@ -442,10 +436,7 @@ class Orchestra:
         if not deployment_type_enum:
             return None
 
-        if deployment_type_enum in [
-            DeploymentType.PYTHON,
-            DeploymentType.PYTHON_NO_NETWORK,
-        ]:
+        if deployment_type_enum == DeploymentType.PYTHON:
             return deploy_to_python(
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,

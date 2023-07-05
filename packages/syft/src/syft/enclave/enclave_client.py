@@ -163,7 +163,7 @@ class AzureEnclaveClient(EnclaveClient):
         syft_enclave_client = None
 
         # python connection
-
+        # TODO: remove this , on change with client seggregation PR.
         if enclave_metadata.worker_id is not None:
             # relative
             from ..node.node import NodeRegistry
@@ -171,14 +171,9 @@ class AzureEnclaveClient(EnclaveClient):
             worker = NodeRegistry.node_for(enclave_metadata.worker_id)
             syft_enclave_client = worker.guest_client
         else:
-            # syft absolute
-            import syft as sy
-
-            syft_enclave_client = sy.login(
+            syft_enclave_client = login(
                 url=enclave_metadata.url, port=enclave_metadata.port
             )  # type: ignore
-        # import ipdb
-        # ipdb.set_trace()
 
         azure_enclave_client = AzureEnclaveClient(
             url=enclave_metadata.url,
