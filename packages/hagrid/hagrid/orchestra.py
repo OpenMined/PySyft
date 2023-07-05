@@ -25,8 +25,8 @@ from .util import shell
 try:
     # syft absolute
     from syft.abstract_node import NodeType
-except Exception:
-    print("Please install syft with `pip install syft`")
+except Exception:  # nosec
+    # print("Please install syft with `pip install syft`")
     pass
 
 DEFAULT_PORT = 8080
@@ -54,8 +54,8 @@ def get_syft_client() -> Optional[Any]:
         import syft as sy
 
         return sy
-    except Exception:
-        print("Please install syft with `pip install syft`")
+    except Exception:  # nosec
+        # print("Please install syft with `pip install syft`")
         pass
     return None
 
@@ -153,18 +153,32 @@ class NodeHandle:
 
     @property
     def client(self) -> Any:
+        # TODO: Refactor this on client seggregation PR
+        # syft absolute
+        from syft.enclave.enclave_client import AzureEnclaveClient
+
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
+            guest_client = sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
+            if self.node_type == NodeType.ENCLAVE:
+                return AzureEnclaveClient(
+                    url=self.url, port=self.port, syft_enclave_client=guest_client
+                )
+            else:
+                return guest_client
         elif self.deployment_type == DeploymentType.PYTHON:
-            return self.python_node.get_guest_client(verbose=False)  # type: ignore
+            guest_client = self.python_node.get_guest_client(verbose=False)  # type: ignore
+            if self.node_type == NodeType.ENCLAVE:
+                return AzureEnclaveClient(syft_enclave_client=guest_client)
+            else:
+                return guest_client
 
     def login(
-        self, email: Optional[str] = None, password: Optional[str] = None
+        self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
         client = self.client
         if email and password:
-            return client.login(email=email, password=password)
+            return client.login(email=email, password=password, **kwargs)
         return None
 
     def register(

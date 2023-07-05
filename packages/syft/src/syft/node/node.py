@@ -50,6 +50,7 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
@@ -209,6 +210,7 @@ class Node(AbstractNode):
                 NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
             ]
             if services is None
             else services
@@ -248,6 +250,8 @@ class Node(AbstractNode):
         self.create_initial_settings()
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
+
+        NodeRegistry.set_node_for(self.id, self)
 
     def init_queue_manager(self, queue_config: QueueConfig):
         MessageHandlers = [APICallMessageHandler]
@@ -445,6 +449,7 @@ class Node(AbstractNode):
                 NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
             ]
 
             if OBLV:
@@ -686,6 +691,10 @@ class Node(AbstractNode):
                 self.name = settings_exists[0].name
                 return None
             else:
+                # Currently we allow automatic user registration on enclaves,
+                # as enclaves do not have superusers
+                if self.node_type == NodeType.ENCLAVE:
+                    flags.CAN_REGISTER = True
                 new_settings = NodeSettings(
                     name=self.name,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
@@ -839,3 +848,26 @@ def create_oblv_key_pair(
             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
     except Exception as e:
         print("Unable to create Oblv Keys.", e)
+
+
+class NodeRegistry:
+    __node_registry__: Dict[UID, Node] = {}
+
+    @classmethod
+    def set_node_for(
+        cls,
+        node_uid: Union[UID, str],
+        node: Node,
+    ) -> None:
+        if isinstance(node_uid, str):
+            node_uid = UID.from_string(node_uid)
+
+        cls.__node_registry__[node_uid] = node
+
+    @classmethod
+    def node_for(cls, node_uid: UID) -> Node:
+        return cls.__node_registry__.get(node_uid, None)
+
+    @classmethod
+    def get_all_nodes(cls) -> List[Node]:
+        return list(cls.__node_registry__.values())
