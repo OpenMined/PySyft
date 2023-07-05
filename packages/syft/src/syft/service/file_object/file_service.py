@@ -47,9 +47,11 @@ class FileObjectService(AbstractService):
     def read(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftResource, SyftError]:
-        file_object = self.stash.get_by_uid(context.credentials, uid=uid)
-        with context.node.file_client as conn:
-            return conn.read(file_object.location)
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
+        if result.is_ok():
+            with context.node.file_client as conn:
+                return conn.read(result.ok().location)
+        return SyftError(message=result.err())
 
 
 TYPE_TO_SERVICE[FileObject] = FileObject
