@@ -6,10 +6,13 @@ from typing import Type
 
 # third party
 from pydantic import BaseModel
+from pydantic import PrivateAttr
 
 # relative
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serializable import serializable
+from ..service.file_object.file_object import CreateFileObject
+from ..types.base import SyftBaseModel
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -54,6 +57,24 @@ class SyftURLResource(SyftObject):
         pass
 
 
+@serializable
+class SyftWriteResource(SyftObject):
+    __canonical_name__ = "SyftWriteResource"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def write(self) -> None:
+        pass
+
+
+@serializable
+class OnDiskSyftWriteResource(SyftWriteResource):
+    __canonical_name__ = "OnDiskSyftWriteResource"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def write(self) -> None:
+        pass
+
+
 class FileClientConfig(BaseModel):
     pass
 
@@ -70,8 +91,31 @@ class FileClientConnection:
     def read(self, fp: SecureFilePathLocation) -> SyftResource:
         raise NotImplementedError
 
-    def write(fp: SecureFilePathLocation, data: bytes) -> None:
+    def write(obj: CreateFileObject) -> SyftWriteResource:
         raise NotImplementedError
+
+
+# SyftObject write ->  syft server -> syftresourcewrite (write)
+
+# def write(syftobject):
+#     WriteSyftResource <- api.service.file.save(CreateFileObject)
+#     WriteSyftResource.write(...)
+
+# class OnDiskWriteSyftResource:
+#     file_object_id: UID
+#     def write(obj: SyftObject):
+#         api.service.file.upload(obj, file_object)
+
+# )
+# SyftResource -> SyftServer -> data or link
+
+# syftclient - SyftResource.read() return the data
+
+# syftclient -> CreateFileObject -> SyftServer -> WriteSyftResource
+# syftclient -> WriteSyftResource.write(data)
+
+
+# WriteSyftResource.write(data)
 
 
 class OnDiskFileClientConnection(FileClientConnection):
@@ -85,11 +129,11 @@ class OnDiskFileClientConnection(FileClientConnection):
             syft_object=(self._base_directory / fp.path).read_bytes()
         )
 
-    def write(self, fp: SecureFilePathLocation, data: bytes) -> None:
-        (self._base_directory / fp.path).write_bytes(data)
+    def write(obj: CreateFileObject) -> SyftWriteResource:
+        return OnDiskSyftWriteResource()
 
 
-class FileClient(BaseModel):
+class FileClient(SyftBaseModel):
     config: FileClientConfig
 
     def __enter__(self) -> FileClientConnection:
@@ -101,14 +145,14 @@ class FileClient(BaseModel):
 
 class OnDiskFileClient(FileClient):
     config: OnDiskFileClientConfig
-    connection: OnDiskFileClientConnection
+    _connection: OnDiskFileClientConnection = PrivateAttr()
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        self.connection = OnDiskFileClientConnection(self.config.base_directory)
+        self._connection = OnDiskFileClientConnection(self.config.base_directory)
 
     def __enter__(self) -> FileClientConnection:
-        return self.connection
+        return self._connection
 
     def __exit__(self) -> None:
         pass
@@ -124,7 +168,7 @@ class SeaweedFSClient(FileClient):
         pass
 
 
-class FileStoreConfig(BaseModel):
+class FileStoreConfig(SyftBaseModel):
     file_client: Type[FileClient]
     file_client_config: FileClientConfig
 

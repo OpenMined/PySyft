@@ -35,7 +35,6 @@ from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
-from ..file_object.file_object import FileObject
 from ..response import SyftException
 from .action_data_empty import ActionDataEmpty
 from .action_permissions import ActionPermission
@@ -420,7 +419,8 @@ class ActionObject(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__: List[str] = []
-    syft_action_proxy_reference: Optional[LinkedObject] = None
+    syft_action_data: Optional[Any] = None
+    # syft_action_proxy_reference: Optional[LinkedObject] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
 
     # Help with calculating history hash for code verification
@@ -437,27 +437,27 @@ class ActionObject(SyftObject):
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     # syft_dont_wrap_attrs = ["shape"]
 
-    @property
-    def syft_action_proxy(self) -> Optional[FileObject]:
-        return (
-            self.syft_action_proxy_reference.resolve
-            if self.syft_action_proxy_reference is not None
-            else None
-        )
+    # @property
+    # def syft_action_proxy(self) -> Optional[FileObject]:
+    #     return (
+    #         self.syft_action_proxy_reference.resolve
+    #         if self.syft_action_proxy_reference is not None
+    #         else None
+    #     )
 
-    @property
-    def syft_action_data(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
+    # @property
+    # def syft_action_data(self) -> Any:
+    #     # relative
+    #     from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        syft_object_resource = api.services.file.read(
-            uid=self.syft_action_proxy_reference.id
-        )
-        return syft_object_resource.read()
+    #     api = APIRegistry.api_for(
+    #         node_uid=self.node_uid,
+    #         user_verify_key=self.syft_client_verify_key,
+    #     )
+    #     syft_object_resource = api.services.file.read(
+    #         uid=self.syft_action_proxy_reference.id
+    #     )
+    #     return syft_object_resource.read()
 
     @property
     def is_pointer(self) -> bool:

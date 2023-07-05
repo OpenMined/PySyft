@@ -51,6 +51,7 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
+from ..service.file_object.file_service import FileObjectService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
@@ -214,6 +215,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                FileObjectService,
             ]
             if services is None
             else services
@@ -258,7 +260,7 @@ class Node(AbstractNode):
 
     def init_file_store(self, config: Optional[FileStoreConfig] = None) -> None:
         config_ = OnDiskFileStoreConfig() if config is None else config
-        self.file_client = config_.file_client(config_.file_client_config)
+        self.file_client = config_.file_client(config=config_.file_client_config)
 
     def init_queue_manager(self, queue_config: QueueConfig) -> None:
         MessageHandlers = [APICallMessageHandler]
@@ -457,6 +459,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                FileObjectService,
             ]
 
             if OBLV:
