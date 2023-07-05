@@ -25,9 +25,8 @@ from ...types.grid_url import GridURL
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...util.constants import DEFAULT_TIMEOUT
 from ...util.util import verify_tls
-
-DEFAULT_TIMEOUT = 5  # in seconds
 
 
 @serializable()

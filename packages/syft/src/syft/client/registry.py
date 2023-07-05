@@ -20,6 +20,7 @@ from ..enclave.enclave_client import AzureEnclaveClient
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.network_service import NodePeer
 from ..types.grid_url import GridURL
+from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
 
@@ -52,7 +53,7 @@ class NetworkRegistry:
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)  # nosec
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
                 online = "This is a PyGrid Network node." in res.text
             except Exception:
                 online = False
@@ -61,7 +62,7 @@ class NetworkRegistry:
             if not online:
                 try:
                     ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=0.5)  # nosec
+                    res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
                     online = res.status_code == 200
                 except Exception:
                     online = False
@@ -74,7 +75,9 @@ class NetworkRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=0.5)  # nosec
+                        res = requests.get(
+                            version_url, timeout=DEFAULT_TIMEOUT
+                        )  # nosec
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
                         else:
@@ -156,7 +159,7 @@ class DomainRegistry:
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)
                 online = "This is a PyGrid Network node." in res.text
             except Exception:
                 online = False
@@ -165,7 +168,7 @@ class DomainRegistry:
             if not online:
                 try:
                     ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=0.5)
+                    res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)
                     online = res.status_code == 200
                 except Exception:
                     online = False
@@ -178,7 +181,7 @@ class DomainRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=0.5)
+                        res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
                         else:
@@ -309,7 +312,7 @@ class EnclaveRegistry:
         def check_enclave(enclave: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + enclave["host_or_ip"] + ":" + str(enclave["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)  # nosec
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
                 online = "OpenMined Enclave Node Running" in res.text
             except Exception:
                 online = False
@@ -322,7 +325,9 @@ class EnclaveRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=0.5)  # nosec
+                        res = requests.get(
+                            version_url, timeout=DEFAULT_TIMEOUT
+                        )  # nosec
                         if res.status_code == 200:
                             enclave["version"] = res.json()["syft_version"]
                         else:
