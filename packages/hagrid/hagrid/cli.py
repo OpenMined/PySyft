@@ -1330,7 +1330,7 @@ def create_launch_cmd(
             #     template = "dev"
             parsed_kwargs["template"] = template
 
-    if parsed_kwargs["template"] and host is not None:
+    if host in ["docker"] and parsed_kwargs["template"] and host is not None:
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(
             host_type=host,

@@ -19,7 +19,9 @@ import requests
 from ..enclave.enclave_client import AzureEnclaveClient
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.network_service import NodePeer
+from ..service.response import SyftException
 from ..types.grid_url import GridURL
+from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
 
@@ -52,7 +54,7 @@ class NetworkRegistry:
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)  # nosec
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
                 online = "This is a PyGrid Network node." in res.text
             except Exception:
                 online = False
@@ -61,7 +63,7 @@ class NetworkRegistry:
             if not online:
                 try:
                     ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=0.5)  # nosec
+                    res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
                     online = res.status_code == 200
                 except Exception:
                     online = False
@@ -74,7 +76,9 @@ class NetworkRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=0.5)  # nosec
+                        res = requests.get(
+                            version_url, timeout=DEFAULT_TIMEOUT
+                        )  # nosec
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
                         else:
@@ -123,7 +127,7 @@ class NetworkRegistry:
             return client.guest()
         except Exception as e:
             error(f"Failed to login with: {network}. {e}")
-            raise e
+            raise SyftException(f"Failed to login with: {network}. {e}")
 
     def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
@@ -156,7 +160,7 @@ class DomainRegistry:
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)
                 online = "This is a PyGrid Network node." in res.text
             except Exception:
                 online = False
@@ -165,7 +169,7 @@ class DomainRegistry:
             if not online:
                 try:
                     ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=0.5)
+                    res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)
                     online = res.status_code == 200
                 except Exception:
                     online = False
@@ -178,7 +182,7 @@ class DomainRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=0.5)
+                        res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
                         else:
@@ -269,7 +273,7 @@ class DomainRegistry:
             return peer.guest_client
         except Exception as e:
             error(f"Failed to login to: {peer}. {e}")
-            raise e
+            raise SyftException(f"Failed to login to: {peer}. {e}")
 
     def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
@@ -309,7 +313,7 @@ class EnclaveRegistry:
         def check_enclave(enclave: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + enclave["host_or_ip"] + ":" + str(enclave["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)  # nosec
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
                 online = "OpenMined Enclave Node Running" in res.text
             except Exception:
                 online = False
@@ -322,7 +326,9 @@ class EnclaveRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=0.5)  # nosec
+                        res = requests.get(
+                            version_url, timeout=DEFAULT_TIMEOUT
+                        )  # nosec
                         if res.status_code == 200:
                             enclave["version"] = res.json()["syft_version"]
                         else:
@@ -369,7 +375,7 @@ class EnclaveRegistry:
             return AzureEnclaveClient(url=grid_url.base_url, port=port)
         except Exception as e:
             error(f"Failed to login with: {enclave}. {e}")
-            raise e
+            raise SyftException(f"Failed to login with: {enclave}. {e}")
 
     def __getitem__(self, key: Union[str, int]) -> AzureEnclaveClient:  # type: ignore
         if isinstance(key, int):

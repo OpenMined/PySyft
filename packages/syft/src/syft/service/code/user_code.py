@@ -18,9 +18,7 @@ from typing import Type
 from typing import Union
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
@@ -153,7 +151,7 @@ class UserCodeStatusContext(SyftHashableObject):
 
     def mutate(
         self, value: UserCodeStatus, node_name: str, node_id, verify_key: SyftVerifyKey
-    ) -> Result[Ok, Err]:
+    ) -> Union[SyftError, Self]:
         node_view = NodeView(
             node_name=node_name, node_id=node_id, verify_key=verify_key
         )
@@ -161,10 +159,10 @@ class UserCodeStatusContext(SyftHashableObject):
         if node_view in base_dict:
             base_dict[node_view] = value
             self.base_dict = base_dict
-            return Ok(self)
+            return self
         else:
-            return Err(
-                "Cannot Modify Status as the Domain's data is not included in the request"
+            return SyftError(
+                message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
 

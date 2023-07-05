@@ -1,45 +1,21 @@
 # stdlib
-from typing import Any
 from typing import Dict
-from typing import Optional
-
-# third party
-from result import Err
-from result import Ok
-from result import Result
+from typing import Union
 
 # relative
 from ...serde.serializable import serializable
+from ...service.response import SyftError
+from ...service.response import SyftSuccess
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ..action.action_object import ActionObject
 from ..code.user_code_service import UserCode
 from ..code.user_code_service import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..service import AbstractService
-from ..service import SyftError
 from ..service import service_method
-
-
-# TODO: 🟡 Duplication of PyPrimitive Dict
-# This is emulated since the action store curently accepts  only SyftObject types
-@serializable()
-class DictObject(SyftObject):
-    # version
-    __canonical_name__ = "Dict"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    base_dict: Dict[Any, Any] = {}
-
-    # serde / storage rules
-    __attr_searchable__ = []
-    __attr_unique__ = ["id"]
-
-    def __repr__(self) -> str:
-        return self.base_dict.__repr__()
 
 
 # TODO 🟣 Created a generic Enclave Service
@@ -47,7 +23,6 @@ class DictObject(SyftObject):
 @serializable()
 class EnclaveService(AbstractService):
     store: DocumentStore
-    service_name: Optional[str]
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
@@ -64,32 +39,31 @@ class EnclaveService(AbstractService):
         inputs: Dict,
         node_name: str,
         node_id: UID,
-    ) -> Result[Ok, Err]:
+    ) -> Union[SyftSuccess, SyftError]:
         if not context.node or not context.node.signing_key:
-            return Err(f"{type(context)} has no node")
+            return SyftError(message=f"{type(context)} has no node")
+
+        root_context = AuthedServiceContext(
+            credentials=context.node.verify_key, node=context.node
+        )
 
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
-        user_code = user_code_service.stash.get_by_uid(
-            context.node.signing_key.verify_key, uid=user_code_id
-        )
-        if user_code.is_err():
-            return SyftError(
-                message=f"Unable to find {user_code_id} in {type(user_code_service)}"
-            )
-        user_code = user_code.ok()
+        user_code = user_code_service.get_by_uid(context=root_context, uid=user_code_id)
+        if isinstance(user_code, SyftError):
+            return user_code
 
-        res = user_code.status.mutate(
+        status_update = user_code.status.mutate(
             value=UserCodeStatus.EXECUTE,
             node_name=node_name,
             node_id=node_id,
             verify_key=context.credentials,
         )
-        if res.is_err():
-            return res
-        user_code.status = res.ok()
+        if isinstance(status_update, SyftError):
+            return status_update
 
-        root_context = AuthedServiceContext(credentials=context.node.verify_key)
+        user_code.status = status_update
+
         user_code_update = user_code_service.update_code_state(
             context=root_context, code_item=user_code
         )
@@ -97,8 +71,11 @@ class EnclaveService(AbstractService):
             return user_code_update
 
         if not action_service.exists(context=context, obj_id=user_code_id):
-            dict_object = DictObject(id=user_code_id)
-            dict_object.base_dict[str(context.credentials)] = inputs
+            dict_object = ActionObject.from_obj({})
+            dict_object.id = user_code_id
+            dict_object[str(context.credentials)] = inputs
+            # TODO: Instead of using the action store, modify to
+            # use the action service directly to store objects
             action_service.store.set(
                 uid=user_code_id,
                 credentials=context.node.verify_key,
@@ -112,16 +89,18 @@ class EnclaveService(AbstractService):
             )
             if res.is_ok():
                 dict_object = res.ok()
-                dict_object.base_dict[str(context.credentials)] = inputs
+                dict_object[str(context.credentials)] = inputs
                 action_service.store.set(
                     uid=user_code_id,
                     credentials=context.node.verify_key,
                     syft_object=dict_object,
                 )
             else:
-                return res
+                return SyftError(
+                    message=f"Error while fetching the object on Enclave: {res.err()}"
+                )
 
-        return Ok(Ok(True))
+        return SyftSuccess(message="Enclave Code Status Updated Successfully")
 
 
 def get_oblv_service():
@@ -162,6 +141,19 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
             worker_name=context.node.name,
         )
         send_method = api.services.oblv.send_user_code_inputs_to_enclave
+        # send data of the current node to enclave
+        # user_node_view = NodeView(
+        #     node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        # )
+        # inputs = user_code.input_policy.inputs[user_node_view]
+        # action_service = context.node.get_service("actionservice")
+        # for var_name, uid in inputs.items():
+        #     action_object = action_service.store.get(
+        #         uid=uid, credentials=context.node.signing_key.verify_key
+        #     )
+        #     if action_object.is_err():
+        #         return SyftError(message=action_object.err())
+        #     inputs[var_name] = action_object.ok()
 
     elif isinstance(user_code.enclave_metadata, AzureEnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
@@ -176,13 +168,11 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
             azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave
         )
     else:
-        return Ok()
+        return SyftSuccess(message="Current Request does not require Enclave Transfer")
 
     inputs = user_code.input_policy._inputs_for_context(context)
-    if inputs.is_err():
+    if isinstance(inputs, SyftError):
         return inputs
-    else:
-        inputs = inputs.ok()
 
     res = send_method(
         user_code_id=user_code.id,
@@ -191,3 +181,22 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
         node_id=context.node.id,
     )
     return res
+    #     inputs = user_code.input_policy.inputs[user_node_view]
+    #     action_service = context.node.get_service("actionservice")
+    #     for var_name, uid in inputs.items():
+    #         action_object = action_service.store.get(
+    #             uid=uid, credentials=context.node.signing_key.verify_key
+    #         )
+    #         if action_object.is_err():
+    #             return SyftError(message=action_object.err())
+    #         inputs[var_name] = action_object.ok()
+
+    #     res = (
+    #         azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave(
+    #             user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
+    #         )
+    #     )
+
+    #     return res
+    # else:
+    #     return SyftSuccess(message="Current Request does not require Enclave Transfer")

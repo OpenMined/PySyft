@@ -197,12 +197,12 @@ class InputPolicy(Policy):
         action_service = context.node.get_service("actionservice")
         for var_name, uid in inputs.items():
             action_object = action_service.store.get(
-                uid=uid, credentials=context.node.signing_key.verify_key
+                uid=uid, credentials=user_node_view.verify_key
             )
             if action_object.is_err():
-                return action_object
+                return SyftError(message=action_object.err())
             inputs[var_name] = action_object.ok()
-        return Ok(inputs)
+        return inputs
 
 
 def retrieve_from_db(
@@ -228,14 +228,14 @@ def retrieve_from_db(
                 context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if kwarg_value.is_err():
-                return kwarg_value
+                return SyftError(message=kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type.value == NodeType.ENCLAVE.value:
         dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
-            return dict_object
-        for value in dict_object.ok().base_dict.values():
+            return SyftError(message=dict_object.err())
+        for value in dict_object.ok().syft_action_data.values():
             code_inputs.update(value)
 
     else:
