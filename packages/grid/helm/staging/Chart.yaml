@@ -1,0 +1,12 @@
+apiVersion: v2
+name: syft
+description: Perform numpy-like analysis on data that remains in someone elses server
+type: application
+version: "0.8.2-beta.2"
+appVersion: "0.8.2-beta.2"
+icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+
+dependencies:
+  - name: component-chart
+    version: "0.8.6"
+    repository: "https://charts.devspace.sh"
