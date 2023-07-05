@@ -141,19 +141,6 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
             worker_name=context.node.name,
         )
         send_method = api.services.oblv.send_user_code_inputs_to_enclave
-        # send data of the current node to enclave
-        # user_node_view = NodeView(
-        #     node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-        # )
-        # inputs = user_code.input_policy.inputs[user_node_view]
-        # action_service = context.node.get_service("actionservice")
-        # for var_name, uid in inputs.items():
-        #     action_object = action_service.store.get(
-        #         uid=uid, credentials=context.node.signing_key.verify_key
-        #     )
-        #     if action_object.is_err():
-        #         return SyftError(message=action_object.err())
-        #     inputs[var_name] = action_object.ok()
 
     elif isinstance(user_code.enclave_metadata, AzureEnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
@@ -163,7 +150,6 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
             signing_key=context.node.signing_key,
         )
 
-        # send data of the current node to enclave
         send_method = (
             azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave
         )
@@ -174,6 +160,7 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     if isinstance(inputs, SyftError):
         return inputs
 
+    # send data of the current node to enclave
     res = send_method(
         user_code_id=user_code.id,
         inputs=inputs,
@@ -181,22 +168,3 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
         node_id=context.node.id,
     )
     return res
-    #     inputs = user_code.input_policy.inputs[user_node_view]
-    #     action_service = context.node.get_service("actionservice")
-    #     for var_name, uid in inputs.items():
-    #         action_object = action_service.store.get(
-    #             uid=uid, credentials=context.node.signing_key.verify_key
-    #         )
-    #         if action_object.is_err():
-    #             return SyftError(message=action_object.err())
-    #         inputs[var_name] = action_object.ok()
-
-    #     res = (
-    #         azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave(
-    #             user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
-    #         )
-    #     )
-
-    #     return res
-    # else:
-    #     return SyftSuccess(message="Current Request does not require Enclave Transfer")
