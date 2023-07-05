@@ -37,6 +37,7 @@ jobs:
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
@@ -110,6 +111,7 @@ jobs:
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
@@ -177,6 +179,7 @@ jobs:
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
@@ -205,7 +208,13 @@ jobs:
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Snyk auth
-        run: snyk config set api=$SNYK_TOKEN
+        run: snyk config set api=a624ac7e-0abf-474d-91fa-45a280521642
+        env:
+          # This is where you will need to introduce the Snyk API token created with your Snyk account
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Snyk auth
+        run: echo $SNYK_TOKEN
         env:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -244,6 +253,7 @@ jobs:
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
