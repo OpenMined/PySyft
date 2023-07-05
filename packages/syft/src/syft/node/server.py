@@ -128,7 +128,7 @@ def run_uvicorn(
 
 def serve_node(
     name: str,
-    node_type: Enum,
+    node_type: NodeType = NodeType.DOMAIN,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
     reset: bool = False,

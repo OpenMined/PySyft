@@ -43,6 +43,7 @@ from ..action.action_object import ActionObject
 from ..code.code_parse import GlobalsVisitor
 from ..code.unparse import unparse
 from ..context import AuthedServiceContext
+from ..context import ChangeContext
 from ..context import NodeServiceContext
 from ..dataset.dataset import Asset
 from ..response import SyftError
@@ -189,6 +190,20 @@ class InputPolicy(Policy):
     def inputs(self) -> Dict[NodeView, Any]:
         return self.init_kwargs
 
+    def _inputs_for_context(self, context: ChangeContext):
+        user_node_view = NodeView.from_change_context(context)
+        inputs = self.inputs[user_node_view]
+
+        action_service = context.node.get_service("actionservice")
+        for var_name, uid in inputs.items():
+            action_object = action_service.store.get(
+                uid=uid, credentials=user_node_view.verify_key
+            )
+            if action_object.is_err():
+                return SyftError(message=action_object.err())
+            inputs[var_name] = action_object.ok()
+        return inputs
+
 
 def retrieve_from_db(
     code_item_id: UID, allowed_inputs: Dict[str, UID], context: AuthedServiceContext
@@ -237,7 +252,9 @@ def allowed_ids_only(
 ) -> Dict[str, UID]:
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
         )
         allowed_inputs = allowed_inputs[node_view]
     elif context.node.node_type == NodeType.ENCLAVE:
