@@ -1,17 +1,18 @@
 ---
 apiVersion: v1
 data:
-  dynamic.yml: "http:\n  services:\n    frontend:\n      loadBalancer:\n        servers:\n\
+  dynamic.yml: "http:\n  services:\n  argocd-server:\n    loadBalancer:\n    -url: \"http://argocd-server:8080\"\n\
+    \ frontend:\n      loadBalancer:\n        servers:\n              \
     \          - url: \"http://frontend\"\n    backend:\n      loadBalancer:\n   \
     \     servers:\n          - url: \"http://backend\"\n    seaweedfs:\n      loadBalancer:\n\
     \        servers:\n          - url: \"http://seaweedfs:8333\"\n  routers:\n  \
-    \  frontend:\n      rule: \"PathPrefix(`/`)\"\n      entryPoints:\n        - \"\
-    web\"\n      service: \"frontend\"\n    backend:\n      rule: \"PathPrefix(`/api`)\
-    \ || PathPrefix(`/docs`) || PathPrefix(`/redoc`)\"\n      entryPoints:\n     \
+    \  frontend:\n      rule: \"PathPrefix(`/staging`)\"\n      entryPoints:\n        - \"\
+    \  web\"\n      service: \"frontend\"\n  argocd:\n rule: \"PathPrefix(`/argocd`) || Path(`/`)\"\n  entryPoints:\n   - \"web\"\n    service: \"argocd-server\"\n  \
+    \ backend:\n      rule: \"PathPrefix(`/api`)\ || PathPrefix(`/docs`) || PathPrefix(`/redoc`)\"\n      entryPoints:\n     \
     \   - \"web\"\n      service: \"backend\"\n    blob-storage:\n      rule: \"PathPrefix(`/blob`)\"\
-    \n      entryPoints:\n        - \"web\"\n      service: \"seaweedfs\"\n      middlewares:\n\
+    \      entryPoints:\n        - \"web\"\n      service: \"seaweedfs\"\n      middlewares:\n\
     \        - \"blob-storage-url\"\n        - \"blob-storage-host\"\n  middlewares:\n\
-    \    blob-storage-host:\n      headers:\n        customrequestheaders:\n     \
+    \  argocd-strip-prefix:\n   stripprefix:\n  prefixes: /argocd\n   forceslash: true:\n   blob-storage-host:\n      headers:\n        customrequestheaders:\n     \
     \     Host: seaweedfs:8333\n    blob-storage-url:\n      stripprefix:\n      \
     \  prefixes: /blob\n        forceslash: true\n"
   traefik.yml: "global:\n  checkNewVersion: false\n  sendAnonymousUsage: false\n\n\
