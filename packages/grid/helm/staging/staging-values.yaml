@@ -31,6 +31,3 @@ ingress:
   ingressClass: "nginx"
   # ingressClass: "azure/application-gateway"
   # ingressClass: "gce"
-
-
-kubectl patch svc frontend -n test -p '{"spec": {"type": "LoadBalancer"}}'
