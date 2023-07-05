@@ -26,9 +26,9 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
+from ...service.action.action_object import ActionObject
 from ...service.code.user_code import UserCodeStatus
 from ...service.context import AuthedServiceContext
-from ...service.enclave.enclave_service import DictObject
 from ...service.response import SyftError
 from ...service.service import AbstractService
 from ...service.service import service_method
@@ -388,8 +388,9 @@ class OblvService(AbstractService):
         user_code_service.update_code_state(context=context, code_item=user_code)
 
         if not action_service.exists(context=context, obj_id=user_code_id):
-            dict_object = DictObject(id=user_code_id)
-            dict_object.base_dict[str(context.credentials)] = inputs
+            dict_object = ActionObject.from_obj({})
+            dict_object.id = user_code_id
+            dict_object[str(context.credentials)] = inputs
             action_service.store.set(
                 uid=user_code_id,
                 credentials=context.node.verify_key,
@@ -403,7 +404,7 @@ class OblvService(AbstractService):
             )
             if res.is_ok():
                 dict_object = res.ok()
-                dict_object.base_dict[str(context.credentials)] = inputs
+                dict_object[str(context.credentials)] = inputs
                 action_service.store.set(
                     uid=user_code_id,
                     credentials=context.node.verify_key,

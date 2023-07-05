@@ -286,7 +286,7 @@ class Request(SyftObject):
             # by default change status is not applied
             change_status = ChangeStatus(change_id=change.id, applied=False)
             result = change.apply(context=change_context)
-            if result.is_err():
+            if isinstance(result, SyftError):
                 # add to history and save history to request
                 self.history.append(change_status)
                 self.save(context=context)
@@ -315,7 +315,7 @@ class Request(SyftObject):
             )
             # undo here may be deny for certain Changes (UserCodeChange)
             result = change.undo(context=change_context)
-            if result.is_err():
+            if isinstance(result, SyftError):
                 # add to history and save history to request
                 self.history.append(change_status)
                 self.save(context=context)
@@ -544,7 +544,7 @@ class ObjectMutation(Change):
                 obj = self.mutate(obj, value=self.previous_value)
                 self.linked_obj.update_with_context(context, obj)
 
-            return Ok(SyftSuccess(message=f"{type(self)} Success"))
+            return SyftSuccess(message=f"{type(self)} Success")
         except Exception as e:
             print(f"failed to apply {type(self)}. {e}")
             return Err(SyftError(message=str(e)))

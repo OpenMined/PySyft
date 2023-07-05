@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Dict
 from typing import Union
 
@@ -12,33 +11,14 @@ from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ..action.action_object import ActionObject
 from ..code.user_code_service import UserCode
 from ..code.user_code_service import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..service import AbstractService
 from ..service import service_method
-
-
-# TODO: 🟡 Duplication of PyPrimitive Dict
-# This is emulated since the action store curently accepts  only SyftObject types
-@serializable()
-class DictObject(SyftObject):
-    # version
-    __canonical_name__ = "Dict"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    base_dict: Dict[Any, Any] = {}
-
-    # serde / storage rules
-    __attr_searchable__ = []
-    __attr_unique__ = ["id"]
-
-    def __repr__(self) -> str:
-        return self.base_dict.__repr__()
 
 
 # TODO 🟣 Created a generic Enclave Service
@@ -92,8 +72,9 @@ class EnclaveService(AbstractService):
             return user_code_update
 
         if not action_service.exists(context=context, obj_id=user_code_id):
-            dict_object = DictObject(id=user_code_id)
-            dict_object.base_dict[str(context.credentials)] = inputs
+            dict_object = ActionObject.from_obj({})
+            dict_object.id = user_code_id
+            dict_object[str(context.credentials)] = inputs
             # TODO: Instead of using the action store, modify to
             # use the action service directly to store objects
             action_service.store.set(
@@ -109,7 +90,7 @@ class EnclaveService(AbstractService):
             )
             if res.is_ok():
                 dict_object = res.ok()
-                dict_object.base_dict[str(context.credentials)] = inputs
+                dict_object[str(context.credentials)] = inputs
                 action_service.store.set(
                     uid=user_code_id,
                     credentials=context.node.verify_key,
