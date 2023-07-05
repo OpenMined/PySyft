@@ -5,12 +5,8 @@ import { KVIterable } from '../capnp/kv_iterable.capnp';
 
 import { deserialize, mergeChunks } from './deserialize';
 import { SerializableInterface } from './serializable_interface';
-import {
-  createData,
-  serialize,
-  serializeChunks,
-  splitChunks,
-} from './serialize';
+import { serialize } from './serialize';
+import { createData, serializeChunks, splitChunks } from './utils';
 
 const PRIMITIVES: Record<string, SerializableInterface> = {
   string: {
@@ -242,5 +238,5 @@ export const getPrimitiveByObj = (obj: any): SerializableInterface => {
 };
 
 export const getPrimitiveByFqn = (fqn: string) => {
-  return PRIMITIVES[PRIMITIVE_REVERSE_MAP.get(fqn)];
+  return PRIMITIVES[PRIMITIVE_REVERSE_MAP.get(fqn) ?? ''];
 };
