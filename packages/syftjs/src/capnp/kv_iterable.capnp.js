@@ -8,7 +8,7 @@ exports.KVIterable = exports._capnpFileId = void 0;
 const capnp = require("capnp-ts");
 const capnp_ts_1 = require("capnp-ts");
 exports._capnpFileId = BigInt("0xb4973e09eff2e05e");
-class KVIterable extends capnp_ts_1.Struct {
+export class KVIterable extends capnp_ts_1.Struct {
     adoptKeys(value) { capnp_ts_1.Struct.adopt(value, capnp_ts_1.Struct.getPointer(0, this)); }
     disownKeys() { return capnp_ts_1.Struct.disown(this.getKeys()); }
     getKeys() { return capnp_ts_1.Struct.getList(0, capnp.DataList, this); }
