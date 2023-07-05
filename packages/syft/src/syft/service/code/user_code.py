@@ -18,13 +18,12 @@ from typing import Type
 from typing import Union
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
 from ...client.api import NodeView
+from ...enclave.metadata import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
@@ -44,7 +43,6 @@ from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
-from ..metadata.node_metadata import EnclaveMetadata
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import ExactMatch
@@ -174,16 +172,16 @@ class UserCodeStatusContext(SyftHashableObject):
 
     def mutate(
         self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
-    ) -> Result[Ok, Err]:
+    ) -> Union[SyftError, Self]:
         node_view = NodeView(node_name=node_name, verify_key=verify_key)
         base_dict = self.base_dict
         if node_view in base_dict:
             base_dict[node_view] = value
             self.base_dict = base_dict
-            return Ok(self)
+            return self
         else:
-            return Err(
-                "Cannot Modify Status as the Domain's data is not included in the request"
+            return SyftError(
+                message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
 
