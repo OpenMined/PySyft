@@ -66,6 +66,9 @@ jobs:
 
       - name: Snyk Container test
         run: snyk container test backend:${{ github.sha }} --file=packages/grid/backend/backend.dockerfile --sarif --sarif-file-output=snyk-code.sarif
+        env:
+          # This is where you will need to introduce the Snyk API token created with your Snyk account
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
@@ -84,7 +87,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/frontend/frontend.dockerfile packages -t frontend:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/frontend/frontend.dockerfile packages/grid/frontend -t frontend:${{ github.sha }}
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Run Trivy vulnerability scanner
@@ -119,11 +122,14 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/frontend/frontend.dockerfile packages -t frontend:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/frontend/frontend.dockerfile packages/grid/frontend -t frontend:${{ github.sha }}
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Snyk Container test
         run: snyk container test frontend:${{ github.sha }} --file=packages/grid/frontend/frontend.dockerfile --sarif --sarif-file-output=snyk-code.sarif
+        env:
+          # This is where you will need to introduce the Snyk API token created with your Snyk account
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
@@ -142,7 +148,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages -t tailscale:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }}
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Run Trivy vulnerability scanner
@@ -177,11 +183,14 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages -t tailscale:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }}
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Snyk Container test
         run: snyk container test tailscale:${{ github.sha }} --file=packages/grid/vpn/tailscale.dockerfile --sarif --sarif-file-output=snyk-code.sarif
+        env:
+          # This is where you will need to introduce the Snyk API token created with your Snyk account
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
@@ -200,7 +209,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages -t headscale:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages/grid/vpn -t headscale:${{ github.sha }}
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Run Trivy vulnerability scanner
@@ -235,11 +244,14 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages -t headscale:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages/grid/vpn -t headscale:${{ github.sha }}
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Snyk Container test
         run: snyk container test headscale:${{ github.sha }} --file=packages/grid/vpn/headscale.dockerfile --sarif --sarif-file-output=snyk-code.sarif
+        env:
+          # This is where you will need to introduce the Snyk API token created with your Snyk account
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
