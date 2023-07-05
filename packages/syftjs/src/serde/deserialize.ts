@@ -31,6 +31,11 @@ export function mergeChunks(chunks: capnp.List<capnp.Data>) {
   return tmp.buffer;
 }
 
+/**
+ * Method used to deserialize a SyftJS Object or Primitives received in Cap'n Proto array buffer format.
+ * @param {ArrayBuffer} buffer - Array buffer containing all the capnp structure and object information.
+ * @returns {Any} SyftJS / Primitive object instance.
+ */
 export function deserialize(buffer: ArrayBuffer) {
   const message = new capnp.Message(buffer, false);
   const rs = message.getRoot(RecursiveSerde);

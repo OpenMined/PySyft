@@ -1,66 +1,14 @@
 import * as capnp from 'capnp-ts';
 
-import { DataBox } from '../capnp/databox.capnp';
-import { DataList } from '../capnp/datalist.capnp';
 import { RecursiveSerde } from '../capnp/recursive_serde.capnp';
 
 import { getPrimitiveByObj } from './primitives';
-import { SerializableInterface } from './serializable_interface';
-
-export function splitChunks(serializedObj: ArrayBuffer) {
-  const sizeLimit = 5.12 ** 8;
-  const chunks = [];
-  let pointer = 0;
-
-  if (serializedObj.byteLength <= sizeLimit) {
-    // If the serialized object is smaller than the size limit, add it as a single chunk
-    chunks.push(serializedObj);
-  } else {
-    // If the serialized object is larger than the size limit, split it into multiple chunks
-    const numSlices = Math.ceil(serializedObj.byteLength / sizeLimit);
-    for (let i = 0; i < numSlices - 1; i++) {
-      // Push a slice of the serialized object to the chunks array
-      chunks.push(serializedObj.slice(pointer, pointer + sizeLimit));
-      pointer += sizeLimit;
-    }
-    // Push the last slice to the chunks array
-    chunks.push(serializedObj.slice(pointer));
-  }
-
-  return chunks;
-}
-
-export function createData(length: number) {
-  const newDataMsg = new capnp.Message();
-  const dataRoot = newDataMsg.initRoot(DataBox);
-  dataRoot.initValue(length);
-  return dataRoot.getValue();
-}
-
-function createDataList(length: number) {
-  const newDataList = new capnp.Message();
-  const dataListRoot = newDataList.initRoot(DataList);
-  dataListRoot.initValues(length);
-  return dataListRoot.getValues();
-}
-
-export function serializeChunks(chunks: ArrayBuffer[]) {
-  const dataList = createDataList(chunks.length);
-
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-    const dataStruct = createData(chunk.byteLength);
-    dataStruct.copyBuffer(chunk);
-    dataList.set(i, dataStruct);
-  }
-
-  return dataList;
-}
+import { createData, splitChunks } from './utils';
 
 function serializePrimitive(
-  obj: SerializableInterface,
+  obj: any,
   rs: RecursiveSerde,
-  serializer: (obj: SerializableInterface) => ArrayBuffer,
+  serializer: (obj: any) => ArrayBuffer,
 ) {
   // Serialize the object using the specified serializer function
   const serializedObj = serializer(obj);
@@ -78,7 +26,12 @@ function serializePrimitive(
   return rs;
 }
 
-export function serialize(obj: SerializableInterface) {
+/**
+ * Method used to serialize a SyftJS Object or Primitives into a Cap'n Proto array buffer.
+ * @param {any} obj - Object to be serialized.
+ * @returns {ArrayBuffer} Array buffer with capnp structure of the serialized object.
+ */
+export function serialize(obj: any) {
   const serde_obj = getPrimitiveByObj(obj);
 
   // Create a new Cap'n Proto message
