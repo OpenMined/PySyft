@@ -15,12 +15,12 @@
 </script>
 
 <span class={variant}>
-  <button 
-    type="button" 
-    title="filter" 
-    class="flex justify-center items-center" 
-    style="" 
-    aria-pressed="false" 
+  <button
+    type="button"
+    title="filter"
+    class="flex justify-center items-center"
+    style=""
+    aria-pressed="false"
     aria-label="Search filters"
   >
     <div class="relative">
@@ -33,7 +33,7 @@
       <select class={variant} bind:value={filter} on:change={onChange}>
         {#each filters as filter (filter)}
           <option value={filter}>{ filter }</option>
-        {/each} 
+        {/each}
       </select>
     </div>
   </button>

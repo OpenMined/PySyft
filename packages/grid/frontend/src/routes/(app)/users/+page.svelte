@@ -84,12 +84,12 @@
     {/each}
   </div>
   <div class="flex justify-center items-center mb-8 divide-y divide-gray-100">
-    <Pagination 
-      variant="gray" 
-      total={total} 
-      page_size={page_size} 
+    <Pagination
+      variant="gray"
+      total={total}
+      page_size={page_size}
       page_row={page_row}
-      bind:page_index={page_index} 
+      bind:page_index={page_index}
       on:setPagination={handleUpdate}
     ></Pagination>
   </div>

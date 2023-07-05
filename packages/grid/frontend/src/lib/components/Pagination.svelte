@@ -12,13 +12,13 @@
   const pageNumbers = (total: number, max: number, current: number) => {
     const half = Math.floor(max / 2);
     let to = max;
-    
+
     if(current + half >= total) {
       to = total;
     } else if(current > half) {
       to = current + half ;
     }
-    
+
     let from = Math.max(to - max, 0);
 
     return Array.from({length: Math.min(total, max)}, (_, i) => (i + 1) + from);
@@ -41,45 +41,45 @@
     if ((page_index + 1) >= paginators) return;
     else dispatch('setPagination', page_index++);
 	};
-  
+
 </script>
 
 <span class="flex gap-2.5">
-  <button 
-    type="button" 
-    title="Previous" 
+  <button
+    type="button"
+    title="Previous"
     class={`${variant} pagination-button`}
-    style="" 
+    style=""
     style:cursor={(page_index) === 0 ? 'not-allowed' : 'pointer'}
-    aria-pressed="false" 
+    aria-pressed="false"
     aria-label="LEFT-POINTING ANGLE"
-    disabled='{(page_index) === 0}'  
+    disabled='{(page_index) === 0}'
     on:click={handlePrev}
   >
     &#10094;
   </button>
   {#each paginations as pagination}
-    <button 
-      type="button" 
-      title="Paginate" 
+    <button
+      type="button"
+      title="Paginate"
       class={`${variant} pagination-button ${(pagination - 1) === page_index ? 'primary-light' : ''}`}
-      style="" 
-      aria-pressed="false" 
+      style=""
+      aria-pressed="false"
       aria-label="Paginate"
       on:click={() => {handlePaginate(pagination - 1)}}
     >
       { pagination }
     </button>
-  {/each} 
-  <button 
-    type="button" 
-    title="Next" 
+  {/each}
+  <button
+    type="button"
+    title="Next"
     class={`${variant} pagination-button`}
-    style="" 
+    style=""
     style:cursor={(page_index+1) === paginators ? 'not-allowed' : 'pointer'}
-    aria-pressed="false" 
+    aria-pressed="false"
     aria-label="RIGHT-POINTING ANGLE"
-    disabled='{(page_index+1) === paginators}'    
+    disabled='{(page_index+1) === paginators}'
     on:click={handleNext}
   >
     &#10095;
