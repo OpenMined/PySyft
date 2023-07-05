@@ -38,6 +38,8 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
@@ -109,6 +111,26 @@ class UserCodeStatusContext(SyftHashableObject):
 
     def __repr__(self):
         return str(self.base_dict)
+
+    def _repr_html_(self):
+        node_name_str = ""
+        verify_key_str = ""
+        status_str = ""
+        for node_view, status in self.base_dict.items():
+            node_name_str += f"{node_view.node_name}"
+            verify_key_str += f"{node_view.verify_key}"
+            status_str += f"{status.value}"
+        return f"""
+            <style>
+            .syft-user_code {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='syft-user_code' style="line-height:25%">
+                <h3>User Code</h3>
+                <p><strong>Node name: </strong>{node_name_str}</p>
+                <p><strong>Verify key: </strong>{verify_key_str}</p>
+                <p><strong>Status: </strong>{status_str}</p>
+            </div>
+            """
 
     def __repr_syft_nested__(self):
         string = ""
