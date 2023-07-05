@@ -2,9 +2,13 @@ import * as capnp from 'capnp-ts';
 
 import { RecursiveSerde } from '../capnp/recursive_serde.capnp';
 
-import { PRIMITIVE_MAP, PRIMITIVES } from './primitives';
+import { getPrimitiveByFqn } from './primitives';
 
-function mergeChunks(chunks: capnp.List<capnp.Data>) {
+export function mergeChunks(chunks: capnp.List<capnp.Data>) {
+  if (chunks.getLength() === 1) {
+    return chunks.get(0).toArrayBuffer();
+  }
+
   let totalSize = 0;
 
   // Calculate the total size of all the chunks
@@ -24,7 +28,7 @@ function mergeChunks(chunks: capnp.List<capnp.Data>) {
     position += dataChunk.byteLength;
   }
 
-  return tmp;
+  return tmp.buffer;
 }
 
 export function deserialize(buffer: ArrayBuffer) {
@@ -32,16 +36,13 @@ export function deserialize(buffer: ArrayBuffer) {
   const rs = message.getRoot(RecursiveSerde);
   const fqn = rs.getFullyQualifiedName();
 
-  const serde_obj = PRIMITIVES[PRIMITIVE_MAP.get(fqn, false)];
+  const serde_obj = getPrimitiveByFqn(fqn);
 
   if (serde_obj) {
     // If the data is a blob, deserialize the blob and return it
     const blob = rs.getNonrecursiveBlob();
-    if (blob.getLength() === 1) {
-      return serde_obj.deserialize(blob.get(0).toArrayBuffer());
-    } else {
-      const totalChunk = mergeChunks(blob);
-      return serde_obj.deserialize(totalChunk.buffer);
-    }
+
+    const totalChunk = mergeChunks(blob);
+    return serde_obj.deserialize(totalChunk);
   }
 }
