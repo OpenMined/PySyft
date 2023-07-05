@@ -124,28 +124,45 @@ class EnclaveService(AbstractService):
         return Ok(Ok(True))
 
 
+def get_oblv_service():
+    # relative
+    from ...external import OBLV
+
+    if OBLV:
+        # relative
+        from ...external.oblv.oblv_service import OblvService
+
+        return OblvService
+    else:
+        return SyftError(
+            message="Oblivious is not enabled."
+            "To enable oblivious package, set sy.enable_external_lib('oblv') "
+            "on the client side"
+            "Or add --oblv when launching by hagrid"
+        )
+
+
 # Checks if the given user code would  propogate value to enclave on acceptance
 def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     # relative
     from ...enclave.enclave_client import AzureEnclaveClient
     from ...enclave.enclave_client import AzureEnclaveMetadata
     from ...external.oblv.deployment_client import OblvMetadata
-    from ...external.oblv.oblv_service import OblvService
 
     if isinstance(user_code.enclave_metadata, OblvMetadata):
-        method = context.node.get_service_method(OblvService.get_api_for)
+        # relative
+        oblv_service_class = get_oblv_service()
+        if isinstance(oblv_service_class, SyftError):
+            return oblv_service_class
+        method = context.node.get_service_method(oblv_service_class.get_api_for)
 
         api = method(
             user_code.enclave_metadata,
             context.node.signing_key,
+            worker_name=context.node.name,
         )
         send_method = api.services.oblv.send_user_code_inputs_to_enclave
 
-        inputs = user_code.input_policy._inputs_for_context(context)
-        if inputs.is_err():
-            return inputs
-        else:
-            inputs = inputs.ok()
     elif isinstance(user_code.enclave_metadata, AzureEnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
 
@@ -155,16 +172,17 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
         )
 
         # send data of the current node to enclave
-        inputs = user_code.input_policy._inputs_for_context(context)
-        if inputs.is_err():
-            return inputs
-        else:
-            inputs = inputs.ok()
         send_method = (
             azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave
         )
     else:
         return Ok()
+
+    inputs = user_code.input_policy._inputs_for_context(context)
+    if inputs.is_err():
+        return inputs
+    else:
+        inputs = inputs.ok()
 
     res = send_method(
         user_code_id=user_code.id,

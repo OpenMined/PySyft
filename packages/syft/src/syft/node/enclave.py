@@ -1,8 +1,11 @@
 # relative
+from ..abstract_node import NodeType
 from ..serde.serializable import serializable
-from .domain import Domain
+from .node import Node
 
 
-@serializable(without=["queue_manager"])
-class Enclave(Domain):
-    pass
+@serializable()
+class Enclave(Node):
+    def post_init(self) -> None:
+        self.node_type = NodeType.ENCLAVE
+        super().post_init()

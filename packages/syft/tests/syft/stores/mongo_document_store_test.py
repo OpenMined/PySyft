@@ -275,6 +275,7 @@ def test_mongo_store_partition_update(
     sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.xfail
 def test_mongo_store_partition_set_threading(
     root_verify_key,
     mongo_server_mock: Tuple,

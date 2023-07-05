@@ -127,6 +127,7 @@ def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], 
             raise Exception(f"{template_location} is not valid")
     else:
         template_location = HAGRID_TEMPLATE_PATH
+
         template, template_hash = read_yml_file(template_location)
 
     if EDITABLE_MODE and is_path(template_location):
@@ -137,6 +138,7 @@ def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], 
 
 def setup_from_manifest_template(
     host_type: str,
+    deployment_type: str,
     template_location: Optional[str] = None,
     overwrite: bool = False,
     verbose: bool = False,
@@ -167,8 +169,13 @@ def setup_from_manifest_template(
             os.path.join(package_path, f) for f in template_files["common"]
         ]
 
+        # worker
+        if deployment_type == "single_container" and host_type in ["docker"]:
+            files_to_download += [
+                os.path.join(package_path, f) for f in template_files["worker"]
+            ]
         # docker related files
-        if host_type in ["docker"]:
+        elif host_type in ["docker"]:
             files_to_download += [
                 os.path.join(package_path, f) for f in template_files["docker"]
             ]
@@ -233,7 +240,11 @@ def download_files(
 
 
 def render_templates(
-    node_name: str, template_location: Optional[str], env_vars: dict, host_type: str
+    node_name: str,
+    deployment_type: str,
+    template_location: Optional[str],
+    env_vars: dict,
+    host_type: str,
 ) -> None:
     template, template_hash = get_template_yml(template_location)
 
@@ -255,8 +266,14 @@ def render_templates(
         # common files
         files_to_render += template_files["common"]
 
-        # docker related files
-        if host_type in ["docker"]:
+        # worker
+        if deployment_type == "single_container" and host_type in ["docker"]:
+            for template_file in template_files["worker"]:
+                if "default.env" not in template_file:
+                    files_to_render.append(template_file)
+
+        elif host_type in ["docker"]:
+            # docker related files
             for template_file in template_files["docker"]:
                 if "default.env" not in template_file:
                     files_to_render.append(template_file)
@@ -264,7 +281,6 @@ def render_templates(
         # Render the files
         for file_path in files_to_render:
             folder_path = template_files["path"]
-
             # relative to src_dir
             src_file_path = f"{folder_path}{file_path}"
             target_file_path = f"{target_dir}/{file_path}"

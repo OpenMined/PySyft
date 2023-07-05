@@ -15,6 +15,7 @@ if [[ ${DEV_MODE} == "True" ]];
 then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
+    pip install -e "/app/syft[telemetry]"
 fi
 
 set +e
@@ -24,6 +25,7 @@ set -e
 
 echo "NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY"
 echo "NODE_UID=$NODE_UID"
+echo "NODE_TYPE=$NODE_TYPE"
 
 export NODE_UID=$NODE_UID
 export NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY

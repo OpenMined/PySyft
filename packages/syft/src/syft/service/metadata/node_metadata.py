@@ -68,7 +68,7 @@ class NodeMetadata(SyftObject):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
-    node_type: str = "Domain"
+    node_type: str = "domain"
     deployed_on: str = "Date"
     organization: str = "OpenMined"
     on_board: bool = False

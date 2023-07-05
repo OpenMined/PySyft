@@ -482,7 +482,7 @@ def test_userservice_register_user_exists(
         new_callable=mock.PropertyMock,
         return_value=metadata_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named("mock-node")
+        mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
 
         response = user_service.register(node_context, guest_create_user)
@@ -509,7 +509,7 @@ def test_userservice_register_error_on_get_email(
         new_callable=mock.PropertyMock,
         return_value=metadata_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named("mock-node")
+        mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
 
         response = user_service.register(node_context, guest_create_user)
@@ -537,13 +537,13 @@ def test_userservice_register_success(
         new_callable=mock.PropertyMock,
         return_value=metadata_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named("mock-node")
+        mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
 
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
         monkeypatch.setattr(user_service.stash, "set", mock_set)
 
-        expected_msg = f"User {guest_create_user.name} successfully registered! To see users, run client.users."
+        expected_msg = f"User '{guest_create_user.name}' successfully registered!"
         expected_private_key = guest_user.to(UserPrivateKey)
 
         response = user_service.register(node_context, guest_create_user)
@@ -581,7 +581,7 @@ def test_userservice_register_set_fail(
         new_callable=mock.PropertyMock,
         return_value=metadata_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named("mock-node")
+        mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
 
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)

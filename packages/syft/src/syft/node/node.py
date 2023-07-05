@@ -51,9 +51,9 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
-from ..service.message.message_service import MessageService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
+from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
@@ -86,6 +86,7 @@ from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
 from ..util.util import random_name
+from ..util.util import str_to_bool
 from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
@@ -136,6 +137,12 @@ def get_default_root_password() -> Optional[str]:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
 
+def get_dev_mode() -> bool:
+    return str_to_bool(get_env("DEV_MODE", "False"))
+
+
+dev_mode = get_dev_mode()
+
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
@@ -161,7 +168,7 @@ class Node(AbstractNode):
         root_password: str = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
-        node_type: NodeType = NodeType.DOMAIN,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: QueueConfig = ZMQQueueConfig,
@@ -188,9 +195,6 @@ class Node(AbstractNode):
 
         self.processes = processes
         self.is_subprocess = is_subprocess
-
-        if name is None:
-            name = random_name()
         self.name = name
         services = (
             [
@@ -203,7 +207,7 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
-                MessageService,
+                NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
@@ -238,6 +242,8 @@ class Node(AbstractNode):
         )
 
         self.client_cache = {}
+        if isinstance(node_type, str):
+            node_type = NodeType(node_type)
         self.node_type = node_type
 
         self.post_init()
@@ -264,12 +270,13 @@ class Node(AbstractNode):
     @classmethod
     def named(
         cls,
+        *,  # Trasterisk
         name: str,
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-        node_type: NodeType = NodeType.DOMAIN,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -330,11 +337,16 @@ class Node(AbstractNode):
 
     @property
     def guest_client(self):
+        return self.get_guest_client()
+
+    def get_guest_client(self, verbose: bool = True):
         # relative
         from ..client.client import PythonConnection
         from ..client.client import SyftClient
 
         connection = PythonConnection(node=self)
+        if verbose:
+            print(f"Logged into {self.name} as GUEST")
         return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
@@ -383,9 +395,10 @@ class Node(AbstractNode):
             and document_store_config.client_config.filename is None
         ):
             document_store_config.client_config.filename = f"{self.id}.sqlite"
-            print(
-                f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
-            )
+            if dev_mode:
+                print(
+                    f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
+                )
         document_store = document_store_config.store_type
         self.document_store_config = document_store_config
 
@@ -433,7 +446,7 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
-                MessageService,
+                NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
@@ -477,20 +490,37 @@ class Node(AbstractNode):
 
     @property
     def metadata(self) -> NodeMetadata:
+        name = ""
+        deployed_on = ""
+        organization = ""
+        on_board = False
+        description = ""
+        signup_enabled = False
+
         settings_stash = SettingsStash(store=self.document_store)
-        settings = settings_stash.get_all(self.signing_key.verify_key).ok()[0]
+        settings = settings_stash.get_all(self.signing_key.verify_key)
+        if settings.is_ok() and len(settings.ok()) > 0:
+            settings_data = settings.ok()[0]
+            name = settings_data.name
+            deployed_on = settings_data.deployed_on
+            organization = settings_data.organization
+            on_board = settings_data.on_board
+            description = settings_data.description
+            signup_enabled = settings_data.signup_enabled
+
         return NodeMetadata(
-            name=settings.name,
+            name=name,
             id=self.id,
             verify_key=self.verify_key,
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
-            deployed_on=settings.deployed_on,
-            description=settings.description,
-            organization=settings.organization,
-            on_board=settings.on_board,
-            signup_enabled=settings.signup_enabled,
+            deployed_on=deployed_on,
+            description=description,
+            organization=organization,
+            on_board=on_board,
+            node_type=self.node_type.value,
+            signup_enabled=signup_enabled,
         )
 
     @property
@@ -652,10 +682,13 @@ class Node(AbstractNode):
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
     def create_initial_settings(self) -> Optional[NodeSettings]:
+        if self.name is None:
+            self.name = random_name()
         try:
             settings_stash = SettingsStash(store=self.document_store)
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
+                self.name = settings_exists[0].name
                 return None
             else:
                 new_settings = NodeSettings(

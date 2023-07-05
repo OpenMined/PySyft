@@ -1,4 +1,4 @@
-__version__ = "0.8.1-beta.10"
+__version__ = "0.8.2-beta.2"
 
 # stdlib
 import pathlib
@@ -7,14 +7,11 @@ import sys
 from typing import Any
 from typing import Callable
 
-# third party
-from IPython.display import Markdown
-from IPython.display import display
-
 # relative
 from . import gevent_patch  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
+from .client.client import register  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
 from .client.registry import DomainRegistry  # noqa: F401
 from .client.registry import EnclaveRegistry  # noqa: F401
@@ -47,7 +44,7 @@ from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .service.dataset.dataset import Contributor  # noqa: F401
 from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
 from .service.dataset.dataset import CreateDataset as Dataset  # noqa: F401
-from .service.message.messages import MessageStatus  # noqa: F401
+from .service.notification.notifications import NotificationStatus  # noqa: F401
 from .service.policy.policy import CustomInputPolicy  # noqa: F401
 from .service.policy.policy import CustomOutputPolicy  # noqa: F401
 from .service.policy.policy import ExactMatch  # noqa: F401
@@ -66,6 +63,7 @@ from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
 from .util import jax_settings  # noqa: F401
 from .util import logger  # noqa: F401
+from .util import options  # noqa: F401
 from .util.autoreload import disable_autoreload  # noqa: F401
 from .util.autoreload import enable_autoreload  # noqa: F401
 from .util.telemetry import instrument  # noqa: F401
@@ -73,7 +71,7 @@ from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
 from .util.version_compare import make_requires
 
-LATEST_STABLE_SYFT = "0.8"
+LATEST_STABLE_SYFT = "0.8.1"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 
@@ -86,12 +84,13 @@ logger.start()
 
 try:
     get_ipython()  # noqa: F821
-    display(
-        Markdown(
-            "\nWarning: syft is imported in light mode by default. \
-        \nTo switch to dark mode, please run `sy.options.color_theme = 'dark'`"
-        )
-    )
+    # TODO: add back later or auto detect
+    # display(
+    #     Markdown(
+    #         "\nWarning: syft is imported in light mode by default. \
+    #     \nTo switch to dark mode, please run `sy.options.color_theme = 'dark'`"
+    #     )
+    # )
 except:  # noqa: E722
     pass  # nosec
 
