@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: frontend
   name: frontend
 spec:
-  externalIPs: null
+  externalIPs:  52.186.165.134
   ports:
   - name: port-0
     port: 80
