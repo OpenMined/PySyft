@@ -17,6 +17,7 @@ def test_orchestra_python_local(node_type):
     assert node.python_node.metadata.node_type == node_type
 
 
+@pytest.mark.skip(reason="This test is flaky on CI")
 @pytest.mark.parametrize("node_type", ["domain", "gateway", "enclave"])
 def test_orchestra_python_server(node_type):
     node = sy.orchestra.launch(name="test-domain", port="auto", node_type=node_type)

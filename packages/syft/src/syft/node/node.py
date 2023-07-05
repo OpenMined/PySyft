@@ -50,9 +50,10 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
-from ..service.message.message_service import MessageService
+from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
+from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
@@ -209,9 +210,10 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
-                MessageService,
+                NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
             ]
             if services is None
             else services
@@ -445,9 +447,10 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
-                MessageService,
+                NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
             ]
 
             if OBLV:
@@ -689,6 +692,10 @@ class Node(AbstractNode):
                 self.name = settings_exists[0].name
                 return None
             else:
+                # Currently we allow automatic user registration on enclaves,
+                # as enclaves do not have superusers
+                if self.node_type == NodeType.ENCLAVE:
+                    flags.CAN_REGISTER = True
                 new_settings = NodeSettings(
                     name=self.name,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
