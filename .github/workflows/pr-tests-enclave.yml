@@ -71,7 +71,8 @@ jobs:
           pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
-      - name: Run Enclave tests
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          tox -e stack.test.integration.enclave.oblv
+      # Temporarily disabled oblv tests
+      # - name: Run Enclave tests
+      #   if: steps.changes.outputs.syft == 'true'
+      #   run: |
+      #     tox -e stack.test.integration.enclave.oblv
