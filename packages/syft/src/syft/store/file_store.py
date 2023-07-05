@@ -91,7 +91,7 @@ class FileClientConnection:
     def read(self, fp: SecureFilePathLocation) -> SyftResource:
         raise NotImplementedError
 
-    def write(obj: CreateFileObject) -> SyftWriteResource:
+    def write(self, obj: CreateFileObject) -> SyftWriteResource:
         raise NotImplementedError
 
 
@@ -129,7 +129,7 @@ class OnDiskFileClientConnection(FileClientConnection):
             syft_object=(self._base_directory / fp.path).read_bytes()
         )
 
-    def write(obj: CreateFileObject) -> SyftWriteResource:
+    def write(self, obj: CreateFileObject) -> SyftWriteResource:
         return OnDiskSyftWriteResource()
 
 
