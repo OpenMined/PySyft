@@ -6,7 +6,6 @@ from typing import Type
 
 # third party
 from pydantic import BaseModel
-from pydantic import PrivateAttr
 
 # relative
 from ..serde.deserialize import _deserialize as deserialize
@@ -102,14 +101,14 @@ class FileClient(BaseModel):
 
 class OnDiskFileClient(FileClient):
     config: OnDiskFileClientConfig
-    _connection: PrivateAttr[OnDiskFileClientConnection]
+    connection: OnDiskFileClientConnection
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        self._connection = OnDiskFileClientConnection(self.config.base_directory)
+        self.connection = OnDiskFileClientConnection(self.config.base_directory)
 
     def __enter__(self) -> FileClientConnection:
-        return self._connection
+        return self.connection
 
     def __exit__(self) -> None:
         pass
