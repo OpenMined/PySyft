@@ -7,5 +7,6 @@ export default {
     dir: 'lib/',
     format: 'cjs',
   },
+  external: ['capnp-ts'],
   plugins: [typescript()],
 };
