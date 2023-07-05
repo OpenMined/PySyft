@@ -701,9 +701,9 @@ class UserCodeStatusChange(Change):
                 node_name=context.node.name,
                 verify_key=context.node.signing_key.verify_key,
             )
-        if res.is_ok():
-            obj.status = res.ok()
-            return Ok(obj)
+        if not isinstance(res, SyftError):
+            obj.status = res
+            return obj
         return res
 
     def _run(
@@ -720,9 +720,8 @@ class UserCodeStatusChange(Change):
             if apply:
                 res = self.mutate(obj, context, undo=False)
 
-                if res.is_err():
+                if isinstance(res, SyftError):
                     return res
-                res = res.ok()
 
                 # relative
                 from ..enclave.enclave_service import check_enclave_transfer
@@ -731,15 +730,13 @@ class UserCodeStatusChange(Change):
                     user_code=res, value=self.value, context=context
                 )
 
-                if enclave_res.is_err():
+                if isinstance(enclave_res, SyftError):
                     return enclave_res
                 self.linked_obj.update_with_context(context, res)
             else:
                 res = self.mutate(obj, context, undo=True)
-                if res.is_err():
+                if isinstance(res, SyftError):
                     return res
-
-                res = res.ok()
 
                 # TODO: Handle Enclave approval.
                 self.linked_obj.update_with_context(context, res)

@@ -1,17 +1,15 @@
 # stdlib
 from typing import Any
 from typing import Dict
-
-# third party
-from result import Err
-from result import Ok
-from result import Result
+from typing import Union
 
 # relative
 from ...client.api import NodeView
 from ...enclave.enclave_client import AzureEnclaveClient
 from ...enclave.enclave_client import AzureEnclaveMetadata
 from ...serde.serializable import serializable
+from ...service.response import SyftError
+from ...service.response import SyftSuccess
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -22,7 +20,6 @@ from ..code.user_code_service import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..service import AbstractService
-from ..service import SyftError
 from ..service import service_method
 
 
@@ -64,31 +61,30 @@ class EnclaveService(AbstractService):
         user_code_id: UID,
         inputs: Dict,
         node_name: str,
-    ) -> Result[Ok, Err]:
+    ) -> Union[SyftSuccess, SyftError]:
         if not context.node or not context.node.signing_key:
-            return Err(f"{type(context)} has no node")
+            return SyftError(message=f"{type(context)} has no node")
+
+        root_context = AuthedServiceContext(
+            credentials=context.node.verify_key, node=context.node
+        )
 
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
-        user_code = user_code_service.stash.get_by_uid(
-            context.node.signing_key.verify_key, uid=user_code_id
-        )
-        if user_code.is_err():
-            return SyftError(
-                message=f"Unable to find {user_code_id} in {type(user_code_service)}"
-            )
-        user_code = user_code.ok()
+        user_code = user_code_service.get_by_uid(context=root_context, uid=user_code_id)
+        if isinstance(user_code, SyftError):
+            return user_code
 
-        res = user_code.status.mutate(
+        status_update = user_code.status.mutate(
             value=UserCodeStatus.EXECUTE,
             node_name=node_name,
             verify_key=context.credentials,
         )
-        if res.is_err():
-            return res
-        user_code.status = res.ok()
+        if isinstance(status_update, SyftError):
+            return status_update
 
-        root_context = AuthedServiceContext(credentials=context.node.verify_key)
+        user_code.status = status_update
+
         user_code_update = user_code_service.update_code_state(
             context=root_context, code_item=user_code
         )
@@ -120,9 +116,11 @@ class EnclaveService(AbstractService):
                     syft_object=dict_object,
                 )
             else:
-                return res
+                return SyftError(
+                    message=f"Error while fetching the object on Enclave: {res.err()}"
+                )
 
-        return Ok(Ok(True))
+        return SyftSuccess(message="Enclave Code Status Updated Successfully")
 
 
 # Checks if the given user code would  propogate value to enclave on acceptance
@@ -165,7 +163,7 @@ def check_enclave_transfer(
                 uid=uid, credentials=context.node.signing_key.verify_key
             )
             if action_object.is_err():
-                return action_object
+                return SyftError(message=action_object.err())
             inputs[var_name] = action_object.ok()
 
         res = api.services.oblv.send_user_code_inputs_to_enclave(
@@ -195,7 +193,7 @@ def check_enclave_transfer(
                 uid=uid, credentials=context.node.signing_key.verify_key
             )
             if action_object.is_err():
-                return action_object
+                return SyftError(message=action_object.err())
             inputs[var_name] = action_object.ok()
 
         res = (
@@ -206,4 +204,4 @@ def check_enclave_transfer(
 
         return res
     else:
-        return Ok()
+        return SyftSuccess(message="Current Request does not require Enclave Transfer")
