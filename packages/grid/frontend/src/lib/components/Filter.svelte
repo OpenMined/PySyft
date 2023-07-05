@@ -4,11 +4,13 @@
   const dispatch = createEventDispatcher();
 
   export let variant: 'gray' | 'primary-light' | 'primary-dark' = 'gray';
+  export let index: number;
   export let filter: number;
   export let filters: number[] = [];
 
   const onChange = () => {
-    dispatch('setFilter', filter);
+    index = 0;
+    dispatch('setFilter');
 	}
 </script>
 

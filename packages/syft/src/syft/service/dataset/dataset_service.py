@@ -23,6 +23,7 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .dataset import Asset
 from .dataset import CreateDataset
 from .dataset import Dataset
+from .dataset import DatasetPageView
 from .dataset_stash import DatasetStash
 
 
@@ -64,7 +65,7 @@ class DatasetService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[List[Dataset], SyftError]:
+    ) -> Union[DatasetPageView, List[Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -76,12 +77,14 @@ class DatasetService(AbstractService):
 
             # If chunk size is defined, then split list into evenly sized chunks
             if page_size:
+                total = len(results)
                 results = [
                     results[i : i + page_size]
                     for i in range(0, len(results), page_size)
                 ]
                 # Return the proper slice using chunk_index
                 results = results[page_index]
+                results = DatasetPageView(datasets=results, total=total)
 
             return results
         return SyftError(message=result.err())
@@ -103,12 +106,14 @@ class DatasetService(AbstractService):
             # If chunk size is defined, then split list into evenly sized chunks
 
             if page_size:
+                total = len(results)
                 results = [
                     results[i : i + page_size]
                     for i in range(0, len(results), page_size)
                 ]
                 # Return the proper slice using chunk_index
                 results = results[page_index]
+                results = DatasetPageView(datasets=results, total=total)
 
         return results
 

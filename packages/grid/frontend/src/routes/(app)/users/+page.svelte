@@ -5,6 +5,7 @@
   import Badge from '$lib/components/Badge.svelte';
   import Filter from '$lib/components/Filter.svelte';
   import Search from '$lib/components/Search.svelte';
+  import Pagination from '$lib/components/Pagination.svelte';
   import UserListItem from '$lib/components/Users/UserListItem.svelte';
   import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
   import UserNewModal from '$lib/components/Users/UserNewModal.svelte';
@@ -13,9 +14,9 @@
 
   let searchTerm = '';
   let userList: UserListView[] = [];
-  let total: number = 2;
+  let total: number = 0;
   let paginators: number[] = [1, 2, 3, 4, 5];
-  let page_size: number = 2, page_index: number = 0;
+  let page_size: number = 2, page_index: number = 0, page_row: number = 3;
 
   let openModal: string | null = null;
 
@@ -35,16 +36,15 @@
 
   const search = debounce(async () => {
     if (searchTerm === '') {
-      const results = await getAllUsers(page_size, page_index);
+      const results = await getAllUsers(page_size);
       userList = results.users;
       total = results.total;
     } else {
       userList = await searchUsersByName(searchTerm);
-      // console.log('page_size: ', page_size)
-      // const results = await getAllUsers(page_size, 0);
-      // console.log('onMount results: ', results)
+      // const results = await searchUsersByName(searchTerm, page_size);
       // userList = results.users;
       // total = results.total;
+      // console.log(userList)
     }
   }, 300);
 
@@ -69,15 +69,11 @@
     <div class="w-full max-w-[378px]">
       <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} />
     </div>
-    <!-- <div class="flex">
-      <Filter variant="gray" filters={paginators} bind:filter={page_size} on:setFilter={handleUpdate}>Filter: </Filter>
-    </div> -->
     <div class="flex-shrink-0">
       <div class="flex gap-2.5">
         <Badge variant="gray">Total: {total || 0}</Badge>
-        <Filter variant="gray" filters={paginators} bind:filter={page_size} on:setFilter={handleUpdate}>Filter: </Filter>
+        <Filter variant="gray" filters={paginators} bind:filter={page_size} bind:index={page_index} on:setFilter={handleUpdate}>Filter: </Filter>
       </div>
-      <!-- <Badge variant="gray">Total: {userList?.length || 0}</Badge> -->
     </div>
   </div>
   <div class="divide-y divide-gray-100">
@@ -86,6 +82,16 @@
         <UserListItem {user} />
       </a>
     {/each}
+  </div>
+  <div class="flex justify-center items-center mb-8 divide-y divide-gray-100">
+    <Pagination 
+      variant="gray" 
+      total={total} 
+      page_size={page_size} 
+      page_row={page_row}
+      bind:page_index={page_index} 
+      on:setPagination={handleUpdate}
+    ></Pagination>
   </div>
 </div>
 <div class="fixed bottom-10 right-12">
