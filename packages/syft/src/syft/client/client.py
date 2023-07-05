@@ -559,7 +559,11 @@ class SyftClient:
 
         return self.api.services.project.get_all()
 
-    def login(self, email: str, password: str, cache: bool = True) -> Self:
+    def login(
+        self, email: str, password: str, cache: bool = True, register=False, **kwargs
+    ) -> Self:
+        if register:
+            self.register(email=email, password=password, **kwargs)
         user_private_key = self.connection.login(email=email, password=password)
         signing_key = None
         if user_private_key is not None:
