@@ -62,7 +62,7 @@ def test_object_mutation(worker: Worker):
 
     result = object_mutation.apply(change_context)
 
-    assert result.is_ok()
+    assert isinstance(result, SyftSuccess)
 
     setting = root_client.api.services.settings.get()
 
