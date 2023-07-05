@@ -222,7 +222,7 @@ def retrieve_from_db(
     root_context = AuthedServiceContext(
         node=context.node, credentials=context.node.verify_key
     )
-    if context.node.node_type.value == NodeType.DOMAIN.value:
+    if context.node.node_type == NodeType.DOMAIN:
         for var_name, arg_id in allowed_inputs.items():
             kwarg_value = action_service.get(
                 context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
@@ -231,7 +231,7 @@ def retrieve_from_db(
                 return SyftError(message=kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
 
-    elif context.node.node_type.value == NodeType.ENCLAVE.value:
+    elif context.node.node_type == NodeType.ENCLAVE:
         dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
             return SyftError(message=dict_object.err())
@@ -250,14 +250,14 @@ def allowed_ids_only(
     kwargs: Dict[str, Any],
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
-    if context.node.node_type.value == NodeType.DOMAIN.value:
+    if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
             node_name=context.node.name,
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
         allowed_inputs = allowed_inputs[node_view]
-    elif context.node.node_type.value == NodeType.ENCLAVE.value:
+    elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
         for key in allowed_inputs.values():
             base_dict.update(key)

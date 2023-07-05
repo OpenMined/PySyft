@@ -121,7 +121,7 @@ class UserCodeStatusContext(SyftHashableObject):
         return len(statuses) == 1 and UserCodeStatus.EXECUTE in statuses
 
     def for_context(self, context: AuthedServiceContext) -> UserCodeStatus:
-        if context.node.node_type.value == NodeType.ENCLAVE.value:
+        if context.node.node_type == NodeType.ENCLAVE:
             keys = set(self.base_dict.values())
             if len(keys) == 1 and UserCodeStatus.EXECUTE in keys:
                 return UserCodeStatus.EXECUTE
@@ -132,7 +132,7 @@ class UserCodeStatusContext(SyftHashableObject):
             else:
                 return Exception(f"Invalid types in {keys} for Code Submission")
 
-        elif context.node.node_type.value == NodeType.DOMAIN.value:
+        elif context.node.node_type == NodeType.DOMAIN:
             node_view = NodeView(
                 node_name=context.node.name,
                 node_id=context.node.id,

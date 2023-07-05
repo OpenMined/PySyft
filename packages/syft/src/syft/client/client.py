@@ -180,8 +180,6 @@ class HTTPConnection(NodeConnection):
         else:
             response = self._make_get(self.routes.ROUTE_METADATA.value)
             metadata_json = json.loads(response)
-            if "signup_enabled" not in metadata_json:
-                metadata_json["signup_enabled"] = False
             return NodeMetadataJSON(**metadata_json)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
@@ -567,7 +565,6 @@ class SyftClient:
         password: str,
         institution: Optional[str] = None,
         website: Optional[str] = None,
-        **kwargs,
     ):
         try:
             new_user = UserCreate(
