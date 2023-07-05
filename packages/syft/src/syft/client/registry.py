@@ -372,7 +372,7 @@ class EnclaveRegistry:
             protocol = enclave["protocol"]
             host_or_ip = enclave["host_or_ip"]
             grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
-            return AzureEnclaveClient(domains=[], url=grid_url.base_url)
+            return AzureEnclaveClient(url=grid_url.base_url, port=port)
         except Exception as e:
             error(f"Failed to login with: {enclave}. {e}")
             raise SyftException(f"Failed to login with: {enclave}. {e}")
