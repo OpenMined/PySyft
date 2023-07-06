@@ -18,7 +18,6 @@ from typing_extensions import Self
 
 # relative
 from ...client.api import APIRegistry
-from ...external import OBLV
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -44,7 +43,7 @@ from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
-from ..message.messages import Message
+from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
@@ -147,7 +146,7 @@ class Request(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     requesting_user_verify_key: SyftVerifyKey
-    requesting_user_name: str
+    requesting_user_name: str = ""
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
     updated_at: Optional[DateTime]
@@ -299,6 +298,7 @@ class Request(SyftObject):
 
         self.updated_at = DateTime.now()
         self.save(context=context)
+
         return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
 
     def undo(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
@@ -343,6 +343,7 @@ class Request(SyftObject):
     def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
+
         change = self.changes[0]
         if not change.is_type(UserCode):
             raise Exception(
@@ -421,7 +422,7 @@ class RequestInfo(SyftObject):
 
     user: UserView
     request: Request
-    message: Message
+    message: Notification
 
 
 @serializable()
@@ -692,18 +693,23 @@ class UserCodeStatusChange(Change):
             res = obj.status.mutate(
                 value=self.value,
                 node_name=context.node.name,
+                node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
         else:
             res = obj.status.mutate(
                 value=UserCodeStatus.DENIED,
                 node_name=context.node.name,
+                node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
-        if res.is_ok():
-            obj.status = res.ok()
-            return Ok(obj)
+        if not isinstance(res, SyftError):
+            obj.status = res
+            return obj
         return res
+
+    def is_enclave_request(self, req_enclave_metadata):
+        return req_enclave_metadata is not None and self.value == UserCodeStatus.EXECUTE
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -719,28 +725,24 @@ class UserCodeStatusChange(Change):
             if apply:
                 res = self.mutate(obj, context, undo=False)
 
-                if res.is_err():
+                if isinstance(res, SyftError):
                     return res
-                res = res.ok()
-                if OBLV:
-                    # relative
-                    from ...external.oblv.oblv_service import check_enclave_transfer
 
-                    enclave_res = check_enclave_transfer(
-                        user_code=res, value=self.value, context=context
+                # relative
+                from ..enclave.enclave_service import propagate_inputs_to_enclave
+
+                user_code = res
+                if self.is_enclave_request(user_code.enclave_metadata):
+                    enclave_res = propagate_inputs_to_enclave(
+                        user_code=res, context=context
                     )
-                else:
-                    enclave_res = Ok()
-
-                if enclave_res.is_err():
-                    return enclave_res
-                self.linked_obj.update_with_context(context, res)
+                    if isinstance(enclave_res, SyftError):
+                        return enclave_res
+                self.linked_obj.update_with_context(context, user_code)
             else:
                 res = self.mutate(obj, context, undo=True)
-                if res.is_err():
+                if isinstance(res, SyftError):
                     return res
-
-                res = res.ok()
 
                 # TODO: Handle Enclave approval.
                 self.linked_obj.update_with_context(context, res)

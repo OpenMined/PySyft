@@ -9,10 +9,6 @@ on:
         description: "Run Nightlies Tests Manually"
         required: false
 
-concurrency:
-  group: ${{ github.workflow_ref }}
-  cancel-in-progress: true
-
 jobs:
   call-pr-tests-linting:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
@@ -41,6 +37,6 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/pr-tests-stack-public.yml@dev
     secrets: inherit
 
-  # call-vm-tests:
-  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
-  #   uses: OpenMined/PySyft/.github/workflows/vm-tests.yml@dev
+  call-container-scan:
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/container-scan.yml@dev

@@ -41,7 +41,7 @@ class LinkedObject(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.messages.resolve_object(self)
+        return api.services.notifications.resolve_object(self)
 
     def resolve_with_context(self, context: NodeServiceContext) -> Any:
         return context.node.get_service(self.service_type).resolve_link(

@@ -30,6 +30,7 @@ from .user import UserPrivateKey
 from .user import UserSearch
 from .user import UserUpdate
 from .user import UserView
+from .user import UserViewPage
 from .user import check_pwd
 from .user import salt_and_hash_password
 from .user_roles import DATA_OWNER_ROLE_LEVEL
@@ -98,19 +99,21 @@ class UserService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[Optional[UserView], SyftError]:
+    ) -> Union[Optional[UserViewPage], Optional[UserView], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             results = [user.to(UserView) for user in result.ok()]
 
             # If chunk size is defined, then split list into evenly sized chunks
             if page_size:
+                total = len(results)
                 results = [
                     results[i : i + page_size]
                     for i in range(0, len(results), page_size)
                 ]
                 # Return the proper slice using chunk_index
                 results = results[page_index]
+                results = UserViewPage(users=results, total=total)
 
             return results
 
@@ -144,7 +147,7 @@ class UserService(AbstractService):
         user_search: UserSearch,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[List[UserView], SyftError]:
+    ) -> Union[Optional[UserViewPage], List[UserView], SyftError]:
         kwargs = user_search.to_dict(exclude_empty=True)
 
         if len(kwargs) == 0:
@@ -162,11 +165,13 @@ class UserService(AbstractService):
 
         # If page size is defined, then split list into evenly sized chunks
         if page_size:
+            total = len(results)
             results = [
                 results[i : i + page_size] for i in range(0, len(results), page_size)
             ]
             # Return the proper slice using page_index
             results = results[page_index]
+            results = UserViewPage(users=results, total=total)
 
         return results
 
@@ -342,8 +347,9 @@ class UserService(AbstractService):
             if new_user.created_by is None
             else self.get_role_for_credentials(new_user.created_by)
         )
-        can_user_register = context.node.metadata.signup_enabled or (
-            request_user_role in DATA_OWNER_ROLE_LEVEL
+        can_user_register = (
+            context.node.metadata.signup_enabled
+            or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
 
         if not can_user_register:

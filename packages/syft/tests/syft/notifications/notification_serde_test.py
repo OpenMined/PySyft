@@ -11,13 +11,13 @@ import syft as sy
 @pytest.mark.parametrize(
     "obj_name",
     [
-        "mock_message",
-        "mock_create_message",
-        # "message_stash", # 🟡 TODO: Fix serde for KVDocumentPartition
-        # "message_service",
+        "mock_notification",
+        "mock_create_notification",
+        # "notification_stash", # 🟡 TODO: Fix serde for KVDocumentPartition
+        # "notification_service",
     ],
 )
-def test_message_serde(obj_name: str, request: FixtureRequest) -> None:
+def test_notification_serde(obj_name: str, request: FixtureRequest) -> None:
     obj = request.getfixturevalue(obj_name)
     ser_data = sy.serialize(obj, to_bytes=True)
     assert isinstance(ser_data, bytes)

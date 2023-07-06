@@ -1,4 +1,4 @@
-__version__ = "0.8.2-beta.1"
+__version__ = "0.8.2-beta.2"
 
 # stdlib
 import pathlib
@@ -14,6 +14,7 @@ from .client.client import login  # noqa: F401
 from .client.client import register  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
 from .client.registry import DomainRegistry  # noqa: F401
+from .client.registry import EnclaveRegistry  # noqa: F401
 from .client.registry import NetworkRegistry  # noqa: F401
 from .client.search import Search  # noqa: F401
 from .client.search import SearchResults  # noqa: F401
@@ -23,6 +24,7 @@ from .external import OBLV  # noqa: F401
 from .external import enable_external_lib  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
 from .node.domain import Domain  # noqa: F401
+from .node.enclave import Enclave  # noqa: F401
 from .node.gateway import Gateway  # noqa: F401
 from .node.server import serve_node  # noqa: F401
 from .node.server import serve_node as bind_worker  # noqa: F401
@@ -42,7 +44,7 @@ from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .service.dataset.dataset import Contributor  # noqa: F401
 from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
 from .service.dataset.dataset import CreateDataset as Dataset  # noqa: F401
-from .service.message.messages import MessageStatus  # noqa: F401
+from .service.notification.notifications import NotificationStatus  # noqa: F401
 from .service.policy.policy import CustomInputPolicy  # noqa: F401
 from .service.policy.policy import CustomOutputPolicy  # noqa: F401
 from .service.policy.policy import ExactMatch  # noqa: F401
@@ -120,6 +122,11 @@ def module_property(func: Any) -> Callable:
 @module_property
 def _gateways() -> NetworkRegistry:
     return NetworkRegistry()
+
+
+@module_property
+def _enclaves() -> EnclaveRegistry:
+    return EnclaveRegistry()
 
 
 @module_property

@@ -5,21 +5,38 @@ on:
     - cron: "00 15 * * */1" # At 15:00 UTC on every day
   workflow_dispatch:
     inputs:
-      none:
-        description: "Run hagrid cd manually"
+      skip_tests:
+        description: "If true, skip tests"
         required: false
-
-concurrency:
-  group: ${{ github.workflow_ref }}
-  cancel-in-progress: true
+        default: "false"
 
 jobs:
+  call-pr-tests-linting:
+    if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
+
+  call-pr-tests-syft:
+    if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
+
+  call-pr-tests-stack:
+    if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
+    secrets: inherit
+
   call-hagrid-tests:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-hagrid.yml@dev
 
   deploy-hagrid:
-    needs: call-hagrid-tests
+    needs:
+      [
+        call-pr-tests-linting,
+        call-pr-tests-syft,
+        call-pr-tests-stack,
+        call-hagrid-tests,
+      ]
+    if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' && needs.call-hagrid-tests.result == 'success' || github.event.inputs.skip_tests == 'true')
     runs-on: ubuntu-latest
 
     outputs:

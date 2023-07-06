@@ -57,7 +57,7 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
 
-    def _code_execution(
+    def _request_code_execution(
         self,
         context: AuthedServiceContext,
         code: SubmitUserCode,
@@ -94,7 +94,7 @@ class UserCodeService(AbstractService):
         reason: Optional[str] = "",
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
-        return self._code_execution(context=context, code=code, reason=reason)
+        return self._request_code_execution(context=context, code=code, reason=reason)
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
