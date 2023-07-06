@@ -16,7 +16,6 @@ import pandas as pd
 import requests
 
 # relative
-from ..enclave.enclave_client import AzureEnclaveClient
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.network_service import NodePeer
 from ..service.response import SyftException
@@ -24,6 +23,7 @@ from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
+from .enclave_client import EnclaveClient
 
 if TYPE_CHECKING:
     # relative
@@ -366,18 +366,20 @@ class EnclaveRegistry:
     @staticmethod
     def create_client(enclave: Dict[str, Any]) -> Client:  # type: ignore
         # relative
+        from ..client.client import connect
 
         try:
             port = int(enclave["port"])
             protocol = enclave["protocol"]
             host_or_ip = enclave["host_or_ip"]
             grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
-            return AzureEnclaveClient(url=grid_url.base_url, port=port)
+            client = connect(url=str(grid_url))
+            return client.guest()
         except Exception as e:
             error(f"Failed to login with: {enclave}. {e}")
             raise SyftException(f"Failed to login with: {enclave}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> AzureEnclaveClient:  # type: ignore
+    def __getitem__(self, key: Union[str, int]) -> EnclaveClient:  # type: ignore
         if isinstance(key, int):
             return self.create_client(enclave=self.online_enclaves[key])
         else:
