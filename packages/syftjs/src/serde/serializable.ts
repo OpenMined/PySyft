@@ -13,7 +13,7 @@ import { serializeChunks } from './utils';
 export function serializeObject(
   obj: any,
   serde_schema: any,
-  rs: RecursiveSerde
+  rs: RecursiveSerde,
 ) {
   if (obj !== serde_schema) {
     return SERIALIZABLE.PRIMITIVE.serialize(obj, rs, serde_schema.serialize);
@@ -118,7 +118,7 @@ const SERIALIZABLE = {
 function primitiveSerialization(
   obj: any,
   rs: RecursiveSerde,
-  serializer: (obj: any) => ArrayBuffer
+  serializer: (obj: any) => ArrayBuffer,
 ) {
   // Serialize the object using the specified serializer function
   const serializedObj = serializer(obj);
@@ -137,7 +137,7 @@ function primitiveSerialization(
 
 function primitiveDeserialization(
   rs: RecursiveSerde,
-  deserializer: (buffer: ArrayBuffer) => any
+  deserializer: (buffer: ArrayBuffer) => any,
 ) {
   const blob = rs.getNonrecursiveBlob();
   const totalChunk = mergeChunks(blob);
