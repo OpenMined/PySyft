@@ -21,6 +21,7 @@ import uvicorn
 
 # relative
 from ..client.client import API_PATH
+from ..util.constants import DEFAULT_TIMEOUT
 from ..util.util import os_name
 from .domain import Domain
 from .enclave import Enclave
@@ -127,7 +128,7 @@ def run_uvicorn(
 
 def serve_node(
     name: str,
-    node_type: Enum,
+    node_type: NodeType = NodeType.DOMAIN,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
     reset: bool = False,
@@ -160,7 +161,8 @@ def serve_node(
             for i in range(WAIT_TIME_SECONDS):
                 try:
                     req = requests.get(
-                        f"http://{host}:{port}{API_PATH}/metadata", timeout=0.5
+                        f"http://{host}:{port}{API_PATH}/metadata",
+                        timeout=DEFAULT_TIMEOUT,
                     )
                     if req.status_code == 200:
                         print(" Done.")

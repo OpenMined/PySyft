@@ -346,8 +346,9 @@ class UserService(AbstractService):
             if new_user.created_by is None
             else self.get_role_for_credentials(new_user.created_by)
         )
-        can_user_register = context.node.metadata.signup_enabled or (
-            request_user_role in DATA_OWNER_ROLE_LEVEL
+        can_user_register = (
+            context.node.metadata.signup_enabled
+            or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
 
         if not can_user_register:

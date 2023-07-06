@@ -22,6 +22,7 @@ from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..context import NodeServiceContext
 from ..response import SyftError
@@ -34,7 +35,10 @@ if TYPE_CHECKING:
 class NodeRoute:
     def client_with_context(self, context: NodeServiceContext) -> SyftClient:
         connection = route_to_connection(route=self, context=context)
-        return SyftClient(connection=connection, credentials=context.node.signing_key)
+        client_type = connection.get_client_type()
+        if isinstance(client_type, SyftError):
+            return client_type
+        return client_type(connection=connection, credentials=context.node.signing_key)
 
     def validate_with_context(self, context: AuthedServiceContext) -> NodePeer:
         # relative
@@ -75,6 +79,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     private: bool = False
     protocol: str = "http"
     port: int = 80
+    proxy_target_uid: Optional[UID] = None
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, HTTPNodeRoute):
@@ -88,6 +93,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
     __version__ = SYFT_OBJECT_VERSION_1
 
     worker_settings: WorkerSettings
+    proxy_target_uid: Optional[UID] = None
 
     @property
     def node(self) -> Optional[AbstractNode]:
