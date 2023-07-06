@@ -15,8 +15,10 @@
   let searchTerm = '';
   let userList: UserListView[] = [];
   let total: number = 0;
-  let paginators: number[] = [1, 2, 3, 4, 5];
-  let page_size: number = 2, page_index: number = 0, page_row: number = 3;
+  let paginators: number[] = [5, 10, 15, 20, 25];
+  let page_size: number = 5,
+    page_index: number = 0,
+    page_row: number = 5;
 
   let openModal: string | null = null;
 
@@ -41,10 +43,8 @@
       total = results.total;
     } else {
       const results = await searchUsersByName(searchTerm, page_size);
-      // const results = await searchUsersByName(searchTerm, page_size, 0);
-      // userList = results.users;
-      // total = results.total;
-      // console.log(results)
+      userList = results.users;
+      total = results.total;
     }
   }, 300);
 
@@ -72,7 +72,15 @@
     <div class="flex-shrink-0">
       <div class="flex gap-2.5">
         <Badge variant="gray">Total: {total || 0}</Badge>
-        <Filter variant="gray" filters={paginators} bind:filter={page_size} bind:index={page_index} on:setFilter={handleUpdate}>Filter: </Filter>
+        <Filter
+          variant="gray"
+          filters={paginators}
+          bind:filter={page_size}
+          bind:index={page_index}
+          on:setFilter={handleUpdate}
+        >
+          Filter:
+        </Filter>
       </div>
     </div>
   </div>
@@ -86,12 +94,12 @@
   <div class="flex justify-center items-center mb-8 divide-y divide-gray-100">
     <Pagination
       variant="gray"
-      total={total}
-      page_size={page_size}
-      page_row={page_row}
-      bind:page_index={page_index}
+      {total}
+      {page_size}
+      {page_row}
+      bind:page_index
       on:setPagination={handleUpdate}
-    ></Pagination>
+    />
   </div>
 </div>
 <div class="fixed bottom-10 right-12">
