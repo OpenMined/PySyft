@@ -3,10 +3,10 @@ name: Container Scan
 on:
   workflow_call:
 
-  push:
-    branches:
-      - dev
-      - main
+  # push:
+  #   branches:
+  #     - dev
+  #     - main
 
   workflow_dispatch:
     inputs:
