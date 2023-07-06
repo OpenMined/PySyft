@@ -23,7 +23,7 @@ from typing_extensions import Self
 # relative
 from ...abstract_node import NodeType
 from ...client.api import NodeView
-from ...enclave.metadata import EnclaveMetadata
+from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
