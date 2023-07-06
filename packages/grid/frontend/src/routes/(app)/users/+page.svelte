@@ -40,11 +40,11 @@
       userList = results.users;
       total = results.total;
     } else {
-      userList = await searchUsersByName(searchTerm);
-      // const results = await searchUsersByName(searchTerm, page_size);
+      const results = await searchUsersByName(searchTerm, page_size);
+      // const results = await searchUsersByName(searchTerm, page_size, 0);
       // userList = results.users;
       // total = results.total;
-      // console.log(userList)
+      // console.log(results)
     }
   }, 300);
 

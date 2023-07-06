@@ -9,7 +9,7 @@
   export let page_index: number;
   export let page_row: number;
 
-  const pageNumbers = (total: number, max: number, current: number) => {
+  const pageNumbers = (total: number, max: number, size: number, current: number) => {
     const half = Math.floor(max / 2);
     let to = max;
 
@@ -21,11 +21,11 @@
 
     let from = Math.max(to - max, 0);
 
-    return Array.from({length: Math.min(total, max)}, (_, i) => (i + 1) + from);
+    return Array.from({length: Math.min(Math.ceil(total/size), max)}, (_, i) => (i + 1) + from);
   }
 
   $: paginators = Math.ceil(total / page_size) || 0;
-  $: paginations = pageNumbers(total, page_row, page_index);
+  $: paginations = pageNumbers(total, page_row, page_size, page_index);
 
   const handlePaginate = (index: number) => {
 		page_index = index;
@@ -61,7 +61,7 @@
   {#each paginations as pagination}
     <button
       type="button"
-      title="Paginate"
+      title={`Page ${pagination}`}
       class={`${variant} pagination-button ${(pagination - 1) === page_index ? 'primary-light' : ''}`}
       style=""
       aria-pressed="false"
