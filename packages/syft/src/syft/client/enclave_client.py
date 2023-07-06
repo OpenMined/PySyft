@@ -11,12 +11,12 @@ from typing_extensions import Self
 # relative
 from ..client.api import APIRegistry
 from ..serde.serializable import serializable
+from ..service.network.routes import NodeRouteType
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from .api import APIModule
 from .client import SyftClient
-from .connection import NodeConnection
 
 if TYPE_CHECKING:
     # relative
@@ -28,7 +28,7 @@ class EnclaveMetadata(SyftObject):
     __canonical_name__ = "EnclaveMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    connection: NodeConnection
+    route: NodeRouteType
 
 
 @serializable()
@@ -50,7 +50,7 @@ class EnclaveClient(SyftClient):
         return self.exchange_route(client)
 
     def get_enclave_metadata(self) -> EnclaveMetadata:
-        return EnclaveMetadata(connection=self.connection)
+        return EnclaveMetadata(route=self.connection.route)
 
     def request_code_execution(self, code: SubmitUserCode):
         # relative

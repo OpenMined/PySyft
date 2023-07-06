@@ -16,6 +16,7 @@ from ..code.user_code_service import UserCode
 from ..code.user_code_service import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
+from ..network.routes import route_to_connection
 from ..service import AbstractService
 from ..service import service_method
 
@@ -145,8 +146,9 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     if isinstance(user_code.enclave_metadata, EnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
 
+        connection = route_to_connection(user_code.enclave_metadata.route)
         enclave_client = EnclaveClient(
-            connection=user_code.enclave_metadata.connection,
+            connection=connection,
             credentials=context.node.signing_key,
         )
 
