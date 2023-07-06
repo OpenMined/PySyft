@@ -17,6 +17,9 @@ devDependencies:
   '@types/debug':
     specifier: ^4.1.8
     version: 4.1.8
+  '@types/uuid':
+    specifier: ^9.0.2
+    version: 9.0.2
   '@typescript-eslint/eslint-plugin':
     specifier: ^5.61.0
     version: 5.61.0(@typescript-eslint/parser@5.61.0)(eslint@8.44.0)(typescript@4.2.4)
@@ -71,6 +74,9 @@ devDependencies:
   typescript:
     specifier: ^4.2.4
     version: 4.2.4
+  uuid:
+    specifier: ^9.0.0
+    version: 9.0.0
   vitest:
     specifier: ^0.32.4
     version: 0.32.4
@@ -1037,6 +1043,13 @@ packages:
     resolution:
       {
         integrity: sha512-G8hZ6XJiHnuhQKR7ZmysCeJWE08o8T0AXtk5darsCaTVsYZhhgUrq53jizaR2FvsoeCwJhlmwTjkXBY5Pn/ZHw==,
+      }
+    dev: true
+
+  /@types/uuid@9.0.2:
+    resolution:
+      {
+        integrity: sha512-kNnC1GFBLuhImSnV7w4njQkUiJi0ZXUycu1rUaouPqiKlXkh77JKgdRnTAp1x5eBwcIwbtI+3otwzuIDEuDoxQ==,
       }
     dev: true
 
@@ -5832,6 +5845,14 @@ packages:
     resolution:
       {
         integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==,
+      }
+    hasBin: true
+    dev: true
+
+  /uuid@9.0.0:
+    resolution:
+      {
+        integrity: sha512-MXcSTerfPa4uqyzStbRoTgt5XIe3x5+42+q1sDuy3R5MDk66URdLMOZe5aPX/SQd+kuYAh0FdP/pO28IkQyTeg==,
       }
     hasBin: true
     dev: true

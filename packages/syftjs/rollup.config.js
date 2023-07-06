@@ -7,6 +7,6 @@ export default {
     dir: 'lib/',
     format: 'cjs',
   },
-  external: ['capnp-ts'],
+  external: ['capnp-ts', 'uuid'],
   plugins: [typescript()],
 };
