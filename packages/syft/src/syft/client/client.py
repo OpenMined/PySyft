@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import Enum
 import hashlib
 import json
+import subprocess
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -22,7 +23,6 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from tqdm import tqdm
 from typing_extensions import Self
-import subprocess
 
 # relative
 from .. import __version__
@@ -47,13 +47,13 @@ from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
+from ..util.env import Env
 from ..util.fonts import fonts_css
 from ..util.logger import debug
 from ..util.telemetry import instrument
 from ..util.util import get_mb_size
 from ..util.util import thread_ident
 from ..util.util import verify_tls
-from ..util.env import Env
 from .api import APIModule
 from .api import APIRegistry
 from .api import SignedSyftAPICall
@@ -331,9 +331,13 @@ class SyftClient:
         self.post_init()
 
     def get_env(self) -> Env:
-        res = subprocess.run("pip list --format=freeze",
-                             shell=True, check=True, executable='/bin/bash',
-                             capture_output=True)
+        res = subprocess.run(
+            "pip list --format=freeze",
+            shell=True,
+            check=True,
+            executable="/bin/bash",
+            capture_output=True,
+        )
         return res.stdout.decode()
         # packages_dict = {}
         # for line in res.stdout.decode().split('\n')[:-1]:
