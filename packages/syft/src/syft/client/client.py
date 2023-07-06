@@ -766,8 +766,24 @@ def connect(
         if isinstance(port, (int, str)):
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
-    _client = SyftClient(connection=connection)
-    return _client
+
+    # TODO: Rasswanth, should remove passing in credentials
+    # when metadata are proxy forwarded in the grid routes
+    # in the gateway fixes PR
+    # relative
+    from .domain_client import DomainClient
+    from .enclave_client import EnclaveClient
+    from .gateway_client import GatewayClient
+
+    metadata = connection.get_node_metadata(credentials=SyftSigningKey.generate())
+    if metadata.node_type == "domain":
+        return DomainClient(connection=connection)
+    elif metadata.node_type == "gateway":
+        return GatewayClient(connection=connection)
+    elif metadata.node_type == "enclave":
+        return EnclaveClient(connection=connection)
+    else:
+        return SyftError(message=f"Unknown node type {metadata.node_type}")
 
 
 @instrument
@@ -801,6 +817,8 @@ def login(
     verbose: bool = True,
 ) -> SyftClient:
     _client = connect(url=url, node=node, port=port)
+    if isinstance(_client, SyftError):
+        return _client
     connection = _client.connection
 
     login_credentials = None
