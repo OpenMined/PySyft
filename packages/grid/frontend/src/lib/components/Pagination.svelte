@@ -13,35 +13,34 @@
     const half = Math.floor(max / 2);
     let to = max;
 
-    if(current + half >= total) {
+    if (current + half >= total) {
       to = total;
-    } else if(current > half) {
-      to = current + half ;
+    } else if (current > half) {
+      to = current + half;
     }
 
     let from = Math.max(to - max, 0);
 
-    return Array.from({length: Math.min(Math.ceil(total/size), max)}, (_, i) => (i + 1) + from);
-  }
+    return Array.from({ length: Math.min(Math.ceil(total / size), max) }, (_, i) => i + 1 + from);
+  };
 
   $: paginators = Math.ceil(total / page_size) || 0;
   $: paginations = pageNumbers(total, page_row, page_size, page_index);
 
   const handlePaginate = (index: number) => {
-		page_index = index;
+    page_index = index;
     dispatch('setPagination', page_index);
-	};
+  };
 
   const handlePrev = () => {
-    if ((page_index - 1) < 0) return;
+    if (page_index - 1 < 0) return;
     else dispatch('setPagination', page_index--);
-	};
+  };
 
   const handleNext = () => {
-    if ((page_index + 1) >= paginators) return;
+    if (page_index + 1 >= paginators) return;
     else dispatch('setPagination', page_index++);
-	};
-
+  };
 </script>
 
 <span class="flex gap-2.5">
@@ -50,10 +49,10 @@
     title="Previous"
     class={`${variant} pagination-button`}
     style=""
-    style:cursor={(page_index) === 0 ? 'not-allowed' : 'pointer'}
+    style:cursor={page_index === 0 ? 'not-allowed' : 'pointer'}
     aria-pressed="false"
     aria-label="LEFT-POINTING ANGLE"
-    disabled='{(page_index) === 0}'
+    disabled={page_index === 0}
     on:click={handlePrev}
   >
     &#10094;
@@ -62,13 +61,15 @@
     <button
       type="button"
       title={`Page ${pagination}`}
-      class={`${variant} pagination-button ${(pagination - 1) === page_index ? 'primary-light' : ''}`}
+      class={`${variant} pagination-button ${pagination - 1 === page_index ? 'primary-light' : ''}`}
       style=""
       aria-pressed="false"
       aria-label="Paginate"
-      on:click={() => {handlePaginate(pagination - 1)}}
+      on:click={() => {
+        handlePaginate(pagination - 1);
+      }}
     >
-      { pagination }
+      {pagination}
     </button>
   {/each}
   <button
@@ -76,10 +77,10 @@
     title="Next"
     class={`${variant} pagination-button`}
     style=""
-    style:cursor={(page_index+1) === paginators ? 'not-allowed' : 'pointer'}
+    style:cursor={page_index + 1 === paginators ? 'not-allowed' : 'pointer'}
     aria-pressed="false"
     aria-label="RIGHT-POINTING ANGLE"
-    disabled='{(page_index+1) === paginators}'
+    disabled={page_index + 1 === paginators}
     on:click={handleNext}
   >
     &#10095;
