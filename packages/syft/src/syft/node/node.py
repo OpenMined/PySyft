@@ -574,13 +574,24 @@ class Node(AbstractNode):
 
             if peer.is_ok() and peer.ok():
                 peer = peer.ok()
-                context = NodeServiceContext(node=self)
+                context = AuthedServiceContext(
+                    node=self, credentials=api_call.credentials
+                )
                 client = peer.client_with_context(context=context)
                 self.client_cache[node_uid] = client
         if client:
-            signed_result = client.connection.make_call(api_call)
-
-            result = debox_signed_syftapicall_response(signed_result=signed_result)
+            message: SyftAPICall = api_call.message
+            if message.path == "metadata":
+                result = client.metadata
+            elif message.path == "login":
+                result = client.connection.login(**message.kwargs)
+            elif message.path == "register":
+                result = client.connection.register(**message.kwargs)
+            elif message.path == "api":
+                result = client.connection.get_api(**message.kwargs)
+            else:
+                signed_result = client.connection.make_call(api_call)
+                result = debox_signed_syftapicall_response(signed_result=signed_result)
 
             return result
 

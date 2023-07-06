@@ -6,9 +6,11 @@ from enum import Enum
 import hashlib
 import json
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Tuple
 from typing import Type
 from typing import Union
 from typing import cast
@@ -79,6 +81,34 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
     except Exception as e:
         print(f"Failed to upgrade to HTTPS. {e}")
     return url
+
+
+def forward_message_to_proxy(
+    make_call: Callable,
+    proxy_target_uid: UID,
+    path: str,
+    credentials: Optional[SyftSigningKey] = None,
+    args: Optional[Tuple] = None,
+    kwargs: Optional[Dict] = None,
+):
+    kwargs = {} if kwargs is None else kwargs
+    args = [] if args is None else args
+    call = SyftAPICall(
+        node_uid=proxy_target_uid,
+        path=path,
+        args=args,
+        kwargs=kwargs,
+        blocking=True,
+    )
+
+    if credentials is None:
+        # generate a random signing key
+        credentials = SyftSigningKey.generate()
+
+    signed_message = call.sign(credentials=credentials)
+    signed_result = make_call(signed_message)
+    response = debox_signed_syftapicall_response(signed_result)
+    return response
 
 
 API_PATH = "/api/v2"
@@ -166,19 +196,13 @@ class HTTPConnection(NodeConnection):
 
     def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
         if self.proxy_target_uid:
-            call = SyftAPICall(
-                node_uid=self.proxy_target_uid,
+            response = forward_message_to_proxy(
+                make_call=self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
                 path="metadata",
-                args=[],
-                kwargs={},
-                blocking=True,
+                credentials=credentials,
             )
-            signed_call = call.sign(credentials=credentials)
-            signed_result = self.make_call(signed_call)
-            response = debox_signed_syftapicall_response(signed_result)
-            if isinstance(response, SyftError):
-                return response
-            return response.to(NodeMetadataJSON)
+            return response
         else:
             response = self._make_get(self.routes.ROUTE_METADATA.value)
             metadata_json = json.loads(response)
@@ -186,26 +210,54 @@ class HTTPConnection(NodeConnection):
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         params = {"verify_key": str(credentials.verify_key)}
-        content = self._make_get(self.routes.ROUTE_API.value, params=params)
-        obj = _deserialize(content, from_bytes=True)
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="api",
+                kwargs={"credentials": credentials},
+                credentials=credentials,
+            )
+        else:
+            content = self._make_get(self.routes.ROUTE_API.value, params=params)
+            obj = _deserialize(content, from_bytes=True)
         obj.connection = self
         obj.signing_key = credentials
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
 
-    def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
+    def login(
+        self,
+        email: str,
+        password: str,
+    ) -> Optional[SyftSigningKey]:
         credentials = {"email": email, "password": password}
-        response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
-        obj = _deserialize(response, from_bytes=True)
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="login",
+                kwargs=credentials,
+            )
+        else:
+            response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
+            obj = _deserialize(response, from_bytes=True)
         if isinstance(obj, UserPrivateKey):
             return obj
         return None
 
     def register(self, new_user: UserCreate) -> SyftSigningKey:
         data = _serialize(new_user, to_bytes=True)
-        response = self._make_post(self.routes.ROUTE_REGISTER.value, data=data)
-        response = _deserialize(response, from_bytes=True)
+        if self.proxy_target_uid:
+            response = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="register",
+            )
+        else:
+            response = self._make_post(self.routes.ROUTE_REGISTER.value, data=data)
+            response = _deserialize(response, from_bytes=True)
         return response
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
@@ -246,25 +298,28 @@ class PythonConnection(NodeConnection):
 
     def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
         if self.proxy_target_uid:
-            call = SyftAPICall(
-                node_uid=self.proxy_target_uid,
+            response = forward_message_to_proxy(
+                make_call=self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
                 path="metadata",
-                args=[],
-                kwargs={},
-                blocking=True,
+                credentials=credentials,
             )
-            signed_call = call.sign(credentials=credentials)
-            signed_result = self.make_call(signed_call)
-            response = debox_signed_syftapicall_response(signed_result)
-            if isinstance(response, SyftError):
-                return response
-            return response.to(NodeMetadataJSON)
+            return response
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
-        obj = self.node.get_api(for_user=credentials.verify_key)
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="api",
+                kwargs={"credentials": credentials},
+                credentials=credentials,
+            )
+        else:
+            obj = self.node.get_api(for_user=credentials.verify_key)
         obj.connection = self
         obj.signing_key = credentials
         if self.proxy_target_uid:
@@ -286,16 +341,37 @@ class PythonConnection(NodeConnection):
         result = method()
         return result
 
-    def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
-        obj = self.exchange_credentials(email=email, password=password)
+    def login(
+        self,
+        email: str,
+        password: str,
+    ) -> Optional[SyftSigningKey]:
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="login",
+                kwargs={"email": email, "password": password},
+            )
+
+        else:
+            obj = self.exchange_credentials(email=email, password=password)
         if isinstance(obj, UserPrivateKey):
             return obj
         return None
 
     def register(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
-        service_context = NodeServiceContext(node=self.node)
-        method = self.node.get_service_method(UserService.register)
-        response = method(context=service_context, new_user=new_user)
+        if self.proxy_target_uid:
+            response = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="register",
+                kwargs={"new_user": new_user},
+            )
+        else:
+            service_context = NodeServiceContext(node=self.node)
+            method = self.node.get_service_method(UserService.register)
+            response = method(context=service_context, new_user=new_user)
         return response
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
