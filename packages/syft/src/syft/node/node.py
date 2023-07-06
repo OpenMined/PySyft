@@ -36,6 +36,7 @@ from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
+from ..client.api import debox_signed_syftapicall_response
 from ..external import OBLV
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
@@ -576,9 +577,12 @@ class Node(AbstractNode):
                 context = NodeServiceContext(node=self)
                 client = peer.client_with_context(context=context)
                 self.client_cache[node_uid] = client
-
         if client:
-            return client.connection.make_call(api_call)
+            signed_result = client.connection.make_call(api_call)
+
+            result = debox_signed_syftapicall_response(signed_result=signed_result)
+
+            return result
 
         return SyftError(message=(f"Node has no route to {node_uid}"))
 

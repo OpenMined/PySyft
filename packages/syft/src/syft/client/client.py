@@ -57,6 +57,7 @@ from .api import APIRegistry
 from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
+from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
 
 # use to enable mitm proxy
@@ -173,7 +174,8 @@ class HTTPConnection(NodeConnection):
                 blocking=True,
             )
             signed_call = call.sign(credentials=credentials)
-            response = self.make_call(signed_call)
+            signed_result = self.make_call(signed_call)
+            response = debox_signed_syftapicall_response(signed_result)
             if isinstance(response, SyftError):
                 return response
             return response.to(NodeMetadataJSON)
@@ -252,7 +254,8 @@ class PythonConnection(NodeConnection):
                 blocking=True,
             )
             signed_call = call.sign(credentials=credentials)
-            response = self.make_call(signed_call)
+            signed_result = self.make_call(signed_call)
+            response = debox_signed_syftapicall_response(signed_result)
             if isinstance(response, SyftError):
                 return response
             return response.to(NodeMetadataJSON)
