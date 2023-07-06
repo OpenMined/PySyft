@@ -34,11 +34,14 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
+from ..service.dataset.dataset import Contributor
+from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.user.roles import Roles
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_roles import ServiceRole
@@ -58,8 +61,6 @@ from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
 from .connection import NodeConnection
-from ..service.user.roles import Roles
-from ..service.dataset.dataset import Contributor, CreateAsset, CreateDataset
 
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
@@ -67,9 +68,8 @@ from ..service.dataset.dataset import Contributor, CreateAsset, CreateDataset
 
 
 def add_default_uploader(
-        user, 
-        obj: Union[CreateDataset, CreateAsset]
-    ) -> Union[CreateDataset, CreateAsset]:
+    user, obj: Union[CreateDataset, CreateAsset]
+) -> Union[CreateDataset, CreateAsset]:
     uploader = None
     for contributor in obj.contributors:
         if contributor.role == str(Roles.UPLOADER):
@@ -82,9 +82,10 @@ def add_default_uploader(
             name=user.name,
             email=user.email,
         )
-        obj.contributors.append(uploader) 
+        obj.contributors.append(uploader)
     obj.uploader = uploader
     return obj
+
 
 if TYPE_CHECKING:
     # relative

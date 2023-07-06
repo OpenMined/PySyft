@@ -263,6 +263,7 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        print(f"Request approved for domain {api.node_name}")
         return api.services.request.apply(self.id)
 
     def deny(self, reason: str):
@@ -278,6 +279,7 @@ class Request(SyftObject):
         return api.services.request.undo(uid=self.id, reason=reason)
 
     def approve_with_client(self, client):
+        print(f"Request approved for domain {client.name}")
         return client.api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
