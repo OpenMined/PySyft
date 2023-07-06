@@ -8,7 +8,6 @@ import json
 from typing import Any
 from typing import Dict
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Type
 from typing import Union
 from typing import cast
@@ -20,7 +19,6 @@ from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
@@ -34,7 +32,6 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
-from ..service.dataset.dataset import CreateDataset
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftError
@@ -49,7 +46,6 @@ from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.logger import debug
 from ..util.telemetry import instrument
-from ..util.util import get_mb_size
 from ..util.util import thread_ident
 from ..util.util import verify_tls
 from .api import APIModule
@@ -62,10 +58,6 @@ from .connection import NodeConnection
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
 # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
-
-if TYPE_CHECKING:
-    # relative
-    from ..service.project.project import Project
 
 
 def upgrade_tls(url: GridURL, response: Response) -> GridURL:
@@ -409,6 +401,17 @@ class SyftClient:
         return "📡"
 
     @property
+    def peer(self) -> Any:
+        # relative
+        from ..service.network.network_service import NodePeer
+
+        return NodePeer.from_client(self)
+
+    @property
+    def route(self) -> Any:
+        return self.connection.route
+
+    @property
     def api(self) -> SyftAPI:
         # invalidate API
         if self._api is None or (self._api.signing_key != self.credentials):
@@ -422,35 +425,6 @@ class SyftClient:
             credentials=SyftSigningKey.generate(),
             metadata=self.metadata,
         )
-
-    def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
-        # relative
-        from ..types.twin_object import TwinObject
-
-        dataset._check_asset_must_contain_mock()
-        dataset_size = 0
-
-        for asset in tqdm(dataset.asset_list):
-            print(f"Uploading: {asset.name}")
-            try:
-                twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
-            except Exception as e:
-                return SyftError(message=f"Failed to create twin. {e}")
-            response = self.api.services.action.set(twin)
-            if isinstance(response, SyftError):
-                print(f"Failed to upload asset\n: {asset}")
-                return response
-            asset.action_id = twin.id
-            asset.node_uid = self.id
-            dataset_size += get_mb_size(asset.data)
-        dataset.mb_size = dataset_size
-        valid = dataset.check()
-        if valid.ok():
-            return self.api.services.dataset.add(dataset=dataset)
-        else:
-            if len(valid.err()) > 0:
-                return tuple(valid.err())
-            return valid.err()
 
     def exchange_route(self, client: Self) -> Union[SyftSuccess, SyftError]:
         # relative
@@ -467,15 +441,6 @@ class SyftClient:
 
         return result
 
-    def apply_to_gateway(self, client: Self) -> None:
-        return self.exchange_route(client)
-
-    @property
-    def data_subject_registry(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("data_subject"):
-            return self.api.services.data_subject
-        return None
-
     @property
     def users(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("user"):
@@ -486,23 +451,6 @@ class SyftClient:
     def settings(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("user"):
             return self.api.services.settings
-        return None
-
-    @property
-    def code(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("code"):
-            return self.api.services.code
-
-    @property
-    def requests(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("request"):
-            return self.api.services.request
-        return None
-
-    @property
-    def datasets(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("dataset"):
-            return self.api.services.dataset
         return None
 
     @property
@@ -520,30 +468,6 @@ class SyftClient:
         if self.api is not None and self.api.has_service("network"):
             return self.api.services.network.get_all_peers()
         return None
-
-    @property
-    def projects(self) -> Optional[APIModule]:
-        if self.api.has_service("project"):
-            return self.api.services.project
-        return None
-
-    def get_project(
-        self,
-        name: str = None,
-        uid: UID = None,
-    ) -> Optional[Project]:
-        """Get project by name or UID"""
-
-        if not self.api.has_service("project"):
-            return None
-
-        if name:
-            return self.api.services.project.get_by_name(name)
-
-        elif uid:
-            return self.api.services.project.get_by_uid(uid)
-
-        return self.api.services.project.get_all()
 
     def login(
         self, email: str, password: str, cache: bool = True, register=False, **kwargs
@@ -620,17 +544,6 @@ class SyftClient:
         if isinstance(response, tuple):
             response = response[0]
         return response
-
-    @property
-    def peer(self) -> Any:
-        # relative
-        from ..service.network.network_service import NodePeer
-
-        return NodePeer.from_client(self)
-
-    @property
-    def route(self) -> Any:
-        return self.connection.route
 
     def __getattr__(self, name):
         if (
