@@ -230,6 +230,25 @@ class HTTPConnection(NodeConnection):
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
 
+    def get_client_type(self) -> Type[SyftClient]:
+        # TODO: Rasswanth, should remove passing in credentials
+        # when metadata are proxy forwarded in the grid routes
+        # in the gateway fixes PR
+        # relative
+        from .domain_client import DomainClient
+        from .enclave_client import EnclaveClient
+        from .gateway_client import GatewayClient
+
+        metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
+        if metadata.node_type == "domain":
+            return DomainClient
+        elif metadata.node_type == "gateway":
+            return GatewayClient
+        elif metadata.node_type == "enclave":
+            return EnclaveClient
+        else:
+            return SyftError(message=f"Unknown node type {metadata.node_type}")
+
 
 @serializable()
 class PythonConnection(NodeConnection):
@@ -304,6 +323,25 @@ class PythonConnection(NodeConnection):
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
+    def get_client_type(self) -> Type[SyftClient]:
+        # TODO: Rasswanth, should remove passing in credentials
+        # when metadata are proxy forwarded in the grid routes
+        # in the gateway fixes PR
+        # relative
+        from .domain_client import DomainClient
+        from .enclave_client import EnclaveClient
+        from .gateway_client import GatewayClient
+
+        metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
+        if metadata.node_type == "domain":
+            return DomainClient
+        elif metadata.node_type == "gateway":
+            return GatewayClient
+        elif metadata.node_type == "enclave":
+            return EnclaveClient
+        else:
+            return SyftError(message=f"Unknown node type {metadata.node_type}")
+
 
 @instrument
 @serializable()
@@ -350,13 +388,13 @@ class SyftClient:
             raise ValueError("SigningKey not set on client")
         return self.credentials.verify_key
 
-    @staticmethod
-    def from_url(url: Union[str, GridURL]) -> Self:
-        return SyftClient(connection=HTTPConnection(GridURL.from_url(url)))
+    @classmethod
+    def from_url(cls, url: Union[str, GridURL]) -> Self:
+        return cls(connection=HTTPConnection(GridURL.from_url(url)))
 
-    @staticmethod
-    def from_node(node: AbstractNode) -> Self:
-        return SyftClient(connection=PythonConnection(node=node))
+    @classmethod
+    def from_node(cls, node: AbstractNode) -> Self:
+        return cls(connection=PythonConnection(node=node))
 
     @property
     def name(self) -> Optional[str]:
@@ -379,7 +417,7 @@ class SyftClient:
         return self._api
 
     def guest(self) -> Self:
-        return SyftClient(
+        return self.__class__(
             connection=self.connection,
             credentials=SyftSigningKey.generate(),
             metadata=self.metadata,
@@ -594,14 +632,6 @@ class SyftClient:
     def route(self) -> Any:
         return self.connection.route
 
-    def proxy_to(self, peer: Any) -> Self:
-        connection = self.connection.with_proxy(peer.id)
-        client = SyftClient(
-            connection=connection,
-            credentials=self.credentials,
-        )
-        return client
-
     def __getattr__(self, name):
         if (
             hasattr(self, "api")
@@ -767,23 +797,12 @@ def connect(
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
 
-    # TODO: Rasswanth, should remove passing in credentials
-    # when metadata are proxy forwarded in the grid routes
-    # in the gateway fixes PR
-    # relative
-    from .domain_client import DomainClient
-    from .enclave_client import EnclaveClient
-    from .gateway_client import GatewayClient
+    client_type = connection.get_client_type()
 
-    metadata = connection.get_node_metadata(credentials=SyftSigningKey.generate())
-    if metadata.node_type == "domain":
-        return DomainClient(connection=connection)
-    elif metadata.node_type == "gateway":
-        return GatewayClient(connection=connection)
-    elif metadata.node_type == "enclave":
-        return EnclaveClient(connection=connection)
-    else:
-        return SyftError(message=f"Unknown node type {metadata.node_type}")
+    if isinstance(client_type, SyftError):
+        return client_type
+
+    return client_type(connection=connection)
 
 
 @instrument
