@@ -11,11 +11,14 @@ from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
+from ..img.base64 import base64read
 from ..serde.serializable import serializable
 from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.user.user_roles import ServiceRole
 from ..types.uid import UID
+from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
 from .api import APIModule
 from .client import SyftClient
@@ -108,3 +111,97 @@ class DomainClient(SyftClient):
             return self.api.services.project.get_by_uid(uid)
 
         return self.api.services.project.get_all()
+
+    def _repr_html_(self) -> str:
+        guest_commands = """
+        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.login</span> - list projects</li>
+        <li>
+            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
+        </li>"""
+        ds_commands = """
+        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
+        <li>
+            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
+        </li>"""
+
+        do_commands = """
+        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.requests</span> - list requests</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.users</span> - list users</li>
+        <li>
+            <span class='syft-code-block'>&lt;your_client&gt;.requests.submit?</span> - display function signature
+        </li>"""
+
+        # TODO: how to select ds/do commands based on self.__user_role
+
+        if (
+            self.user_role.value == ServiceRole.NONE.value
+            or self.user_role.value == ServiceRole.GUEST.value
+        ):
+            commands = guest_commands
+        elif (
+            self.user_role is not None
+            and self.user_role.value == ServiceRole.DATA_SCIENTIST.value
+        ):
+            commands = ds_commands
+        elif (
+            self.user_role is not None
+            and self.user_role.value >= ServiceRole.DATA_OWNER.value
+        ):
+            commands = do_commands
+
+        command_list = f"""
+        <ul style='padding-left: 1em;'>
+            {commands}
+        </ul>
+        """
+
+        small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
+
+        return f"""
+        <style>
+            {fonts_css}
+
+            .syft-container {{
+                padding: 5px;
+                font-family: 'Open Sans';
+            }}
+            .syft-alert-info {{
+                color: #1F567A;
+                background-color: #C2DEF0;
+                border-radius: 4px;
+                padding: 5px;
+                padding: 13px 10px
+            }}
+            .syft-code-block {{
+                background-color: #f7f7f7;
+                border: 1px solid #cfcfcf;
+                padding: 0px 2px;
+            }}
+            .syft-space {{
+                margin-top: 1em;
+            }}
+        </style>
+        <div class="syft-client syft-container">
+            <img src="{small_grid_symbol_logo}" alt="Logo"
+            style="width:48px;height:48px;padding:3px;">
+            <h2>Welcome to {self.name}</h2>
+            <div class="syft-space">
+                <!-- <strong>Institution:</strong> TODO<br /> -->
+                <!-- <strong>Owner:</strong> TODO<br /> -->
+                <strong>URL:</strong> {getattr(self.connection, 'url', '')}<br />
+                <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
+            </div>
+            <div class='syft-alert-info syft-space'>
+                &#9432;&nbsp;
+                This domain is run by the library PySyft to learn more about how it works visit
+                <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
+            </div>
+            <h4>Commands to Get Started</h4>
+            {command_list}
+        </div><br />
+        """

@@ -11,8 +11,7 @@ from .client import SyftClient
 
 @serializable()
 class GatewayClient(SyftClient):
-    def __repr__(self) -> str:
-        return f"<GatewayClient: {self.name}>"
+    # TODO: add widget repr for gateway client
 
     def proxy_to(self, peer: Any) -> Self:
         connection = self.connection.with_proxy(peer.id)
