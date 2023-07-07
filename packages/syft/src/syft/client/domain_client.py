@@ -63,7 +63,12 @@ class DomainClient(SyftClient):
             return valid.err()
 
     def apply_to_gateway(self, client: Self) -> None:
-        return self.exchange_route(client)
+        res = self.exchange_route(client)
+        if isinstance(res, SyftSuccess):
+            return SyftSuccess(
+                message=f"Connected {self.metadata.node_type} to gateway"
+            )
+        return res
 
     @property
     def data_subject_registry(self) -> Optional[APIModule]:
