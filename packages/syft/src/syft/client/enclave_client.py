@@ -12,6 +12,7 @@ from typing_extensions import Self
 from ..client.api import APIRegistry
 from ..serde.serializable import serializable
 from ..service.network.routes import NodeRouteType
+from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -47,7 +48,12 @@ class EnclaveClient(SyftClient):
         return None
 
     def apply_to_gateway(self, client: Self) -> None:
-        return self.exchange_route(client)
+        res = self.exchange_route(client)
+        if isinstance(res, SyftSuccess):
+            return SyftSuccess(
+                message=f"Connected {self.metadata.node_type} to gateway"
+            )
+        return res
 
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)

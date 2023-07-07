@@ -244,6 +244,7 @@ class HTTPConnection(NodeConnection):
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="register",
+                kwargs={"new_user": new_user},
             )
         else:
             response = self._make_post(self.routes.ROUTE_REGISTER.value, data=data)
@@ -655,7 +656,7 @@ class SyftClient:
         if proxy_target_uid:
             client_type = "ProxyClient"
             uid = proxy_target_uid
-            return f"<{client_type} - <{uid}>: via {self.id} {self.connection}>"
+            return f"<{client_type} - <{uid}>: via {self.connection}>"
         return f"<{client_type} - {self.name} <{uid}>: {self.connection}>"
 
     def _fetch_node_metadata(self, credentials: SyftSigningKey) -> None:
