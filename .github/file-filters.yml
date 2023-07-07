@@ -76,6 +76,7 @@ frontend:
 notebooks:
   - .github/workflows/pr-tests-syft.yml
   - notebooks/api/**/*.ipynb
+  - notebooks/tutorials/**/*.ipynb
   - packages/syft/**/*.py
   - packages/syft/**/*.capnp
   - packages/syft/**/*.yml

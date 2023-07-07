@@ -34,6 +34,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - name: "clean .git/config"
         if: matrix.os == 'windows'
         continue-on-error: true
@@ -70,7 +74,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: buildjet/cache@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -113,6 +117,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - name: "clean .git/config"
         if: matrix.os == 'windows'
         continue-on-error: true
@@ -149,7 +157,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: buildjet/cache@v3
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -187,8 +195,11 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
-
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -215,7 +226,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: buildjet/cache@v3
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -282,8 +293,11 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
-
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -310,7 +324,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: buildjet/cache@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}

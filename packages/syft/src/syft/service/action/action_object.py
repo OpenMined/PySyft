@@ -28,6 +28,7 @@ from typing_extensions import Self
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
+from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
@@ -176,6 +177,7 @@ passthrough_attrs = [
     "send",  # syft
     "_copy_and_set_values",  # pydantic
     "get_from",  # syft
+    "get",  # syft
     "delete_data",  # syft
 ]
 dont_wrap_output_attrs = [
@@ -727,7 +729,7 @@ class ActionObject(SyftObject):
         """Get the object from a Syft Client"""
         res = client.api.services.action.get(self.id)
         if not isinstance(res, ActionObject):
-            return Err(res)
+            return SyftError(message=f"{res}")
         else:
             return res.syft_action_data
 
@@ -743,7 +745,7 @@ class ActionObject(SyftObject):
         res = api.services.action.get(self.id)
 
         if not isinstance(res, ActionObject):
-            return Err(res)
+            return SyftError(message=f"{res}")
         else:
             return res.syft_action_data
 

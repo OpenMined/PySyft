@@ -285,12 +285,14 @@ class NetworkService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Network Route Verified")
 
-    @service_method(path="network.get_all_peers", name="get_all_peers")
+    @service_method(
+        path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
+    )
     def get_all_peers(
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
-        result = self.stash.get_all(context.credentials)
+        result = self.stash.get_all(credentials=context.node.verify_key)
         if result.is_ok():
             peers = result.ok()
             return peers
@@ -463,6 +465,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
     context.output["protocol"] = url.protocol
     context.output["port"] = url.port
     context.output["private"] = False
+    context.output["proxy_target_uid"] = context.obj.proxy_target_uid
     return context
 
 
@@ -474,6 +477,7 @@ def http_connection_to_node_route() -> List[Callable]:
 def get_python_node_route(context: TransformContext) -> TransformContext:
     context.output["id"] = context.obj.node.id
     context.output["worker_settings"] = WorkerSettings.from_node(context.obj.node)
+    context.output["proxy_target_uid"] = context.obj.proxy_target_uid
     return context
 
 
@@ -486,7 +490,7 @@ def python_connection_to_node_route() -> List[Callable]:
 def node_route_to_python_connection(
     obj: Any, context: Optional[TransformContext] = None
 ) -> List[Callable]:
-    return PythonConnection(node=obj.node)
+    return PythonConnection(node=obj.node, proxy_target_uid=obj.proxy_target_uid)
 
 
 @transform_method(HTTPNodeRoute, HTTPConnection)
@@ -496,7 +500,7 @@ def node_route_to_http_connection(
     url = GridURL(
         protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
     ).as_container_host()
-    return HTTPConnection(url=url)
+    return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
 
 
 @transform(NodeMetadata, NodePeer)
