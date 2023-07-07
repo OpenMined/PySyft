@@ -103,6 +103,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         node = Worker(
             id=self.worker_settings.id,
             name=self.worker_settings.name,
+            node_type=self.worker_settings.node_type,
             signing_key=self.worker_settings.signing_key,
             document_store_config=self.worker_settings.document_store_config,
             action_store_config=self.worker_settings.action_store_config,
