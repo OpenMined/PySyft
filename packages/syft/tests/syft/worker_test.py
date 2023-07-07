@@ -96,8 +96,8 @@ def test_action_store() -> None:
 
     test_verift_key_2 = SyftVerifyKey.from_string(test_verify_key_string_2)
     test_object_result_fail = action_store.get(uid=uid, credentials=test_verift_key_2)
-    assert isinstance(test_object_result_fail, SyftError)
-    assert "denied" in test_object_result_fail.message
+    assert test_object_result_fail.is_err()
+    assert "denied" in test_object_result_fail.err()
 
 
 def test_user_transform() -> None:

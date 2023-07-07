@@ -21,7 +21,6 @@ from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ..response import SyftError
 from ..response import SyftSuccess
 from .action_object import TwinMode
 from .action_object import is_action_data_empty
@@ -70,7 +69,6 @@ class KeyValueActionStore(ActionStore):
 
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-
         if has_permission or self.has_permission(read_permission):
             try:
                 if isinstance(uid, LineageID):
@@ -82,7 +80,7 @@ class KeyValueActionStore(ActionStore):
                 return Ok(syft_object)
             except Exception as e:
                 return Err(f"Could not find item with uid {uid}, {e}")
-        return SyftError(message=f"Permission: {read_permission} denied")
+        return Err(f"Permission: {read_permission} denied")
 
     def get_pointer(
         self, uid: UID, credentials: SyftVerifyKey, node_uid: UID

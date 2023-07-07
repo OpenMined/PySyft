@@ -194,9 +194,9 @@ class Asset(SyftObject):
     def has_permission(self, data_result):
         # TODO: implement in a better way
         return not (
-            isinstance(data_result, SyftError)
-            and data_result.message.startswith("Permission")
-            and data_result.message.endswith("denied")
+            isinstance(data_result, str)
+            and data_result.startswith("Permission")
+            and data_result.endswith("denied")
         )
 
     @property
