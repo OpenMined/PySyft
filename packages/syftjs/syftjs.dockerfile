@@ -13,6 +13,10 @@ FROM base AS dependencies
 
 RUN pnpm i --frozen-lockfile
 
+FROM dependencies AS syftjs-doc-test
+COPY ./src/ ./src
+
+CMD pnpm test:doc
 
 FROM dependencies as syftjs-build
 COPY ./src/ ./src
@@ -23,3 +27,4 @@ FROM syftjs-build AS syftjs-unit-tests
 COPY ./tests ./tests
 
 CMD pnpm test:unit
+

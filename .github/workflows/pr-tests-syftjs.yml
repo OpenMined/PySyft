@@ -68,6 +68,13 @@ jobs:
         run: |
           pip install --upgrade tox
 
+      - name: Run SyftJS Documentation Tests
+        if: steps.changes.outputs.syftjs == 'true'
+        env:
+          DOCKER: true
+        run: |
+          tox -e syftjs.test.doc
+
       - name: Run SyftJS Unit Tests
         if: steps.changes.outputs.syftjs == 'true'
         env:
