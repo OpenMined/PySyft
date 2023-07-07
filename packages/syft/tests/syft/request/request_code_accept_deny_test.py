@@ -112,7 +112,7 @@ def test_action_store_change(faker: Faker, worker: Worker):
     assert result.is_ok()
 
     result = action_obj_ptr.get()
-    assert result.is_err()
+    assert isinstance(result, SyftError)
 
 
 def test_user_code_status_change(faker: Faker, worker: Worker):
