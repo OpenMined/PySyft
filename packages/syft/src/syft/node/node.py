@@ -330,10 +330,12 @@ class Node(AbstractNode):
     def root_client(self):
         # relative
         from ..client.client import PythonConnection
-        from ..client.client import SyftClient
 
         connection = PythonConnection(node=self)
-        return SyftClient(connection=connection, credentials=self.signing_key)
+        client_type = connection.get_client_type()
+        if isinstance(client_type, SyftError):
+            return client_type
+        return client_type(connection=connection, credentials=self.signing_key)
 
     @property
     def guest_client(self):
@@ -342,12 +344,16 @@ class Node(AbstractNode):
     def get_guest_client(self, verbose: bool = True):
         # relative
         from ..client.client import PythonConnection
-        from ..client.client import SyftClient
 
         connection = PythonConnection(node=self)
         if verbose:
             print(f"Logged into {self.name} as GUEST")
-        return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
+
+        client_type = connection.get_client_type()
+        if isinstance(client_type, SyftError):
+            return client_type
+
+        return client_type(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
         service_string = ""
