@@ -343,6 +343,18 @@ class APIModule:
         return results._repr_html_()
 
 
+def debox_signed_syftapicall_response(
+    signed_result: SignedSyftAPICall,
+) -> Union[Any, SyftError]:
+    if not isinstance(signed_result, SignedSyftAPICall):
+        return SyftError(message="The result is not signed")  # type: ignore
+
+    if not signed_result.is_valid:
+        return SyftError(message="The result signature is invalid")  # type: ignore
+
+    return signed_result.message.data
+
+
 @instrument
 @serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
@@ -443,13 +455,7 @@ class SyftAPI(SyftObject):
         signed_call = api_call.sign(credentials=self.signing_key)
         signed_result = self.connection.make_call(signed_call)
 
-        if not isinstance(signed_result, SignedSyftAPICall):
-            return SyftError(message="The result is not signed")  # type: ignore
-
-        if not signed_result.is_valid:
-            return SyftError(message="The result signature is invalid")  # type: ignore
-
-        result = signed_result.message.data
+        result = debox_signed_syftapicall_response(signed_result=signed_result)
 
         if isinstance(result, OkErr):
             if result.is_ok():
