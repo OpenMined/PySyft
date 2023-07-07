@@ -5,11 +5,11 @@ import os
 from fastapi import FastAPI
 
 # syft absolute
+from syft.abstract_node import NodeType
 from syft.client.client import API_PATH
 from syft.node.domain import Domain
 from syft.node.enclave import Enclave
 from syft.node.gateway import Gateway
-from syft.node.node import NodeType
 from syft.node.routes import make_routes
 
 worker_classes = {
@@ -29,4 +29,11 @@ worker = worker_class(
 router = make_routes(worker=worker)
 
 app = FastAPI(title="Worker")
+
+
+@app.get("/")
+async def root() -> str:
+    return f"OpenMined {node_type.value.capitalize()} Node Running"
+
+
 app.include_router(router, prefix=API_PATH)

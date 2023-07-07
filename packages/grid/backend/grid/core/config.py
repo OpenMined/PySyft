@@ -76,7 +76,7 @@ class Settings(BaseSettings):
 
     NODE_NAME: str = "default_node_name"
     STREAM_QUEUE: bool = False
-    NODE_TYPE: str = "Domain"
+    NODE_TYPE: str = "domain"
 
     OPEN_REGISTRATION: bool = True
 

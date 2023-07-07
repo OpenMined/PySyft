@@ -8,7 +8,6 @@ import json
 from typing import Any
 from typing import Dict
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Type
 from typing import Union
 from typing import cast
@@ -20,13 +19,11 @@ from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
-from ..img.base64 import base64read
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
@@ -34,7 +31,6 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
-from ..service.dataset.dataset import CreateDataset
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftError
@@ -46,10 +42,8 @@ from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
-from ..util.fonts import fonts_css
 from ..util.logger import debug
 from ..util.telemetry import instrument
-from ..util.util import get_mb_size
 from ..util.util import thread_ident
 from ..util.util import verify_tls
 from .api import APIModule
@@ -62,10 +56,6 @@ from .connection import NodeConnection
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
 # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
-
-if TYPE_CHECKING:
-    # relative
-    from ..service.project.project import Project
 
 
 def upgrade_tls(url: GridURL, response: Response) -> GridURL:
@@ -230,6 +220,25 @@ class HTTPConnection(NodeConnection):
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
 
+    def get_client_type(self) -> Type[SyftClient]:
+        # TODO: Rasswanth, should remove passing in credentials
+        # when metadata are proxy forwarded in the grid routes
+        # in the gateway fixes PR
+        # relative
+        from .domain_client import DomainClient
+        from .enclave_client import EnclaveClient
+        from .gateway_client import GatewayClient
+
+        metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
+        if metadata.node_type == "domain":
+            return DomainClient
+        elif metadata.node_type == "gateway":
+            return GatewayClient
+        elif metadata.node_type == "enclave":
+            return EnclaveClient
+        else:
+            return SyftError(message=f"Unknown node type {metadata.node_type}")
+
 
 @serializable()
 class PythonConnection(NodeConnection):
@@ -304,6 +313,25 @@ class PythonConnection(NodeConnection):
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
+    def get_client_type(self) -> Type[SyftClient]:
+        # TODO: Rasswanth, should remove passing in credentials
+        # when metadata are proxy forwarded in the grid routes
+        # in the gateway fixes PR
+        # relative
+        from .domain_client import DomainClient
+        from .enclave_client import EnclaveClient
+        from .gateway_client import GatewayClient
+
+        metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
+        if metadata.node_type == "domain":
+            return DomainClient
+        elif metadata.node_type == "gateway":
+            return GatewayClient
+        elif metadata.node_type == "enclave":
+            return EnclaveClient
+        else:
+            return SyftError(message=f"Unknown node type {metadata.node_type}")
+
 
 @instrument
 @serializable()
@@ -350,13 +378,13 @@ class SyftClient:
             raise ValueError("SigningKey not set on client")
         return self.credentials.verify_key
 
-    @staticmethod
-    def from_url(url: Union[str, GridURL]) -> Self:
-        return SyftClient(connection=HTTPConnection(GridURL.from_url(url)))
+    @classmethod
+    def from_url(cls, url: Union[str, GridURL]) -> Self:
+        return cls(connection=HTTPConnection(GridURL.from_url(url)))
 
-    @staticmethod
-    def from_node(node: AbstractNode) -> Self:
-        return SyftClient(connection=PythonConnection(node=node))
+    @classmethod
+    def from_node(cls, node: AbstractNode) -> Self:
+        return cls(connection=PythonConnection(node=node))
 
     @property
     def name(self) -> Optional[str]:
@@ -371,6 +399,17 @@ class SyftClient:
         return "📡"
 
     @property
+    def peer(self) -> Any:
+        # relative
+        from ..service.network.network_service import NodePeer
+
+        return NodePeer.from_client(self)
+
+    @property
+    def route(self) -> Any:
+        return self.connection.route
+
+    @property
     def api(self) -> SyftAPI:
         # invalidate API
         if self._api is None or (self._api.signing_key != self.credentials):
@@ -379,40 +418,11 @@ class SyftClient:
         return self._api
 
     def guest(self) -> Self:
-        return SyftClient(
+        return self.__class__(
             connection=self.connection,
             credentials=SyftSigningKey.generate(),
             metadata=self.metadata,
         )
-
-    def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
-        # relative
-        from ..types.twin_object import TwinObject
-
-        dataset._check_asset_must_contain_mock()
-        dataset_size = 0
-
-        for asset in tqdm(dataset.asset_list):
-            print(f"Uploading: {asset.name}")
-            try:
-                twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
-            except Exception as e:
-                return SyftError(message=f"Failed to create twin. {e}")
-            response = self.api.services.action.set(twin)
-            if isinstance(response, SyftError):
-                print(f"Failed to upload asset\n: {asset}")
-                return response
-            asset.action_id = twin.id
-            asset.node_uid = self.id
-            dataset_size += get_mb_size(asset.data)
-        dataset.mb_size = dataset_size
-        valid = dataset.check()
-        if valid.ok():
-            return self.api.services.dataset.add(dataset=dataset)
-        else:
-            if len(valid.err()) > 0:
-                return tuple(valid.err())
-            return valid.err()
 
     def exchange_route(self, client: Self) -> Union[SyftSuccess, SyftError]:
         # relative
@@ -429,15 +439,6 @@ class SyftClient:
 
         return result
 
-    def apply_to_gateway(self, client: Self) -> None:
-        return self.exchange_route(client)
-
-    @property
-    def data_subject_registry(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("data_subject"):
-            return self.api.services.data_subject
-        return None
-
     @property
     def users(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("user"):
@@ -448,23 +449,6 @@ class SyftClient:
     def settings(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("user"):
             return self.api.services.settings
-        return None
-
-    @property
-    def code(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("code"):
-            return self.api.services.code
-
-    @property
-    def requests(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("request"):
-            return self.api.services.request
-        return None
-
-    @property
-    def datasets(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("dataset"):
-            return self.api.services.dataset
         return None
 
     @property
@@ -483,31 +467,11 @@ class SyftClient:
             return self.api.services.network.get_all_peers()
         return None
 
-    @property
-    def projects(self) -> Optional[APIModule]:
-        if self.api.has_service("project"):
-            return self.api.services.project
-        return None
-
-    def get_project(
-        self,
-        name: str = None,
-        uid: UID = None,
-    ) -> Optional[Project]:
-        """Get project by name or UID"""
-
-        if not self.api.has_service("project"):
-            return None
-
-        if name:
-            return self.api.services.project.get_by_name(name)
-
-        elif uid:
-            return self.api.services.project.get_by_uid(uid)
-
-        return self.api.services.project.get_all()
-
-    def login(self, email: str, password: str, cache: bool = True) -> Self:
+    def login(
+        self, email: str, password: str, cache: bool = True, register=False, **kwargs
+    ) -> Self:
+        if register:
+            self.register(email=email, password=password, **kwargs)
         user_private_key = self.connection.login(email=email, password=password)
         signing_key = None
         if user_private_key is not None:
@@ -579,25 +543,6 @@ class SyftClient:
             response = response[0]
         return response
 
-    @property
-    def peer(self) -> Any:
-        # relative
-        from ..service.network.network_service import NodePeer
-
-        return NodePeer.from_client(self)
-
-    @property
-    def route(self) -> Any:
-        return self.connection.route
-
-    def proxy_to(self, peer: Any) -> Self:
-        connection = self.connection.with_proxy(peer.id)
-        client = SyftClient(
-            connection=connection,
-            credentials=self.credentials,
-        )
-        return client
-
     def __getattr__(self, name):
         if (
             hasattr(self, "api")
@@ -634,100 +579,6 @@ class SyftClient:
             return f"<{client_type} - <{uid}>: via {self.id} {self.connection}>"
         return f"<{client_type} - {self.name} <{uid}>: {self.connection}>"
 
-    def _repr_html_(self) -> str:
-        guest_commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.login</span> - list projects</li>
-        <li>
-            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
-        </li>"""
-        ds_commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
-        <li>
-            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
-        </li>"""
-
-        do_commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.requests</span> - list requests</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.users</span> - list users</li>
-        <li>
-            <span class='syft-code-block'>&lt;your_client&gt;.requests.submit?</span> - display function signature
-        </li>"""
-
-        # TODO: how to select ds/do commands based on self.__user_role
-
-        if (
-            self.user_role.value == ServiceRole.NONE.value
-            or self.user_role.value == ServiceRole.GUEST.value
-        ):
-            commands = guest_commands
-        elif (
-            self.user_role is not None
-            and self.user_role.value == ServiceRole.DATA_SCIENTIST.value
-        ):
-            commands = ds_commands
-        elif (
-            self.user_role is not None
-            and self.user_role.value >= ServiceRole.DATA_OWNER.value
-        ):
-            commands = do_commands
-
-        command_list = f"""
-        <ul style='padding-left: 1em;'>
-            {commands}
-        </ul>
-        """
-
-        small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
-
-        return f"""
-        <style>
-            {fonts_css}
-
-            .syft-container {{
-                padding: 5px;
-                font-family: 'Open Sans';
-            }}
-            .syft-alert-info {{
-                color: #1F567A;
-                background-color: #C2DEF0;
-                border-radius: 4px;
-                padding: 5px;
-                padding: 13px 10px
-            }}
-            .syft-code-block {{
-                background-color: #f7f7f7;
-                border: 1px solid #cfcfcf;
-                padding: 0px 2px;
-            }}
-            .syft-space {{
-                margin-top: 1em;
-            }}
-        </style>
-        <div class="syft-client syft-container">
-            <img src="{small_grid_symbol_logo}" alt="Logo"
-            style="width:48px;height:48px;padding:3px;">
-            <h2>Welcome to {self.name}</h2>
-            <div class="syft-space">
-                <!-- <strong>Institution:</strong> TODO<br /> -->
-                <!-- <strong>Owner:</strong> TODO<br /> -->
-                <strong>URL:</strong> {getattr(self.connection, 'url', '')}<br />
-                <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
-            </div>
-            <div class='syft-alert-info syft-space'>
-                &#9432;&nbsp;
-                This domain is run by the library PySyft to learn more about how it works visit
-                <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
-            </div>
-            <h4>Commands to Get Started</h4>
-            {command_list}
-        </div><br />
-        """
-
     def _fetch_node_metadata(self, credentials: SyftSigningKey) -> None:
         metadata = self.connection.get_node_metadata(credentials=credentials)
         if isinstance(metadata, NodeMetadataJSON):
@@ -762,8 +613,13 @@ def connect(
         if isinstance(port, (int, str)):
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
-    _client = SyftClient(connection=connection)
-    return _client
+
+    client_type = connection.get_client_type()
+
+    if isinstance(client_type, SyftError):
+        return client_type
+
+    return client_type(connection=connection)
 
 
 @instrument
@@ -797,6 +653,8 @@ def login(
     verbose: bool = True,
 ) -> SyftClient:
     _client = connect(url=url, node=node, port=port)
+    if isinstance(_client, SyftError):
+        return _client
     connection = _client.connection
 
     login_credentials = None
