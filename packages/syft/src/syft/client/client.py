@@ -33,14 +33,10 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
-from ..service.dataset.dataset import Contributor
-from ..service.dataset.dataset import CreateAsset
-from ..service.dataset.dataset import CreateDataset
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..service.user.roles import Roles
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_roles import ServiceRole
@@ -63,31 +59,6 @@ from .connection import NodeConnection
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
 # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
-
-
-def add_default_uploader(
-    user, obj: Union[CreateDataset, CreateAsset]
-) -> Union[CreateDataset, CreateAsset]:
-    uploader = None
-    for contributor in obj.contributors:
-        if contributor.role == str(Roles.UPLOADER):
-            uploader = contributor
-            break
-
-    if uploader is None:
-        uploader = Contributor(
-            role=str(Roles.UPLOADER),
-            name=user.name,
-            email=user.email,
-        )
-        obj.contributors.append(uploader)
-    obj.uploader = uploader
-    return obj
-
-
-if TYPE_CHECKING:
-    # relative
-    from ..service.project.project import Project
 
 
 def upgrade_tls(url: GridURL, response: Response) -> GridURL:
@@ -548,43 +519,6 @@ class SyftClient:
             credentials=SyftSigningKey.generate(),
             metadata=self.metadata,
         )
-
-    def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
-        # relative
-        from ..types.twin_object import TwinObject
-
-        # # TODO: get user from client
-        user = self.users.get_current_user()
-        dataset = add_default_uploader(user, dataset)
-        for i in range(len(dataset.assets)):
-            asset = dataset.assets[i]
-            dataset.assets[i] = add_default_uploader(user, asset)
-
-        dataset._check_asset_must_contain_mock()
-        dataset_size = 0
-
-        for asset in tqdm(dataset.asset_list):
-            print(f"Uploading: {asset.name}")
-            try:
-                twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
-            except Exception as e:
-                return SyftError(message=f"Failed to create twin. {e}")
-            response = self.api.services.action.set(twin)
-            if isinstance(response, SyftError):
-                print(f"Failed to upload asset\n: {asset}")
-                return response
-            asset.action_id = twin.id
-            asset.node_uid = self.id
-            dataset_size += get_mb_size(asset.data)
-        dataset.mb_size = dataset_size
-        valid = dataset.check()
-        if valid.ok():
-            return self.api.services.dataset.add(dataset=dataset)
-        else:
-            if len(valid.err()) > 0:
-                return tuple(valid.err())
-            return valid.err()
-
 
     def exchange_route(self, client: Self) -> Union[SyftSuccess, SyftError]:
         # relative
