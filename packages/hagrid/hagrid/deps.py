@@ -41,7 +41,8 @@ from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
 
-LATEST_STABLE_SYFT = "0.8"
+LATEST_STABLE_SYFT = "0.8.1"
+LATEST_BETA_SYFT = "0.8.2-beta.3"
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
@@ -64,9 +65,9 @@ sudo usermod -aG docker $USER
 docker compose version
 """
 
-SYFT_MINIMUM_PYTHON_VERSION = (3, 7)
-SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.7"
-SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
+SYFT_MINIMUM_PYTHON_VERSION = (3, 9)
+SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.9"
+SYFT_MAXIMUM_PYTHON_VERSION = (3, 11, 999)
 SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.11"
 WHITE = "\033[0;37m"
 GREEN = "\033[0;32m"

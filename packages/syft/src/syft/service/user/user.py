@@ -1,5 +1,7 @@
 # stdlib
+from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -56,7 +58,7 @@ class User(SyftObject):
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email"]
 
 
 def default_role(role: ServiceRole) -> Callable:
@@ -65,7 +67,8 @@ def default_role(role: ServiceRole) -> Callable:
 
 def hash_password(context: TransformContext) -> TransformContext:
     if context.output["password"] is not None and (
-        context.output["password"] == context.output["password_verify"]
+        (context.output["password_verify"] is None)
+        or context.output["password"] == context.output["password_verify"]
     ):
         salt, hashed = salt_and_hash_password(context.output["password"], 12)
         context.output["hashed_password"] = hashed
@@ -124,12 +127,13 @@ class UserCreate(UserUpdate):
     name: str
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: str
-    password_verify: str
+    password_verify: Optional[str] = None
     verify_key: Optional[SyftVerifyKey]
     institution: Optional[str]
     website: Optional[str]
+    created_by: Optional[SyftSigningKey]
 
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email"]
 
 
 @serializable()
@@ -154,7 +158,25 @@ class UserView(SyftObject):
     institution: Optional[str]
     website: Optional[str]
 
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email", "institute", "website", "role"]
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "Name": self.name,
+            "Email": self.email,
+            "Institute": self.institution,
+            "Website": self.website,
+            "Role": self.role.name.capitalize(),
+        }
+
+
+@serializable()
+class UserViewPage(SyftObject):
+    __canonical_name__ = "UserViewPage"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    users: List[UserView]
+    total: int
 
 
 @transform(UserUpdate, User)
@@ -173,8 +195,9 @@ def user_create_to_user() -> List[Callable]:
         validate_email,
         hash_password,
         generate_key,
-        default_role(ServiceRole.GUEST),
-        drop(["password", "password_verify"]),
+        drop(["password", "password_verify", "created_by"]),
+        # TODO: Fix this by passing it from client & verifying it at server
+        default_role(ServiceRole.DATA_SCIENTIST),
     ]
 
 
@@ -190,8 +213,9 @@ class UserPrivateKey(SyftObject):
 
     email: str
     signing_key: SyftSigningKey
+    role: ServiceRole
 
 
 @transform(User, UserPrivateKey)
 def user_to_user_verify() -> List[Callable]:
-    return [keep(["email", "signing_key", "id"])]
+    return [keep(["email", "signing_key", "id", "role"])]

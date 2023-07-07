@@ -18,9 +18,12 @@ import requests
 # relative
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.network_service import NodePeer
+from ..service.response import SyftException
 from ..types.grid_url import GridURL
+from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
+from .enclave_client import EnclaveClient
 
 if TYPE_CHECKING:
     # relative
@@ -51,7 +54,7 @@ class NetworkRegistry:
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)  # nosec
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
                 online = "This is a PyGrid Network node." in res.text
             except Exception:
                 online = False
@@ -60,7 +63,7 @@ class NetworkRegistry:
             if not online:
                 try:
                     ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=0.5)  # nosec
+                    res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
                     online = res.status_code == 200
                 except Exception:
                     online = False
@@ -73,7 +76,9 @@ class NetworkRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=0.5)  # nosec
+                        res = requests.get(
+                            version_url, timeout=DEFAULT_TIMEOUT
+                        )  # nosec
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
                         else:
@@ -122,7 +127,7 @@ class NetworkRegistry:
             return client.guest()
         except Exception as e:
             error(f"Failed to login with: {network}. {e}")
-            raise e
+            raise SyftException(f"Failed to login with: {network}. {e}")
 
     def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
@@ -155,7 +160,7 @@ class DomainRegistry:
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.5)
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)
                 online = "This is a PyGrid Network node." in res.text
             except Exception:
                 online = False
@@ -164,7 +169,7 @@ class DomainRegistry:
             if not online:
                 try:
                     ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=0.5)
+                    res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)
                     online = res.status_code == 200
                 except Exception:
                     online = False
@@ -177,7 +182,7 @@ class DomainRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=0.5)
+                        res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
                         else:
@@ -268,7 +273,7 @@ class DomainRegistry:
             return peer.guest_client
         except Exception as e:
             error(f"Failed to login to: {peer}. {e}")
-            raise e
+            raise SyftException(f"Failed to login to: {peer}. {e}")
 
     def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
@@ -280,4 +285,106 @@ class DomainRegistry:
                 if domain.name == key:
                     return self.create_client(self.online_domains[count][0])
                 count += 1
+        raise KeyError(f"Invalid key: {key} for {on}")
+
+
+ENCLAVE_REGISTRY_URL = (
+    "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/enclaves.json"
+)
+ENCLAVE_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
+
+
+class EnclaveRegistry:
+    def __init__(self) -> None:
+        self.all_enclaves: List[Dict] = []
+        try:
+            response = requests.get(ENCLAVE_REGISTRY_URL)  # nosec
+            enclaves_json = response.json()
+            self.all_enclaves = enclaves_json["2.0.0"]["enclaves"]
+        except Exception as e:
+            warning(
+                f"Failed to get Enclave Registry, go checkout: {ENCLAVE_REGISTRY_REPO}. {e}"
+            )
+
+    @property
+    def online_enclaves(self) -> List[Dict]:
+        enclaves = self.all_enclaves
+
+        def check_enclave(enclave: Dict) -> Optional[Dict[Any, Any]]:
+            url = "http://" + enclave["host_or_ip"] + ":" + str(enclave["port"]) + "/"
+            try:
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
+                online = "OpenMined Enclave Node Running" in res.text
+            except Exception:
+                online = False
+
+            if online:
+                version = enclave.get("version", None)
+                # Check if syft version was described in EnclaveRegistry
+                # If it's unknown, try to update it to an available version.
+                if not version or version == "unknown":
+                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
+                    try:
+                        version_url = url + "api/v2/metadata"
+                        res = requests.get(
+                            version_url, timeout=DEFAULT_TIMEOUT
+                        )  # nosec
+                        if res.status_code == 200:
+                            enclave["version"] = res.json()["syft_version"]
+                        else:
+                            enclave["version"] = "unknown"
+                    except Exception:
+                        enclave["version"] = "unknown"
+                return enclave
+            return None
+
+        # We can use a with statement to ensure threads are cleaned up promptly
+        with futures.ThreadPoolExecutor(max_workers=20) as executor:
+            # map
+            _online_enclaves = list(
+                executor.map(lambda enclave: check_enclave(enclave), enclaves)
+            )
+
+        online_enclaves = list()
+        for each in _online_enclaves:
+            if each is not None:
+                online_enclaves.append(each)
+        return online_enclaves
+
+    def _repr_html_(self) -> str:
+        on = self.online_enclaves
+        if len(on) == 0:
+            return "(no enclaves online - try syft.enclaves.all_enclaves to see offline enclaves)"
+        return pd.DataFrame(on)._repr_html_()
+
+    def __repr__(self) -> str:
+        on = self.online_enclaves
+        if len(on) == 0:
+            return "(no enclaves online - try syft.enclaves.all_enclaves to see offline enclaves)"
+        return pd.DataFrame(on).to_string()
+
+    @staticmethod
+    def create_client(enclave: Dict[str, Any]) -> Client:  # type: ignore
+        # relative
+        from ..client.client import connect
+
+        try:
+            port = int(enclave["port"])
+            protocol = enclave["protocol"]
+            host_or_ip = enclave["host_or_ip"]
+            grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
+            client = connect(url=str(grid_url))
+            return client.guest()
+        except Exception as e:
+            error(f"Failed to login with: {enclave}. {e}")
+            raise SyftException(f"Failed to login with: {enclave}. {e}")
+
+    def __getitem__(self, key: Union[str, int]) -> EnclaveClient:  # type: ignore
+        if isinstance(key, int):
+            return self.create_client(enclave=self.online_enclaves[key])
+        else:
+            on = self.online_enclaves
+            for enclave in on:
+                if enclave["name"] == key:
+                    return self.create_client(enclave=enclave)
         raise KeyError(f"Invalid key: {key} for {on}")

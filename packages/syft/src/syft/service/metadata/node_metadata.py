@@ -68,11 +68,12 @@ class NodeMetadata(SyftObject):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
-    node_type: str = "Domain"
+    node_type: str = "domain"
     deployed_on: str = "Date"
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "Text"
+    signup_enabled: bool
 
     def check_version(self, client_version: str) -> None:
         return check_version(
@@ -91,11 +92,12 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
-    node_type: str = "Domain"
+    node_type: str = "domain"
     deployed_on: str = "Date"
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "My cool domain"
+    signup_enabled: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -108,7 +110,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
 @transform(NodeMetadata, NodeMetadataJSON)
 def metadata_to_json() -> List[Callable]:
     return [
-        drop("__canonical_name__"),
+        drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
         convert_types(["id", "verify_key"], str),
     ]
@@ -120,9 +122,3 @@ def json_to_metadata() -> List[Callable]:
         drop(["metadata_version"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),
     ]
-
-
-class EnclaveMetadata:
-    """Contains metadata to connect to a specific Enclave"""
-
-    pass

@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING
 
 # third party
 from oblv_ctl import OblvClient
-from pydantic import BaseModel
 from pydantic import validator
 import requests
 
@@ -25,8 +24,8 @@ import requests
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...client.client import login
+from ...enclave.metadata import EnclaveMetadata
 from ...serde.serializable import serializable
-from ...service.metadata.node_metadata import EnclaveMetadata
 from ...types.uid import UID
 from ...util.util import bcolors
 from .constants import LOCAL_MODE
@@ -40,11 +39,8 @@ if TYPE_CHECKING:
 
 
 @serializable()
-class OblvMetadata(EnclaveMetadata, BaseModel):
+class OblvMetadata(EnclaveMetadata):
     """Contains Metadata to connect to Oblivious Enclave"""
-
-    class Config:
-        arbitrary_types_allowed = True
 
     deployment_id: Optional[str]
     oblv_client: Optional[OblvClient]
@@ -308,7 +304,7 @@ class DeploymentClient:
         code.enclave_metadata = enclave_metadata
 
         for domain_client in self.domain_clients:
-            domain_client.api.services.code.request_code_execution(code=code)
+            domain_client.code.request_code_execution(code=code)
 
         res = self.api.services.code.request_code_execution(code=code)
 

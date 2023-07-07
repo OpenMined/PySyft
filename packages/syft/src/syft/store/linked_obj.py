@@ -37,8 +37,11 @@ class LinkedObject(SyftObject):
         # relative
         from ..client.api import APIRegistry
 
-        api = APIRegistry.api_for(node_uid=self.node_uid)
-        return api.services.messages.resolve_object(self)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        return api.services.notifications.resolve_object(self)
 
     def resolve_with_context(self, context: NodeServiceContext) -> Any:
         return context.node.get_service(self.service_type).resolve_link(
@@ -92,6 +95,7 @@ class LinkedObject(SyftObject):
             service_type=service_type,
             object_type=type(obj),
             object_uid=object_uid,
+            syft_client_verify_key=obj.syft_client_verify_key,
         )
 
     @classmethod

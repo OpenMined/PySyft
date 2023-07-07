@@ -10,12 +10,14 @@ from ...client.client import SyftClient
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.response import SyftError
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..context import NodeServiceContext
 from ..metadata.node_metadata import NodeMetadata
 from .routes import NodeRoute
+from .routes import NodeRouteType
 from .routes import connection_to_route
 from .routes import route_to_connection
 
@@ -31,11 +33,11 @@ class NodePeer(SyftObject):
     verify_key: SyftVerifyKey
     is_vpn: bool = False
     vpn_auth_key: Optional[str] = None
-    node_routes: List[NodeRoute] = []
+    node_routes: List[NodeRouteType] = []
 
     __attr_searchable__ = ["name"]
     __attr_unique__ = ["verify_key"]
-    __attr_repr_cols__ = ["name"]
+    __repr_attrs__ = ["name"]
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []
@@ -60,14 +62,22 @@ class NodePeer(SyftObject):
             raise Exception(f"No routes to peer: {self}")
         route = self.node_routes[0]
         connection = route_to_connection(route=route)
-        return SyftClient(connection=connection, credentials=context.node.signing_key)
+
+        client_type = connection.get_client_type()
+        if isinstance(client_type, SyftError):
+            return client_type
+        return client_type(connection=connection, credentials=context.node.signing_key)
 
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         route = self.node_routes[0]
         connection = route_to_connection(route=route)
-        return SyftClient(connection=connection, credentials=credentials)
+        client_type = connection.get_client_type()
+        if isinstance(client_type, SyftError):
+            return client_type
+
+        return client_type(connection=connection, credentials=credentials)
 
     @property
     def guest_client(self) -> SyftClient:

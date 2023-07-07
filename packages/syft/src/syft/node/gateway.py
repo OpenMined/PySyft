@@ -1,4 +1,5 @@
 # relative
+from ..abstract_node import NodeType
 from ..serde.serializable import serializable
 from ..service.context import AuthedServiceContext
 from ..service.network.network_service import NetworkService
@@ -8,8 +9,8 @@ from .node import Node
 @serializable()
 class Gateway(Node):
     def post_init(self) -> None:
+        self.node_type = NodeType.GATEWAY
         super().post_init()
-        print("Connecting to VPN...")
         self.connect_to_vpn_self()
 
     def connect_to_vpn_self(self) -> None:

@@ -15,12 +15,16 @@ on:
         description: "Run Tests Manually"
         required: false
 
+concurrency:
+  group: syft-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
+  cancel-in-progress: true
+
 jobs:
   pr-tests-syft-unit:
     strategy:
-      max-parallel: 4
+      max-parallel: 99
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-13]
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
@@ -30,6 +34,18 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
+      - name: "clean .git/config"
+        if: matrix.os == 'windows'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - uses: actions/checkout@v3
 
       - name: Check for file changes
@@ -58,7 +74,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: buildjet/cache@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -73,7 +89,7 @@ jobs:
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker on MacOS
-        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
+        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
       - name: Run unit tests
@@ -83,24 +99,36 @@ jobs:
 
   pr-tests-syft-notebook-python:
     strategy:
-      max-parallel: 4
+      max-parallel: 99
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-13]
         python-version: ["3.11"]
-        node-type: ["python"]
-        notebook-paths: ["api/0.8"]
+        deployment-type: ["python"]
+        notebook-paths: ["tutorials"]
         include:
           - python-version: "3.9"
             os: "ubuntu-latest"
-            node-type: "python"
-            notebook-paths: "api/0.8"
+            deployment-type: "python"
+            notebook-paths: "tutorials"
           - python-version: "3.10"
             os: "ubuntu-latest"
-            node-type: "python"
-            notebook-paths: "api/0.8"
+            deployment-type: "python"
+            notebook-paths: "tutorials"
 
     runs-on: ${{ matrix.os }}
     steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
+      - name: "clean .git/config"
+        if: matrix.os == 'windows'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - uses: actions/checkout@v3
 
       - name: Check for file changes
@@ -113,24 +141,24 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
-        if: steps.changes.outputs.syft == 'true'
+        uses: buildjet/cache@v3
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -138,18 +166,21 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
-        if: steps.changes.outputs.syft == 'true'
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
-        if: steps.changes.outputs.syft == 'true'
+        uses: nick-fields/retry@v2
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         env:
-          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
-        run: |
-          tox -e syft.test.notebook
+        with:
+          timeout_seconds: 1800
+          max_attempts: 3
+          command: tox -e syft.test.notebook
 
   pr-tests-syft-notebook-container:
     strategy:
@@ -157,15 +188,18 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11"]
-        node-type: ["enclave"]
-        notebook-paths: ["tutorials"]
+        deployment-type: ["single_container"]
+        notebook-paths: ["api/0.8"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
 
     steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
-
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -176,24 +210,24 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
-        if: steps.changes.outputs.stack == 'true'
+        uses: buildjet/cache@v3
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -201,13 +235,13 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker Compose on Linux
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'ubuntu-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
@@ -217,11 +251,11 @@ jobs:
           docker compose version
 
       - name: Docker on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v1.1.0
 
       - name: Docker Compose on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
         shell: bash
         run: |
           brew install docker-compose
@@ -230,7 +264,7 @@ jobs:
           docker compose version
 
       - name: Docker on Windows
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -242,9 +276,9 @@ jobs:
           docker compose version
 
       - name: Run unit tests
-        if: steps.changes.outputs.stack == 'true'
+        if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         env:
-          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
           DEV_MODE: "True" # force orchestra --build
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
         run: |
@@ -259,8 +293,11 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
-
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -287,7 +324,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: buildjet/cache@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}

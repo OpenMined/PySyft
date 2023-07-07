@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import random
 import shutil
 import socket
 import subprocess  # nosec
@@ -261,7 +262,11 @@ def name_tag(name: str) -> str:
     return hashlib.sha256(name.encode("utf8")).hexdigest()
 
 
-def find_available_port(host: str, port: int, search: bool = False) -> int:
+def find_available_port(
+    host: str, port: Optional[int] = None, search: bool = False
+) -> int:
+    if port is None:
+        port = random.randint(1500, 65000)  # nosec
     port_available = False
     while not port_available:
         try:

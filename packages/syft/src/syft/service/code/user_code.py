@@ -7,6 +7,7 @@ from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
+import itertools
 import sys
 from typing import Any
 from typing import Callable
@@ -17,13 +18,12 @@ from typing import Type
 from typing import Union
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
 from ...client.api import NodeView
+from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
@@ -37,14 +37,17 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util.markdown import CodeMarkdown
+from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
-from ..metadata.node_metadata import EnclaveMetadata
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
+from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
 from ..policy.policy import Policy
+from ..policy.policy import SingleExecutionExactOutput
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
 from ..policy.policy import init_policy
@@ -105,6 +108,12 @@ class UserCodeStatusContext(SyftHashableObject):
     def __repr__(self):
         return str(self.base_dict)
 
+    def __repr_syft_nested__(self):
+        string = ""
+        for node_view, status in self.base_dict.items():
+            string += f"{node_view.node_name}: {status}<br>"
+        return string
+
     @property
     def approved(self) -> bool:
         # approved for this node only
@@ -126,6 +135,7 @@ class UserCodeStatusContext(SyftHashableObject):
         elif context.node.node_type == NodeType.DOMAIN:
             node_view = NodeView(
                 node_name=context.node.name,
+                node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
             if node_view in self.base_dict:
@@ -140,17 +150,19 @@ class UserCodeStatusContext(SyftHashableObject):
             )
 
     def mutate(
-        self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
-    ) -> Result[Ok, Err]:
-        node_view = NodeView(node_name=node_name, verify_key=verify_key)
+        self, value: UserCodeStatus, node_name: str, node_id, verify_key: SyftVerifyKey
+    ) -> Union[SyftError, Self]:
+        node_view = NodeView(
+            node_name=node_name, node_id=node_id, verify_key=verify_key
+        )
         base_dict = self.base_dict
         if node_view in base_dict:
             base_dict[node_view] = value
             self.base_dict = base_dict
-            return Ok(self)
+            return self
         else:
-            return Err(
-                "Cannot Modify Status as the Domain's data is not included in the request"
+            return SyftError(
+                message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
 
@@ -182,7 +194,7 @@ class UserCode(SyftObject):
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
-    __attr_repr_cols__ = ["status", "service_func_name"]
+    __repr_attrs__ = ["status.approved", "service_func_name"]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -190,6 +202,26 @@ class UserCode(SyftObject):
             attr.fset(self, value)
         else:
             return super().__setattr__(key, value)
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        status = list(self.status.base_dict.values())[0].value
+        if status == UserCodeStatus.SUBMITTED.value:
+            badge_color = "badge-purple"
+        elif status == UserCodeStatus.EXECUTE.value:
+            badge_color = "badge-green"
+        else:
+            badge_color = "badge-red"
+        status_badge = {"value": status, "type": badge_color}
+        return {
+            "Input Policy": self.input_policy_type.__canonical_name__,
+            "Output Policy": self.output_policy_type.__canonical_name__,
+            "Function name": self.service_func_name,
+            "User verify key": {
+                "value": str(self.user_verify_key),
+                "type": "clipboard",
+            },
+            "Status": status_badge,
+        }
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:
@@ -296,16 +328,17 @@ class UserCode(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(self.node_uid)
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
-        node_view = NodeView(
-            node_name=api.node_name, verify_key=api.signing_key.verify_key
+        inputs = (
+            uids
+            for node_view, uids in self.input_policy_init_kwargs.items()
+            if node_view.node_name == api.node_name
         )
-        inputs = self.input_policy_init_kwargs[node_view]
         all_assets = []
-        for uid in inputs.values():
+        for uid in itertools.chain.from_iterable(x.values() for x in inputs):
             if isinstance(uid, UID):
                 assets = api.services.dataset.get_assets_by_action_id(uid)
                 if not isinstance(assets, list):
@@ -324,6 +357,7 @@ class UserCode(SyftObject):
                 filtered_kwargs = {}
                 for k, v in kwargs.items():
                     filtered_kwargs[k] = debox_asset(v)
+                # third party
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
@@ -342,9 +376,29 @@ class UserCode(SyftObject):
 
         return wrapper
 
+    def _repr_markdown_(self):
+        md = f"""class UserCode
+    id: str = {self.id}
+    status.approved: str = {self.status.approved}
+    service_func_name: str = {self.service_func_name}
+    code:
+
+{self.raw_code}"""
+        return as_markdown_code(md)
+
     @property
-    def code(self) -> str:
-        return self.raw_code
+    def show_code(self) -> CodeMarkdown:
+        return CodeMarkdown(self.raw_code)
+
+    def show_code_cell(self):
+        warning_message = """# WARNING: \n# Before you submit
+# change the name of the function \n# for no duplicates\n\n"""
+
+        # third party
+        from IPython import get_ipython
+
+        ip = get_ipython()
+        ip.set_next_input(warning_message + self.raw_code)
 
 
 @serializable(without=["local_function"])
@@ -364,6 +418,8 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+
+    __repr_attrs__ = ["func_name", "code"]
 
     @property
     def kwargs(self) -> List[str]:
@@ -387,20 +443,34 @@ class SubmitUserCode(SyftObject):
 def debox_asset(arg: Any) -> Any:
     deboxed_arg = arg
     if isinstance(deboxed_arg, Asset):
-        deboxed_arg = arg.mock
+        asset = deboxed_arg
+        if asset.has_data_permission():
+            return asset.data
+        else:
+            return asset.mock
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg
 
 
+def syft_function_single_use(*args: Any, **kwargs: Any):
+    return syft_function(
+        input_policy=ExactMatch(*args, **kwargs),
+        output_policy=SingleExecutionExactOutput(),
+    )
+
+
 def syft_function(
     input_policy: Union[InputPolicy, UID],
-    output_policy: Union[OutputPolicy, UID],
+    output_policy: Optional[Union[OutputPolicy, UID]] = None,
 ) -> SubmitUserCode:
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
     else:
         input_policy_type = type(input_policy)
+
+    if output_policy is None:
+        output_policy = SingleExecutionExactOutput()
 
     if isinstance(output_policy, CustomOutputPolicy):
         output_policy_type = SubmitUserPolicy.from_obj(output_policy)
@@ -408,6 +478,11 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
+        print(
+            f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
+        )
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -564,20 +639,23 @@ def add_custom_status(context: TransformContext) -> TransformContext:
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
         )
         if node_view in input_keys or len(input_keys) == 0:
             context.output["status"] = UserCodeStatusContext(
                 base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
-            raise NotImplementedError
+            raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
     else:
-        # Consult with Madhava, on propogating errors from transforms
-        raise NotImplementedError
+        raise NotImplementedError(
+            f"Invalid node type:{context.node.node_type} for code submission"
+        )
     return context
 
 

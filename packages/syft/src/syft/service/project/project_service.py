@@ -9,8 +9,8 @@ from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..message.message_service import CreateMessage
-from ..message.message_service import MessageService
+from ..notification.notification_service import NotificationService
+from ..notification.notifications import CreateNotification
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
@@ -19,12 +19,13 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_service import UserService
+from ..user.user_roles import ONLY_DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
 from .project import Project
 from .project import ProjectEvent
 from .project import ProjectRequest
 from .project import ProjectSubmit
-from .project_stash import OrderByNamePartitionKey
+from .project import create_project_hash
 from .project_stash import ProjectStash
 
 
@@ -39,19 +40,37 @@ class ProjectService(AbstractService):
         self.stash = ProjectStash(store=store)
 
     @service_method(
-        path="project.create_project", name="create_project", roles=GUEST_ROLE_LEVEL
+        path="project.can_create_project",
+        name="can_create_project",
+        roles=ONLY_DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def can_create_project(
+        self, context: AuthedServiceContext
+    ) -> Union[bool, SyftError]:
+        user_service = context.node.get_service("userservice")
+        role = user_service.get_role_for_credentials(credentials=context.credentials)
+        if role == ServiceRole.DATA_SCIENTIST:
+            return True
+        return SyftError(message="User cannot create projects")
+
+    @service_method(
+        path="project.create_project",
+        name="create_project",
+        roles=ONLY_DATA_SCIENTIST_ROLE_LEVEL,
     )
     def create_project(
-        self,
-        context: AuthedServiceContext,
-        project: ProjectSubmit,
-        project_id: UID,
+        self, context: AuthedServiceContext, project: ProjectSubmit
     ) -> Union[SyftSuccess, SyftError]:
         """Start a Project"""
+
+        check_role = self.can_create_project(context)
+        if isinstance(check_role, SyftError):
+            return check_role
+
         try:
             # Check if the project with given id already exists
             project_id_check = self.stash.get_by_uid(
-                credentials=context.node.verify_key, uid=project_id
+                credentials=context.node.verify_key, uid=project.id
             )
 
             if project_id_check.is_err():
@@ -59,10 +78,9 @@ class ProjectService(AbstractService):
 
             if project_id_check.ok() is not None:
                 return SyftError(
-                    message=f"Project with id {project_id} already exists. Kindly use a different id"
+                    message=f"Project with id: {project.id} already exists."
                 )
 
-            project.id = project_id
             project_obj: Project = project.to(Project, context=context)
 
             # Updating the leader node route of the project object
@@ -75,7 +93,7 @@ class ProjectService(AbstractService):
 
             # If the current node is a follower
             # For followers the leader node route is retrieved from its peer
-            if project_obj.state_sync_leader.verify_key != context.node.verify_key:
+            if leader_node.verify_key != context.node.verify_key:
                 network_service = context.node.get_service("networkservice")
                 peer = network_service.stash.get_for_verify_key(
                     credentials=context.node.verify_key,
@@ -83,8 +101,10 @@ class ProjectService(AbstractService):
                 )
                 if peer.is_err():
                     return SyftError(
-                        message=f"Node {context.node.name}-{str(context.node.id)[:6]} does not"
-                        + "leader node as peer. Kindly exchange routes with the leader node"
+                        message=(
+                            f"Leader Node(id={leader_node.id.short()}) is not a "
+                            f"peer of this Node(id={context.node.id.short()})"
+                        )
                     )
                 leader_node_peer = peer.ok()
             else:
@@ -98,14 +118,16 @@ class ProjectService(AbstractService):
             project_obj.leader_node_peer = leader_node_peer
 
             # This should always be the last call before flushing to DB
-            project_obj.start_hash = project_obj.hash()
+            project_obj.start_hash = create_project_hash(project_obj)[1]
 
             result = self.stash.set(context.credentials, project_obj)
             if result.is_err():
                 return SyftError(message=str(result.err()))
 
             project_obj_store = result.ok()
-            project_obj_store = add_signing_key_to_project(context, project_obj_store)
+            project_obj_store = self.add_signing_key_to_project(
+                context, project_obj_store
+            )
 
             return project_obj_store
 
@@ -143,7 +165,9 @@ class ProjectService(AbstractService):
             project.events.append(project_event)
             project.event_id_hashmap[project_event.id] = project_event
 
-            message_result = check_for_project_request(project, project_event, context)
+            message_result = self.check_for_project_request(
+                project, project_event, context
+            )
             if isinstance(message_result, SyftError):
                 return message_result
 
@@ -198,23 +222,23 @@ class ProjectService(AbstractService):
         project.events.append(project_event)
         project.event_id_hashmap[project_event.id] = project_event
 
-        message_result = check_for_project_request(project, project_event, context)
+        message_result = self.check_for_project_request(project, project_event, context)
         if isinstance(message_result, SyftError):
             return message_result
 
         # Broadcast the event to all the members of the project
         network_service = context.node.get_service("networkservice")
-        for sharedholder in project.shareholders:
-            if sharedholder.verify_key != context.node.verify_key:
+        for member in project.members:
+            if member.verify_key != context.node.verify_key:
                 # Retrieving the NodePeer Object to communicate with the node
                 peer = network_service.stash.get_for_verify_key(
                     credentials=context.node.verify_key,
-                    verify_key=sharedholder.verify_key,
+                    verify_key=member.verify_key,
                 )
 
                 if peer.is_err():
                     return SyftError(
-                        message=f"Leader node does not have peer {sharedholder.name}-{sharedholder.id}"
+                        message=f"Leader node does not have peer {member.name}-{member.id.short()}"
                         + " Kindly exchange routes with the peer"
                     )
                 peer = peer.ok()
@@ -268,7 +292,6 @@ class ProjectService(AbstractService):
     def get_all(self, context: AuthedServiceContext) -> Union[List[Project], SyftError]:
         result = self.stash.get_all(
             context.credentials,
-            order_by=OrderByNamePartitionKey,
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -276,65 +299,98 @@ class ProjectService(AbstractService):
         projects = result.ok()
 
         for idx, project in enumerate(projects):
-            result = add_signing_key_to_project(context, project)
+            result = self.add_signing_key_to_project(context, project)
             if isinstance(result, SyftError):
                 return result
             projects[idx] = result
 
         return projects
 
-
-def add_signing_key_to_project(
-    context: AuthedServiceContext, project: Project
-) -> Union[Project, SyftError]:
-    # Automatically infuse signing key of user
-    # requesting get_all() or creating the project object
-
-    user_service = context.node.get_service(UserService)
-    user = user_service.stash.get_by_verify_key(
-        credentials=context.credentials, verify_key=context.credentials
+    @service_method(
+        path="project.get_by_name",
+        name="get_by_name",
+        roles=GUEST_ROLE_LEVEL,
     )
-    if user.is_err():
-        return SyftError(message=str(user.err()))
+    def get_by_name(
+        self, context: AuthedServiceContext, name: str
+    ) -> Union[Project, SyftError]:
+        result = self.stash.get_by_name(context.credentials, project_name=name)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        elif result.ok():
+            project = result.ok()
+            return self.add_signing_key_to_project(context, project)
+        return SyftError(message=f'Project(name="{name}") does not exist')
 
-    user = user.ok()
-    if not user:
-        return SyftError(message="User not found! Kindly register user first")
-
-    project.user_signing_key = user.signing_key
-
-    return project
-
-
-def check_for_project_request(
-    project: Project, project_event: ProjectEvent, context: AuthedServiceContext
-):
-    """To check for project request event and create a message for the root user
-
-    Args:
-        project (Project): Project object
-        project_event (ProjectEvent): Project event object
-        context (AuthedServiceContext): Context of the node
-
-    Returns:
-        Union[SyftSuccess, SyftError]: SyftSuccess if message is created else SyftError
-    """
-    if (
-        isinstance(project_event, ProjectRequest)
-        and project_event.request.node_uid == context.node.id
-    ):
-        link = LinkedObject.with_context(project, context=context)
-        message = CreateMessage(
-            subject="Project Approval",
-            from_user_verify_key=context.credentials,
-            to_user_verify_key=context.node.verify_key,
-            linked_obj=link,
+    @service_method(
+        path="project.get_by_uid",
+        name="get_by_uid",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get_by_uid(self, context: AuthedServiceContext, uid: UID):
+        result = self.stash.get_by_uid(
+            credentials=context.node.verify_key,
+            uid=uid,
         )
-        method = context.node.get_service_method(MessageService.send)
-        result = method(context=context, message=message)
-        if isinstance(result, SyftError):
-            return result
-    return SyftSuccess(message="Successfully Validated Project Request")
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        elif result.ok():
+            return result.ok()
+        return SyftError(message=f'Project(id="{uid}") does not exist')
+
+    def add_signing_key_to_project(
+        self, context: AuthedServiceContext, project: Project
+    ) -> Union[Project, SyftError]:
+        # Automatically infuse signing key of user
+        # requesting get_all() or creating the project object
+
+        user_service = context.node.get_service("userservice")
+        user = user_service.stash.get_by_verify_key(
+            credentials=context.credentials, verify_key=context.credentials
+        )
+        if user.is_err():
+            return SyftError(message=str(user.err()))
+
+        user = user.ok()
+        if not user:
+            return SyftError(message="User not found! Kindly register user first")
+
+        project.user_signing_key = user.signing_key
+
+        return project
+
+    def check_for_project_request(
+        self,
+        project: Project,
+        project_event: ProjectEvent,
+        context: AuthedServiceContext,
+    ):
+        """To check for project request event and create a message for the root user
+
+        Args:
+            project (Project): Project object
+            project_event (ProjectEvent): Project event object
+            context (AuthedServiceContext): Context of the node
+
+        Returns:
+            Union[SyftSuccess, SyftError]: SyftSuccess if message is created else SyftError
+        """
+        if (
+            isinstance(project_event, ProjectRequest)
+            and project_event.linked_request.node_uid == context.node.id
+        ):
+            link = LinkedObject.with_context(project, context=context)
+            message = CreateNotification(
+                subject=f"A new request has been added to the Project: {project.name}.",
+                from_user_verify_key=context.credentials,
+                to_user_verify_key=context.node.verify_key,
+                linked_obj=link,
+            )
+            method = context.node.get_service_method(NotificationService.send)
+            result = method(context=context, notification=message)
+            if isinstance(result, SyftError):
+                return result
+        return SyftSuccess(message="Successfully Validated Project Request")
 
 
 TYPE_TO_SERVICE[Project] = ProjectService

@@ -18,3 +18,21 @@ warnings.filterwarnings(
     ".*urllib3.contrib.pyopenssl.*",
     category=DeprecationWarning,
 )
+
+# UserWarning: libuv only supports millisecond timer resolution; all times less will be
+# # set to 1 ms
+warnings.filterwarnings(
+    "ignore",
+    ".*libuv only supports millisecond timer resolution*",
+    category=UserWarning,
+)
+
+# site-packages/IPython/core/formatters.py:367: FormatterWarning:
+#  text/html formatter returned invalid type <class 'type'> (expected <class 'str'>)
+#  for object: <EnclaveClient - cranky_norvig <a2fa3fe86007429189dcd88081185bd5>: HTTPConnection: http://localhost:8082>
+# during printing of client object
+warnings.filterwarnings(
+    "ignore",
+    ".*text/html formatter returned invalid type <class 'type'>*",
+    category=UserWarning,
+)
