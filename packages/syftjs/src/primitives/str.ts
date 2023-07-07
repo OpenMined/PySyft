@@ -1,9 +1,9 @@
-import { PrimitiveInterface } from './primitive_interface';
+import { PrimitiveInterface } from "./primitive_interface";
 
 export const STRING: PrimitiveInterface = {
   serialize: serializeString,
   deserialize: deserializeString,
-  fqn: 'builtins.str',
+  fqn: "builtins.str",
 };
 
 function serializeString(obj: string) {

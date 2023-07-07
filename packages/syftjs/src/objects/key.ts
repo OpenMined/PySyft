@@ -1,4 +1,4 @@
-import { ObjectInterface } from './object';
+import { ObjectInterface } from "./object";
 
 /**
  * SyftVerifyKey class extends the ObjectInterface.
@@ -19,7 +19,7 @@ export class SyftVerifyKey extends ObjectInterface {
    * It represents the class path in PySyft library. This can be accessed without instantiating the class.
    */
   public static readonly classFqn: string =
-    'syft.node.credentials.SyftVerifyKey';
+    "syft.node.credentials.SyftVerifyKey";
 
   /**
    * Constructs a new instance of SyftVerifyKey.
@@ -36,7 +36,7 @@ export class SyftVerifyKey extends ObjectInterface {
 class VerifyKey extends ObjectInterface {
   key: Uint8Array;
   fqn: string;
-  public static readonly classFqn: string = 'nacl.signing.VerifyKey';
+  public static readonly classFqn: string = "nacl.signing.VerifyKey";
 
   constructor(key: Uint8Array) {
     super();

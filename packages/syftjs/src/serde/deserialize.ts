@@ -1,8 +1,8 @@
-import * as capnp from 'capnp-ts';
+import * as capnp from "capnp-ts";
 
-import { RecursiveSerde } from '../capnp/recursive_serde.capnp';
+import { RecursiveSerde } from "../capnp/recursive_serde.capnp";
 
-import { deserializeObject } from './serializable';
+import { deserializeObject } from "./serializable";
 
 /**
  * Method used to deserialize a SyftJS Object or Primitives received in Cap'n Proto array buffer format.

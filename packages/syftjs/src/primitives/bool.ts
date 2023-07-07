@@ -1,4 +1,4 @@
-import { PrimitiveInterface } from './primitive_interface';
+import { PrimitiveInterface } from "./primitive_interface";
 
 export const BOOLEAN: PrimitiveInterface = {
   serialize: (obj: boolean) => {
@@ -7,5 +7,5 @@ export const BOOLEAN: PrimitiveInterface = {
   deserialize: (buffer: ArrayBuffer) => {
     return new Uint8Array(buffer)[0] == 49 ? true : false;
   },
-  fqn: 'builtins.bool',
+  fqn: "builtins.bool",
 };

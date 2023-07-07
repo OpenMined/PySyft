@@ -1,17 +1,17 @@
-import * as capnp from 'capnp-ts';
+import * as capnp from "capnp-ts";
 
-import { KVIterable } from '../capnp/kv_iterable.capnp';
-import { deserialize } from '../serde/deserialize';
-import { mergeChunks } from '../serde/serializable';
-import { serialize } from '../serde/serialize';
-import { createData, serializeChunks, splitChunks } from '../serde/utils';
+import { KVIterable } from "../capnp/kv_iterable.capnp";
+import { deserialize } from "../serde/deserialize";
+import { mergeChunks } from "../serde/serializable";
+import { serialize } from "../serde/serialize";
+import { createData, serializeChunks, splitChunks } from "../serde/utils";
 
-import { PrimitiveInterface } from './primitive_interface';
+import { PrimitiveInterface } from "./primitive_interface";
 
 export const MAP: PrimitiveInterface = {
   serialize: serializeMap,
   deserialize: deserializeMap,
-  fqn: 'builtins.dict',
+  fqn: "builtins.dict",
 };
 
 function serializeMap(obj: Map<any, any>): ArrayBuffer {
@@ -62,8 +62,8 @@ function deserializeMap(buffer: ArrayBuffer): Record<any, any> {
 
     // Deserialize the key using the deserialize method and convert it to an ArrayBuffer.
     const deserializedKey = deserialize(key.toArrayBuffer());
-    let keyObj = '';
-    if (Object.prototype.toString.call(deserializedKey) === '[object Object]') {
+    let keyObj = "";
+    if (Object.prototype.toString.call(deserializedKey) === "[object Object]") {
       keyObj = JSON.stringify(deserializedKey);
     } else {
       keyObj = deserializedKey;

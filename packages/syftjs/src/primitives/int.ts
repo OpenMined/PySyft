@@ -1,11 +1,11 @@
-import * as capnp from 'capnp-ts';
+import * as capnp from "capnp-ts";
 
-import { PrimitiveInterface } from './primitive_interface';
+import { PrimitiveInterface } from "./primitive_interface";
 
 export const INTEGER: PrimitiveInterface = {
   serialize: serializeInt,
   deserialize: deserializeInt,
-  fqn: 'builtins.int',
+  fqn: "builtins.int",
 };
 
 function serializeInt(obj: number) {

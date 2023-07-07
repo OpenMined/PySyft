@@ -1,17 +1,17 @@
-import * as capnp from 'capnp-ts';
+import * as capnp from "capnp-ts";
 
-import { Iterable } from '../capnp/iterable.capnp';
-import { deserialize } from '../serde/deserialize';
-import { mergeChunks } from '../serde/serializable';
-import { serialize } from '../serde/serialize';
-import { serializeChunks, splitChunks } from '../serde/utils';
+import { Iterable } from "../capnp/iterable.capnp";
+import { deserialize } from "../serde/deserialize";
+import { mergeChunks } from "../serde/serializable";
+import { serialize } from "../serde/serialize";
+import { serializeChunks, splitChunks } from "../serde/utils";
 
-import { PrimitiveInterface } from './primitive_interface';
+import { PrimitiveInterface } from "./primitive_interface";
 
 export const ARRAY: PrimitiveInterface = {
   serialize: serializeArray,
   deserialize: deserializeArray,
-  fqn: 'builtins.list',
+  fqn: "builtins.list",
 };
 
 function serializeArray(obj: any[]) {

@@ -1,10 +1,10 @@
-import { expect, it, expectTypeOf } from 'vitest';
-import { serialize } from './lib/index.js';
-import { deserialize } from './lib/index.js';
+import { expect, it, expectTypeOf } from "vitest";
+import { serialize } from "./lib/index.js";
+import { deserialize } from "./lib/index.js";
 
-it('Testing string serialization', () => {
-  const emptyString = '';
-  const complexStringStructure = 'TeStInG123456*/{}  ';
+it("Testing string serialization", () => {
+  const emptyString = "";
+  const complexStringStructure = "TeStInG123456*/{}  ";
 
   const serializedEmptyString = serialize(emptyString);
   const serializedcomplexStringStructure = serialize(complexStringStructure);
@@ -18,7 +18,7 @@ it('Testing string serialization', () => {
   );
 });
 
-it('Testing boolean serialization and deserialization', () => {
+it("Testing boolean serialization and deserialization", () => {
   const serializedTrue = serialize(true);
   const serializedFalse = serialize(false);
 
@@ -29,7 +29,7 @@ it('Testing boolean serialization and deserialization', () => {
   expect(deserialize(serializedFalse)).toBe(false);
 });
 
-it('Testing bytes serialization and deserialization', () => {
+it("Testing bytes serialization and deserialization", () => {
   const serializedBytesSample = serialize(new Uint8Array([16, 12, 13, 14, 15]));
   const serializedEmptySample = serialize(new Uint8Array([]));
 
@@ -42,7 +42,7 @@ it('Testing bytes serialization and deserialization', () => {
   expect(deserialize(serializedEmptySample)).toStrictEqual(new Uint8Array([]));
 });
 
-it('Test Int primitive serialization/deserialization', () => {
+it("Test Int primitive serialization/deserialization", () => {
   const positiveInt32 = 2147483647;
   const negativeInt32 = -2147483648;
   const zeroInt = 0;
@@ -60,7 +60,7 @@ it('Test Int primitive serialization/deserialization', () => {
   expect(deserialize(serializedzeroInt)).toBe(zeroInt);
 });
 
-it('Test Float primitive serialization/deserialization', () => {
+it("Test Float primitive serialization/deserialization", () => {
   const positiveBigFloat = 2147483647.2532;
   const negativeBigFloat = -2147483648.1456;
   const positiveMultipleDecimalFloat = 0.1632162264589963231812316;
@@ -98,12 +98,12 @@ it('Test Float primitive serialization/deserialization', () => {
   );
 });
 
-it('Test List/Array primitive serialization/deserialization', () => {
+it("Test List/Array primitive serialization/deserialization", () => {
   const emptyArray = [];
   const IntArray = [1, 2, 3, 4, 5, 6];
   const FloatArray = [1.5, 2.3, 3.4, 4.7, 5.5, 6.2];
-  const StringArray = ['testing', 'test', 'tst'];
-  const ArrayOfArrays = [[], ['Test'], [1, 2, 3, 4, 5, 6]];
+  const StringArray = ["testing", "test", "tst"];
+  const ArrayOfArrays = [[], ["Test"], [1, 2, 3, 4, 5, 6]];
 
   const serializedEmptyArray = serialize(emptyArray);
   const serializedIntArray = serialize(IntArray);
@@ -124,11 +124,11 @@ it('Test List/Array primitive serialization/deserialization', () => {
   expect(deserialize(serializedArrayOfArrays)).toStrictEqual(ArrayOfArrays);
 });
 
-it('Test JS Map/Python Dictionary primitive serialization/deserialization', () => {
+it("Test JS Map/Python Dictionary primitive serialization/deserialization", () => {
   const emptyMap = new Map();
   const composedMap = new Map(
     Object.entries({
-      string: 'Test',
+      string: "Test",
       bool: true,
       float: 3.5,
       int: 42,

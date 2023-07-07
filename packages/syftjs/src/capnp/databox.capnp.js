@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 /* tslint:disable */
-Object.defineProperty(exports, '__esModule', { value: true });
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataBox = exports._capnpFileId = void 0;
-const capnp_ts_1 = require('capnp-ts');
-exports._capnpFileId = BigInt('0x915f3367709de788');
+const capnp_ts_1 = require("capnp-ts");
+exports._capnpFileId = BigInt("0x915f3367709de788");
 export class DataBox extends capnp_ts_1.Struct {
   adoptValue(value) {
     capnp_ts_1.Struct.adopt(value, capnp_ts_1.Struct.getPointer(0, this));
@@ -24,12 +24,12 @@ export class DataBox extends capnp_ts_1.Struct {
     capnp_ts_1.Struct.copyFrom(value, capnp_ts_1.Struct.getPointer(0, this));
   }
   toString() {
-    return 'DataBox_' + super.toString();
+    return "DataBox_" + super.toString();
   }
 }
 exports.DataBox = DataBox;
 DataBox._capnp = {
-  displayName: 'DataBox',
-  id: 'e21ed6551e7a8638',
+  displayName: "DataBox",
+  id: "e21ed6551e7a8638",
   size: new capnp_ts_1.ObjectSize(0, 1),
 };

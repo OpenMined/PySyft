@@ -1,7 +1,7 @@
-import * as capnp from 'capnp-ts';
+import * as capnp from "capnp-ts";
 
-import { DataBox } from '../capnp/databox.capnp';
-import { DataList } from '../capnp/datalist.capnp';
+import { DataBox } from "../capnp/databox.capnp";
+import { DataList } from "../capnp/datalist.capnp";
 
 export function splitChunks(serializedObj: ArrayBuffer) {
   const sizeLimit = 5.12 ** 8;

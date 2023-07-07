@@ -1,7 +1,8 @@
-import { parse as uuidParse } from 'uuid';
-import { v4 as uuidv4 } from 'uuid';
-import { stringify } from 'uuid';
-import { ObjectInterface } from './object';
+import { parse as uuidParse } from "uuid";
+import { v4 as uuidv4 } from "uuid";
+import { stringify } from "uuid";
+
+import { ObjectInterface } from "./object";
 
 /**
  * UID class extends the ObjectInterface.
@@ -22,7 +23,7 @@ export class UID extends ObjectInterface {
    * The static, readonly property of class fully qualified name.
    * It represents the class path in PySyft library. This can be accessed without instantiating the class.
    */
-  public static readonly classFqn: string = 'syft.types.uid.UID';
+  public static readonly classFqn: string = "syft.types.uid.UID";
 
   /**
    * Constructs a new instance of UID.

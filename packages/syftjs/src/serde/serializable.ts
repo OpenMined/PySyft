@@ -1,14 +1,14 @@
-import * as capnp from 'capnp-ts';
+import * as capnp from "capnp-ts";
 
-import { RecursiveSerde } from '../capnp/recursive_serde.capnp';
-import * as SYFT_OBJECT_TYPES from '../objects';
-import * as PRIMITIVE_TYPES from '../primitives';
+import { RecursiveSerde } from "../capnp/recursive_serde.capnp";
+import * as SYFT_OBJECT_TYPES from "../objects";
+import * as PRIMITIVE_TYPES from "../primitives";
 
-import { deserialize } from './deserialize';
-import { serialize } from './serialize';
-import { splitChunks } from './utils';
-import { createData } from './utils';
-import { serializeChunks } from './utils';
+import { deserialize } from "./deserialize";
+import { serialize } from "./serialize";
+import { splitChunks } from "./utils";
+import { createData } from "./utils";
+import { serializeChunks } from "./utils";
 
 export function serializeObject(
   obj: any,
@@ -32,7 +32,7 @@ export function deserializeObject(fqn: string, rs: RecursiveSerde) {
 }
 
 export function getSerdeSchema(obj: any) {
-  if (typeof obj !== 'undefined' && obj !== null) {
+  if (typeof obj !== "undefined" && obj !== null) {
     switch (obj.constructor) {
       case Number:
         return Number.isInteger(obj)
@@ -146,6 +146,7 @@ function primitiveDeserialization(
 
 function recursiveSerialization(obj: object, rs: RecursiveSerde) {
   // Remove fqn obj property to avoid serializing it as a valid field attribute.
+  // eslint-disable-next-line  @typescript-eslint/no-unused-vars
   const { fqn, ...newObj }: any = obj;
 
   // Initialize the fields for the object's text and data
@@ -174,7 +175,7 @@ function recursiveDeserialization(rs: RecursiveSerde) {
   const kvIterable: Record<string, any> = {};
   // Check if the number of fields in the object matches the number of field names
   if (fieldsData.getLength() !== fieldsName.getLength()) {
-    console.log('Mismatch between Fields Data and Fields Name!!');
+    console.log("Mismatch between Fields Data and Fields Name!!");
   } else {
     // Iterate over the fields in the object and deserialize their values
     for (let i = 0; i < fieldsName.getLength(); i++) {
@@ -187,13 +188,13 @@ function recursiveDeserialization(rs: RecursiveSerde) {
       kvIterable[key] = obj; // Add the deserialized value to the key-value iterable
     }
   }
-  let syftClass = OBJ_MAP.get(fqn);
+  const syftClass = OBJ_MAP.get(fqn);
   if (syftClass) {
     const objInstance = new syftClass();
     Object.assign(objInstance, kvIterable);
     return objInstance;
   } else {
-    kvIterable['fqn'] = fqn;
+    kvIterable["fqn"] = fqn;
     return kvIterable;
   }
 }

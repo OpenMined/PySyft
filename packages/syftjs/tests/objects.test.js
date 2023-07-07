@@ -1,10 +1,10 @@
-import { expect, it, expectTypeOf } from 'vitest';
-import { serialize } from './lib/index.js';
-import { deserialize } from './lib/index.js';
-import { UID } from './lib/index.js';
-import { SyftVerifyKey } from './lib/index.js';
+import { expect, it, expectTypeOf } from "vitest";
+import { serialize } from "./lib/index.js";
+import { deserialize } from "./lib/index.js";
+import { UID } from "./lib/index.js";
+import { SyftVerifyKey } from "./lib/index.js";
 
-it('Testing bytes serialization and deserialization', () => {
+it("Testing bytes serialization and deserialization", () => {
   const randomUUID = new UID();
   const presetUUID = new UID(new Uint8Array([16, 12, 13, 14, 15]));
   const serializedrandomUID = serialize(randomUUID);
@@ -18,7 +18,7 @@ it('Testing bytes serialization and deserialization', () => {
 });
 
 it(
-  ('Testing Verify Key serialization and deserialization',
+  ("Testing Verify Key serialization and deserialization",
   () => {
     const verifyKey = new SyftVerifyKey(new Uint8Array(32));
 

@@ -1,2 +1,2 @@
-export { UID } from './uuid';
-export { SyftVerifyKey } from './key';
+export { UID } from "./uuid";
+export { SyftVerifyKey } from "./key";
