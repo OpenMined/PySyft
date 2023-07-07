@@ -73,6 +73,19 @@ frontend:
   - packages/grid/frontend/**/*.ts
   - packages/grid/frontend/**/*.tsx
 
+syftjs:
+  - .github/workflows/pr-tests-syftjs.yml
+  - "**.json"
+  - "**.js"
+  - "**.ts"
+  - "**.yaml"
+  - "**.lock"
+  - packages/syftjs/**/*.eslintrc
+  - packages/syftjs/**/*.js
+  - packages/syftjs/**/*.ts
+  - packages/syftjs/**/*.json
+  - packages/syftjs/**/*.lock
+
 notebooks:
   - .github/workflows/pr-tests-syft.yml
   - notebooks/api/**/*.ipynb
