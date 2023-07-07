@@ -187,13 +187,22 @@ function recursiveDeserialization(rs: RecursiveSerde) {
       kvIterable[key] = obj; // Add the deserialized value to the key-value iterable
     }
   }
-  kvIterable['fqn'] = fqn;
-  return kvIterable;
+  let syftClass = OBJ_MAP.get(fqn);
+  if (syftClass) {
+    const objInstance = new syftClass();
+    Object.assign(objInstance, kvIterable);
+    return objInstance;
+  } else {
+    kvIterable['fqn'] = fqn;
+    return kvIterable;
+  }
 }
 
-export const OBJ_MAP = new Map<string, object>();
+export const OBJ_MAP = new Map();
 
 Object.keys(SYFT_OBJECT_TYPES).forEach((key) => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   const obj = SYFT_OBJECT_TYPES[key];
-  OBJ_MAP.set(obj.fqn, obj);
+  OBJ_MAP.set(obj.classFqn, obj);
 });
