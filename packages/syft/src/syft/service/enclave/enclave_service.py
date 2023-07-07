@@ -3,9 +3,8 @@ from typing import Dict
 from typing import Union
 
 # relative
-from ...client.api import NodeView
-from ...enclave.enclave_client import AzureEnclaveClient
-from ...enclave.enclave_client import AzureEnclaveMetadata
+from ...client.enclave_client import EnclaveClient
+from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
@@ -17,6 +16,7 @@ from ..code.user_code_service import UserCode
 from ..code.user_code_service import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
+from ..network.routes import route_to_connection
 from ..service import AbstractService
 from ..service import service_method
 
@@ -41,6 +41,7 @@ class EnclaveService(AbstractService):
         user_code_id: UID,
         inputs: Dict,
         node_name: str,
+        node_id: UID,
     ) -> Union[SyftSuccess, SyftError]:
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
@@ -58,6 +59,7 @@ class EnclaveService(AbstractService):
         status_update = user_code.status.mutate(
             value=UserCodeStatus.EXECUTE,
             node_name=node_name,
+            node_id=node_id,
             verify_key=context.credentials,
         )
         if isinstance(status_update, SyftError):
@@ -104,85 +106,68 @@ class EnclaveService(AbstractService):
         return SyftSuccess(message="Enclave Code Status Updated Successfully")
 
 
-# Checks if the given user code would  propogate value to enclave on acceptance
-def check_enclave_transfer(
-    user_code: UserCode, value: UserCodeStatus, context: ChangeContext
-):
-    if (
-        type(user_code.enclave_metadata).__name__ == "OblvMetadata"
-        and value == UserCodeStatus.EXECUTE
-    ):
+def get_oblv_service():
+    # relative
+    from ...external import OBLV
+
+    if OBLV:
         # relative
-        from ...external import OBLV
+        from ...external.oblv.oblv_service import OblvService
 
-        if OBLV:
-            # relative
-            from ...external.oblv.oblv_service import OblvService
-        else:
-            return SyftError(
-                message="Oblivious is not enabled."
-                "To enable oblivious package, set sy.enable_external_lib('oblv') "
-                "on the client side"
-                "Or add --oblv when launching by hagrid"
-            )
-
-        method = context.node.get_service_method(OblvService.get_api_for)
-
-        api = method(
-            user_code.enclave_metadata,
-            context.node.signing_key,
-            worker_name=context.node.name,
-        )
-        # send data of the current node to enclave
-        user_node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-        )
-        inputs = user_code.input_policy.inputs[user_node_view]
-        action_service = context.node.get_service("actionservice")
-        for var_name, uid in inputs.items():
-            action_object = action_service.store.get(
-                uid=uid, credentials=context.node.signing_key.verify_key
-            )
-            if action_object.is_err():
-                return SyftError(message=action_object.err())
-            inputs[var_name] = action_object.ok()
-
-        res = api.services.oblv.send_user_code_inputs_to_enclave(
-            user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
+        return OblvService
+    else:
+        return SyftError(
+            message="Oblivious is not enabled."
+            "To enable oblivious package, set sy.enable_external_lib('oblv') "
+            "on the client side"
+            "Or add --oblv when launching by hagrid"
         )
 
-        return res
 
-    elif (
-        isinstance(user_code.enclave_metadata, AzureEnclaveMetadata)
-        and value == UserCodeStatus.EXECUTE
-    ):
+# Checks if the given user code would  propogate value to enclave on acceptance
+def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
+    # Temporarily disable Oblivious Enclave
+    # from ...external.oblv.deployment_client import OblvMetadata
+
+    # if isinstance(user_code.enclave_metadata, OblvMetadata):
+    #     # relative
+    #     oblv_service_class = get_oblv_service()
+    #     if isinstance(oblv_service_class, SyftError):
+    #         return oblv_service_class
+    #     method = context.node.get_service_method(oblv_service_class.get_api_for)
+
+    #     api = method(
+    #         user_code.enclave_metadata,
+    #         context.node.signing_key,
+    #         worker_name=context.node.name,
+    #     )
+    #     send_method = api.services.oblv.send_user_code_inputs_to_enclave
+
+    if isinstance(user_code.enclave_metadata, EnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
-        azure_enclave_client = AzureEnclaveClient.from_enclave_metadata(
-            enclave_metadata=user_code.enclave_metadata,
-            signing_key=context.node.signing_key,
+
+        connection = route_to_connection(user_code.enclave_metadata.route)
+        enclave_client = EnclaveClient(
+            connection=connection,
+            credentials=context.node.signing_key,
         )
 
-        # send data of the current node to enclave
-        user_node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-        )
-        inputs = user_code.input_policy.inputs[user_node_view]
-        action_service = context.node.get_service("actionservice")
-        for var_name, uid in inputs.items():
-            action_object = action_service.store.get(
-                uid=uid, credentials=context.node.signing_key.verify_key
-            )
-            if action_object.is_err():
-                return SyftError(message=action_object.err())
-            inputs[var_name] = action_object.ok()
-
-        res = (
-            azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave(
-                user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
-            )
+        send_method = (
+            enclave_client.api.services.enclave.send_user_code_inputs_to_enclave
         )
 
-        return res
     else:
         return SyftSuccess(message="Current Request does not require Enclave Transfer")
+
+    inputs = user_code.input_policy._inputs_for_context(context)
+    if isinstance(inputs, SyftError):
+        return inputs
+
+    # send data of the current node to enclave
+    res = send_method(
+        user_code_id=user_code.id,
+        inputs=inputs,
+        node_name=context.node.name,
+        node_id=context.node.id,
+    )
+    return res

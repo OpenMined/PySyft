@@ -34,6 +34,7 @@ from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..service.context import AuthedServiceContext
+from ..service.context import ChangeContext
 from ..service.response import SyftAttributeError
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
@@ -342,6 +343,18 @@ class APIModule:
         return results._repr_html_()
 
 
+def debox_signed_syftapicall_response(
+    signed_result: SignedSyftAPICall,
+) -> Union[Any, SyftError]:
+    if not isinstance(signed_result, SignedSyftAPICall):
+        return SyftError(message="The result is not signed")  # type: ignore
+
+    if not signed_result.is_valid:
+        return SyftError(message="The result signature is invalid")  # type: ignore
+
+    return signed_result.message.data
+
+
 @instrument
 @serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
@@ -442,13 +455,7 @@ class SyftAPI(SyftObject):
         signed_call = api_call.sign(credentials=self.signing_key)
         signed_result = self.connection.make_call(signed_call)
 
-        if not isinstance(signed_result, SignedSyftAPICall):
-            return SyftError(message="The result is not signed")  # type: ignore
-
-        if not signed_result.is_valid:
-            return SyftError(message="The result signature is invalid")  # type: ignore
-
-        result = signed_result.message.data
+        result = debox_signed_syftapicall_response(signed_result=signed_result)
 
         if isinstance(result, OkErr):
             if result.is_ok():
@@ -640,6 +647,7 @@ class NodeView(BaseModel):
         arbitrary_types_allowed = True
 
     node_name: str
+    node_id: UID
     verify_key: SyftVerifyKey
 
     @staticmethod
@@ -648,13 +656,26 @@ class NodeView(BaseModel):
         node_metadata = api.connection.get_node_metadata(api.signing_key)
         return NodeView(
             node_name=node_metadata.name,
+            node_id=api.node_uid,
             verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
+        )
+
+    @classmethod
+    def from_change_context(cls, context: ChangeContext):
+        return cls(
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
         )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, NodeView):
             return False
-        return self.node_name == other.node_name and self.verify_key == other.verify_key
+        return (
+            self.node_name == other.node_name
+            and self.verify_key == other.verify_key
+            and self.node_id == other.node_id
+        )
 
     def __hash__(self) -> int:
         return hash((self.node_name, self.verify_key))

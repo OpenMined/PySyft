@@ -23,7 +23,7 @@ from typing_extensions import Self
 # relative
 from ...abstract_node import NodeType
 from ...client.api import NodeView
-from ...enclave.metadata import EnclaveMetadata
+from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
@@ -135,6 +135,7 @@ class UserCodeStatusContext(SyftHashableObject):
         elif context.node.node_type == NodeType.DOMAIN:
             node_view = NodeView(
                 node_name=context.node.name,
+                node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
             if node_view in self.base_dict:
@@ -149,9 +150,11 @@ class UserCodeStatusContext(SyftHashableObject):
             )
 
     def mutate(
-        self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
+        self, value: UserCodeStatus, node_name: str, node_id, verify_key: SyftVerifyKey
     ) -> Union[SyftError, Self]:
-        node_view = NodeView(node_name=node_name, verify_key=verify_key)
+        node_view = NodeView(
+            node_name=node_name, node_id=node_id, verify_key=verify_key
+        )
         base_dict = self.base_dict
         if node_view in base_dict:
             base_dict[node_view] = value
@@ -636,7 +639,9 @@ def add_custom_status(context: TransformContext) -> TransformContext:
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
         )
         if node_view in input_keys or len(input_keys) == 0:
             context.output["status"] = UserCodeStatusContext(

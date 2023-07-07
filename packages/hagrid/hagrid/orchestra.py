@@ -158,13 +158,17 @@ class NodeHandle:
             return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"client not implemented for the deployment type:{self.deployment_type}"
+            )
 
     def login(
-        self, email: Optional[str] = None, password: Optional[str] = None
+        self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
         client = self.client
         if email and password:
-            return client.login(email=email, password=password)
+            return client.login(email=email, password=password, **kwargs)
         return None
 
     def register(
