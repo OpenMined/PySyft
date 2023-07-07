@@ -4,17 +4,25 @@ import requests
 
 # syft absolute
 import syft as sy
+from syft.client.domain_client import DomainClient
+from syft.client.enclave_client import EnclaveClient
+from syft.client.gateway_client import GatewayClient
 from syft.node.node import Node
 
 
-@pytest.mark.parametrize("node_type", ["domain", "gateway", "enclave"])
-def test_orchestra_python_local(node_type):
+@pytest.mark.parametrize(
+    "node_metadata",
+    [("domain", DomainClient), ("gateway", GatewayClient), ("enclave", EnclaveClient)],
+)
+def test_orchestra_python_local(node_metadata):
+    node_type, client_type = node_metadata
     node = sy.orchestra.launch(name="test-domain", node_type=node_type)
 
     assert isinstance(node.python_node, Node)
     assert node.python_node.name == "test-domain"
     assert node.python_node.node_type.value == node_type
     assert node.python_node.metadata.node_type == node_type
+    assert isinstance(node.client, client_type)
 
 
 @pytest.mark.skip(reason="This test is flaky on CI")
