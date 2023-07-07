@@ -3,6 +3,8 @@ from typing import Dict
 from typing import Union
 
 # relative
+from ...client.enclave_client import EnclaveClient
+from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
@@ -14,6 +16,7 @@ from ..code.user_code_service import UserCode
 from ..code.user_code_service import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
+from ..network.routes import route_to_connection
 from ..service import AbstractService
 from ..service import service_method
 
@@ -123,36 +126,36 @@ def get_oblv_service():
 
 # Checks if the given user code would  propogate value to enclave on acceptance
 def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
-    # relative
-    from ...enclave.enclave_client import AzureEnclaveClient
-    from ...enclave.enclave_client import AzureEnclaveMetadata
-    from ...external.oblv.deployment_client import OblvMetadata
+    # Temporarily disable Oblivious Enclave
+    # from ...external.oblv.deployment_client import OblvMetadata
 
-    if isinstance(user_code.enclave_metadata, OblvMetadata):
-        # relative
-        oblv_service_class = get_oblv_service()
-        if isinstance(oblv_service_class, SyftError):
-            return oblv_service_class
-        method = context.node.get_service_method(oblv_service_class.get_api_for)
+    # if isinstance(user_code.enclave_metadata, OblvMetadata):
+    #     # relative
+    #     oblv_service_class = get_oblv_service()
+    #     if isinstance(oblv_service_class, SyftError):
+    #         return oblv_service_class
+    #     method = context.node.get_service_method(oblv_service_class.get_api_for)
 
-        api = method(
-            user_code.enclave_metadata,
-            context.node.signing_key,
-            worker_name=context.node.name,
-        )
-        send_method = api.services.oblv.send_user_code_inputs_to_enclave
+    #     api = method(
+    #         user_code.enclave_metadata,
+    #         context.node.signing_key,
+    #         worker_name=context.node.name,
+    #     )
+    #     send_method = api.services.oblv.send_user_code_inputs_to_enclave
 
-    elif isinstance(user_code.enclave_metadata, AzureEnclaveMetadata):
+    if isinstance(user_code.enclave_metadata, EnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
 
-        azure_enclave_client = AzureEnclaveClient.from_enclave_metadata(
-            enclave_metadata=user_code.enclave_metadata,
-            signing_key=context.node.signing_key,
+        connection = route_to_connection(user_code.enclave_metadata.route)
+        enclave_client = EnclaveClient(
+            connection=connection,
+            credentials=context.node.signing_key,
         )
 
         send_method = (
-            azure_enclave_client.api.services.enclave.send_user_code_inputs_to_enclave
+            enclave_client.api.services.enclave.send_user_code_inputs_to_enclave
         )
+
     else:
         return SyftSuccess(message="Current Request does not require Enclave Transfer")
 

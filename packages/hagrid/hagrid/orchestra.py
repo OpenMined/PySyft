@@ -153,25 +153,15 @@ class NodeHandle:
 
     @property
     def client(self) -> Any:
-        # TODO: Refactor this on client seggregation PR
-        # syft absolute
-        from syft.enclave.enclave_client import AzureEnclaveClient
-
         if self.port:
             sy = get_syft_client()
-            guest_client = sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
-            if self.node_type == NodeType.ENCLAVE:
-                return AzureEnclaveClient(
-                    url=self.url, port=self.port, syft_enclave_client=guest_client
-                )
-            else:
-                return guest_client
+            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
-            guest_client = self.python_node.get_guest_client(verbose=False)  # type: ignore
-            if self.node_type == NodeType.ENCLAVE:
-                return AzureEnclaveClient(syft_enclave_client=guest_client)
-            else:
-                return guest_client
+            return self.python_node.get_guest_client(verbose=False)  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"client not implemented for the deployment type:{self.deployment_type}"
+            )
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any

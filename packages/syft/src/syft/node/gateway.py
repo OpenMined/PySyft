@@ -11,7 +11,6 @@ class Gateway(Node):
     def post_init(self) -> None:
         self.node_type = NodeType.GATEWAY
         super().post_init()
-        print("Connecting to VPN...")
         self.connect_to_vpn_self()
 
     def connect_to_vpn_self(self) -> None:
