@@ -118,6 +118,9 @@ def module_property(func: Any) -> Callable:
     module.__getattr__ = new_getattr  # type: ignore
     return func
 
+def wallet():
+    from .wallet import Wallet
+    return Wallet()
 
 @module_property
 def _gateways() -> NetworkRegistry:
