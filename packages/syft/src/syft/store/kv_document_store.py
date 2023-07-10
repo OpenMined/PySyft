@@ -213,7 +213,7 @@ class KeyValueStorePartition(StorePartition):
                 permissions = self.permissions[uid]
                 permissions.add(permission)
                 if add_permissions is not None:
-                    permissions.update([x.permission_string for x in add_permissions])
+                    permissions.update(x.permission_string for x in add_permissions)
                 self.permissions[uid] = permissions
                 return Ok(obj)
             else:
