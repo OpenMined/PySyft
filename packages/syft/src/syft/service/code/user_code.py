@@ -111,24 +111,27 @@ class UserCodeStatusContext(SyftHashableObject):
         return str(self.base_dict)
 
     def _repr_html_(self):
-        node_name_str = ""
-        verify_key_str = ""
-        status_str = ""
-        for node_view, status in self.base_dict.items():
-            node_name_str += f"{node_view.node_name}"
-            verify_key_str += f"{node_view.verify_key}"
-            status_str += f"{status.value}"
-        return f"""
+        string = f"""
             <style>
-            .syft-user_code {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            <div class='syft-user_code' style="line-height:25%">
-                <h3>User Code</h3>
-                <p><strong>Node name: </strong>{node_name_str}</p>
-                <p><strong>Verify key: </strong>{verify_key_str}</p>
-                <p><strong>Status: </strong>{status_str}</p>
-            </div>
+                .syft-user_code {{color: {SURFACE[options.color_theme]};}}
+                </style>
+                <div class='syft-user_code'>
+                    <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
+                    <p style="margin-left: 3px;">
             """
+        for node_view, status in self.base_dict.items():
+            node_name_str = f"{node_view.node_name}"
+            uid_str = f"{node_view.node_id}"
+            status_str = f"{status.value}"
+
+            string += f"""
+                    &#x2022; <strong>UID: </strong>{uid_str}&nbsp;
+                    <strong>Node name: </strong>{node_name_str}&nbsp;
+                    <strong>Status: </strong>{status_str}
+                    <br>
+                """
+        string += "</p></div>"
+        return string
 
     def __repr_syft_nested__(self):
         string = ""
