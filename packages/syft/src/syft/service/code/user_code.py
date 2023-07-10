@@ -18,13 +18,12 @@ from typing import Type
 from typing import Union
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
 from ...client.api import NodeView
+from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
@@ -42,7 +41,6 @@ from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
-from ..metadata.node_metadata import EnclaveMetadata
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import ExactMatch
@@ -137,6 +135,7 @@ class UserCodeStatusContext(SyftHashableObject):
         elif context.node.node_type == NodeType.DOMAIN:
             node_view = NodeView(
                 node_name=context.node.name,
+                node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
             if node_view in self.base_dict:
@@ -151,17 +150,19 @@ class UserCodeStatusContext(SyftHashableObject):
             )
 
     def mutate(
-        self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
-    ) -> Result[Ok, Err]:
-        node_view = NodeView(node_name=node_name, verify_key=verify_key)
+        self, value: UserCodeStatus, node_name: str, node_id, verify_key: SyftVerifyKey
+    ) -> Union[SyftError, Self]:
+        node_view = NodeView(
+            node_name=node_name, node_id=node_id, verify_key=verify_key
+        )
         base_dict = self.base_dict
         if node_view in base_dict:
             base_dict[node_view] = value
             self.base_dict = base_dict
-            return Ok(self)
+            return self
         else:
-            return Err(
-                "Cannot Modify Status as the Domain's data is not included in the request"
+            return SyftError(
+                message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
 
@@ -386,7 +387,7 @@ class UserCode(SyftObject):
         return as_markdown_code(md)
 
     @property
-    def code(self) -> CodeMarkdown:
+    def show_code(self) -> CodeMarkdown:
         return CodeMarkdown(self.raw_code)
 
     def show_code_cell(self):
@@ -638,7 +639,9 @@ def add_custom_status(context: TransformContext) -> TransformContext:
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     if context.node.node_type == NodeType.DOMAIN:
         node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
         )
         if node_view in input_keys or len(input_keys) == 0:
             context.output["status"] = UserCodeStatusContext(
