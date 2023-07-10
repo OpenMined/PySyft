@@ -188,6 +188,20 @@ class UserView(SyftObject):
             message=f"Successfully setting a new password for user '{self.name}' with email '{self.email}'"
         )
 
+    def set_name(self, new_name: str) -> Union[SyftSuccess, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        api.services.user.update(uid=self.id, user_update=UserUpdate(name=new_name))
+        self.name = new_name
+        return SyftSuccess(
+            message=f"Successfully setting a new name for the user "
+            f"with email '{self.email}'. New name is '{self.name}'."
+        )
+
 
 @serializable()
 class UserViewPage(SyftObject):
