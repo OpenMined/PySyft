@@ -186,7 +186,7 @@ class KeyValueStorePartition(StorePartition):
             if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
                 # attempt to claim it for writing
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
-                can_write = True if ownership_result.is_ok() else False
+                can_write = ownership_result.is_ok()
             elif not ignore_duplicates:
                 keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
                 return Err(
