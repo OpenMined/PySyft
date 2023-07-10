@@ -29,11 +29,11 @@ def test_create_gateway_client(faker: Faker):
     assert client.metadata.node_type == NodeType.GATEWAY.value
 
 
-def test_domain_apply_to_gateway(faker: Faker):
+def test_domain_connect_to_gateway(faker: Faker):
     gateway_client: GatewayClient = get_client(NodeType.GATEWAY.value)
     domain_client: DomainClient = get_client(NodeType.DOMAIN.value)
 
-    result = domain_client.apply_to_gateway(gateway_client)
+    result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
 
     assert len(domain_client.peers) == 1
@@ -63,11 +63,11 @@ def test_domain_apply_to_gateway(faker: Faker):
     )
 
 
-def test_enclave_apply_to_gateway(faker: Faker):
+def test_enclave_connect_to_gateway(faker: Faker):
     gateway_client: GatewayClient = get_client(NodeType.GATEWAY.value)
     enclave_client: EnclaveClient = get_client(NodeType.ENCLAVE.value)
 
-    result = enclave_client.apply_to_gateway(gateway_client)
+    result = enclave_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
 
     assert len(enclave_client.peers) == 1

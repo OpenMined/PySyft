@@ -5,9 +5,6 @@ from __future__ import annotations
 from typing import Optional
 from typing import TYPE_CHECKING
 
-# third party
-from typing_extensions import Self
-
 # relative
 from ..client.api import APIRegistry
 from ..serde.serializable import serializable
@@ -18,6 +15,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from .api import APIModule
 from .client import SyftClient
+from .client import login
 
 if TYPE_CHECKING:
     # relative
@@ -47,7 +45,17 @@ class EnclaveClient(SyftClient):
             return self.api.services.request
         return None
 
-    def apply_to_gateway(self, client: Self) -> None:
+    def connect_to_gateway(
+        self,
+        url: Optional[str] = None,
+        port: Optional[int] = None,
+        handle: Optional["NodeHandle"] = None,  # noqa: F821
+        **kwargs,
+    ) -> None:
+        if handle is not None:
+            client = handle.client
+        else:
+            login(url, port, **kwargs)
         res = self.exchange_route(client)
         if isinstance(res, SyftSuccess):
             return SyftSuccess(

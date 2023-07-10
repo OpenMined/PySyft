@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Optional
 
 # third party
 from typing_extensions import Self
@@ -36,3 +37,19 @@ class GatewayClient(SyftClient):
             credentials=self.credentials,
         )
         return client
+
+    def proxy_client_for(
+        self,
+        name: str,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        **kwargs,
+    ):
+        peers = [p for p in self.domains if p.name == name]
+        if len(peers) < 1:
+            raise ValueError(f"No domain with name {name}")
+        peer = peers[0]
+        res = self.proxy_to(peer)
+        if email:
+            res.login(email=email, password=password, **kwargs)
+        return res

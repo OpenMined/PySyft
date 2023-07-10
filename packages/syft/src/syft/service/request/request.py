@@ -367,7 +367,6 @@ class Request(SyftObject):
         permission_request = self.approve()
         if isinstance(permission_request, SyftError):
             return permission_request
-        print(permission_request)
 
         code = change.linked_obj.resolve
         state = code.output_policy
