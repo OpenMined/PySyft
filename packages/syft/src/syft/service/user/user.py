@@ -5,6 +5,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 from bcrypt import checkpw
@@ -28,6 +29,8 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
+from ..response import SyftError
+from ..response import SyftSuccess
 from .user_roles import ServiceRole
 
 
@@ -168,6 +171,14 @@ class UserView(SyftObject):
             "Website": self.website,
             "Role": self.role.name.capitalize(),
         }
+
+    # get an API from the API registry and then pass in UserUpdate
+    # to get the API registry we need the
+    # UserView is created from a service with syft_user_verify_key and syft_node_location
+    # so we can get the API from the API registry to call the user_service update function
+    def set_password(self, new_password: str) -> Union[SyftSuccess, SyftError]:
+        # check that the api is not None => return a SyftError
+        return SyftSuccess("setting password")
 
 
 @serializable()
