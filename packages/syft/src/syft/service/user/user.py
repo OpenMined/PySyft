@@ -15,6 +15,7 @@ import pydantic
 from pydantic.networks import EmailStr
 
 # relative
+from ...client.api import APIRegistry
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -172,13 +173,18 @@ class UserView(SyftObject):
             "Role": self.role.name.capitalize(),
         }
 
-    # get an API from the API registry and then pass in UserUpdate
-    # to get the API registry we need the
-    # UserView is created from a service with syft_user_verify_key and syft_node_location
-    # so we can get the API from the API registry to call the user_service update function
     def set_password(self, new_password: str) -> Union[SyftSuccess, SyftError]:
-        # check that the api is not None => return a SyftError
-        return SyftSuccess("setting password")
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        api.services.user.update(
+            uid=self.id, user_update=UserUpdate(password=new_password)
+        )
+
+        return SyftSuccess(message="setting password")
 
 
 @serializable()
