@@ -12,6 +12,7 @@ from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Union
+import warnings
 
 # third party
 import gevent
@@ -166,6 +167,12 @@ class NodeHandle:
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
+        if password == "changethis":
+            warnings.warn(
+                message="You are using a default password. Please change the password "
+                "using `[your_client].users[0].set_password([new_password])`.",
+                category=RuntimeWarning,
+            )
         client = self.client
         if email and password:
             return client.login(email=email, password=password, **kwargs)

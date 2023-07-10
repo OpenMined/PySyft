@@ -184,7 +184,9 @@ class UserView(SyftObject):
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
 
-        return SyftSuccess(message="setting password")
+        return SyftSuccess(
+            message=f"Successfully setting a new password for user '{self.name}' with email '{self.email}'"
+        )
 
 
 @serializable()
