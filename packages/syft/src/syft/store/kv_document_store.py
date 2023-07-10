@@ -188,7 +188,11 @@ class KeyValueStorePartition(StorePartition):
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
                 can_write = True if ownership_result.is_ok() else False
             elif not ignore_duplicates:
-                return Err(f"Duplication Key Error: {obj}")
+                keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
+                return Err(
+                    f"Duplication Key Error for {obj}.\n"
+                    f"The fields that should be unique are {keys}."
+                )
             else:
                 # we are not throwing an error, because we are ignoring duplicates
                 # we are also not writing though
