@@ -12,15 +12,15 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
-def get_client(node_type: str):
-    node = sy.orchestra.launch(
+def get_node_handle(node_type: str):
+    node_handle = sy.orchestra.launch(
         name=sy.UID().to_string(),
         node_type=node_type,
         dev_mode=True,
         reset=True,
         local_db=True,
     )
-    return node.client
+    return node_handle
 
 
 def get_admin_client(node_type: str):
@@ -35,16 +35,18 @@ def get_admin_client(node_type: str):
 
 
 def test_create_gateway_client(faker: Faker):
-    client = get_client(NodeType.GATEWAY.value)
+    node_handle = get_node_handle(NodeType.GATEWAY.value)
+    client = node_handle.client
     assert isinstance(client, GatewayClient)
     assert client.metadata.node_type == NodeType.GATEWAY.value
 
 
-def test_domain_apply_to_gateway(faker: Faker):
-    gateway_client: GatewayClient = get_admin_client(NodeType.GATEWAY.value)
-    domain_client: DomainClient = get_admin_client(NodeType.DOMAIN.value)
+def test_domain_connect_to_gateway(faker: Faker):
+    gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
+    gateway_client: GatewayClient = gateway_node_handle.client
+    domain_client: DomainClient = get_node_handle(NodeType.DOMAIN.value).client
 
-    result = domain_client.apply_to_gateway(gateway_client)
+    result = domain_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
 
     assert len(domain_client.peers) == 1
@@ -74,11 +76,12 @@ def test_domain_apply_to_gateway(faker: Faker):
     )
 
 
-def test_enclave_apply_to_gateway(faker: Faker):
-    gateway_client: GatewayClient = get_admin_client(NodeType.GATEWAY.value)
-    enclave_client: EnclaveClient = get_admin_client(NodeType.ENCLAVE.value)
+def test_enclave_connect_to_gateway(faker: Faker):
+    gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
+    gateway_client: GatewayClient = gateway_node_handle.client
+    enclave_client: EnclaveClient = get_node_handle(NodeType.ENCLAVE.value).client
 
-    result = enclave_client.apply_to_gateway(gateway_client)
+    result = enclave_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
 
     assert len(enclave_client.peers) == 1

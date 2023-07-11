@@ -654,12 +654,15 @@ def add_custom_status(context: TransformContext) -> TransformContext:
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
-        if node_view in input_keys or len(input_keys) == 0:
-            context.output["status"] = UserCodeStatusContext(
-                base_dict={node_view: UserCodeStatus.SUBMITTED}
-            )
-        else:
-            raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
+        context.output["status"] = UserCodeStatusContext(
+            base_dict={node_view: UserCodeStatus.SUBMITTED}
+        )
+        # if node_view in input_keys or len(input_keys) == 0:
+        #     context.output["status"] = UserCodeStatusContext(
+        #         base_dict={node_view: UserCodeStatus.SUBMITTED}
+        #     )
+        # else:
+        #     raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
