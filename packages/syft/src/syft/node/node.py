@@ -32,6 +32,7 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
 from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
@@ -112,6 +113,7 @@ NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 NODE_TYPE = "NODE_TYPE"
 NODE_NAME = "NODE_NAME"
+NODE_SIDE_TYPE = "NODE_SIDE_TYPE"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
@@ -131,6 +133,10 @@ def get_node_type() -> Optional[str]:
 
 def get_node_name() -> Optional[str]:
     return get_env(NODE_NAME, None)
+
+
+def get_node_side_type() -> str:
+    return get_env(NODE_SIDE_TYPE, "high")
 
 
 def get_node_uid_env() -> Optional[str]:
@@ -188,6 +194,7 @@ class Node(AbstractNode):
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: QueueConfig = ZMQQueueConfig,
+        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -264,6 +271,10 @@ class Node(AbstractNode):
             node_type = NodeType(node_type)
         self.node_type = node_type
 
+        if isinstance(node_side_type, str):
+            node_side_type = NodeSideType(node_side_type)
+        self.node_side_type = node_side_type
+
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
         if not (self.is_subprocess or self.processes == 0):
@@ -295,6 +306,7 @@ class Node(AbstractNode):
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
+        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -339,6 +351,7 @@ class Node(AbstractNode):
             local_db=local_db,
             sqlite_path=sqlite_path,
             node_type=node_type,
+            node_side_type=node_side_type,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -549,6 +562,7 @@ class Node(AbstractNode):
             node_type=self.node_type.value,
             signup_enabled=signup_enabled,
             admin_email=admin_email,
+            node_side_type=self.node_side_type.value,
         )
 
     @property
@@ -742,6 +756,7 @@ class Node(AbstractNode):
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,
+                    node_side_type=self.node_side_type,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings

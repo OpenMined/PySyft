@@ -17,6 +17,7 @@ from typing import Union
 import gevent
 
 # relative
+from .cli import NodeSideType
 from .cli import str_to_bool
 from .grammar import find_available_port
 from .names import random_name
@@ -137,6 +138,7 @@ class NodeHandle:
         self,
         node_type: NodeType,
         deployment_type: DeploymentType,
+        node_side_type: NodeSideType,
         name: str,
         port: Optional[int] = None,
         url: Optional[str] = None,
@@ -207,6 +209,7 @@ def deploy_to_python(
     dev_mode: bool,
     processes: int,
     local_db: bool,
+    node_side_type: NodeSideType,
 ) -> Optional[NodeHandle]:
     sy = get_syft_client()
     if sy is None:
@@ -233,6 +236,7 @@ def deploy_to_python(
                 dev_mode=dev_mode,
                 tail=tail,
                 node_type=node_type_enum,
+                node_side_type=node_side_type,
             )
         else:
             # syft <= 0.8.1
@@ -252,6 +256,7 @@ def deploy_to_python(
             port=port,
             url="http://localhost",
             shutdown=stop,
+            node_side_type=node_side_type,
         )
     else:
         if node_type_enum in worker_classes:
@@ -264,6 +269,7 @@ def deploy_to_python(
                     reset=reset,
                     local_db=local_db,
                     node_type=node_type_enum,
+                    node_side_type=node_side_type,
                 )
             else:
                 # syft <= 0.8.1
@@ -280,11 +286,15 @@ def deploy_to_python(
             deployment_type=deployment_type_enum,
             name=name,
             python_node=worker,
+            node_side_type=node_side_type,
         )
 
 
 def deploy_to_k8s(
-    node_type_enum: NodeType, deployment_type_enum: DeploymentType, name: str
+    node_type_enum: NodeType,
+    deployment_type_enum: DeploymentType,
+    name: str,
+    node_side_type: NodeSideType,
 ) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
     return NodeHandle(
@@ -293,12 +303,14 @@ def deploy_to_k8s(
         name=name,
         port=node_port,
         url="http://localhost",
+        node_side_type=node_side_type,
     )
 
 
 def deploy_to_container(
     node_type_enum: NodeType,
     deployment_type_enum: DeploymentType,
+    node_side_type: NodeSideType,
     reset: bool,
     cmd: bool,
     tail: bool,
@@ -326,6 +338,7 @@ def deploy_to_container(
                 name=name,
                 port=port,
                 url="http://localhost",
+                node_side_type=node_side_type,
             )
 
     # Start a subprocess and capture its output
@@ -381,6 +394,7 @@ def deploy_to_container(
             name=name,
             port=port,
             url="http://localhost",
+            node_side_type=node_side_type,
         )
     return None
 
@@ -404,6 +418,7 @@ class Orchestra:
         tag: Optional[str] = "latest",
         verbose: bool = False,
         render: bool = False,
+        node_side_type: NodeSideType = NodeSideType.HIGH_SIDE,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
@@ -438,6 +453,7 @@ class Orchestra:
                 dev_mode=dev_mode,
                 processes=processes,
                 local_db=local_db,
+                node_side_type=node_side_type,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
@@ -445,6 +461,7 @@ class Orchestra:
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 name=name,
+                node_side_type=node_side_type,
             )
 
         elif (
@@ -463,6 +480,7 @@ class Orchestra:
                 dev_mode=dev_mode,
                 port=port,
                 name=name,
+                node_side_type=node_side_type,
             )
         else:
             print(f"deployment_type: {deployment_type_enum} is not supported")

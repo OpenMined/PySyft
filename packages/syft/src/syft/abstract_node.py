@@ -21,6 +21,12 @@ class NodeType(Enum):
         return self.value
 
 
+@serializable()
+class NodeSideType(Enum):
+    LOW_SIDE = "low"
+    HIGH_SIDE = "high"
+
+
 class AbstractNode:
     id: Optional[UID]
     name: Optional[str]

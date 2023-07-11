@@ -1,6 +1,7 @@
 # stdlib
 
 # relative
+from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -41,3 +42,4 @@ class NodeSettings(SyftObject):
     description: str = "Text"
     signup_enabled: bool
     admin_email: str
+    node_side_type: NodeSideType = NodeSideType.HIGH_SIDE

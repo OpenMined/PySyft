@@ -1,5 +1,6 @@
 # stdlib
 from collections import namedtuple
+from enum import Enum
 import json
 import os
 from pathlib import Path
@@ -99,6 +100,11 @@ from .util import shell
 
 # fix VirtualEnvironment bug in windows
 fix_windows_virtualenv_api(VirtualEnvironment)
+
+
+class NodeSideType(Enum):
+    LOW_SIDE = "low"
+    HIGH_SIDE = "high"
 
 
 def get_azure_image(short_name: str) -> str:
@@ -257,7 +263,7 @@ def clean(location: str) -> None:
     "--release",
     default="production",
     required=False,
-    type=click.Choice(["production", "development"], case_sensitive=False),
+    type=click.Choice(["production", "staging", "development"], case_sensitive=False),
     help="Choose between production and development release",
 )
 @click.option(
@@ -1255,6 +1261,12 @@ def create_launch_cmd(
     if parsed_kwargs["dev"] is True:
         parsed_kwargs["release"] = "development"
 
+    # derive node type
+    if parsed_kwargs["release"] == "production":
+        parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
+    else:
+        parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
+
     # choosing deployment type
     parsed_kwargs["deployment_type"] = "container_stack"
     if "deployment_type" in kwargs and kwargs["deployment_type"] is not None:
@@ -2063,7 +2075,7 @@ def create_launch_docker_cmd(
     print("  - TEMPLATE DIR: " + template_grid_dir)
     if compose_src_path:
         print("  - COMPOSE SOURCE: " + compose_src_path)
-    print("  - RELEASE: " + kwargs["release"])
+    print("  - RELEASE: " + f'{kwargs["node_side_type"]}-{kwargs["release"]}')
     print("  - DEPLOYMENT:", kwargs["deployment_type"])
     print("  - ARCH: " + docker_platform)
     print("  - TYPE: " + str(node_type.input))
@@ -2116,6 +2128,7 @@ def create_launch_docker_cmd(
         ),
         "ENABLE_OBLV": str(enable_oblv).lower(),
         "BACKEND_STORAGE_PATH": backend_storage,
+        "NODE_SIDE_TYPE": kwargs["node_side_type"],
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
