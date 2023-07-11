@@ -16,11 +16,14 @@ class CodeInterface(SyftObject):
     user_code_mapping: Optional[Dict[str, UserCode]] = None
     service_func_name: str
 
+    def add_code(self, code:UserCode):
+        if not isinstance(code, UserCode):
+            raise ValueError("Input must be an instance of UserCode")
+        if code.service_func_name in self.user_code_mapping:
+            new_version = max(self.user_code_mapping[code.service_func_name].keys(), default=0) + 1
+        else:
+            self.user_code_mapping[code.service_func_name][new_version] = {}
+            new_version = 1
 
-
-
-
-
-
-
-
+        self.user_code_mapping[code.service_func_name][new_version] = code
+    
