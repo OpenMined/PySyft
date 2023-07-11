@@ -757,6 +757,7 @@ class Node(AbstractNode):
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,
                     node_side_type=self.node_side_type,
+                    node_side_type=self.node_side_type.value,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
