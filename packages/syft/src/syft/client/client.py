@@ -440,22 +440,6 @@ class SyftClient:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
 
-    def create_project(
-        self, name: str, description: str, user_email_address: str
-    ) -> Any:
-        # relative
-        from ..service.project.project import ProjectSubmit
-
-        project_create = ProjectSubmit(
-            name=name,
-            description=description,
-            shareholders=[self],
-            user_email_address=user_email_address,
-            members=[self],
-        )
-        project = project_create.start()
-        return project
-
     @property
     def authed(self) -> bool:
         return bool(self.credentials)

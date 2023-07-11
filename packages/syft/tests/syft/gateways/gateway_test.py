@@ -23,17 +23,6 @@ def get_node_handle(node_type: str):
     return node_handle
 
 
-def get_admin_client(node_type: str):
-    node = sy.orchestra.launch(
-        name=sy.UID().to_string(),
-        node_type=node_type,
-        dev_mode=True,
-        reset=True,
-        local_db=True,
-    )
-    return node.login(email="info@openmined.org", password="changethis")
-
-
 def test_create_gateway_client(faker: Faker):
     node_handle = get_node_handle(NodeType.GATEWAY.value)
     client = node_handle.client
@@ -43,10 +32,8 @@ def test_create_gateway_client(faker: Faker):
 
 def test_domain_connect_to_gateway(faker: Faker):
     gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
-    gateway_client: GatewayClient = gateway_node_handle.login(
-        email="info@openmined.org", password="changethis"
-    )
-    domain_client: DomainClient = get_admin_client(NodeType.DOMAIN.value)
+    gateway_client: GatewayClient = gateway_node_handle.client
+    domain_client: DomainClient = get_node_handle(NodeType.DOMAIN.value).client
 
     result = domain_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
@@ -80,10 +67,8 @@ def test_domain_connect_to_gateway(faker: Faker):
 
 def test_enclave_connect_to_gateway(faker: Faker):
     gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
-    gateway_client: GatewayClient = gateway_node_handle.login(
-        email="info@openmined.org", password="changethis"
-    )
-    enclave_client: EnclaveClient = get_admin_client(NodeType.ENCLAVE.value)
+    gateway_client: GatewayClient = gateway_node_handle.client
+    enclave_client: EnclaveClient = get_node_handle(NodeType.ENCLAVE.value).client
 
     result = enclave_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)

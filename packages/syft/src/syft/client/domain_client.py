@@ -12,12 +12,9 @@ from tqdm import tqdm
 # relative
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
-from ..service.dataset.dataset import Contributor
-from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..service.user.roles import Roles
 from ..service.user.user_roles import ServiceRole
 from ..types.uid import UID
 from ..util.fonts import fonts_css
@@ -31,26 +28,6 @@ if TYPE_CHECKING:
     from ..service.project.project import Project
 
 
-def add_default_uploader(
-    user, obj: Union[CreateDataset, CreateAsset]
-) -> Union[CreateDataset, CreateAsset]:
-    uploader = None
-    for contributor in obj.contributors:
-        if contributor.role == str(Roles.UPLOADER):
-            uploader = contributor
-            break
-
-    if uploader is None:
-        uploader = Contributor(
-            role=str(Roles.UPLOADER),
-            name=user.name,
-            email=user.email,
-        )
-        obj.contributors.append(uploader)
-    obj.uploader = uploader
-    return obj
-
-
 @serializable()
 class DomainClient(SyftClient):
     def __repr__(self) -> str:
@@ -59,12 +36,6 @@ class DomainClient(SyftClient):
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         # relative
         from ..types.twin_object import TwinObject
-
-        user = self.users.get_current_user()
-        dataset = add_default_uploader(user, dataset)
-        for i in range(len(dataset.assets)):
-            asset = dataset.assets[i]
-            dataset.assets[i] = add_default_uploader(user, asset)
 
         dataset._check_asset_must_contain_mock()
         dataset_size = 0

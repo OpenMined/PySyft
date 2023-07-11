@@ -940,20 +940,8 @@ class Project(SyftObject):
         return results
 
     def create_code_request(
-        self,
-        obj: SubmitUserCode,
-        client: Optional[SyftClient] = None,
-        reason: Optional[str] = None,
+        self, obj: SubmitUserCode, client: SyftClient, reason: Optional[str] = None
     ):
-        if client is None:
-            leader_client = self.get_leader_client(self.user_signing_key)
-            res = add_code_request_to_project(
-                project=self,
-                code=obj,
-                client=leader_client,
-                reason=reason,
-            )
-            return res
         return add_code_request_to_project(
             project=self,
             code=obj,
