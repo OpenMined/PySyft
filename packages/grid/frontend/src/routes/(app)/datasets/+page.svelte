@@ -90,7 +90,7 @@
 
       {#if datasets === null}
         <h2>Loading</h2>
-      {:else if datasets.length === 0}
+      {:else if typeof datasets === 'undefined' || datasets.length === 0  }
         <NoDatasetFound />
       {:else if datasets.length > 0}
         {#each datasets as dataset}
