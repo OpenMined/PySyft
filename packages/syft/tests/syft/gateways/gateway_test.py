@@ -79,43 +79,43 @@ def test_domain_connect_to_gateway(faker: Faker):
 
 
 def test_enclave_connect_to_gateway(faker: Faker):
-    print("A")
     gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
+    gateway_client = gateway_node_handle.client
     enclave_client: EnclaveClient = get_node_handle(NodeType.ENCLAVE.value).client
 
-    enclave_client.connect_to_gateway(handle=gateway_node_handle)
-    # assert isinstance(result, SyftSuccess)
+    result = enclave_client.connect_to_gateway(handle=gateway_node_handle)
+    assert isinstance(result, SyftSuccess)
 
-    # assert len(enclave_client.peers) == 1
-    # assert len(gateway_client.peers) == 1
+    assert len(enclave_client.peers) == 1
+    assert len(gateway_client.peers) == 1
 
-    # gateway_peer = gateway_client.peers[0]
-    # enclave_peer = enclave_client.peers[0]
+    gateway_peer = gateway_client.peers[0]
+    enclave_peer = enclave_client.peers[0]
 
-    # assert isinstance(gateway_peer, NodePeer)
-    # assert isinstance(enclave_peer, NodePeer)
+    assert isinstance(gateway_peer, NodePeer)
+    assert isinstance(enclave_peer, NodePeer)
 
-    # assert gateway_client.name == enclave_peer.name
-    # assert enclave_client.name == gateway_peer.name
+    assert gateway_client.name == enclave_peer.name
+    assert enclave_client.name == gateway_peer.name
 
-    # proxy_enclave_client = gateway_client.proxy_to(gateway_peer)
-    # assert proxy_enclave_client.metadata == enclave_client.metadata
-    # assert proxy_enclave_client.user_role == ServiceRole.NONE
+    proxy_enclave_client = gateway_client.proxy_to(gateway_peer)
+    assert proxy_enclave_client.metadata == enclave_client.metadata
+    assert proxy_enclave_client.user_role == ServiceRole.NONE
 
-    # # add a new user to enclave
-    # user_email, password = faker.email(), "password"
-    # enclave_client.register(
-    #     name=faker.name(),
-    #     email=user_email,
-    #     password=password,
-    # )
+    # add a new user to enclave
+    user_email, password = faker.email(), "password"
+    enclave_client.register(
+        name=faker.name(),
+        email=user_email,
+        password=password,
+    )
 
-    # enclave_client.login(email=user_email, password=password)
-    # proxy_enclave_client.login(email=user_email, password=password)
+    enclave_client.login(email=user_email, password=password)
+    proxy_enclave_client.login(email=user_email, password=password)
 
-    # assert proxy_enclave_client.logged_in_user == user_email
-    # assert proxy_enclave_client.user_role == enclave_client.user_role
-    # assert proxy_enclave_client.credentials == enclave_client.credentials
-    # assert (
-    #     proxy_enclave_client.api.endpoints.keys() == enclave_client.api.endpoints.keys()
-    # )
+    assert proxy_enclave_client.logged_in_user == user_email
+    assert proxy_enclave_client.user_role == enclave_client.user_role
+    assert proxy_enclave_client.credentials == enclave_client.credentials
+    assert (
+        proxy_enclave_client.api.endpoints.keys() == enclave_client.api.endpoints.keys()
+    )
