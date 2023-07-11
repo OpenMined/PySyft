@@ -178,7 +178,7 @@ def test_exception12_custom_classes(mock_object) -> None:
 
     # this won't raise an Error, but instead will give the user a warning and incorrect results
     np.random.shuffle(mock_object)
-    assert False
+    raise AssertionError()
 
 
 def test_exception13_record_arrays() -> None:
