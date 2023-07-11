@@ -40,3 +40,4 @@ jobs:
   call-container-scan:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/container-scan.yml@dev
+    secrets: inherit
