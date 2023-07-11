@@ -72,7 +72,7 @@ class DomainClient(SyftClient):
         if handle is not None:
             client = handle.client
         else:
-            client = login(url, port, **kwargs)
+            client = login(url=url, port=port, **kwargs)
             if isinstance(client, SyftError):
                 return client
 
