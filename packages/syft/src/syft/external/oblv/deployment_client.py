@@ -308,7 +308,7 @@ class DeploymentClient:
             print(f"Sent code execution request to {domain_client.name}")
 
         res = self.api.services.code.request_code_execution(code=code)
-        print(f"Execution done on {self.__enclave_client.name}")
+        print(f"Execution will be done on {self.__enclave_client.name}")
 
         return res
 
