@@ -8,7 +8,6 @@ from typing import Union
 
 # third party
 from tqdm import tqdm
-from typing_extensions import Self
 
 # relative
 from ..img.base64 import base64read
@@ -22,6 +21,7 @@ from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
 from .api import APIModule
 from .client import SyftClient
+from .client import login
 
 if TYPE_CHECKING:
     # relative
@@ -62,11 +62,24 @@ class DomainClient(SyftClient):
                 return tuple(valid.err())
             return valid.err()
 
-    def apply_to_gateway(self, client: Self) -> None:
+    def connect_to_gateway(
+        self,
+        url: Optional[str] = None,
+        port: Optional[int] = None,
+        handle: Optional["NodeHandle"] = None,  # noqa: F821
+        **kwargs,
+    ) -> None:
+        if handle is not None:
+            client = handle.client
+        else:
+            client = login(url=url, port=port, **kwargs)
+            if isinstance(client, SyftError):
+                return client
+
         res = self.exchange_route(client)
         if isinstance(res, SyftSuccess):
             return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} to gateway"
+                message=f"Connected {self.metadata.node_type} to {client.name} gateway"
             )
         return res
 
