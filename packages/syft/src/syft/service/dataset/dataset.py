@@ -103,6 +103,7 @@ class Asset(SyftObject):
     mock_is_real: bool = False
     shape: Optional[Tuple]
     created_at: DateTime = DateTime.now()
+    uploader: Contributor
 
     __repr_attrs__ = ["name", "shape"]
 
@@ -122,7 +123,7 @@ class Asset(SyftObject):
         uploaded_by_line = "n/a"
         if len(self.contributors) > 0:
             uploaded_by_line = (
-                f"<p><strong>Uploaded by: </strong>{self.contributors[0].name}</p>"
+                f"<p><strong>Uploaded by: </strong>{self.uploader.name}</p>"
             )
         if isinstance(self.data, ActionObject):
             data_table_line = itables.to_html_datatable(
@@ -250,6 +251,7 @@ class CreateAsset(SyftObject):
     shape: Optional[Tuple]
     mock_is_real: bool = False
     created_at: Optional[DateTime]
+    uploader: Optional[Contributor]
 
     __repr_attrs__ = ["name"]
 
@@ -379,6 +381,7 @@ class Dataset(SyftObject):
     requests: Optional[int] = 0
     mb_size: Optional[int]
     created_at: DateTime = DateTime.now()
+    uploader: Contributor
 
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
@@ -402,7 +405,7 @@ class Dataset(SyftObject):
         if len(self.contributors) > 0:
             uploaded_by_line = (
                 "<p class='paragraph-sm'><strong>"
-                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.contributors[0].name}</p>"
+                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name}</p>"
             )
         return f"""
             <style>
@@ -529,6 +532,7 @@ class CreateDataset(Dataset):
 
     id: Optional[UID] = None
     created_at: Optional[DateTime]
+    uploader: Optional[Contributor]
 
     class Config:
         validate_assignment = True
@@ -596,6 +600,9 @@ class CreateDataset(Dataset):
         return SyftSuccess(
             message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
         )
+
+    def replace_asset(self, asset: CreateAsset):
+        return self.add_asset(asset=asset, force_replace=True)
 
     def remove_asset(self, name: str) -> None:
         asset_to_remove = None
