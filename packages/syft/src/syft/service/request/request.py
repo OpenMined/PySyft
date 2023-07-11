@@ -744,7 +744,7 @@ class UserCodeStatusChange(Change):
             else:
                 res = self.mutate(obj, context, undo=True)
                 if isinstance(res, SyftError):
-                    return res
+                    return Err(res.message)
 
                 # TODO: Handle Enclave approval.
                 self.linked_obj.update_with_context(context, res)
