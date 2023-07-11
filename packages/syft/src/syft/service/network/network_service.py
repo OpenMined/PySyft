@@ -125,7 +125,7 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-        project_uid: Optional[UID],
+        project_uid: Optional[UID] = None,
     ) -> Union[SyftSuccess, SyftError]:
         """Exchange Route With Another Node"""
 

@@ -185,6 +185,11 @@ class Request(SyftObject):
             str_change = f"{str_change}. "
             str_changes.append(str_change)
         str_changes = "\n".join(str_changes)
+        api = APIRegistry.api_for(
+            self.node_uid,
+            self.syft_client_verify_key,
+        )
+
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -196,6 +201,7 @@ class Request(SyftObject):
                 {updated_at_line}
                 <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
+                <p><strong>Sent to Domain </strong>{api.node_name}</p>
             </div>
             """
 

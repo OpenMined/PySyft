@@ -364,6 +364,11 @@ def deploy_to_container(
     env = os.environ.copy()
     env["USER"] = USER
 
+    # stdlib
+    import sys
+
+    print(" ".join(commands), file=sys.stderr)
+
     process = subprocess.Popen(  # nosec
         commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
     )
