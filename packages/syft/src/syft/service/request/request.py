@@ -294,6 +294,8 @@ class Request(SyftObject):
             # by default change status is not applied
             change_status = ChangeStatus(change_id=change.id, applied=False)
             result = change.apply(context=change_context)
+            if isinstance(result, SyftError):
+                return result
             if result.is_err():
                 # add to history and save history to request
                 self.history.append(change_status)
@@ -734,7 +736,7 @@ class UserCodeStatusChange(Change):
                 res = self.mutate(obj, context, undo=False)
 
                 if isinstance(res, SyftError):
-                    return res
+                    return Err(res.message)
 
                 # relative
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
@@ -750,7 +752,7 @@ class UserCodeStatusChange(Change):
             else:
                 res = self.mutate(obj, context, undo=True)
                 if isinstance(res, SyftError):
-                    return res
+                    return Err(res.message)
 
                 # TODO: Handle Enclave approval.
                 self.linked_obj.update_with_context(context, res)

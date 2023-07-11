@@ -298,6 +298,22 @@ class NetworkService(AbstractService):
             return peers
         return SyftError(message=result.err())
 
+    @service_method(
+        path="network.get_peer_by_name", name="get_peer_by_name", roles=GUEST_ROLE_LEVEL
+    )
+    def get_peer_by_name(
+        self, context: AuthedServiceContext, name: str
+    ) -> Union[Optional[NodePeer], SyftError]:
+        """Get Peer by Name"""
+        result = self.stash.get_by_name(
+            credentials=context.node.verify_key,
+            name=name,
+        )
+        if result.is_ok():
+            peer = result.ok()
+            return peer
+        return SyftError(message=str(result.err()))
+
     @service_method(path="network.join_vpn", name="join_vpn")
     def join_vpn(
         self,
