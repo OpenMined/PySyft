@@ -50,12 +50,10 @@ class EnclaveClient(SyftClient):
         self,
         url: Optional[str] = None,
         port: Optional[int] = None,
-        handle: Optional["NodeHandle"] = None,  # noqa: F821
+        client: Optional[SyftClient] = None,
         **kwargs,
     ) -> None:
-        if handle is not None:
-            client = handle.client
-        else:
+        if client is None:
             client = login(url=url, port=port, **kwargs)
             if isinstance(client, SyftError):
                 return client
