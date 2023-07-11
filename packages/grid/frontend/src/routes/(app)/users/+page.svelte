@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import debounce from 'just-debounce-it';
-  import { getAllUsers, getSelf, searchUsersByName } from '$lib/api/users';
+  import { getAllUsers, searchUsersByName } from '$lib/api/users';
   import Badge from '$lib/components/Badge.svelte';
   import Filter from '$lib/components/Filter.svelte';
   import Search from '$lib/components/Search.svelte';
@@ -17,8 +17,8 @@
   let total: number = 0;
   let paginators: number[] = [5, 10, 15, 20, 25];
   let page_size: number = 5,
-    page_index: number = 0,
-    page_row: number = 5;
+  page_index: number = 0,
+  page_row: number = 5;
 
   let openModal: string | null = null;
 
@@ -112,4 +112,4 @@
 </div>
 
 <UserNewModal open={openModal === 'newUser'} onClose={closeModal} {onCreateGeneralUser} />
-<UserCreateModal open={openModal === 'step1'} onClose={closeModal} on:userUpdate={handleUpdate} />
+<UserCreateModal open={openModal === 'step1'} on:userUpdate={handleUpdate} />
