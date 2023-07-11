@@ -9,11 +9,13 @@ from typing_extensions import Self
 
 # relative
 from ..abstract_node import NodeType
+from ..img.base64 import base64read
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
 from ..service.network.node_peer import NodePeer
 from ..service.response import SyftError
 from ..service.response import SyftException
+from ..util.fonts import fonts_css
 from .client import SyftClient
 
 
@@ -71,3 +73,62 @@ class GatewayClient(SyftClient):
         if not self.api.has_service("network"):
             return None
         return self.api.services.network.get_peers_by_type(node_type=NodeType.ENCLAVE)
+
+    def _repr_html_(self) -> str:
+        commands = """
+        <li><span class='syft-code-block'>&lt;your_client&gt;.domains</span> - list domains connected to this gateway</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.proxy_client_for</span> - get a connection to a listed domain</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.login</span> - log into the gateway</li>
+        """
+
+        command_list = f"""
+        <ul style='padding-left: 1em;'>
+            {commands}
+        </ul>
+        """
+
+        small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
+
+        return f"""
+        <style>
+            {fonts_css}
+
+            .syft-container {{
+                padding: 5px;
+                font-family: 'Open Sans';
+            }}
+            .syft-alert-info {{
+                color: #1F567A;
+                background-color: #C2DEF0;
+                border-radius: 4px;
+                padding: 5px;
+                padding: 13px 10px
+            }}
+            .syft-code-block {{
+                background-color: #f7f7f7;
+                border: 1px solid #cfcfcf;
+                padding: 0px 2px;
+            }}
+            .syft-space {{
+                margin-top: 1em;
+            }}
+        </style>
+        <div class="syft-client syft-container">
+            <img src="{small_grid_symbol_logo}" alt="Logo"
+            style="width:48px;height:48px;padding:3px;">
+            <h2>Welcome to {self.name}</h2>
+            <div class="syft-space">
+                <!-- <strong>Institution:</strong> TODO<br /> -->
+                <!-- <strong>Owner:</strong> TODO<br /> -->
+                <strong>URL:</strong> {getattr(self.connection, 'url', '')}<br />
+                <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
+            </div>
+            <div class='syft-alert-info syft-space'>
+                &#9432;&nbsp;
+                This node is run by the library PySyft to learn more about how it works visit
+                <a href="https://github.com/OpenMined/PySyft">github.com/OpenMined/PySyft</a>.
+            </div>
+            <h4>Commands to Get Started</h4>
+            {command_list}
+        </div><br />
+        """
