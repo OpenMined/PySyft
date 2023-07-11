@@ -1,8 +1,15 @@
-from ...types.syft_object import SyftObject, SYFT_OBJECT_VERSION_1, SyftVerifyKey
+# stdlib
+from typing import Dict
+from typing import Optional
+
+# relative
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
+from ...types.syft_object import SyftVerifyKey
 from ...types.uid import UID
-from typing import Optional, Dict
-from ..metadata.node_metadata import EnclaveMetadata
 from ..code.user_code import UserCode
+from ..metadata.node_metadata import EnclaveMetadata
+
 
 class CodeInterface(SyftObject):
     # version
@@ -16,14 +23,16 @@ class CodeInterface(SyftObject):
     user_code_mapping: Optional[Dict[str, UserCode]] = None
     service_func_name: str
 
-    def add_code(self, code:UserCode):
+    def add_code(self, code: UserCode):
         if not isinstance(code, UserCode):
             raise ValueError("Input must be an instance of UserCode")
         if code.service_func_name in self.user_code_mapping:
-            new_version = max(self.user_code_mapping[code.service_func_name].keys(), default=0) + 1
+            new_version = (
+                max(self.user_code_mapping[code.service_func_name].keys(), default=0)
+                + 1
+            )
         else:
             self.user_code_mapping[code.service_func_name][new_version] = {}
             new_version = 1
 
         self.user_code_mapping[code.service_func_name][new_version] = code
-    
