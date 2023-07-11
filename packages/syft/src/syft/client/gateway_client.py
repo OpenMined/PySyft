@@ -8,6 +8,7 @@ from typing_extensions import Self
 # relative
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
+from ..service.response import SyftError
 from ..service.response import SyftException
 from .client import SyftClient
 
@@ -45,11 +46,12 @@ class GatewayClient(SyftClient):
         password: Optional[str] = None,
         **kwargs,
     ):
-        peers = [p for p in self.domains if p.name == name]
-        if len(peers) < 1:
-            raise ValueError(f"No domain with name {name}")
-        peer = peers[0]
+        peer = None
+        if self.api is not None and self.api.has_service("network"):
+            peer = self.api.services.network.get_peer_by_name(name=name)
+        if peer is None:
+            return SyftError(message=f"No domain with name {name}")
         res = self.proxy_to(peer)
-        if email:
+        if email and password:
             res.login(email=email, password=password, **kwargs)
         return res

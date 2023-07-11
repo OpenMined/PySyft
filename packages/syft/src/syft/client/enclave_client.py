@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from ..client.api import APIRegistry
 from ..serde.serializable import serializable
 from ..service.network.routes import NodeRouteType
+from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
@@ -55,11 +56,14 @@ class EnclaveClient(SyftClient):
         if handle is not None:
             client = handle.client
         else:
-            login(url, port, **kwargs)
+            client = login(url=url, port=port, **kwargs)
+            if isinstance(client, SyftError):
+                return client
+
         res = self.exchange_route(client)
         if isinstance(res, SyftSuccess):
             return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} to gateway"
+                message=f"Connected {self.metadata.node_type} to {client.name} gateway"
             )
         return res
 

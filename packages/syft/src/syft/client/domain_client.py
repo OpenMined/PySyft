@@ -72,11 +72,14 @@ class DomainClient(SyftClient):
         if handle is not None:
             client = handle.client
         else:
-            login(url, port, **kwargs)
+            client = login(url=url, port=port, **kwargs)
+            if isinstance(client, SyftError):
+                return client
+
         res = self.exchange_route(client)
         if isinstance(res, SyftSuccess):
             return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} to gateway"
+                message=f"Connected {self.metadata.node_type} to {client.name} gateway"
             )
         return res
 
