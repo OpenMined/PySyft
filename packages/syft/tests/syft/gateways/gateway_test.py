@@ -23,6 +23,17 @@ def get_client(node_type: str):
     return node.client
 
 
+def get_admin_client(node_type: str):
+    node = sy.orchestra.launch(
+        name=sy.UID().to_string(),
+        node_type=node_type,
+        dev_mode=True,
+        reset=True,
+        local_db=True,
+    )
+    return node.login(email="info@openmined.org", password="changethis")
+
+
 def test_create_gateway_client(faker: Faker):
     client = get_client(NodeType.GATEWAY.value)
     assert isinstance(client, GatewayClient)
@@ -30,8 +41,8 @@ def test_create_gateway_client(faker: Faker):
 
 
 def test_domain_apply_to_gateway(faker: Faker):
-    gateway_client: GatewayClient = get_client(NodeType.GATEWAY.value)
-    domain_client: DomainClient = get_client(NodeType.DOMAIN.value)
+    gateway_client: GatewayClient = get_admin_client(NodeType.GATEWAY.value)
+    domain_client: DomainClient = get_admin_client(NodeType.DOMAIN.value)
 
     result = domain_client.apply_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
@@ -64,8 +75,8 @@ def test_domain_apply_to_gateway(faker: Faker):
 
 
 def test_enclave_apply_to_gateway(faker: Faker):
-    gateway_client: GatewayClient = get_client(NodeType.GATEWAY.value)
-    enclave_client: EnclaveClient = get_client(NodeType.ENCLAVE.value)
+    gateway_client: GatewayClient = get_admin_client(NodeType.GATEWAY.value)
+    enclave_client: EnclaveClient = get_admin_client(NodeType.ENCLAVE.value)
 
     result = enclave_client.apply_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
