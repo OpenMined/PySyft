@@ -43,8 +43,10 @@ def test_create_gateway_client(faker: Faker):
 
 def test_domain_connect_to_gateway(faker: Faker):
     gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
-    gateway_client: GatewayClient = gateway_node_handle.client
-    domain_client: DomainClient = get_node_handle(NodeType.DOMAIN.value).client
+    gateway_client: GatewayClient = gateway_node_handle.login(
+        email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = get_admin_client(NodeType.DOMAIN.value)
 
     result = domain_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
@@ -78,8 +80,10 @@ def test_domain_connect_to_gateway(faker: Faker):
 
 def test_enclave_connect_to_gateway(faker: Faker):
     gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
-    gateway_client: GatewayClient = gateway_node_handle.client
-    enclave_client: EnclaveClient = get_node_handle(NodeType.ENCLAVE.value).client
+    gateway_client: GatewayClient = gateway_node_handle.login(
+        email="info@openmined.org", password="changethis"
+    )
+    enclave_client: EnclaveClient = get_admin_client(NodeType.ENCLAVE.value)
 
     result = enclave_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
