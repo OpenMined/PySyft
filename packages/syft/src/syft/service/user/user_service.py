@@ -174,6 +174,20 @@ class UserService(AbstractService):
 
         return results
 
+    @service_method(
+        path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
+    )
+    def get_current_user(self, context: AuthedServiceContext) -> UserView:
+        result = self.stash.get_by_verify_key(
+            credentials=context.credentials, verify_key=context.credentials
+        )
+        if result.is_ok():
+            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+            if user:
+                return user
+        return SyftError(message=str(result.err()))
+
     @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate

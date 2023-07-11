@@ -26,6 +26,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.transforms import transform_method
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -36,6 +37,8 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..vpn.headscale_client import HeadscaleAuthToken
 from ..vpn.headscale_client import HeadscaleClient
@@ -114,7 +117,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.exchange_credentials_with",
         name="exchange_credentials_with",
-        roles=GUEST_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def exchange_credentials_with(
         self,
@@ -122,8 +125,23 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
+        project_uid: Optional[UID] = None,
     ) -> Union[SyftSuccess, SyftError]:
         """Exchange Route With Another Node"""
+
+        # Step 0: Validate Permission
+        # If user == DO, always work
+        # If user == DS, validate project context
+        if context.role not in DATA_OWNER_ROLE_LEVEL:
+            if project_uid is not None:
+                project_service = context.node.get_service("projectservice")
+                result = project_service.get_by_uid(context=context, uid=project_uid)
+                if result.is_err():
+                    return SyftError(message=f"{result.err()}")
+            else:
+                return SyftError(
+                    message="A data scientist can only use exchange_credentials_with within a project context"
+                )
 
         # Step 1: Validate the Route
         self_node_peer = self_node_route.validate_with_context(context=context)
@@ -267,16 +285,34 @@ class NetworkService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Network Route Verified")
 
-    @service_method(path="network.get_all_peers", name="get_all_peers")
+    @service_method(
+        path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
+    )
     def get_all_peers(
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
-        result = self.stash.get_all(context.credentials)
+        result = self.stash.get_all(credentials=context.node.verify_key)
         if result.is_ok():
             peers = result.ok()
             return peers
         return SyftError(message=result.err())
+
+    @service_method(
+        path="network.get_peer_by_name", name="get_peer_by_name", roles=GUEST_ROLE_LEVEL
+    )
+    def get_peer_by_name(
+        self, context: AuthedServiceContext, name: str
+    ) -> Union[Optional[NodePeer], SyftError]:
+        """Get Peer by Name"""
+        result = self.stash.get_by_name(
+            credentials=context.node.verify_key,
+            name=name,
+        )
+        if result.is_ok():
+            peer = result.ok()
+            return peer
+        return SyftError(message=str(result.err()))
 
     @service_method(path="network.join_vpn", name="join_vpn")
     def join_vpn(
