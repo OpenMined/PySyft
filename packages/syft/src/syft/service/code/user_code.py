@@ -161,10 +161,9 @@ class UserCodeStatusContext(SyftHashableObject):
             self.base_dict = base_dict
             return self
         else:
-            return self
-            # return SyftError(
-            #     message="Cannot Modify Status as the Domain's data is not included in the request"
-            # )
+            return SyftError(
+                message="Cannot Modify Status as the Domain's data is not included in the request"
+            )
 
 
 @serializable()
