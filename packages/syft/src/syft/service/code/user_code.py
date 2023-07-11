@@ -393,7 +393,7 @@ class UserCode(SyftObject):
         return as_markdown_code(md)
 
     @property
-    def code(self) -> CodeMarkdown:
+    def show_code(self) -> CodeMarkdown:
         return CodeMarkdown(self.raw_code)
 
     def show_code_cell(self):
