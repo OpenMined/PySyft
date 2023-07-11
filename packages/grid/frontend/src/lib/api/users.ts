@@ -1,5 +1,16 @@
 import { getUserIdFromStorage } from './keys';
 import { makeSyftUID, syftCall } from './syft-api-call';
+import { SyftSigningKey } from '$lib/client/objects/key';
+
+interface SignUpDetails {
+  email: string;
+  password: string;
+  password_verify: string;
+  name: string;
+  institution?: string;
+  website?: string;
+  role: number;
+}
 
 export async function getAllUsers(page_size: number = 0, page_index: number = 0) {
   return await syftCall({
@@ -10,6 +21,26 @@ export async function getAllUsers(page_size: number = 0, page_index: number = 0)
 
 export async function getUser(uid: string) {
   return await syftCall({ path: 'user.view', payload: { uid: makeSyftUID(uid) } });
+}
+
+export async function createUser(newUser: SignUpDetails) {
+  const { email, password, password_verify, name } = newUser;
+
+  if (!email || !password || !password_verify || !name) {
+    throw new Error('Missing required fields');
+  }
+
+  const key: string = window.localStorage.getItem('key') || '';
+  let signingKey: SyftSigningKey | undefined = undefined;
+  if (key) {
+    let signingKey = new SyftSigningKey(Uint8Array.from(key.split(',')));
+  }
+  const createUser = {
+    ...newUser,
+    created_by: signingKey,
+    fqn: 'syft.service.user.user.UserCreate'
+  };
+  return await syftCall({ path: 'user.create', payload: { user_create: createUser } });
 }
 
 export async function getSelf() {
