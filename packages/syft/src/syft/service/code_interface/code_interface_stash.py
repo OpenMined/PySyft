@@ -44,3 +44,4 @@ class CodeInterfaceStash(BaseUIDStoreStash):
         return super().set(
             credentials=credentials, obj=res.ok(), add_permissions=add_permissions
         )
+    
