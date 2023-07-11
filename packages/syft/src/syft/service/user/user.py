@@ -162,7 +162,7 @@ class UserView(SyftObject):
     institution: Optional[str]
     website: Optional[str]
 
-    __repr_attrs__ = ["name", "email", "institute", "website", "role"]
+    __repr_attrs__ = ["name", "email", "institution", "website", "role"]
 
     def _coll_repr_(self) -> Dict[str, Any]:
         return {
@@ -185,7 +185,8 @@ class UserView(SyftObject):
         )
 
         return SyftSuccess(
-            message=f"Successfully setting a new password for user '{self.name}' with email '{self.email}'"
+            message=f"Successfully setting a new password for "
+            f"user '{self.name}' with email '{self.email}'."
         )
 
     def set_name(self, new_name: str) -> Union[SyftSuccess, SyftError]:
@@ -200,6 +201,81 @@ class UserView(SyftObject):
         return SyftSuccess(
             message=f"Successfully setting a new name for the user "
             f"with email '{self.email}'. New name is '{self.name}'."
+        )
+
+    def set_email(self, new_email: EmailStr) -> Union[SyftSuccess, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        api.services.user.update(uid=self.id, user_update=UserUpdate(email=new_email))
+        self.email = new_email
+        return SyftSuccess(
+            message=f"Successfully setting a new email for the user "
+            f"'{self.name}'. New email is '{self.email}'."
+        )
+
+    def set_institute(self, new_institute: str) -> Union[SyftSuccess, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        api.services.user.update(
+            uid=self.id, user_update=UserUpdate(institution=new_institute)
+        )
+        self.institution = new_institute
+        return SyftSuccess(
+            message=f"Successfully setting a new institute for the user "
+            f"'{self.name}' with email '{self.email}'. "
+            f"New institute is '{self.institution}'."
+        )
+
+    def set_website(self, new_website: str) -> Union[SyftSuccess, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        api.services.user.update(
+            uid=self.id, user_update=UserUpdate(website=new_website)
+        )
+        self.website = new_website
+        return SyftSuccess(
+            message=f"Successfully setting a new website for the user "
+            f"'{self.name}' with email '{self.email}'. "
+            f"New website is '{self.website}'."
+        )
+
+    def set_role(self, new_role: str) -> Union[SyftSuccess, SyftError]:
+        if new_role == "guest":
+            update_role = ServiceRole.GUEST
+        elif new_role == "data_scientist":
+            update_role = ServiceRole.DATA_SCIENTIST
+        elif new_role == "data_owner":
+            update_role = ServiceRole.DATA_OWNER
+        elif new_role == "admin":
+            update_role = ServiceRole.ADMIN
+        else:
+            return SyftError(
+                message=f"Can't set role to {new_role}. Please try "
+                f"admin / data_scientist / data_owner / guest."
+            )
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        api.services.user.update(uid=self.id, user_update=UserUpdate(role=update_role))
+        self.role = update_role
+        return SyftSuccess(
+            message=f"Successfully setting a new role for the user "
+            f"'{self.name}' with email '{self.email}'. New role is '{new_role}'."
         )
 
 
