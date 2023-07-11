@@ -11,8 +11,8 @@
   import MinusCircle from '../icons/MinusCircle.svelte';
   import Input from '../Input.svelte';
   import CheckIcon from '../icons/CheckIcon.svelte';
-  import { register } from '$lib/api/auth';
   import Dialog from '../Dialog.svelte';
+  import { createUser } from '$lib/api/users';
 
   const cardsContent = [
     {
@@ -44,13 +44,15 @@
   const dispatch = createEventDispatcher();
 
   export let open = false;
-  export let onClose: () => void;
+
 
   let selectedRole: number | null = null;
   let currentStep = 1;
   let email = '';
   let name = '';
   let institution = '';
+
+  let onClose: () => void = () => {selectedRole = null; currentStep = 1; open = false; email = ''; name = ''; institution = ''; };
 
   const handleRoleSelection = (id: number) => {
     selectedRole = id;
@@ -64,15 +66,14 @@
 
   const handleCreateUser = async () => {
     try {
-      await register({
+      await createUser({
         email,
         password: 'changethis',
         password_verify: 'changethis',
         name,
         institution,
         role: selectedRole ?? 0
-      });
-
+      })
       currentStep = 3;
       dispatch('userUpdate');
     } catch (error) {
