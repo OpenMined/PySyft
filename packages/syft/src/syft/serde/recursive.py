@@ -214,7 +214,15 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         return msg
 
     if attribute_list is None:
-        attribute_list = self.__dict__.keys()
+        if hasattr(self, "__dict__"):
+            attribute_list = self.__dict__.keys()
+        elif hasattr(self, "__slots__"):
+            attribute_list = self.__slots__
+        else:
+            raise Exception(
+                "Recursive Serde requires attributes. "
+                f"No attribute list, __dict__ or __slots__ found on {fqn}"
+            )
 
     hash_exclude_attrs_set = (
         set(hash_exclude_attrs).union(set(DYNAMIC_SYFT_ATTRIBUTES))

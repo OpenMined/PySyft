@@ -381,8 +381,9 @@ class SyftAPI(SyftObject):
     def for_user(
         node: AbstractNode, user_verify_key: Optional[SyftVerifyKey] = None
     ) -> SyftAPI:
-        # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
+        # relative
+        from ..service.bridge.bridge_service import BridgeService
         from ..service.code.user_code_service import UserCodeService
 
         # find user role by verify_key
@@ -443,6 +444,32 @@ class SyftAPI(SyftObject):
                 pre_kwargs={"uid": code_item.id},
             )
             endpoints[unique_path] = endpoint
+
+        # get bridge APIs
+        # 🟡 TODO 35: fix root context
+        method = node.get_method_with_context(BridgeService.get_all, context)
+        bridges = method()
+
+        for bridge in bridges:
+            for m in list(sorted(bridge.openapi._operation_map.keys())):
+                method = bridge.openapi._operation_map[m]
+                method_name = method.operationId
+                signature = bridge.op_to_signature(method)
+                pre_kwargs = {"bridge": bridge.api_name, "method_name": method_name}
+
+                path = "bridge.call"
+                unique_path = f"bridge.call_{bridge.api_name}_{method_name}"
+                endpoint = APIEndpoint(
+                    service_path=path,
+                    module_path=path,
+                    name=method_name,
+                    description="",
+                    doc_string=method.summary,
+                    signature=signature,
+                    has_self=False,
+                    pre_kwargs=pre_kwargs,
+                )
+                endpoints[unique_path] = endpoint
 
         return SyftAPI(
             node_name=node.name,

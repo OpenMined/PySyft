@@ -43,6 +43,7 @@ from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
+from ..service.bridge.bridge_service import BridgeService
 from ..service.code.user_code_service import UserCodeService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
@@ -212,6 +213,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                BridgeService,
             ]
             if services is None
             else services
@@ -457,6 +459,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                BridgeService,
             ]
 
             if OBLV:
