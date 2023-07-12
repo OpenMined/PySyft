@@ -216,7 +216,6 @@ class UserCode(SyftObject):
     status: UserCodeStatusContext
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    shareholding: Optional[List[str]] = None
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
