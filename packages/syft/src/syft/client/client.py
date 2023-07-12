@@ -27,6 +27,7 @@ from typing_extensions import Self
 
 # relative
 from .. import __version__
+from .....hagrid.hagrid.cli import NodeSideType
 from ..abstract_node import AbstractNode
 from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
@@ -49,6 +50,7 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
+from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
 from .api import APIModule
@@ -646,6 +648,19 @@ class SyftClient:
             )
         except Exception as e:
             return SyftError(message=str(e))
+
+        if (
+            not self.metadata.signup_enabled
+            and self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value
+        ):
+            message = (
+                "[bold yellow]Reminder:[/] [bold]"
+                "You're registering a user to a high side domain, which could "
+                "host datasets with private information."
+            )
+            if not prompt_warning_message(message=message, confirm=True):
+                return
+
         response = self.connection.register(new_user=new_user)
         if isinstance(response, tuple):
             response = response[0]
