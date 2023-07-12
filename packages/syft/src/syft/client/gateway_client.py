@@ -6,6 +6,7 @@ from typing import Optional
 from typing_extensions import Self
 
 # relative
+from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
 from ..service.response import SyftError
@@ -55,3 +56,11 @@ class GatewayClient(SyftClient):
         if email and password:
             res.login(email=email, password=password, **kwargs)
         return res
+
+    @property
+    def domains(self):
+        return self.api.services.network.get_peers_by_type(node_type=NodeType.DOMAIN)
+
+    @property
+    def enclaves(self):
+        return self.api.services.network.get_peers_by_type(node_type=NodeType.ENCLAVE)
