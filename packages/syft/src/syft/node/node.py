@@ -36,6 +36,7 @@ from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
+from ..client.api import SyftTypes
 from ..client.api import debox_signed_syftapicall_response
 from ..external import OBLV
 from ..serde.deserialize import _deserialize
@@ -598,6 +599,8 @@ class Node(AbstractNode):
                 result = client.connection.register(**message.kwargs)
             elif message.path == "api":
                 result = client.connection.get_api(**message.kwargs)
+            elif message.path == "types":
+                result = client.connection.get_types(**message.kwargs)
             else:
                 signed_result = client.connection.make_call(api_call)
                 result = debox_signed_syftapicall_response(signed_result=signed_result)
@@ -693,6 +696,9 @@ class Node(AbstractNode):
 
     def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
         return SyftAPI.for_user(node=self, user_verify_key=for_user)
+
+    def get_types(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
+        return SyftTypes.for_user(node=self, user_verify_key=for_user)
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext

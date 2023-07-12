@@ -54,6 +54,11 @@ class BridgeStash(BaseUIDStoreStash):
         return super().set(credentials=credentials, obj=res.ok())
 
 
+@serializable()
+class BridgeAdded(SyftSuccess):
+    pass
+
+
 @instrument
 @serializable()
 class BridgeService(AbstractService):
@@ -67,13 +72,14 @@ class BridgeService(AbstractService):
     @service_method(path="bridge.add", name="add")
     def add(
         self, context: AuthedServiceContext, url: str, base_url: Optional[str] = None
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[BridgeAdded, SyftError]:
         """Register a an API Bridge."""
 
         bridge = APIBridge.from_url(url, base_url)
         result = self.stash.add(context.credentials, bridge=bridge)
         if result.is_ok():
-            return SyftSuccess(message=f"API Bridge added: {url}")
+            bridge.register_serde_types()
+            return BridgeAdded(message=f"API Bridge added: {url}")
         return SyftError(message=f"Failed to add API Bridge {url}. {result.err()}")
 
     def get_all(
@@ -101,21 +107,6 @@ class BridgeService(AbstractService):
         bridge = results[0]
         method = bridge.openapi._operation_map[method_name]
         callable_op = bridge.openapi._get_callable(method.request)
-        parameters = {}
-        data = {}
-
-        for param in method.parameters:
-            name = param.name
-            if name in kwargs:
-                parameters[name] = kwargs[name]
-
-        if method.requestBody:
-            if "application/json" in method.requestBody.content:
-                schema = method.requestBody.content["application/json"].schema._proxy
-                title = schema.title.lower()
-                if title in kwargs:
-                    data = kwargs[title]
-
+        parameters, data = bridge.kwargs_to_parameters(method, kwargs)
         result = callable_op(parameters=parameters, data=data)
-        print("got result", result)
         return result

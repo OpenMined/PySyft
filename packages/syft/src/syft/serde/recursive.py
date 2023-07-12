@@ -148,7 +148,6 @@ def recursive_serde_register(
         cls,
         attribute_types,
     )
-
     TYPE_BANK[fqn] = serde_attributes
 
     if isinstance(alias_fqn, tuple):
@@ -219,10 +218,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         elif hasattr(self, "__slots__"):
             attribute_list = self.__slots__
         else:
-            raise Exception(
-                "Recursive Serde requires attributes. "
-                f"No attribute list, __dict__ or __slots__ found on {fqn}"
-            )
+            attribute_list = []  # type: ignore
 
     hash_exclude_attrs_set = (
         set(hash_exclude_attrs).union(set(DYNAMIC_SYFT_ATTRIBUTES))

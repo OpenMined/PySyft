@@ -33,6 +33,8 @@ from ..serde.serialize import _serialize
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
+from ..service.bridge.api_bridge import SerdeType
+from ..service.bridge.bridge_service import BridgeAdded
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
 from ..service.response import SyftAttributeError
@@ -355,6 +357,36 @@ def debox_signed_syftapicall_response(
     return signed_result.message.data
 
 
+@serializable()
+class SyftTypes(SyftObject):
+    # version
+    __canonical_name__ = "SyftTypes"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    serde_types: Optional[List[SerdeType]] = None
+
+    @staticmethod
+    def for_user(
+        node: AbstractNode, user_verify_key: Optional[SyftVerifyKey] = None
+    ) -> SyftAPI:
+        # relative
+        from ..service.bridge.bridge_service import BridgeService
+
+        context = AuthedServiceContext(node=node, credentials=user_verify_key)
+        method = node.get_method_with_context(BridgeService.get_all, context)
+        bridges = method()
+
+        serde_types = []
+        for bridge in bridges:
+            serde_types += bridge.get_serde_types()
+        return SyftTypes(serde_types=serde_types)
+
+    def register_serde_types(self) -> None:
+        if self.serde_types:
+            for serde_type in self.serde_types:
+                serde_type.register_type()
+
+
 @instrument
 @serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
@@ -370,6 +402,7 @@ class SyftAPI(SyftObject):
     lib_endpoints: Optional[Dict[str, LibEndpoint]] = None
     api_module: Optional[APIModule] = None
     libs: Optional[APIModule] = None
+    syft_types: Optional[SyftTypes] = None
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
@@ -449,7 +482,6 @@ class SyftAPI(SyftObject):
         # 🟡 TODO 35: fix root context
         method = node.get_method_with_context(BridgeService.get_all, context)
         bridges = method()
-
         for bridge in bridges:
             for m in list(sorted(bridge.openapi._operation_map.keys())):
                 method = bridge.openapi._operation_map[m]
@@ -457,11 +489,12 @@ class SyftAPI(SyftObject):
                 signature = bridge.op_to_signature(method)
                 pre_kwargs = {"bridge": bridge.api_name, "method_name": method_name}
 
-                path = "bridge.call"
-                unique_path = f"bridge.call_{bridge.api_name}_{method_name}"
+                service_path = "bridge.call"
+                module_path = f"{bridge.api_name}.{method_name}"
+                # unique_path = f"bridge.call_{bridge.api_name}_{method_name}"
                 endpoint = APIEndpoint(
-                    service_path=path,
-                    module_path=path,
+                    service_path=service_path,
+                    module_path=module_path,
                     name=method_name,
                     description="",
                     doc_string=method.summary,
@@ -469,7 +502,7 @@ class SyftAPI(SyftObject):
                     has_self=False,
                     pre_kwargs=pre_kwargs,
                 )
-                endpoints[unique_path] = endpoint
+                endpoints[module_path] = endpoint
 
         return SyftAPI(
             node_name=node.name,
@@ -484,18 +517,23 @@ class SyftAPI(SyftObject):
 
         result = debox_signed_syftapicall_response(signed_result=signed_result)
 
+        self.update_api(result)
+
         if isinstance(result, OkErr):
             if result.is_ok():
                 res = result.ok()
-                # we update the api when we create objects that change it
-                self.update_api(res)
                 return res
             else:
                 return result.err()
         return result
 
     def update_api(self, api_call_result):
+        if isinstance(api_call_result, OkErr):
+            if api_call_result.is_ok():
+                api_call_result = api_call_result.ok()
+
         # TODO: hacky stuff with typing and imports to prevent circular imports
+        refresh = False
         # relative
         from ..service.request.request import Request
         from ..service.request.request import UserCodeStatusChange
@@ -503,8 +541,13 @@ class SyftAPI(SyftObject):
         if isinstance(api_call_result, Request) and any(
             [isinstance(x, UserCodeStatusChange) for x in api_call_result.changes]
         ):
-            if self.refresh_api_callback is not None:
-                self.refresh_api_callback()
+            refresh = True
+
+        if isinstance(api_call_result, BridgeAdded):
+            refresh = True
+
+        if refresh and self.refresh_api_callback is not None:
+            self.refresh_api_callback()
 
     @staticmethod
     def _add_route(
@@ -573,6 +616,15 @@ class SyftAPI(SyftObject):
 
     def has_service(self, service_name: str) -> bool:
         return hasattr(self.services, service_name)
+
+    @property
+    def types(self) -> APIModule:
+        _types = APIModule(path="")
+        if self.syft_types:
+            for serde_type in self.syft_types.serde_types:
+                _type = serde_type.create_type()
+                setattr(_types, serde_type._class_name, _type)
+        return _types
 
     def __repr__(self) -> str:
         modules = self.services
