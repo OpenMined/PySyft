@@ -9,6 +9,7 @@ from typing_extensions import Self
 
 # relative
 from ..abstract_node import NodeType
+from ..abstract_node import NodeSideType
 from ..img.base64 import base64read
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
@@ -76,9 +77,12 @@ class GatewayClient(SyftClient):
 
     def _repr_html_(self) -> str:
         commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.domains</span> - list domains connected to this gateway</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.proxy_client_for</span> - get a connection to a listed domain</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.login</span> - log into the gateway</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;
+        .domains</span> - list domains connected to this gateway</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;
+        .proxy_client_for</span> - get a connection to a listed domain</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;
+        .login</span> - log into the gateway</li>
         """
 
         command_list = f"""
@@ -88,6 +92,21 @@ class GatewayClient(SyftClient):
         """
 
         small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
+
+        url = getattr(self.connection, "url", None)
+        node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
+        node_details += (
+            f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
+        )
+        node_side_type = (
+            "Low Side"
+            if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+            else "High Side"
+        )
+        node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
+        node_details += (
+            f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
+        )
 
         return f"""
         <style>
@@ -118,10 +137,7 @@ class GatewayClient(SyftClient):
             style="width:48px;height:48px;padding:3px;">
             <h2>Welcome to {self.name}</h2>
             <div class="syft-space">
-                <!-- <strong>Institution:</strong> TODO<br /> -->
-                <!-- <strong>Owner:</strong> TODO<br /> -->
-                <strong>URL:</strong> {getattr(self.connection, 'url', '')}<br />
-                <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
+                {node_details}
             </div>
             <div class='syft-alert-info syft-space'>
                 &#9432;&nbsp;
