@@ -420,7 +420,7 @@ class UserCode(SyftObject):
     id: str = {self.id}
     status.approved: str = {self.status.approved}
     service_func_name: str = {self.service_func_name}
-    shareholders: str = {self.shareholders}
+    shareholders: list = {self.shareholders}
     code:
 
 {self.raw_code}"""
