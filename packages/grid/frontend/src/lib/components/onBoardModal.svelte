@@ -250,7 +250,7 @@
           </p>
         </div>
         <div class="flex w-full justify-end px-4 gap-4" slot="button-group">
-            <Button variant="primary" on:click={handleForward}>Close</Button>
+            <Button variant="primary" on:click={onClose}>Close</Button>
         </div>
       </Modal>
     {/if}
