@@ -23,11 +23,12 @@ from ...serde.serializable import serializable
 from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...util.constants import DEFAULT_TIMEOUT
 
 
 def consume_api(url: str, base_url: Optional[str] = None) -> OpenAPI:
     grid_url = GridURL.from_url(url)
-    d = requests.get(grid_url)
+    d = requests.get(grid_url, timeout=DEFAULT_TIMEOUT)
     x = d.json()
     if not base_url:
         base_url = GridURL.from_url(grid_url.base_url)
