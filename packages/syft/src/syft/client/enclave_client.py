@@ -35,10 +35,19 @@ class EnclaveMetadata(SyftObject):
 class EnclaveClient(SyftClient):
     # TODO: add widget repr for enclave client
 
+    __api_patched = False
+
     @property
     def code(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("code"):
-            return self.api.services.code
+            res = self.api.services.code
+            # the order is important here
+            # its also important that patching only happens once
+            if not self.__api_patched:
+                self._request_code_execution = res.request_code_execution
+                self.__api_patched = True
+            res.request_code_execution = self.request_code_execution
+            return res
 
     @property
     def requests(self) -> Optional[APIModule]:
@@ -96,6 +105,8 @@ class EnclaveClient(SyftClient):
         for api in apis:
             api.services.code.request_code_execution(code=code)
 
-        res = self.api.services.code.request_code_execution(code=code)
+        # we are using the real method here, see the .code property getter
+        _ = self.code
+        res = self._request_code_execution(code=code)
 
         return res
