@@ -558,10 +558,6 @@ class SyftClient:
         return None
 
     @property
-    def domains(self) -> Optional[APIModule]:
-        return self.peers
-
-    @property
     def peers(self) -> Optional[APIModule]:
         if self.api is not None and self.api.has_service("network"):
             return self.api.services.network.get_all_peers()
