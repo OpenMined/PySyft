@@ -76,7 +76,13 @@ def run_uvicorn(
     node_side_type: str,
 ):
     async def _run_uvicorn(
-        name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
+        name: str,
+        node_type: Enum,
+        host: str,
+        port: int,
+        reset: bool,
+        dev_mode: bool,
+        node_side_type: Enum,
     ):
         if node_type not in worker_classes:
             raise NotImplementedError(f"node_type: {node_type} is not supported")
