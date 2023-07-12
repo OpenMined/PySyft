@@ -588,7 +588,10 @@ class SyftClient:
             # TODO: How to get the role of the user?
             # self.__user_role =
             self._fetch_api(self.credentials)
-            print(f"Logged into {self.name} as <{email}>")
+            print(
+                f"Logged into {self.name} {self.metadata.node_side_type} "
+                f"{self.metadata.node_type.capitalize()} as <{email}>"
+            )
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
+import rich
 from tqdm import tqdm
 
 # relative
@@ -60,6 +61,13 @@ class DomainClient(SyftClient):
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         # relative
         from ..types.twin_object import TwinObject
+
+        if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value:
+            console = rich.get_console()
+            console.print(
+                "[bold yellow]Warning:[/] [bold] "
+                "This is a low side domain, please don't upload private assets."
+            )
 
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
