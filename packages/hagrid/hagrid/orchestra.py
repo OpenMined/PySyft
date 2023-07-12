@@ -26,6 +26,7 @@ from .util import shell
 try:
     # syft absolute
     from syft.abstract_node import NodeType
+    from syft.node.node import get_default_root_password
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
     pass
@@ -167,7 +168,7 @@ class NodeHandle:
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
-        if password == "changethis":
+        if password == get_default_root_password():
             warnings.simplefilter("always", RuntimeWarning)
             warnings.warn(
                 message="You are using a default password. Please change the password "
