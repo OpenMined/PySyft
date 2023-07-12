@@ -286,7 +286,6 @@ class HTTPConnection(NodeConnection):
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        print(metadata.node_type, type(metadata.node_type))
         if metadata.node_type == NodeType.DOMAIN.value:
             return DomainClient
         elif metadata.node_type == NodeType.GATEWAY.value:
@@ -405,7 +404,6 @@ class PythonConnection(NodeConnection):
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        print(metadata.node_type, type(metadata.node_type))
         if metadata.node_type == NodeType.DOMAIN.value:
             return DomainClient
         elif metadata.node_type == NodeType.GATEWAY.value:
