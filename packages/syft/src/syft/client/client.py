@@ -26,6 +26,7 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
@@ -285,11 +286,12 @@ class HTTPConnection(NodeConnection):
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == "domain":
+        print(metadata.node_type, type(metadata.node_type))
+        if metadata.node_type == NodeType.DOMAIN.value:
             return DomainClient
-        elif metadata.node_type == "gateway":
+        elif metadata.node_type == NodeType.GATEWAY.value:
             return GatewayClient
-        elif metadata.node_type == "enclave":
+        elif metadata.node_type == NodeType.ENCLAVE.value:
             return EnclaveClient
         else:
             return SyftError(message=f"Unknown node type {metadata.node_type}")
@@ -403,11 +405,12 @@ class PythonConnection(NodeConnection):
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == "domain":
+        print(metadata.node_type, type(metadata.node_type))
+        if metadata.node_type == NodeType.DOMAIN.value:
             return DomainClient
-        elif metadata.node_type == "gateway":
+        elif metadata.node_type == NodeType.GATEWAY.value:
             return GatewayClient
-        elif metadata.node_type == "enclave":
+        elif metadata.node_type == NodeType.ENCLAVE.value:
             return EnclaveClient
         else:
             return SyftError(message=f"Unknown node type {metadata.node_type}")

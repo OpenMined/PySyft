@@ -69,7 +69,7 @@ class NodeMetadata(SyftObject):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
-    node_type = NodeType.DOMAIN
+    node_type: NodeType = NodeType.DOMAIN
     deployed_on: str = "Date"
     organization: str = "OpenMined"
     on_board: bool = False
@@ -93,7 +93,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
-    node_type: str = "domain"
+    node_type: str = NodeType.DOMAIN.value
     deployed_on: str = "Date"
     organization: str = "OpenMined"
     on_board: bool = False
@@ -113,7 +113,7 @@ def metadata_to_json() -> List[Callable]:
     return [
         drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
-        convert_types(["id", "verify_key"], str),
+        convert_types(["id", "verify_key", "node_type"], str),
     ]
 
 
@@ -122,4 +122,5 @@ def json_to_metadata() -> List[Callable]:
     return [
         drop(["metadata_version"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),
+        convert_types(["node_type"], NodeType),
     ]
