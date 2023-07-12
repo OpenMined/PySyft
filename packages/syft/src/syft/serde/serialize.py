@@ -1,48 +1,56 @@
 # stdlib
-import functools
+import threading
 from typing import Any
-from typing import Callable
+from typing import Optional
+
+# third party
+from typing_extensions import Self
 
 
-def recursive_serialize_kwargs(func: Callable) -> Callable:
-    """Helps detect recursive calls and pass-through kwargs used in the first invocation"""
+class RecursiveSerdeContext:
+    """Context manager singleton that tracks recursive SerDe calls in a thread-safe way"""
 
-    @functools.wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Callable:
-        recurse_step = getattr(wrapper, "recurse_step", 0)
+    _instance: Optional[Self] = None
+    _store = threading.local()
 
-        # We want to preserve the `for_hashing` flag during recursive _serialize() calls..
-        # ..skip if not being called for first call
-        if recurse_step == 0 and not kwargs.get("for_hashing", None):
-            return func(*args, **kwargs)
-        elif recurse_step == 0:
-            # cache kwargs
-            wrapper.for_hashing = kwargs["for_hashing"]
-            wrapper.debug = kwargs.get("debug", False)
-            wrapper.recurse_step = 1
-        else:
-            # carry forward the cached args during recursive _serialize() call
-            kwargs["for_hashing"] = wrapper.for_hashing
-            wrapper.recurse_step += 1
+    def __new__(cls) -> Any:
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
-        if wrapper.debug:
-            print(f'{"-" * wrapper.recurse_step}>', args, kwargs)
+    @property
+    def in_recursion(self) -> bool:
+        return self._store.recurse_step > 1
 
-        result = func(*args, **kwargs)
+    @property
+    def recurse_step(self) -> int:
+        return getattr(self._store, "recurse_step", 0)
 
-        wrapper.recurse_step -= 1
+    def get(self, key: str) -> Any:
+        return getattr(self._store, key)
 
-        if wrapper.recurse_step == 0:
-            delattr(wrapper, "recurse_step")
-            delattr(wrapper, "for_hashing")
-            delattr(wrapper, "debug")
+    def set(self, key: str, value: Any) -> None:
+        setattr(self._store, key, value)
 
-        return result
+    def __track_call(self) -> None:
+        if not hasattr(self._store, "recurse_step"):
+            self._store.recurse_step = 0
 
-    return wrapper
+        self._store.recurse_step += 1
+
+    def __enter__(self) -> Self:
+        self.__track_call()
+
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self._store.recurse_step -= 1
+
+        # Clear store when the recursion ends
+        if self._store.recurse_step == 0:
+            self._store.__dict__.clear()
 
 
-@recursive_serialize_kwargs
 def _serialize(
     obj: object,
     to_proto: bool = True,
@@ -53,10 +61,27 @@ def _serialize(
     # relative
     from .recursive import rs_object2proto
 
-    proto = rs_object2proto(obj, for_hashing=for_hashing)
+    with RecursiveSerdeContext() as ctx:
+        if ctx.in_recursion:
+            # select start args will be passed to recursive serde invocations
+            start_args = ctx.get("start_args")
+            for_hashing = start_args.get("for_hashing")
+            debug = start_args.get("debug")
+        else:
+            # save the start args in serde context
+            start_args = dict(for_hashing=for_hashing, debug=debug)
+            ctx.set("start_args", start_args)
 
-    if to_bytes:
-        return proto.to_bytes()
+        if debug:
+            print(
+                f'{"-" * ctx.recurse_step}>',
+                f"Obj = {obj.__class__.__name__}@{hex(id(obj))} | Value = {obj}",
+            )
 
-    if to_proto:
-        return proto
+        proto = rs_object2proto(obj, for_hashing=for_hashing)
+
+        if to_bytes:
+            return proto.to_bytes()
+
+        if to_proto:
+            return proto

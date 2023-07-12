@@ -1,5 +1,6 @@
 # stdlib
 from copy import deepcopy
+from multiprocessing.pool import ThreadPool
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -110,3 +111,28 @@ def test_nested_map():
     )
 
     assert obj1.hash() == obj2.hash()
+
+
+def test_multithreaded_hashing():
+    obj1 = MockNestedMap(
+        id=UID("090de5e5f39449a08fde75b0c82ec128"),
+        map={d.id: d for d in deepcopy(MOCK_DATA)},
+    )
+    obj2 = MockNestedMap(
+        id=UID("6e9518ea30874948b9049ecb2c1086a9"),
+        map={d.id: d for d in deepcopy(MOCK_DATA)},
+    )
+
+    def hash_object(obj):
+        return obj.hash()
+
+    data = [obj1, obj2, obj1, obj2, obj1, obj2]
+
+    with ThreadPool(4) as pool:
+        results = pool.map(hash_object, data, chunksize=1)
+
+    # id = 090de5e5f39449a08fde75b0c82ec128
+    assert results[0] == results[2] == results[4]
+
+    # id = 6e9518ea30874948b9049ecb2c1086a9
+    assert results[1] == results[3] == results[5]
