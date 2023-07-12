@@ -11,6 +11,7 @@ from packaging import version
 from pydantic import BaseModel
 
 # relative
+from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -68,14 +69,14 @@ class NodeMetadata(SyftObject):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
-    node_type: str = "domain"
+    node_type = NodeType.DOMAIN
     deployed_on: str = "Date"
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "Text"
     signup_enabled: bool
 
-    def check_version(self, client_version: str) -> None:
+    def check_version(self, client_version: str) -> bool:
         return check_version(
             client_version=client_version,
             server_version=self.syft_version,

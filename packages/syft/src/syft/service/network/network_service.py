@@ -504,5 +504,5 @@ def node_route_to_http_connection(
 @transform(NodeMetadata, NodePeer)
 def metadata_to_peer() -> List[Callable]:
     return [
-        keep(["id", "name", "verify_key"]),
+        keep(["id", "name", "verify_key", "node_type"]),
     ]
