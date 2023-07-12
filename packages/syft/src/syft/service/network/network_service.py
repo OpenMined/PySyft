@@ -26,7 +26,6 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.transforms import transform_method
-from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -37,8 +36,6 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..vpn.headscale_client import HeadscaleAuthToken
 from ..vpn.headscale_client import HeadscaleClient
@@ -117,7 +114,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.exchange_credentials_with",
         name="exchange_credentials_with",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
+        roles=GUEST_ROLE_LEVEL,
     )
     def exchange_credentials_with(
         self,
@@ -125,23 +122,8 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-        project_uid: Optional[UID] = None,
     ) -> Union[SyftSuccess, SyftError]:
         """Exchange Route With Another Node"""
-
-        # Step 0: Validate Permission
-        # If user == DO, always work
-        # If user == DS, validate project context
-        if context.role not in DATA_OWNER_ROLE_LEVEL:
-            if project_uid is not None:
-                project_service = context.node.get_service("projectservice")
-                result = project_service.get_by_uid(context=context, uid=project_uid)
-                if result.is_err():
-                    return SyftError(message=f"{result.err()}")
-            else:
-                return SyftError(
-                    message="A data scientist can only use exchange_credentials_with within a project context"
-                )
 
         # Step 1: Validate the Route
         self_node_peer = self_node_route.validate_with_context(context=context)
