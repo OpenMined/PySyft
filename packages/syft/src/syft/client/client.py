@@ -589,8 +589,8 @@ class SyftClient:
             # self.__user_role =
             self._fetch_api(self.credentials)
             print(
-                f"Logged into {self.name} {self.metadata.node_side_type} "
-                f"{self.metadata.node_type.capitalize()} as <{email}>"
+                f"Logged into {self.name} {self.metadata.node_side_type} side "
+                f"{self.metadata.node_type} as <{email}>"
             )
             if cache:
                 SyftClientSessionCache.add_client(
@@ -771,7 +771,10 @@ def login(
 
     if login_credentials is None:
         if verbose:
-            print(f"Logged into {_client.name} as GUEST")
+            print(
+                f"Logged into {_client.name} {_client.metadata.node_side_type} "
+                f"side {_client.metadata.node_type} as GUEST"
+            )
         return _client.guest()
 
     if cache and login_credentials:

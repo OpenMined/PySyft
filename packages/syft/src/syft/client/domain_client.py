@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
-import rich
 from tqdm import tqdm
 
 # relative
@@ -24,6 +23,7 @@ from ..service.user.user_roles import ServiceRole
 from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
+from ..util.util import prompt_warning_message
 from .api import APIModule
 from .client import SyftClient
 from .client import login
@@ -62,12 +62,20 @@ class DomainClient(SyftClient):
         # relative
         from ..types.twin_object import TwinObject
 
+        message = (
+            "[bold yellow]Warning:[/] [bold]"
+            "This is an operation on the low side domain, "
+            "and it can only host mock or synthetic datasets. "
+        )
+
         if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value:
-            console = rich.get_console()
-            console.print(
-                "[bold yellow]Warning:[/] [bold] "
-                "This is a low side domain, please don't upload private assets."
+            message = (
+                "[bold yellow]Warning:[/] [bold]"
+                "This is an operation on the high side domain, "
+                "and the datasets could contain private information."
             )
+        if not prompt_warning_message(message=message, confirm=True):
+            return
 
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
@@ -108,6 +116,15 @@ class DomainClient(SyftClient):
         handle: Optional["NodeHandle"] = None,  # noqa: F821
         **kwargs,
     ) -> None:
+        if self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+            message = (
+                "[bold yellow]Warning:[/] [bold]"
+                "This is a high side domain, which could host private "
+                "information."
+            )
+            if not prompt_warning_message(message=message, confirm=True):
+                return
+
         if via_client is not None:
             client = via_client
         elif handle is not None:
@@ -145,6 +162,17 @@ class DomainClient(SyftClient):
     @property
     def datasets(self) -> Optional[APIModule]:
         if self.api.has_service("dataset"):
+            message = (
+                "[bold yellow]Remineder:[/] This is a high side domain, "
+                "and the datasets could contain private information."
+            )
+            if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value:
+                message = (
+                    "[bold yellow]Remineder:[/] This is a low side domain, "
+                    "and it can only host mock or synthetic datasets."
+                )
+            prompt_warning_message(message=message)
+
             return self.api.services.dataset
         return None
 
