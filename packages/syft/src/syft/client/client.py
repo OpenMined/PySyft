@@ -400,9 +400,6 @@ class PythonConnection(NodeConnection):
         return f"{type(self).__name__}"
 
     def get_client_type(self) -> Type[SyftClient]:
-        # TODO: Rasswanth, should remove passing in credentials
-        # when metadata are proxy forwarded in the grid routes
-        # in the gateway fixes PR
         # relative
         from .domain_client import DomainClient
         from .enclave_client import EnclaveClient
