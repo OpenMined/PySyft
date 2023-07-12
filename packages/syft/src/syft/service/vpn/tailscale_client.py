@@ -246,4 +246,4 @@ def get_vpn_client(
         )
         return Ok(client)
 
-    return Err(f"Failed to create client for: {client_type.__name__}")
+    return Err(f"Cannot create client for: {client_type.__name__}")

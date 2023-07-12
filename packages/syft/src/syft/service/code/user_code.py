@@ -111,24 +111,27 @@ class UserCodeStatusContext(SyftHashableObject):
         return str(self.base_dict)
 
     def _repr_html_(self):
-        node_name_str = ""
-        verify_key_str = ""
-        status_str = ""
-        for node_view, status in self.base_dict.items():
-            node_name_str += f"{node_view.node_name}"
-            verify_key_str += f"{node_view.verify_key}"
-            status_str += f"{status.value}"
-        return f"""
+        string = f"""
             <style>
-            .syft-user_code {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            <div class='syft-user_code' style="line-height:25%">
-                <h3>User Code</h3>
-                <p><strong>Node name: </strong>{node_name_str}</p>
-                <p><strong>Verify key: </strong>{verify_key_str}</p>
-                <p><strong>Status: </strong>{status_str}</p>
-            </div>
+                .syft-user_code {{color: {SURFACE[options.color_theme]};}}
+                </style>
+                <div class='syft-user_code'>
+                    <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
+                    <p style="margin-left: 3px;">
             """
+        for node_view, status in self.base_dict.items():
+            node_name_str = f"{node_view.node_name}"
+            uid_str = f"{node_view.node_id}"
+            status_str = f"{status.value}"
+
+            string += f"""
+                    &#x2022; <strong>UID: </strong>{uid_str}&nbsp;
+                    <strong>Node name: </strong>{node_name_str}&nbsp;
+                    <strong>Status: </strong>{status_str}
+                    <br>
+                """
+        string += "</p></div>"
+        return string
 
     def __repr_syft_nested__(self):
         string = ""
@@ -377,8 +380,14 @@ class UserCode(SyftObject):
         def wrapper(*args: Any, **kwargs: Any) -> Callable:
             try:
                 filtered_kwargs = {}
+                real_data_flag = True
                 for k, v in kwargs.items():
-                    filtered_kwargs[k] = debox_asset(v)
+                    filtered_kwargs[k], is_real_data = debox_asset(v)
+                    real_data_flag = real_data_flag and is_real_data
+                if not real_data_flag:
+                    print("Warning: The result you see is on MOCK data.")
+                if real_data_flag:
+                    print("Warning: The result you see is on REAL data.")
                 # third party
 
                 # remove the decorator
@@ -409,7 +418,7 @@ class UserCode(SyftObject):
         return as_markdown_code(md)
 
     @property
-    def code(self) -> CodeMarkdown:
+    def show_code(self) -> CodeMarkdown:
         return CodeMarkdown(self.raw_code)
 
     def show_code_cell(self):
@@ -454,9 +463,14 @@ class SubmitUserCode(SyftObject):
             filtered_kwargs = {}
             # for arg in args:
             #     filtered_args.append(debox_asset(arg))
+            real_data_flag = True
             for k, v in kwargs.items():
-                filtered_kwargs[k] = debox_asset(v)
-
+                filtered_kwargs[k], is_real_data = debox_asset(v)
+                real_data_flag = real_data_flag and is_real_data
+            if not real_data_flag:
+                print("Warning: The result you see is on MOCK data.")
+            if real_data_flag:
+                print("Warning: The result you see is on REAL data.")
             return self.local_function(**filtered_kwargs)
         else:
             raise NotImplementedError
@@ -467,12 +481,12 @@ def debox_asset(arg: Any) -> Any:
     if isinstance(deboxed_arg, Asset):
         asset = deboxed_arg
         if asset.has_data_permission():
-            return asset.data
+            return asset.data, True
         else:
-            return asset.mock
+            return asset.mock, False
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
-    return deboxed_arg
+    return deboxed_arg, True
 
 
 def syft_function_single_use(*args: Any, **kwargs: Any):
@@ -665,12 +679,15 @@ def add_custom_status(context: TransformContext) -> TransformContext:
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
-        if node_view in input_keys or len(input_keys) == 0:
-            context.output["status"] = UserCodeStatusContext(
-                base_dict={node_view: UserCodeStatus.SUBMITTED}
-            )
-        else:
-            raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
+        context.output["status"] = UserCodeStatusContext(
+            base_dict={node_view: UserCodeStatus.SUBMITTED}
+        )
+        # if node_view in input_keys or len(input_keys) == 0:
+        #     context.output["status"] = UserCodeStatusContext(
+        #         base_dict={node_view: UserCodeStatus.SUBMITTED}
+        #     )
+        # else:
+        #     raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
