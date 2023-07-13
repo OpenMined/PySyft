@@ -358,14 +358,7 @@ class SyftClient:
         self.post_init()
 
     def get_env(self) -> str:
-        res = subprocess.run(
-            "pip list --format=freeze",
-            shell=True,
-            check=True,
-            executable="/bin/bash",
-            capture_output=True,
-        )
-        return res.stdout.decode()
+        return self.api.services.metadata.get_env()
 
     def post_init(self) -> None:
         if self.metadata is None:

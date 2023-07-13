@@ -73,6 +73,7 @@ from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
+from ..service.metadata.metadata_service import MetadataService
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
 from ..store.dict_document_store import DictStoreConfig
@@ -211,6 +212,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                MetadataService,
             ]
             if services is None
             else services
@@ -456,6 +458,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                MetadataService
             ]
 
             if OBLV:
