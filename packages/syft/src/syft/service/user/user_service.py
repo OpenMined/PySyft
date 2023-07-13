@@ -176,6 +176,15 @@ class UserService(AbstractService):
 
         return results
 
+    @service_method(path="user.get_admin", name="get_admin", roles=GUEST_ROLE_LEVEL)
+    def get_admin(self, context: AuthedServiceContext) -> UserView:
+        result = self.stash.admin_user()
+        if result.is_ok():
+            user = result.ok()
+            if user:
+                return user
+        return SyftError(message=str(result.err()))
+
     @service_method(
         path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
     )

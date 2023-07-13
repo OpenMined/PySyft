@@ -189,7 +189,8 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
-
+        metadata = api.services.metadata.get_metadata()
+        admin_user = api.services.user.get_admin()
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -201,7 +202,10 @@ class Request(SyftObject):
                 {updated_at_line}
                 <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
-                <p><strong>Sent to Domain </strong>{api.node_name}</p>
+                <p><strong>Sent to: </strong></p>
+                <p>&emsp; <strong>Name:  </strong>{api.node_name}</p>
+                <p>&emsp; <strong>Type:  </strong>{metadata.node_type.value}</p>
+                <p>&emsp; <strong>Domain Owner's email:  </strong>{admin_user.email}</p>
             </div>
             """
 
