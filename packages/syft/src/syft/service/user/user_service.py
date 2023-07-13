@@ -5,6 +5,7 @@ from typing import Tuple
 from typing import Union
 
 # relative
+from ...abstract_node import NodeType
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -328,6 +329,14 @@ class UserService(AbstractService):
                 context.login_credentials.password,
                 user.hashed_password,
             ):
+                if (
+                    context.node.node_type == NodeType.ENCLAVE
+                    and user.role == ServiceRole.ADMIN
+                ):
+                    return SyftError(
+                        message="Admins are not allowed to login to Enclaves."
+                        "\n Kindly register a new data scientist account by your_client.register."
+                    )
                 return user.to(UserPrivateKey)
 
             return SyftError(
