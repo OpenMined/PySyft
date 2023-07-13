@@ -388,15 +388,17 @@ class UserCode(SyftObject):
         def wrapper(*args: Any, **kwargs: Any) -> Callable:
             try:
                 filtered_kwargs = {}
-                real_data_flag = True
+                on_private_data, on_mock_data = False, False
                 for k, v in kwargs.items():
-                    filtered_kwargs[k], is_real_data = debox_asset(v)
-                    real_data_flag = real_data_flag and is_real_data
-                if not real_data_flag:
-                    print("Warning: The result you see is on MOCK data.")
-                if real_data_flag:
-                    print("Warning: The result you see is on REAL data.")
-                # third party
+                    filtered_kwargs[k], arg_type = debox_asset(v)
+                    on_private_data = (
+                        on_private_data or arg_type == ArgumentType.PRIVATE
+                    )
+                    on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
+                if on_private_data:
+                    print("Warning: The result you see is computed on PRIVATE data.")
+                elif on_mock_data:
+                    print("Warning: The result you see is computed on MOCK data.")
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
@@ -472,17 +474,24 @@ class SubmitUserCode(SyftObject):
             filtered_kwargs = {}
             # for arg in args:
             #     filtered_args.append(debox_asset(arg))
-            real_data_flag = True
+            on_private_data, on_mock_data = False, False
             for k, v in kwargs.items():
-                filtered_kwargs[k], is_real_data = debox_asset(v)
-                real_data_flag = real_data_flag and is_real_data
-            if not real_data_flag:
-                print("Warning: The result you see is on MOCK data.")
-            if real_data_flag:
-                print("Warning: The result you see is on REAL data.")
+                filtered_kwargs[k], arg_type = debox_asset(v)
+                on_private_data = on_private_data or arg_type == ArgumentType.PRIVATE
+                on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
+            if on_private_data:
+                print("Warning: The result you see is computed on PRIVATE data.")
+            elif on_mock_data:
+                print("Warning: The result you see is computed on MOCK data.")
             return self.local_function(**filtered_kwargs)
         else:
             raise NotImplementedError
+
+
+class ArgumentType(Enum):
+    REAL = 1
+    MOCK = 2
+    PRIVATE = 4
 
 
 def debox_asset(arg: Any) -> Any:
@@ -490,12 +499,12 @@ def debox_asset(arg: Any) -> Any:
     if isinstance(deboxed_arg, Asset):
         asset = deboxed_arg
         if asset.has_data_permission():
-            return asset.data, True
+            return asset.data, ArgumentType.PRIVATE
         else:
-            return asset.mock, False
+            return asset.mock, ArgumentType.MOCK
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
-    return deboxed_arg, True
+    return deboxed_arg, ArgumentType.REAL
 
 
 def syft_function_single_use(*args: Any, **kwargs: Any):
