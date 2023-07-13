@@ -214,52 +214,26 @@ class UserView(SyftObject):
             f"'{self.name}'. New email is '{self.email}'."
         )
 
-    def set_name(self, new_name: str) -> Union[SyftSuccess, SyftError]:
+    def update(self, **kwargs) -> Union[SyftSuccess, SyftError]:
+        """
+        Used to update name, institute, website of a user
+        """
+        valid_keys = ["name", "institution", "website"]
+        invalid_keys = [x for x in kwargs.keys() if x not in valid_keys]
+        if invalid_keys:
+            return SyftError(
+                message=f"Unvalid keys provided ({', '. join([str(x) for x in invalid_keys])})"
+            )
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        api.services.user.update(uid=self.id, user_update=UserUpdate(name=new_name))
-        self.name = new_name
+        api.services.user.update(uid=self.id, user_update=UserUpdate(**kwargs))
         return SyftSuccess(
-            message=f"Successfully setting a new name for the user "
-            f"with email '{self.email}'. New name is '{self.name}'."
-        )
-
-    def set_institute(self, new_institute: str) -> Union[SyftSuccess, SyftError]:
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
-        api.services.user.update(
-            uid=self.id, user_update=UserUpdate(institution=new_institute)
-        )
-        self.institution = new_institute
-        return SyftSuccess(
-            message=f"Successfully setting a new institute for the user "
-            f"'{self.name}' with email '{self.email}'. "
-            f"New institute is '{self.institution}'."
-        )
-
-    def set_website(self, new_website: str) -> Union[SyftSuccess, SyftError]:
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
-        api.services.user.update(
-            uid=self.id, user_update=UserUpdate(website=new_website)
-        )
-        self.website = new_website
-        return SyftSuccess(
-            message=f"Successfully setting a new website for the user "
-            f"'{self.name}' with email '{self.email}'. "
-            f"New website is '{self.website}'."
+            message=f"Successfully setting new {', '. join([str(x) for x in kwargs.keys()])} "
+            f"for the user with email '{self.email}'."
         )
 
     def set_role(self, new_role: str) -> Union[SyftSuccess, SyftError]:
