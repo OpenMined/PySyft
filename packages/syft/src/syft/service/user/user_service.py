@@ -115,7 +115,6 @@ class UserService(AbstractService):
                 # Return the proper slice using chunk_index
                 results = results[page_index]
                 results = UserViewPage(users=results, total=total)
-
             return results
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
