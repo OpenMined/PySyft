@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections import OrderedDict
 import inspect
 from inspect import signature
 import types
@@ -51,7 +52,7 @@ from .connection import NodeConnection
 
 
 class APIRegistry:
-    __api_registry__: Dict[Tuple, SyftAPI] = {}
+    __api_registry__: Dict[Tuple, SyftAPI] = OrderedDict()
 
     @classmethod
     def set_api_for(
@@ -78,6 +79,13 @@ class APIRegistry:
     @classmethod
     def get_all_api(cls) -> List[SyftAPI]:
         return list(cls.__api_registry__.values())
+
+    @classmethod
+    def get_by_recent_node_uid(cls, node_uid: UID) -> Optional[SyftAPI]:
+        for key, api in reversed(cls.__api_registry__.items()):
+            if key[0] == node_uid:
+                return api
+        return None
 
 
 @serializable()
