@@ -100,7 +100,19 @@ class EnclaveClient(SyftClient):
 
         apis = []
         for k, v in code.input_policy_init_kwargs.items():
-            api = APIRegistry.api_for(k.node_id, k.verify_key)
+            # We would need the verify key of the data scientist to be able to index the correct client
+            # Since we do not want the data scientist to pass in the clients to the enclave client
+            # from a UX perspecitve.
+            # we will use the recent node id to find the correct client
+            # assuming that it is the correct client
+            # Warning: This could lead to inconsistent results, when we have multiple clients
+            # in the same node pointing to the same node.
+            # One way, by which we could solve this in the long term,
+            # by forcing the user to pass only assets to the sy.ExactMatch,
+            # by which we could extract the verify key of the data scientist
+            # as each object comes with a verify key and node_uid
+            # the asset object would contain the verify key of the data scientist.
+            api = APIRegistry.get_by_recent_node_uid(k.node_id)
             if api is None:
                 raise ValueError(f"could not find client for input {v}")
             else:
