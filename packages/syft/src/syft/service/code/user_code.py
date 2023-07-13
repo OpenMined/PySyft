@@ -417,8 +417,8 @@ class UserCode(SyftObject):
 
     def _repr_markdown_(self):
         md = f"""class UserCode
-    id: str = {self.id}
-    status.approved: str = {self.status.approved}
+    id: UID = {self.id}
+    status.approved: bool = {self.status.approved}
     service_func_name: str = {self.service_func_name}
     shareholders: list = {self.shareholders}
     code:
