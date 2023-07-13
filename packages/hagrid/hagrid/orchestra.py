@@ -96,7 +96,7 @@ def container_exists_with(name: str, port: int) -> bool:
     return len(output) > 0
 
 
-def get_node_type(node_type: Optional[str]) -> Optional[NodeType]:
+def get_node_type(node_type: Optional[Union[str, NodeType]]) -> Optional[NodeType]:
     if node_type is None:
         node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
     try:
@@ -399,7 +399,7 @@ class Orchestra:
     def launch(
         # node information and deployment
         name: Optional[str] = None,
-        node_type: Optional[str] = None,
+        node_type: Optional[Union[str, NodeType]] = None,
         deploy_to: Optional[str] = None,
         # worker related inputs
         port: Optional[Union[int, str]] = None,
@@ -419,7 +419,7 @@ class Orchestra:
 
         # syft 0.8.1
         if node_type == "python":
-            node_type = "domain"
+            node_type = NodeType.DOMAIN
             if deploy_to is None:
                 deploy_to = "python"
 
