@@ -114,24 +114,25 @@ class DomainClient(SyftClient):
 
     @property
     def data_subject_registry(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("data_subject"):
+        if self.api.has_service("data_subject"):
             return self.api.services.data_subject
         return None
 
     @property
     def code(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("code"):
+        if self.api.has_service("code"):
             return self.api.services.code
+        return None
 
     @property
     def requests(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("request"):
+        if self.api.has_service("request"):
             return self.api.services.request
         return None
 
     @property
     def datasets(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("dataset"):
+        if self.api.has_service("dataset"):
             return self.api.services.dataset
         return None
 

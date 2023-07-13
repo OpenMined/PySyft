@@ -10,6 +10,7 @@ from typing import Union
 from result import Result
 
 # relative
+from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
@@ -49,6 +50,7 @@ from .routes import NodeRoute
 from .routes import PythonNodeRoute
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
+NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
 
 
 @instrument
@@ -97,6 +99,12 @@ class NetworkStash(BaseUIDStoreStash):
     ) -> Result[NodePeer, SyftError]:
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_one(credentials, qks)
+
+    def get_by_node_type(
+        self, credentials: SyftVerifyKey, node_type: NodeType
+    ) -> Result[List[NodePeer], SyftError]:
+        qks = QueryKeys(qks=[NodeTypePartitionKey.with_obj(node_type)])
+        return self.query_all(credentials=credentials, qks=qks)
 
 
 @instrument
@@ -295,6 +303,24 @@ class NetworkService(AbstractService):
             peer = result.ok()
             return peer
         return SyftError(message=str(result.err()))
+
+    @service_method(
+        path="network.get_peers_by_type",
+        name="get_peers_by_type",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get_peers_by_type(
+        self, context: AuthedServiceContext, node_type: NodeType
+    ) -> Union[List[NodePeer], SyftError]:
+        result = self.stash.get_by_node_type(
+            credentials=context.node.verify_key, node_type=node_type
+        )
+
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        # Return peers or an empty list when result is None
+        return result.ok() or []
 
     @service_method(path="network.join_vpn", name="join_vpn")
     def join_vpn(
@@ -504,5 +530,5 @@ def node_route_to_http_connection(
 @transform(NodeMetadata, NodePeer)
 def metadata_to_peer() -> List[Callable]:
     return [
-        keep(["id", "name", "verify_key"]),
+        keep(["id", "name", "verify_key", "node_type"]),
     ]
