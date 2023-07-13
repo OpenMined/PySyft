@@ -331,7 +331,7 @@ class UserService(AbstractService):
             ):
                 if (
                     context.node.node_type == NodeType.ENCLAVE
-                    and user.role == ServiceRole.DATA_OWNER
+                    and user.role == ServiceRole.ADMIN
                 ):
                     return SyftError(
                         message="Admins are not allowed to login to Enclaves."

@@ -240,9 +240,8 @@ class HTTPConnection(NodeConnection):
         else:
             response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
             obj = _deserialize(response, from_bytes=True)
-        if isinstance(obj, UserPrivateKey):
-            return obj
-        return None
+
+        return obj
 
     def register(self, new_user: UserCreate) -> SyftSigningKey:
         data = _serialize(new_user, to_bytes=True)
@@ -373,9 +372,7 @@ class PythonConnection(NodeConnection):
 
         else:
             obj = self.exchange_credentials(email=email, password=password)
-        if isinstance(obj, UserPrivateKey):
-            return obj
-        return None
+        return obj
 
     def register(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
         if self.proxy_target_uid:
@@ -576,6 +573,8 @@ class SyftClient:
         if register:
             self.register(email=email, password=password, **kwargs)
         user_private_key = self.connection.login(email=email, password=password)
+        if isinstance(user_private_key, SyftError):
+            return user_private_key
         signing_key = None
         if user_private_key is not None:
             signing_key = user_private_key.signing_key
