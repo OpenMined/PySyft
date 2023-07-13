@@ -60,8 +60,15 @@ def test_domain_connect_to_gateway(faker: Faker):
     assert isinstance(gateway_peer, NodePeer)
     assert isinstance(domain_peer, NodePeer)
 
+    # Domain's peer is a gateway and vice-versa
+    assert domain_peer.node_type == NodeType.GATEWAY
+    assert gateway_peer.node_type == NodeType.DOMAIN
+
     assert gateway_client.name == domain_peer.name
     assert domain_client.name == gateway_peer.name
+
+    assert len(gateway_client.domains) == 1
+    assert len(gateway_client.enclaves) == 0
 
     proxy_domain_client = gateway_client.proxy_to(gateway_peer)
     assert proxy_domain_client.metadata == domain_client.metadata
@@ -97,6 +104,13 @@ def test_enclave_connect_to_gateway(faker: Faker):
 
     assert gateway_client.name == enclave_peer.name
     assert enclave_client.name == gateway_peer.name
+
+    # Domain's peer is a gateway and vice-versa
+    assert enclave_peer.node_type == NodeType.GATEWAY
+    assert gateway_peer.node_type == NodeType.ENCLAVE
+
+    assert len(gateway_client.domains) == 0
+    assert len(gateway_client.enclaves) == 1
 
     proxy_enclave_client = gateway_client.proxy_to(gateway_peer)
     assert proxy_enclave_client.metadata == enclave_client.metadata

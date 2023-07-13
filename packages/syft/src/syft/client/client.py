@@ -8,7 +8,9 @@ import json
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -26,6 +28,7 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
@@ -55,6 +58,10 @@ from .api import SyftAPI
 from .api import SyftAPICall
 from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
+
+if TYPE_CHECKING:
+    # relative
+    from ..service.network.node_peer import NodePeer
 
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
@@ -285,11 +292,11 @@ class HTTPConnection(NodeConnection):
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == "domain":
+        if metadata.node_type == NodeType.DOMAIN.value:
             return DomainClient
-        elif metadata.node_type == "gateway":
+        elif metadata.node_type == NodeType.GATEWAY.value:
             return GatewayClient
-        elif metadata.node_type == "enclave":
+        elif metadata.node_type == NodeType.ENCLAVE.value:
             return EnclaveClient
         else:
             return SyftError(message=f"Unknown node type {metadata.node_type}")
@@ -403,11 +410,11 @@ class PythonConnection(NodeConnection):
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == "domain":
+        if metadata.node_type == NodeType.DOMAIN.value:
             return DomainClient
-        elif metadata.node_type == "gateway":
+        elif metadata.node_type == NodeType.GATEWAY.value:
             return GatewayClient
-        elif metadata.node_type == "enclave":
+        elif metadata.node_type == NodeType.ENCLAVE.value:
             return EnclaveClient
         else:
             return SyftError(message=f"Unknown node type {metadata.node_type}")
@@ -537,13 +544,13 @@ class SyftClient:
 
     @property
     def users(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("user"):
+        if self.api.has_service("user"):
             return self.api.services.user
         return None
 
     @property
     def settings(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("user"):
+        if self.api.has_service("user"):
             return self.api.services.settings
         return None
 
@@ -553,17 +560,13 @@ class SyftClient:
             "WARNING: Notifications is currently is in a beta state, so use carefully!"
         )
         print("If possible try using client.requests/client.projects")
-        if self.api is not None and self.api.has_service("notifications"):
+        if self.api.has_service("notifications"):
             return self.api.services.notifications
         return None
 
     @property
-    def domains(self) -> Optional[APIModule]:
-        return self.peers
-
-    @property
-    def peers(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("network"):
+    def peers(self) -> Optional[Union[List[NodePeer], SyftError]]:
+        if self.api.has_service("network"):
             return self.api.services.network.get_all_peers()
         return None
 
