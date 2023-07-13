@@ -1,6 +1,8 @@
 # stdlib
 from typing import Any
+from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -9,6 +11,7 @@ from typing_extensions import Self
 from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
+from ..service.network.node_peer import NodePeer
 from ..service.response import SyftError
 from ..service.response import SyftException
 from .client import SyftClient
@@ -48,7 +51,7 @@ class GatewayClient(SyftClient):
         **kwargs,
     ):
         peer = None
-        if self.api is not None and self.api.has_service("network"):
+        if self.api.has_service("network"):
             peer = self.api.services.network.get_peer_by_name(name=name)
         if peer is None:
             return SyftError(message=f"No domain with name {name}")
@@ -58,9 +61,13 @@ class GatewayClient(SyftClient):
         return res
 
     @property
-    def domains(self):
+    def domains(self) -> Optional[Union[List[NodePeer], SyftError]]:
+        if not self.api.has_service("network"):
+            return None
         return self.api.services.network.get_peers_by_type(node_type=NodeType.DOMAIN)
 
     @property
-    def enclaves(self):
+    def enclaves(self) -> Optional[Union[List[NodePeer], SyftError]]:
+        if not self.api.has_service("network"):
+            return None
         return self.api.services.network.get_peers_by_type(node_type=NodeType.ENCLAVE)

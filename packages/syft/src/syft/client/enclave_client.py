@@ -39,7 +39,7 @@ class EnclaveClient(SyftClient):
 
     @property
     def code(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("code"):
+        if self.api.has_service("code"):
             res = self.api.services.code
             # the order is important here
             # its also important that patching only happens once
@@ -48,10 +48,11 @@ class EnclaveClient(SyftClient):
                 self.__api_patched = True
             res.request_code_execution = self.request_code_execution
             return res
+        return None
 
     @property
     def requests(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("request"):
+        if self.api.has_service("request"):
             return self.api.services.request
         return None
 
