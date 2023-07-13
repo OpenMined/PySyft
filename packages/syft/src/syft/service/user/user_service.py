@@ -5,6 +5,7 @@ from typing import Tuple
 from typing import Union
 
 # relative
+from ...abstract_node import NodeType
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -175,6 +176,20 @@ class UserService(AbstractService):
 
         return results
 
+    @service_method(
+        path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
+    )
+    def get_current_user(self, context: AuthedServiceContext) -> UserView:
+        result = self.stash.get_by_verify_key(
+            credentials=context.credentials, verify_key=context.credentials
+        )
+        if result.is_ok():
+            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+            if user:
+                return user
+        return SyftError(message=str(result.err()))
+
     @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
@@ -314,6 +329,14 @@ class UserService(AbstractService):
                 context.login_credentials.password,
                 user.hashed_password,
             ):
+                if (
+                    context.node.node_type == NodeType.ENCLAVE
+                    and user.role == ServiceRole.ADMIN
+                ):
+                    return SyftError(
+                        message="Admins are not allowed to login to Enclaves."
+                        "\n Kindly register a new data scientist account by your_client.register."
+                    )
                 return user.to(UserPrivateKey)
 
             return SyftError(

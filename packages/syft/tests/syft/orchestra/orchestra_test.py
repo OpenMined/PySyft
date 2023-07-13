@@ -12,7 +12,11 @@ from syft.node.node import Node
 
 @pytest.mark.parametrize(
     "node_metadata",
-    [("domain", DomainClient), ("gateway", GatewayClient), ("enclave", EnclaveClient)],
+    [
+        (sy.NodeType.DOMAIN, DomainClient),
+        (sy.NodeType.GATEWAY, GatewayClient),
+        (sy.NodeType.ENCLAVE, EnclaveClient),
+    ],
 )
 def test_orchestra_python_local(node_metadata):
     node_type, client_type = node_metadata
@@ -20,7 +24,7 @@ def test_orchestra_python_local(node_metadata):
 
     assert isinstance(node.python_node, Node)
     assert node.python_node.name == "test-domain"
-    assert node.python_node.node_type.value == node_type
+    assert node.python_node.node_type == node_type
     assert node.python_node.metadata.node_type == node_type
     assert isinstance(node.client, client_type)
 

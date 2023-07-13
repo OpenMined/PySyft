@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections import OrderedDict
 import inspect
 from inspect import signature
 import types
@@ -51,7 +52,7 @@ from .connection import NodeConnection
 
 
 class APIRegistry:
-    __api_registry__: Dict[Tuple, SyftAPI] = {}
+    __api_registry__: Dict[Tuple, SyftAPI] = OrderedDict()
 
     @classmethod
     def set_api_for(
@@ -78,6 +79,13 @@ class APIRegistry:
     @classmethod
     def get_all_api(cls) -> List[SyftAPI]:
         return list(cls.__api_registry__.values())
+
+    @classmethod
+    def get_by_recent_node_uid(cls, node_uid: UID) -> Optional[SyftAPI]:
+        for key, api in reversed(cls.__api_registry__.items()):
+            if key[0] == node_uid:
+                return api
+        return None
 
 
 @serializable()
@@ -343,6 +351,18 @@ class APIModule:
         return results._repr_html_()
 
 
+def debox_signed_syftapicall_response(
+    signed_result: SignedSyftAPICall,
+) -> Union[Any, SyftError]:
+    if not isinstance(signed_result, SignedSyftAPICall):
+        return SyftError(message="The result is not signed")  # type: ignore
+
+    if not signed_result.is_valid:
+        return SyftError(message="The result signature is invalid")  # type: ignore
+
+    return signed_result.message.data
+
+
 @instrument
 @serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
@@ -443,13 +463,7 @@ class SyftAPI(SyftObject):
         signed_call = api_call.sign(credentials=self.signing_key)
         signed_result = self.connection.make_call(signed_call)
 
-        if not isinstance(signed_result, SignedSyftAPICall):
-            return SyftError(message="The result is not signed")  # type: ignore
-
-        if not signed_result.is_valid:
-            return SyftError(message="The result signature is invalid")  # type: ignore
-
-        result = signed_result.message.data
+        result = debox_signed_syftapicall_response(signed_result=signed_result)
 
         if isinstance(result, OkErr):
             if result.is_ok():

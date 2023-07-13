@@ -16,6 +16,10 @@ class NodeType(Enum):
     ENCLAVE = "enclave"
     GATEWAY = "gateway"
 
+    def __str__(self) -> str:
+        # Use values when transforming NodeType to str
+        return self.value
+
 
 class AbstractNode:
     id: Optional[UID]
