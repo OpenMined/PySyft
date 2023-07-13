@@ -178,7 +178,9 @@ class UserService(AbstractService):
     @service_method(
         path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
     )
-    def get_current_user(self, context: AuthedServiceContext) -> UserView:
+    def get_current_user(
+        self, context: AuthedServiceContext
+    ) -> Union[UserView, SyftError]:
         result = self.stash.get_by_verify_key(
             credentials=context.credentials, verify_key=context.credentials
         )
@@ -186,7 +188,9 @@ class UserService(AbstractService):
             # this seems weird that we get back None as Ok(None)
             user = result.ok()
             if user:
-                return user
+                return user.to(UserView)
+            else:
+                SyftError(message="User not found!")
         return SyftError(message=str(result.err()))
 
     @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
