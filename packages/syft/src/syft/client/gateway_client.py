@@ -11,6 +11,7 @@ from typing_extensions import Self
 from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
+from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.node_peer import NodePeer
 from ..service.response import SyftError
 from ..service.response import SyftException
@@ -65,8 +66,9 @@ class GatewayClient(SyftClient):
         if not self.api.has_service("network"):
             return None
         domains = self.api.services.network.get_peers_by_type(node_type=NodeType.DOMAIN)
-        domains.append(self)
+        domains.append(self.metadata.to(NodeMetadata).to(NodePeer))
         return domains
+        # return self.api.services.network.get_peers_by_type(node_type=NodeType.DOMAIN)
 
     @property
     def enclaves(self) -> Optional[Union[List[NodePeer], SyftError]]:
