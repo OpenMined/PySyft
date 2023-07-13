@@ -51,6 +51,10 @@ def test_domain_connect_to_gateway(faker: Faker):
     result = domain_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
 
+    # Try via client approach
+    result_2 = domain_client.connect_to_gateway(via_client=gateway_node_handle.client)
+    assert isinstance(result_2, SyftSuccess)
+
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
 
@@ -92,6 +96,10 @@ def test_enclave_connect_to_gateway(faker: Faker):
 
     result = enclave_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
+
+    # Try via client approach
+    result_2 = enclave_client.connect_to_gateway(via_client=gateway_node_handle.client)
+    assert isinstance(result_2, SyftSuccess)
 
     assert len(enclave_client.peers) == 1
     assert len(gateway_client.peers) == 1
