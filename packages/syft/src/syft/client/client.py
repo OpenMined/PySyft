@@ -572,8 +572,10 @@ class SyftClient:
         return None
 
     @property
-    def me(self) -> Union[UserView, SyftError]:
-        return self.api.services.user.get_current_user()
+    def me(self) -> Optional[Union[UserView, SyftError]]:
+        if self.api.has_service("user"):
+            return self.api.services.user.get_current_user()
+        return None
 
     def login(
         self, email: str, password: str, cache: bool = True, register=False, **kwargs

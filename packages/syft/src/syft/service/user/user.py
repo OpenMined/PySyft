@@ -1,4 +1,5 @@
 # stdlib
+from getpass import getpass
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -12,6 +13,7 @@ from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
 import pydantic
+from pydantic.error_wrappers import ValidationError
 from pydantic.networks import EmailStr
 
 # relative
@@ -174,6 +176,10 @@ class UserView(SyftObject):
         }
 
     def set_password(self, new_password: str) -> Union[SyftSuccess, SyftError]:
+        confirm_password = getpass("Please confirm your password: ")
+        if confirm_password != new_password:
+            return SyftError(message="Passwords do not match!")
+
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -189,6 +195,25 @@ class UserView(SyftObject):
             f"user '{self.name}' with email '{self.email}'."
         )
 
+    def set_email(self, new_email: EmailStr) -> Union[SyftSuccess, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        try:
+            api.services.user.update(
+                uid=self.id, user_update=UserUpdate(email=new_email)
+            )
+        except ValidationError as e:
+            return SyftError(message=f"ValidationError: {e}")
+        self.email = new_email
+        return SyftSuccess(
+            message=f"Successfully setting a new email for the user "
+            f"'{self.name}'. New email is '{self.email}'."
+        )
+
     def set_name(self, new_name: str) -> Union[SyftSuccess, SyftError]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -201,20 +226,6 @@ class UserView(SyftObject):
         return SyftSuccess(
             message=f"Successfully setting a new name for the user "
             f"with email '{self.email}'. New name is '{self.name}'."
-        )
-
-    def set_email(self, new_email: EmailStr) -> Union[SyftSuccess, SyftError]:
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
-        api.services.user.update(uid=self.id, user_update=UserUpdate(email=new_email))
-        self.email = new_email
-        return SyftSuccess(
-            message=f"Successfully setting a new email for the user "
-            f"'{self.name}'. New email is '{self.email}'."
         )
 
     def set_institute(self, new_institute: str) -> Union[SyftSuccess, SyftError]:

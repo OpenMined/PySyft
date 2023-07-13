@@ -172,7 +172,7 @@ class NodeHandle:
             warnings.simplefilter("always", RuntimeWarning)
             warnings.warn(
                 message="You are using a default password. Please change the password "
-                "using `[your_client].users[0].set_password([new_password])`.",
+                "using `[your_client].me.set_password(<new_password>)`.",
                 category=RuntimeWarning,
             )
         client = self.client
