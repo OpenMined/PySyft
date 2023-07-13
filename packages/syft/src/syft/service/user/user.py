@@ -236,18 +236,16 @@ class UserView(SyftObject):
             f"for the user with email '{self.email}'."
         )
 
-    def set_role(self, new_role: str) -> Union[SyftSuccess, SyftError]:
-        if new_role == "guest":
-            update_role = ServiceRole.GUEST
-        elif new_role == "data_scientist":
-            update_role = ServiceRole.DATA_SCIENTIST
-        elif new_role == "data_owner":
-            update_role = ServiceRole.DATA_OWNER
-        elif new_role == "admin":
-            update_role = ServiceRole.ADMIN
-        else:
+    def set_role(self, role: str) -> Union[SyftSuccess, SyftError]:
+        valid_roles = {
+            "guest": ServiceRole.GUEST,
+            "data_scientist": ServiceRole.DATA_SCIENTIST,
+            "data_owner": ServiceRole.DATA_OWNER,
+            "admin": ServiceRole.ADMIN,
+        }
+        if role not in valid_roles.keys():
             return SyftError(
-                message=f"Can't set role to {new_role}. Please try "
+                message=f"Can't set role to {role}. Please try "
                 f"admin / data_scientist / data_owner / guest."
             )
         api = APIRegistry.api_for(
@@ -256,11 +254,12 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        api.services.user.update(uid=self.id, user_update=UserUpdate(role=update_role))
-        self.role = update_role
+        api.services.user.update(
+            uid=self.id, user_update=UserUpdate(role=valid_roles[role])
+        )
         return SyftSuccess(
             message=f"Successfully setting a new role for the user "
-            f"'{self.name}' with email '{self.email}'. New role is '{new_role}'."
+            f"'{self.name}' with email '{self.email}'. New role is '{role}'."
         )
 
 
