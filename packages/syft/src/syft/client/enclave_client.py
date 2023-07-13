@@ -58,12 +58,15 @@ class EnclaveClient(SyftClient):
 
     def connect_to_gateway(
         self,
+        via_client: Optional[SyftClient] = None,
         url: Optional[str] = None,
         port: Optional[int] = None,
         handle: Optional["NodeHandle"] = None,  # noqa: F821
         **kwargs,
     ) -> None:
-        if handle is not None:
+        if via_client is not None:
+            client = via_client
+        elif handle is not None:
             client = handle.client
         else:
             client = login(url=url, port=port, **kwargs)
