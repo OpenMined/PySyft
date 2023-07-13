@@ -41,6 +41,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.warnings import APIEndpointWarning
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -98,6 +99,7 @@ class APIEndpoint(SyftBaseObject):
     signature: Signature
     has_self: bool = False
     pre_kwargs: Optional[Dict[str, Any]]
+    warning: Optional[APIEndpointWarning]
 
 
 @serializable()
@@ -414,6 +416,7 @@ class SyftAPI(SyftObject):
                     doc_string=service_config.doc_string,
                     signature=service_config.signature,
                     has_self=False,
+                    warning=service_config.warning,
                 )
                 endpoints[path] = endpoint
 
