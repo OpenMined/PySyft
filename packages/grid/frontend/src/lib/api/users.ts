@@ -64,3 +64,28 @@ export async function searchUsersByName(
     }
   });
 }
+
+export async function updateCurrentUser(
+  name: string,
+  email: string,
+  password: string,
+  institution: string,
+  website: string
+) {
+  const userUpdate = {
+    name: name,
+    email: email,
+    password: password,
+    institution: institution,
+    website: website,
+    fqn: 'syft.service.user.user.UserUpdate'
+  };
+
+  return await syftCall({
+    path: 'user.update',
+    payload: {
+      uid: makeSyftUID(getUserIdFromStorage()),
+      user_update: userUpdate
+    }
+  });
+}
