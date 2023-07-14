@@ -55,7 +55,7 @@ class UserCodeService(AbstractService):
         result = self.stash.set(context.credentials, code.to(UserCode, context=context))
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(message="User Code Submitted")
+        return SyftSuccess(message=f"User Code Submitted with id: {result.ok().id}")
 
     def _request_code_execution(
         self,

@@ -44,6 +44,7 @@ from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.code.user_code_service import UserCodeService
+from ..service.code_interface.code_interface_service import CodeInterfaceService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
 from ..service.context import UnauthedServiceContext
@@ -212,6 +213,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                CodeInterfaceService,
             ]
             if services is None
             else services
@@ -457,6 +459,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                CodeInterfaceService,
             ]
 
             if OBLV:

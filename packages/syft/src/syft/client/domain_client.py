@@ -99,6 +99,12 @@ class DomainClient(SyftClient):
             return self.api.services.project
         return None
 
+    @property
+    def code_interface(self) -> Optional[APIModule]:
+        if self.api is not None and self.api.has_service("code_interface"):
+            return self.api.services.code_interface
+        return None
+
     def get_project(
         self,
         name: str = None,
