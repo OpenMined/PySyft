@@ -1,6 +1,7 @@
 # syft absolute
 from syft.node.domain import Domain
 from syft.node.gateway import Gateway
+from syft.node.node import get_node_name
 from syft.node.node import get_node_type
 from syft.store.mongo_client import MongoStoreClientConfig
 from syft.store.mongo_document_store import MongoStoreConfig
@@ -24,12 +25,17 @@ client_config = SQLiteStoreClientConfig(path="/storage/")
 sql_store_config = SQLiteStoreConfig(client_config=client_config)
 
 node_type = get_node_type()
+node_name = get_node_name()
 
 if node_type == "gateway" or node_type == "network":
     worker = Gateway(
-        action_store_config=sql_store_config, document_store_config=mongo_store_config
+        name=node_name,
+        action_store_config=sql_store_config,
+        document_store_config=mongo_store_config,
     )
 else:
     worker = Domain(
-        action_store_config=sql_store_config, document_store_config=mongo_store_config
+        name=node_name,
+        action_store_config=sql_store_config,
+        document_store_config=mongo_store_config,
     )
