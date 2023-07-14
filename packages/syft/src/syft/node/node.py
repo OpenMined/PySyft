@@ -9,6 +9,7 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
+import subprocess  # nosec
 import traceback
 from typing import Any
 from typing import Callable
@@ -52,6 +53,7 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
+from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
@@ -147,6 +149,13 @@ def get_dev_mode() -> bool:
     return str_to_bool(get_env("DEV_MODE", "False"))
 
 
+def get_venv_packages() -> str:
+    res = subprocess.getoutput(
+        "pip list --format=freeze",
+    )
+    return res
+
+
 dev_mode = get_dev_mode()
 
 signing_key_env = get_private_key_env()
@@ -160,6 +169,7 @@ default_root_password = get_default_root_password()
 class Node(AbstractNode):
     signing_key: Optional[SyftSigningKey]
     required_signed_calls: bool = True
+    packages: str
 
     def __init__(
         self,
@@ -187,6 +197,7 @@ class Node(AbstractNode):
             if id is None:
                 id = UID()
             self.id = id
+        self.packages = get_venv_packages()
 
         self.signing_key = None
         if signing_key_env is not None:
@@ -217,6 +228,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                MetadataService,
             ]
             if services is None
             else services
@@ -253,7 +265,7 @@ class Node(AbstractNode):
         self.node_type = node_type
 
         self.post_init()
-        self.create_initial_settings()
+        self.create_initial_settings(admin_email=root_email)
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
 
@@ -462,6 +474,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                MetadataService,
             ]
 
             if OBLV:
@@ -508,6 +521,7 @@ class Node(AbstractNode):
         on_board = False
         description = ""
         signup_enabled = False
+        admin_email = ""
 
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key)
@@ -519,6 +533,7 @@ class Node(AbstractNode):
             on_board = settings_data.on_board
             description = settings_data.description
             signup_enabled = settings_data.signup_enabled
+            admin_email = settings_data.admin_email
 
         return NodeMetadata(
             name=name,
@@ -533,6 +548,7 @@ class Node(AbstractNode):
             on_board=on_board,
             node_type=self.node_type.value,
             signup_enabled=signup_enabled,
+            admin_email=admin_email,
         )
 
     @property
@@ -707,7 +723,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self) -> Optional[NodeSettings]:
+    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettings]:
         if self.name is None:
             self.name = random_name()
         try:
@@ -725,6 +741,7 @@ class Node(AbstractNode):
                     name=self.name,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
+                    admin_email=admin_email,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings

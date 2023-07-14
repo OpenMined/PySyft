@@ -59,6 +59,11 @@ class UserStash(BaseStash):
     def admin_verify_key(self):
         return Ok(self.partition.root_verify_key)
 
+    def admin_user(self):
+        return self.get_by_role(
+            credentials=self.admin_verify_key().ok(), role=ServiceRole.ADMIN
+        )
+
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Optional[User], str]:
