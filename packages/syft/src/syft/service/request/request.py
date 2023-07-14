@@ -190,7 +190,7 @@ class Request(SyftObject):
             self.syft_client_verify_key,
         )
         metadata = api.services.metadata.get_metadata()
-        admin_user = api.services.user.get_admin()
+        admin_email = metadata.admin_email
         node_name = api.node_name.capitalize() if api.node_name is not None else ""
         return f"""
             <style>
@@ -204,7 +204,7 @@ class Request(SyftObject):
                 <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
                 <p><strong>Requested on: </strong> {node_name} of type <strong> \
-                    {metadata.node_type.value.capitalize()}</strong> owned by {admin_user.email}</p>
+                    {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
             </div>
             """
 
