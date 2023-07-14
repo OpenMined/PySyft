@@ -8,8 +8,8 @@ from typing import Union
 from typing_extensions import Self
 
 # relative
-from ..abstract_node import NodeType
 from ..abstract_node import NodeSideType
+from ..abstract_node import NodeType
 from ..img.base64 import base64read
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
