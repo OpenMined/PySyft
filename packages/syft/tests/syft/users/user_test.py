@@ -238,3 +238,18 @@ def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> No
     # log in again with the right password
     root_client_b = worker.root_client.login(email=email, password="123")
     assert root_client_b.me == root_client.me
+
+
+@pytest.mark.skip(reason="to be implemented")
+def test_user_view_set_email():
+    pass
+
+
+@pytest.mark.skip(reason="to be implemented")
+def test_user_view_update_name_institution_website():
+    pass
+
+
+@pytest.mark.skip(reason="to be implemented")
+def test_user_view_set_role():
+    pass
