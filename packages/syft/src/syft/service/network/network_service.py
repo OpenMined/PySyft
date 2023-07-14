@@ -345,11 +345,6 @@ class NetworkService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
-        if result.ok() is not None:
-            return SyftError(
-                message=f"Already connected to VPN Peer: {remote_peer.name}"
-            )
-
         # tell the remote peer our details
         if not context.node:
             return SyftError(message=f"{type(context)} has no node")
