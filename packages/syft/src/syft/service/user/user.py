@@ -216,13 +216,14 @@ class UserView(SyftObject):
 
     def update(self, **kwargs) -> Union[SyftSuccess, SyftError]:
         """
-        Used to update name, institute, website of a user
+        Used to update name, institution, website of a user
         """
         valid_keys = ["name", "institution", "website"]
         invalid_keys = [x for x in kwargs.keys() if x not in valid_keys]
         if invalid_keys:
             return SyftError(
-                message=f"Unvalid keys provided ({', '. join([str(x) for x in invalid_keys])})"
+                message=f"Unvalid keys provided ({', '. join([str(x) for x in invalid_keys])}). "
+                f"Valid keys are 'name', 'institution', 'website'."
             )
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -231,6 +232,8 @@ class UserView(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
         api.services.user.update(uid=self.id, user_update=UserUpdate(**kwargs))
+        for attr, new_value in kwargs.items():
+            setattr(self, attr, new_value)
         return SyftSuccess(
             message=f"Successfully setting new {', '. join([str(x) for x in kwargs.keys()])} "
             f"for the user with email '{self.email}'."
