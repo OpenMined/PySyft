@@ -756,7 +756,6 @@ class Node(AbstractNode):
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,
-                    node_side_type=self.node_side_type,
                     node_side_type=self.node_side_type.value,
                 )
                 result = settings_stash.set(
