@@ -1,12 +1,10 @@
 # third party
-import gevent.subprocess as subprocess
 
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
@@ -32,11 +30,4 @@ class MetadataService(AbstractService):
 
     @service_method(path="metadata.get_env", name="get_env", roles=GUEST_ROLE_LEVEL)
     def get_env(self, context: AuthedServiceContext):
-        res = subprocess.getoutput(
-            "pip list --format=freeze",
-        )
-        # stdlib
-        import sys
-
-        print(res, file=sys.stderr)
-        return SyftSuccess(message=res.stdout.decode())
+        return context.node.packages

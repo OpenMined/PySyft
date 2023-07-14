@@ -9,6 +9,7 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
+import subprocess
 import traceback
 from typing import Any
 from typing import Callable
@@ -93,7 +94,6 @@ from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .worker_settings import WorkerSettings
-import subprocess
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific node UID and thread
@@ -143,11 +143,13 @@ def get_default_root_password() -> Optional[str]:
 def get_dev_mode() -> bool:
     return str_to_bool(get_env("DEV_MODE", "False"))
 
+
 def get_venv_packages() -> str:
     res = subprocess.getoutput(
-            "pip list --format=freeze",
-        )
+        "pip list --format=freeze",
+    )
     return res
+
 
 dev_mode = get_dev_mode()
 
@@ -541,7 +543,7 @@ class Node(AbstractNode):
             on_board=on_board,
             node_type=self.node_type.value,
             signup_enabled=signup_enabled,
-            admin_email=admin_email
+            admin_email=admin_email,
         )
 
     @property

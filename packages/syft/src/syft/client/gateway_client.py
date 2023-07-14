@@ -11,7 +11,6 @@ from typing_extensions import Self
 from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
-from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.node_peer import NodePeer
 from ..service.response import SyftError
 from ..service.response import SyftException
