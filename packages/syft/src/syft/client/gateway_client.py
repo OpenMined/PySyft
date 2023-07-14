@@ -65,10 +65,7 @@ class GatewayClient(SyftClient):
     def domains(self) -> Optional[Union[List[NodePeer], SyftError]]:
         if not self.api.has_service("network"):
             return None
-        domains = self.api.services.network.get_peers_by_type(node_type=NodeType.DOMAIN)
-        domains.append(self.metadata.to(NodeMetadata).to(NodePeer))
-        return domains
-        # return self.api.services.network.get_peers_by_type(node_type=NodeType.DOMAIN)
+        return self.api.services.network.get_peers_by_type(node_type=NodeType.DOMAIN)
 
     @property
     def enclaves(self) -> Optional[Union[List[NodePeer], SyftError]]:
