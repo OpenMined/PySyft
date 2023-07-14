@@ -56,6 +56,7 @@ class NodeMetadataUpdate(SyftObject):
     highest_object_version: Optional[int]
     lowest_object_version: Optional[int]
     syft_version: Optional[str]
+    admin_email: Optional[str]
 
 
 @serializable()
@@ -75,6 +76,7 @@ class NodeMetadata(SyftObject):
     on_board: bool = False
     description: str = "Text"
     signup_enabled: bool
+    admin_email: str
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -99,6 +101,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     on_board: bool = False
     description: str = "My cool domain"
     signup_enabled: bool
+    admin_email: str
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
