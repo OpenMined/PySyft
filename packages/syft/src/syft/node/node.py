@@ -111,6 +111,7 @@ def gipc_decoder(obj_bytes):
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 NODE_TYPE = "NODE_TYPE"
+NODE_NAME = "NODE_NAME"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
@@ -126,6 +127,10 @@ def get_private_key_env() -> Optional[str]:
 
 def get_node_type() -> Optional[str]:
     return get_env(NODE_TYPE, "domain")
+
+
+def get_node_name() -> Optional[str]:
+    return get_env(NODE_NAME, None)
 
 
 def get_node_uid_env() -> Optional[str]:
@@ -207,7 +212,7 @@ class Node(AbstractNode):
 
         self.processes = processes
         self.is_subprocess = is_subprocess
-        self.name = name
+        self.name = random_name() if name is None else name
         services = (
             [
                 UserService,

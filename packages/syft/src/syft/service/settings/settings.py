@@ -37,7 +37,7 @@ class NodeSettings(SyftObject):
     name: str = "Node"
     deployed_on: str
     organization: str = "OpenMined"
-    on_board: bool = False
+    on_board: bool = True
     description: str = "Text"
     signup_enabled: bool
     admin_email: str
