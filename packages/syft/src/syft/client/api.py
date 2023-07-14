@@ -91,7 +91,11 @@ class APIRegistry:
 
 
 @serializable()
-class APIEndpoint(SyftBaseObject):
+class APIEndpoint(SyftObject):
+    __canonical_name__ = "APIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
     service_path: str
     module_path: str
     name: str

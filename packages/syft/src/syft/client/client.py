@@ -646,12 +646,10 @@ class SyftClient:
         except Exception as e:
             return SyftError(message=str(e))
 
-        if (
-            not self.metadata.signup_enabled
-            and self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value
-        ):
+        if self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
             message = (
-                "You're registering a user to a high side domain, which could "
+                "You're registering a user to a high side "
+                "{self.metadata.node_type.value}, which could "
                 "host datasets with private information."
             )
             if not prompt_warning_message(message=message, confirm=True):

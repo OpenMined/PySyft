@@ -93,11 +93,11 @@ class LowSideCRUDWarning(APIEndpointWarning):
         if context is not None:
             node = context.node
             node_side_type = node.node_side_type
-            node_type = node.node_type.value
-            if node_type == NodeSideType.LOW_SIDE:
+            node_type = node.node_type
+            if node_side_type.value == NodeSideType.LOW_SIDE.value:
                 message = (
                     "You're performing an operation on "
-                    f"{node_side_type.value} side {node_type} "
+                    f"{node_side_type.value} side {node_type.value} "
                     "which only hosts mock or synthetic data."
                 )
 
@@ -110,12 +110,11 @@ class HighSideCRUDWarning(APIEndpointWarning):
         if context is not None:
             node = context.node
             node_side_type = node.node_side_type
-            node_type = node.node_type.value
-            if node_type == NodeSideType.HIGH_SIDE:
+            node_type = node.node_type
+            if node_side_type.value == NodeSideType.HIGH_SIDE.value:
                 message = (
                     "You're performing an operation on "
-                    f"{node_side_type.value} side {node_type} "
+                    f"{node_side_type.value} side {node_type.value} "
                     "which could host datasets with private information."
                 )
-
                 self.message = message
