@@ -231,10 +231,7 @@ def generate_remote_function(
             blocking=blocking,
         )
 
-        allowed = False
-        if warning:
-            allowed = warning.show()
-
+        allowed = warning.show() if warning else True
         if not allowed:
             return
         result = make_call(api_call=api_call)
@@ -421,7 +418,7 @@ class SyftAPI(SyftObject):
         ) in _user_service_config_registry.get_registered_configs().items():
             if not service_config.is_from_lib:
                 service_warning = service_config.warning
-                if service_warning and service_warning.message is None:
+                if service_warning:
                     service_warning.message_from(warning_context)
                 endpoint = APIEndpoint(
                     service_path=path,

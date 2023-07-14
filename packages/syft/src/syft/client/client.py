@@ -651,7 +651,6 @@ class SyftClient:
             and self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value
         ):
             message = (
-                "[bold yellow]Reminder:[/] [bold]"
                 "You're registering a user to a high side domain, which could "
                 "host datasets with private information."
             )

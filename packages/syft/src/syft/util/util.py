@@ -35,6 +35,7 @@ from typing import Type
 from typing import Union
 
 # third party
+from IPython.display import display
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -447,8 +448,14 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
 def prompt_warning_message(message: str, confirm: bool = False) -> bool:
     # third party
 
+    # third party
+
     # relative
+    from ..service.response import SyftWarning
     from .experimental_flags import flags
+
+    warning = SyftWarning(message=message)
+    display(warning)
 
     if flags.PROMPT_ENABLED and confirm:
         allowed = Confirm.ask("Would you like to proceed?")

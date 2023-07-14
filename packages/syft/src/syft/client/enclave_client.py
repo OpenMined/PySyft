@@ -17,7 +17,6 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.fonts import fonts_css
-from ..util.util import prompt_warning_message
 from .api import APIModule
 from .client import SyftClient
 from .client import login
@@ -68,16 +67,6 @@ class EnclaveClient(SyftClient):
         handle: Optional["NodeHandle"] = None,  # noqa: F821
         **kwargs,
     ) -> None:
-
-        if self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
-            message = (
-                "[bold yellow]Warning:[/] [bold]"
-                "This is a high side domain, which could host datasets with private "
-                "information."
-            )
-            if not prompt_warning_message(message=message, confirm=True):
-                return
-
         if via_client is not None:
             client = via_client
         elif handle is not None:
