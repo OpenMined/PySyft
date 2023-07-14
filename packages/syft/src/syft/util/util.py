@@ -39,7 +39,6 @@ from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import requests
-import rich
 from rich.prompt import Confirm
 
 # relative
@@ -446,11 +445,10 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
 
 
 def prompt_warning_message(message: str, confirm: bool = False) -> bool:
+    # third party
+
     # relative
     from .experimental_flags import flags
-
-    console = rich.get_console()
-    console.print(message, soft_wrap=True)
 
     if flags.PROMPT_ENABLED and confirm:
         allowed = Confirm.ask("Would you like to proceed?")

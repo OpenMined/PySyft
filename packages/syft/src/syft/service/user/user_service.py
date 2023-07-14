@@ -26,6 +26,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..settings.settings_stash import SettingsStash
+from ..warnings import CRUDWarning
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -95,7 +96,12 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
+    @service_method(
+        path="user.get_all",
+        name="get_all",
+        roles=DATA_OWNER_ROLE_LEVEL,
+        warning=CRUDWarning(confirmation=True),
+    )
     def get_all(
         self,
         context: AuthedServiceContext,
