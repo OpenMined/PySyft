@@ -175,11 +175,7 @@ class UserView(SyftObject):
             "Role": self.role.name.capitalize(),
         }
 
-    def set_password(self, new_password: str) -> Union[SyftSuccess, SyftError]:
-        confirm_password = getpass("Please confirm your password: ")
-        if confirm_password != new_password:
-            return SyftError(message="Passwords do not match!")
-
+    def set_pw(self, new_password: str) -> Union[SyftError, SyftSuccess]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -189,11 +185,19 @@ class UserView(SyftObject):
         api.services.user.update(
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
-
         return SyftSuccess(
             message=f"Successfully setting a new password for "
             f"user '{self.name}' with email '{self.email}'."
         )
+
+    def set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
+        """
+        Set a new password interactively with confirmed password from user input
+        """
+        confirmed_password: str = getpass("Please confirm your password: ")
+        if confirmed_password != new_password:
+            return SyftError(message="Passwords do not match!")
+        return self.set_pw(new_password)
 
     def set_email(self, new_email: EmailStr) -> Union[SyftSuccess, SyftError]:
         api = APIRegistry.api_for(
@@ -260,6 +264,7 @@ class UserView(SyftObject):
         api.services.user.update(
             uid=self.id, user_update=UserUpdate(role=valid_roles[role])
         )
+        self.role = valid_roles[role]
         return SyftSuccess(
             message=f"Successfully setting a new role for the user "
             f"'{self.name}' with email '{self.email}'. New role is '{role}'."

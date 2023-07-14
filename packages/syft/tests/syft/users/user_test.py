@@ -3,7 +3,10 @@ from faker import Faker
 import pytest
 
 # syft absolute
+import syft as sy
 from syft.client.api import SyftAPICall
+from syft.client.domain_client import DomainClient
+from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
@@ -224,3 +227,14 @@ def test_user_update(root_client):
         assert executing_client.api.services.user.update(
             executing_client.user_id, UserUpdate(name=Faker().name())
         )
+
+
+def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> None:
+    root_client.me.set_pw("123")
+    email = root_client.me.email
+    # log in again with the wrong password
+    root_client_c = worker.root_client.login(email=email, password="1234")
+    assert isinstance(root_client_c, sy.SyftError)
+    # log in again with the right password
+    root_client_b = worker.root_client.login(email=email, password="123")
+    assert root_client_b.me == root_client.me
