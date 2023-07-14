@@ -9,7 +9,7 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
-import subprocess
+import subprocess  # nosec
 import traceback
 from typing import Any
 from typing import Callable
