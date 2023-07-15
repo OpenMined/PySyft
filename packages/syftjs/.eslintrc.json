@@ -1,7 +1,7 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
-  "parserOptions": { "project": "./tsconfig.json" },
+  "parserOptions": { "project": "./packages/syftjs/tsconfig.json" },
   "env": { "es6": true },
   "ignorePatterns": ["node_modules", "build", "coverage"],
   "plugins": ["import", "eslint-comments"],
@@ -29,5 +29,8 @@
       "error",
       { "ignoreDeclarationSort": true, "ignoreCase": true }
     ]
+  },
+  "compilerOptions": {
+    "allowJs": true
   }
 }
