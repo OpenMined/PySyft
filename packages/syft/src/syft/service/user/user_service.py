@@ -219,6 +219,16 @@ class UserService(AbstractService):
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
 
         # TODO: ADD Email Validation
+        # check if the email already exists
+        if user_update.email is not Empty:
+            user_with_email = self.stash.get_by_email(
+                credentials=context.credentials, email=user_update.email
+            )
+            if user_with_email.ok() is not None:
+                return SyftError(
+                    message=f"A user with the email {user_update.email} already exists."
+                )
+
         if result.is_err():
             error_msg = (
                 f"Failed to find user with UID: {uid}. Error: {str(result.err())}"

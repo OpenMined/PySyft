@@ -194,6 +194,7 @@ class UserView(SyftObject):
         """
         Set a new password interactively with confirmed password from user input
         """
+        # TODO: password validation (having uppcase, special characters...)?
         confirmed_password: str = getpass("Please confirm your password: ")
         if confirmed_password != new_password:
             return SyftError(message="Passwords do not match!")
@@ -206,12 +207,16 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
+
         try:
-            api.services.user.update(
+            result = api.services.user.update(
                 uid=self.id, user_update=UserUpdate(email=new_email)
             )
         except ValidationError as e:
             return SyftError(message=f"ValidationError: {e}")
+        if isinstance(result, SyftError):
+            return SyftError(message=result.message)
+
         self.email = new_email
         return SyftSuccess(
             message=f"Successfully setting a new email for the user "
