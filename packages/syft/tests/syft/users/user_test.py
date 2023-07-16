@@ -253,14 +253,23 @@ def test_user_view_set_invalid_email(
 
 
 @pytest.mark.parametrize(
-    "valid_email",
-    ["syft@gmail.com", "syft@openmined.com", "info@openmined.org"],
+    "valid_email_root, valid_email_ds",
+    [
+        ("syft@gmail.com", "syft_ds@gmail.com"),
+        ("syft@openmined.com", "syft_ds@openmined.com"),
+        ("info@openmined.org", "info_ds@openmined.org"),
+    ],
 )
 def test_user_view_set_email_success(
-    root_client: DomainClient, valid_email: str
+    root_client: DomainClient,
+    ds_client: DomainClient,
+    valid_email_root: str,
+    valid_email_ds: str,
 ) -> None:
-    result = root_client.me.set_email(valid_email)
+    result = root_client.me.set_email(valid_email_root)
     assert isinstance(result, SyftSuccess)
+    result2 = ds_client.me.set_email(valid_email_ds)
+    assert isinstance(result2, SyftSuccess)
 
 
 def test_user_view_set_duplicated_email(
@@ -285,9 +294,35 @@ def test_user_view_set_duplicated_email(
     )
 
 
-@pytest.mark.skip(reason="to be implemented")
-def test_user_view_update_name_institution_website():
-    pass
+def test_user_view_update_name_institution_website(
+    root_client: DomainClient, ds_client: DomainClient, guest_client: DomainClient
+) -> None:
+    err = root_client.me.update(
+        name="syft",
+        institute="OpenMined",
+        website="https://syft.org",
+        websites=1,
+        y=1,
+        z="a",
+    )
+    assert isinstance(err, SyftError)
+
+    result = root_client.me.update(
+        name="syft", institution="OpenMined", website="https://syft.org"
+    )
+    assert isinstance(result, SyftSuccess)
+    assert root_client.me.name == "syft"
+    assert root_client.me.institution == "OpenMined"
+    assert root_client.me.website == "https://syft.org"
+
+    result2 = ds_client.me.update(name="syft2", institution="OpenMined")
+    assert isinstance(result2, SyftSuccess)
+    assert ds_client.me.name == "syft2"
+    assert ds_client.me.institution == "OpenMined"
+
+    result3 = guest_client.me.update(name="syft3")
+    assert isinstance(result3, SyftSuccess)
+    assert guest_client.me.name == "syft3"
 
 
 @pytest.mark.skip(reason="to be implemented")
