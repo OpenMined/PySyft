@@ -1,285 +1,257 @@
-<script>
-  // import { Modal, Button } from 'flowbite-svelte';
-  import FormControl from '$lib/components/FormControl.svelte';
+<script lang='ts'>
+    import Dialog from '$lib/components/Dialog.svelte';
+    import Modal from '$lib/components/Modal.svelte';
+    import UserGearIcon from '$lib/components/icons/UserGearIcon.svelte';
+    import XIcon from '$lib/components/icons/XIcon.svelte';
+    import Button from '$lib/components/Button.svelte';
+    import Progress from '$lib/components/Progress.svelte';
+    import Input from '$lib/components/Input.svelte';
+    import ButtonGhost from '$lib/components/ButtonGhost.svelte';
+    import NodeIcon from '$lib/components/icons/NodeIcon.svelte';
+    import CheckIcon from '$lib/components/icons/CheckIcon.svelte';
+    import { metadata } from '$lib/store';
+    import { updateMetadata, getMetadata } from '$lib/api/metadata';
+    import { updateCurrentUser } from '$lib/api/users';
 
-  // import { Progressbar } from 'flowbite-svelte';
-  export let onBoardModal = false;
-  export let user_info;
-  export let metadata;
-  export let client;
-  let passwordHint =
-    'To make your account more secure please update your password. Passwords should be at least 7 characters long and contain alphanumeric characters.';
-  let websiteHint =
-    'To help others verify who you are you can add a link to your university profile, Google Scholar profile, or any other profile page that helps showcase your work.';
+    export let open = true;
+    let currentStep = 1;
 
-  let steps = ['inline', 'none', 'none', 'none'];
-  let stepIndex = 0;
-
-  function nextStep() {
-    steps[stepIndex] = 'none';
-    steps[stepIndex + 1] = 'inline';
-    stepIndex = stepIndex + 1;
-  }
-
-  function previousStep() {
-    steps[stepIndex] = 'none';
-    steps[stepIndex - 1] = 'inline';
-    stepIndex = stepIndex - 1;
-  }
-
-  function checkOnBoard() {
-    if (user_info.role === 'Owner' && !metadata.on_board) {
-      setTimeout(() => {
-        onBoardModal = true;
-      }, 1000);
+    let userSettings = {
+      name: '',
+      email: '',
+      password: '',
+      institution: '',
+      website: '',
     }
-  }
 
-  async function submitChanges() {
-    let domainInfo = {
-      domain_name: document.getElementById('domain_name').value,
-      organization: document.getElementById('organization').value,
-      description: document.getElementById('description').value
+    let domainSettings = {
+      name: '',
+      description: '',
+      organization: '',
+      on_board: false,
+    }
+
+    let checkRequiredDomainFields = () => {
+      return (domainSettings.name !== '') ? true : false;
+    }
+
+    let checkRequiredUserFields = () => {
+      return (userSettings.name !== '' && userSettings.email !== '' && userSettings.password !== '') ? true : false;
+    }
+
+    let handleUpdate = async () => {
+        await updateMetadata(domainSettings);
+        await updateCurrentUser(
+            userSettings.name,
+            userSettings.email,
+            userSettings.password,
+            userSettings.institution,
+            userSettings.website,
+        );
+
+        try {
+          const updatedMetadata = await getMetadata();
+          metadata.set(updatedMetadata);
+          currentStep = currentStep + 1;
+        } catch (error) {
+          console.log(error);
+        }
+    }
+
+    let handleForward = () => {
+      currentStep = currentStep + 1;
     };
 
-    // Set Domain name, organization and description
-    await client.updateConfigs(domainInfo);
-
-    let userInfo = {
-      user_id: user_info.id,
-      email: document.getElementById('email').value,
-      password: document.getElementById('password').value,
-      name: document.getElementById('name').value,
-      institution: document.getElementById('team').value,
-      website: document.getElementById('website').value
+    let handleBack = () => {
+      currentStep = currentStep - 1;
     };
 
-    await client.updateUser(userInfo);
+    let onClose: () => void = () => {
+        open = false;
+        currentStep = 1;
 
-    // Update layout metadata variable
-    await client.metadata;
-    metadata = JSON.parse(window.sessionStorage.getItem('metadata'));
+        userSettings = {
+          name: '',
+          email: '',
+          password: '',
+          institution: '',
+          website: '',
+        }
 
-    // Update user info
-    user_info = await client.user;
+        domainSettings = {
+          name: '',
+          description: '',
+          organization: '',
+        }
+    }
 
-    nextStep();
-  }
-
-  checkOnBoard();
 </script>
 
-<main>
-  <!-- <Modal bind:open={onBoardModal} placement="top-center" size="md" class="w-full"> -->
-  <!--   <!-1- Modal First step -1-> -->
-  <!--   <div class="space-y-9" style="display: {steps[0]}"> -->
-  <!--     <div style="display:flex; justify-content: center; align-items:center"> -->
-  <!--       <!-1- Header -1-> -->
-  <!--       <div id="onboard-square" /> -->
-  <!--     </div> -->
-  <!--     <div style="display:flex; justify-content: center;"> -->
-  <!--       <h1 color="black"><b> Welcome to PyGrid Admin!</b></h1> -->
-  <!--     </div> -->
-  <!--     <Progressbar size="h-1.5" progress="25" /> -->
-
-  <!--     <h2> -->
-  <!--       Congratulations on deploying {metadata.name} node. This wizard will help get you started in setting -->
-  <!--       up your domain node and user account. You can skip this wizard by pressing "Cancel" below. You -->
-  <!--       can edit any of your responses later by going to "Domain Settings" indicated in the gear icon -->
-  <!--       in the top left corner of your navigation or by going to "Account Settings" indicated by your -->
-  <!--       avatar in the top right corner of the navigation. -->
-  <!--     </h2> -->
-  <!--     <h2>Click "Next" to begin.</h2> -->
-
-  <!--     <div style="display:flex; justify-content: right"> -->
-  <!--       <button -->
-  <!--         class="cancel-button" -->
-  <!--         on:click={() => { -->
-  <!--           onBoardModal = false; -->
-  <!--         }}>Cancel</button -->
-  <!--       > -->
-  <!--       <Button pill={true} on:click={() => nextStep()} color="dark">Next</Button> -->
-  <!--     </div> -->
-  <!--   </div> -->
-
-  <!--   <!-1- Modal Second Step -1-> -->
-  <!--   <div class="space-y-4" style="display:{steps[1]}; justify-content: center; align-items:center"> -->
-  <!--     <div style="display:flex;justify-content:center;align-items:center"> -->
-  <!--       <div -->
-  <!--         style="background-color: rgb(59 130 246); border-radius:50%; height: 10vh; width: 10vh; display:flex;justify-content:center;align-items:center;" -->
-  <!--       > -->
-  <!--         <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" -->
-  <!--           ><path -->
-  <!--             d="m21 7.702-8.5 4.62v9.678c1.567-.865 6.379-3.517 7.977-4.399.323-.177.523-.519.523-.891zm-9.5 4.619-8.5-4.722v9.006c0 .37.197.708.514.887 1.59.898 6.416 3.623 7.986 4.508zm-8.079-5.629 8.579 4.763 8.672-4.713s-6.631-3.738-8.186-4.614c-.151-.085-.319-.128-.486-.128-.168 0-.335.043-.486.128-1.555.876-8.093 4.564-8.093 4.564z" -->
-  <!--             fill-rule="nonzero" -->
-  <!--           /></svg -->
-  <!--         > -->
-  <!--       </div> -->
-  <!--     </div> -->
-
-  <!--     <div style="display:flex; justify-content: center;"> -->
-  <!--       <h1 style="color:black; text-align:center"><b> Domain Profile</b></h1> -->
-  <!--     </div> -->
-  <!--     <div style="display:flex; justify-content: center;"> -->
-  <!--       <h1 style="color: rgb(59 130 246); text-align:center"><b> Steps 2 of 4</b></h1> -->
-  <!--     </div> -->
-  <!--     <Progressbar size="h-1.5" progress="50" /> -->
-  <!--     <h2> -->
-  <!--       Let's begin by describing some basic information about this domain node. This information -->
-  <!--       will be shown to outside users to help them find and understand what your domain offers. -->
-  <!--     </h2> -->
-
-  <!--     <form class="flex flex-col space-y-6" action="#"> -->
-  <!--       <FormControl -->
-  <!--         placeholder="Oxford Parkinson's Disease Center" -->
-  <!--         label="Domain Name" -->
-  <!--         id="domain_name" -->
-  <!--         required -->
-  <!--       /> -->
-  <!--       <FormControl placeholder="ABC University" label="Organization" id="organization" required /> -->
-  <!--       <FormControl -->
-  <!--         placeholder="ABC University" -->
-  <!--         label="Description" -->
-  <!--         id="description" -->
-  <!--         type="textarea" -->
-  <!--         optional -->
-  <!--       /> -->
-  <!--     </form> -->
-
-  <!--     <div style="display:flex; justify-content: space-between;"> -->
-  <!--       <Button pill={true} on:click={() => previousStep()} color="dark">Back</Button> -->
-  <!--       <div style="display: flex"> -->
-  <!--         <button -->
-  <!--           class="cancel-button" -->
-  <!--           on:click={() => { -->
-  <!--             onBoardModal = false; -->
-  <!--           }} -->
-  <!--         > -->
-  <!--           <h1>Cancel</h1> -->
-  <!--         </button> -->
-  <!--         <Button pill={true} on:click={() => nextStep()} color="dark">Next</Button> -->
-  <!--       </div> -->
-  <!--     </div> -->
-  <!--   </div> -->
-
-  <!--   <!-1- Modal Third Step -1-> -->
-  <!--   <div class="space-y-4" style="display:{steps[2]};"> -->
-  <!--     <div style="display:flex;justify-content:center;align-items:center"> -->
-  <!--       <div -->
-  <!--         style="background-color: rgb(59 130 246); border-radius:50%; height: 10vh; width: 10vh; display:flex;justify-content:center;align-items:center;" -->
-  <!--       > -->
-  <!--         <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" -->
-  <!--           ><path -->
-  <!--             stroke-linecap="round" -->
-  <!--             stroke-linejoin="round" -->
-  <!--             d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" -->
-  <!--           /></svg -->
-  <!--         > -->
-  <!--       </div> -->
-  <!--     </div> -->
-  <!--     <div style="display:flex; justify-content: center;"> -->
-  <!--       <h1 style="color:black; text-align:center"><b> User Account</b></h1> -->
-  <!--     </div> -->
-  <!--     <div style="display:flex; justify-content: center;"> -->
-  <!--       <h1 style="color: rgb(59 130 246); text-align:center"><b> Steps 3 of 4</b></h1> -->
-  <!--     </div> -->
-  <!--     <Progressbar size="h-1.5" progress="75" /> -->
-  <!--     <h2> -->
-  <!--       Now that we have described our domain, let's update our password and describe some basic -->
-  <!--       information about ourselves for our "User Profile".User profile information will be shown to -->
-  <!--       teammates and collaborators when working on studies together. -->
-  <!--     </h2> -->
-
-  <!--     <form class="flex flex-col space-y-6" action="#"> -->
-  <!--       <FormControl -->
-  <!--         placeholder="info@openmined.org" -->
-  <!--         type="email" -->
-  <!--         label="Email" -->
-  <!--         id="email" -->
-  <!--         required -->
-  <!--       /> -->
-  <!--       <FormControl -->
-  <!--         hint={passwordHint} -->
-  <!--         placeholder="*******" -->
-  <!--         type="password" -->
-  <!--         label="Password" -->
-  <!--         id="password" -->
-  <!--         required -->
-  <!--       /> -->
-
-  <!--       <h3><b> PROFILE INFORMATION </b></h3> -->
-  <!--       <FormControl placeholder="Jana Doe" label="Full name" id="name" required /> -->
-  <!--       <FormControl -->
-  <!--         hint="Please identify the team or department you primarily work with at this organization." -->
-  <!--         placeholder="OpenMined Team" -->
-  <!--         label="Team" -->
-  <!--         id="team" -->
-  <!--         optional -->
-  <!--       /> -->
-  <!--       <FormControl -->
-  <!--         hint={websiteHint} -->
-  <!--         placeholder="www.openmined.org" -->
-  <!--         label="Website" -->
-  <!--         id="website" -->
-  <!--         optional -->
-  <!--       /> -->
-  <!--     </form> -->
-
-  <!--     <div style="display:flex; justify-content: space-between;"> -->
-  <!--       <Button pill={true} on:click={() => previousStep()} color="dark">Back</Button> -->
-  <!--       <div style="display: flex"> -->
-  <!--         <button -->
-  <!--           class="cancel-button" -->
-  <!--           on:click={() => { -->
-  <!--             onBoardModal = false; -->
-  <!--           }} -->
-  <!--         > -->
-  <!--           <h1>Cancel</h1> -->
-  <!--         </button> -->
-  <!--         <Button pill={true} on:click={() => submitChanges()} color="dark">Finish</Button> -->
-  <!--       </div> -->
-  <!--     </div> -->
-  <!--   </div> -->
-
-  <!--   <div class="space-y-9" style="display: {steps[3]}"> -->
-  <!--     <div style="display:flex; justify-content: center; align-items:center"> -->
-  <!--       <!-1- Header -1-> -->
-  <!--       <div id="onboard-square" /> -->
-  <!--     </div> -->
-  <!--     <div style="display:flex; justify-content: center;"> -->
-  <!--       <h1 color="black"><b> Setup Complete!</b></h1> -->
-  <!--     </div> -->
-  <!--     <Progressbar size="h-1.5" progress="100" /> -->
-
-  <!--     <h2> -->
-  <!--       Congratulations on setting up {metadata.name} node. To edit any of your responses you can go -->
-  <!--       to "Domain Settings" indicated by a gear icon in the top left corner of your navigation or by -->
-  <!--       going to "Account Settings" indicated by your avatar in the top right corner of the navigation. -->
-  <!--     </h2> -->
-  <!--     <br /> -->
-  <!--     <div style="display:flex; justify-content: right"> -->
-  <!--       <Button -->
-  <!--         on:click={() => (onBoardModal = false)} -->
-  <!--         style="width: 10vh; border-radius:5px;" -->
-  <!--         color="dark">Close</Button -->
-  <!--       > -->
-  <!--     </div> -->
-  <!--   </div> -->
-  <!-- </Modal> -->
-</main>
-
-<style>
-  #onboard-square {
-    background: linear-gradient(to bottom left, rgb(146, 247, 51), rgb(30, 155, 251));
-    height: 15vh;
-    width: 15vh;
-  }
-
-  .cancel-button {
-    margin-right: 5vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-  }
-</style>
+<Dialog bind:open>
+    {#if currentStep === 1}
+    <Modal>
+        <div class="flex w-full" slot="header">
+          <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
+            <div class='flex justify-center items-center w-full '>
+              <img width="264px" height='224px' src="assets/2023_welcome_to_pygrid.png">
+            </div>
+            <div class="text-center space-y-2">
+              <h3 class="text-2xl capitalize font-bold">Welcome to PyGrid Admin!</h3>
+              <p class="text-primary-500">Step 1 of 4</p>
+            </div>
+          </div>
+          <button class="self-start" on:click={onClose}>
+            <XIcon class="w-6 h-6" />
+          </button>
+        </div>
+        <div class="w-full flex flex-col gap-4" slot="body">
+          <div class="w-full py-2">
+            <Progress max={4} value={1} />
+          </div>
+          <p class="text-gray-400 py-2">
+            Congratulations on logging into {$metadata?.name ?? ''} node. This wizard will help get you started in setting up your user account. You can skip this wizard by pressing “Cancel” below.  You can edit any of your responses later by going to "Account Settings" indicated by your avatar in the top right corner of the navigation.
+          </p>
+        </div>
+        <div class="flex w-full justify-end px-4 gap-4" slot="button-group">
+          <div class="flex gap-4">
+            <ButtonGhost variant="gray" on:click={onClose}>Cancel</ButtonGhost>
+            <Button variant="primary" on:click={handleForward}>Next</Button>
+          </div>
+        </div>
+      </Modal>
+    {:else if currentStep == 2}
+      <Modal>
+        <div class="flex w-full" slot="header">
+          <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
+            <div class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2">
+              <NodeIcon class="w-6 h-6" />
+            </div>
+            <div class="text-center space-y-2">
+              <h3 class="text-2xl capitalize font-bold">Domain Profile</h3>
+              <p class="text-primary-500">Step 2 of 4</p>
+            </div>
+          </div>
+          <button class="self-start" on:click={onClose}>
+            <XIcon class="w-6 h-6" />
+          </button>
+        </div>
+          <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m21 7.702-8.5 4.62v9.678c1.567-.865 6.379-3.517 7.977-4.399.323-.177.523-.519.523-.891zm-9.5 4.619-8.5-4.722v9.006c0 .37.197.708.514.887 1.59.898 6.416 3.623 7.986 4.508zm-8.079-5.629 8.579 4.763 8.672-4.713s-6.631-3.738-8.186-4.614c-.151-.085-.319-.128-.486-.128-.168 0-.335.043-.486.128-1.555.876-8.093 4.564-8.093 4.564z"fill-rule="nonzero"/></svg>
+        <div class="flex w-full justify-between px-4 gap-4" slot="button-group">
+          <Button on:click={handleBack} type="button">Back</Button>
+          <div class="flex gap-4">
+            <ButtonGhost variant="gray" on:click={onClose}>Cancel</ButtonGhost>
+            <Button variant="primary" on:click={handleForward}>Next</Button>
+          </div>
+        </div>
+        <div class="w-full flex flex-col gap-4" slot="body">
+          <div class="w-full py-2">
+            <Progress max={4} value={2} />
+          </div>
+          <p class="text-gray-400 py-2">
+            Let's begin by describing some basic information about this domain node. This information will be shown to outside users to help them find and understand what your domain offers.
+          </p>
+          <Input
+          label="Domain Name"
+          id="domainName"
+          required
+          bind:value={domainSettings.name}
+          placeholder="ABC University Domain"
+        />
+        <Input
+          label="Organization"
+          id="domainOrganization"
+          bind:value={domainSettings.organization}
+          placeholder="ABC University"
+        />
+        <Input
+          label="Description"
+          id="domainDescription"
+          bind:value={domainSettings.description}
+          placeholder="Describe your domain here ..."
+        />
+        </div>
+      </Modal>
+    {:else if currentStep == 3}
+      <Modal>
+        <div class="flex w-full" slot="header">
+          <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
+            <div class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2">
+              <UserGearIcon class="w-6 h-6" />
+            </div>
+            <div class="text-center space-y-2">
+              <h3 class="text-2xl capitalize font-bold">User Account</h3>
+              <p class="text-primary-500">Step 3 of 4</p>
+            </div>
+          </div>
+          <button class="self-start" on:click={onClose}>
+            <XIcon class="w-6 h-6" />
+          </button>
+        </div>
+        <div class="w-full flex flex-col gap-4" slot="body">
+          <div class="w-full py-2">
+            <Progress max={3} value={2} />
+          </div>
+          <p class="text-gray-400 py-2">
+            Now that we have described our domain, let's update our password and describe some basic information about ourselves for our "User Profile". User profile information will be shown to teammates and collaborators when working on studies together.          </p>
+          <div class="py-2 flex flex-col gap-6">
+            <Input
+              label="Email"
+              id="email"
+              required
+              bind:value={userSettings.email}
+              placeholder="info@openmined.org"
+            />
+            <Input label="Password" id="password" type="password" required bind:value={userSettings.password} placeholder="*****" />
+            <div>
+              <p class='text-gray-400 font-bold'> Profile Information</p>
+              <p class="text-gray-400">
+                Now, some profile information to help your teammates and collaborators get to know you better.
+              </p>
+           </div>
+            <Input label="Full Name" id="name" required bind:value={userSettings.name} placeholder="Full Name" />
+            <Input
+              label="Organization"
+              bind:value={userSettings.institution}
+              id="institution"
+              placeholder="Organization name here"
+            />
+            <Input label='Website' bind:value={userSettings.website} id='website' placeholder='www.abc.com'/>
+          </div>
+        </div>
+        <div class="flex w-full justify-between px-4 gap-4" slot="button-group">
+          <Button on:click={handleBack} type="button">Back</Button>
+          <div class="flex gap-4">
+            <ButtonGhost variant="gray" on:click={onClose}>Cancel</ButtonGhost>
+            <Button variant="primary" on:click={handleUpdate}>Finish</Button>
+          </div>
+        </div>
+      </Modal>
+      {:else if currentStep == 4}
+      <Modal>
+        <div class="flex w-full" slot="header">
+          <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
+            <div class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2">
+              <CheckIcon class="w-6 h-6" />
+            </div>
+            <div class="text-center space-y-2">
+              <h3 class="text-2xl capitalize font-bold">Setup Complete!</h3>
+            </div>
+          </div>
+          <button class="self-start" on:click={onClose}>
+            <XIcon class="w-6 h-6" />
+          </button>
+        </div>
+        <div class="w-full flex flex-col gap-4" slot="body">
+          <div class="w-full py-2">
+            <Progress max={3} value={3} />
+          </div>
+          <p class="text-gray-400 py-2">
+            Congratulations on setting up your account. To edit any of your responses you can go to "Account Settings" indicated by your avatar in the top right corner of the navigation.
+          </p>
+        </div>
+        <div class="flex w-full justify-end px-4 gap-4" slot="button-group">
+            <Button variant="primary" on:click={onClose}>Close</Button>
+        </div>
+      </Modal>
+    {/if}
+</Dialog>
