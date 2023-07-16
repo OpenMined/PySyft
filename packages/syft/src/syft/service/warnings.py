@@ -4,15 +4,16 @@ from typing import Optional
 # third party
 from IPython.display import display
 from rich.prompt import Confirm
+from typing_extensions import Self
 
 # relative
 from ..abstract_node import AbstractNode
 from ..abstract_node import NodeSideType
 from ..node.credentials import SyftCredentials
 from ..serde.serializable import serializable
+from ..types.base import SyftBaseModel
 from ..types.syft_object import Context
 from ..util.experimental_flags import flags
-from .response import SyftResponseMessage
 from .user.user_roles import ServiceRole
 
 
@@ -25,9 +26,17 @@ class WarningContext(
 
 
 @serializable()
-class APIEndpointWarning(SyftResponseMessage):
+class APIEndpointWarning(SyftBaseModel):
     confirmation: bool = False
     message: Optional[str] = None
+
+    def __bool__(self) -> bool:
+        return self._bool
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, APIEndpointWarning):
+            return self.message == other.message and self._bool == other._bool
+        return self._bool == other
 
     @property
     def _repr_html_class_(self) -> str:
@@ -36,7 +45,16 @@ class APIEndpointWarning(SyftResponseMessage):
     def __repr__(self) -> str:
         return f"SyftWarning: {self.message}"
 
-    def message_from(self, context: Optional[WarningContext]):
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def _repr_html_(self) -> str:
+        return (
+            f'<div class="{self._repr_html_class_}" style="padding:5px;">'
+            + f"<strong>SyftWarning</strong>: {self.message}</div><br />"
+        )
+
+    def message_from(self, context: Optional[WarningContext]) -> Self:
         raise NotImplementedError
 
     def show(self):
@@ -55,6 +73,7 @@ class APIEndpointWarning(SyftResponseMessage):
 class CRUDWarning(APIEndpointWarning):
     def message_from(self, context: Optional[WarningContext] = None):
         message = None
+        confirmation = self.confirmation
         if context is not None:
             node = context.node
             node_side_type = node.node_side_type
@@ -68,8 +87,10 @@ class CRUDWarning(APIEndpointWarning):
                 "You're performing an operation on "
                 f"{node_side_type.value} side {node_type.value}, {_msg}"
             )
-            self.confirmation = node_side_type.value == NodeSideType.HIGH_SIDE.value
-            self.message = message
+            confirmation = node_side_type.value == NodeSideType.HIGH_SIDE.value
+            message = message
+
+        return CRUDWarning(confirmation=confirmation, message=message)
 
 
 @serializable()
@@ -78,6 +99,7 @@ class CRUDReminder(CRUDWarning):
 
     def message_from(self, context: Optional[WarningContext] = None):
         message = None
+        confirmation = self.confirmation
         if context is not None:
             node = context.node
             node_side_type = node.node_side_type
@@ -91,12 +113,16 @@ class CRUDReminder(CRUDWarning):
                 "You're performing an operation on "
                 f"{node_side_type.value} side {node_type.value}, {_msg}"
             )
-            self.message = message
+            message = message
+
+        return CRUDReminder(confirmation=confirmation, message=message)
 
 
 @serializable()
 class LowSideCRUDWarning(APIEndpointWarning):
     def message_from(self, context: Optional[WarningContext] = None):
+        confirmation = self.confirmation
+        message = None
         if context is not None:
             node = context.node
             node_side_type = node.node_side_type
@@ -108,12 +134,16 @@ class LowSideCRUDWarning(APIEndpointWarning):
                     "which only hosts mock or synthetic data."
                 )
 
-            self.message = message
+            message = message
+
+        return LowSideCRUDWarning(confirmation=confirmation, message=message)
 
 
 @serializable()
 class HighSideCRUDWarning(APIEndpointWarning):
     def message_from(self, context: Optional[WarningContext] = None):
+        confirmation = self.confirmation
+        message = None
         if context is not None:
             node = context.node
             node_side_type = node.node_side_type
@@ -124,4 +154,6 @@ class HighSideCRUDWarning(APIEndpointWarning):
                     f"{node_side_type.value} side {node_type.value} "
                     "which could host datasets with private information."
                 )
-                self.message = message
+                message = message
+
+        return HighSideCRUDWarning(confirmation=confirmation, message=message)

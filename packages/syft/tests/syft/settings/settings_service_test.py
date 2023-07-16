@@ -10,6 +10,7 @@ from result import Ok
 
 # syft absolute
 import syft
+from syft.abstract_node import NodeSideType
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
@@ -234,6 +235,7 @@ def test_settings_allow_guest_registration(
         syft_version=syft.__version__,
         signup_enabled=False,
         admin_email="info@openmined.org",
+        node_side_type=NodeSideType.LOW_SIDE,
     )
 
     with mock.patch(
@@ -309,6 +311,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         syft_version=syft.__version__,
         signup_enabled=False,
         admin_email="info@openmined.org",
+        node_side_type=NodeSideType.LOW_SIDE,
     )
 
     with mock.patch(

@@ -423,7 +423,7 @@ class SyftAPI(SyftObject):
             if not service_config.is_from_lib:
                 service_warning = service_config.warning
                 if service_warning:
-                    service_warning.message_from(warning_context)
+                    service_warning = service_warning.message_from(warning_context)
                 endpoint = APIEndpoint(
                     service_path=path,
                     module_path=path,
