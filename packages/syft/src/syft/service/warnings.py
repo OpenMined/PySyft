@@ -12,7 +12,7 @@ from ..node.credentials import SyftCredentials
 from ..serde.serializable import serializable
 from ..types.syft_object import Context
 from ..util.experimental_flags import flags
-from .response import SyftWarning
+from .response import SyftResponseMessage
 from .user.user_roles import ServiceRole
 
 
@@ -25,9 +25,16 @@ class WarningContext(
 
 
 @serializable()
-class APIEndpointWarning(SyftWarning):
+class APIEndpointWarning(SyftResponseMessage):
     confirmation: bool = False
     message: Optional[str] = None
+
+    @property
+    def _repr_html_class_(self) -> str:
+        return "alert-warning"
+
+    def __repr__(self) -> str:
+        return f"SyftWarning: {self.message}"
 
     def message_from(self, context: Optional[WarningContext]):
         raise NotImplementedError
