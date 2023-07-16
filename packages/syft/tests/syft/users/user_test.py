@@ -325,6 +325,43 @@ def test_user_view_update_name_institution_website(
     assert guest_client.me.name == "syft3"
 
 
-@pytest.mark.skip(reason="to be implemented")
-def test_user_view_set_role():
-    pass
+def test_user_view_set_role(worker, guest_client) -> None:
+    admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
+    assert admin_client.me.role == ServiceRole.ADMIN
+    admin_client.register(
+        name="Sheldon Cooper",
+        email="sheldon@caltech.edu",
+        password="changethis",
+        institution="Caltech",
+        website="https://www.caltech.edu/",
+    )
+    sheldon = admin_client.users[-1]
+    assert (
+        sheldon.syft_client_verify_key
+        == admin_client.me.syft_client_verify_key
+        == admin_client.verify_key
+    )
+    assert sheldon.role == ServiceRole.DATA_SCIENTIST
+    sheldon.set_role("guest")
+    assert sheldon.role == ServiceRole.GUEST
+    sheldon.set_role("data_owner")
+    assert sheldon.role == ServiceRole.DATA_OWNER
+    # the data scientist (Sheldon) log in the domain, he should not
+    # be able to change his role, even if he is a data owner now
+    ds_client = guest_client.login(email="sheldon@caltech.edu", password="changethis")
+    assert (
+        ds_client.me.syft_client_verify_key
+        == ds_client.verify_key
+        != admin_client.verify_key
+    )
+    assert ds_client.me.role == sheldon.role
+    assert ds_client.me.role == ServiceRole.DATA_OWNER
+    assert isinstance(ds_client.me.set_role("guest"), SyftError)
+    assert isinstance(ds_client.me.set_role("data_scientist"), SyftError)
+    # now we set sheldon's role to admin. Only now he can change his role
+    sheldon.set_role("admin")
+    assert sheldon.role == ServiceRole.ADMIN
+    # QA: this is different than when running in the notebook
+    assert len(ds_client.users.get_all()) == len(admin_client.users.get_all()) - 1
+    assert isinstance(ds_client.me.set_role("guest"), SyftSuccess)
+    assert isinstance(ds_client.me.set_role("admin"), SyftError)

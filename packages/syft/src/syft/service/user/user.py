@@ -266,9 +266,11 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        api.services.user.update(
+        set_role_result = api.services.user.update(
             uid=self.id, user_update=UserUpdate(role=valid_roles[role])
         )
+        if isinstance(set_role_result, SyftError):
+            return SyftError(message=set_role_result.message)
         self.role = valid_roles[role]
         return SyftSuccess(
             message=f"Successfully setting a new role for the user "
