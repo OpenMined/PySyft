@@ -30,9 +30,6 @@ class APIEndpointWarning(SyftBaseModel):
     confirmation: bool = False
     message: Optional[str] = None
 
-    def __bool__(self) -> bool:
-        return self._bool
-
     def __eq__(self, other) -> bool:
         if isinstance(other, APIEndpointWarning):
             return self.message == other.message and self._bool == other._bool
@@ -58,10 +55,12 @@ class APIEndpointWarning(SyftBaseModel):
         raise NotImplementedError
 
     def show(self):
-        if not self.message:
+        # skip is WARNINGS_ENABLED flag is disabled
+        # or message is None
+        if not flags.WARNINGS_ENABLED or not self.message:
             return True
         display(self)
-        if self.confirmation and flags.PROMPT_ENABLED:
+        if self.confirmation:
             allowed = Confirm.ask("Would you like to proceed?")
             if not allowed:
                 display("Aborted !!")

@@ -60,8 +60,8 @@ class ExperimentalFlags:
         self._CAN_REGISTER = value
 
     @property
-    def PROMPT_ENABLED(self) -> bool:
-        return str_to_bool(os.getenv("ENABLE_PROMPT", "true"))
+    def WARNINGS_ENABLED(self) -> bool:
+        return str_to_bool(os.getenv("ENABLE_WARNINGS", "false"))
 
 
 flags = ExperimentalFlags()

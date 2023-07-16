@@ -432,6 +432,11 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Render Docker Files",
 )
+@click.option(
+    "--enable-warnings",
+    is_flag=True,
+    help="Enable API warnings on the node.",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1266,6 +1271,8 @@ def create_launch_cmd(
         parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
     else:
         parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
+
+    parsed_kwargs["enable_warnings"] = kwargs["enable-warnings"]
 
     # choosing deployment type
     parsed_kwargs["deployment_type"] = "container_stack"
@@ -2137,6 +2144,9 @@ def create_launch_docker_cmd(
         envs["JAEGER_PORT"] = int(
             find_available_port(host="localhost", port=14268, search=True)
         )
+
+    if "enable_warnings" in kwargs:
+        envs["ENABLE_WARNINGS"] = kwargs["enable_warnings"]
 
     if "platform" in kwargs and kwargs["platform"] is not None:
         envs["DOCKER_DEFAULT_PLATFORM"] = docker_platform
