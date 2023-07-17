@@ -9,25 +9,23 @@
   export let message = {};
 
   const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp * 1000)
-    const day = date.getDate()
-    const month_year = date.toLocaleString('en-us',{month:'short', year:'numeric'})
-    return day + " , " + month_year
-  }
+    const date = new Date(timestamp * 1000);
+    const day = date.getDate();
+    const month_year = date.toLocaleString('en-us', { month: 'short', year: 'numeric' });
+    return day + ' , ' + month_year;
+  };
 
   const checkKeys = (request_key, comment_key) => {
-    console.log(request_key)
-    if (request_key && comment_key){
-        return request_key.join() == comment_key.join();
+    console.log(request_key);
+    if (request_key && comment_key) {
+      return request_key.join() == comment_key.join();
+    } else {
+      return false;
     }
-    else{
-      return false
-    }
-  }
-
+  };
 </script>
 
-<div class='hover:bg-primary-50'>
+<div class="hover:bg-primary-50">
   <div class="flex w-full pt-4 px-6 gap-2">
     <div class="flex h-16 flex-shrink-0">
       <!-- Avatar -->
@@ -46,8 +44,14 @@
         {#each message.replies as reply}
           <p
             class="border-l-4 pl-4"
-            class:border-cyan-500={checkKeys(reply.from_user_verify_key.verify_key.key,request.requesting_user_verify_key.verify_key.key)}
-            class:border-red-300={!checkKeys(reply.from_user_verify_key.verify_key.key,request.requesting_user_verify_key.verify_key.key)}
+            class:border-cyan-500={checkKeys(
+              reply.from_user_verify_key.verify_key.key,
+              request.requesting_user_verify_key.verify_key.key
+            )}
+            class:border-red-300={!checkKeys(
+              reply.from_user_verify_key.verify_key.key,
+              request.requesting_user_verify_key.verify_key.key
+            )}
           >
             {reply.text}
           </p>
