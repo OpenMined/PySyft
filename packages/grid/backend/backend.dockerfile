@@ -1,6 +1,6 @@
-ARG PYTHON_VERSION='3.11.4'
+ARG PYTHON_VERSION='3.11'
 
-FROM python:3.11.4-slim as build
+FROM python:3.11-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
@@ -32,6 +32,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # Backend
 FROM python:$PYTHON_VERSION-slim as backend
+RUN apt-get update && apt-get upgrade -y
 COPY --from=build /root/.local /root/.local
 
 ENV PYTHONPATH=/app

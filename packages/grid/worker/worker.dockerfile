@@ -1,12 +1,14 @@
-ARG PYTHON_VERSION='3.11.3'
+ARG PYTHON_VERSION='3.11'
 
-FROM python:3.11.3-slim as build
+FROM python:3.11-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN mkdir -p /root/.local
+
+RUN apt-get update && apt-get upgrade -y
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
     DEBIAN_FRONTEND=noninteractive \
@@ -32,6 +34,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # Backend
 FROM python:$PYTHON_VERSION-slim as worker
+RUN apt-get update && apt-get upgrade -y
 COPY --from=build /root/.local /root/.local
 
 ENV PYTHONPATH=/app
