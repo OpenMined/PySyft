@@ -20,7 +20,7 @@ class HeadscaleAuthToken(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
-    namespace: str
+    user: str
     key: str
 
 
@@ -64,7 +64,8 @@ class HeadscaleClient(BaseVPNClient):
             return SyftError(message=result.error)
 
         result = json.loads(command_result.report)
+        print("got result", result)
         return HeadscaleAuthToken(
             key=result["key"],
-            namespace=result["namespace"],
+            user=result["user"],
         )

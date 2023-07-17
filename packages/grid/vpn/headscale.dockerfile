@@ -1,9 +1,11 @@
-FROM headscale/headscale:0.15.0-alpine
+FROM headscale/headscale:0.22.3
 
-RUN --mount=type=cache,target=/var/cache/apk \
-  apk -U upgrade || true; \
-  apk fix || true; \
-  apk add --no-cache python3 py3-pip curl bash || true
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
+  DEBIAN_FRONTEND=noninteractive \
+  apt-get update && \
+  apt-get install -yqq \
+  python3 python3-pip curl procps && \
+  rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip
 
@@ -19,6 +21,7 @@ RUN --mount=type=cache,target=/root/.cache \
 COPY ./headscale.sh /headscale/headscale.sh
 COPY ./config.yaml /etc/headscale/config.yaml
 COPY ./headscale.py /headscale/headscale.py
+RUN mkdir -p /headscale/data
 
 ENV NETWORK_NAME="omnet"
 
