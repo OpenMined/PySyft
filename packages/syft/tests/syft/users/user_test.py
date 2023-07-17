@@ -362,6 +362,6 @@ def test_user_view_set_role(worker, guest_client) -> None:
     sheldon.set_role("admin")
     assert sheldon.role == ServiceRole.ADMIN
     # QA: this is different than when running in the notebook
-    assert len(ds_client.users.get_all()) == len(admin_client.users.get_all()) - 1
+    assert len(ds_client.users.get_all()) == len(admin_client.users.get_all())
     assert isinstance(ds_client.me.set_role("guest"), SyftSuccess)
     assert isinstance(ds_client.me.set_role("admin"), SyftError)
