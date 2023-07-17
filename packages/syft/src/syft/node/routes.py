@@ -143,7 +143,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         if isinstance(result, SyftError):
             logger.bind(payload={"email": email}).error(result.message)
-            response = {"Error": result.message}
+            response = result
         else:
             user_private_key = result
             if not isinstance(user_private_key, UserPrivateKey):

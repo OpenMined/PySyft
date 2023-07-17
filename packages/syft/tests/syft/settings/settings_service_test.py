@@ -233,6 +233,7 @@ def test_settings_allow_guest_registration(
         lowest_object_version=2,
         syft_version=syft.__version__,
         signup_enabled=False,
+        admin_email="info@openmined.org",
     )
 
     with mock.patch(
@@ -307,6 +308,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         lowest_object_version=2,
         syft_version=syft.__version__,
         signup_enabled=False,
+        admin_email="info@openmined.org",
     )
 
     with mock.patch(
