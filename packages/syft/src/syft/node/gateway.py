@@ -18,5 +18,8 @@ class Gateway(Node):
         context = AuthedServiceContext(
             node=self, credentials=self.signing_key.verify_key
         )
-        network_service.connect_self(context=context)
-        # print("Message: ", result.message)
+        try:
+            network_service.connect_self(context=context)
+            # print("Message: ", result.message)
+        except Exception as e:
+            print("Failed to connect to VPN:", e)
