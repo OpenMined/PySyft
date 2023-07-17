@@ -1,6 +1,6 @@
 # stdlib
 # stdlib
-from typing import Union
+from typing import Union, List
 
 # relative
 from ...store.document_store import DocumentStore
@@ -14,6 +14,7 @@ from ..service import AbstractService
 from ..service import service_method
 from .code_interface import CodeInterface
 from .code_interface_stash import CodeInterfaceStash
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 
 
 class CodeInterfaceService(AbstractService):
@@ -69,3 +70,34 @@ class CodeInterfaceService(AbstractService):
             return SyftError(message=result.err())
 
         return SyftSuccess(message="Code version submit success")
+
+    @service_method(path="code_interface.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    def get_all(
+            self, context: AuthedServiceContext
+        ) -> Union[List[UserCode], SyftError]:
+            """Get a Dataset"""
+            result = self.stash.get_all(context.credentials)
+            if result.is_ok():
+                return result.ok()
+            return SyftError(message=result.err())
+
+
+    @service_method(path="code_interface.get_by_id", name="get_by_id")
+    def get_code_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        """Get a User Code Item"""
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
+        if result.is_ok():
+            code_interface = result.ok()
+            return code_interface
+        return SyftError(message=result.err())
+        
+    
+    # TODO
+    # add delete
+    # Test duplicate versions
+    # get_code_interface_by_name
+    # get_all
+
+

@@ -6,7 +6,8 @@ from result import Result
 
 # relative
 from ...node.credentials import SyftVerifyKey
-from ...store.document_store import BaseStash  # BaseUIDStoreStash
+from ...serde.serializable import serializable
+from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -16,7 +17,8 @@ from .code_interface import CodeInterface
 NamePartitionKey = PartitionKey(key="service_func_name", type_=str)
 
 
-class CodeInterfaceStash(BaseStash):
+@serializable()
+class CodeInterfaceStash(BaseUIDStoreStash):
     object_type = CodeInterface
     settings: PartitionSettings = PartitionSettings(
         name=CodeInterface.__canonical_name__, object_type=CodeInterface
