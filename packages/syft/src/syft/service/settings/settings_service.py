@@ -18,6 +18,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..warnings import HighSideCRUDWarning
 from .settings import NodeSettings
 from .settings import NodeSettingsUpdate
 from .settings_stash import SettingsStash
@@ -79,7 +80,11 @@ class SettingsService(AbstractService):
         else:
             return SyftError(message=result.err())
 
-    @service_method(path="settings.allow_guest_signup", name="allow_guest_signup")
+    @service_method(
+        path="settings.allow_guest_signup",
+        name="allow_guest_signup",
+        warning=HighSideCRUDWarning(confirmation=True),
+    )
     def allow_guest_signup(
         self, context: AuthedServiceContext, enable: bool
     ) -> Union[SyftSuccess, SyftError]:

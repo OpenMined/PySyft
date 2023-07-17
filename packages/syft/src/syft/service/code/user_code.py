@@ -264,7 +264,7 @@ class UserCode(SyftObject):
 
     @property
     def code_status(self) -> list:
-        current_status = []
+        status_list = []
         for node_view, status in self.status.base_dict.items():
             status_str = ""
             if status == UserCodeStatus.PENDING:
@@ -273,10 +273,10 @@ class UserCode(SyftObject):
                 status_str += f"[action user: you must follow up]"
             elif status == UserCodeStatus.APPROVED:
                 status_str += f"[action user: can check the result]"
-            current_status.append(
+            status_list.append(
                 f"Node: {node_view.node_name}, Status: {status.value} {status_str}"
             )
-        return current_status
+        return status_list
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:

@@ -44,6 +44,7 @@ from ..vpn.tailscale_client import TailscaleClient
 from ..vpn.tailscale_client import TailscaleState
 from ..vpn.tailscale_client import TailscaleStatus
 from ..vpn.tailscale_client import get_vpn_client
+from ..warnings import CRUDWarning
 from .node_peer import NodePeer
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
@@ -51,6 +52,7 @@ from .routes import PythonNodeRoute
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
+OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
@@ -104,7 +106,9 @@ class NetworkStash(BaseUIDStoreStash):
         self, credentials: SyftVerifyKey, node_type: NodeType
     ) -> Result[List[NodePeer], SyftError]:
         qks = QueryKeys(qks=[NodeTypePartitionKey.with_obj(node_type)])
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(
+            credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
+        )
 
 
 @instrument
@@ -123,6 +127,7 @@ class NetworkService(AbstractService):
         path="network.exchange_credentials_with",
         name="exchange_credentials_with",
         roles=GUEST_ROLE_LEVEL,
+        warning=CRUDWarning(confirmation=True),
     )
     def exchange_credentials_with(
         self,
@@ -282,7 +287,10 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
-        result = self.stash.get_all(credentials=context.node.verify_key)
+        result = self.stash.get_all(
+            credentials=context.node.verify_key,
+            order_by=OrderByNamePartitionKey,
+        )
         if result.is_ok():
             peers = result.ok()
             return peers

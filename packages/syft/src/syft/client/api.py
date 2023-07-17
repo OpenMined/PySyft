@@ -41,6 +41,8 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.warnings import APIEndpointWarning
+from ..service.warnings import WarningContext
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -89,7 +91,11 @@ class APIRegistry:
 
 
 @serializable()
-class APIEndpoint(SyftBaseObject):
+class APIEndpoint(SyftObject):
+    __canonical_name__ = "APIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
     service_path: str
     module_path: str
     name: str
@@ -98,6 +104,7 @@ class APIEndpoint(SyftBaseObject):
     signature: Signature
     has_self: bool = False
     pre_kwargs: Optional[Dict[str, Any]]
+    warning: Optional[APIEndpointWarning]
 
 
 @serializable()
@@ -198,6 +205,7 @@ def generate_remote_function(
     path: str,
     make_call: Callable,
     pre_kwargs: Dict[str, Any],
+    warning: Optional[APIEndpointWarning],
 ):
     if "blocking" in signature.parameters:
         raise Exception(
@@ -226,6 +234,10 @@ def generate_remote_function(
             kwargs=_valid_kwargs,
             blocking=blocking,
         )
+
+        allowed = warning.show() if warning else True
+        if not allowed:
+            return
         result = make_call(api_call=api_call)
         return result
 
@@ -400,12 +412,19 @@ class SyftAPI(SyftObject):
         _user_lib_config_registry = UserLibConfigRegistry.from_user(user_verify_key)
         endpoints: Dict[str, APIEndpoint] = {}
         lib_endpoints: Dict[str, LibEndpoint] = {}
+        warning_context = WarningContext(
+            node=node, role=role, credentials=user_verify_key
+        )
 
         for (
             path,
             service_config,
         ) in _user_service_config_registry.get_registered_configs().items():
             if not service_config.is_from_lib:
+                service_warning = service_config.warning
+                if service_warning:
+                    service_warning = service_warning.message_from(warning_context)
+                    service_warning.enabled = node.enable_warnings
                 endpoint = APIEndpoint(
                     service_path=path,
                     module_path=path,
@@ -414,6 +433,7 @@ class SyftAPI(SyftObject):
                     doc_string=service_config.doc_string,
                     signature=service_config.signature,
                     has_self=False,
+                    warning=service_warning,
                 )
                 endpoints[path] = endpoint
 
@@ -520,6 +540,7 @@ class SyftAPI(SyftObject):
                         v.service_path,
                         self.make_call,
                         pre_kwargs=v.pre_kwargs,
+                        warning=v.warning,
                     )
                 elif isinstance(v, LibEndpoint):
                     endpoint_function = generate_remote_lib_function(
