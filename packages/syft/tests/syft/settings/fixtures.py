@@ -57,6 +57,7 @@ def metadata_json(faker) -> NodeMetadataJSON:
         signup_enabled=False,
         admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE.value,
+        show_warnings=False,
     )
 
 

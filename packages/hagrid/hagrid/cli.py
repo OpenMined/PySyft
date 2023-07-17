@@ -1272,7 +1272,7 @@ def create_launch_cmd(
     else:
         parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
 
-    parsed_kwargs["enable_warnings"] = not kwargs["no-warnings"]
+    parsed_kwargs["enable_warnings"] = not kwargs["no_warnings"]
 
     # choosing deployment type
     parsed_kwargs["deployment_type"] = "container_stack"

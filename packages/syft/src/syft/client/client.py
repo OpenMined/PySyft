@@ -649,7 +649,7 @@ class SyftClient:
         if self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
             message = (
                 "You're registering a user to a high side "
-                f"{self.metadata.node_type.value}, which could "
+                f"{self.metadata.node_type}, which could "
                 "host datasets with private information."
             )
             if self.metadata.show_warnings and not prompt_warning_message(
