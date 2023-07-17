@@ -387,7 +387,10 @@ class Node(AbstractNode):
 
         connection = PythonConnection(node=self)
         if verbose:
-            print(f"Logged into {self.name} as GUEST")
+            print(
+                f"Logged into <{self.name}: {self.node_side_type.value.capitalize()} "
+                f"side {self.node_type.value.capitalize()} > as GUEST"
+            )
 
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
