@@ -63,7 +63,7 @@ class GatewayClient(SyftClient):
         return res
 
     @property
-    def nodes(self) -> Optional[Union[List[NodePeer], SyftError]]:
+    def peers(self) -> Optional[Union[List[NodePeer], SyftError]]:
         return ProxyClient(routing_client=self)
 
     @property
