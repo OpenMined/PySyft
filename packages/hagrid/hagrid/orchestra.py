@@ -17,7 +17,6 @@ from typing import Union
 import gevent
 
 # relative
-from .cli import NodeSideType
 from .cli import str_to_bool
 from .grammar import find_available_port
 from .names import random_name
@@ -25,6 +24,7 @@ from .util import shell
 
 try:
     # syft absolute
+    from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
