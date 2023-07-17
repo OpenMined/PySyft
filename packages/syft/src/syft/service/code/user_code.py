@@ -258,12 +258,12 @@ class UserCode(SyftObject):
 
     @property
     def code_status(self) -> list:
-        current_status = []
+        status_list = []
         for node_view, status in self.status.base_dict.items():
-            current_status.append(
+            status_list.append(
                 f"Node: {node_view.node_name}, Status: {status.value}"
             )
-        return current_status
+        return status_list
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:
