@@ -219,7 +219,7 @@ class UserCode(SyftObject):
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
-    __repr_attrs__ = ["status.approved", "service_func_name", "shareholders"]
+    __repr_attrs__ = ["service_func_name", "shareholders", "code_status"]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -255,6 +255,15 @@ class UserCode(SyftObject):
         for node_view in nodes:
             node_names_list.append(str(node_view.node_name))
         return node_names_list
+
+    @property
+    def code_status(self) -> list:
+        current_status = []
+        for node_view, status in self.status.base_dict.items():
+            current_status.append(
+                f"Node: {node_view.node_name}, Status: {status.value}"
+            )
+        return current_status
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:
@@ -420,9 +429,9 @@ class UserCode(SyftObject):
     def _repr_markdown_(self):
         md = f"""class UserCode
     id: UID = {self.id}
-    status.approved: bool = {self.status.approved}
     service_func_name: str = {self.service_func_name}
     shareholders: list = {self.shareholders}
+    status: list = {self.code_status}
     code:
 
 {self.raw_code}"""
