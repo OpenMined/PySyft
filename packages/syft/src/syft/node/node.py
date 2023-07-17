@@ -544,6 +544,7 @@ class Node(AbstractNode):
         description = ""
         signup_enabled = False
         admin_email = ""
+        show_warnings = self.enable_warnings
 
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key)

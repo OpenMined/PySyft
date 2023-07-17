@@ -437,6 +437,11 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Enable API warnings on the node.",
 )
+@click.option(
+    "--low-side",
+    is_flag=True,
+    help="Launch a low side node type else a high side node type",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1267,10 +1272,10 @@ def create_launch_cmd(
         parsed_kwargs["release"] = "development"
 
     # derive node type
-    if parsed_kwargs["release"] == "production":
-        parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
-    else:
+    if parsed_kwargs["low_side"]:
         parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
+    else:
+        parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
 
     parsed_kwargs["enable_warnings"] = not kwargs["no_warnings"]
 
