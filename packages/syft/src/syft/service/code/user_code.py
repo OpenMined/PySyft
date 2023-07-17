@@ -89,9 +89,9 @@ def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
 
 @serializable()
 class UserCodeStatus(Enum):
-    SUBMITTED = "submitted"
+    PENDING = "pending"
     DENIED = "denied"
-    EXECUTE = "execute"
+    APPROVED = "approved"
 
     def __hash__(self) -> int:
         return hash(self.value)
@@ -123,6 +123,12 @@ class UserCodeStatusContext(SyftHashableObject):
             node_name_str = f"{node_view.node_name}"
             uid_str = f"{node_view.node_id}"
             status_str = f"{status.value}"
+            if status == UserCodeStatus.PENDING:
+                status_str += f" [action user: you have to wait]"
+            elif status == UserCodeStatus.DENIED:
+                status_str += f" [action user: you must follow up]"
+            elif status == UserCodeStatus.APPROVED:
+                status_str += f" [action user: can check the result]"
 
             string += f"""
                     &#x2022; <strong>UID: </strong>{uid_str}&nbsp;
@@ -143,15 +149,15 @@ class UserCodeStatusContext(SyftHashableObject):
     def approved(self) -> bool:
         # approved for this node only
         statuses = set(self.base_dict.values())
-        return len(statuses) == 1 and UserCodeStatus.EXECUTE in statuses
+        return len(statuses) == 1 and UserCodeStatus.APPROVED in statuses
 
     def for_context(self, context: AuthedServiceContext) -> UserCodeStatus:
         if context.node.node_type == NodeType.ENCLAVE:
             keys = set(self.base_dict.values())
-            if len(keys) == 1 and UserCodeStatus.EXECUTE in keys:
-                return UserCodeStatus.EXECUTE
-            elif UserCodeStatus.SUBMITTED in keys and UserCodeStatus.DENIED not in keys:
-                return UserCodeStatus.SUBMITTED
+            if len(keys) == 1 and UserCodeStatus.APPROVED in keys:
+                return UserCodeStatus.APPROVED
+            elif UserCodeStatus.PENDING in keys and UserCodeStatus.DENIED not in keys:
+                return UserCodeStatus.PENDING
             elif UserCodeStatus.DENIED in keys:
                 return UserCodeStatus.DENIED
             else:
@@ -230,9 +236,9 @@ class UserCode(SyftObject):
 
     def _coll_repr_(self) -> Dict[str, Any]:
         status = list(self.status.base_dict.values())[0].value
-        if status == UserCodeStatus.SUBMITTED.value:
+        if status == UserCodeStatus.PENDING.value:
             badge_color = "badge-purple"
-        elif status == UserCodeStatus.EXECUTE.value:
+        elif status == UserCodeStatus.APPROVED.value:
             badge_color = "badge-green"
         else:
             badge_color = "badge-red"
@@ -260,8 +266,15 @@ class UserCode(SyftObject):
     def code_status(self) -> list:
         current_status = []
         for node_view, status in self.status.base_dict.items():
+            status_str = ""
+            if status == UserCodeStatus.PENDING:
+                status_str += f"[action user: you have to wait]"
+            elif status == UserCodeStatus.DENIED:
+                status_str += f"[action user: you must follow up]"
+            elif status == UserCodeStatus.APPROVED:
+                status_str += f"[action user: can check the result]"
             current_status.append(
-                f"Node: {node_view.node_name}, Status: {status.value}"
+                f"Node: {node_view.node_name}, Status: {status.value} {status_str}"
             )
         return current_status
 
@@ -707,16 +720,16 @@ def add_custom_status(context: TransformContext) -> TransformContext:
             verify_key=context.node.signing_key.verify_key,
         )
         context.output["status"] = UserCodeStatusContext(
-            base_dict={node_view: UserCodeStatus.SUBMITTED}
+            base_dict={node_view: UserCodeStatus.PENDING}
         )
         # if node_view in input_keys or len(input_keys) == 0:
         #     context.output["status"] = UserCodeStatusContext(
-        #         base_dict={node_view: UserCodeStatus.SUBMITTED}
+        #         base_dict={node_view: UserCodeStatus.PENDING}
         #     )
         # else:
         #     raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
     elif context.node.node_type == NodeType.ENCLAVE:
-        base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
+        base_dict = {key: UserCodeStatus.PENDING for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
     else:
         raise NotImplementedError(

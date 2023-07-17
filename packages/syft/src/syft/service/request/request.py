@@ -722,7 +722,9 @@ class UserCodeStatusChange(Change):
         return res
 
     def is_enclave_request(self, req_enclave_metadata):
-        return req_enclave_metadata is not None and self.value == UserCodeStatus.EXECUTE
+        return (
+            req_enclave_metadata is not None and self.value == UserCodeStatus.APPROVED
+        )
 
     def _run(
         self, context: ChangeContext, apply: bool

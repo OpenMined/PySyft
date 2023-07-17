@@ -71,7 +71,7 @@ class UserCodeService(AbstractService):
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
         CODE_EXECUTE = UserCodeStatusChange(
-            value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
+            value=UserCodeStatus.APPROVED, linked_obj=linked_obj
         )
         changes = [CODE_EXECUTE]
 
@@ -171,8 +171,8 @@ class UserCodeService(AbstractService):
                 )
 
             # Check if the code is approved
-            if code_status.for_context(context) != UserCodeStatus.EXECUTE:
-                if code_status.for_context(context) == UserCodeStatus.SUBMITTED:
+            if code_status.for_context(context) != UserCodeStatus.APPROVED:
+                if code_status.for_context(context) == UserCodeStatus.PENDING:
                     string = ""
                     for node_view, status in code_status.base_dict.items():
                         string += f"Code status on node '{node_view.node_name}' is '{status.value}'. "
