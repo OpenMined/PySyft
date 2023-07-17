@@ -18,5 +18,5 @@ class Gateway(Node):
         context = AuthedServiceContext(
             node=self, credentials=self.signing_key.verify_key
         )
-        result = network_service.connect_self(context=context)
-        print("Message: ", result.message)
+        network_service.connect_self(context=context)
+        # print("Message: ", result.message)

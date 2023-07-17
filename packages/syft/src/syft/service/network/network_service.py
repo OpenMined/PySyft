@@ -44,6 +44,7 @@ from ..vpn.tailscale_client import TailscaleClient
 from ..vpn.tailscale_client import TailscaleState
 from ..vpn.tailscale_client import TailscaleStatus
 from ..vpn.tailscale_client import get_vpn_client
+from ..warnings import CRUDWarning
 from .node_peer import NodePeer
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
@@ -126,6 +127,7 @@ class NetworkService(AbstractService):
         path="network.exchange_credentials_with",
         name="exchange_credentials_with",
         roles=GUEST_ROLE_LEVEL,
+        warning=CRUDWarning(confirmation=True),
     )
     def exchange_credentials_with(
         self,
