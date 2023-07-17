@@ -51,6 +51,7 @@ from .routes import PythonNodeRoute
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
+OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
@@ -104,7 +105,9 @@ class NetworkStash(BaseUIDStoreStash):
         self, credentials: SyftVerifyKey, node_type: NodeType
     ) -> Result[List[NodePeer], SyftError]:
         qks = QueryKeys(qks=[NodeTypePartitionKey.with_obj(node_type)])
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(
+            credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
+        )
 
 
 @instrument
@@ -282,7 +285,10 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
-        result = self.stash.get_all(credentials=context.node.verify_key)
+        result = self.stash.get_all(
+            credentials=context.node.verify_key,
+            order_by=OrderByNamePartitionKey,
+        )
         if result.is_ok():
             peers = result.ok()
             return peers
