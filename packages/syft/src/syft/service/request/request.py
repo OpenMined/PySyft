@@ -17,6 +17,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -273,16 +274,23 @@ class Request(SyftObject):
             self.syft_client_verify_key,
         )
         # TODO: Refactor so that object can also be passed to generate warnings
+        metadata = api.connection.get_node_metadata(api.signing_key)
         code = self.code
-        is_enclave = False
+        message, is_enclave = None, False
+
         if code and not isinstance(code, SyftError):
             is_enclave = getattr(code, "enclave_metadata", None) is not None
 
         if is_enclave:
             message = "On approval, the result will be released to the enclave."
-            metadata = api.connection.get_node_metadata(api.signing_key)
-            if metadata.show_warnings:
-                prompt_warning_message(message=message, confirm=True)
+        elif metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+            message = (
+                "You're approving a request on "
+                f"{metadata.node_side_type} side {metadata.node_type} "
+                "which may host datasets with private information."
+            )
+        if message and metadata.show_warnings:
+            prompt_warning_message(message=message, confirm=True)
 
         print(f"Request approved for domain {api.node_name}")
         return api.services.request.apply(self.id)
