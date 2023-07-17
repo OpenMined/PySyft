@@ -155,6 +155,10 @@ def get_dev_mode() -> bool:
     return str_to_bool(get_env("DEV_MODE", "False"))
 
 
+def get_enable_warnings() -> bool:
+    return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
+
+
 def get_venv_packages() -> str:
     res = subprocess.getoutput(
         "pip list --format=freeze",
@@ -195,6 +199,7 @@ class Node(AbstractNode):
         sqlite_path: Optional[str] = None,
         queue_config: QueueConfig = ZMQQueueConfig,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        enable_warnings: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -256,6 +261,8 @@ class Node(AbstractNode):
             services += [OblvService]
             create_oblv_key_pair(worker=self)
 
+        self.enable_warnings = enable_warnings
+
         self.services = services
         self._construct_services()
 
@@ -307,6 +314,7 @@ class Node(AbstractNode):
         sqlite_path: Optional[str] = None,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        enable_warnings: bool = False,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -352,6 +360,7 @@ class Node(AbstractNode):
             sqlite_path=sqlite_path,
             node_type=node_type,
             node_side_type=node_side_type,
+            enable_warnings=enable_warnings,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -563,6 +572,7 @@ class Node(AbstractNode):
             signup_enabled=signup_enabled,
             admin_email=admin_email,
             node_side_type=self.node_side_type.value,
+            show_warnings=self.enable_warnings,
         )
 
     @property

@@ -433,7 +433,7 @@ def clean(location: str) -> None:
     help="Render Docker Files",
 )
 @click.option(
-    "--enable-warnings",
+    "--no-warnings",
     is_flag=True,
     help="Enable API warnings on the node.",
 )
@@ -1272,7 +1272,7 @@ def create_launch_cmd(
     else:
         parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
 
-    parsed_kwargs["enable_warnings"] = kwargs["enable_warnings"]
+    parsed_kwargs["enable_warnings"] = not kwargs["no-warnings"]
 
     # choosing deployment type
     parsed_kwargs["deployment_type"] = "container_stack"

@@ -74,6 +74,7 @@ def run_uvicorn(
     reset: bool,
     dev_mode: bool,
     node_side_type: str,
+    enable_warnings: bool,
 ):
     async def _run_uvicorn(
         name: str,
@@ -100,6 +101,7 @@ def run_uvicorn(
                 local_db=True,
                 node_type=node_type,
                 node_side_type=node_side_type,
+                enable_warnings=enable_warnings,
             )
         else:
             worker = worker_class(
@@ -108,6 +110,7 @@ def run_uvicorn(
                 local_db=True,
                 node_type=node_type,
                 node_side_type=node_side_type,
+                enable_warnings=enable_warnings,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
@@ -160,10 +163,20 @@ def serve_node(
     reset: bool = False,
     dev_mode: bool = False,
     tail: bool = False,
+    enable_warnings: bool = False,
 ) -> Tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
         target=run_uvicorn,
-        args=(name, node_type, host, port, reset, dev_mode, node_side_type),
+        args=(
+            name,
+            node_type,
+            host,
+            port,
+            reset,
+            dev_mode,
+            node_side_type,
+            enable_warnings,
+        ),
     )
 
     def stop():

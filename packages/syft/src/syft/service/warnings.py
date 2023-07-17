@@ -13,7 +13,6 @@ from ..node.credentials import SyftCredentials
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
 from ..types.syft_object import Context
-from ..util.experimental_flags import flags
 from .user.user_roles import ServiceRole
 
 
@@ -29,6 +28,7 @@ class WarningContext(
 class APIEndpointWarning(SyftBaseModel):
     confirmation: bool = False
     message: Optional[str] = None
+    enabled: bool = True
 
     def __eq__(self, other) -> bool:
         if isinstance(other, APIEndpointWarning):
@@ -55,9 +55,7 @@ class APIEndpointWarning(SyftBaseModel):
         raise NotImplementedError
 
     def show(self):
-        # skip is WARNINGS_ENABLED flag is disabled
-        # or message is None
-        if not flags.WARNINGS_ENABLED or not self.message:
+        if not self.enabled or not self.message:
             return True
         display(self)
         if self.confirmation:

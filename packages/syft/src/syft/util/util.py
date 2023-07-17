@@ -40,7 +40,6 @@ from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import requests
-from rich.prompt import Confirm
 
 # relative
 from .logger import critical
@@ -445,22 +444,12 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
     return ref.pointer_type  # type: ignore
 
 
-def prompt_warning_message(message: str, confirm: bool = False) -> bool:
+def prompt_warning_message(message: str) -> bool:
     # relative
     from ..service.response import SyftWarning
-    from .experimental_flags import flags
-
-    if not flags.WARNINGS_ENABLED:
-        return True
 
     warning = SyftWarning(message=message)
     display(warning)
-
-    if confirm:
-        allowed = Confirm.ask("Would you like to proceed?")
-        if not allowed:
-            print("Aborted !!")
-            return False
     return True
 
 

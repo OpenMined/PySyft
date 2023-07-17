@@ -59,9 +59,5 @@ class ExperimentalFlags:
     def CAN_REGISTER(self, value: bool) -> None:
         self._CAN_REGISTER = value
 
-    @property
-    def WARNINGS_ENABLED(self) -> bool:
-        return str_to_bool(os.getenv("ENABLE_WARNINGS", "false"))
-
 
 flags = ExperimentalFlags()

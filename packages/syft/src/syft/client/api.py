@@ -424,6 +424,7 @@ class SyftAPI(SyftObject):
                 service_warning = service_config.warning
                 if service_warning:
                     service_warning = service_warning.message_from(warning_context)
+                    service_warning.enabled = node.enable_warnings
                 endpoint = APIEndpoint(
                     service_path=path,
                     module_path=path,
