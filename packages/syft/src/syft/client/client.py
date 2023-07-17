@@ -440,6 +440,9 @@ class SyftClient:
 
         self.post_init()
 
+    def get_env(self) -> str:
+        return self.api.services.metadata.get_env()
+
     def post_init(self) -> None:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
