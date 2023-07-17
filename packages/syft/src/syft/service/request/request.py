@@ -35,6 +35,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.notebook_addons import REQUEST_ICON
+from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
@@ -271,6 +272,18 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        # TODO: Refactor so that object can also be passed to generate warnings
+        code = self.code
+        is_enclave = False
+        if code and not isinstance(code, SyftError):
+            is_enclave = getattr(code, "enclave_metadata", None) is not None
+
+        if is_enclave:
+            message = "On approval, the result will be released to the enclave."
+            metadata = api.connection.get_node_metadata(api.signing_key)
+            if metadata.show_warnings:
+                prompt_warning_message(message=message, confirm=True)
+
         print(f"Request approved for domain {api.node_name}")
         return api.services.request.apply(self.id)
 

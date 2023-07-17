@@ -43,3 +43,4 @@ class NodeSettings(SyftObject):
     signup_enabled: bool
     admin_email: str
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
+    show_warnings: bool

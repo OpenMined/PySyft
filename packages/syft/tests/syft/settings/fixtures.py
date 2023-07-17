@@ -32,6 +32,7 @@ def settings(worker, faker) -> NodeSettings:
         signup_enabled=False,
         admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE,
+        show_warnings=False,
     )
 
 

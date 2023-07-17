@@ -28,6 +28,7 @@ from ..service import service_method
 from ..user.user import UserView
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
+from ..warnings import HighSideCRUDWarning
 from .request import Change
 from .request import Request
 from .request import RequestInfo
@@ -181,7 +182,11 @@ class RequestService(AbstractService):
 
         return requests
 
-    @service_method(path="request.apply", name="apply")
+    @service_method(
+        path="request.apply",
+        name="apply",
+        warning=HighSideCRUDWarning(confirmation=True),
+    )
     def apply(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:

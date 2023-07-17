@@ -556,6 +556,7 @@ class Node(AbstractNode):
             description = settings_data.description
             signup_enabled = settings_data.signup_enabled
             admin_email = settings_data.admin_email
+            show_warnings = settings_data.show_warnings
 
         return NodeMetadata(
             name=name,
@@ -572,7 +573,7 @@ class Node(AbstractNode):
             signup_enabled=signup_enabled,
             admin_email=admin_email,
             node_side_type=self.node_side_type.value,
-            show_warnings=self.enable_warnings,
+            show_warnings=show_warnings,
         )
 
     @property
@@ -767,6 +768,7 @@ class Node(AbstractNode):
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,
                     node_side_type=self.node_side_type.value,
+                    show_warnings=self.enable_warnings,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
