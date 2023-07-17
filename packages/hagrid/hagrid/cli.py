@@ -1272,7 +1272,7 @@ def create_launch_cmd(
         parsed_kwargs["release"] = "development"
 
     # derive node type
-    if parsed_kwargs["low_side"]:
+    if kwargs["low_side"]:
         parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
     else:
         parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
