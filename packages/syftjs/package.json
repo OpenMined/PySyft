@@ -33,7 +33,11 @@
   },
   "devDependencies": {
     "@ava/typescript": "^4.1.0",
+    "@babel/core": "^7.22.9",
+    "@babel/preset-env": "^7.22.9",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-node-resolve": "^15.1.0",
     "@rollup/plugin-typescript": "^11.1.2",
     "@types/debug": "^4.1.8",
     "@types/uuid": "^9.0.2",
