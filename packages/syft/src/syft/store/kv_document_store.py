@@ -143,14 +143,16 @@ class KeyValueStorePartition(StorePartition):
     def __len__(self) -> int:
         return len(self.data)
 
-    def _get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
+    def _get(
+        self, uid: UID, credentials: SyftVerifyKey, has_permission=False
+    ) -> Result[SyftObject, str]:
         # relative
         from ..service.action.action_store import ActionObjectREAD
 
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
 
-        if self.has_permission(read_permission):
+        if self.has_permission(read_permission) or has_permission:
             syft_object = self.data[uid]
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
@@ -286,10 +288,13 @@ class KeyValueStorePartition(StorePartition):
         return False
 
     def _all(
-        self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: bool = False,
     ) -> Result[List[BaseStash.object_type], str]:
         # this checks permissions
-        res = [self._get(uid, credentials) for uid in self.data.keys()]
+        res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
         result = [x.ok() for x in res if x.is_ok()]
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))

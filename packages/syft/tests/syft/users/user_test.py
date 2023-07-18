@@ -3,6 +3,7 @@ from faker import Faker
 import pytest
 
 # syft absolute
+import syft as sy
 from syft import SyftError
 from syft import SyftSuccess
 from syft.client.api import SyftAPICall
@@ -325,7 +326,7 @@ def test_user_view_update_name_institution_website(
     assert guest_client.me.name == "syft3"
 
 
-def test_user_view_set_role(worker, guest_client) -> None:
+def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
     assert admin_client.me.role == ServiceRole.ADMIN
     admin_client.register(
@@ -365,3 +366,33 @@ def test_user_view_set_role(worker, guest_client) -> None:
     assert len(ds_client.users.get_all()) == len(admin_client.users.get_all())
     assert isinstance(ds_client.me.set_role("guest"), SyftSuccess)
     assert isinstance(ds_client.me.set_role("admin"), SyftError)
+
+
+def test_user_view_set_role_admin() -> None:
+    node = sy.orchestra.launch(name="test-domain-1", reset=True)
+    domain_client = node.login(email="info@openmined.org", password="changethis")
+    domain_client.register(
+        name="Sheldon Cooper",
+        email="sheldon@caltech.edu",
+        password="changethis",
+        institution="Caltech",
+        website="https://www.caltech.edu/",
+    )
+    domain_client.register(
+        name="Sheldon Cooper",
+        email="sheldon2@caltech.edu",
+        password="changethis",
+        institution="Caltech",
+        website="https://www.caltech.edu/",
+    )
+    assert len(domain_client.users.get_all()) == 3
+
+    domain_client.users[1].set_role("admin")
+    ds_client = node.login(email="sheldon@caltech.edu", password="changethis")
+    assert ds_client.me.role == ServiceRole.ADMIN
+    assert len(ds_client.users.get_all()) == len(domain_client.users.get_all())
+
+    domain_client.users[2].set_role("admin")
+    ds_client_2 = node.login(email="sheldon2@caltech.edu", password="changethis")
+    assert ds_client_2.me.role == ServiceRole.ADMIN
+    assert len(ds_client_2.users.get_all()) == len(domain_client.users.get_all())

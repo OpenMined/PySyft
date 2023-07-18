@@ -106,7 +106,10 @@ class UserService(AbstractService):
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
     ) -> Union[Optional[UserViewPage], Optional[UserView], SyftError]:
-        result = self.stash.get_all(context.credentials)
+        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            result = self.stash.get_all(context.credentials, has_permission=True)
+        else:
+            result = self.stash.get_all(context.credentials)
         if result.is_ok():
             results = [user.to(UserView) for user in result.ok()]
 
