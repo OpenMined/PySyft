@@ -157,11 +157,6 @@ class TailscaleClient(BaseVPNClient):
         self, headscale_host: str, headscale_auth_token: str
     ) -> Union[SyftSuccess, SyftError]:
         CONNECT_TIMEOUT = 60
-        print(">>> connect to headscale host:", headscale_host)
-        # headscale_host = "http://192.168.4.65:9080/vpn"
-        headscale_host = "http://host.docker.internal:9080/vpn"
-        # headscale_host = "http://host.docker.internal:8080"
-        print(">>> change connect to headscale host:", headscale_host)
         command_args = {
             "args": [
                 "--login-server",
