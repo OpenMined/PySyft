@@ -94,10 +94,20 @@ class CodeInterfaceService(AbstractService):
         return SyftError(message=result.err())
         
     
+    @service_method(path="code_interface.delete_by_id", name="delete_by_id", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    def delete_version(self, context: AuthedServiceContext, uid: UID):
+        result = self.stash.delete_by_uid(context.credentials, uid)
+        if result.is_ok():
+            return result.ok()
+        else:
+            return SyftError(message=result.err())
+
+
     # TODO
-    # add delete
-    # Test duplicate versions
     # get_code_interface_by_name
     # get_all
+    # add delete
+    # Test duplicate versions
+ 
 
 
