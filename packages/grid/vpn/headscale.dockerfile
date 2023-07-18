@@ -44,4 +44,7 @@ RUN mkdir -p /headscale/data
 
 ENV NETWORK_NAME="omnet"
 
+# clean up
+RUN apt purge --auto-remove linux-libc-dev -y
+
 CMD ["sh", "-c", "/headscale/headscale.sh ${NETWORK_NAME}"]
