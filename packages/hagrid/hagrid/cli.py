@@ -137,9 +137,10 @@ def get_compose_src_path(
         path = deployment_dir(node_name)
 
     if kwargs["deployment_type"] == "single_container":  # type: ignore
-        return path + "/worker"
-    else:
-        return path
+        path = path + "/worker"
+
+    os.makedirs(path, exist_ok=True)
+    return path
 
 
 @click.command(
@@ -3052,6 +3053,12 @@ def create_launch_custom_cmd(
 
         if host_term.host == "localhost":
             ANSIBLE_ARGS["local"] = "true"
+
+        if "node_side_type" in kwargs:
+            ANSIBLE_ARGS["node_side_type"] = kwargs["node_side_type"]
+
+        if "enable_warnings" in kwargs:
+            ANSIBLE_ARGS["enable_warnings"] = kwargs["enable_warnings"]
 
         if kwargs["tls"] is True:
             ANSIBLE_ARGS["tls"] = "true"
