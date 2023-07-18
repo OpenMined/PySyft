@@ -24,11 +24,11 @@ RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit
 
 ENV HEADSCALE_VERSION="0.22.3"
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-  curl -o /bin/headscale -sSL https://github.com/juanfont/headscale/releases/download/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux_arm64; \
+  curl -o /bin/headscale -sSL "https://github.com/juanfont/headscale/releases/download/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux_arm64"; \
   fi
 
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) == "x86_64" ]; then \
-  curl -o /bin/headscale -sSL https://github.com/juanfont/headscale/releases/download/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux_amd64; \
+  curl -o /bin/headscale -sSL "https://github.com/juanfont/headscale/releases/download/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux_amd64"; \
   fi
 
 RUN chmod +x /bin/headscale
