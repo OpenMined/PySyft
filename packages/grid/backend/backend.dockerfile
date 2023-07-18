@@ -10,25 +10,21 @@ RUN mkdir -p /root/.local
 
 RUN apt-get update && apt-get upgrade -y
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
-  DEBIAN_FRONTEND=noninteractive \
-  apt-get update && \
-  apt-get install -y --no-install-recommends \
-  curl python3-dev gcc make build-essential cmake git
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl python3-dev gcc make build-essential cmake git
 
 RUN --mount=type=cache,target=/root/.cache \
-  pip install -U pip
+    pip install -U pip
 
 # copy precompiled arm64 packages
 COPY grid/backend/wheels /wheels
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-  pip install --user /wheels/jaxlib-0.4.10-cp311-cp311-manylinux2014_aarch64.whl; \
-  fi
+    pip install --user /wheels/jaxlib-0.4.10-cp311-cp311-manylinux2014_aarch64.whl; \
+    fi
 
 WORKDIR /app
-COPY grid/backend/requirements.txt /app
-
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user -r requirements.txt
 
 # Backend
 FROM python:$PYTHON_VERSION-slim as backend
@@ -39,7 +35,7 @@ ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
 RUN --mount=type=cache,target=/root/.cache \
-  pip install -U pip
+    pip install -U pip
 
 WORKDIR /app
 
@@ -56,7 +52,9 @@ COPY syft/src/syft/capnp /app/syft/src/syft/capnp
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
-  pip install --user -e /app/syft
+    pip install --user -e /app/syft && \
+    pip uninstall ansible ansible-core -y && \
+    rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
 
 # copy any changed source
 COPY syft/src /app/syft/src
