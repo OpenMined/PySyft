@@ -1,5 +1,5 @@
 # stdlib
-from typing import Optional
+from typing import Optional, List
 
 # third party
 from result import Result
@@ -13,6 +13,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from .code_interface import CodeInterface
+from ...types.uid import UID
 
 NamePartitionKey = PartitionKey(key="service_func_name", type_=str)
 
@@ -29,10 +30,18 @@ class CodeInterfaceStash(BaseUIDStoreStash):
 
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
-    ) -> Result[Optional[CodeInterface], str]:
+    ) -> Result[List[CodeInterface], str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(service_func_name)])
-        return self.query_one(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks)
 
+    # def get_by_user_code_uid(  self, credentials: SyftVerifyKey, uid: UID
+    # ) -> Result[Optional[CodeInterface], str]:
+        
+    #     get_all(credentials, order_by: Optional[PartitionKey] = None
+    # )
+    #     qks = QueryKeys(qks=[NamePartitionKey.with_obj(uid)])
+    #     return self.query_one(credentials=credentials, qks=qks)
+    
     # def set(
     #     self,
     #     credentials: SyftVerifyKey,

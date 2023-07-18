@@ -1,6 +1,7 @@
 # stdlib
 # stdlib
-from typing import Union, List
+from typing import List
+from typing import Union
 
 # relative
 from ...store.document_store import DocumentStore
@@ -12,9 +13,9 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .code_interface import CodeInterface
 from .code_interface_stash import CodeInterfaceStash
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 
 
 class CodeInterfaceService(AbstractService):
@@ -25,7 +26,7 @@ class CodeInterfaceService(AbstractService):
         self.store = store
         self.stash = CodeInterfaceStash(store=store)
 
-    @service_method(path="code_interface.submit_version", name="submit_version")
+    @service_method(path="code_interface.submit_version", name="submit_version", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def submit_version(
         self, context: AuthedServiceContext, code: Union[SubmitUserCode, UserCode]
     ) -> Union[SyftSuccess, SyftError]:
@@ -45,21 +46,28 @@ class CodeInterfaceService(AbstractService):
                 return result
             code = result
 
-        result_code_interface = self.stash.get_by_service_func_name(
+        result_code_interface_list = self.stash.get_by_service_func_name(
             credentials=context.credentials, service_func_name=code.service_func_name
         )
-        if result_code_interface.is_err():
-            return SyftError(message=result_code_interface.err())
 
-        code_interface = result_code_interface.ok()
+        if result_code_interface_list.is_err():
+            return SyftError(message=result_code_interface_list.err())
+
+        code_interface = None
+        code_interface_list = result_code_interface_list.ok()
+    
+        for elem in code_interface_list:
+            if code.id in elem.user_code_mapping.values():
+                code_interface = elem
+                break
+        
         if code_interface is None:
             code_interface = CodeInterface(
-                id=UID(),
-                node_uid=context.node.id,
-                user_verify_key=context.credentials,
-                service_func_name=code.service_func_name,
-            )
-
+                    id=UID(),
+                    node_uid=context.node.id,
+                    user_verify_key=context.credentials,
+                    service_func_name=code.service_func_name,
+                )
             result = self.stash.set(credentials=context.credentials, obj=code_interface)
             if result.is_err():
                 return SyftError(message=result.err())
@@ -71,18 +79,19 @@ class CodeInterfaceService(AbstractService):
 
         return SyftSuccess(message="Code version submit success")
 
-    @service_method(path="code_interface.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    @service_method(
+        path="code_interface.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def get_all(
-            self, context: AuthedServiceContext
-        ) -> Union[List[UserCode], SyftError]:
-            """Get a Dataset"""
-            result = self.stash.get_all(context.credentials)
-            if result.is_ok():
-                return result.ok()
-            return SyftError(message=result.err())
+        self, context: AuthedServiceContext
+    ) -> Union[List[UserCode], SyftError]:
+        """Get a Dataset"""
+        result = self.stash.get_all(context.credentials)
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
 
-
-    @service_method(path="code_interface.get_by_id", name="get_by_id")
+    @service_method(path="code_interface.get_by_id", name="get_by_id", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_code_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
@@ -92,22 +101,15 @@ class CodeInterfaceService(AbstractService):
             code_interface = result.ok()
             return code_interface
         return SyftError(message=result.err())
-        
-    
-    @service_method(path="code_interface.delete_by_id", name="delete_by_id", roles=DATA_SCIENTIST_ROLE_LEVEL)
-    def delete_version(self, context: AuthedServiceContext, uid: UID):
+
+
+    @service_method(
+        path="code_interface.delete_by_id",
+        name="delete_by_id"
+    )
+    def delete(self, context: AuthedServiceContext, uid: UID):
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
             return result.ok()
         else:
             return SyftError(message=result.err())
-
-
-    # TODO
-    # get_code_interface_by_name
-    # get_all
-    # add delete
-    # Test duplicate versions
- 
-
-

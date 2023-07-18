@@ -29,11 +29,12 @@ class CodeInterface(SyftObject):
 
     def add_code(self, code: UserCode):
         # if code.service_func_name in self.user_code_mapping:
-        new_version = (max(self.user_code_mapping.keys(), default=0)+ 1)
+        new_version = max(self.user_code_mapping.keys(), default=0) + 1
         # else:
         #     self.user_code_mapping = {}
         #     new_version = 1
 
         self.user_code_mapping[new_version] = code.id
+
 
 # TODO: Fix Multiple users can passing the same name for their code.
