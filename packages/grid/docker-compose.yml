@@ -24,7 +24,6 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
     ports:
       - "${HTTP_PORT}:81"
-      - "41641/udp"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -212,9 +211,6 @@ services:
       - RELEASE=${RELEASE:-production}
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
-    ports:
-      - "3478/udp"
-      - "8080:8080"
 
   # seaweedfs:
   #   profiles:
