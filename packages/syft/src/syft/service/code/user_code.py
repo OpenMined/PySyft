@@ -123,13 +123,6 @@ class UserCodeStatusContext(SyftHashableObject):
             node_name_str = f"{node_view.node_name}"
             uid_str = f"{node_view.node_id}"
             status_str = f"{status.value}"
-            if status == UserCodeStatus.PENDING:
-                status_str += f" [action user: you have to wait]"
-            elif status == UserCodeStatus.DENIED:
-                status_str += f" [action user: you must follow up]"
-            elif status == UserCodeStatus.APPROVED:
-                status_str += f" [action user: can check the result]"
-
             string += f"""
                     &#x2022; <strong>UID: </strong>{uid_str}&nbsp;
                     <strong>Node name: </strong>{node_name_str}&nbsp;
@@ -266,16 +259,7 @@ class UserCode(SyftObject):
     def code_status(self) -> list:
         status_list = []
         for node_view, status in self.status.base_dict.items():
-            status_str = ""
-            if status == UserCodeStatus.PENDING:
-                status_str += f"[action user: you have to wait]"
-            elif status == UserCodeStatus.DENIED:
-                status_str += f"[action user: you must follow up]"
-            elif status == UserCodeStatus.APPROVED:
-                status_str += f"[action user: can check the result]"
-            status_list.append(
-                f"Node: {node_view.node_name}, Status: {status.value} {status_str}"
-            )
+            status_list.append(f"Node: {node_view.node_name}, Status: {status.value}")
         return status_list
 
     @property
