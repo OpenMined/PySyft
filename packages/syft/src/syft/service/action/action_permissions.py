@@ -52,9 +52,10 @@ class ActionObjectPermission:
 
     def __repr__(self) -> str:
         if self.credentials is not None:
-            return f"<{self.permission.name}: {self.uid} as {self.credentials.verify}>"
+            return f"[{self.permission.name}: {self.uid} as {self.credentials.verify}]"
         else:
-            # TODO: somehow, __repr__ is only triggered in this case
+            # TODO: somehow, __repr__ is only triggered in this case.
+            # Maybe fixed by change from <> brackets to [] so it now prints in htlm?
             return self.permission_string
 
 

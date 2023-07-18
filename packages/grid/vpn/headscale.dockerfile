@@ -1,5 +1,7 @@
 FROM headscale/headscale:0.15.0-alpine
 
+RUN apk update && apk upgrade --available
+
 RUN --mount=type=cache,target=/var/cache/apk \
   apk -U upgrade || true; \
   apk fix || true; \

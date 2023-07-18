@@ -1,5 +1,6 @@
 # stdlib
 from collections import namedtuple
+from enum import Enum
 import json
 import os
 from pathlib import Path
@@ -99,6 +100,11 @@ from .util import shell
 
 # fix VirtualEnvironment bug in windows
 fix_windows_virtualenv_api(VirtualEnvironment)
+
+
+class NodeSideType(Enum):
+    LOW_SIDE = "low"
+    HIGH_SIDE = "high"
 
 
 def get_azure_image(short_name: str) -> str:
@@ -257,7 +263,7 @@ def clean(location: str) -> None:
     "--release",
     default="production",
     required=False,
-    type=click.Choice(["production", "development"], case_sensitive=False),
+    type=click.Choice(["production", "staging", "development"], case_sensitive=False),
     help="Choose between production and development release",
 )
 @click.option(
@@ -425,6 +431,16 @@ def clean(location: str) -> None:
     "--render",
     is_flag=True,
     help="Render Docker Files",
+)
+@click.option(
+    "--no-warnings",
+    is_flag=True,
+    help="Enable API warnings on the node.",
+)
+@click.option(
+    "--low-side",
+    is_flag=True,
+    help="Launch a low side node type else a high side node type",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
@@ -1255,6 +1271,14 @@ def create_launch_cmd(
     if parsed_kwargs["dev"] is True:
         parsed_kwargs["release"] = "development"
 
+    # derive node type
+    if kwargs["low_side"]:
+        parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
+    else:
+        parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
+
+    parsed_kwargs["enable_warnings"] = not kwargs["no_warnings"]
+
     # choosing deployment type
     parsed_kwargs["deployment_type"] = "container_stack"
     if "deployment_type" in kwargs and kwargs["deployment_type"] is not None:
@@ -1330,7 +1354,7 @@ def create_launch_cmd(
             #     template = "dev"
             parsed_kwargs["template"] = template
 
-    if parsed_kwargs["template"] and host is not None:
+    if host in ["docker"] and parsed_kwargs["template"] and host is not None:
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(
             host_type=host,
@@ -2063,7 +2087,7 @@ def create_launch_docker_cmd(
     print("  - TEMPLATE DIR: " + template_grid_dir)
     if compose_src_path:
         print("  - COMPOSE SOURCE: " + compose_src_path)
-    print("  - RELEASE: " + kwargs["release"])
+    print("  - RELEASE: " + f'{kwargs["node_side_type"]}-{kwargs["release"]}')
     print("  - DEPLOYMENT:", kwargs["deployment_type"])
     print("  - ARCH: " + docker_platform)
     print("  - TYPE: " + str(node_type.input))
@@ -2116,6 +2140,7 @@ def create_launch_docker_cmd(
         ),
         "ENABLE_OBLV": str(enable_oblv).lower(),
         "BACKEND_STORAGE_PATH": backend_storage,
+        "NODE_SIDE_TYPE": kwargs["node_side_type"],
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -2124,6 +2149,9 @@ def create_launch_docker_cmd(
         envs["JAEGER_PORT"] = int(
             find_available_port(host="localhost", port=14268, search=True)
         )
+
+    if "enable_warnings" in kwargs:
+        envs["ENABLE_WARNINGS"] = kwargs["enable_warnings"]
 
     if "platform" in kwargs and kwargs["platform"] is not None:
         envs["DOCKER_DEFAULT_PLATFORM"] = docker_platform

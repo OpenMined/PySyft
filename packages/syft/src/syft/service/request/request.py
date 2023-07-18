@@ -17,8 +17,8 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
-from ...external import OBLV
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -36,6 +36,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.notebook_addons import REQUEST_ICON
+from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
@@ -147,7 +148,7 @@ class Request(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     requesting_user_verify_key: SyftVerifyKey
-    requesting_user_name: str
+    requesting_user_name: str = ""
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
     updated_at: Optional[DateTime]
@@ -186,6 +187,13 @@ class Request(SyftObject):
             str_change = f"{str_change}. "
             str_changes.append(str_change)
         str_changes = "\n".join(str_changes)
+        api = APIRegistry.api_for(
+            self.node_uid,
+            self.syft_client_verify_key,
+        )
+        metadata = api.services.metadata.get_metadata()
+        admin_email = metadata.admin_email
+        node_name = api.node_name.capitalize() if api.node_name is not None else ""
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -197,6 +205,8 @@ class Request(SyftObject):
                 {updated_at_line}
                 <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
+                <p><strong>Requested on: </strong> {node_name} of type <strong> \
+                    {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
             </div>
             """
 
@@ -263,6 +273,26 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        # TODO: Refactor so that object can also be passed to generate warnings
+        metadata = api.connection.get_node_metadata(api.signing_key)
+        code = self.code
+        message, is_enclave = None, False
+
+        if code and not isinstance(code, SyftError):
+            is_enclave = getattr(code, "enclave_metadata", None) is not None
+
+        if is_enclave:
+            message = "On approval, the result will be released to the enclave."
+        elif metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+            message = (
+                "You're approving a request on "
+                f"{metadata.node_side_type} side {metadata.node_type} "
+                "which may host datasets with private information."
+            )
+        if message and metadata.show_warnings:
+            prompt_warning_message(message=message, confirm=True)
+
+        print(f"Request approved for domain {api.node_name}")
         return api.services.request.apply(self.id)
 
     def deny(self, reason: str):
@@ -278,6 +308,7 @@ class Request(SyftObject):
         return api.services.request.undo(uid=self.id, reason=reason)
 
     def approve_with_client(self, client):
+        print(f"Request approved for domain {client.name}")
         return client.api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
@@ -287,6 +318,8 @@ class Request(SyftObject):
             # by default change status is not applied
             change_status = ChangeStatus(change_id=change.id, applied=False)
             result = change.apply(context=change_context)
+            if isinstance(result, SyftError):
+                return result
             if result.is_err():
                 # add to history and save history to request
                 self.history.append(change_status)
@@ -694,18 +727,23 @@ class UserCodeStatusChange(Change):
             res = obj.status.mutate(
                 value=self.value,
                 node_name=context.node.name,
+                node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
         else:
             res = obj.status.mutate(
                 value=UserCodeStatus.DENIED,
                 node_name=context.node.name,
+                node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
-        if res.is_ok():
-            obj.status = res.ok()
-            return Ok(obj)
+        if not isinstance(res, SyftError):
+            obj.status = res
+            return obj
         return res
+
+    def is_enclave_request(self, req_enclave_metadata):
+        return req_enclave_metadata is not None and self.value == UserCodeStatus.EXECUTE
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -721,28 +759,24 @@ class UserCodeStatusChange(Change):
             if apply:
                 res = self.mutate(obj, context, undo=False)
 
-                if res.is_err():
-                    return res
-                res = res.ok()
-                if OBLV:
-                    # relative
-                    from ...external.oblv.oblv_service import check_enclave_transfer
+                if isinstance(res, SyftError):
+                    return Err(res.message)
 
-                    enclave_res = check_enclave_transfer(
-                        user_code=res, value=self.value, context=context
+                # relative
+                from ..enclave.enclave_service import propagate_inputs_to_enclave
+
+                user_code = res
+                if self.is_enclave_request(user_code.enclave_metadata):
+                    enclave_res = propagate_inputs_to_enclave(
+                        user_code=res, context=context
                     )
-                else:
-                    enclave_res = Ok()
-
-                if enclave_res.is_err():
-                    return enclave_res
-                self.linked_obj.update_with_context(context, res)
+                    if isinstance(enclave_res, SyftError):
+                        return enclave_res
+                self.linked_obj.update_with_context(context, user_code)
             else:
                 res = self.mutate(obj, context, undo=True)
-                if res.is_err():
-                    return res
-
-                res = res.ok()
+                if isinstance(res, SyftError):
+                    return Err(res.message)
 
                 # TODO: Handle Enclave approval.
                 self.linked_obj.update_with_context(context, res)

@@ -940,8 +940,20 @@ class Project(SyftObject):
         return results
 
     def create_code_request(
-        self, obj: SubmitUserCode, client: SyftClient, reason: Optional[str] = None
+        self,
+        obj: SubmitUserCode,
+        client: Optional[SyftClient] = None,
+        reason: Optional[str] = None,
     ):
+        if client is None:
+            leader_client = self.get_leader_client(self.user_signing_key)
+            res = add_code_request_to_project(
+                project=self,
+                code=obj,
+                client=leader_client,
+                reason=reason,
+            )
+            return res
         return add_code_request_to_project(
             project=self,
             code=obj,
@@ -1402,7 +1414,7 @@ def create_project_hash(project: Project) -> Tuple[bytes, str]:
 def create_project_event_hash(project_event: ProjectEvent) -> Tuple[bytes, str]:
     # Creating a custom hash for the project
     # as the recursive hash is yet to be revamped
-    # for primitives python types
+    # for primitives python types.
 
     # hashing is calculated based on the following attributes,
     # attrs = ["id", "project_id", "seq no",

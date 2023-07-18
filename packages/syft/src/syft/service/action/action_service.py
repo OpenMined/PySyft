@@ -26,6 +26,7 @@ from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..warnings import HighSideCRUDWarning
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -55,7 +56,12 @@ class ActionService(AbstractService):
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
-    @service_method(path="action.set", name="set", roles=GUEST_ROLE_LEVEL)
+    @service_method(
+        path="action.set",
+        name="set",
+        roles=GUEST_ROLE_LEVEL,
+        warning=HighSideCRUDWarning(confirmation=True),
+    )
     def set(
         self,
         context: AuthedServiceContext,

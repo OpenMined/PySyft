@@ -3,7 +3,9 @@
   import debounce from 'just-debounce-it';
   import { getAllUsers, getSelf, searchUsersByName } from '$lib/api/users';
   import Badge from '$lib/components/Badge.svelte';
+  import Filter from '$lib/components/Filter.svelte';
   import Search from '$lib/components/Search.svelte';
+  import Pagination from '$lib/components/Pagination.svelte';
   import UserListItem from '$lib/components/Users/UserListItem.svelte';
   import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
   import UserNewModal from '$lib/components/Users/UserNewModal.svelte';
@@ -12,11 +14,18 @@
 
   let searchTerm = '';
   let userList: UserListView[] = [];
+  let total: number = 0;
+  let paginators: number[] = [5, 10, 15, 20, 25];
+  let page_size: number = 5,
+    page_index: number = 0,
+    page_row: number = 5;
 
   let openModal: string | null = null;
 
   onMount(async () => {
-    userList = await getAllUsers();
+    const results = await getAllUsers(page_size, page_index);
+    userList = results.users;
+    total = results.total;
   });
 
   const closeModal = () => {
@@ -28,12 +37,21 @@
   };
 
   const search = debounce(async () => {
-    if (searchTerm === '') userList = await getAllUsers();
-    else userList = await searchUsersByName(searchTerm);
+    if (searchTerm === '') {
+      const results = await getAllUsers(page_size);
+      userList = results.users;
+      total = results.total;
+    } else {
+      const results = await searchUsersByName(searchTerm, page_size);
+      userList = results.users;
+      total = results.total;
+    }
   }, 300);
 
   const handleUpdate = async () => {
-    userList = await getAllUsers();
+    const results = await getAllUsers(page_size, page_index);
+    userList = results.users;
+    total = results.total;
   };
 </script>
 
@@ -52,7 +70,18 @@
       <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} />
     </div>
     <div class="flex-shrink-0">
-      <Badge variant="gray">Total: {userList?.length || 0}</Badge>
+      <div class="flex gap-2.5">
+        <Badge variant="gray">Total: {total || 0}</Badge>
+        <Filter
+          variant="gray"
+          filters={paginators}
+          bind:filter={page_size}
+          bind:index={page_index}
+          on:setFilter={handleUpdate}
+        >
+          Filter:
+        </Filter>
+      </div>
     </div>
   </div>
   <div class="divide-y divide-gray-100">
@@ -61,6 +90,16 @@
         <UserListItem {user} />
       </a>
     {/each}
+  </div>
+  <div class="flex justify-center items-center mb-8 divide-y divide-gray-100">
+    <Pagination
+      variant="gray"
+      {total}
+      {page_size}
+      {page_row}
+      bind:page_index
+      on:setPagination={handleUpdate}
+    />
   </div>
 </div>
 <div class="fixed bottom-10 right-12">
