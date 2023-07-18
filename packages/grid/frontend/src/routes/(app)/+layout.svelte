@@ -11,10 +11,11 @@
     const metadata = await getMetadata();
     const user = await getSelf();
     if (metadata?.on_board && user?.role?.value === 128) {
-      setTimeout ( function(){ open = true}, 2000);
+      setTimeout(function () {
+        open = true;
+      }, 2000);
     }
   });
-
 </script>
 
 <SideNav />
@@ -22,4 +23,4 @@
   <TopNav />
   <slot />
 </main>
-<OnBoardModal open={open} />
+<OnBoardModal {open} />

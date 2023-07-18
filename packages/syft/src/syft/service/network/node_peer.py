@@ -31,7 +31,7 @@ class NodePeer(SyftObject):
 
     __attr_searchable__ = ["name", "node_type"]
     __attr_unique__ = ["verify_key"]
-    __repr_attrs__ = ["name", "node_type"]
+    __repr_attrs__ = ["name", "node_type", "admin_email"]
 
     id: Optional[UID]
     name: str
@@ -40,6 +40,7 @@ class NodePeer(SyftObject):
     vpn_auth_key: Optional[str] = None
     node_routes: List[NodeRouteType] = []
     node_type: NodeType
+    admin_email: str
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []

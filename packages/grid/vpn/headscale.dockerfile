@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION='3.11'
 
-FROM python:3.11-slim as build
+FROM python:3.11-slim as headscale
 
 # set UTC timezone
 ENV TZ=Etc/UTC
