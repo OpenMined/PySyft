@@ -35,10 +35,22 @@
   shell:
     cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }}'
   become: yes
-  when: tls == "false" and install == "true"
+  when: tls == "false" and install == "true" and node_side_type == "high"
+
+- name: Start Low Side Docker Containers
+  shell:
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }} --low-side'
+  become: yes
+  when: tls == "false" and install == "true" and node_side_type == "low"
 
 - name: Start Docker Containers with TLS
   shell:
     cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }} --tls --cert-store-path={{ cert_store_path }}'
   become: yes
-  when: tls == "true" and install == "true"
+  when: tls == "true" and install == "true" and node_side_type == "high"
+
+- name: Start Low Docker Containers with TLS
+  shell:
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }} --low-side --tls --cert-store-path={{ cert_store_path }}'
+  become: yes
+  when: tls == "true" and install == "true" and node_side_type == "low"

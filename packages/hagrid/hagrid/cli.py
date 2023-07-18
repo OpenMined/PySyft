@@ -329,7 +329,7 @@ def clean(location: str) -> None:
     help="Run docker with a different platform like linux/arm64",
 )
 @click.option(
-    "--no-vpn",
+    "--vpn",
     is_flag=True,
     help="Disable tailscale vpn container",
 )
@@ -1309,7 +1309,7 @@ def create_launch_cmd(
     else:
         parsed_kwargs["jupyter"] = False
 
-    parsed_kwargs["vpn"] = not bool(kwargs["no_vpn"])
+    parsed_kwargs["vpn"] = bool(kwargs["vpn"])
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
@@ -3056,9 +3056,6 @@ def create_launch_custom_cmd(
 
         if "node_side_type" in kwargs:
             ANSIBLE_ARGS["node_side_type"] = kwargs["node_side_type"]
-
-        if "enable_warnings" in kwargs:
-            ANSIBLE_ARGS["enable_warnings"] = kwargs["enable_warnings"]
 
         if kwargs["tls"] is True:
             ANSIBLE_ARGS["tls"] = "true"
