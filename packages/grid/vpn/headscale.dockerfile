@@ -26,7 +26,7 @@ ENV HEADSCALE_VERSION="0.22.3"
 ENV GITHUB_URL="https://github.com/juanfont/headscale/releases/download"
 ENV HEADSCALE_URL="${GITHUB_URL}/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux"
 RUN [ $(uname -m) != "x86_64" ] && curl -o /bin/headscale -sSL "${HEADSCALE_URL}_arm64" || true
-RUN [ $(uname -m) == "x86_64" ] && curl -o /bin/headscale -sSL "${HEADSCALE_URL}_amd64" || true
+RUN [ $(uname -m) = "x86_64" ] && curl -o /bin/headscale -sSL "${HEADSCALE_URL}_amd64" || true
 
 RUN chmod +x /bin/headscale
 
