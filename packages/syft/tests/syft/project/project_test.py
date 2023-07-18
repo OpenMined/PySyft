@@ -70,6 +70,7 @@ def test_exception_different_email(worker):
             members=[ds_sheldon, ds_leonard],
         )
 
+
 def test_project_serde(worker):
     root_client = worker.root_client
 
