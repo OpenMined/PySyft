@@ -181,7 +181,10 @@ class RequestService(AbstractService):
 
         return requests
 
-    @service_method(path="request.apply", name="apply")
+    @service_method(
+        path="request.apply",
+        name="apply",
+    )
     def apply(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:

@@ -95,7 +95,11 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
+    @service_method(
+        path="user.get_all",
+        name="get_all",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
     def get_all(
         self,
         context: AuthedServiceContext,

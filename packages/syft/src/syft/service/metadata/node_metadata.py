@@ -77,6 +77,8 @@ class NodeMetadata(SyftObject):
     description: str = "Text"
     signup_enabled: bool
     admin_email: str
+    node_side_type: str
+    show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -102,6 +104,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     description: str = "My cool domain"
     signup_enabled: bool
     admin_email: str
+    node_side_type: str
+    show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(

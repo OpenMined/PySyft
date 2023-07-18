@@ -1,6 +1,6 @@
 {
   "name": "pygrid-ui",
-  "version": "0.8.2-beta.3",
+  "version": "0.8.2-beta.6",
   "private": true,
   "scripts": {
     "dev": "pnpm i && vite dev --host --port 80",
@@ -21,7 +21,7 @@
     "@typescript-eslint/parser": "^5.62.0",
     "autoprefixer": "^10.4.14",
     "dotenv": "^16.3.1",
-    "esbuild": "^0.18.12",
+    "esbuild": "^0.18.13",
     "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-svelte3": "^4.0.0",
@@ -44,6 +44,7 @@
     "libsodium": "^0.7.11",
     "libsodium-wrappers": "^0.7.11",
     "prismjs": "^1.29.0",
+    "semver": "^7.5.4",
     "uuid": "^9.0.0"
   },
   "engines": {
