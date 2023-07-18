@@ -10,6 +10,7 @@ from typing import Union
 from result import Result
 
 # relative
+from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
@@ -26,7 +27,6 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.transforms import transform_method
-from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -37,8 +37,6 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..vpn.headscale_client import HeadscaleAuthToken
 from ..vpn.headscale_client import HeadscaleClient
@@ -46,12 +44,15 @@ from ..vpn.tailscale_client import TailscaleClient
 from ..vpn.tailscale_client import TailscaleState
 from ..vpn.tailscale_client import TailscaleStatus
 from ..vpn.tailscale_client import get_vpn_client
+from ..warnings import CRUDWarning
 from .node_peer import NodePeer
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import PythonNodeRoute
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
+NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
+OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
@@ -101,6 +102,14 @@ class NetworkStash(BaseUIDStoreStash):
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_one(credentials, qks)
 
+    def get_by_node_type(
+        self, credentials: SyftVerifyKey, node_type: NodeType
+    ) -> Result[List[NodePeer], SyftError]:
+        qks = QueryKeys(qks=[NodeTypePartitionKey.with_obj(node_type)])
+        return self.query_all(
+            credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
+        )
+
 
 @instrument
 @serializable()
@@ -117,7 +126,8 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.exchange_credentials_with",
         name="exchange_credentials_with",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
+        roles=GUEST_ROLE_LEVEL,
+        warning=CRUDWarning(confirmation=True),
     )
     def exchange_credentials_with(
         self,
@@ -125,23 +135,8 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-        project_uid: Optional[UID] = None,
     ) -> Union[SyftSuccess, SyftError]:
         """Exchange Route With Another Node"""
-
-        # Step 0: Validate Permission
-        # If user == DO, always work
-        # If user == DS, validate project context
-        if context.role not in DATA_OWNER_ROLE_LEVEL:
-            if project_uid is not None:
-                project_service = context.node.get_service("projectservice")
-                result = project_service.get_by_uid(context=context, uid=project_uid)
-                if result.is_err():
-                    return SyftError(message=f"{result.err()}")
-            else:
-                return SyftError(
-                    message="A data scientist can only use exchange_credentials_with within a project context"
-                )
 
         # Step 1: Validate the Route
         self_node_peer = self_node_route.validate_with_context(context=context)
@@ -292,7 +287,10 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
-        result = self.stash.get_all(credentials=context.node.verify_key)
+        result = self.stash.get_all(
+            credentials=context.node.verify_key,
+            order_by=OrderByNamePartitionKey,
+        )
         if result.is_ok():
             peers = result.ok()
             return peers
@@ -313,6 +311,24 @@ class NetworkService(AbstractService):
             peer = result.ok()
             return peer
         return SyftError(message=str(result.err()))
+
+    @service_method(
+        path="network.get_peers_by_type",
+        name="get_peers_by_type",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get_peers_by_type(
+        self, context: AuthedServiceContext, node_type: NodeType
+    ) -> Union[List[NodePeer], SyftError]:
+        result = self.stash.get_by_node_type(
+            credentials=context.node.verify_key, node_type=node_type
+        )
+
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        # Return peers or an empty list when result is None
+        return result.ok() or []
 
     @service_method(path="network.join_vpn", name="join_vpn")
     def join_vpn(
@@ -336,11 +352,6 @@ class NetworkService(AbstractService):
 
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-
-        if result.ok() is not None:
-            return SyftError(
-                message=f"Already connected to VPN Peer: {remote_peer.name}"
-            )
 
         # tell the remote peer our details
         if not context.node:
@@ -522,5 +533,5 @@ def node_route_to_http_connection(
 @transform(NodeMetadata, NodePeer)
 def metadata_to_peer() -> List[Callable]:
     return [
-        keep(["id", "name", "verify_key"]),
+        keep(["id", "name", "verify_key", "node_type", "admin_email"]),
     ]

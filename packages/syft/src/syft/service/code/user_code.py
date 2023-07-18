@@ -37,6 +37,8 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
@@ -107,6 +109,29 @@ class UserCodeStatusContext(SyftHashableObject):
 
     def __repr__(self):
         return str(self.base_dict)
+
+    def _repr_html_(self):
+        string = f"""
+            <style>
+                .syft-user_code {{color: {SURFACE[options.color_theme]};}}
+                </style>
+                <div class='syft-user_code'>
+                    <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
+                    <p style="margin-left: 3px;">
+            """
+        for node_view, status in self.base_dict.items():
+            node_name_str = f"{node_view.node_name}"
+            uid_str = f"{node_view.node_id}"
+            status_str = f"{status.value}"
+
+            string += f"""
+                    &#x2022; <strong>UID: </strong>{uid_str}&nbsp;
+                    <strong>Node name: </strong>{node_name_str}&nbsp;
+                    <strong>Status: </strong>{status_str}
+                    <br>
+                """
+        string += "</p></div>"
+        return string
 
     def __repr_syft_nested__(self):
         string = ""
@@ -194,7 +219,7 @@ class UserCode(SyftObject):
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
-    __repr_attrs__ = ["status.approved", "service_func_name"]
+    __repr_attrs__ = ["status.approved", "service_func_name", "shareholders"]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -222,6 +247,14 @@ class UserCode(SyftObject):
             },
             "Status": status_badge,
         }
+
+    @property
+    def shareholders(self) -> List[str]:
+        node_names_list = []
+        nodes = self.input_policy_init_kwargs.keys()
+        for node_view in nodes:
+            node_names_list.append(str(node_view.node_name))
+        return node_names_list
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:
@@ -355,15 +388,17 @@ class UserCode(SyftObject):
         def wrapper(*args: Any, **kwargs: Any) -> Callable:
             try:
                 filtered_kwargs = {}
-                real_data_flag = True
+                on_private_data, on_mock_data = False, False
                 for k, v in kwargs.items():
-                    filtered_kwargs[k], is_real_data = debox_asset(v)
-                    real_data_flag = real_data_flag and is_real_data
-                if not real_data_flag:
-                    print("Warning: The result you see is on MOCK data.")
-                if real_data_flag:
-                    print("Warning: The result you see is on REAL data.")
-                # third party
+                    filtered_kwargs[k], arg_type = debox_asset(v)
+                    on_private_data = (
+                        on_private_data or arg_type == ArgumentType.PRIVATE
+                    )
+                    on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
+                if on_private_data:
+                    print("Warning: The result you see is computed on PRIVATE data.")
+                elif on_mock_data:
+                    print("Warning: The result you see is computed on MOCK data.")
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
@@ -384,9 +419,10 @@ class UserCode(SyftObject):
 
     def _repr_markdown_(self):
         md = f"""class UserCode
-    id: str = {self.id}
-    status.approved: str = {self.status.approved}
+    id: UID = {self.id}
+    status.approved: bool = {self.status.approved}
     service_func_name: str = {self.service_func_name}
+    shareholders: list = {self.shareholders}
     code:
 
 {self.raw_code}"""
@@ -438,17 +474,24 @@ class SubmitUserCode(SyftObject):
             filtered_kwargs = {}
             # for arg in args:
             #     filtered_args.append(debox_asset(arg))
-            real_data_flag = True
+            on_private_data, on_mock_data = False, False
             for k, v in kwargs.items():
-                filtered_kwargs[k], is_real_data = debox_asset(v)
-                real_data_flag = real_data_flag and is_real_data
-            if not real_data_flag:
-                print("Warning: The result you see is on MOCK data.")
-            if real_data_flag:
-                print("Warning: The result you see is on REAL data.")
+                filtered_kwargs[k], arg_type = debox_asset(v)
+                on_private_data = on_private_data or arg_type == ArgumentType.PRIVATE
+                on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
+            if on_private_data:
+                print("Warning: The result you see is computed on PRIVATE data.")
+            elif on_mock_data:
+                print("Warning: The result you see is computed on MOCK data.")
             return self.local_function(**filtered_kwargs)
         else:
             raise NotImplementedError
+
+
+class ArgumentType(Enum):
+    REAL = 1
+    MOCK = 2
+    PRIVATE = 4
 
 
 def debox_asset(arg: Any) -> Any:
@@ -456,12 +499,12 @@ def debox_asset(arg: Any) -> Any:
     if isinstance(deboxed_arg, Asset):
         asset = deboxed_arg
         if asset.has_data_permission():
-            return asset.data, True
+            return asset.data, ArgumentType.PRIVATE
         else:
-            return asset.mock, False
+            return asset.mock, ArgumentType.MOCK
     if hasattr(deboxed_arg, "syft_action_data"):
         deboxed_arg = deboxed_arg.syft_action_data
-    return deboxed_arg, True
+    return deboxed_arg, ArgumentType.REAL
 
 
 def syft_function_single_use(*args: Any, **kwargs: Any):
