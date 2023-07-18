@@ -26,7 +26,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/backend/backend.dockerfile packages -t backend:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/backend/backend.dockerfile packages -t backend:${{ github.sha }} --no-cache
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Run Trivy vulnerability scanner
@@ -63,7 +63,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/backend/backend.dockerfile packages -t backend:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/backend/backend.dockerfile packages -t backend:${{ github.sha }} --no-cache
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Snyk auth
@@ -96,7 +96,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/frontend/frontend.dockerfile packages/grid/frontend -t frontend:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/frontend/frontend.dockerfile packages/grid/frontend -t frontend:${{ github.sha }} --no-cache
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Run Trivy vulnerability scanner
@@ -133,7 +133,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/frontend/frontend.dockerfile packages/grid/frontend -t frontend:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/frontend/frontend.dockerfile packages/grid/frontend -t frontend:${{ github.sha }} --no-cache
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Snyk auth
@@ -166,7 +166,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }} --no-cache
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Run Trivy vulnerability scanner
@@ -203,7 +203,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }} --no-cache
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Snyk auth
@@ -236,7 +236,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages/grid/vpn -t headscale:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages/grid/vpn -t headscale:${{ github.sha }} --no-cache
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Run Trivy vulnerability scanner
@@ -273,7 +273,7 @@ jobs:
 
       # Build the docker image for testing
       - name: Build a Docker image
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages/grid/vpn -t headscale:${{ github.sha }}
+        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages/grid/vpn -t headscale:${{ github.sha }} --no-cache
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
 
       - name: Snyk auth
