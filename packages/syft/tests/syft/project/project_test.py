@@ -69,3 +69,23 @@ def test_exception_different_email(worker):
             description="My Cool Description",
             members=[ds_sheldon, ds_leonard],
         )
+
+def test_project_serde(worker):
+    root_client = worker.root_client
+
+    root_client.register(
+        name="sheldon", email="sheldon@caltech.edu", password="bazinga"
+    )
+
+    new_project = sy.Project(
+        name="My Cool Project", description="My Cool Description", members=[root_client]
+    )
+
+    project = new_project.start()
+
+    ser_data = sy.serialize(project, to_bytes=True)
+    assert isinstance(ser_data, bytes)
+
+    deser_data = sy.deserialize(ser_data, from_bytes=True)
+    assert isinstance(deser_data, type(project))
+    assert deser_data == project
