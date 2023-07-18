@@ -39,6 +39,7 @@ class EnclaveClient(SyftClient):
 
     @property
     def code(self) -> Optional[APIModule]:
+        self
         if self.api.has_service("code"):
             res = self.api.services.code
             # the order is important here
@@ -119,7 +120,9 @@ class EnclaveClient(SyftClient):
                 apis += [api]
 
         for api in apis:
-            api.services.code.request_code_execution(code=code)
+            res = api.services.code.request_code_execution(code=code)
+            if isinstance(res, SyftError):
+                return res
 
         # we are using the real method here, see the .code property getter
         _ = self.code

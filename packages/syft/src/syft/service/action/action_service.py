@@ -32,7 +32,9 @@ from .action_object import ActionObjectPointer
 from .action_object import ActionType
 from .action_object import AnyActionObject
 from .action_object import TwinMode
+from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
+from .action_permissions import ActionPermission
 from .action_store import ActionStore
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
@@ -205,8 +207,18 @@ class ActionService(AbstractService):
             syft_object=result_action_object,
             has_result_read_permission=True,
         )
+
         if set_result.is_err():
             return set_result.err()
+
+        if len(code_item.output_policy.output_readers) > 0:
+            self.store.add_permissions(
+                [
+                    ActionObjectPermission(result_id, ActionPermission.READ, x)
+                    for x in code_item.output_policy.output_readers
+                ]
+            )
+
         return Ok(result_action_object)
 
     def execute_plan(

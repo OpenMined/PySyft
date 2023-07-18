@@ -319,6 +319,7 @@ class OutputPolicy(Policy):
     output_history: List[OutputHistory] = []
     output_kwargs: List[str] = []
     node_uid: Optional[UID]
+    output_readers: List[SyftVerifyKey] = []
 
     def apply_output(
         self,
@@ -339,6 +340,10 @@ class OutputPolicy(Policy):
     @property
     def outputs(self) -> List[str]:
         return self.output_kwargs
+
+    @property
+    def last_output_ids(self) -> List[str]:
+        return self.output_history[-1].outputs
 
 
 @serializable()

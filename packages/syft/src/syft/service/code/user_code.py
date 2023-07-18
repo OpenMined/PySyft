@@ -56,6 +56,8 @@ from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
+from ..response import SyftNotReady
+from ..response import SyftSuccess
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
 
@@ -100,15 +102,15 @@ class UserCodeStatus(Enum):
 # User Code status context for multiple approvals
 # To make nested dicts hashable for mongodb
 # as status is in attr_searchable
-@serializable(attrs=["base_dict"])
-class UserCodeStatusContext(SyftHashableObject):
-    base_dict: Dict = {}
+@serializable(attrs=["status_dict"])
+class UserCodeStatusCollection(SyftHashableObject):
+    status_dict: Dict[NodeView, UserCodeStatus] = {}
 
-    def __init__(self, base_dict: Dict):
-        self.base_dict = base_dict
+    def __init__(self, status_dict: Dict):
+        self.status_dict = status_dict
 
     def __repr__(self):
-        return str(self.base_dict)
+        return str(self.status_dict)
 
     def _repr_html_(self):
         string = f"""
@@ -119,7 +121,7 @@ class UserCodeStatusContext(SyftHashableObject):
                     <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
                     <p style="margin-left: 3px;">
             """
-        for node_view, status in self.base_dict.items():
+        for node_view, status in self.status_dict.items():
             node_name_str = f"{node_view.node_name}"
             uid_str = f"{node_view.node_id}"
             status_str = f"{status.value}"
@@ -135,19 +137,36 @@ class UserCodeStatusContext(SyftHashableObject):
 
     def __repr_syft_nested__(self):
         string = ""
-        for node_view, status in self.base_dict.items():
+        for node_view, status in self.status_dict.items():
             string += f"{node_view.node_name}: {status}<br>"
         return string
 
+    def get_status_message(self):
+        if self.approved:
+            return SyftSuccess(message=f"{type(self)} approved")
+        string = ""
+        for node_view, status in self.status_dict.items():
+            string += (
+                f"Code status on node '{node_view.node_name}' is '{status.value}'. "
+            )
+        if self.denied:
+            return SyftError(message=f"{type(self)} Your code cannot be run: {string}")
+        else:
+            return SyftNotReady(
+                message=f"{type(self)} Your code is waiting for approval. {string}"
+            )
+
     @property
     def approved(self) -> bool:
-        # approved for this node only
-        statuses = set(self.base_dict.values())
-        return len(statuses) == 1 and UserCodeStatus.EXECUTE in statuses
+        return all([x == UserCodeStatus.EXECUTE for x in self.status_dict.values()])
 
-    def for_context(self, context: AuthedServiceContext) -> UserCodeStatus:
+    @property
+    def denied(self) -> bool:
+        return UserCodeStatus.denied in self.status_dict.values()
+
+    def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
         if context.node.node_type == NodeType.ENCLAVE:
-            keys = set(self.base_dict.values())
+            keys = set(self.status_dict.values())
             if len(keys) == 1 and UserCodeStatus.EXECUTE in keys:
                 return UserCodeStatus.EXECUTE
             elif UserCodeStatus.SUBMITTED in keys and UserCodeStatus.DENIED not in keys:
@@ -163,8 +182,8 @@ class UserCodeStatusContext(SyftHashableObject):
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
-            if node_view in self.base_dict:
-                return self.base_dict[node_view]
+            if node_view in self.status_dict:
+                return self.status_dict[node_view]
             else:
                 raise Exception(
                     f"Code Object does not contain {context.node.name} Domain's data"
@@ -180,10 +199,10 @@ class UserCodeStatusContext(SyftHashableObject):
         node_view = NodeView(
             node_name=node_name, node_id=node_id, verify_key=verify_key
         )
-        base_dict = self.base_dict
-        if node_view in base_dict:
-            base_dict[node_view] = value
-            self.base_dict = base_dict
+        status_dict = self.status_dict
+        if node_view in status_dict:
+            status_dict[node_view] = value
+            self.status_dict = status_dict
             return self
         else:
             return SyftError(
@@ -213,13 +232,13 @@ class UserCode(SyftObject):
     user_unique_func_name: str
     code_hash: str
     signature: inspect.Signature
-    status: UserCodeStatusContext
+    status: UserCodeStatusCollection
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = ["code_hash", "user_unique_func_name"]
-    __repr_attrs__ = ["status.approved", "service_func_name", "shareholders"]
+    __repr_attrs__ = ["status.approved", "service_func_name", "input_owners"]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -229,7 +248,7 @@ class UserCode(SyftObject):
             return super().__setattr__(key, value)
 
     def _coll_repr_(self) -> Dict[str, Any]:
-        status = list(self.status.base_dict.values())[0].value
+        status = list(self.status.status_dict.values())[0].value
         if status == UserCodeStatus.SUBMITTED.value:
             badge_color = "badge-purple"
         elif status == UserCodeStatus.EXECUTE.value:
@@ -249,12 +268,26 @@ class UserCode(SyftObject):
         }
 
     @property
-    def shareholders(self) -> List[str]:
-        node_names_list = []
-        nodes = self.input_policy_init_kwargs.keys()
-        for node_view in nodes:
-            node_names_list.append(str(node_view.node_name))
-        return node_names_list
+    def is_enclave_code(self) -> bool:
+        return self.enclave_metadata is not None
+
+    @property
+    def input_owners(self) -> List[str]:
+        return [str(x.node_name) for x in self.input_policy_init_kwargs.keys()]
+
+    @property
+    def input_owner_verify_keys(self) -> List[SyftVerifyKey]:
+        return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+
+    @property
+    def output_reader_names(self) -> List[SyftVerifyKey]:
+        keys = self.output_policy_init_kwargs.get("output_readers", [])
+        inpkey2name = {x.verify_key: x.node_name for x in self.input_policy_init_kwargs}
+        return [inpkey2name[k] for k in keys if k in inpkey2name]
+
+    @property
+    def output_readers(self) -> List[SyftVerifyKey]:
+        return self.output_policy_init_kwargs.get("output_readers", [])
 
     @property
     def input_policy(self) -> Optional[InputPolicy]:
@@ -356,6 +389,13 @@ class UserCode(SyftObject):
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
 
+    def get_results(self) -> Any:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        return api.services.code.get_results(self)
+
     @property
     def assets(self) -> List[Asset]:
         # relative
@@ -418,11 +458,20 @@ class UserCode(SyftObject):
         return wrapper
 
     def _repr_markdown_(self):
+        shared_with_line = ""
+        if len(self.output_readers) > 0:
+            owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
+            shared_with_line += (
+                f"Custom Policy: "
+                f"outputs are *shared* with the owners of {owners_string} once computed"
+            )
+
         md = f"""class UserCode
     id: UID = {self.id}
     status.approved: bool = {self.status.approved}
     service_func_name: str = {self.service_func_name}
-    shareholders: list = {self.shareholders}
+    shareholders: list = {self.input_owners}
+    {shared_with_line}
     code:
 
 {self.raw_code}"""
@@ -487,6 +536,10 @@ class SubmitUserCode(SyftObject):
         else:
             raise NotImplementedError
 
+    @property
+    def input_owner_verify_keys(self) -> List[str]:
+        return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+
 
 class ArgumentType(Enum):
     REAL = 1
@@ -507,16 +560,20 @@ def debox_asset(arg: Any) -> Any:
     return deboxed_arg, ArgumentType.REAL
 
 
-def syft_function_single_use(*args: Any, **kwargs: Any):
+def syft_function_single_use(
+    *args: Any, share_results_with_owners=False, **kwargs: Any
+):
     return syft_function(
         input_policy=ExactMatch(*args, **kwargs),
         output_policy=SingleExecutionExactOutput(),
+        share_results_with_owners=share_results_with_owners,
     )
 
 
 def syft_function(
     input_policy: Union[InputPolicy, UID],
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
+    share_results_with_owners=False,
 ) -> SubmitUserCode:
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
@@ -537,7 +594,7 @@ def syft_function(
             f"To add a code request, please create a project using `project = syft.Project(...)`, "
             f"then use command `project.create_code_request`."
         )
-        return SubmitUserCode(
+        res = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
             signature=inspect.signature(f),
@@ -548,6 +605,12 @@ def syft_function(
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
         )
+
+        if share_results_with_owners:
+            res.output_policy_init_kwargs[
+                "output_readers"
+            ] = res.input_owner_verify_keys
+        return res
 
     return decorator
 
@@ -697,8 +760,8 @@ def add_custom_status(context: TransformContext) -> TransformContext:
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
-        context.output["status"] = UserCodeStatusContext(
-            base_dict={node_view: UserCodeStatus.SUBMITTED}
+        context.output["status"] = UserCodeStatusCollection(
+            status_dict={node_view: UserCodeStatus.SUBMITTED}
         )
         # if node_view in input_keys or len(input_keys) == 0:
         #     context.output["status"] = UserCodeStatusContext(
@@ -707,8 +770,8 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         # else:
         #     raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
     elif context.node.node_type == NodeType.ENCLAVE:
-        base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
-        context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
+        status_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
+        context.output["status"] = UserCodeStatusCollection(status_dict=status_dict)
     else:
         raise NotImplementedError(
             f"Invalid node type:{context.node.node_type} for code submission"
