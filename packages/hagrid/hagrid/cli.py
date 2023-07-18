@@ -3063,6 +3063,12 @@ def create_launch_custom_cmd(
         if "release" in kwargs:
             ANSIBLE_ARGS["release"] = kwargs["release"]
 
+        if "set_root_email" in kwargs and kwargs["set_root_email"] is not None:
+            ANSIBLE_ARGS["root_user_email"] = kwargs["set_root_email"]
+
+        if "set_root_password" in kwargs and kwargs["set_root_password"] is not None:
+            ANSIBLE_ARGS["root_user_password"] = kwargs["set_root_password"]
+
         if (
             kwargs["tls"] is True
             and "cert_store_path" in kwargs
