@@ -137,9 +137,10 @@ def get_compose_src_path(
         path = deployment_dir(node_name)
 
     if kwargs["deployment_type"] == "single_container":  # type: ignore
-        return path + "/worker"
-    else:
-        return path
+        path = path + "/worker"
+
+    os.makedirs(path, exist_ok=True)
+    return path
 
 
 @click.command(
@@ -328,7 +329,7 @@ def clean(location: str) -> None:
     help="Run docker with a different platform like linux/arm64",
 )
 @click.option(
-    "--no-vpn",
+    "--vpn",
     is_flag=True,
     help="Disable tailscale vpn container",
 )
@@ -1308,7 +1309,7 @@ def create_launch_cmd(
     else:
         parsed_kwargs["jupyter"] = False
 
-    parsed_kwargs["vpn"] = not bool(kwargs["no_vpn"])
+    parsed_kwargs["vpn"] = bool(kwargs["vpn"])
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
@@ -3053,11 +3054,20 @@ def create_launch_custom_cmd(
         if host_term.host == "localhost":
             ANSIBLE_ARGS["local"] = "true"
 
+        if "node_side_type" in kwargs:
+            ANSIBLE_ARGS["node_side_type"] = kwargs["node_side_type"]
+
         if kwargs["tls"] is True:
             ANSIBLE_ARGS["tls"] = "true"
 
         if "release" in kwargs:
             ANSIBLE_ARGS["release"] = kwargs["release"]
+
+        if "set_root_email" in kwargs and kwargs["set_root_email"] is not None:
+            ANSIBLE_ARGS["root_user_email"] = kwargs["set_root_email"]
+
+        if "set_root_password" in kwargs and kwargs["set_root_password"] is not None:
+            ANSIBLE_ARGS["root_user_password"] = kwargs["set_root_password"]
 
         if (
             kwargs["tls"] is True
