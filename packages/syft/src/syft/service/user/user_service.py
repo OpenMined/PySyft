@@ -25,6 +25,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..settings.settings_stash import SettingsStash
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -94,7 +95,11 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
+    @service_method(
+        path="user.get_all",
+        name="get_all",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
     def get_all(
         self,
         context: AuthedServiceContext,
@@ -174,6 +179,15 @@ class UserService(AbstractService):
             results = UserViewPage(users=results, total=total)
 
         return results
+
+    # @service_method(path="user.get_admin", name="get_admin", roles=GUEST_ROLE_LEVEL)
+    # def get_admin(self, context: AuthedServiceContext) -> UserView:
+    #     result = self.stash.admin_user()
+    #     if result.is_ok():
+    #         user = result.ok()
+    #         if user:
+    #             return user
+    #     return SyftError(message=str(result.err()))
 
     @service_method(
         path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
@@ -270,6 +284,15 @@ class UserService(AbstractService):
             return SyftError(message=error_msg)
 
         user = result.ok()
+        if user.role == ServiceRole.ADMIN:
+            settings_stash = SettingsStash(store=self.store)
+            settings = settings_stash.get_all(context.credentials)
+            if settings.is_ok() and len(settings.ok()) > 0:
+                settings_data = settings.ok()[0]
+                settings_data.admin_email = user.email
+                settings_stash.update(
+                    credentials=context.credentials, settings=settings_data
+                )
 
         return user.to(UserView)
 

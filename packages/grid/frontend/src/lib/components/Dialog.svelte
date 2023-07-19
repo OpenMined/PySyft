@@ -7,7 +7,12 @@
   $: if (dialog && !open) dialog.close();
 </script>
 
-<dialog class='dialog-container' bind:this={dialog} on:close={() => (open = false)} on:click|self={() => dialog.close()}>
+<dialog
+  class="dialog-container"
+  bind:this={dialog}
+  on:close={() => (open = false)}
+  on:click|self={() => dialog.close()}
+>
   <slot />
 </dialog>
 
@@ -31,9 +36,10 @@
   .dialog-container {
     overflow-y: scroll;
     scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
   }
-  .dialog-container::-webkit-scrollbar { /* WebKit */
+  .dialog-container::-webkit-scrollbar {
+    /* WebKit */
     width: 0;
     height: 0;
   }

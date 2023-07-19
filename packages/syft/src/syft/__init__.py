@@ -1,4 +1,4 @@
-__version__ = "0.8.2-beta.4"
+__version__ = "0.8.2-beta.6"
 
 # stdlib
 import pathlib
@@ -14,6 +14,8 @@ from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
 from .client.client import register  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
+from .client.domain_client import DomainClient  # noqa: F401
+from .client.gateway_client import GatewayClient  # noqa: F401
 from .client.registry import DomainRegistry  # noqa: F401
 from .client.registry import EnclaveRegistry  # noqa: F401
 from .client.registry import NetworkRegistry  # noqa: F401

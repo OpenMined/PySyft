@@ -9,6 +9,7 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
+import subprocess  # nosec
 import traceback
 from typing import Any
 from typing import Callable
@@ -31,6 +32,7 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
 from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
@@ -52,6 +54,7 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
+from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
@@ -110,6 +113,7 @@ NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 NODE_TYPE = "NODE_TYPE"
 NODE_NAME = "NODE_NAME"
+NODE_SIDE_TYPE = "NODE_SIDE_TYPE"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
@@ -131,6 +135,10 @@ def get_node_name() -> Optional[str]:
     return get_env(NODE_NAME, None)
 
 
+def get_node_side_type() -> str:
+    return get_env(NODE_SIDE_TYPE, "high")
+
+
 def get_node_uid_env() -> Optional[str]:
     return get_env(NODE_UID)
 
@@ -147,6 +155,17 @@ def get_dev_mode() -> bool:
     return str_to_bool(get_env("DEV_MODE", "False"))
 
 
+def get_enable_warnings() -> bool:
+    return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
+
+
+def get_venv_packages() -> str:
+    res = subprocess.getoutput(
+        "pip list --format=freeze",
+    )
+    return res
+
+
 dev_mode = get_dev_mode()
 
 signing_key_env = get_private_key_env()
@@ -160,6 +179,7 @@ default_root_password = get_default_root_password()
 class Node(AbstractNode):
     signing_key: Optional[SyftSigningKey]
     required_signed_calls: bool = True
+    packages: str
 
     def __init__(
         self,
@@ -178,6 +198,8 @@ class Node(AbstractNode):
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: QueueConfig = ZMQQueueConfig,
+        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        enable_warnings: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -187,6 +209,7 @@ class Node(AbstractNode):
             if id is None:
                 id = UID()
             self.id = id
+        self.packages = get_venv_packages()
 
         self.signing_key = None
         if signing_key_env is not None:
@@ -217,6 +240,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                MetadataService,
             ]
             if services is None
             else services
@@ -237,6 +261,8 @@ class Node(AbstractNode):
             services += [OblvService]
             create_oblv_key_pair(worker=self)
 
+        self.enable_warnings = enable_warnings
+
         self.services = services
         self._construct_services()
 
@@ -252,8 +278,12 @@ class Node(AbstractNode):
             node_type = NodeType(node_type)
         self.node_type = node_type
 
+        if isinstance(node_side_type, str):
+            node_side_type = NodeSideType(node_side_type)
+        self.node_side_type = node_side_type
+
         self.post_init()
-        self.create_initial_settings()
+        self.create_initial_settings(admin_email=root_email)
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
 
@@ -283,6 +313,8 @@ class Node(AbstractNode):
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
+        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        enable_warnings: bool = False,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -327,6 +359,8 @@ class Node(AbstractNode):
             local_db=local_db,
             sqlite_path=sqlite_path,
             node_type=node_type,
+            node_side_type=node_side_type,
+            enable_warnings=enable_warnings,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -353,7 +387,10 @@ class Node(AbstractNode):
 
         connection = PythonConnection(node=self)
         if verbose:
-            print(f"Logged into {self.name} as GUEST")
+            print(
+                f"Logged into <{self.name}: {self.node_side_type.value.capitalize()} "
+                f"side {self.node_type.value.capitalize()} > as GUEST"
+            )
 
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
@@ -462,6 +499,7 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                MetadataService,
             ]
 
             if OBLV:
@@ -508,6 +546,8 @@ class Node(AbstractNode):
         on_board = False
         description = ""
         signup_enabled = False
+        admin_email = ""
+        show_warnings = self.enable_warnings
 
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key)
@@ -519,6 +559,8 @@ class Node(AbstractNode):
             on_board = settings_data.on_board
             description = settings_data.description
             signup_enabled = settings_data.signup_enabled
+            admin_email = settings_data.admin_email
+            show_warnings = settings_data.show_warnings
 
         return NodeMetadata(
             name=name,
@@ -533,6 +575,9 @@ class Node(AbstractNode):
             on_board=on_board,
             node_type=self.node_type.value,
             signup_enabled=signup_enabled,
+            admin_email=admin_email,
+            node_side_type=self.node_side_type.value,
+            show_warnings=show_warnings,
         )
 
     @property
@@ -707,7 +752,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self) -> Optional[NodeSettings]:
+    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettings]:
         if self.name is None:
             self.name = random_name()
         try:
@@ -725,6 +770,9 @@ class Node(AbstractNode):
                     name=self.name,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
+                    admin_email=admin_email,
+                    node_side_type=self.node_side_type.value,
+                    show_warnings=self.enable_warnings,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
