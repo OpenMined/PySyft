@@ -146,9 +146,7 @@ class UserCodeStatusCollection(SyftHashableObject):
             return SyftSuccess(message=f"{type(self)} approved")
         string = ""
         for node_view, status in self.status_dict.items():
-            string += (
-                f"Code status on node '{node_view.node_name}' is '{status.value}'. "
-            )
+            string += f"Code status on node '{node_view.node_name}' is '{status}'. "
         if self.denied:
             return SyftError(message=f"{type(self)} Your code cannot be run: {string}")
         else:
@@ -162,7 +160,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 
     @property
     def denied(self) -> bool:
-        return UserCodeStatus.denied in self.status_dict.values()
+        return UserCodeStatus.DENIED in self.status_dict.values()
 
     def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
         if context.node.node_type == NodeType.ENCLAVE:
