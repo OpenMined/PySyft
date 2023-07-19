@@ -326,7 +326,7 @@ jobs:
       #Generate SBOM
       - name: Generate SBOM
         run: |
-          pip install /packages/syft
+          pip install ./packages/syft
           pip install cyclonedx-bom
           pip freeze > requirements.txt
           cyclonedx-py --r  -i requirements.txt --format json  -o syft.sbom.json
@@ -443,8 +443,8 @@ jobs:
       - name: Upload SBOM to GitHub Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: mongo-trivy-results.sbom.json
-          path: mongo-trivy-results.sbom.json
+          name: traefik-trivy-results.sbom.json
+          path: traefik-trivy-results.sbom.json
 
   scan-traefik-snyk:
     permissions:
