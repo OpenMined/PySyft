@@ -192,7 +192,7 @@ class Request(SyftObject):
             self.syft_client_verify_key,
         )
         shared_with_line = ""
-        if len(self.code.output_readers) > 0:
+        if self.code and len(self.code.output_readers) > 0:
             # owner_names = ["canada", "US"]
             owners_string = " and ".join(
                 [f"<strong>{x}</strong>" for x in self.code.output_reader_names]
