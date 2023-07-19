@@ -452,7 +452,7 @@ class StorePartition:
         self,
         credentials: SyftVerifyKey,
         order_by: Optional[PartitionKey] = None,
-        has_permission: bool = False,
+        has_permission: Optional[bool] = False,
     ) -> Result[List[BaseStash.object_type], str]:
         return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
 

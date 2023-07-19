@@ -144,7 +144,10 @@ class KeyValueStorePartition(StorePartition):
         return len(self.data)
 
     def _get(
-        self, uid: UID, credentials: SyftVerifyKey, has_permission=False
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        has_permission: Optional[bool] = False,
     ) -> Result[SyftObject, str]:
         # relative
         from ..service.action.action_store import ActionObjectREAD
@@ -291,7 +294,7 @@ class KeyValueStorePartition(StorePartition):
         self,
         credentials: SyftVerifyKey,
         order_by: Optional[PartitionKey] = None,
-        has_permission: bool = False,
+        has_permission: Optional[bool] = False,
     ) -> Result[List[BaseStash.object_type], str]:
         # this checks permissions
         res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
