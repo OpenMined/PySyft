@@ -44,7 +44,8 @@ RUN mkdir -p /headscale/data
 
 ENV NETWORK_NAME="omnet"
 
-# clean up
-RUN apt purge --auto-remove linux-libc-dev -y
+# security patches
+RUN apt purge --auto-remove linux-libc-dev -y || true
+RUN apt purge --auto-remove libldap-2.5-0 -y || true
 
 CMD ["sh", "-c", "/headscale/headscale.sh ${NETWORK_NAME}"]
