@@ -326,10 +326,10 @@ jobs:
       #Generate SBOM
       - name: Generate SBOM
         run: |
-          # pip install ./packages/syft
-          # pip install cyclonedx-bom
-          # pip freeze > requirements.txt
-          # cyclonedx-py --r  -i requirements.txt --format json  -o syft.sbom.json
+          pip install ./packages/syft
+          pip install cyclonedx-bom
+          pip freeze > requirements.txt
+          cyclonedx-py --r  -i requirements.txt --format json  -o syft.sbom.json
 
         #Trivy scan SBOM
       - name: Run Trivy vulnerability scanner
