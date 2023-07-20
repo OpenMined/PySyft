@@ -88,14 +88,17 @@ class SeaweedSyftWriteResource(SyftWriteResource):
         pass
 
 
+@serializable()
 class FileClientConfig(BaseModel):
     pass
 
 
+@serializable()
 class OnDiskFileClientConfig(FileClientConfig):
     base_directory: Path = Path(gettempdir())
 
 
+@serializable()
 class SeaweedClientConfig(FileClientConfig):
     pass
 
