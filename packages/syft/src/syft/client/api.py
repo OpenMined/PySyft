@@ -17,7 +17,6 @@ from typing import _GenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
-from pydantic import BaseModel
 from pydantic import EmailStr
 from result import OkErr
 from result import Result
@@ -43,6 +42,7 @@ from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
+from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -673,19 +673,14 @@ except Exception:
 
 
 @serializable()
-class NodeView(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-
+class NodeIdentity(Identity):
     node_name: str
-    node_id: UID
-    verify_key: SyftVerifyKey
 
     @staticmethod
     def from_api(api: SyftAPI):
         # stores the name root verify key of the domain node
         node_metadata = api.connection.get_node_metadata(api.signing_key)
-        return NodeView(
+        return NodeIdentity(
             node_name=node_metadata.name,
             node_id=api.node_uid,
             verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
@@ -700,7 +695,7 @@ class NodeView(BaseModel):
         )
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, NodeView):
+        if not isinstance(other, NodeIdentity):
             return False
         return (
             self.node_name == other.node_name
@@ -710,6 +705,9 @@ class NodeView(BaseModel):
 
     def __hash__(self) -> int:
         return hash((self.node_name, self.verify_key))
+
+    def __repr__(self) -> str:
+        return f"NodeIdentity <name={self.node_name}, id={self.node_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
 
 
 def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
