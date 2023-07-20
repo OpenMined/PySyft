@@ -10,6 +10,8 @@ from result import OkErr
 from result import Result
 
 # relative
+from ...abstract_node import NodeType
+from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -17,13 +19,14 @@ from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
-from ..policy.policy import OutputHistory
+from ..network.routes import route_to_connection
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
-from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -63,10 +66,22 @@ class UserCodeService(AbstractService):
         code: SubmitUserCode,
         reason: Optional[str] = "",
     ):
-        user_code = code.to(UserCode, context=context)
+        user_code: UserCode = code.to(UserCode, context=context)
+        if not all(
+            [x in user_code.input_owner_verify_keys for x in user_code.output_readers]
+        ):
+            raise ValueError("outputs can only be distributed to input owners")
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
+
+        # Users that have access to the output also have access to the code item
+        self.stash.add_permissions(
+            [
+                ActionObjectPermission(user_code.id, ActionPermission.READ, x)
+                for x in user_code.output_readers
+            ]
+        )
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
@@ -145,77 +160,99 @@ class UserCodeService(AbstractService):
             user_code_items = result.ok()
             load_approved_policy_code(user_code_items=user_code_items)
 
+    @service_method(path="code.get_results", name="get_results", roles=GUEST_ROLE_LEVEL)
+    def get_results(
+        self, context: AuthedServiceContext, inp: Union[UID, UserCode]
+    ) -> Union[List[UserCode], SyftError]:
+        uid = inp.id if isinstance(inp, UserCode) else inp
+        code_result = self.stash.get_by_uid(context.credentials, uid=uid)
+
+        if code_result.is_err():
+            return SyftError(message=code_result.err())
+        code = code_result.ok()
+
+        if code.is_enclave_code:
+            # if the current node is not the enclave
+            if not context.node.node_type == NodeType.ENCLAVE:
+                connection = route_to_connection(code.enclave_metadata.route)
+                enclave_client = EnclaveClient(
+                    connection=connection,
+                    credentials=context.node.signing_key,
+                )
+                return enclave_client.code.get_results(code.id)
+
+            # if the current node is the enclave
+            else:
+                if not code.status.approved:
+                    return code.status.get_status_message()
+
+                if (output_policy := code.output_policy) is None:
+                    return SyftError(message=f"Output policy not approved {code}")
+
+                if len(output_policy.output_history) > 0:
+                    return resolve_outputs(
+                        context=context, output_ids=output_policy.last_output_ids
+                    )
+                else:
+                    return SyftError(message="No results available")
+        else:
+            return SyftError(message="Endpoint only supported for enclave code")
+
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         try:
-            filtered_kwargs = filter_kwargs(kwargs)
-            result = self.stash.get_by_uid(context.credentials, uid=uid)
-            if not result.is_ok():
-                return SyftError(message=result.err())
-
             # Unroll variables
-            code_item = result.ok()
-            code_status = code_item.status
+            kwarg2id = map_kwargs_to_id(kwargs)
 
-            # Check if the user has permission to execute the code
-            # They can execute if they are root user or if they are the user who submitted the code
-            if not (
-                context.credentials == context.node.verify_key
-                or context.credentials == code_item.user_verify_key
-            ):
-                return SyftError(
-                    message=f"Code Execution Permission: {context.credentials} denied"
-                )
+            # get code item
+            code_result = self.stash.get_by_uid(context.credentials, uid=uid)
+            if code_result.is_err():
+                return SyftError(message=code_result.err())
+            code: UserCode = code_result.ok()
 
-            # Check if the code is approved
-            if code_status.for_context(context) != UserCodeStatus.EXECUTE:
-                if code_status.for_context(context) == UserCodeStatus.SUBMITTED:
-                    string = ""
-                    for node_identity, status in code_status.base_dict.items():
-                        string += f"Code status on node '{node_identity.node_name}' is '{status.value}'. "
-                    return SyftNotReady(
-                        message=f"{type(code_item)} Your code is waiting for approval. {string}"
-                    )
-                return SyftError(
-                    message=f"{type(code_item)} Your code cannot be run: {code_status.for_context(context)}"
-                )
+            if not code.status.approved:
+                return code.status.get_status_message()
 
-            output_policy = code_item.output_policy
-            if output_policy is None:
-                raise Exception("Output policy not approved", code_item)
+            # Check if the user has permission to execute the code.
+            if not (has_code_permission := self.has_code_permission(code, context)):
+                return has_code_permission
+
+            if (output_policy := code.output_policy) is None:
+                return SyftError("Output policy not approved", code)
 
             # Check if the OutputPolicy is valid
-            is_valid = output_policy.valid
-
-            if not is_valid:
+            if not (is_valid := output_policy.valid):
                 if len(output_policy.output_history) > 0:
-                    result = get_outputs(
-                        context=context,
-                        output_history=output_policy.output_history[-1],
+                    result = resolve_outputs(
+                        context=context, output_ids=output_policy.last_output_ids
                     )
                     return result.as_empty()
                 return is_valid
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
-            result: Result = action_service._user_code_execute(
-                context, code_item, filtered_kwargs
-            )
-            if isinstance(result, str):
-                return SyftError(message=result)
+
+            output_result: Result[
+                Union[ActionObject, TwinObject], str
+            ] = action_service._user_code_execute(context, code, kwarg2id)
+
+            if output_result.is_err():
+                return SyftError(message=output_result.err())
+            result = output_result.ok()
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            result: Union[ActionObject, TwinObject] = result.ok()
             output_policy.apply_output(context=context, outputs=result)
-            code_item.output_policy = output_policy
-            update_success = self.update_code_state(
-                context=context, code_item=code_item
-            )
-            if not update_success:
+            code.output_policy = output_policy
+            if not (
+                update_success := self.update_code_state(
+                    context=context, code_item=code
+                )
+            ):
                 return update_success
+
             if isinstance(result, TwinObject):
                 return result.mock
             else:
@@ -223,16 +260,29 @@ class UserCodeService(AbstractService):
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
 
+    def has_code_permission(self, code_item, context):
+        if not (
+            context.credentials == context.node.verify_key
+            or context.credentials == code_item.user_verify_key
+        ):
+            return SyftError(
+                message=f"Code Execution Permission: {context.credentials} denied"
+            )
+        return SyftSuccess(message="you have permission")
 
-def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) -> Any:
+
+def resolve_outputs(
+    context: AuthedServiceContext,
+    output_ids: Optional[Union[List[UID], Dict[str, UID]]],
+) -> Any:
     # relative
     from ...service.action.action_object import TwinMode
 
-    if isinstance(output_history.outputs, list):
-        if len(output_history.outputs) == 0:
+    if isinstance(output_ids, list):
+        if len(output_ids) == 0:
             return None
         outputs = []
-        for output_id in output_history.outputs:
+        for output_id in output_ids:
             action_service = context.node.get_service("actionservice")
             result = action_service.get(
                 context, uid=output_id, twin_mode=TwinMode.PRIVATE
@@ -247,7 +297,7 @@ def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) ->
         raise NotImplementedError
 
 
-def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+def map_kwargs_to_id(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     # relative
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
