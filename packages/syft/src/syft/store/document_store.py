@@ -673,6 +673,9 @@ class BaseUIDStoreStash(BaseStash):
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks)
 
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        self.partition.add_permissions(permissions)
+
     def set(
         self,
         credentials: SyftVerifyKey,
