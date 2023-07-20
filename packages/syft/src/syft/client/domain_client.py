@@ -124,6 +124,8 @@ class DomainClient(SyftClient):
 
     @property
     def code(self) -> Optional[APIModule]:
+        # if self.api.refresh_api_callback is not None:
+        #     self.api.refresh_api_callback()
         if self.api.has_service("code"):
             return self.api.services.code
         return None
