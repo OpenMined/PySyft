@@ -49,7 +49,7 @@ class SyftURLResource(SyftObject):
         pass
 
 
-@serializable
+@serializable()
 class SyftWriteResource(SyftObject):
     __canonical_name__ = "SyftWriteResource"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -58,7 +58,7 @@ class SyftWriteResource(SyftObject):
         pass
 
 
-@serializable
+@serializable()
 class OnDiskSyftWriteResource(SyftWriteResource):
     __canonical_name__ = "OnDiskSyftWriteResource"
     __version__ = SYFT_OBJECT_VERSION_1
