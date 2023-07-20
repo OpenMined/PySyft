@@ -56,8 +56,10 @@ COPY syft/src/syft/capnp /app/syft/src/syft/capnp
 RUN --mount=type=cache,target=/root/.cache \
     pip install --user -e /app/syft && \
     pip uninstall ansible ansible-core -y && \
-    rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections && \
-    pip install jupyter
+    rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
+
+RUN sudo apt-get install gcc
+RUN pip install jupyter
 
 # clean up
 RUN apt purge --auto-remove linux-libc-dev -y
