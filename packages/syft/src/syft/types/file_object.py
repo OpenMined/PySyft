@@ -33,7 +33,7 @@ class FileObject(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
     id: UID
     location: SecureFilePathLocation
-    type_: Type[SyftObject]
+    type_: Optional[Type[SyftObject]]
     mimetype: str = "bytes"
     file_size: int
     uploaded_by: SyftVerifyKey
@@ -46,12 +46,13 @@ class CreateFileObject(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
+    type_: Optional[Type[SyftObject]]
     mimetype: str = "bytes"
     file_size: int
 
     @classmethod
     def from_obj(cls, obj: SyftObject) -> Self:
-        return CreateFileObject(file_size=sys.getsizeof(obj))
+        return CreateFileObject(file_size=sys.getsizeof(obj), type_=type(obj))
 
     @classmethod
     def from_path(cls, fp: Union[str, Path], mimetype: Optional[str] = None) -> Self:

@@ -1,4 +1,5 @@
 # stdlib
+from pathlib import Path
 from typing import List
 from typing import Union
 
@@ -12,6 +13,7 @@ from ...types.file_object import FileObject
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
+from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
@@ -55,12 +57,48 @@ class FileObjectService(AbstractService):
                 return conn.read(result.ok().location)
         return SyftError(message=result.err())
 
-    @service_method(path="file.save", name="save")
-    def save(
+    @service_method(path="file.allocate", name="allocate")
+    def allocate(
         self, context: AuthedServiceContext, obj: CreateFileObject
     ) -> Union[SyftWriteResource, SyftError]:
-        with context.node.file_client as conn:
-            return conn.write(obj)
+        conn = context.node.file_client.__enter__()
+        # with context.node.file_client as conn:
+        #     secure_location = conn.allocate(obj)
+
+        #     file_object = FileObject(
+        #         location=secure_location,
+        #         type_=obj.type_,
+        #         mimetype=obj.mimetype,
+        #         file_size=obj.file_size,
+        #         uploaded_by=context.credentials,
+        #     )
+        #     write_resource = conn.create_resource(file_object)
+
+        secure_location = conn.allocate(obj)
+
+        file_object = FileObject(
+            location=secure_location,
+            type_=obj.type_,
+            mimetype=obj.mimetype,
+            file_size=obj.file_size,
+            uploaded_by=context.credentials,
+        )
+        write_resource = conn.create_resource(file_object)
+
+        context.node.file_client.__exit__()
+
+        self.stash.set(context.credentials, file_object)
+        return write_resource
+
+    @service_method(path="file.write_to_disk", name="write_to_disk")
+    def write_to_disk(
+        self, context: AuthedServiceContext, obj: FileObject, data: bytes
+    ) -> Union[SyftSuccess, SyftError]:
+        try:
+            Path(obj.location.path).write_bytes(data)
+            return SyftSuccess(message="File successfully saved.")
+        except Exception as e:
+            return SyftError(message=f"Failed to write object to disk: {e}")
 
 
 TYPE_TO_SERVICE[FileObject] = FileObject
