@@ -154,6 +154,7 @@ class OnDiskFileClientConnection(FileClientConnection):
         return OnDiskSyftWriteResource(file_object=obj)
 
 
+@serializable()
 class FileClient(SyftBaseModel):
     config: FileClientConfig
 
@@ -164,6 +165,7 @@ class FileClient(SyftBaseModel):
         raise NotImplementedError
 
 
+@serializable()
 class OnDiskFileClient(FileClient):
     config: OnDiskFileClientConfig
     _connection: OnDiskFileClientConnection = PrivateAttr()
@@ -179,6 +181,7 @@ class OnDiskFileClient(FileClient):
         pass
 
 
+@serializable()
 class SeaweedFSClient(FileClient):
     config: SeaweedClientConfig
 
