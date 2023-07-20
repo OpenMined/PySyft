@@ -121,7 +121,7 @@
             </div>
           </div>
           <div class="space-y-3" style="padding-bottom: 5%;">
-            <span class="font-bold ">AUTHENTICATION</span>
+            <span class="font-bold">AUTHENTICATION</span>
             <div class="space-y-1" style="display:flex;flex-direction:column">
               <span class="font-bold small">Email</span>
               <span class="font-roboto small">{user_info.email}</span>

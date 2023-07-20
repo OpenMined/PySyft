@@ -24,6 +24,7 @@ from .util import shell
 
 try:
     # syft absolute
+    from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
@@ -94,7 +95,7 @@ def container_exists_with(name: str, port: int) -> bool:
     return len(output) > 0
 
 
-def get_node_type(node_type: Optional[str]) -> Optional[NodeType]:
+def get_node_type(node_type: Optional[Union[str, NodeType]]) -> Optional[NodeType]:
     if node_type is None:
         node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
     try:
@@ -137,6 +138,7 @@ class NodeHandle:
         self,
         node_type: NodeType,
         deployment_type: DeploymentType,
+        node_side_type: NodeSideType,
         name: str,
         port: Optional[int] = None,
         url: Optional[str] = None,
@@ -150,28 +152,19 @@ class NodeHandle:
         self.python_node = python_node
         self.shutdown = shutdown
         self.deployment_type = deployment_type
+        self.node_side_type = node_side_type
 
     @property
     def client(self) -> Any:
-        # TODO: Refactor this on client seggregation PR
-        # syft absolute
-        from syft.enclave.enclave_client import AzureEnclaveClient
-
         if self.port:
             sy = get_syft_client()
-            guest_client = sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
-            if self.node_type == NodeType.ENCLAVE:
-                return AzureEnclaveClient(
-                    url=self.url, port=self.port, syft_enclave_client=guest_client
-                )
-            else:
-                return guest_client
+            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
-            guest_client = self.python_node.get_guest_client(verbose=False)  # type: ignore
-            if self.node_type == NodeType.ENCLAVE:
-                return AzureEnclaveClient(syft_enclave_client=guest_client)
-            else:
-                return guest_client
+            return self.python_node.get_guest_client(verbose=False)  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"client not implemented for the deployment type:{self.deployment_type}"
+            )
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
@@ -217,6 +210,8 @@ def deploy_to_python(
     dev_mode: bool,
     processes: int,
     local_db: bool,
+    node_side_type: NodeSideType,
+    enable_warnings: bool,
 ) -> Optional[NodeHandle]:
     sy = get_syft_client()
     if sy is None:
@@ -243,6 +238,8 @@ def deploy_to_python(
                 dev_mode=dev_mode,
                 tail=tail,
                 node_type=node_type_enum,
+                node_side_type=node_side_type,
+                enable_warnings=enable_warnings,
             )
         else:
             # syft <= 0.8.1
@@ -262,6 +259,7 @@ def deploy_to_python(
             port=port,
             url="http://localhost",
             shutdown=stop,
+            node_side_type=node_side_type,
         )
     else:
         if node_type_enum in worker_classes:
@@ -274,6 +272,8 @@ def deploy_to_python(
                     reset=reset,
                     local_db=local_db,
                     node_type=node_type_enum,
+                    node_side_type=node_side_type,
+                    enable_warnings=enable_warnings,
                 )
             else:
                 # syft <= 0.8.1
@@ -290,11 +290,15 @@ def deploy_to_python(
             deployment_type=deployment_type_enum,
             name=name,
             python_node=worker,
+            node_side_type=node_side_type,
         )
 
 
 def deploy_to_k8s(
-    node_type_enum: NodeType, deployment_type_enum: DeploymentType, name: str
+    node_type_enum: NodeType,
+    deployment_type_enum: DeploymentType,
+    name: str,
+    node_side_type: NodeSideType,
 ) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
     return NodeHandle(
@@ -303,12 +307,14 @@ def deploy_to_k8s(
         name=name,
         port=node_port,
         url="http://localhost",
+        node_side_type=node_side_type,
     )
 
 
 def deploy_to_container(
     node_type_enum: NodeType,
     deployment_type_enum: DeploymentType,
+    node_side_type: NodeSideType,
     reset: bool,
     cmd: bool,
     tail: bool,
@@ -318,6 +324,7 @@ def deploy_to_container(
     dev_mode: bool,
     port: Union[int, str],
     name: str,
+    enable_warnings: bool,
 ) -> Optional[NodeHandle]:
     if port == "auto" or port is None:
         if container_exists(name=name):
@@ -336,6 +343,7 @@ def deploy_to_container(
                 name=name,
                 port=port,
                 url="http://localhost",
+                node_side_type=node_side_type,
             )
 
     # Start a subprocess and capture its output
@@ -349,6 +357,9 @@ def deploy_to_container(
 
     if dev_mode:
         commands.append("--dev")
+
+    if not enable_warnings:
+        commands.append("--no-warnings")
 
     # by default , we deploy as container stack
     if deployment_type_enum == DeploymentType.SINGLE_CONTAINER:
@@ -391,6 +402,7 @@ def deploy_to_container(
             name=name,
             port=port,
             url="http://localhost",
+            node_side_type=node_side_type,
         )
     return None
 
@@ -400,8 +412,9 @@ class Orchestra:
     def launch(
         # node information and deployment
         name: Optional[str] = None,
-        node_type: Optional[str] = None,
+        node_type: Optional[Union[str, NodeType]] = None,
         deploy_to: Optional[str] = None,
+        node_side_type: Optional[str] = None,
         # worker related inputs
         port: Optional[Union[int, str]] = None,
         processes: int = 1,  # temporary work around for jax in subprocess
@@ -414,13 +427,14 @@ class Orchestra:
         tag: Optional[str] = "latest",
         verbose: bool = False,
         render: bool = False,
+        enable_warnings: bool = False,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
 
         # syft 0.8.1
         if node_type == "python":
-            node_type = "domain"
+            node_type = NodeType.DOMAIN
             if deploy_to is None:
                 deploy_to = "python"
 
@@ -429,6 +443,12 @@ class Orchestra:
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
         if not node_type_enum:
             return None
+
+        node_side_type_enum = (
+            NodeSideType.HIGH_SIDE
+            if node_side_type is None
+            else NodeSideType(node_side_type)
+        )
 
         deployment_type_enum: Optional[DeploymentType] = get_deployment_type(
             deployment_type=deploy_to
@@ -448,6 +468,8 @@ class Orchestra:
                 dev_mode=dev_mode,
                 processes=processes,
                 local_db=local_db,
+                node_side_type=node_side_type_enum,
+                enable_warnings=enable_warnings,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
@@ -455,6 +477,7 @@ class Orchestra:
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 name=name,
+                node_side_type=node_side_type_enum,
             )
 
         elif (
@@ -473,6 +496,8 @@ class Orchestra:
                 dev_mode=dev_mode,
                 port=port,
                 name=name,
+                node_side_type=node_side_type_enum,
+                enable_warnings=enable_warnings,
             )
         else:
             print(f"deployment_type: {deployment_type_enum} is not supported")

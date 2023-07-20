@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections import OrderedDict
 import inspect
 from inspect import signature
 import types
@@ -40,6 +41,8 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.warnings import APIEndpointWarning
+from ..service.warnings import WarningContext
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -51,7 +54,7 @@ from .connection import NodeConnection
 
 
 class APIRegistry:
-    __api_registry__: Dict[Tuple, SyftAPI] = {}
+    __api_registry__: Dict[Tuple, SyftAPI] = OrderedDict()
 
     @classmethod
     def set_api_for(
@@ -79,9 +82,20 @@ class APIRegistry:
     def get_all_api(cls) -> List[SyftAPI]:
         return list(cls.__api_registry__.values())
 
+    @classmethod
+    def get_by_recent_node_uid(cls, node_uid: UID) -> Optional[SyftAPI]:
+        for key, api in reversed(cls.__api_registry__.items()):
+            if key[0] == node_uid:
+                return api
+        return None
+
 
 @serializable()
-class APIEndpoint(SyftBaseObject):
+class APIEndpoint(SyftObject):
+    __canonical_name__ = "APIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
     service_path: str
     module_path: str
     name: str
@@ -90,6 +104,7 @@ class APIEndpoint(SyftBaseObject):
     signature: Signature
     has_self: bool = False
     pre_kwargs: Optional[Dict[str, Any]]
+    warning: Optional[APIEndpointWarning]
 
 
 @serializable()
@@ -190,6 +205,7 @@ def generate_remote_function(
     path: str,
     make_call: Callable,
     pre_kwargs: Dict[str, Any],
+    warning: Optional[APIEndpointWarning],
 ):
     if "blocking" in signature.parameters:
         raise Exception(
@@ -218,6 +234,10 @@ def generate_remote_function(
             kwargs=_valid_kwargs,
             blocking=blocking,
         )
+
+        allowed = warning.show() if warning else True
+        if not allowed:
+            return
         result = make_call(api_call=api_call)
         return result
 
@@ -343,6 +363,18 @@ class APIModule:
         return results._repr_html_()
 
 
+def debox_signed_syftapicall_response(
+    signed_result: SignedSyftAPICall,
+) -> Union[Any, SyftError]:
+    if not isinstance(signed_result, SignedSyftAPICall):
+        return SyftError(message="The result is not signed")  # type: ignore
+
+    if not signed_result.is_valid:
+        return SyftError(message="The result signature is invalid")  # type: ignore
+
+    return signed_result.message.data
+
+
 @instrument
 @serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
@@ -380,12 +412,19 @@ class SyftAPI(SyftObject):
         _user_lib_config_registry = UserLibConfigRegistry.from_user(user_verify_key)
         endpoints: Dict[str, APIEndpoint] = {}
         lib_endpoints: Dict[str, LibEndpoint] = {}
+        warning_context = WarningContext(
+            node=node, role=role, credentials=user_verify_key
+        )
 
         for (
             path,
             service_config,
         ) in _user_service_config_registry.get_registered_configs().items():
             if not service_config.is_from_lib:
+                service_warning = service_config.warning
+                if service_warning:
+                    service_warning = service_warning.message_from(warning_context)
+                    service_warning.enabled = node.enable_warnings
                 endpoint = APIEndpoint(
                     service_path=path,
                     module_path=path,
@@ -394,6 +433,7 @@ class SyftAPI(SyftObject):
                     doc_string=service_config.doc_string,
                     signature=service_config.signature,
                     has_self=False,
+                    warning=service_warning,
                 )
                 endpoints[path] = endpoint
 
@@ -443,13 +483,7 @@ class SyftAPI(SyftObject):
         signed_call = api_call.sign(credentials=self.signing_key)
         signed_result = self.connection.make_call(signed_call)
 
-        if not isinstance(signed_result, SignedSyftAPICall):
-            return SyftError(message="The result is not signed")  # type: ignore
-
-        if not signed_result.is_valid:
-            return SyftError(message="The result signature is invalid")  # type: ignore
-
-        result = signed_result.message.data
+        result = debox_signed_syftapicall_response(signed_result=signed_result)
 
         if isinstance(result, OkErr):
             if result.is_ok():
@@ -506,6 +540,7 @@ class SyftAPI(SyftObject):
                         v.service_path,
                         self.make_call,
                         pre_kwargs=v.pre_kwargs,
+                        warning=v.warning,
                     )
                 elif isinstance(v, LibEndpoint):
                     endpoint_function = generate_remote_lib_function(

@@ -5,6 +5,7 @@ from typing import Tuple
 from typing import Union
 
 # relative
+from ...abstract_node import NodeType
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -24,12 +25,14 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..settings.settings_stash import SettingsStash
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
 from .user import UserSearch
 from .user import UserUpdate
 from .user import UserView
+from .user import UserViewPage
 from .user import check_pwd
 from .user import salt_and_hash_password
 from .user_roles import DATA_OWNER_ROLE_LEVEL
@@ -92,26 +95,31 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
+    @service_method(
+        path="user.get_all",
+        name="get_all",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
     def get_all(
         self,
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[Optional[UserView], SyftError]:
+    ) -> Union[Optional[UserViewPage], Optional[UserView], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             results = [user.to(UserView) for user in result.ok()]
 
             # If chunk size is defined, then split list into evenly sized chunks
             if page_size:
+                total = len(results)
                 results = [
                     results[i : i + page_size]
                     for i in range(0, len(results), page_size)
                 ]
                 # Return the proper slice using chunk_index
                 results = results[page_index]
-
+                results = UserViewPage(users=results, total=total)
             return results
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
@@ -144,7 +152,7 @@ class UserService(AbstractService):
         user_search: UserSearch,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[List[UserView], SyftError]:
+    ) -> Union[Optional[UserViewPage], List[UserView], SyftError]:
         kwargs = user_search.to_dict(exclude_empty=True)
 
         if len(kwargs) == 0:
@@ -162,13 +170,38 @@ class UserService(AbstractService):
 
         # If page size is defined, then split list into evenly sized chunks
         if page_size:
+            total = len(results)
             results = [
                 results[i : i + page_size] for i in range(0, len(results), page_size)
             ]
             # Return the proper slice using page_index
             results = results[page_index]
+            results = UserViewPage(users=results, total=total)
 
         return results
+
+    # @service_method(path="user.get_admin", name="get_admin", roles=GUEST_ROLE_LEVEL)
+    # def get_admin(self, context: AuthedServiceContext) -> UserView:
+    #     result = self.stash.admin_user()
+    #     if result.is_ok():
+    #         user = result.ok()
+    #         if user:
+    #             return user
+    #     return SyftError(message=str(result.err()))
+
+    @service_method(
+        path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
+    )
+    def get_current_user(self, context: AuthedServiceContext) -> UserView:
+        result = self.stash.get_by_verify_key(
+            credentials=context.credentials, verify_key=context.credentials
+        )
+        if result.is_ok():
+            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+            if user:
+                return user
+        return SyftError(message=str(result.err()))
 
     @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
     def update(
@@ -251,6 +284,15 @@ class UserService(AbstractService):
             return SyftError(message=error_msg)
 
         user = result.ok()
+        if user.role == ServiceRole.ADMIN:
+            settings_stash = SettingsStash(store=self.store)
+            settings = settings_stash.get_all(context.credentials)
+            if settings.is_ok() and len(settings.ok()) > 0:
+                settings_data = settings.ok()[0]
+                settings_data.admin_email = user.email
+                settings_stash.update(
+                    credentials=context.credentials, settings=settings_data
+                )
 
         return user.to(UserView)
 
@@ -309,6 +351,14 @@ class UserService(AbstractService):
                 context.login_credentials.password,
                 user.hashed_password,
             ):
+                if (
+                    context.node.node_type == NodeType.ENCLAVE
+                    and user.role == ServiceRole.ADMIN
+                ):
+                    return SyftError(
+                        message="Admins are not allowed to login to Enclaves."
+                        "\n Kindly register a new data scientist account by your_client.register."
+                    )
                 return user.to(UserPrivateKey)
 
             return SyftError(

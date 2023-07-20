@@ -28,6 +28,7 @@ from typing_extensions import Self
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
+from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
@@ -751,7 +752,7 @@ class ActionObject(SyftObject):
         """Get the object from a Syft Client"""
         res = client.api.services.action.get(self.id)
         if not isinstance(res, ActionObject):
-            return Err(res)
+            return SyftError(message=f"{res}")
         else:
             return res.syft_action_data
 
@@ -767,7 +768,7 @@ class ActionObject(SyftObject):
         res = api.services.action.get(self.id)
 
         if not isinstance(res, ActionObject):
-            return Err(res)
+            return SyftError(message=f"{res}")
         else:
             return res.syft_action_data
 
