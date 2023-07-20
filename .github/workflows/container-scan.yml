@@ -3,11 +3,6 @@ name: Container Scan
 on:
   workflow_call:
 
-  # push:
-  #   branches:
-  #     - dev
-  #     - main
-
   workflow_dispatch:
     inputs:
       none:
@@ -419,7 +414,7 @@ jobs:
       - name: Snyk Container test
         continue-on-error: true
         shell: bash
-        run: snyk container test mongo:7.0-rc --sarif --sarif-file-output=snyk-code.sarif
+        run: snyk container test mongo:latest --sarif --sarif-file-output=snyk-code.sarif
         env:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
