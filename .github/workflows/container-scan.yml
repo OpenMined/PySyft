@@ -378,8 +378,8 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "mongo:latest"
-          format: "cyclonedx"
-          output: "mongo-trivy-results.sbom.json"
+          format: "sarif"
+          output: "trivy-results.sarif"
           timeout: "10m0s"
 
           #Upload sarif file to GitHub Security tab
