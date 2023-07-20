@@ -22,7 +22,7 @@ from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
-from ...client.api import NodeView
+from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
@@ -119,9 +119,9 @@ class UserCodeStatusContext(SyftHashableObject):
                     <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
                     <p style="margin-left: 3px;">
             """
-        for node_view, status in self.base_dict.items():
-            node_name_str = f"{node_view.node_name}"
-            uid_str = f"{node_view.node_id}"
+        for node_identity, status in self.base_dict.items():
+            node_name_str = f"{node_identity.node_name}"
+            uid_str = f"{node_identity.node_id}"
             status_str = f"{status.value}"
 
             string += f"""
@@ -135,8 +135,8 @@ class UserCodeStatusContext(SyftHashableObject):
 
     def __repr_syft_nested__(self):
         string = ""
-        for node_view, status in self.base_dict.items():
-            string += f"{node_view.node_name}: {status}<br>"
+        for node_identity, status in self.base_dict.items():
+            string += f"{node_identity.node_name}: {status}<br>"
         return string
 
     @property
@@ -158,13 +158,13 @@ class UserCodeStatusContext(SyftHashableObject):
                 return Exception(f"Invalid types in {keys} for Code Submission")
 
         elif context.node.node_type == NodeType.DOMAIN:
-            node_view = NodeView(
+            node_identity = NodeIdentity(
                 node_name=context.node.name,
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
-            if node_view in self.base_dict:
-                return self.base_dict[node_view]
+            if node_identity in self.base_dict:
+                return self.base_dict[node_identity]
             else:
                 raise Exception(
                     f"Code Object does not contain {context.node.name} Domain's data"
@@ -177,12 +177,12 @@ class UserCodeStatusContext(SyftHashableObject):
     def mutate(
         self, value: UserCodeStatus, node_name: str, node_id, verify_key: SyftVerifyKey
     ) -> Union[SyftError, Self]:
-        node_view = NodeView(
+        node_identity = NodeIdentity(
             node_name=node_name, node_id=node_id, verify_key=verify_key
         )
         base_dict = self.base_dict
-        if node_view in base_dict:
-            base_dict[node_view] = value
+        if node_identity in base_dict:
+            base_dict[node_identity] = value
             self.base_dict = base_dict
             return self
         else:
@@ -252,8 +252,8 @@ class UserCode(SyftObject):
     def shareholders(self) -> List[str]:
         node_names_list = []
         nodes = self.input_policy_init_kwargs.keys()
-        for node_view in nodes:
-            node_names_list.append(str(node_view.node_name))
+        for node_identity in nodes:
+            node_names_list.append(str(node_identity.node_name))
         return node_names_list
 
     @property
@@ -269,7 +269,7 @@ class UserCode(SyftObject):
                 # TODO: Tech Debt here
                 node_view_workaround = False
                 for k, _ in self.input_policy_init_kwargs.items():
-                    if isinstance(k, NodeView):
+                    if isinstance(k, NodeIdentity):
                         node_view_workaround = True
 
                 if node_view_workaround:
@@ -367,8 +367,8 @@ class UserCode(SyftObject):
 
         inputs = (
             uids
-            for node_view, uids in self.input_policy_init_kwargs.items()
-            if node_view.node_name == api.node_name
+            for node_identity, uids in self.input_policy_init_kwargs.items()
+            if node_identity.node_name == api.node_name
         )
         all_assets = []
         for uid in itertools.chain.from_iterable(x.values() for x in inputs):
@@ -607,7 +607,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
     input_kwargs = context.output["input_policy_init_kwargs"]
     node_view_workaround = False
     for k in input_kwargs.keys():
-        if isinstance(k, NodeView):
+        if isinstance(k, NodeIdentity):
             node_view_workaround = True
 
     if not node_view_workaround:
@@ -692,20 +692,20 @@ def check_output_policy(context: TransformContext) -> TransformContext:
 def add_custom_status(context: TransformContext) -> TransformContext:
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     if context.node.node_type == NodeType.DOMAIN:
-        node_view = NodeView(
+        node_identity = NodeIdentity(
             node_name=context.node.name,
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
         context.output["status"] = UserCodeStatusContext(
-            base_dict={node_view: UserCodeStatus.SUBMITTED}
+            base_dict={node_identity: UserCodeStatus.SUBMITTED}
         )
-        # if node_view in input_keys or len(input_keys) == 0:
+        # if node_identity in input_keys or len(input_keys) == 0:
         #     context.output["status"] = UserCodeStatusContext(
-        #         base_dict={node_view: UserCodeStatus.SUBMITTED}
+        #         base_dict={node_identity: UserCodeStatus.SUBMITTED}
         #     )
         # else:
-        #     raise ValueError(f"Invalid input keys: {input_keys} for {node_view}")
+        #     raise ValueError(f"Invalid input keys: {input_keys} for {node_identity}")
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {key: UserCodeStatus.SUBMITTED for key in input_keys}
         context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
