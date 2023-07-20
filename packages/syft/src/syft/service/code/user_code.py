@@ -3,13 +3,13 @@ from __future__ import annotations
 
 # stdlib
 import ast
-import time
 from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
 import itertools
 import sys
+import time
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -504,7 +504,9 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
     service_func_name = context.output["func_name"]
     context.output["service_func_name"] = service_func_name
     func_name = f"user_func_{service_func_name}_{context.credentials}_{code_hash}"
-    user_unique_func_name = f"user_func_{service_func_name}_{context.credentials}_{time.time()}"
+    user_unique_func_name = (
+        f"user_func_{service_func_name}_{context.credentials}_{time.time()}"
+    )
     context.output["unique_func_name"] = func_name
     context.output["user_unique_func_name"] = user_unique_func_name
     return context
