@@ -48,6 +48,7 @@ from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.bridge.bridge_service import BridgeService
 from ..service.code.user_code_service import UserCodeService
+from ..service.container.container_service import ContainerService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
 from ..service.context import UnauthedServiceContext
@@ -242,8 +243,9 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
-                BridgeService,
                 MetadataService,
+                BridgeService,
+                ContainerService,
             ]
             if services is None
             else services
@@ -502,8 +504,9 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
-                BridgeService,
                 MetadataService,
+                BridgeService,
+                ContainerService,
             ]
 
             if OBLV:

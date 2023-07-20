@@ -36,6 +36,7 @@ from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..service.bridge.api_bridge import SerdeType
 from ..service.bridge.bridge_service import BridgeAdded
+from ..service.container.container_service import ContainerCommandAdded
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
 from ..service.response import SyftAttributeError
@@ -438,6 +439,7 @@ class SyftAPI(SyftObject):
         # relative
         from ..service.bridge.bridge_service import BridgeService
         from ..service.code.user_code_service import UserCodeService
+        from ..service.container.container_service import ContainerService
 
         # find user role by verify_key
         # TODO: we should probably not allow empty verify keys but instead make user always register
@@ -532,6 +534,29 @@ class SyftAPI(SyftObject):
                 )
                 endpoints[module_path] = endpoint
 
+        method = node.get_method_with_context(ContainerService.get_commands, context)
+        commands = method()
+        for command in commands:
+            signature = command.user_signature()
+            pre_kwargs = {
+                "image_name": command.image_name,
+                "command_name": command.name,
+            }
+            service_path = "container.call"
+            method_name = command.name
+            module_path = f"{command.module_name}.{method_name}"
+            endpoint = APIEndpoint(
+                service_path=service_path,
+                module_path=module_path,
+                name=method_name,
+                description="",
+                doc_string=command.doc_string,
+                signature=signature,
+                has_self=False,
+                pre_kwargs=pre_kwargs,
+            )
+            endpoints[module_path] = endpoint
+
         return SyftAPI(
             node_name=node.name,
             node_uid=node.id,
@@ -571,7 +596,7 @@ class SyftAPI(SyftObject):
         ):
             refresh = True
 
-        if isinstance(api_call_result, BridgeAdded):
+        if isinstance(api_call_result, (BridgeAdded, ContainerCommandAdded)):
             refresh = True
 
         if refresh and self.refresh_api_callback is not None:
