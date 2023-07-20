@@ -174,8 +174,8 @@ class UserCodeService(AbstractService):
             if code_status.for_context(context) != UserCodeStatus.EXECUTE:
                 if code_status.for_context(context) == UserCodeStatus.SUBMITTED:
                     string = ""
-                    for node_view, status in code_status.base_dict.items():
-                        string += f"Code status on node '{node_view.node_name}' is '{status.value}'. "
+                    for node_identity, status in code_status.base_dict.items():
+                        string += f"Code status on node '{node_identity.node_name}' is '{status.value}'. "
                     return SyftNotReady(
                         message=f"{type(code_item)} Your code is waiting for approval. {string}"
                     )

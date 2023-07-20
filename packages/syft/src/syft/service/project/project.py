@@ -24,6 +24,7 @@ from rich.progress import Progress
 from typing_extensions import Self
 
 # relative
+from ...client.api import NodeIdentity
 from ...client.client import SyftClient
 from ...client.client import SyftClientSessionCache
 from ...node.credentials import SyftSigningKey
@@ -33,11 +34,13 @@ from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.identity import Identity
+from ...types.identity import UserIdentity
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_qual_name
 from ...types.transforms import TransformContext
-from ...types.transforms import keep
+from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -60,44 +63,9 @@ class EventAlreadyAddedException(SyftException):
     pass
 
 
-class Identity(SyftObject):
-    __canonical_name__ = "Identity"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    verify_key: SyftVerifyKey
-
-    __repr_attrs__ = ["id", "verify_key"]
-
-    def __repr__(self) -> str:
-        verify_key_str = f"{self.verify_key}"
-        return f"<🔑 {verify_key_str[0:8]} @ 🟢 {self.id.short()}>"
-
-    @classmethod
-    def from_client(cls, client: SyftClient) -> Identity:
-        return cls(id=client.id, verify_key=client.credentials.verify_key)
-
-
-@serializable()
-class NodeIdentity(Identity):
-    """This class is used to identify the node owner"""
-
-    __canonical_name__ = "NodeIdentity"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-
-# Used to Identity data scientist users of the node
-@serializable()
-class UserIdentity(Identity):
-    """This class is used to identify the data scientist users of the node"""
-
-    __canonical_name__ = "UserIdentity"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-
 @transform(NodeMetadata, NodeIdentity)
 def metadata_to_node_identity() -> List[Callable]:
-    return [keep(["id", "verify_key"])]
+    return [rename("id", "node_id"), rename("name", "node_name")]
 
 
 class ProjectEvent(SyftObject):
