@@ -9,6 +9,7 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
+import subprocess  # nosec
 import traceback
 from typing import Any
 from typing import Callable
@@ -31,11 +32,13 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
 from ..client.api import SignedSyftAPICall
 from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
+from ..client.api import debox_signed_syftapicall_response
 from ..external import OBLV
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
@@ -53,9 +56,11 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
-from ..service.message.message_service import MessageService
+from ..service.enclave.enclave_service import EnclaveService
+from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
+from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
@@ -110,6 +115,8 @@ def gipc_decoder(obj_bytes):
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 NODE_TYPE = "NODE_TYPE"
+NODE_NAME = "NODE_NAME"
+NODE_SIDE_TYPE = "NODE_SIDE_TYPE"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
@@ -125,6 +132,14 @@ def get_private_key_env() -> Optional[str]:
 
 def get_node_type() -> Optional[str]:
     return get_env(NODE_TYPE, "domain")
+
+
+def get_node_name() -> Optional[str]:
+    return get_env(NODE_NAME, None)
+
+
+def get_node_side_type() -> str:
+    return get_env(NODE_SIDE_TYPE, "high")
 
 
 def get_node_uid_env() -> Optional[str]:
@@ -143,6 +158,17 @@ def get_dev_mode() -> bool:
     return str_to_bool(get_env("DEV_MODE", "False"))
 
 
+def get_enable_warnings() -> bool:
+    return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
+
+
+def get_venv_packages() -> str:
+    res = subprocess.getoutput(
+        "pip list --format=freeze",
+    )
+    return res
+
+
 dev_mode = get_dev_mode()
 
 signing_key_env = get_private_key_env()
@@ -156,6 +182,7 @@ default_root_password = get_default_root_password()
 class Node(AbstractNode):
     signing_key: Optional[SyftSigningKey]
     required_signed_calls: bool = True
+    packages: str
 
     def __init__(
         self,
@@ -170,11 +197,13 @@ class Node(AbstractNode):
         root_password: str = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
-        node_type: NodeType = NodeType.DOMAIN,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: QueueConfig = ZMQQueueConfig,
         action_graph_config: Optional[StoreConfig] = None,
+        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        enable_warnings: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -184,6 +213,7 @@ class Node(AbstractNode):
             if id is None:
                 id = UID()
             self.id = id
+        self.packages = get_venv_packages()
 
         self.signing_key = None
         if signing_key_env is not None:
@@ -198,9 +228,7 @@ class Node(AbstractNode):
 
         self.processes = processes
         self.is_subprocess = is_subprocess
-        if name is None:
-            name = random_name()
-        self.name = name
+        self.name = random_name() if name is None else name
         services = (
             [
                 UserService,
@@ -213,9 +241,11 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
-                MessageService,
+                NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
+                MetadataService,
             ]
             if services is None
             else services
@@ -237,6 +267,8 @@ class Node(AbstractNode):
             services += [OblvService]
             create_oblv_key_pair(worker=self)
 
+        self.enable_warnings = enable_warnings
+
         self.services = services
         self._construct_services()
 
@@ -248,12 +280,20 @@ class Node(AbstractNode):
         )
 
         self.client_cache = {}
+        if isinstance(node_type, str):
+            node_type = NodeType(node_type)
         self.node_type = node_type
 
+        if isinstance(node_side_type, str):
+            node_side_type = NodeSideType(node_side_type)
+        self.node_side_type = node_side_type
+
         self.post_init()
-        self.create_initial_settings()
+        self.create_initial_settings(admin_email=root_email)
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
+
+        NodeRegistry.set_node_for(self.id, self)
 
     def init_queue_manager(self, queue_config: QueueConfig):
         MessageHandlers = [APICallMessageHandler]
@@ -272,11 +312,15 @@ class Node(AbstractNode):
     @classmethod
     def named(
         cls,
+        *,  # Trasterisk
         name: str,
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
+        node_type: Union[str, NodeType] = NodeType.DOMAIN,
+        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        enable_warnings: bool = False,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -325,6 +369,9 @@ class Node(AbstractNode):
             local_db=local_db,
             sqlite_path=sqlite_path,
             action_graph_config=graph_config,
+            node_type=node_type,
+            node_side_type=node_side_type,
+            enable_warnings=enable_warnings,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -334,10 +381,12 @@ class Node(AbstractNode):
     def root_client(self):
         # relative
         from ..client.client import PythonConnection
-        from ..client.client import SyftClient
 
         connection = PythonConnection(node=self)
-        return SyftClient(connection=connection, credentials=self.signing_key)
+        client_type = connection.get_client_type()
+        if isinstance(client_type, SyftError):
+            return client_type
+        return client_type(connection=connection, credentials=self.signing_key)
 
     @property
     def guest_client(self):
@@ -346,12 +395,19 @@ class Node(AbstractNode):
     def get_guest_client(self, verbose: bool = True):
         # relative
         from ..client.client import PythonConnection
-        from ..client.client import SyftClient
 
         connection = PythonConnection(node=self)
         if verbose:
-            print(f"Logged into {self.name} as GUEST")
-        return SyftClient(connection=connection, credentials=SyftSigningKey.generate())
+            print(
+                f"Logged into <{self.name}: {self.node_side_type.value.capitalize()} "
+                f"side {self.node_type.value.capitalize()} > as GUEST"
+            )
+
+        client_type = connection.get_client_type()
+        if isinstance(client_type, SyftError):
+            return client_type
+
+        return client_type(connection=connection, credentials=SyftSigningKey.generate())
 
     def __repr__(self) -> str:
         service_string = ""
@@ -459,9 +515,11 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
-                MessageService,
+                NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
+                EnclaveService,
+                MetadataService,
             ]
 
             if OBLV:
@@ -508,6 +566,8 @@ class Node(AbstractNode):
         on_board = False
         description = ""
         signup_enabled = False
+        admin_email = ""
+        show_warnings = self.enable_warnings
 
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key)
@@ -519,6 +579,8 @@ class Node(AbstractNode):
             on_board = settings_data.on_board
             description = settings_data.description
             signup_enabled = settings_data.signup_enabled
+            admin_email = settings_data.admin_email
+            show_warnings = settings_data.show_warnings
 
         return NodeMetadata(
             name=name,
@@ -531,7 +593,11 @@ class Node(AbstractNode):
             description=description,
             organization=organization,
             on_board=on_board,
+            node_type=self.node_type.value,
             signup_enabled=signup_enabled,
+            admin_email=admin_email,
+            node_side_type=self.node_side_type.value,
+            show_warnings=show_warnings,
         )
 
     @property
@@ -584,12 +650,26 @@ class Node(AbstractNode):
 
             if peer.is_ok() and peer.ok():
                 peer = peer.ok()
-                context = NodeServiceContext(node=self)
+                context = AuthedServiceContext(
+                    node=self, credentials=api_call.credentials
+                )
                 client = peer.client_with_context(context=context)
                 self.client_cache[node_uid] = client
-
         if client:
-            return client.connection.make_call(api_call)
+            message: SyftAPICall = api_call.message
+            if message.path == "metadata":
+                result = client.metadata
+            elif message.path == "login":
+                result = client.connection.login(**message.kwargs)
+            elif message.path == "register":
+                result = client.connection.register(**message.kwargs)
+            elif message.path == "api":
+                result = client.connection.get_api(**message.kwargs)
+            else:
+                signed_result = client.connection.make_call(api_call)
+                result = debox_signed_syftapicall_response(signed_result=signed_result)
+
+            return result
 
         return SyftError(message=(f"Node has no route to {node_uid}"))
 
@@ -692,7 +772,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self) -> Optional[NodeSettings]:
+    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettings]:
         if self.name is None:
             self.name = random_name()
         try:
@@ -702,10 +782,17 @@ class Node(AbstractNode):
                 self.name = settings_exists[0].name
                 return None
             else:
+                # Currently we allow automatic user registration on enclaves,
+                # as enclaves do not have superusers
+                if self.node_type == NodeType.ENCLAVE:
+                    flags.CAN_REGISTER = True
                 new_settings = NodeSettings(
                     name=self.name,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
+                    admin_email=admin_email,
+                    node_side_type=self.node_side_type.value,
+                    show_warnings=self.enable_warnings,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
@@ -855,3 +942,26 @@ def create_oblv_key_pair(
             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
     except Exception as e:
         print("Unable to create Oblv Keys.", e)
+
+
+class NodeRegistry:
+    __node_registry__: Dict[UID, Node] = {}
+
+    @classmethod
+    def set_node_for(
+        cls,
+        node_uid: Union[UID, str],
+        node: Node,
+    ) -> None:
+        if isinstance(node_uid, str):
+            node_uid = UID.from_string(node_uid)
+
+        cls.__node_registry__[node_uid] = node
+
+    @classmethod
+    def node_for(cls, node_uid: UID) -> Node:
+        return cls.__node_registry__.get(node_uid, None)
+
+    @classmethod
+    def get_all_nodes(cls) -> List[Node]:
+        return list(cls.__node_registry__.values())
