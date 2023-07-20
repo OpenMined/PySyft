@@ -11,19 +11,11 @@ from pydantic import PrivateAttr
 # relative
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serializable import serializable
-from ..service.file_object.file_object import CreateFileObject
 from ..types.base import SyftBaseModel
+from ..types.file_object import CreateFileObject
+from ..types.file_object import SecureFilePathLocation
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
-from ..types.uid import UID
-
-
-@serializable()
-class SecureFilePathLocation(SyftObject):
-    __canonical_name__ = "SecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_1
-    id: UID
-    path: str
 
 
 @serializable()

@@ -10,14 +10,21 @@ from typing import Union
 from typing_extensions import Self
 
 # relative
-from ...node.credentials import SyftVerifyKey
-from ...serde.serializable import serializable
-from ...service.response import SyftException
-from ...store.file_store import SecureFilePathLocation
-from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...types.uid import UID
+from ..node.credentials import SyftVerifyKey
+from ..serde.serializable import serializable
+from ..service.response import SyftException
+from .datetime import DateTime
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftObject
+from .uid import UID
+
+
+@serializable()
+class SecureFilePathLocation(SyftObject):
+    __canonical_name__ = "SecureFilePathLocation"
+    __version__ = SYFT_OBJECT_VERSION_1
+    id: UID
+    path: str
 
 
 @serializable()
