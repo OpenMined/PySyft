@@ -61,31 +61,17 @@ class FileObjectService(AbstractService):
     def allocate(
         self, context: AuthedServiceContext, obj: CreateFileObject
     ) -> Union[SyftWriteResource, SyftError]:
-        conn = context.node.file_client.__enter__()
-        # with context.node.file_client as conn:
-        #     secure_location = conn.allocate(obj)
+        with context.node.file_client as conn:
+            secure_location = conn.allocate(obj)
 
-        #     file_object = FileObject(
-        #         location=secure_location,
-        #         type_=obj.type_,
-        #         mimetype=obj.mimetype,
-        #         file_size=obj.file_size,
-        #         uploaded_by=context.credentials,
-        #     )
-        #     write_resource = conn.create_resource(file_object)
-
-        secure_location = conn.allocate(obj)
-
-        file_object = FileObject(
-            location=secure_location,
-            type_=obj.type_,
-            mimetype=obj.mimetype,
-            file_size=obj.file_size,
-            uploaded_by=context.credentials,
-        )
-        write_resource = conn.create_resource(file_object)
-
-        context.node.file_client.__exit__()
+            file_object = FileObject(
+                location=secure_location,
+                type_=obj.type_,
+                mimetype=obj.mimetype,
+                file_size=obj.file_size,
+                uploaded_by=context.credentials,
+            )
+            write_resource = conn.create_resource(file_object)
 
         self.stash.set(context.credentials, file_object)
         return write_resource

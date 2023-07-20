@@ -160,7 +160,7 @@ class FileClient(SyftBaseModel):
     def __enter__(self) -> FileClientConnection:
         raise NotImplementedError
 
-    def __exit__(self) -> None:
+    def __exit__(self, *exc) -> None:
         raise NotImplementedError
 
 
@@ -175,7 +175,7 @@ class OnDiskFileClient(FileClient):
     def __enter__(self) -> FileClientConnection:
         return self._connection
 
-    def __exit__(self) -> None:
+    def __exit__(self, *exc) -> None:
         pass
 
 
@@ -185,7 +185,7 @@ class SeaweedFSClient(FileClient):
     def __enter__(self) -> FileClientConnection:
         pass
 
-    def __exit__(self) -> None:
+    def __exit__(self, *exc) -> None:
         pass
 
 
