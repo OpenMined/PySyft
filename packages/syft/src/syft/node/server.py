@@ -20,6 +20,7 @@ from starlette.middleware.cors import CORSMiddleware
 import uvicorn
 
 # relative
+from ..abstract_node import NodeSideType
 from ..client.client import API_PATH
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.util import os_name
@@ -66,10 +67,23 @@ worker_classes = {
 
 
 def run_uvicorn(
-    name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
+    name: str,
+    node_type: Enum,
+    host: str,
+    port: int,
+    reset: bool,
+    dev_mode: bool,
+    node_side_type: str,
+    enable_warnings: bool,
 ):
     async def _run_uvicorn(
-        name: str, node_type: Enum, host: str, port: int, reset: bool, dev_mode: bool
+        name: str,
+        node_type: Enum,
+        host: str,
+        port: int,
+        reset: bool,
+        dev_mode: bool,
+        node_side_type: Enum,
     ):
         if node_type not in worker_classes:
             raise NotImplementedError(f"node_type: {node_type} is not supported")
@@ -86,6 +100,8 @@ def run_uvicorn(
                 reset=reset,
                 local_db=True,
                 node_type=node_type,
+                node_side_type=node_side_type,
+                enable_warnings=enable_warnings,
             )
         else:
             worker = worker_class(
@@ -93,6 +109,8 @@ def run_uvicorn(
                 processes=0,
                 local_db=True,
                 node_type=node_type,
+                node_side_type=node_side_type,
+                enable_warnings=enable_warnings,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
@@ -122,21 +140,43 @@ def run_uvicorn(
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(_run_uvicorn(name, node_type, host, port, reset, dev_mode))
+    loop.run_until_complete(
+        _run_uvicorn(
+            name,
+            node_type,
+            host,
+            port,
+            reset,
+            dev_mode,
+            node_side_type,
+        )
+    )
     loop.close()
 
 
 def serve_node(
     name: str,
     node_type: NodeType = NodeType.DOMAIN,
+    node_side_type: NodeSideType = NodeSideType.HIGH_SIDE,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
     reset: bool = False,
     dev_mode: bool = False,
     tail: bool = False,
+    enable_warnings: bool = False,
 ) -> Tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
-        target=run_uvicorn, args=(name, node_type, host, port, reset, dev_mode)
+        target=run_uvicorn,
+        args=(
+            name,
+            node_type,
+            host,
+            port,
+            reset,
+            dev_mode,
+            node_side_type,
+            enable_warnings,
+        ),
     )
 
     def stop():

@@ -57,7 +57,7 @@ def connect_with_key(tailscale_host: str, headscale_host: str, authkey: str) -> 
     # /etc/resolv.conf has the mDNS ip nameserver 127.0.0.11
     data = {
         "args": [
-            "-login-server",
+            "--login-server",
             f"{headscale_host}",
             "--reset",
             "--force-reauth",

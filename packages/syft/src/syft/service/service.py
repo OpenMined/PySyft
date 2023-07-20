@@ -40,6 +40,7 @@ from .context import ChangeContext
 from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
+from .warnings import APIEndpointWarning
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)
@@ -78,6 +79,7 @@ class BaseConfig(SyftBaseObject):
     doc_string: Optional[str]
     signature: Optional[Signature]
     is_from_lib: bool = False
+    warning: Optional[APIEndpointWarning]
 
 
 @serializable()
@@ -309,6 +311,7 @@ def service_method(
     path: Optional[str] = None,
     roles: Optional[List[ServiceRole]] = None,
     autosplat: Optional[List[str]] = None,
+    warning: Optional[APIEndpointWarning] = None,
 ):
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
@@ -355,6 +358,7 @@ def service_method(
             signature=signature,
             roles=roles,
             permissions=["Guest"],
+            warning=warning,
         )
         ServiceConfigRegistry.register(config)
 

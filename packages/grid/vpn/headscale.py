@@ -57,7 +57,7 @@ def generate_key_callback(context: Dict, future: Future) -> None:
 
 shell2http.register_command(
     endpoint="generate_key",
-    command_name=f"headscale -n {network_name} preauthkeys create -o json",
+    command_name=f"headscale -u {network_name} preauthkeys create -o json",
     callback_fn=generate_key_callback,
     decorators=[basic_auth_check],
 )
@@ -70,7 +70,7 @@ def list_nodes_callback(context: Dict, future: Future) -> None:
 
 shell2http.register_command(
     endpoint="list_nodes",
-    command_name=f"headscale -n {network_name} nodes list -o json",
+    command_name=f"headscale -u {network_name} nodes list -o json",
     callback_fn=list_nodes_callback,
     decorators=[basic_auth_check],
 )

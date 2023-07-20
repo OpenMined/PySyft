@@ -25,7 +25,7 @@ from result import Ok
 
 # relative
 from ...abstract_node import NodeType
-from ...client.api import NodeView
+from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
@@ -131,7 +131,7 @@ class UserPolicyStatus(Enum):
 def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
     from ...client.api import APIRegistry
-    from ...client.api import NodeView
+    from ...client.api import NodeIdentity
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
 
@@ -153,11 +153,11 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
         _obj_exists = False
         for api in api_list:
             if api.services.action.exists(uid):
-                node_view = NodeView.from_api(api)
-                if node_view not in output_kwargs:
-                    output_kwargs[node_view] = {k: uid}
+                node_identity = NodeIdentity.from_api(api)
+                if node_identity not in output_kwargs:
+                    output_kwargs[node_identity] = {k: uid}
                 else:
-                    output_kwargs[node_view].update({k: uid})
+                    output_kwargs[node_identity].update({k: uid})
 
                 _obj_exists = True
                 break
@@ -187,11 +187,11 @@ class InputPolicy(Policy):
         raise NotImplementedError
 
     @property
-    def inputs(self) -> Dict[NodeView, Any]:
+    def inputs(self) -> Dict[NodeIdentity, Any]:
         return self.init_kwargs
 
     def _inputs_for_context(self, context: ChangeContext):
-        user_node_view = NodeView.from_change_context(context)
+        user_node_view = NodeIdentity.from_change_context(context)
         inputs = self.inputs[user_node_view]
 
         action_service = context.node.get_service("actionservice")
@@ -251,12 +251,12 @@ def allowed_ids_only(
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
     if context.node.node_type == NodeType.DOMAIN:
-        node_view = NodeView(
+        node_identity = NodeIdentity(
             node_name=context.node.name,
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
-        allowed_inputs = allowed_inputs[node_view]
+        allowed_inputs = allowed_inputs[node_identity]
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
         for key in allowed_inputs.values():
@@ -319,6 +319,7 @@ class OutputPolicy(Policy):
     output_history: List[OutputHistory] = []
     output_kwargs: List[str] = []
     node_uid: Optional[UID]
+    output_readers: List[SyftVerifyKey] = []
 
     def apply_output(
         self,
@@ -339,6 +340,10 @@ class OutputPolicy(Policy):
     @property
     def outputs(self) -> List[str]:
         return self.output_kwargs
+
+    @property
+    def last_output_ids(self) -> List[str]:
+        return self.output_history[-1].outputs
 
 
 @serializable()
