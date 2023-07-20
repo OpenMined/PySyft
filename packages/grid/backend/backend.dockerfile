@@ -56,8 +56,9 @@ RUN --mount=type=cache,target=/root/.cache \
     pip uninstall ansible ansible-core -y && \
     rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
 
-# clean up
-RUN apt purge --auto-remove linux-libc-dev -y
+# security patches
+RUN apt purge --auto-remove linux-libc-dev -y || true
+RUN apt purge --auto-remove libldap-2.5-0 -y || true
 
 # copy any changed source
 COPY syft/src /app/syft/src
