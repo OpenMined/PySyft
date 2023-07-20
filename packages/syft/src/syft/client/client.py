@@ -28,6 +28,7 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
@@ -49,6 +50,7 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
+from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
 from .api import APIModule
@@ -431,9 +433,6 @@ class PythonConnection(NodeConnection):
         return f"{type(self).__name__}"
 
     def get_client_type(self) -> Type[SyftClient]:
-        # TODO: Rasswanth, should remove passing in credentials
-        # when metadata are proxy forwarded in the grid routes
-        # in the gateway fixes PR
         # relative
         from .domain_client import DomainClient
         from .enclave_client import EnclaveClient
@@ -621,7 +620,10 @@ class SyftClient:
             # TODO: How to get the role of the user?
             # self.__user_role =
             self._fetch_api(self.credentials)
-            print(f"Logged into {self.name} as <{email}>")
+            print(
+                f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()} side "
+                f"{self.metadata.node_type.capitalize()}> as <{email}>"
+            )
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,
@@ -676,6 +678,18 @@ class SyftClient:
             )
         except Exception as e:
             return SyftError(message=str(e))
+
+        if self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+            message = (
+                "You're registering a user to a high side "
+                f"{self.metadata.node_type}, which could "
+                "host datasets with private information."
+            )
+            if self.metadata.show_warnings and not prompt_warning_message(
+                message=message
+            ):
+                return
+
         response = self.connection.register(new_user=new_user)
         if isinstance(response, tuple):
             response = response[0]
@@ -807,7 +821,10 @@ def login(
 
     if login_credentials is None:
         if verbose:
-            print(f"Logged into {_client.name} as GUEST")
+            print(
+                f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
+                f"side {_client.metadata.node_type.capitalize()}> as GUEST"
+            )
         return _client.guest()
 
     if cache and login_credentials:
