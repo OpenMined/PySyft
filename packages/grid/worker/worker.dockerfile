@@ -58,7 +58,6 @@ RUN --mount=type=cache,target=/root/.cache \
     pip uninstall ansible ansible-core -y && \
     rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
 
-RUN sudo apt-get install gcc
 RUN pip install jupyter
 
 # clean up
