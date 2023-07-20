@@ -3,11 +3,6 @@ name: Container Scan
 on:
   workflow_call:
 
-  push:
-    branches:
-      - dev
-      - main
-
   workflow_dispatch:
     inputs:
       none:
@@ -360,22 +355,38 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      #Generate SBOM
       - name: Run Trivy vulnerability scanner
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "mongo:7.0-rc"
-          format: "github"
-          template: "@/contrib/sarif.tpl"
+          image-ref: "mongo:latest"
+          format: "cyclonedx"
           output: "mongo-trivy-results.sbom.json"
-          severity: "CRITICAL,HIGH"
           timeout: "10m0s"
 
+        #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: mongo-trivy-results.sbom.json
           path: mongo-trivy-results.sbom.json
+
+          #Generate sarif file
+      - name: Run Trivy vulnerability scanner
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "mongo:latest"
+          format: "cyclonedx"
+          output: "mongo-trivy-results.sbom.json"
+          timeout: "10m0s"
+
+          #Upload sarif file to GitHub Security tab
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: "trivy-results.sarif"
 
   scan-mongo-latest-snyk:
     permissions:
@@ -403,7 +414,7 @@ jobs:
       - name: Snyk Container test
         continue-on-error: true
         shell: bash
-        run: snyk container test mongo:7.0-rc --sarif --sarif-file-output=snyk-code.sarif
+        run: snyk container test mongo:latest --sarif --sarif-file-output=snyk-code.sarif
         env:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -423,22 +434,38 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      #Generate SBOM
       - name: Run Trivy vulnerability scanner
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "traefik:v2.8.1"
-          format: "github"
-          template: "@/contrib/sarif.tpl"
+          format: "cyclonedx"
           output: "traefik-trivy-results.sbom.json"
-          severity: "CRITICAL,HIGH"
           timeout: "10m0s"
-
+          #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: traefik-trivy-results.sbom.json
           path: traefik-trivy-results.sbom.json
+
+        #Generate sarif file
+      - name: Run Trivy vulnerability scanner
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "traefik:v2.8.1"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          timeout: "10m0s"
+
+          #Upload sarif file to GitHub Security tab
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: "trivy-results.sarif"
 
   scan-traefik-snyk:
     permissions:
