@@ -314,12 +314,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
       #Generate SBOM
       - name: Generate SBOM
         run: |
-          pip install ./packages/syft
-          pip install cyclonedx-bom
-          pip freeze > requirements.txt
+          python3 --version
+          python3 -m pip install ./packages/syft
+          python3 -m pip install cyclonedx-bom
+          python3 -m pip freeze > requirements.txt
           cyclonedx-py --r  -i requirements.txt --format json  -o syft.sbom.json
 
         #Trivy scan SBOM
