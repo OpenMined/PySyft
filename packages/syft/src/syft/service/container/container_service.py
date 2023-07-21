@@ -1,7 +1,9 @@
 # stdlib
 import io
 import json
+import tempfile
 from typing import Any
+from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
@@ -19,6 +21,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.file import SyftFile
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -28,6 +31,7 @@ from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .container import ContainerCommand
 from .container import ContainerImage
+from .container import ContainerResult
 
 ImageNamePartitionKey = PartitionKey(key="name", type_=str)
 CommandNamePartitionKey = PartitionKey(key="name", type_=str)
@@ -60,6 +64,56 @@ def build_image(container_image: ContainerImage) -> Union[SyftSuccess, SyftError
         return SyftSuccess(message=f"Build {container_image} succeeded.\n{log}")
     except docker.errors.BuildError as e:
         return SyftError(message=f"Failed to build {container_image}. {e}")
+
+
+def run_command(
+    container_image: ContainerImage,
+    command: ContainerCommand,
+    files: Dict[str, SyftFile],
+) -> ContainerResult:
+    client = docker.from_env()
+
+    # create temporary sandbox file system
+    temp_dir = tempfile.TemporaryDirectory()
+    volumes = {temp_dir.name: {"bind": "/sandbox", "mode": "rw"}}
+
+    # start container
+    container = None
+    try:
+        # try:
+        #     container = client.containers.get(container_name)
+        #     container.stop()
+        #     container = None
+        # except Exception: # nosec
+        #     pass
+
+        container = client.containers.run(
+            container_image.tag,
+            # name=container_name,
+            volumes=volumes,
+            command="sleep 999999",
+            detach=True,
+            auto_remove=True,
+        )
+
+        # write the files
+        for _k, v in files.items():
+            write_result = v.write_file(path=temp_dir.name)
+            if not write_result:
+                return write_result
+
+        cmd = command.cmd(run_files=files)
+        result = container.exec_run(cmd=cmd, stdout=True, stderr=True, demux=True)
+        container_result = ContainerResult.from_execresult(result=result)
+        container_result.image_name = container_image.name
+        container_result.image_tag = container_image.tag
+        container_result.command_name = command.name
+        return container_result
+    except Exception as e:
+        print(f"Failed to run command in container. {command} {container_image}. {e}")
+    finally:
+        if container:
+            container.stop()
 
 
 @instrument
@@ -214,4 +268,12 @@ class ContainerService(AbstractService):
 
         command = result.ok()
 
-        print("Got image and command", image, command)
+        files = {}
+        for k, v in kwargs.items():
+            if isinstance(v, SyftFile):
+                files[k] = v
+        try:
+            result = run_command(container_image=image, command=command, files=files)
+            return result
+        except Exception as e:
+            return SyftError(f"Failed to run command. {e}")

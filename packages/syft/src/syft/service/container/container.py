@@ -1,11 +1,16 @@
 # stdlib
 from inspect import Parameter
 from inspect import Signature
+import json
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Self
 from typing import Union
+
+# third party
+from docker.models.containers import ExecResult
 
 # relative
 from ...serde.serializable import serializable
@@ -166,3 +171,60 @@ class ContainerCommand(SyftObject):
             )
             parameters.append(parameter)
         return Signature(parameters=parameters)
+
+
+def extract_json_objects(text: str) -> List[Dict[str, Any]]:
+    """Generate all JSON objects in a string."""
+    decoder = json.JSONDecoder()
+    pos = 0
+    while True:
+        match = text.find("{", pos)
+        if match == -1:
+            break
+        try:
+            result, index = decoder.raw_decode(text[match:])
+            yield result
+            pos = match + index
+        except ValueError:
+            pos = match + 1
+
+
+@serializable()
+class ContainerResult(SyftObject):
+    # version
+    __canonical_name__ = "ContainerResult"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    image_name: Optional[str] = None
+    image_tag: Optional[str] = None
+    command_name: Optional[str] = None
+    exit_code: int
+    stdout: List[str]
+    stderr: List[str]
+    jsonstd: List[Dict[str, Any]]
+    jsonerr: List[Dict[str, Any]]
+
+    @staticmethod
+    def from_execresult(result: ExecResult) -> Self:
+        stdout = []
+        stderr = []
+        jsonstd = []
+        jsonerr = []
+        if result.output:
+            out, err = result.output
+            if out is not None:
+                stdout = out.decode("utf-8").strip()
+                jsonstd = list(extract_json_objects(stdout))
+                stdout = stdout.splitlines()
+            if err is not None:
+                stderr = err.decode("utf-8").strip()
+                jsonerr = list(extract_json_objects(stderr))
+                stderr = stderr.splitlines()
+
+        return ContainerResult(
+            exit_code=result.exit_code,
+            stdout=stdout,
+            jsonstd=jsonstd,
+            stderr=stderr,
+            jsonerr=jsonerr,
+        )
