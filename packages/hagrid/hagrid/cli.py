@@ -1302,7 +1302,10 @@ def create_launch_cmd(
     if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
         parsed_kwargs["tag"] = kwargs["tag"]
     else:
-        parsed_kwargs["tag"] = "latest"
+        if parsed_kwargs["dev"] is True:
+            parsed_kwargs["tag"] = "local"
+        else:
+            parsed_kwargs["tag"] = "latest"
 
     if "jupyter" in kwargs and kwargs["jupyter"] is not None:
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
