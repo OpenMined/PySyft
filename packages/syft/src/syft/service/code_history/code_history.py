@@ -3,6 +3,7 @@ from typing import List
 from typing import Optional
 
 # relative
+from ...client.api import SyftAPI
 from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -29,6 +30,27 @@ class CodeHistory(SyftObject):
 
     def add_code(self, code: UserCode):
         self.user_code_history.append(code.id)
+
+    # def __getitem__(self, key: int):
+    #     api = APIRegistry.api_for(
+    #         self.node_uid,
+    #         self.user_verify_key,
+    #     )
+    #     return api.services.code.get_by_id(self.user_code_history[key])
+
+
+@serializable()
+class CodeVersions:
+    user_code_history: Optional[List[UserCode]] = []
+    service_func_name: str
+    api: SyftAPI
+
+    def __init__(self, user_code_history=None, service_func_name="") -> None:
+        self.user_code_history = user_code_history
+        self.service_func_name = service_func_name
+
+    def __getitem__(self, key: int):
+        return self.user_code_history[key]
 
 
 # TODO: Fix Multiple users can passing the same name for their code.

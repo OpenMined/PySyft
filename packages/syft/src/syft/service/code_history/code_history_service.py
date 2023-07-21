@@ -2,11 +2,6 @@
 from typing import List
 from typing import Union
 
-# third party
-from result import Err
-from result import Ok
-from result import Result
-
 # relative
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
@@ -17,9 +12,9 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
-from ..user.user import User
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .code_history import CodeHistory
+from .code_history import CodeVersions
 from .code_history_stash import CodeHistoryStash
 
 
@@ -92,7 +87,7 @@ class CodeHistoryService(AbstractService):
     )
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[List[UserCode], SyftError]:
+    ) -> Union[List[CodeHistory], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -119,6 +114,70 @@ class CodeHistoryService(AbstractService):
             return result.ok()
         else:
             return SyftError(message=result.err())
+
+    @service_method(
+        path="code_history.get_history",
+        name="get_history",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get_histories_for_current_user(self, context: AuthedServiceContext):
+        result = self.stash.get_all(credentials=context.credentials)
+        user_code_service = context.node.get_service("usercodeservice")
+
+        def get_code(uid):
+            return user_code_service.get_by_uid(context=context, uid=uid)
+
+        if result.is_ok():
+            code_histories = result.ok()
+            result = {}
+            for code_history in code_histories:
+                user_code_list = [
+                    get_code(uid) for uid in code_history.user_code_history
+                ]
+                result[code_history.service_func_name] = user_code_list
+            return result
+        else:
+            return SyftError(message=result.err())
+
+    @service_method(
+        path="code_history.get_histories",
+        name="get_histories",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get_histories_group_by_user(self, context: AuthedServiceContext):
+        result = self.stash.get_all(credentials=context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+        code_histories = result.ok()
+
+        user_service = context.node.get_service("userservice")
+        result = user_service.stash.get_all(context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+        users = result.ok()
+
+        user_code_histories = {}
+        verify_key_2_user_email = {}
+        for user in users:
+            user_code_histories[user.email] = {}
+            verify_key_2_user_email[user.verify_key] = user.email
+
+        user_code_service = context.node.get_service("usercodeservice")
+
+        def get_code(uid):
+            return user_code_service.get_by_uid(context=context, uid=uid)
+
+        for code_history in code_histories:
+            user_email = verify_key_2_user_email[code_history.user_verify_key]
+
+            user_code_list = [get_code(uid) for uid in code_history.user_code_history]
+
+            code_versions = CodeVersions(user_code_list, code_history.service_func_name)
+            user_code_histories[user_email][
+                code_history.service_func_name
+            ] = code_versions
+
+        return user_code_histories
 
     # @service_method(path="code_history.get_by_name_and_user_id", name="get_by_name_and_user_id")
     # def get_by_name_and_user_id(self, context: AuthedServiceContext, service_func_name: str, user_id: UID

@@ -1,6 +1,5 @@
 # stdlib
 from typing import List
-from typing import Optional
 
 # third party
 from result import Result
@@ -13,7 +12,6 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...types.uid import UID
 from .code_history import CodeHistory
 
 NamePartitionKey = PartitionKey(key="service_func_name", type_=str)
@@ -34,6 +32,11 @@ class CodeHistoryStash(BaseUIDStoreStash):
     ) -> Result[List[CodeHistory], str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(service_func_name)])
         return self.query_all(credentials=credentials, qks=qks)
+
+    def get_by_verify_key(
+        self, credentials: SyftVerifyKey
+    ) -> Result[List[CodeHistory], str]:
+        return self.find_all(credentials=credentials)
 
     # def get_version(self, name:str, version:int) -> Optional[UserCode]:
     #     for obj in self.objs.values():
