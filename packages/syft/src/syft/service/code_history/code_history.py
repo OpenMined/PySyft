@@ -1,5 +1,5 @@
 # stdlib
-from typing import List
+from typing import List, Dict, Tuple
 from typing import Optional
 
 # relative
@@ -23,15 +23,17 @@ class CodeHistory(SyftObject):
     node_uid: Optional[UID]
     user_verify_key: SyftVerifyKey
     enclave_metadata: Optional[EnclaveMetadata] = None
-    user_code_history: Optional[List[UID]] = []
+    user_code_history: Optional[List[Tuple[UID, str]]] = []
     service_func_name: str
+    comment_history: Optional[Dict[UID, str]] = {}
+    # comments: Optional[str] = None
 
     __attr_unique__ = ["service_func_name"]
 
-    def add_code(self, code: UserCode):
-        self.user_code_history.append(code.id)
+    def add_code(self, code: UserCode, comment: str):
+        self.user_code_history.append((code.id, comment))
 
-    # def __getitem__(self, key: int):
+    # def __getitem__(self, key: int):  
     #     api = APIRegistry.api_for(
     #         self.node_uid,
     #         self.user_verify_key,
@@ -51,6 +53,3 @@ class CodeVersions:
 
     def __getitem__(self, key: int):
         return self.user_code_history[key]
-
-
-# TODO: Fix Multiple users can passing the same name for their code.

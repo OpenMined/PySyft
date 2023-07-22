@@ -1,6 +1,6 @@
 # stdlib
 from typing import List
-from typing import Union
+from typing import Union, Optional
 
 # relative
 from ...store.document_store import DocumentStore
@@ -32,7 +32,7 @@ class CodeHistoryService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def submit_version(
-        self, context: AuthedServiceContext, code: Union[SubmitUserCode, UserCode]
+        self, context: AuthedServiceContext, code: Union[SubmitUserCode, UserCode], comment: Optional[str]=None
     ) -> Union[SyftSuccess, SyftError]:
         user_code_service = context.node.get_service("usercodeservice")
 
@@ -43,6 +43,7 @@ class CodeHistoryService(AbstractService):
 
             uid = UID.from_string(result.message.split(" ")[-1])
             code = user_code_service.get_by_uid(context=context, uid=uid)
+            
 
         elif isinstance(code, UserCode):
             result = user_code_service.get_by_uid(context=context, uid=code.id)
@@ -75,7 +76,7 @@ class CodeHistoryService(AbstractService):
             if result.is_err():
                 return SyftError(message=result.err())
 
-        code_history.add_code(code=code)
+        code_history.add_code(code=code, comment=comment)
         result = self.stash.update(credentials=context.credentials, obj=code_history)
         if result.is_err():
             return SyftError(message=result.err())
@@ -114,7 +115,7 @@ class CodeHistoryService(AbstractService):
             return result.ok()
         else:
             return SyftError(message=result.err())
-
+        
     @service_method(
         path="code_history.get_history",
         name="get_history",
@@ -126,15 +127,19 @@ class CodeHistoryService(AbstractService):
 
         def get_code(uid):
             return user_code_service.get_by_uid(context=context, uid=uid)
-
+        
         if result.is_ok():
             code_histories = result.ok()
             result = {}
+
             for code_history in code_histories:
-                user_code_list = [
-                    get_code(uid) for uid in code_history.user_code_history
-                ]
+                user_code_list = []
+                comments_list = []
+                for uid, comment in code_history.user_code_history:
+                    user_code_list.append(get_code(uid))
+                    comments_list.append(comment)
                 result[code_history.service_func_name] = user_code_list
+                result["comments"] = comments_list
             return result
         else:
             return SyftError(message=result.err())
@@ -149,7 +154,6 @@ class CodeHistoryService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
         code_histories = result.ok()
-
         user_service = context.node.get_service("userservice")
         result = user_service.stash.get_all(context.credentials)
         if result.is_err():
@@ -216,8 +220,6 @@ class CodeHistoryService(AbstractService):
         user_service = context.node.get_service("userservice")
         user_verify_key = user_service.user_verify_key(user_email)
 
-        # user = self.verify_user_id(context=context, user_id=user_id)
-        print("USER: ", user_verify_key)
         if isinstance(user_verify_key, SyftError):
             return user_verify_key
 
@@ -229,26 +231,7 @@ class CodeHistoryService(AbstractService):
         }
 
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
-        print("Results", result)
         if result.is_err():  # or len(result) > 1
             return result
 
-    # @service_method(path="code_history.get_by_name", name="get_by_name", roles=DATA_SCIENTIST_ROLE_LEVEL)
-    # def get_by_func_name(self, context: AuthedServiceContext, service_func_name: str, user_email: str):
-    #     user_service = context.node.get_service("userservice")
-    #     user_verify_key = user_service.user_verify_key(user_email)
-
-    # #     def get_by_name(
-    # #     self, credentials: SyftVerifyKey, name: str
-    # # ) -> Result[Optional[Dataset], str]:
-    #     qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
-    #     return self.query_one(credentials=credentials, qks=qks)
-
-    # TODO
-    # verify the user => get_service from user_service
-    # create kwargs => get syft_Verify key from the user
-    # try find_all
-    # make sure we get atmost one result => error
-    # Write another function for data scientist => get_by_name
-    # Another function to check for the syft_verify key
-    #
+    
