@@ -5,7 +5,7 @@ from enum import Enum
 from enum import EnumMeta
 import functools
 import pathlib
-from pathlib import Path
+from pathlib import PurePath
 import sys
 from types import MappingProxyType
 from typing import Any
@@ -169,10 +169,10 @@ def deserialize_type(type_blob: bytes) -> type:
     return exception_type
 
 
-TPath = TypeVar("TPath", bound=Path)
+TPath = TypeVar("TPath", bound=PurePath)
 
 
-def serialize_path(path: Path) -> bytes:
+def serialize_path(path: PurePath) -> bytes:
     # relative
     from .serialize import _serialize
 
@@ -295,7 +295,14 @@ recursive_serde_register(
 )
 
 
-for path_type in (Path, pathlib.PosixPath, pathlib.WindowsPath):
+for path_type in (
+    PurePath,
+    pathlib.PurePosixPath,
+    pathlib.PureWindowsPath,
+    pathlib.Path,
+    pathlib.PosixPath,
+    pathlib.WindowsPath,
+):
     recursive_serde_register(
         path_type,
         serialize=serialize_path,
