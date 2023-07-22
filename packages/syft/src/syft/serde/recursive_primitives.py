@@ -169,6 +169,9 @@ def deserialize_type(type_blob: bytes) -> type:
     return exception_type
 
 
+TPath = TypeVar("TPath", bound=Path)
+
+
 def serialize_path(path: Path) -> bytes:
     # relative
     from .serialize import _serialize
@@ -176,7 +179,7 @@ def serialize_path(path: Path) -> bytes:
     return cast(bytes, _serialize(str(path), to_bytes=True))
 
 
-def deserialize_path(path_type: Type[Path], buf: bytes) -> Path:
+def deserialize_path(path_type: Type[TPath], buf: bytes) -> TPath:
     # relative
     from .deserialize import _deserialize
 
