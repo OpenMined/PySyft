@@ -4,6 +4,7 @@ from collections import defaultdict
 from enum import Enum
 from enum import EnumMeta
 import functools
+import pathlib
 from pathlib import Path
 import sys
 from types import MappingProxyType
@@ -13,6 +14,7 @@ from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Type
 from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
@@ -174,12 +176,12 @@ def serialize_path(path: Path) -> bytes:
     return cast(bytes, _serialize(str(path), to_bytes=True))
 
 
-def deserialize_path(buf: bytes) -> Path:
+def deserialize_path(path_type: Type[Path], buf: bytes) -> Path:
     # relative
     from .deserialize import _deserialize
 
     path: str = _deserialize(buf, from_bytes=True)
-    return Path(path)
+    return path_type(path)
 
 
 # bit_length + 1 for signed
@@ -289,7 +291,13 @@ recursive_serde_register(
     deserialize=functools.partial(deserialize_kv, MappingProxyType),
 )
 
-recursive_serde_register(Path, serialize=serialize_path, deserialize=deserialize_path)
+
+for path_type in (Path, pathlib.PosixPath, pathlib.WindowsPath):
+    recursive_serde_register(
+        path_type,
+        serialize=serialize_path,
+        deserialize=functools.partial(deserialize_path, path_type),
+    )
 
 
 def serialize_generic_alias(serialized_type: _GenericAlias) -> bytes:
