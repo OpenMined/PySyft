@@ -83,7 +83,7 @@ from ..service.user.user_stash import UserStash
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.file_store import FileStoreConfig
-from ..store.file_store import OnDiskFileStoreConfig
+from ..store.file_store.on_disk import OnDiskFileStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
