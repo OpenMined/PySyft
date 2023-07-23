@@ -1,6 +1,27 @@
 """Blob file storage
 
-Contains blob file storage interfaces. See `on_disk.py` for example of a concrete implementation.
+Contains blob file storage interfaces. See `on_disk.py` for an example of a concrete implementation.
+
+FileClient, FileClientConfig and FileClientConnection
+-----------------------------------------------------
+
+```
+file_client_cls: Type[FileClient]
+file_client_config: FileClientConfig
+
+file_client = file_client_cls(config=file_client_config)
+```
+
+FileClient implements context manager (`__enter__()` and `__exit__()`) to create a FileClientConnection.
+`FileClient.__enter__()` creates a connection (FileClientConnection) to the file system (e.g. SeaweedFS).
+FileClientConnection implements operations on files (read, write, ...).
+
+```
+with file_client as conn:
+    conn.read(...)
+```
+
+See `file_service.py` for usage example.
 
 Write/persist SyftObject to blob storage
 ----------------------------------------
