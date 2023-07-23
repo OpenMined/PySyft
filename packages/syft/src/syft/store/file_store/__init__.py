@@ -1,3 +1,23 @@
+"""Blob file storage
+
+Write/persist SyftObject to blob storage
+----------------------------------------
+
+- create a CreateFileObject from SyftObject `create_file_object = CreateFileObject.from(obj)`
+- pre-allocate the file object `write_resource = api.services.file.allocate(create_file_object)`
+  (this returns a SyftWriteResource)
+- use `SyftWriteResource.write` to upload/save/persist the SyftObject
+  `write_resource.write(sy.serialize(user_object, to_bytes=True))`
+
+Read/retrieve SyftObject from blob storage
+----------------------------------------
+
+- get a SyftResource from the id of the FileObject of the SyftObject
+  `resource = api.services.file.read(file_object_id)`
+- use `SyftResource.read` to retrieve the SyftObject `syft_object = resouce.read()`
+"""
+
+
 # stdlib
 from typing import Type
 from typing import Union
@@ -74,29 +94,6 @@ class FileClientConnection:
 
     def create_resource(self, obj: FileObject) -> SyftWriteResource:
         raise NotImplementedError
-
-
-# SyftObject write ->  syft server -> syftresourcewrite (write)
-
-# def save(syftobject):
-#     WriteSyftResource <- api.service.file.allocate(CreateFileObject)
-#     WriteSyftResource.write(...)
-
-# class OnDiskWriteSyftResource:
-#     file_object_id: UID
-#     def write(obj: SyftObject):
-#         api.service.file.upload(obj, file_object)
-
-# )
-# SyftResource -> SyftServer -> data or link
-
-# syftclient - SyftResource.read() return the data
-
-# syftclient -> CreateFileObject -> SyftServer -> WriteSyftResource
-# syftclient -> WriteSyftResource.write(data)
-
-
-# WriteSyftResource.write(data)
 
 
 @serializable()
