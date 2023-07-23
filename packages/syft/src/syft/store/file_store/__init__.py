@@ -1,5 +1,7 @@
 """Blob file storage
 
+Contains blob file storage interfaces. See `on_disk.py` for example of a concrete implementation.
+
 Write/persist SyftObject to blob storage
 ----------------------------------------
 
@@ -10,7 +12,7 @@ Write/persist SyftObject to blob storage
   `write_resource.write(sy.serialize(user_object, to_bytes=True))`
 
 Read/retrieve SyftObject from blob storage
-----------------------------------------
+------------------------------------------
 
 - get a SyftResource from the id of the FileObject of the SyftObject
   `resource = api.services.file.read(file_object_id)`
