@@ -83,7 +83,7 @@ class DatasetService(AbstractService):
                 results.append(dataset)
 
             # If chunk size is defined, then split list into evenly sized chunks
-            if page_size:
+            if page_size and len(results):
                 total = len(results)
                 results = [
                     results[i : i + page_size]
@@ -92,6 +92,8 @@ class DatasetService(AbstractService):
                 # Return the proper slice using chunk_index
                 results = results[page_index]
                 results = DatasetPageView(datasets=results, total=total)
+            else:
+                results = DatasetPageView(datasets=datasets, total=len(datasets)) 
 
             return results
         return SyftError(message=result.err())
