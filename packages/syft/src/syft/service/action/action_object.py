@@ -292,6 +292,7 @@ def convert_to_pointers(
 ) -> Tuple[List, Dict]:
     arg_list = []
     kwarg_dict = {}
+    print("inside convert_to_pointer")
     if args is not None:
         for arg in args:
             if not isinstance(arg, ActionObject):
@@ -582,6 +583,7 @@ class ActionObject(SyftObject):
                 user_verify_key=self.syft_client_verify_key,
             )
         api.services.action.execute(action)
+        api.services.graph.add_action(action)
 
     def _syft_prepare_obj_uid(self, obj) -> LineageID:
         # We got the UID
