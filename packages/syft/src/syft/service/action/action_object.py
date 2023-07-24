@@ -292,7 +292,6 @@ def convert_to_pointers(
 ) -> Tuple[List, Dict]:
     arg_list = []
     kwarg_dict = {}
-    print("inside convert_to_pointer")
     if args is not None:
         for arg in args:
             if not isinstance(arg, ActionObject):
