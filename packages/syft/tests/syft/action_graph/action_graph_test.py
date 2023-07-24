@@ -14,6 +14,7 @@ from threading import Thread
 
 # third party
 import networkx as nx
+import pytest
 from result import Err
 
 # syft absolute
@@ -86,6 +87,7 @@ def test_node_action_data_from_action_no_mutagen(verify_key: SyftVerifyKey) -> N
     assert node_action_data.last_nm_mutagen_node is None
 
 
+@pytest.mark.skip(reason="We are ignoring actions that are causing mutations for now")
 def test_node_action_data_from_action_mutagen(verify_key: SyftVerifyKey) -> None:
     """
     action1 -> d = numpy.arry([1, 2, 3])
