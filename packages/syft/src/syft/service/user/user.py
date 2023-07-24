@@ -197,13 +197,16 @@ class UserView(SyftObject):
             f"user '{self.name}' with email '{self.email}'."
         )
 
-    def set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
+    def set_password(
+        self, new_password: str, confirm: bool = True
+    ) -> Union[SyftError, SyftSuccess]:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
 
-        confirmed_password: str = getpass("Please confirm your password: ")
-        if confirmed_password != new_password:
-            return SyftError(message="Passwords do not match !")
+        if confirm:
+            confirmed_password: str = getpass("Please confirm your password: ")
+            if confirmed_password != new_password:
+                return SyftError(message="Passwords do not match !")
         return self._set_password(new_password)
 
     def set_email(self, email: str) -> Union[SyftSuccess, SyftError]:

@@ -174,7 +174,7 @@ class NodeHandle:
         if password == get_default_root_password():
             message = (
                 "You are using a default password. Please change the password "
-                "using `[your_client].me.set_password(<new_password>)`."
+                "using `[your_client].me.set_password([new_password])`."
             )
             prompt_warning_message(message)
         client = self.client

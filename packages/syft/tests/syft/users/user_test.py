@@ -232,7 +232,7 @@ def test_user_update(root_client):
 
 
 def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> None:
-    root_client.me.set_password("123")
+    root_client.me.set_password("123", confirm=False)
     email = root_client.me.email
     # log in again with the wrong password
     root_client_c = worker.root_client.login(email=email, password="1234")
