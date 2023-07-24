@@ -73,7 +73,7 @@ def connect_with_key(tailscale_host: str, headscale_host: str, authkey: str) -> 
         report = get_result(json=resp.json())
         return json.loads(report)["report"]
     except Exception as e:
-        print("failed to make request", data, e)
+        print("failed to make request", e)
     return ""
 
 
