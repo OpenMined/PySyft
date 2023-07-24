@@ -86,7 +86,7 @@ class UserCodeService(AbstractService):
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
         CODE_EXECUTE = UserCodeStatusChange(
-            value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
+            value=UserCodeStatus.APPROVED, linked_obj=linked_obj
         )
         changes = [CODE_EXECUTE]
 
