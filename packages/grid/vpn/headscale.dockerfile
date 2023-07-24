@@ -23,13 +23,10 @@ RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit
   chmod +x /usr/local/bin/waitforit
 
 ENV HEADSCALE_VERSION="0.22.3"
-RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-  curl -o /bin/headscale -sSL "https://github.com/juanfont/headscale/releases/download/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux_arm64"; \
-  fi
-
-RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) == "x86_64" ]; then \
-  curl -o /bin/headscale -sSL "https://github.com/juanfont/headscale/releases/download/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux_amd64"; \
-  fi
+ENV GITHUB_URL="https://github.com/juanfont/headscale/releases/download"
+ENV HEADSCALE_URL="${GITHUB_URL}/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux"
+RUN [ $(uname -m) != "x86_64" ] && curl -o /bin/headscale -sSL "${HEADSCALE_URL}_arm64" || true
+RUN [ $(uname -m) = "x86_64" ] && curl -o /bin/headscale -sSL "${HEADSCALE_URL}_amd64" || true
 
 RUN chmod +x /bin/headscale
 
@@ -46,5 +43,9 @@ COPY ./headscale.py /headscale/headscale.py
 RUN mkdir -p /headscale/data
 
 ENV NETWORK_NAME="omnet"
+
+# security patches
+RUN apt purge --auto-remove linux-libc-dev -y || true
+RUN apt purge --auto-remove libldap-2.5-0 -y || true
 
 CMD ["sh", "-c", "/headscale/headscale.sh ${NETWORK_NAME}"]
