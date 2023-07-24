@@ -14,7 +14,7 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .code_history import CodeHistory
-from .code_history import CodeVersions
+from .code_history import CodeVersions, CodeHistoryDict
 from .code_history_stash import CodeHistoryStash
 
 
@@ -130,17 +130,19 @@ class CodeHistoryService(AbstractService):
         
         if result.is_ok():
             code_histories = result.ok()
-            result = {}
+            code_versions_dict = {}
 
             for code_history in code_histories:
                 user_code_list = []
-                comments_list = []
-                for uid, comment in code_history.user_code_history:
+                for uid in code_history.user_code_history:
                     user_code_list.append(get_code(uid))
-                    comments_list.append(comment)
-                result[code_history.service_func_name] = user_code_list
-                result["comments"] = comments_list
-            return result
+                code_versions = CodeVersions(
+                    user_code_history=user_code_list, 
+                    service_func_name=code_history.service_func_name, 
+                    comment_history=code_history.comment_history
+                )
+                code_versions_dict[code_history.service_func_name] = code_versions
+            return CodeHistoryDict(code_versions=code_versions_dict)
         else:
             return SyftError(message=result.err())
 
@@ -163,7 +165,7 @@ class CodeHistoryService(AbstractService):
         user_code_histories = {}
         verify_key_2_user_email = {}
         for user in users:
-            user_code_histories[user.email] = {}
+            user_code_histories[user.email] = CodeHistoryDict()
             verify_key_2_user_email[user.verify_key] = user.email
 
         user_code_service = context.node.get_service("usercodeservice")
@@ -176,10 +178,12 @@ class CodeHistoryService(AbstractService):
 
             user_code_list = [get_code(uid) for uid in code_history.user_code_history]
 
-            code_versions = CodeVersions(user_code_list, code_history.service_func_name)
-            user_code_histories[user_email][
-                code_history.service_func_name
-            ] = code_versions
+            code_versions = CodeVersions(
+                user_code_history=user_code_list, 
+                service_func_name=code_history.service_func_name, 
+                comment_history=code_history.comment_history
+            )
+            user_code_histories[user_email].add_func(code_versions)
 
         return user_code_histories
 
