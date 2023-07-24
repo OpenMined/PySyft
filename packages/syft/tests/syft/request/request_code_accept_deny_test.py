@@ -139,7 +139,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     linked_obj = LinkedObject.from_obj(user_code, node_uid=worker.id)
 
     user_code_change = UserCodeStatusChange(
-        value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
+        value=UserCodeStatus.APPROVED, linked_obj=linked_obj
     )
 
     change_context = ChangeContext(

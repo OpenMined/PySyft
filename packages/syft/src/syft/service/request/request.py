@@ -760,7 +760,7 @@ class UserCodeStatusChange(Change):
     def is_enclave_request(self, user_code: UserCode):
         return (
             user_code.is_enclave_code is not None
-            and self.value == UserCodeStatus.EXECUTE
+            and self.value == UserCodeStatus.APPROVED
         )
 
     def _run(
