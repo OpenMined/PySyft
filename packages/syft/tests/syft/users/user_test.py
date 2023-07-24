@@ -232,7 +232,7 @@ def test_user_update(root_client):
 
 
 def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> None:
-    root_client.me.set_pw("123")
+    root_client.me.set_password("123")
     email = root_client.me.email
     # log in again with the wrong password
     root_client_c = worker.root_client.login(email=email, password="1234")
@@ -296,18 +296,10 @@ def test_user_view_set_duplicated_email(
 
 
 def test_user_view_update_name_institution_website(
-    root_client: DomainClient, ds_client: DomainClient, guest_client: DomainClient
+    root_client: DomainClient,
+    ds_client: DomainClient,
+    guest_client: DomainClient,
 ) -> None:
-    err = root_client.me.update(
-        name="syft",
-        institute="OpenMined",
-        website="https://syft.org",
-        websites=1,
-        y=1,
-        z="a",
-    )
-    assert isinstance(err, SyftError)
-
     result = root_client.me.update(
         name="syft", institution="OpenMined", website="https://syft.org"
     )
@@ -343,9 +335,9 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
         == admin_client.verify_key
     )
     assert sheldon.role == ServiceRole.DATA_SCIENTIST
-    sheldon.set_role("guest")
+    sheldon.update(role="guest")
     assert sheldon.role == ServiceRole.GUEST
-    sheldon.set_role("data_owner")
+    sheldon.update(role="data_owner")
     assert sheldon.role == ServiceRole.DATA_OWNER
     # the data scientist (Sheldon) log in the domain, he should not
     # be able to change his role, even if he is a data owner now
@@ -357,15 +349,15 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
     )
     assert ds_client.me.role == sheldon.role
     assert ds_client.me.role == ServiceRole.DATA_OWNER
-    assert isinstance(ds_client.me.set_role("guest"), SyftError)
-    assert isinstance(ds_client.me.set_role("data_scientist"), SyftError)
+    assert isinstance(ds_client.me.update(role="guest"), SyftError)
+    assert isinstance(ds_client.me.update(role="data_scientist"), SyftError)
     # now we set sheldon's role to admin. Only now he can change his role
-    sheldon.set_role("admin")
+    sheldon.update(role="admin")
     assert sheldon.role == ServiceRole.ADMIN
     # QA: this is different than when running in the notebook
     assert len(ds_client.users.get_all()) == len(admin_client.users.get_all())
-    assert isinstance(ds_client.me.set_role("guest"), SyftSuccess)
-    assert isinstance(ds_client.me.set_role("admin"), SyftError)
+    assert isinstance(ds_client.me.update(role="guest"), SyftSuccess)
+    assert isinstance(ds_client.me.update(role="admin"), SyftError)
 
 
 def test_user_view_set_role_admin() -> None:
@@ -387,12 +379,12 @@ def test_user_view_set_role_admin() -> None:
     )
     assert len(domain_client.users.get_all()) == 3
 
-    domain_client.users[1].set_role("admin")
+    domain_client.users[1].update(role="admin")
     ds_client = node.login(email="sheldon@caltech.edu", password="changethis")
     assert ds_client.me.role == ServiceRole.ADMIN
     assert len(ds_client.users.get_all()) == len(domain_client.users.get_all())
 
-    domain_client.users[2].set_role("admin")
+    domain_client.users[2].update(role="admin")
     ds_client_2 = node.login(email="sheldon2@caltech.edu", password="changethis")
     assert ds_client_2.me.role == ServiceRole.ADMIN
     assert len(ds_client_2.users.get_all()) == len(domain_client.users.get_all())

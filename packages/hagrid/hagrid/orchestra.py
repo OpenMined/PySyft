@@ -12,7 +12,6 @@ from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Union
-import warnings
 
 # third party
 import gevent
@@ -28,6 +27,7 @@ try:
     from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
     from syft.node.node import get_default_root_password
+    from syft.util.util import prompt_warning_message
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
     pass
@@ -172,12 +172,11 @@ class NodeHandle:
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
         if password == get_default_root_password():
-            warnings.simplefilter("always", RuntimeWarning)
-            warnings.warn(
-                message="You are using a default password. Please change the password "
-                "using `[your_client].me.set_password(<new_password>)`.",
-                category=RuntimeWarning,
+            message = (
+                "You are using a default password. Please change the password "
+                "using `[your_client].me.set_password(<new_password>)`."
             )
+            prompt_warning_message(message)
         client = self.client
         if email and password:
             return client.login(email=email, password=password, **kwargs)

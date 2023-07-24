@@ -13,7 +13,7 @@ from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
 import pydantic
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 from pydantic.networks import EmailStr
 
 # relative
@@ -21,6 +21,7 @@ from ...client.api import APIRegistry
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -114,6 +115,12 @@ class UserUpdate(PartialSyftObject):
     def make_email(cls, v: EmailStr) -> Optional[EmailStr]:
         return EmailStr(v) if isinstance(v, str) else v
 
+    @pydantic.validator("role", pre=True)
+    def str_to_role(cls, v: Union[str, ServiceRole]) -> Optional[ServiceRole]:
+        if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
+            return getattr(ServiceRole, v.upper())
+        return v
+
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
@@ -175,7 +182,7 @@ class UserView(SyftObject):
             "Role": self.role.name.capitalize(),
         }
 
-    def set_pw(self, new_password: str) -> Union[SyftError, SyftSuccess]:
+    def _set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -186,21 +193,21 @@ class UserView(SyftObject):
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
         return SyftSuccess(
-            message=f"Successfully setting a new password for "
+            message=f"Successfully updated password for "
             f"user '{self.name}' with email '{self.email}'."
         )
 
     def set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
-        """
-        Set a new password interactively with confirmed password from user input
-        """
-        # TODO: password validation (having uppcase, special characters...)?
+        """Set a new password interactively with confirmed password from user input"""
+        # TODO: Add password validation for special characters
+
         confirmed_password: str = getpass("Please confirm your password: ")
         if confirmed_password != new_password:
-            return SyftError(message="Passwords do not match!")
-        return self.set_pw(new_password)
+            return SyftError(message="Passwords do not match !")
+        return self._set_password(new_password)
 
-    def set_email(self, new_email: EmailStr) -> Union[SyftSuccess, SyftError]:
+    def set_email(self, email: str) -> Union[SyftSuccess, SyftError]:
+        # validate email address
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -209,73 +216,50 @@ class UserView(SyftObject):
             return SyftError(message=f"You must login to {self.node_uid}")
 
         try:
-            result = api.services.user.update(
-                uid=self.id, user_update=UserUpdate(email=new_email)
-            )
-        except ValidationError as e:
-            return SyftError(message=f"ValidationError: {e}")
+            user_update = UserUpdate(email=email)
+        except ValidationError as e:  # noqa: F841
+            return SyftError(message="{email} is not a valid email address.")
+
+        result = api.services.user.update(uid=self.id, user_update=user_update)
+
         if isinstance(result, SyftError):
-            return SyftError(message=result.message)
+            return result
 
-        self.email = new_email
+        self.email = email
         return SyftSuccess(
-            message=f"Successfully setting a new email for the user "
-            f"'{self.name}'. New email is '{self.email}'."
+            message=f"Successfully updated email for the user "
+            f"'{self.name}' to '{self.email}'."
         )
 
-    def update(self, **kwargs) -> Union[SyftSuccess, SyftError]:
-        """
-        Used to update name, institution, website of a user
-        """
-        valid_keys = ["name", "institution", "website"]
-        invalid_keys = [x for x in kwargs.keys() if x not in valid_keys]
-        if invalid_keys:
-            return SyftError(
-                message=f"Unvalid keys provided ({', '. join([str(x) for x in invalid_keys])}). "
-                f"Valid keys are 'name', 'institution', 'website'."
-            )
+    def update(
+        self,
+        name: Union[Empty, str] = Empty,
+        institution: Union[Empty, str] = Empty,
+        website: Union[str, Empty] = Empty,
+        role: Union[str, Empty] = Empty,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Used to update name, institution, website of a user."""
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        api.services.user.update(uid=self.id, user_update=UserUpdate(**kwargs))
-        for attr, new_value in kwargs.items():
-            setattr(self, attr, new_value)
-        return SyftSuccess(
-            message=f"Successfully setting new {', '. join([str(x) for x in kwargs.keys()])} "
-            f"for the user with email '{self.email}'."
+        user_update = UserUpdate(
+            name=name,
+            institution=institution,
+            website=website,
+            role=role,
         )
+        result = api.services.user.update(uid=self.id, user_update=user_update)
 
-    def set_role(self, role: str) -> Union[SyftSuccess, SyftError]:
-        valid_roles = {
-            "guest": ServiceRole.GUEST,
-            "data_scientist": ServiceRole.DATA_SCIENTIST,
-            "data_owner": ServiceRole.DATA_OWNER,
-            "admin": ServiceRole.ADMIN,
-        }
-        if role not in valid_roles.keys():
-            return SyftError(
-                message=f"Can't set role to {role}. Please try "
-                f"admin / data_scientist / data_owner / guest."
-            )
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.node_uid}")
-        set_role_result = api.services.user.update(
-            uid=self.id, user_update=UserUpdate(role=valid_roles[role])
-        )
-        if isinstance(set_role_result, SyftError):
-            return SyftError(message=set_role_result.message)
-        self.role = valid_roles[role]
-        return SyftSuccess(
-            message=f"Successfully setting a new role for the user "
-            f"'{self.name}' with email '{self.email}'. New role is '{role}'."
-        )
+        if isinstance(result, SyftError):
+            return result
+
+        for attr, val in result.to_dict(exclude_empty=True).items():
+            setattr(self, attr, val)
+
+        return SyftSuccess(message="User details successfully updated.")
 
 
 @serializable()
