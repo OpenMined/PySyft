@@ -378,7 +378,7 @@ class OblvService(AbstractService):
         user_code = user_code.ok()
 
         res = user_code.status.mutate(
-            value=UserCodeStatus.EXECUTE,
+            value=UserCodeStatus.APPROVED,
             node_name=node_name,
             verify_key=context.credentials,
         )
