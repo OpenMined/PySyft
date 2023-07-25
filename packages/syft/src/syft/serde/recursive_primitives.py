@@ -12,6 +12,7 @@ from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Tuple
 from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
@@ -345,6 +346,7 @@ recursive_serde_register_type(_SpecialForm)
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
+recursive_serde_register_type(Tuple)
 
 if sys.version_info >= (3, 9):
     recursive_serde_register_type(
