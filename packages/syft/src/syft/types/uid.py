@@ -173,14 +173,14 @@ class UID:
     def emoji(self) -> str:
         return f"<UID:{self.string_emoji(string=str(self.value), length=8, chunk=4)}>"
 
-    def repr_short(self) -> str:
+    def short(self) -> str:
         """Returns a SHORT human-readable version of the ID
 
         Return a SHORT human-readable version of the ID which
         makes it print nicer when embedded (often alongside other
         UID objects) within other object __repr__ methods."""
 
-        return f"..{str(self.value)[-5:]}"
+        return str(self.value)[:8]
 
     @property
     def id(self) -> "UID":

@@ -41,7 +41,7 @@ def test_settingsstash_update(
     mock_settings = add_mock_settings(root_verify_key, settings_stash, settings)
 
     # update mock_settings according to update_settings
-    update_kwargs = update_settings.to_dict(exclude_none=True).items()
+    update_kwargs = update_settings.to_dict(exclude_empty=True).items()
     for field_name, value in update_kwargs:
         setattr(mock_settings, field_name, value)
 

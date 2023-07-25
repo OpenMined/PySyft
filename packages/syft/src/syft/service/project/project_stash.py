@@ -20,7 +20,7 @@ from ..response import SyftError
 from .project import Project
 
 VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
-OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
+NamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
@@ -40,11 +40,16 @@ class ProjectStash(BaseUIDStoreStash):
         return self.query_all(
             credentials=credentials,
             qks=qks,
-            order_by=OrderByNamePartitionKey,
         )
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Optional[Project], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
+        return self.query_one(credentials=credentials, qks=qks)
+
+    def get_by_name(
+        self, credentials: SyftVerifyKey, project_name: str
+    ) -> Result[Optional[Project], str]:
+        qks = QueryKeys(qks=[NamePartitionKey.with_obj(project_name)])
         return self.query_one(credentials=credentials, qks=qks)

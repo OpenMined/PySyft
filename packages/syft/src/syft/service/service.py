@@ -33,12 +33,14 @@ from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
+from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
 from .context import AuthedServiceContext
 from .context import ChangeContext
 from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
+from .warnings import APIEndpointWarning
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)
@@ -77,6 +79,7 @@ class BaseConfig(SyftBaseObject):
     doc_string: Optional[str]
     signature: Optional[Signature]
     is_from_lib: bool = False
+    warning: Optional[APIEndpointWarning]
 
 
 @serializable()
@@ -308,6 +311,7 @@ def service_method(
     path: Optional[str] = None,
     roles: Optional[List[ServiceRole]] = None,
     autosplat: Optional[List[str]] = None,
+    warning: Optional[APIEndpointWarning] = None,
 ):
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
@@ -331,7 +335,16 @@ def service_method(
                     args=args,
                     kwargs=kwargs,
                 )
-            return func(self, *args, **kwargs)
+            result = func(self, *args, **kwargs)
+            context = kwargs.get("context", None)
+            context = args[0] if context is None else context
+            attrs_to_attach = {
+                "syft_node_location": context.node.id,
+                "syft_client_verify_key": context.credentials,
+            }
+            return attach_attribute_to_syft_object(
+                result=result, attr_dict=attrs_to_attach
+            )
 
         if autosplat is not None and len(autosplat) > 0:
             signature = expand_signature(signature=input_signature, autosplat=autosplat)
@@ -345,6 +358,7 @@ def service_method(
             signature=signature,
             roles=roles,
             permissions=["Guest"],
+            warning=warning,
         )
         ServiceConfigRegistry.register(config)
 

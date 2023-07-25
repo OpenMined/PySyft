@@ -21,7 +21,7 @@ from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F40
 from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def faker():
     return Faker()
 
@@ -83,6 +83,7 @@ pytest_plugins = [
     "tests.syft.settings.fixtures",
     "tests.syft.request.fixtures",
     "tests.syft.dataset.fixtures",
-    "tests.syft.messages.fixtures",
+    "tests.syft.notifications.fixtures",
     "tests.syft.action_graph.fixtures",
+    "tests.syft.serde.fixtures",
 ]

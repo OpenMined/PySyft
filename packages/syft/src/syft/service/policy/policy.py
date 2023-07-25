@@ -25,7 +25,7 @@ from result import Ok
 
 # relative
 from ...abstract_node import NodeType
-from ...client.api import NodeView
+from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
@@ -43,6 +43,7 @@ from ..action.action_object import ActionObject
 from ..code.code_parse import GlobalsVisitor
 from ..code.unparse import unparse
 from ..context import AuthedServiceContext
+from ..context import ChangeContext
 from ..context import NodeServiceContext
 from ..dataset.dataset import Asset
 from ..response import SyftError
@@ -130,7 +131,7 @@ class UserPolicyStatus(Enum):
 def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
     from ...client.api import APIRegistry
-    from ...client.api import NodeView
+    from ...client.api import NodeIdentity
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
 
@@ -152,11 +153,11 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
         _obj_exists = False
         for api in api_list:
             if api.services.action.exists(uid):
-                node_view = NodeView.from_api(api)
-                if node_view not in output_kwargs:
-                    output_kwargs[node_view] = {k: uid}
+                node_identity = NodeIdentity.from_api(api)
+                if node_identity not in output_kwargs:
+                    output_kwargs[node_identity] = {k: uid}
                 else:
-                    output_kwargs[node_view].update({k: uid})
+                    output_kwargs[node_identity].update({k: uid})
 
                 _obj_exists = True
                 break
@@ -176,7 +177,7 @@ class InputPolicy(Policy):
             init_kwargs = kwargs["init_kwargs"]
             del kwargs["init_kwargs"]
         else:
-            # TODO: remove this tech debt
+            # TODO: remove this tech debt, dont remove the id mapping functionality
             init_kwargs = partition_by_node(kwargs)
         super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
 
@@ -186,8 +187,22 @@ class InputPolicy(Policy):
         raise NotImplementedError
 
     @property
-    def inputs(self) -> Dict[NodeView, Any]:
+    def inputs(self) -> Dict[NodeIdentity, Any]:
         return self.init_kwargs
+
+    def _inputs_for_context(self, context: ChangeContext):
+        user_node_view = NodeIdentity.from_change_context(context)
+        inputs = self.inputs[user_node_view]
+
+        action_service = context.node.get_service("actionservice")
+        for var_name, uid in inputs.items():
+            action_object = action_service.store.get(
+                uid=uid, credentials=user_node_view.verify_key
+            )
+            if action_object.is_err():
+                return SyftError(message=action_object.err())
+            inputs[var_name] = action_object.ok()
+        return inputs
 
 
 def retrieve_from_db(
@@ -199,20 +214,28 @@ def retrieve_from_db(
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
 
+    # When we are retrieving the code from the database, we need to use the node's
+    # verify key as the credentials. This is because when we approve the code, we
+    # we allow the private data to be used only for this specific code.
+    # but we are not modifying the permissions of the private data
+
+    root_context = AuthedServiceContext(
+        node=context.node, credentials=context.node.verify_key
+    )
     if context.node.node_type == NodeType.DOMAIN:
         for var_name, arg_id in allowed_inputs.items():
             kwarg_value = action_service.get(
-                context=context, uid=arg_id, twin_mode=TwinMode.NONE
+                context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
             )
             if kwarg_value.is_err():
-                return kwarg_value
+                return SyftError(message=kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type == NodeType.ENCLAVE:
-        dict_object = action_service.get(context=context, uid=code_item_id)
+        dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
-            return dict_object
-        for value in dict_object.ok().base_dict.values():
+            return SyftError(message=dict_object.err())
+        for value in dict_object.ok().syft_action_data.values():
             code_inputs.update(value)
 
     else:
@@ -228,10 +251,12 @@ def allowed_ids_only(
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
     if context.node.node_type == NodeType.DOMAIN:
-        node_view = NodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        node_identity = NodeIdentity(
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
         )
-        allowed_inputs = allowed_inputs[node_view]
+        allowed_inputs = allowed_inputs[node_identity]
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
         for key in allowed_inputs.values():
@@ -294,6 +319,7 @@ class OutputPolicy(Policy):
     output_history: List[OutputHistory] = []
     output_kwargs: List[str] = []
     node_uid: Optional[UID]
+    output_readers: List[SyftVerifyKey] = []
 
     def apply_output(
         self,
@@ -314,6 +340,10 @@ class OutputPolicy(Policy):
     @property
     def outputs(self) -> List[str]:
         return self.output_kwargs
+
+    @property
+    def last_output_ids(self) -> List[str]:
+        return self.output_history[-1].outputs
 
 
 @serializable()

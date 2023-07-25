@@ -37,6 +37,7 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/pr-tests-stack-public.yml@dev
     secrets: inherit
 
-  call-vm-tests:
+  call-container-scan:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/vm-tests.yml@dev
+    uses: OpenMined/PySyft/.github/workflows/container-scan.yml@dev
+    secrets: inherit

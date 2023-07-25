@@ -9,6 +9,10 @@ on:
         description: "Run Version Tests Manually"
         required: false
 
+concurrency:
+  group: stackarm64-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
+  cancel-in-progress: true
+
 jobs:
   pr-tests-stack-arm64:
     strategy:
@@ -79,6 +83,8 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Run integration tests
-        timeout-minutes: 600
-        run: |
-          EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration
+        uses: nick-fields/retry@v2
+        with:
+          timeout_seconds: 36000
+          max_attempts: 3
+          command: EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration

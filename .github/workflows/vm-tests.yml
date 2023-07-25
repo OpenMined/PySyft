@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [macos-12]
         python-version: ["3.11"]
-        node-type: ["vm"]
+        deployment-type: ["vm"]
         linux-distro: ["ubuntu-22-04", "rhel-9"]
       fail-fast: false
 
@@ -73,7 +73,7 @@ jobs:
       - name: Run notebook tests
         if: steps.changes.outputs.stack == 'true'
         env:
-          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.node-type }}"
           LINUX_DISTRO: "${{ matrix.linux-distro }}"
           RHEL_SUBSCRIPTION_USERNAME: "${{ secrets.RHEL_SUBSCRIPTION_USERNAME }}"
           RHEL_SUBSCRIPTION_PASSWORD: "${{ secrets.RHEL_SUBSCRIPTION_PASSWORD }}"

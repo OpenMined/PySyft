@@ -1,8 +1,10 @@
 <script>
   import { onMount } from 'svelte';
   import debounce from 'just-debounce-it';
+  import Filter from '$lib/components/Filter.svelte';
   import Search from '$lib/components/Search.svelte';
   import Button from '$lib/components/Button.svelte';
+  import Pagination from '$lib/components/Pagination.svelte';
   import DatasetListItem from '$lib/components/Datasets/DatasetListItem.svelte';
   import NoDatasetFound from '$lib/components/Datasets/DatasetNoneFound.svelte';
   import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
@@ -10,6 +12,11 @@
   import { getAllDatasets, searchDataset } from '$lib/api/datasets';
 
   let datasets = null;
+  let total = 0;
+  let paginators = [5, 10, 15, 20, 25];
+  let page_size = 5,
+    page_index = 0,
+    page_row = 5;
   let openModalNew = false;
   let searchTerm = '';
 
@@ -18,13 +25,28 @@
   }
 
   const search = debounce(async () => {
-    if (searchTerm === '') datasets = await getAllDatasets();
-    else datasets = await searchDataset(searchTerm);
+    if (searchTerm === '') {
+      const results = await getAllDatasets(page_size);
+      datasets = results.datasets;
+      total = results.total;
+    } else {
+      const results = await searchDataset(searchTerm, page_size);
+      datasets = results.datasets;
+      total = results.total;
+    }
   }, 300);
 
   onMount(async () => {
-    datasets = await getAllDatasets();
+    const results = await getAllDatasets(page_size, page_index);
+    datasets = results.datasets;
+    total = results.total;
   });
+
+  const handleUpdate = async () => {
+    const results = await getAllDatasets(page_size, page_index);
+    datasets = results.datasets;
+    total = results.total;
+  };
 </script>
 
 <div class="grid grid-cols-6">
@@ -44,8 +66,26 @@
     <!-- List Actions -->
     <!-- Body -->
     <section class="body pt-10">
-      <div class="w-full max-w-[378px] pb-5">
-        <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} />
+      <div class="flex items-center justify-between w-full gap-8">
+        <div class="w-full max-w-[378px] pb-5">
+          <Search
+            type="text"
+            placeholder="Search by name"
+            bind:value={searchTerm}
+            on:input={search}
+          />
+        </div>
+        <div>
+          <Filter
+            variant="gray"
+            filters={paginators}
+            bind:filter={page_size}
+            bind:index={page_index}
+            on:setFilter={handleUpdate}
+          >
+            Filter:
+          </Filter>
+        </div>
       </div>
 
       {#if datasets === null}
@@ -56,6 +96,16 @@
         {#each datasets as dataset}
           <DatasetListItem {dataset} />
         {/each}
+        <div class="flex justify-center items-center mt-8 mb-8 divide-y divide-gray-100">
+          <Pagination
+            variant="gray"
+            {total}
+            {page_size}
+            {page_row}
+            bind:page_index
+            on:setPagination={handleUpdate}
+          />
+        </div>
       {/if}
     </section>
   </div>

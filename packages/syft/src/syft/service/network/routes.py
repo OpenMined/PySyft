@@ -6,6 +6,7 @@ import secrets
 from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -21,6 +22,7 @@ from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
+from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..context import NodeServiceContext
 from ..response import SyftError
@@ -33,7 +35,10 @@ if TYPE_CHECKING:
 class NodeRoute:
     def client_with_context(self, context: NodeServiceContext) -> SyftClient:
         connection = route_to_connection(route=self, context=context)
-        return SyftClient(connection=connection, credentials=context.node.signing_key)
+        client_type = connection.get_client_type()
+        if isinstance(client_type, SyftError):
+            return client_type
+        return client_type(connection=connection, credentials=context.node.signing_key)
 
     def validate_with_context(self, context: AuthedServiceContext) -> NodePeer:
         # relative
@@ -74,6 +79,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     private: bool = False
     protocol: str = "http"
     port: int = 80
+    proxy_target_uid: Optional[UID] = None
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, HTTPNodeRoute):
@@ -87,6 +93,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
     __version__ = SYFT_OBJECT_VERSION_1
 
     worker_settings: WorkerSettings
+    proxy_target_uid: Optional[UID] = None
 
     @property
     def node(self) -> Optional[AbstractNode]:
@@ -96,6 +103,8 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         node = Worker(
             id=self.worker_settings.id,
             name=self.worker_settings.name,
+            node_type=self.worker_settings.node_type,
+            node_side_type=self.worker_settings.node_side_type,
             signing_key=self.worker_settings.signing_key,
             document_store_config=self.worker_settings.document_store_config,
             action_store_config=self.worker_settings.action_store_config,
@@ -112,6 +121,9 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         if isinstance(other, PythonNodeRoute):
             return hash(self) == hash(other)
         return self == other
+
+
+NodeRouteType = Union[HTTPNodeRoute, PythonNodeRoute]
 
 
 def route_to_connection(

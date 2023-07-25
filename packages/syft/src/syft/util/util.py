@@ -35,10 +35,12 @@ from typing import Type
 from typing import Union
 
 # third party
+from IPython.display import display
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import requests
+from rich.prompt import Confirm
 
 # relative
 from .logger import critical
@@ -85,6 +87,10 @@ def get_name_for(klass: type):
     if klass_name is None:
         klass_name = extract_name(klass)
     return klass_name
+
+
+def get_mb_size(data: Any) -> float:
+    return sys.getsizeof(data) / (1024 * 1024)
 
 
 def extract_name(klass: type):
@@ -437,6 +443,22 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
         raise Exception(log)
 
     return ref.pointer_type  # type: ignore
+
+
+def prompt_warning_message(message: str, confirm: bool = False) -> bool:
+    # relative
+    from ..service.response import SyftWarning
+
+    warning = SyftWarning(message=message)
+    display(warning)
+
+    if confirm:
+        allowed = Confirm.ask("Would you like to proceed?")
+        if not allowed:
+            display("Aborted !!")
+            return False
+
+    return True
 
 
 left_name = [

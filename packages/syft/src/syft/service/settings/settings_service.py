@@ -1,5 +1,8 @@
 # stdlib
 
+# stdlib
+from typing import Union
+
 # third party
 from result import Err
 from result import Ok
@@ -8,11 +11,14 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...util.experimental_flags import flags
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..response import SyftError
+from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..warnings import HighSideCRUDWarning
 from .settings import NodeSettings
 from .settings import NodeSettingsUpdate
 from .settings_stash import SettingsStash
@@ -62,7 +68,7 @@ class SettingsService(AbstractService):
             current_settings = result.ok()
             if len(current_settings) > 0:
                 new_settings = current_settings[0].copy(
-                    update=settings.dict(exclude_unset=True)
+                    update=settings.to_dict(exclude_empty=True)
                 )
                 update_result = self.stash.update(context.credentials, new_settings)
                 if update_result.is_ok():
@@ -73,3 +79,24 @@ class SettingsService(AbstractService):
                 return SyftError(message="No settings found")
         else:
             return SyftError(message=result.err())
+
+    @service_method(
+        path="settings.allow_guest_signup",
+        name="allow_guest_signup",
+        warning=HighSideCRUDWarning(confirmation=True),
+    )
+    def allow_guest_signup(
+        self, context: AuthedServiceContext, enable: bool
+    ) -> Union[SyftSuccess, SyftError]:
+        """Enable/Disable Registration for Data Scientist or Guest Users."""
+        flags.CAN_REGISTER = enable
+        method = context.node.get_service_method(SettingsService.update)
+        settings = NodeSettingsUpdate(signup_enabled=enable)
+
+        result = method(context=context, settings=settings)
+
+        if result.is_err():
+            return SyftError(message=f"Failed to update settings: {result.err()}")
+
+        message = "enabled" if enable else "disabled"
+        return SyftSuccess(message=f"Registration feature successfully {message}")

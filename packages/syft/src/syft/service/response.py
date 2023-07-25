@@ -21,7 +21,11 @@ class SyftResponseMessage(SyftBaseModel):
         return self._bool == other
 
     def __repr__(self) -> str:
-        return f"{type(self)}: {self.message}"
+        _class_name_ = type(self).__name__
+        return f"{_class_name_}: {self.message}"
+
+    def __str__(self) -> str:
+        return self.__repr__()
 
     @property
     def _repr_html_class_(self) -> str:
@@ -52,9 +56,18 @@ class SyftSuccess(SyftResponseMessage):
 
 @serializable()
 class SyftNotReady(SyftResponseMessage):
+    _bool: bool = False
+
     @property
     def _repr_html_class_(self) -> str:
         return "alert-info"
+
+
+@serializable()
+class SyftWarning(SyftResponseMessage):
+    @property
+    def _repr_html_class_(self) -> str:
+        return "alert-warning"
 
 
 @serializable()
