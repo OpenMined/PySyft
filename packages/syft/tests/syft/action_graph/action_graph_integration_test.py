@@ -3,6 +3,7 @@ Tests for the integration of action graph into action and action object creation
 """
 
 # third party
+from faker import Faker
 import numpy as np
 import pandas as pd
 import pytest
@@ -18,11 +19,13 @@ from syft.service.action.action_object import ActionObject
     "num_assets",
     [1, 2, 3],
 )
-def test_node_creation_dataset_upload(root_client: SyftClient, num_assets: int) -> None:
+def test_node_creation_dataset_upload(faker: Faker, num_assets: int) -> None:
     """
     Create a node in the graph when a dataset is uploaded
     """
     # let's upload a dataset with #num_assets assets inside of it
+    worker = sy.Worker.named(name=faker.name(), reset=True)
+    root_client = worker.root_client
     dataset = sy.Dataset(name="Test Dataset")
     dataset.set_description("""Test Dataset""")
     dataset.add_citation("Person, place or thing")
@@ -51,10 +54,12 @@ def test_node_creation_dataset_upload(root_client: SyftClient, num_assets: int) 
     assert len(root_client.api.services.graph.edges()) == 0
 
 
-def test_node_creation_action_obj_send(root_client: SyftClient) -> None:
+def test_node_creation_action_obj_send(faker: Faker) -> None:
     """
     Test the creation of a node in the graph when the action_obj.send method is called
     """
+    worker = sy.Worker.named(name=faker.name(), reset=True)
+    root_client = worker.root_client
     action_obj_a = ActionObject.from_obj([2, 4, 6])
     action_obj_a.send(root_client)
     action_obj_b = ActionObject.from_obj([1, 2, 3])
@@ -63,7 +68,7 @@ def test_node_creation_action_obj_send(root_client: SyftClient) -> None:
     assert len(root_client.api.services.graph.edges()) == 0
 
 
-def test_action_graph_creation_no_mutation(root_client: SyftClient) -> None:
+def test_action_graph_creation_no_mutation(faker: Faker) -> None:
     """
     Test the creation of an action graph when we do these non-mutating operations:
 
@@ -73,6 +78,8 @@ def test_action_graph_creation_no_mutation(root_client: SyftClient) -> None:
     d = root_domain_client.api.lib.numpy.array([1, 2, 3])
     e = c * d
     """
+    worker = sy.Worker.named(name=faker.name(), reset=True)
+    root_client = worker.root_client
     a = root_client.api.lib.numpy.array([1, 2, 3])
     b = root_client.api.lib.numpy.array([2, 3, 4])
     assert len(root_client.api.services.graph.nodes()) == 6
@@ -88,11 +95,13 @@ def test_action_graph_creation_no_mutation(root_client: SyftClient) -> None:
     assert len(root_client.api.services.graph.edges()) == 12
 
 
-def test_node_creation_generate_remote_lib_function(root_client: SyftClient) -> None:
+def test_node_creation_generate_remote_lib_function(faker: Faker) -> None:
     """
     Create a graph node when an Action is
     created when a client calls generate_remote_lib_function
     """
+    worker = sy.Worker.named(name=faker.name(), reset=True)
+    root_client = worker.root_client
     a = root_client.api.lib.numpy.array([1, 2, 3])
     b = root_client.api.lib.numpy.array([2, 3, 4])
     c = root_client.api.lib.numpy.add(a, b)
