@@ -622,7 +622,7 @@ def add_code_request_to_project(
     if reason is None:
         reason = f"Code Request for Project: {project.name} has been submitted by {project.created_by}"
 
-    submitted_req = client.api.services.code.request_code_execution(
+    submitted_req = client.api.services.code_history.submit_version(
         code=code, reason=reason
     )
     if isinstance(submitted_req, SyftError):

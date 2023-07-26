@@ -20,8 +20,12 @@ from .code_history import CodeHistoryDict
 from .code_history import CodeVersions
 from .code_history import UserHistoryDict
 from .code_history_stash import CodeHistoryStash
+from ...serde.serializable import serializable
+from ...util.telemetry import instrument
 
 
+@instrument
+@serializable()
 class CodeHistoryService(AbstractService):
     store: DocumentStore
     stash: CodeHistoryStash
@@ -41,13 +45,15 @@ class CodeHistoryService(AbstractService):
         code: Union[SubmitUserCode, UserCode],
         comment: Optional[str] = None,
         add_request: Optional[bool] = True,
+        reason: Optional[str] = None
     ) -> Union[SyftSuccess, SyftError]:
         user_code_service = context.node.get_service("usercodeservice")
 
+        final_result = None
         if isinstance(code, SubmitUserCode):
             if add_request:
                 result = user_code_service.request_code_execution(
-                    context=context, code=code
+                    context=context, code=code, reason=reason
                 )
                 if isinstance(result, SyftError):
                     return result
@@ -57,6 +63,7 @@ class CodeHistoryService(AbstractService):
                     .linked_obj.resolve_with_context(context=context)
                     .ok()
                 )
+                final_result = result
             else:
                 result = user_code_service.submit(context=context, code=code)
                 if isinstance(result, SyftError):
@@ -100,7 +107,10 @@ class CodeHistoryService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
-        return SyftSuccess(message="Code version submit success")
+        if final_result is None:
+            return SyftSuccess(message="Code version submit success")
+        else:
+            return final_result
 
     @service_method(
         path="code_history.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
