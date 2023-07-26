@@ -350,8 +350,8 @@ class NetworkXBackingStore(BaseGraphStore):
     @staticmethod
     def _load_from_path(file_path: str) -> None:
         with open(file_path, "rb") as f:
-            bytes = f.read()
-        return _deserialize(blob=bytes, from_bytes=True)
+            byte_data = f.read()
+        return _deserialize(blob=byte_data, from_bytes=True)
 
 
 @serializable()
