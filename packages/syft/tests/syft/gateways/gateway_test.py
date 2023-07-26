@@ -12,7 +12,18 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
-def get_client(node_type: str):
+def get_node_handle(node_type: str):
+    node_handle = sy.orchestra.launch(
+        name=sy.UID().to_string(),
+        node_type=node_type,
+        dev_mode=True,
+        reset=True,
+        local_db=True,
+    )
+    return node_handle
+
+
+def get_admin_client(node_type: str):
     node = sy.orchestra.launch(
         name=sy.UID().to_string(),
         node_type=node_type,
@@ -20,35 +31,48 @@ def get_client(node_type: str):
         reset=True,
         local_db=True,
     )
-    return node.client
+    return node.login(email="info@openmined.org", password="changethis")
 
 
 def test_create_gateway_client(faker: Faker):
-    client = get_client(NodeType.GATEWAY.value)
+    node_handle = get_node_handle(NodeType.GATEWAY.value)
+    client = node_handle.client
     assert isinstance(client, GatewayClient)
     assert client.metadata.node_type == NodeType.GATEWAY.value
 
 
-def test_domain_apply_to_gateway(faker: Faker):
-    gateway_client: GatewayClient = get_client(NodeType.GATEWAY.value)
-    domain_client: DomainClient = get_client(NodeType.DOMAIN.value)
+def test_domain_connect_to_gateway(faker: Faker):
+    gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
+    gateway_client: GatewayClient = gateway_node_handle.login(
+        email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = get_admin_client(NodeType.DOMAIN.value)
 
-    result = domain_client.apply_to_gateway(gateway_client)
+    result = domain_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
+
+    # Try via client approach
+    result_2 = domain_client.connect_to_gateway(via_client=gateway_node_handle.client)
+    assert isinstance(result_2, SyftSuccess)
 
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
 
-    gateway_peer = gateway_client.peers[0]
+    proxy_domain_client = gateway_client.peers[0]
     domain_peer = domain_client.peers[0]
 
-    assert isinstance(gateway_peer, NodePeer)
+    assert isinstance(proxy_domain_client, DomainClient)
     assert isinstance(domain_peer, NodePeer)
 
-    assert gateway_client.name == domain_peer.name
-    assert domain_client.name == gateway_peer.name
+    # Domain's peer is a gateway and vice-versa
+    assert domain_peer.node_type == NodeType.GATEWAY
 
-    proxy_domain_client = gateway_client.proxy_to(gateway_peer)
+    assert gateway_client.name == domain_peer.name
+    assert domain_client.name == proxy_domain_client.name
+
+    assert len(gateway_client.domains) == 1
+    assert len(gateway_client.enclaves) == 0
+
     assert proxy_domain_client.metadata == domain_client.metadata
     assert proxy_domain_client.user_role == ServiceRole.NONE
 
@@ -63,26 +87,36 @@ def test_domain_apply_to_gateway(faker: Faker):
     )
 
 
-def test_enclave_apply_to_gateway(faker: Faker):
-    gateway_client: GatewayClient = get_client(NodeType.GATEWAY.value)
-    enclave_client: EnclaveClient = get_client(NodeType.ENCLAVE.value)
+def test_enclave_connect_to_gateway(faker: Faker):
+    gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
+    gateway_client = gateway_node_handle.client
+    enclave_client: EnclaveClient = get_node_handle(NodeType.ENCLAVE.value).client
 
-    result = enclave_client.apply_to_gateway(gateway_client)
+    result = enclave_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
+
+    # Try via client approach
+    result_2 = enclave_client.connect_to_gateway(via_client=gateway_node_handle.client)
+    assert isinstance(result_2, SyftSuccess)
 
     assert len(enclave_client.peers) == 1
     assert len(gateway_client.peers) == 1
 
-    gateway_peer = gateway_client.peers[0]
+    proxy_enclave_client = gateway_client.peers[0]
     enclave_peer = enclave_client.peers[0]
 
-    assert isinstance(gateway_peer, NodePeer)
+    assert isinstance(proxy_enclave_client, EnclaveClient)
     assert isinstance(enclave_peer, NodePeer)
 
     assert gateway_client.name == enclave_peer.name
-    assert enclave_client.name == gateway_peer.name
+    assert enclave_client.name == proxy_enclave_client.name
 
-    proxy_enclave_client = gateway_client.proxy_to(gateway_peer)
+    # Domain's peer is a gateway and vice-versa
+    assert enclave_peer.node_type == NodeType.GATEWAY
+
+    assert len(gateway_client.domains) == 0
+    assert len(gateway_client.enclaves) == 1
+
     assert proxy_enclave_client.metadata == enclave_client.metadata
     assert proxy_enclave_client.user_role == ServiceRole.NONE
 

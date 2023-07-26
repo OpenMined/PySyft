@@ -8,7 +8,9 @@ import json
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -26,6 +28,8 @@ from typing_extensions import Self
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
+from ..abstract_node import NodeSideType
+from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
@@ -39,6 +43,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
+from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
@@ -46,6 +51,7 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
+from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
 from .api import APIModule
@@ -55,6 +61,10 @@ from .api import SyftAPI
 from .api import SyftAPICall
 from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
+
+if TYPE_CHECKING:
+    # relative
+    from ..service.network.node_peer import NodePeer
 
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
@@ -233,9 +243,8 @@ class HTTPConnection(NodeConnection):
         else:
             response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
             obj = _deserialize(response, from_bytes=True)
-        if isinstance(obj, UserPrivateKey):
-            return obj
-        return None
+
+        return obj
 
     def register(self, new_user: UserCreate) -> SyftSigningKey:
         data = _serialize(new_user, to_bytes=True)
@@ -285,11 +294,11 @@ class HTTPConnection(NodeConnection):
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == "domain":
+        if metadata.node_type == NodeType.DOMAIN.value:
             return DomainClient
-        elif metadata.node_type == "gateway":
+        elif metadata.node_type == NodeType.GATEWAY.value:
             return GatewayClient
-        elif metadata.node_type == "enclave":
+        elif metadata.node_type == NodeType.ENCLAVE.value:
             return EnclaveClient
         else:
             return SyftError(message=f"Unknown node type {metadata.node_type}")
@@ -366,9 +375,7 @@ class PythonConnection(NodeConnection):
 
         else:
             obj = self.exchange_credentials(email=email, password=password)
-        if isinstance(obj, UserPrivateKey):
-            return obj
-        return None
+        return obj
 
     def register(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
         if self.proxy_target_uid:
@@ -394,20 +401,17 @@ class PythonConnection(NodeConnection):
         return f"{type(self).__name__}"
 
     def get_client_type(self) -> Type[SyftClient]:
-        # TODO: Rasswanth, should remove passing in credentials
-        # when metadata are proxy forwarded in the grid routes
-        # in the gateway fixes PR
         # relative
         from .domain_client import DomainClient
         from .enclave_client import EnclaveClient
         from .gateway_client import GatewayClient
 
         metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == "domain":
+        if metadata.node_type == NodeType.DOMAIN.value:
             return DomainClient
-        elif metadata.node_type == "gateway":
+        elif metadata.node_type == NodeType.GATEWAY.value:
             return GatewayClient
-        elif metadata.node_type == "enclave":
+        elif metadata.node_type == NodeType.ENCLAVE.value:
             return EnclaveClient
         else:
             return SyftError(message=f"Unknown node type {metadata.node_type}")
@@ -436,9 +440,28 @@ class SyftClient:
 
         self.post_init()
 
+    def get_env(self) -> str:
+        return self.api.services.metadata.get_env()
+
     def post_init(self) -> None:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
+
+    def create_project(
+        self, name: str, description: str, user_email_address: str
+    ) -> Any:
+        # relative
+        from ..service.project.project import ProjectSubmit
+
+        project_create = ProjectSubmit(
+            name=name,
+            description=description,
+            shareholders=[self],
+            user_email_address=user_email_address,
+            members=[self],
+        )
+        project = project_create.start()
+        return project
 
     @property
     def authed(self) -> bool:
@@ -521,13 +544,13 @@ class SyftClient:
 
     @property
     def users(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("user"):
+        if self.api.has_service("user"):
             return self.api.services.user
         return None
 
     @property
     def settings(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("user"):
+        if self.api.has_service("user"):
             return self.api.services.settings
         return None
 
@@ -537,18 +560,20 @@ class SyftClient:
             "WARNING: Notifications is currently is in a beta state, so use carefully!"
         )
         print("If possible try using client.requests/client.projects")
-        if self.api is not None and self.api.has_service("notifications"):
+        if self.api.has_service("notifications"):
             return self.api.services.notifications
         return None
 
     @property
-    def domains(self) -> Optional[APIModule]:
-        return self.peers
+    def peers(self) -> Optional[Union[List[NodePeer], SyftError]]:
+        if self.api.has_service("network"):
+            return self.api.services.network.get_all_peers()
+        return None
 
     @property
-    def peers(self) -> Optional[APIModule]:
-        if self.api is not None and self.api.has_service("network"):
-            return self.api.services.network.get_all_peers()
+    def me(self) -> Optional[Union[UserView, SyftError]]:
+        if self.api.has_service("user"):
+            return self.api.services.user.get_current_user()
         return None
 
     def login(
@@ -557,6 +582,8 @@ class SyftClient:
         if register:
             self.register(email=email, password=password, **kwargs)
         user_private_key = self.connection.login(email=email, password=password)
+        if isinstance(user_private_key, SyftError):
+            return user_private_key
         signing_key = None
         if user_private_key is not None:
             signing_key = user_private_key.signing_key
@@ -567,7 +594,10 @@ class SyftClient:
             # TODO: How to get the role of the user?
             # self.__user_role =
             self._fetch_api(self.credentials)
-            print(f"Logged into {self.name} as <{email}>")
+            print(
+                f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()} side "
+                f"{self.metadata.node_type.capitalize()}> as <{email}>"
+            )
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,
@@ -622,6 +652,18 @@ class SyftClient:
             )
         except Exception as e:
             return SyftError(message=str(e))
+
+        if self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+            message = (
+                "You're registering a user to a high side "
+                f"{self.metadata.node_type}, which could "
+                "host datasets with private information."
+            )
+            if self.metadata.show_warnings and not prompt_warning_message(
+                message=message
+            ):
+                return
+
         response = self.connection.register(new_user=new_user)
         if isinstance(response, tuple):
             response = response[0]
@@ -747,7 +789,10 @@ def login(
 
     if login_credentials is None:
         if verbose:
-            print(f"Logged into {_client.name} as GUEST")
+            print(
+                f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
+                f"side {_client.metadata.node_type.capitalize()}> as GUEST"
+            )
         return _client.guest()
 
     if cache and login_credentials:

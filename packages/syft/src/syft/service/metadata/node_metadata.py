@@ -11,6 +11,7 @@ from packaging import version
 from pydantic import BaseModel
 
 # relative
+from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -55,6 +56,7 @@ class NodeMetadataUpdate(SyftObject):
     highest_object_version: Optional[int]
     lowest_object_version: Optional[int]
     syft_version: Optional[str]
+    admin_email: Optional[str]
 
 
 @serializable()
@@ -68,14 +70,17 @@ class NodeMetadata(SyftObject):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
-    node_type: str = "domain"
+    node_type: NodeType = NodeType.DOMAIN
     deployed_on: str = "Date"
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "Text"
     signup_enabled: bool
+    admin_email: str
+    node_side_type: str
+    show_warnings: bool
 
-    def check_version(self, client_version: str) -> None:
+    def check_version(self, client_version: str) -> bool:
         return check_version(
             client_version=client_version,
             server_version=self.syft_version,
@@ -92,12 +97,15 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
-    node_type: str = "domain"
+    node_type: str = NodeType.DOMAIN.value
     deployed_on: str = "Date"
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "My cool domain"
     signup_enabled: bool
+    admin_email: str
+    node_side_type: str
+    show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -112,7 +120,7 @@ def metadata_to_json() -> List[Callable]:
     return [
         drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
-        convert_types(["id", "verify_key"], str),
+        convert_types(["id", "verify_key", "node_type"], str),
     ]
 
 
@@ -121,4 +129,5 @@ def json_to_metadata() -> List[Callable]:
     return [
         drop(["metadata_version"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),
+        convert_types(["node_type"], NodeType),
     ]

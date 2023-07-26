@@ -6,6 +6,7 @@ from typing_extensions import Self
 
 # relative
 from ..abstract_node import AbstractNode
+from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
@@ -23,6 +24,7 @@ class WorkerSettings(SyftObject):
     id: UID
     name: str
     node_type: NodeType
+    node_side_type: NodeSideType
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
@@ -36,4 +38,5 @@ class WorkerSettings(SyftObject):
             signing_key=node.signing_key,
             document_store_config=node.document_store_config,
             action_store_config=node.action_store_config,
+            node_side_type=node.node_side_type.value,
         )

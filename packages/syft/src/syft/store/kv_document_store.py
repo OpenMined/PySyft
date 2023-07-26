@@ -143,14 +143,19 @@ class KeyValueStorePartition(StorePartition):
     def __len__(self) -> int:
         return len(self.data)
 
-    def _get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
+    def _get(
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        has_permission: Optional[bool] = False,
+    ) -> Result[SyftObject, str]:
         # relative
         from ..service.action.action_store import ActionObjectREAD
 
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
 
-        if self.has_permission(read_permission):
+        if self.has_permission(read_permission) or has_permission:
             syft_object = self.data[uid]
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
@@ -186,9 +191,13 @@ class KeyValueStorePartition(StorePartition):
             if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
                 # attempt to claim it for writing
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
-                can_write = True if ownership_result.is_ok() else False
+                can_write = ownership_result.is_ok()
             elif not ignore_duplicates:
-                return Err(f"Duplication Key Error: {obj}")
+                keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
+                return Err(
+                    f"Duplication Key Error for {obj}.\n"
+                    f"The fields that should be unique are {keys}."
+                )
             else:
                 # we are not throwing an error, because we are ignoring duplicates
                 # we are also not writing though
@@ -209,7 +218,7 @@ class KeyValueStorePartition(StorePartition):
                 permissions = self.permissions[uid]
                 permissions.add(permission)
                 if add_permissions is not None:
-                    permissions.update([x.permission_string for x in add_permissions])
+                    permissions.update(x.permission_string for x in add_permissions)
                 self.permissions[uid] = permissions
                 return Ok(obj)
             else:
@@ -282,10 +291,13 @@ class KeyValueStorePartition(StorePartition):
         return False
 
     def _all(
-        self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: Optional[bool] = False,
     ) -> Result[List[BaseStash.object_type], str]:
         # this checks permissions
-        res = [self._get(uid, credentials) for uid in self.data.keys()]
+        res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
         result = [x.ok() for x in res if x.is_ok()]
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
