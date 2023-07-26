@@ -4,8 +4,10 @@ from typing import Optional
 from typing import Union
 
 # relative
+from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
+from ...util.telemetry import instrument
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
@@ -20,8 +22,6 @@ from .code_history import CodeHistoryDict
 from .code_history import CodeVersions
 from .code_history import UserHistoryDict
 from .code_history_stash import CodeHistoryStash
-from ...serde.serializable import serializable
-from ...util.telemetry import instrument
 
 
 @instrument
@@ -45,7 +45,7 @@ class CodeHistoryService(AbstractService):
         code: Union[SubmitUserCode, UserCode],
         comment: Optional[str] = None,
         add_request: Optional[bool] = True,
-        reason: Optional[str] = None
+        reason: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         user_code_service = context.node.get_service("usercodeservice")
 
