@@ -501,11 +501,8 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
-<<<<<<< HEAD
                 CodeHistoryService,
-=======
                 MetadataService,
->>>>>>> 45e0859a5f520b9474d4604b2aa24169f27ef6a4
             ]
 
             if OBLV:

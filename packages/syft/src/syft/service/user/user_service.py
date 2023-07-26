@@ -81,18 +81,6 @@ class UserService(AbstractService):
         user = result.ok()
         return user.to(UserView)
 
-    @service_method(
-        path="user.current_user", name="current_user", roles=GUEST_ROLE_LEVEL
-    )
-    def get_current_user(
-        self,
-        context: AuthedServiceContext,
-    ) -> User:
-        result = self.stash.get_by_verify_key(
-            credentials=context.credentials, verify_key=context.credentials
-        )
-        return result.ok()
-
     @service_method(path="user.view", name="view")
     def view(
         self, context: AuthedServiceContext, uid: UID
