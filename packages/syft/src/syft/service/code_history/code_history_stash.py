@@ -1,5 +1,6 @@
 # stdlib
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
 # third party
 from result import Result

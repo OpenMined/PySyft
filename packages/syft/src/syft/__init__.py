@@ -70,7 +70,6 @@ from .util.telemetry import instrument  # noqa: F401
 from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
 from .util.version_compare import make_requires
-from .service.code_history.code_history import CodeHistoryDict
 
 LATEST_STABLE_SYFT = "0.8.1"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)

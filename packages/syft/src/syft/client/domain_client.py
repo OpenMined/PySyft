@@ -14,6 +14,7 @@ from typing_extensions import Self
 # relative
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
+from ..service.code.user_code import SubmitUserCode
 from ..service.code_history.code_history import CodeHistory
 from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
@@ -71,6 +72,11 @@ class DomainClient(SyftClient):
                 message=f"Connected {self.metadata.node_type} to gateway"
             )
         return res
+
+    def request_code_execution(
+        self, code: SubmitUserCode, comment: Optional[str] = None
+    ) -> Union[SyftSuccess, SyftError]:
+        return self.api.services.code_history.submit_version(code=code, comment=comment)
 
     @property
     def data_subject_registry(self) -> Optional[APIModule]:
