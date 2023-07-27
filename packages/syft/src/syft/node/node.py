@@ -496,6 +496,7 @@ class Node(AbstractNode):
         self.action_graph_store = InMemoryActionGraphStore(
             store_config=action_graph_config,
         )
+        self.action_graph_config = action_graph_config
 
     def _construct_services(self):
         self.service_path_map = {}
@@ -838,6 +839,8 @@ def task_runner(
         signing_key=worker_settings.signing_key,
         document_store_config=worker_settings.document_store_config,
         action_store_config=worker_settings.action_store_config,
+        action_graph_config=worker_settings.action_graph_config,
+        node_side_type=worker_settings.node_side_type,
         is_subprocess=True,
     )
     try:

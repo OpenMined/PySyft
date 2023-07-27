@@ -77,6 +77,8 @@ class APICallMessageHandler(AbstractMessageHandler):
             signing_key=worker_settings.signing_key,
             document_store_config=worker_settings.document_store_config,
             action_store_config=worker_settings.action_store_config,
+            action_graph_config=worker_settings.action_graph_config,
+            node_side_type=worker_settings.node_side_type,
             is_subprocess=True,
         )
 
