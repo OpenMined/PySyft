@@ -55,10 +55,14 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
-        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
+        result = self._submit(context=context, code=code)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(message=f"User Code Submitted with id: {result.ok().id}")
+        return SyftSuccess(message="User Code Submitted")
+
+    def _submit(self, context: AuthedServiceContext, code: SubmitUserCode) -> Result:
+        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
+        return result
 
     def _request_code_execution(
         self,
@@ -74,6 +78,12 @@ class UserCodeService(AbstractService):
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
+
+        # Create a code history
+        code_history_service = context.node.get_service("codehistoryservice")
+        result = code_history_service.submit_version(context=context, code=user_code)
+        if isinstance(result, SyftError):
+            return result
 
         # Users that have access to the output also have access to the code item
         self.stash.add_permissions(
