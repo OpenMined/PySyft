@@ -43,6 +43,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
+from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
@@ -600,6 +601,12 @@ class SyftClient:
     def peers(self) -> Optional[Union[List[NodePeer], SyftError]]:
         if self.api.has_service("network"):
             return self.api.services.network.get_all_peers()
+        return None
+
+    @property
+    def me(self) -> Optional[Union[UserView, SyftError]]:
+        if self.api.has_service("user"):
+            return self.api.services.user.get_current_user()
         return None
 
     def login(
