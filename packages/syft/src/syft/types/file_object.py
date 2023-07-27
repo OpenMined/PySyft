@@ -52,7 +52,7 @@ class CreateFileObject(SyftObject):
 
     @classmethod
     def from_obj(cls, obj: SyftObject) -> Self:
-        return CreateFileObject(file_size=sys.getsizeof(obj), type_=type(obj))
+        return cls(file_size=sys.getsizeof(obj), type_=type(obj))
 
     @classmethod
     def from_path(cls, fp: Union[str, Path], mimetype: Optional[str] = None) -> Self:
@@ -72,4 +72,4 @@ class CreateFileObject(SyftObject):
                     "Please specify mimetype manually `from_path(..., mimetype = ...)`."
                 )
 
-        return CreateFileObject(mimetype=mimetype, file_size=path.stat().st_size)
+        return cls(mimetype=mimetype, file_size=path.stat().st_size)
