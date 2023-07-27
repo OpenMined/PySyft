@@ -79,6 +79,12 @@ class UserCodeService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
 
+        # Create a code history
+        code_history_service = context.node.get_service("codehistoryservice")
+        result = code_history_service.submit_version(context=context, code=user_code)
+        if isinstance(result, SyftError):
+            return result
+
         # Users that have access to the output also have access to the code item
         self.stash.add_permissions(
             [
