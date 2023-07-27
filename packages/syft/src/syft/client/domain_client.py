@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Dict
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -15,7 +14,8 @@ from ..abstract_node import NodeSideType
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
 from ..service.code.user_code import SubmitUserCode
-from ..service.code_history.code_history import CodeHistory
+from ..service.code_history.code_history import CodeHistoriesDict
+from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
@@ -163,11 +163,11 @@ class DomainClient(SyftClient):
         return None
 
     @property
-    def code_history(self) -> Dict[str, CodeHistory]:
+    def code_history(self) -> CodeHistoriesDict:
         return self.api.services.code_history.get_history()
 
     @property
-    def code_histories(self) -> Dict[str, CodeHistory]:
+    def code_histories(self) -> UsersCodeHistoriesDict:
         return self.api.services.code_history.get_histories()
 
     def get_project(

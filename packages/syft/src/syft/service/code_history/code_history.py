@@ -14,6 +14,7 @@ from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.uid import UID
 from ..code.user_code import UserCode
+from ..response import SyftError
 
 
 @serializable()
@@ -23,13 +24,12 @@ class CodeHistory(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    node_uid: Optional[UID]
+    node_uid: UID
     user_verify_key: SyftVerifyKey
     enclave_metadata: Optional[EnclaveMetadata] = None
-    user_code_history: Optional[List[UID]] = []
+    user_code_history: List[UID] = []
     service_func_name: str
-    comment_history: Optional[List[str]] = []
-    # comments: Optional[str] = None
+    comment_history: List[str] = []
 
     __attr_unique__ = ["service_func_name"]
     __attr_searchable__ = ["user_verify_key"]
@@ -42,15 +42,15 @@ class CodeHistory(SyftObject):
 
 
 @serializable()
-class CodeVersions(SyftObject):
+class CodeHistoryView(SyftObject):
     # version
-    __canonical_name__ = "CodeVersions"
+    __canonical_name__ = "CodeHistoryView"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    user_code_history: Optional[List[UserCode]] = []
+    user_code_history: List[UserCode] = []
     service_func_name: str
-    comment_history: Optional[List[str]] = []
+    comment_history: List[str] = []
 
     def _coll_repr_(self):
         return {"Number of versions": len(self.user_code_history)}
@@ -58,25 +58,30 @@ class CodeVersions(SyftObject):
     def _repr_html_(self):
         return self.user_code_history._repr_html_()
 
-    def __getitem__(self, key: int):
-        return self.user_code_history[key]
+    def __getitem__(self, index: int):
+        if index < 0:
+            return SyftError(
+                message="For security concerns we do not allow negative indexing. \
+                Try using absolute values when indexing"
+            )
+        return self.user_code_history[index]
 
 
 @serializable()
-class CodeHistoryDict(SyftObject):
+class CodeHistoriesDict(SyftObject):
     # version
-    __canonical_name__ = "CodeHistoryDict"
+    __canonical_name__ = "CodeHistoriesDict"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    code_versions: Optional[Dict[str, CodeVersions]] = {}
+    code_versions: Dict[str, CodeHistoryView] = {}
 
     def _repr_html_(self):
         return f"""
             {self.code_versions._repr_html_()}
             """
 
-    def add_func(self, versions: CodeVersions) -> Any:
+    def add_func(self, versions: CodeHistoryView) -> Any:
         self.code_versions[versions.service_func_name] = versions
 
     def __getitem__(self, name: str) -> Any:
@@ -90,14 +95,14 @@ class CodeHistoryDict(SyftObject):
 
 
 @serializable()
-class UserHistoryDict(SyftObject):
+class UsersCodeHistoriesDict(SyftObject):
     # version
-    __canonical_name__ = "UserHistoryDict"
+    __canonical_name__ = "UsersCodeHistoriesDict"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     node_uid: UID
-    user_dict: Optional[Dict[str, List[str]]] = {}
+    user_dict: Dict[str, List[str]] = {}
 
     __repr_attrs__ = ["available_keys"]
 

@@ -29,6 +29,20 @@ class CodeHistoryStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    def get_by_service_func_name_and_verify_key(
+        self,
+        credentials: SyftVerifyKey,
+        service_func_name: str,
+        user_verify_key: SyftVerifyKey,
+    ) -> Result[List[CodeHistory], str]:
+        qks = QueryKeys(
+            qks=[
+                NamePartitionKey.with_obj(service_func_name),
+                VerifyKeyPartitionKey.with_obj(user_verify_key),
+            ]
+        )
+        return self.query_one(credentials=credentials, qks=qks)
+
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
     ) -> Result[List[CodeHistory], str]:
