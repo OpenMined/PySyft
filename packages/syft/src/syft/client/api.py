@@ -729,11 +729,18 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
             try:
                 if t is not inspect.Parameter.empty:
                     if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                        success = False
                         for v in t.__args__:
                             if issubclass(v, EmailStr):
                                 v = str
-                            check_type(key, value, v)  # raises Exception
-                            break  # only need one to match
+                            try:
+                                check_type(key, value, v)  # raises Exception
+                                success = True
+                                break  # only need one to match
+                            except Exception:
+                                pass
+                        if not success:
+                            raise TypeError()
                     else:
                         check_type(key, value, t)  # raises Exception
             except TypeError:

@@ -12,7 +12,9 @@ from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
+from ...types.syft_object import get_repr_values_table
 from ...types.uid import UID
+from ...util.notebook_ui.notebook_addons import create_table_template
 from ..code.user_code import UserCode
 
 
@@ -56,7 +58,11 @@ class CodeVersions(SyftObject):
         return {"Number of versions": len(self.user_code_history)}
 
     def _repr_html_(self):
-        return self.user_code_history._repr_html_()
+        rows = get_repr_values_table(self.user_code_history, True)
+        for i, r in enumerate(rows):
+            r["Version"] = f"v{i}"
+        rows = sorted(rows, key=lambda x: x["Version"], reverse=True)
+        return create_table_template(rows, "CodeVersions", table_icon=None)
 
     def __getitem__(self, key: int):
         return self.user_code_history[key]
@@ -108,3 +114,13 @@ class UserHistoryDict(SyftObject):
     def __getitem__(self, key: int):
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         return api.services.code_history.get_history_for_user(key)
+
+    def _repr_html_(self):
+        rows = []
+        for user, funcs in self.user_dict.items():
+            if len(funcs) == 0:
+                funcs_str = ""
+            else:
+                funcs_str = str(["my_func"] * 100)
+            rows += [{"user": user, "UserCodes": funcs_str}]
+        return create_table_template(rows, "UserCodeHistory", table_icon=None)
