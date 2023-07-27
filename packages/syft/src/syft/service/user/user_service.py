@@ -111,8 +111,7 @@ class UserService(AbstractService):
         else:
             result = self.stash.get_all(context.credentials)
         if result.is_ok():
-            # results = [user.to(UserView) for user in result.ok()]
-            results = result.ok()
+            results = [user.to(UserView) for user in result.ok()]
 
             # If chunk size is defined, then split list into evenly sized chunks
             if page_size:
