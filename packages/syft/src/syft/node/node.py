@@ -359,6 +359,7 @@ class Node(AbstractNode):
             with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
+                if os.path.exists(graph_config.client_config.file_path):
                     os.unlink(graph_config.client_config.file_path)
 
         return cls(
