@@ -328,9 +328,9 @@ class NetworkXBackingStore(BaseGraphStore):
         return parent in parents
 
     def save(self) -> None:
-        bytes = _serialize(self.db, to_bytes=True)
+        byte_data = _serialize(self.db, to_bytes=True)
         with open(self.path_str, "wb") as f:
-            f.write(bytes)
+            f.write(byte_data)
 
     def _filter_nodes_by(self, uid: UID, qks: QueryKeys) -> bool:
         node_data = self.db.nodes[uid]["data"]

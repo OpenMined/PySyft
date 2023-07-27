@@ -491,8 +491,9 @@ class Node(AbstractNode):
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
         if action_graph_config is None:
+            now = datetime.now().strftime("%H:%M:%S,%m.%d.%Y")
             action_graph_config = InMemoryGraphConfig()
-            action_graph_config.client_config.filename = f"{self.id}.bytes"
+            action_graph_config.client_config.filename = f"{self.id}({now}).bytes"
         self.action_graph_store = InMemoryActionGraphStore(
             store_config=action_graph_config,
         )
