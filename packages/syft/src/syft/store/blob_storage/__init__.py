@@ -131,5 +131,5 @@ class BlobStorageClient(SyftBaseModel):
 
 
 class BlobStorageConfig(SyftBaseModel):
-    blob_storage_client: Type[BlobStorageClient]
-    blob_storage_client_config: BlobStorageClientConfig
+    client_type: Type[BlobStorageClient]
+    client_config: BlobStorageClientConfig

@@ -85,7 +85,5 @@ class OnDiskBlobStorageClient(BlobStorageClient):
 
 
 class OnDiskBlobStorageConfig(BlobStorageConfig):
-    blob_storage_client: Type[BlobStorageClient] = OnDiskBlobStorageClient
-    blob_storage_client_config: OnDiskBlobStorageClientConfig = (
-        OnDiskBlobStorageClientConfig()
-    )
+    client_type: Type[BlobStorageClient] = OnDiskBlobStorageClient
+    client_config: OnDiskBlobStorageClientConfig = OnDiskBlobStorageClientConfig()

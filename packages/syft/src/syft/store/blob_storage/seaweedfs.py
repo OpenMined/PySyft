@@ -39,5 +39,5 @@ class SeaweedFSClient(BlobStorageClient):
 
 
 class SeaweedFSConfig(BlobStorageConfig):
-    blob_storage_client = SeaweedFSClient
-    blob_storage_client_config: SeaweedFSClientConfig
+    client_type = SeaweedFSClient
+    client_config: SeaweedFSClientConfig

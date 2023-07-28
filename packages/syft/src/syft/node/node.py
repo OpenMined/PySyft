@@ -298,9 +298,7 @@ class Node(AbstractNode):
 
     def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
         config_ = OnDiskBlobStorageConfig() if config is None else config
-        self.blob_storage_client = config_.blob_storage_client(
-            config=config_.blob_storage_client_config
-        )
+        self.blob_storage_client = config_.client_type(config=config_.client_config)
 
     def init_queue_manager(self, queue_config: QueueConfig) -> None:
         MessageHandlers = [APICallMessageHandler]
