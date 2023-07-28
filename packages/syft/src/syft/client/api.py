@@ -40,6 +40,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.identity import Identity
@@ -393,6 +394,7 @@ class SyftAPI(SyftObject):
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
+    __user_role: ServiceRole = ServiceRole.NONE
 
     # def __post_init__(self) -> None:
     #     pass
@@ -477,7 +479,12 @@ class SyftAPI(SyftObject):
             node_uid=node.id,
             endpoints=endpoints,
             lib_endpoints=lib_endpoints,
+            __user_role=role,
         )
+
+    @property
+    def user_role(self) -> ServiceRole:
+        return self.__user_role
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)

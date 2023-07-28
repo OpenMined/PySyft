@@ -30,6 +30,7 @@ from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
+from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
@@ -233,9 +234,10 @@ class UserCode(SyftObject):
     status: UserCodeStatusCollection
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
-    __attr_unique__ = ["code_hash", "user_unique_func_name"]
+    __attr_unique__ = []
     __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -263,6 +265,7 @@ class UserCode(SyftObject):
                 "type": "clipboard",
             },
             "Status": status_badge,
+            "Submit time": str(self.submit_time),
         }
 
     @property
@@ -788,6 +791,11 @@ def add_custom_status(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_submit_time(context: TransformContext) -> TransformContext:
+    context.output["submit_time"] = DateTime.now()
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
@@ -800,6 +808,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
         add_node_uid_for_key("node_uid"),
+        add_submit_time,
     ]
 
 

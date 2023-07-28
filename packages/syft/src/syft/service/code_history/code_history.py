@@ -9,6 +9,7 @@ from typing import Optional
 from ...client.api import APIRegistry
 from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
+from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
@@ -61,15 +62,22 @@ class CodeHistoryView(SyftObject):
         rows = get_repr_values_table(self.user_code_history, True)
         for i, r in enumerate(rows):
             r["Version"] = f"v{i}"
-        rows = sorted(rows, key=lambda x: x["Version"])
-        return create_table_template(rows, "CodeVersions", table_icon=None)
+            raw_code = self.user_code_history[i].raw_code
+            n_code_lines = raw_code.count("\n")
+            if n_code_lines > 5:
+                raw_code = "\n".join(raw_code.split("\n", 5))
+            r["Code"] = raw_code
+        # rows = sorted(rows, key=lambda x: x["Version"])
+        return create_table_template(rows, "CodeHistory", table_icon=None)
 
     def __getitem__(self, index: int):
-        if index < 0:
-            return SyftError(
-                message="For security concerns we do not allow negative indexing. \
-                Try using absolute values when indexing"
-            )
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if api.user_role.value >= ServiceRole.DATA_OWNER.value:
+            if index < 0:
+                return SyftError(
+                    message="For security concerns we do not allow negative indexing. \
+                    Try using absolute values when indexing"
+                )
         return self.user_code_history[index]
 
 
