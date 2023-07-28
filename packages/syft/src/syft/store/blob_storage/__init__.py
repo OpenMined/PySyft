@@ -21,7 +21,7 @@ with blob_storage_client as conn:
     conn.read(...)
 ```
 
-See `file_service.py` for usage example.
+See `blob_storage/service.py` for usage example.
 
 Write/persist SyftObject to blob storage
 ----------------------------------------
