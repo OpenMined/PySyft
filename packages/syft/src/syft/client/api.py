@@ -737,7 +737,7 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
                                 check_type(key, value, v)  # raises Exception
                                 success = True
                                 break  # only need one to match
-                            except Exception:
+                            except Exception:  # nosec
                                 pass
                         if not success:
                             raise TypeError()
