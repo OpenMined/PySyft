@@ -256,5 +256,5 @@ class ZMQClient(QueueClient):
 
 @serializable()
 class ZMQQueueConfig(QueueConfig):
-    client_config = ZMQClientConfig
     client_type = ZMQClient
+    client_config = ZMQClientConfig()
