@@ -295,7 +295,7 @@ recursive_serde_register(
 )
 
 
-for path_type in (
+for __path_type in (
     PurePath,
     pathlib.PurePosixPath,
     pathlib.PureWindowsPath,
@@ -304,9 +304,9 @@ for path_type in (
     pathlib.WindowsPath,
 ):
     recursive_serde_register(
-        path_type,
+        __path_type,
         serialize=serialize_path,
-        deserialize=functools.partial(deserialize_path, path_type),
+        deserialize=functools.partial(deserialize_path, __path_type),
     )
 
 
