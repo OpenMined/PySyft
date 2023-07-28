@@ -1,3 +1,6 @@
+# stdlib
+from typing import Union
+
 # relative
 from . import FileClient
 from . import FileClientConfig
@@ -5,6 +8,8 @@ from . import FileClientConnection
 from . import FileStoreConfig
 from . import SyftWriteResource
 from ...serde.serializable import serializable
+from ...service.response import SyftError
+from ...service.response import SyftSuccess
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 
 
@@ -13,7 +18,7 @@ class SeaweedSyftWriteResource(SyftWriteResource):
     __canonical_name__ = "SeaweedSyftWriteResource"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def write(self, data: bytes) -> None:
+    def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
         pass
 
 
