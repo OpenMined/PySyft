@@ -71,7 +71,7 @@ class SyftResource(SyftObject):
 
 
 @serializable()
-class SyftObjectResource(SyftObject):
+class SyftObjectResource(SyftResource):
     __canonical_name__ = "SyftObjectResource"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -82,7 +82,7 @@ class SyftObjectResource(SyftObject):
 
 
 @serializable()
-class SyftURLResource(SyftObject):
+class SyftURLResource(SyftResource):
     __canonical_name__ = "SyftURLResource"
     __version__ = SYFT_OBJECT_VERSION_1
 
