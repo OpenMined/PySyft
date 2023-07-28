@@ -1,6 +1,7 @@
 # stdlib
 import io
 import json
+import os
 import tempfile
 from typing import Any
 from typing import Dict
@@ -69,13 +70,43 @@ def build_image(container_image: ContainerImage) -> Union[SyftSuccess, SyftError
 def run_command(
     container_image: ContainerImage,
     command: ContainerCommand,
+    user_kwargs: Dict[str, SyftFile],
     files: Dict[str, SyftFile],
 ) -> ContainerResult:
     client = docker.from_env()
 
     # create temporary sandbox file system
-    temp_dir = tempfile.TemporaryDirectory()
-    volumes = {temp_dir.name: {"bind": "/sandbox", "mode": "rw"}}
+    temp_dirs = []
+
+    # ... do stuff with dirpath
+    temp_dir = tempfile.mkdtemp()
+    # temp_dir = tempfile.TemporaryDirectory()
+    temp_dirs.append(temp_dir)
+    volumes = {temp_dir: {"bind": "/sandbox", "mode": "rw"}}
+
+    for container_mount in container_image.volumes:
+        print("got container_mount", container_mount, type(container_mount))
+        volume = client.volumes.create(name=container_mount.name)
+        print("got volume", volume, type(volume))
+        volumes[volume.name] = {
+            "bind": container_mount.internal_mountpath,
+            "mode": container_mount.mode,
+        }
+
+    for container_mount in command.mounts:
+        # mount_dir = tempfile.TemporaryDirectory()
+        mount_dir = tempfile.mkdtemp()
+        temp_dirs.append(mount_dir)
+        container_mount.file.write_file(path=mount_dir)
+        local_path = f"{mount_dir}/{container_mount.file.filename}"
+        os.chmod(local_path, int(container_mount.unix_permission, base=8))
+
+        mount = {
+            "bind": container_mount.internal_filepath,
+            "mode": container_mount.mode,
+        }
+        volumes[local_path] = mount
+        print("local path", local_path, "mount", mount)
 
     # start container
     container = None
@@ -96,24 +127,45 @@ def run_command(
             auto_remove=True,
         )
 
+        result = container.exec_run(
+            cmd="bash /start.sh || true", stdout=True, stderr=True, demux=True
+        )
+        print("result of start.sh", result)
+
         # write the files
         for _k, v in files.items():
-            write_result = v.write_file(path=temp_dir.name)
-            if not write_result:
-                return write_result
+            if isinstance(v, list):
+                for sub_v in v:
+                    write_result = sub_v.write_file(path=temp_dir)
+                    if not write_result:
+                        return write_result
+            else:
+                write_result = v.write_file(path=temp_dir)
+                if not write_result:
+                    return write_result
 
-        cmd = command.cmd(run_files=files)
+        print("user_kwargs", user_kwargs)
+        print("files", files)
+        cmd = command.cmd(run_user_kwargs=user_kwargs, run_files=files)
+        print("running cmd", cmd)
         result = container.exec_run(cmd=cmd, stdout=True, stderr=True, demux=True)
         container_result = ContainerResult.from_execresult(result=result)
         container_result.image_name = container_image.name
         container_result.image_tag = container_image.tag
         container_result.command_name = command.name
+        if command.return_filepath:
+            return_file = SyftFile.from_path(f"{temp_dir}/{command.return_filepath}")
+            container_result.return_file = return_file
         return container_result
     except Exception as e:
         print(f"Failed to run command in container. {command} {container_image}. {e}")
     finally:
         if container:
-            container.stop()
+            pass
+            # container.stop()
+        for temp_dir in temp_dirs:
+            print("remove temp_dir", temp_dir)
+            # shutil.rmtree(temp_dir)
 
 
 @instrument
@@ -269,11 +321,32 @@ class ContainerService(AbstractService):
         command = result.ok()
 
         files = {}
+        user_kwargs = {}
         for k, v in kwargs.items():
+            key = k
+            for possible_keys in command.user_kwargs:
+                # some cli args are - but only _ allowed in python signatures
+                if "-" in possible_keys and possible_keys.replace("-", "_") == key:
+                    key = key.replace("_", "-")
+
+            # todo make another SyftList object or some safe way to check them all
+            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], SyftFile):
+                for item in v:
+                    if not isinstance(item, SyftFile):
+                        raise Exception("All files in a list must be files")
+                files[key] = v
+
             if isinstance(v, SyftFile):
-                files[k] = v
+                files[key] = v
+            else:
+                user_kwargs[key] = v
         try:
-            result = run_command(container_image=image, command=command, files=files)
+            result = run_command(
+                container_image=image,
+                command=command,
+                user_kwargs=user_kwargs,
+                files=files,
+            )
             return result
         except Exception as e:
             return SyftError(f"Failed to run command. {e}")

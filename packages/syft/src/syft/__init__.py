@@ -47,7 +47,9 @@ from .service.container.container import ContainerCommand  # noqa: F401
 from .service.container.container import ContainerCommandKwarg  # noqa: F401
 from .service.container.container import ContainerCommandKwargBool  # noqa: F401
 from .service.container.container import ContainerCommandKwargTemplate  # noqa: F401
+from .service.container.container import ContainerMount  # noqa: F401
 from .service.container.container import ContainerUpload  # noqa: F401
+from .service.container.container import ContainerVolume  # noqa: F401
 from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .service.dataset.dataset import Contributor  # noqa: F401
 from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401

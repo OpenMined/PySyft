@@ -7,6 +7,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Self
+from typing import Type
 from typing import Union
 
 # third party
@@ -17,6 +18,21 @@ from ...serde.serializable import serializable
 from ...types.file import SyftFile
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+
+
+@serializable()
+class ContainerVolume(SyftObject):
+    # version
+    __canonical_name__ = "ContainerVolume"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    __attr_searchable__ = ["name", "internal_mountpath"]
+    __attr_unique__ = ["name"]
+    __repr_attrs__ = ["name", "internal_mountpath"]
+
+    name: str
+    internal_mountpath: str
+    mode: str = "ro"
 
 
 @serializable()
@@ -32,6 +48,7 @@ class ContainerImage(SyftObject):
     name: str
     tag: str
     dockerfile: Optional[str]
+    volumes: List[ContainerVolume] = []
 
 
 @serializable()
@@ -40,13 +57,13 @@ class ContainerUpload(SyftObject):
     __canonical_name__ = "ContainerUpload"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    command_file: str
-    sandbox_path: Optional[str] = None
+    arg_name: str
+    sandbox_path: Optional[str] = "/sandbox"
 
     def format(self, run_kwargs: Dict[str, Any]) -> str:
-        if self.command_file not in run_kwargs["files"]:
-            raise Exception(f"Missing command_file: {self.command_file}")
-        syft_file = run_kwargs["files"][self.command_file]
+        if self.arg_name not in run_kwargs["files"]:
+            raise Exception(f"Missing arg_name: {self.arg_name}")
+        syft_file = run_kwargs["files"][self.arg_name]
         path = ""
         if self.sandbox_path:
             path = f"{self.sandbox_path}/"
@@ -67,15 +84,24 @@ class ContainerCommandKwarg(ContainerCommandArg):
     __canonical_name__ = "ContainerCommandKwarg"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    signature_key: Optional[str] = None  # TODO: overrides name
     name: str
     hyphens: str = "--"
     equals: str = "="
-    value: Union[str, ContainerUpload]
+    value: Union[str, Type[str], ContainerUpload]
+    arg_only: bool = False  # no key= # TODO: refactor to own class
 
     def format(self, run_kwargs: Dict[str, Any]) -> Optional[str]:
-        value_str = (
-            self.value if isinstance(self.value, str) else self.value.format(run_kwargs)
-        )
+        if self.name in run_kwargs["user_kwargs"]:
+            value_str = run_kwargs["user_kwargs"][self.name].strip()
+        else:
+            value_str = (
+                self.value
+                if isinstance(self.value, str)
+                else self.value.format(run_kwargs)
+            )
+        if self.arg_only:
+            return f"{value_str}"
         return f"{self.hyphens}{self.name}{self.equals}{value_str}"
 
 
@@ -92,9 +118,14 @@ class ContainerCommandKwargBool(ContainerCommandKwarg):
     flag: bool = True
 
     def format(self, run_kwargs: Dict[str, Any]) -> Optional[str]:
-        if self.flag and self.value:
+        value = self.value
+        print("value", value)
+        if self.name in run_kwargs["user_kwargs"]:
+            value = bool(run_kwargs["user_kwargs"][self.name])
+            print("second value", value)
+        if self.flag and value:
             return f"{self.hyphens}{self.name}"
-        if not self.flag and not self.value:
+        if self.flag and not self.value:
             return None
         return f"{self.hyphens}{self.name}{self.equals}{self.value}"
 
@@ -124,6 +155,18 @@ class ContainerCommandKwargTemplate(ContainerCommandKwarg):
 
 
 @serializable()
+class ContainerMount(SyftObject):
+    # version
+    __canonical_name__ = "ContainerMount"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    internal_filepath: str
+    file: SyftFile
+    mode: str = "ro"
+    unix_permission: str = "644"
+
+
+@serializable()
 class ContainerCommand(SyftObject):
     # version
     __canonical_name__ = "ContainerCommand"
@@ -136,14 +179,20 @@ class ContainerCommand(SyftObject):
     command: str
     args: str
     kwargs: Dict[str, ContainerCommandArg] = {}
-    user_kwargs: List[str] = {}
+    user_kwargs: List[str] = []
+    user_files: List[str] = []
+    return_filepath: Optional[str] = None
+    mounts: List[ContainerMount] = []
 
     __attr_searchable__ = ["module_name", "name", "image_name"]
-    __attr_unique__ = ["name", "image_name"]
+    __attr_unique__ = ["name"]
     __repr_attrs__ = ["module_name", "name", "image_name"]
 
-    def cmd(self, run_files: Dict[str, SyftFile]) -> str:
+    def cmd(
+        self, run_user_kwargs: Dict[str, str], run_files: Dict[str, SyftFile]
+    ) -> str:
         run_kwargs = {}
+        run_kwargs["user_kwargs"] = run_user_kwargs
         run_kwargs["files"] = run_files
         cmd = ""
         cmd += f"{self.command} "
@@ -156,20 +205,29 @@ class ContainerCommand(SyftObject):
 
     def user_signature(self) -> Signature:
         parameters = []
-        for key in self.user_kwargs:
-            kwarg = self.kwargs[key]
-            param_name = kwarg.name
-            param_type = (
-                SyftFile
-                if isinstance(kwarg.value, ContainerUpload)
-                else type(kwarg.value)
-            )
+        keys = self.user_kwargs + self.user_files
+        for key in keys:
+            if key in self.kwargs:
+                kwarg = self.kwargs[key]
+                param_name = kwarg.name.replace("-", "_")
+                if isinstance(kwarg.value, ContainerUpload):
+                    param_type = SyftFile
+                elif isinstance(kwarg.value, type):
+                    param_type = kwarg.value
+                else:
+                    param_type = type(kwarg.value)
+            else:
+                param_name = key.replace("-", "_")
+                param_type = Union[SyftFile, List[SyftFile]]
+
             if not kwarg.required:
                 param_type = Optional[param_type]
+
             parameter = Parameter(
                 name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
             )
             parameters.append(parameter)
+
         return Signature(parameters=parameters)
 
 
@@ -203,6 +261,7 @@ class ContainerResult(SyftObject):
     stderr: List[str]
     jsonstd: List[Dict[str, Any]]
     jsonerr: List[Dict[str, Any]]
+    return_file: Optional[SyftFile] = None
 
     @staticmethod
     def from_execresult(result: ExecResult) -> Self:

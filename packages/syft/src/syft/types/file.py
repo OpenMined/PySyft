@@ -17,12 +17,11 @@ from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 
+# extra mime types not in mimetypes.types_map
 mime_types = {
-    "txt": "text/plain",
-    "json": "application/json",
-    "msgpack": "application/msgpack",
-    "jpg": "image/jpeg",
-    "png": "image/png",
+    ".msgpack": "application/msgpack",
+    ".yml": "application/yaml",
+    ".yaml": "application/yaml",
 }
 
 
@@ -32,9 +31,11 @@ def get_mimetype(filename: str, path: str) -> str:
         if mimetype is not None:
             return mimetype
 
-        extension = filename.split(".")
-        if len(extension) > 1 and extension[-1] in mime_types:
-            return mime_types[extension[-1]]
+        extension_parts = filename.split(".")
+        if len(extension_parts) > 1:
+            extension = f".{extension_parts[-1]}"
+            if extension in mime_types:
+                return mime_types[extension]
     except Exception as e:
         print(f"failed to get mime type. {e}")
     return "application/octet-stream"
@@ -51,6 +52,23 @@ class SyftFile(SyftObject):
 
     __attr_repr_cols__ = ["filename", "mimetype", "size_bytes"]
 
+    def head(self, length: int = 200) -> str:
+        print(self.decode(length=length))
+
+    def decode(self, length: int = -1) -> str:
+        output = ""
+        try:
+            if length < 0:
+                length = self.size_bytes
+            slice_size = min(length, self.size_bytes)
+
+            output = self.data[:slice_size].decode("utf-8")
+        except Exception:  # nosec
+            print("Failed to slice bytes")
+        if length < self.size_bytes:
+            output += "\n..."
+        return output
+
     def write_file(self, path: str) -> Union[SyftSuccess, SyftError]:
         try:
             full_path = f"{path}/{self.filename}"
@@ -61,6 +79,20 @@ class SyftFile(SyftObject):
             return SyftSuccess(message=f"File saved: {full_path}")
         except Exception as e:
             return SyftError(message=f"Failed to write {type(self)} to {path}. {e}")
+
+    @staticmethod
+    def from_string(
+        content: str, filename: str = "file.txt", mime_type: Optional[str] = None
+    ) -> Optional[Self]:
+        data = content.encode("utf-8")
+        if mime_type is None:
+            mime_type = get_mimetype(filename, filename)
+        return SyftFile(
+            filename=filename,
+            size_bytes=len(data),
+            mimetype=mime_type,
+            data=data,
+        )
 
     @staticmethod
     def from_path(path: str) -> Optional[Self]:
