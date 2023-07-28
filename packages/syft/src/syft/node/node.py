@@ -80,10 +80,10 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..store.blob_storage import BlobStorageConfig
+from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
-from ..store.file_store import FileStoreConfig
-from ..store.file_store.on_disk import OnDiskFileStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
@@ -201,7 +201,7 @@ class Node(AbstractNode):
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         queue_config: Type[QueueConfig] = ZMQQueueConfig,
-        file_store_config: Optional[FileStoreConfig] = None,
+        blob_storage_config: Optional[BlobStorageConfig] = None,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
     ):
@@ -292,13 +292,15 @@ class Node(AbstractNode):
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
 
-        self.init_file_store(config=file_store_config)
+        self.init_blob_storage(config=blob_storage_config)
 
         NodeRegistry.set_node_for(self.id, self)
 
-    def init_file_store(self, config: Optional[FileStoreConfig] = None) -> None:
-        config_ = OnDiskFileStoreConfig() if config is None else config
-        self.file_client = config_.file_client(config=config_.file_client_config)
+    def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
+        config_ = OnDiskBlobStorageConfig() if config is None else config
+        self.blob_storage_client = config_.blob_storage_client(
+            config=config_.blob_storage_client_config
+        )
 
     def init_queue_manager(self, queue_config: QueueConfig) -> None:
         MessageHandlers = [APICallMessageHandler]

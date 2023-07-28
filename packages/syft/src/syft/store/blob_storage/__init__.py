@@ -2,22 +2,22 @@
 
 Contains blob file storage interfaces. See `on_disk.py` for an example of a concrete implementation.
 
-FileClient, FileClientConfig and FileClientConnection
+BlobStorageClient, BlobStorageClientConfig and BlobStorageConnection
 -----------------------------------------------------
 
 ```
-file_client_cls: Type[FileClient]
-file_client_config: FileClientConfig
+blob_storage_client_cls: Type[BlobStorageClient]
+blob_storage_client_config: BlobStorageClientConfig
 
-file_client = file_client_cls(config=file_client_config)
+blob_storage_client = blob_storage_client_cls(config=blob_storage_client_config)
 ```
 
-FileClient implements context manager (`__enter__()` and `__exit__()`) to create a FileClientConnection.
-`FileClient.__enter__()` creates a connection (FileClientConnection) to the file system (e.g. SeaweedFS).
-FileClientConnection implements operations on files (read, write, ...).
+BlobStorageClient implements context manager (`__enter__()` and `__exit__()`) to create a BlobStorageConnection.
+`BlobStorageClient.__enter__()` creates a connection (BlobStorageConnection) to the file system (e.g. SeaweedFS).
+BlobStorageConnection implements operations on files (read, write, ...).
 
 ```
-with file_client as conn:
+with blob_storage_client as conn:
     conn.read(...)
 ```
 
@@ -104,11 +104,11 @@ class SyftWriteResource(SyftObject):
 
 
 @serializable()
-class FileClientConfig(BaseModel):
+class BlobStorageClientConfig(BaseModel):
     pass
 
 
-class FileClientConnection:
+class BlobStorageConnection:
     def read(self, fp: SecureFilePathLocation) -> SyftResource:
         raise NotImplementedError
 
@@ -120,16 +120,16 @@ class FileClientConnection:
 
 
 @serializable()
-class FileClient(SyftBaseModel):
-    config: FileClientConfig
+class BlobStorageClient(SyftBaseModel):
+    config: BlobStorageClientConfig
 
-    def __enter__(self) -> FileClientConnection:
+    def __enter__(self) -> BlobStorageConnection:
         raise NotImplementedError
 
     def __exit__(self, *exc) -> None:
         raise NotImplementedError
 
 
-class FileStoreConfig(SyftBaseModel):
-    file_client: Type[FileClient]
-    file_client_config: FileClientConfig
+class BlobStorageConfig(SyftBaseModel):
+    blob_storage_client: Type[BlobStorageClient]
+    blob_storage_client_config: BlobStorageClientConfig

@@ -5,9 +5,9 @@ from typing import Union
 
 # relative
 from ...serde.serializable import serializable
+from ...store.blob_storage import SyftResource
+from ...store.blob_storage import SyftWriteResource
 from ...store.document_store import DocumentStore
-from ...store.file_store import SyftResource
-from ...store.file_store import SyftWriteResource
 from ...types.file_object import CreateFileObject
 from ...types.file_object import FileObject
 from ...types.uid import UID
@@ -53,7 +53,7 @@ class BlobStorageService(AbstractService):
     ) -> Union[SyftResource, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
-            with context.node.file_client as conn:
+            with context.node.blob_storage_client as conn:
                 return conn.read(result.ok().location)
         return SyftError(message=result.err())
 
@@ -61,7 +61,7 @@ class BlobStorageService(AbstractService):
     def allocate(
         self, context: AuthedServiceContext, obj: CreateFileObject
     ) -> Union[SyftWriteResource, SyftError]:
-        with context.node.file_client as conn:
+        with context.node.blob_storage_client as conn:
             secure_location = conn.allocate(obj)
 
             file_object = FileObject(

@@ -9,10 +9,10 @@ from typing import Union
 from pydantic import PrivateAttr
 
 # relative
-from . import FileClient
-from . import FileClientConfig
-from . import FileClientConnection
-from . import FileStoreConfig
+from . import BlobStorageClient
+from . import BlobStorageClientConfig
+from . import BlobStorageConfig
+from . import BlobStorageConnection
 from . import SyftObjectResource
 from . import SyftResource
 from . import SyftWriteResource
@@ -41,7 +41,7 @@ class OnDiskSyftWriteResource(SyftWriteResource):
         return api.services.blob_storage.write_to_disk(data=data, obj=self.file_object)
 
 
-class OnDiskFileClientConnection(FileClientConnection):
+class OnDiskBlobStorageConnection(BlobStorageConnection):
     _base_directory: Path
 
     def __init__(self, base_directory: Path) -> None:
@@ -62,26 +62,28 @@ class OnDiskFileClientConnection(FileClientConnection):
 
 
 @serializable()
-class OnDiskFileClientConfig(FileClientConfig):
+class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
     base_directory: Path = Path(gettempdir())
 
 
 @serializable()
-class OnDiskFileClient(FileClient):
-    config: OnDiskFileClientConfig
-    _connection: OnDiskFileClientConnection = PrivateAttr()
+class OnDiskBlobStorageClient(BlobStorageClient):
+    config: OnDiskBlobStorageClientConfig
+    _connection: OnDiskBlobStorageConnection = PrivateAttr()
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        self._connection = OnDiskFileClientConnection(self.config.base_directory)
+        self._connection = OnDiskBlobStorageConnection(self.config.base_directory)
 
-    def __enter__(self) -> FileClientConnection:
+    def __enter__(self) -> BlobStorageConnection:
         return self._connection
 
     def __exit__(self, *exc) -> None:
         pass
 
 
-class OnDiskFileStoreConfig(FileStoreConfig):
-    file_client: Type[FileClient] = OnDiskFileClient
-    file_client_config: OnDiskFileClientConfig = OnDiskFileClientConfig()
+class OnDiskBlobStorageConfig(BlobStorageConfig):
+    blob_storage_client: Type[BlobStorageClient] = OnDiskBlobStorageClient
+    blob_storage_client_config: OnDiskBlobStorageClientConfig = (
+        OnDiskBlobStorageClientConfig()
+    )
