@@ -9,12 +9,12 @@ from typing import Union
 from pydantic import PrivateAttr
 
 # relative
+from . import BlobRetrieval
 from . import BlobStorageClient
 from . import BlobStorageClientConfig
 from . import BlobStorageConfig
 from . import BlobStorageConnection
-from . import SyftObjectResource
-from . import SyftResource
+from . import SyftObjectRetrieval
 from . import SyftWriteResource
 from ...serde.serializable import serializable
 from ...service.response import SyftError
@@ -47,8 +47,8 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def __init__(self, base_directory: Path) -> None:
         self._base_directory = base_directory
 
-    def read(self, fp: SecureFilePathLocation) -> SyftResource:
-        return SyftObjectResource(
+    def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
+        return SyftObjectRetrieval(
             syft_object=(self._base_directory / fp.path).read_bytes()
         )
 

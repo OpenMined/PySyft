@@ -35,9 +35,9 @@ Write/persist SyftObject to blob storage
 Read/retrieve SyftObject from blob storage
 ------------------------------------------
 
-- get a SyftResource from the id of the FileObject of the SyftObject
-  `resource = api.services.blob_storage.read(file_object_id)`
-- use `SyftResource.read` to retrieve the SyftObject `syft_object = resouce.read()`
+- get a BlobRetrieval from the id of the FileObject of the SyftObject
+  `blob_retrieval = api.services.blob_storage.read(file_object_id)`
+- use `BlobRetrieval.read` to retrieve the SyftObject `blob_retrieval = resouce.read()`
 """
 
 
@@ -62,8 +62,8 @@ from ...types.syft_object import SyftObject
 
 
 @serializable()
-class SyftResource(SyftObject):
-    __canonical_name__ = "SyftResource"
+class BlobRetrieval(SyftObject):
+    __canonical_name__ = "BlobRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
 
     def read(self) -> SyftObject:
@@ -71,8 +71,8 @@ class SyftResource(SyftObject):
 
 
 @serializable()
-class SyftObjectResource(SyftResource):
-    __canonical_name__ = "SyftObjectResource"
+class SyftObjectRetrieval(BlobRetrieval):
+    __canonical_name__ = "SyftObjectRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_object: bytes
@@ -82,8 +82,8 @@ class SyftObjectResource(SyftResource):
 
 
 @serializable()
-class SyftURLResource(SyftResource):
-    __canonical_name__ = "SyftURLResource"
+class BlobRetrievalByURL(BlobRetrieval):
+    __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_1
 
     url: str
@@ -109,7 +109,7 @@ class BlobStorageClientConfig(BaseModel):
 
 
 class BlobStorageConnection:
-    def read(self, fp: SecureFilePathLocation) -> SyftResource:
+    def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
         raise NotImplementedError
 
     def allocate(self, obj: CreateFileObject) -> SecureFilePathLocation:

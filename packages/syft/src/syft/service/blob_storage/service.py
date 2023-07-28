@@ -5,7 +5,7 @@ from typing import Union
 
 # relative
 from ...serde.serializable import serializable
-from ...store.blob_storage import SyftResource
+from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage import SyftWriteResource
 from ...store.document_store import DocumentStore
 from ...types.file_object import CreateFileObject
@@ -50,7 +50,7 @@ class BlobStorageService(AbstractService):
     @service_method(path="blob_storage.read", name="read")
     def read(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftResource, SyftError]:
+    ) -> Union[BlobRetrieval, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             with context.node.blob_storage_client as conn:
