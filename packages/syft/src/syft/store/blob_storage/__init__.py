@@ -26,8 +26,8 @@ See `file_service.py` for usage example.
 Write/persist SyftObject to blob storage
 ----------------------------------------
 
-- create a CreateFileObject from SyftObject `create_file_object = CreateFileObject.from(obj)`
-- pre-allocate the file object `blob_deposit = api.services.blob_storage.allocate(create_file_object)`
+- create a CreateBlobStorageEntry from SyftObject `create_blob_storage_entry = CreateBlobStorageEntry.from(obj)`
+- pre-allocate the file object `blob_deposit = api.services.blob_storage.allocate(create_blob_storage_entry)`
   (this returns a BlobDeposit)
 - use `BlobDeposit.write` to upload/save/persist the SyftObject
   `blob_deposit.write(sy.serialize(user_object, to_bytes=True))`
@@ -35,9 +35,9 @@ Write/persist SyftObject to blob storage
 Read/retrieve SyftObject from blob storage
 ------------------------------------------
 
-- get a BlobRetrieval from the id of the FileObject of the SyftObject
-  `blob_retrieval = api.services.blob_storage.read(file_object_id)`
-- use `BlobRetrieval.read` to retrieve the SyftObject `blob_retrieval = resouce.read()`
+- get a BlobRetrieval from the id of the BlobStorageEntry of the SyftObject
+  `blob_retrieval = api.services.blob_storage.read(blob_storage_entry_id)`
+- use `BlobRetrieval.read` to retrieve the SyftObject `syft_object = blob_retrieval.read()`
 """
 
 
@@ -54,8 +54,8 @@ from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...types.base import SyftBaseModel
-from ...types.blob_storage import CreateFileObject
-from ...types.blob_storage import FileObject
+from ...types.blob_storage import BlobStorageEntry
+from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -97,7 +97,7 @@ class BlobDeposit(SyftObject):
     __canonical_name__ = "BlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    file_object: FileObject
+    blob_storage_entry: BlobStorageEntry
 
     def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
         pass
@@ -112,10 +112,10 @@ class BlobStorageConnection:
     def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
         raise NotImplementedError
 
-    def allocate(self, obj: CreateFileObject) -> SecureFilePathLocation:
+    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
         raise NotImplementedError
 
-    def write(self, obj: FileObject) -> BlobDeposit:
+    def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         raise NotImplementedError
 
 

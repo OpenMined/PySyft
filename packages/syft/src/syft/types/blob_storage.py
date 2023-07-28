@@ -28,8 +28,8 @@ class SecureFilePathLocation(SyftObject):
 
 
 @serializable()
-class FileObject(SyftObject):
-    __canonical_name__ = "FileObject"
+class BlobStorageEntry(SyftObject):
+    __canonical_name__ = "BlobStorageEntry"
     __version__ = SYFT_OBJECT_VERSION_1
     id: UID
     location: SecureFilePathLocation
@@ -41,8 +41,8 @@ class FileObject(SyftObject):
 
 
 @serializable()
-class CreateFileObject(SyftObject):
-    __canonical_name__ = "CreateFileObject"
+class CreateBlobStorageEntry(SyftObject):
+    __canonical_name__ = "CreateBlobStorageEntry"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID

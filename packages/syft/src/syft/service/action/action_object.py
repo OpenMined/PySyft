@@ -439,7 +439,7 @@ class ActionObject(SyftObject):
     # syft_dont_wrap_attrs = ["shape"]
 
     # @property
-    # def syft_action_proxy(self) -> Optional[FileObject]:
+    # def syft_action_proxy(self) -> Optional[BlobStorageEntry]:
     #     return (
     #         self.syft_action_proxy_reference.resolve
     #         if self.syft_action_proxy_reference is not None

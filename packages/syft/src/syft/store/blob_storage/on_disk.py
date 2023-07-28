@@ -19,8 +19,8 @@ from . import SyftObjectRetrieval
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
-from ...types.blob_storage import CreateFileObject
-from ...types.blob_storage import FileObject
+from ...types.blob_storage import BlobStorageEntry
+from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 
@@ -38,7 +38,9 @@ class OnDiskBlobDeposit(BlobDeposit):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.blob_storage.write_to_disk(data=data, obj=self.file_object)
+        return api.services.blob_storage.write_to_disk(
+            data=data, obj=self.blob_storage_entry
+        )
 
 
 class OnDiskBlobStorageConnection(BlobStorageConnection):
@@ -52,13 +54,13 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
             syft_object=(self._base_directory / fp.path).read_bytes()
         )
 
-    def allocate(self, obj: CreateFileObject) -> SecureFilePathLocation:
+    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
         return SecureFilePathLocation(
             path=str((self._base_directory / str(obj.id)).absolute())
         )
 
-    def write(self, obj: FileObject) -> BlobDeposit:
-        return OnDiskBlobDeposit(file_object=obj)
+    def write(self, obj: BlobStorageEntry) -> BlobDeposit:
+        return OnDiskBlobDeposit(blob_storage_entry=obj)
 
 
 @serializable()

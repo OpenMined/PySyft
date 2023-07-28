@@ -8,8 +8,8 @@ from ...serde.serializable import serializable
 from ...store.blob_storage import BlobDeposit
 from ...store.blob_storage import BlobRetrieval
 from ...store.document_store import DocumentStore
-from ...types.blob_storage import CreateFileObject
-from ...types.blob_storage import FileObject
+from ...types.blob_storage import BlobStorageEntry
+from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -30,18 +30,18 @@ class BlobStorageService(AbstractService):
         self.stash = BlobStorageStash(store=store)
 
     @service_method(path="blob_storage.get_all", name="get_all")
-    def get_all_file_objects(
+    def get_all_blob_storage_entries(
         self, context: AuthedServiceContext
-    ) -> Union[List[FileObject], SyftError]:
+    ) -> Union[List[BlobStorageEntry], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
 
     @service_method(path="blob_storage.get_by_uid", name="get_by_uid")
-    def get_file_object_by_uid(
+    def get_blob_storage_entry_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[FileObject, SyftError]:
+    ) -> Union[BlobStorageEntry, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
@@ -59,26 +59,26 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.allocate", name="allocate")
     def allocate(
-        self, context: AuthedServiceContext, obj: CreateFileObject
+        self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
     ) -> Union[BlobDeposit, SyftError]:
         with context.node.blob_storage_client as conn:
             secure_location = conn.allocate(obj)
 
-            file_object = FileObject(
+            blob_storage_entry = BlobStorageEntry(
                 location=secure_location,
                 type_=obj.type_,
                 mimetype=obj.mimetype,
                 file_size=obj.file_size,
                 uploaded_by=context.credentials,
             )
-            blob_deposit = conn.write(file_object)
+            blob_deposit = conn.write(blob_storage_entry)
 
-        self.stash.set(context.credentials, file_object)
+        self.stash.set(context.credentials, blob_storage_entry)
         return blob_deposit
 
     @service_method(path="blob_storage.write_to_disk", name="write_to_disk")
     def write_to_disk(
-        self, context: AuthedServiceContext, obj: FileObject, data: bytes
+        self, context: AuthedServiceContext, obj: BlobStorageEntry, data: bytes
     ) -> Union[SyftSuccess, SyftError]:
         try:
             Path(obj.location.path).write_bytes(data)
@@ -87,4 +87,4 @@ class BlobStorageService(AbstractService):
             return SyftError(message=f"Failed to write object to disk: {e}")
 
 
-TYPE_TO_SERVICE[FileObject] = FileObject
+TYPE_TO_SERVICE[BlobStorageEntry] = BlobStorageEntry
