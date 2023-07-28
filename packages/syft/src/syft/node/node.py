@@ -42,7 +42,7 @@ from ..client.api import debox_signed_syftapicall_response
 from ..external import OBLV
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
-from ..service.action.action_graph import InMemoryActionGraphStore
+from ..service.action.action_graph import ActionGraphStore
 from ..service.action.action_graph import InMemoryGraphConfig
 from ..service.action.action_graph_service import ActionGraphService
 from ..service.action.action_service import ActionService
@@ -494,7 +494,7 @@ class Node(AbstractNode):
         if action_graph_config is None:
             action_graph_config = InMemoryGraphConfig()
             action_graph_config.client_config.filename = f"{self.id}.bytes"
-        self.action_graph_store = InMemoryActionGraphStore(
+        self.action_graph_store = ActionGraphStore(
             store_config=action_graph_config,
         )
         self.action_graph_config = action_graph_config

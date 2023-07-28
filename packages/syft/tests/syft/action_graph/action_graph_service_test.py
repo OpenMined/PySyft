@@ -8,8 +8,8 @@ import networkx as nx
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.node.worker import Worker
+from syft.service.action.action_graph import ActionGraphStore
 from syft.service.action.action_graph import ExecutionStatus
-from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import NetworkXBackingStore
 from syft.service.action.action_graph import NodeActionData
 from syft.service.action.action_graph import NodeActionDataUpdate
@@ -27,7 +27,7 @@ from syft.types.uid import UID
 def test_action_graph_service_init(
     in_mem_action_graph_service: ActionGraphService,
 ) -> None:
-    assert isinstance(in_mem_action_graph_service.store, InMemoryActionGraphStore)
+    assert isinstance(in_mem_action_graph_service.store, ActionGraphStore)
     assert isinstance(in_mem_action_graph_service.store.graph, NetworkXBackingStore)
 
 
@@ -461,6 +461,6 @@ def test_action_graph_service_get_by_verify_key(
 def test_action_graph_service_init_with_node(worker: Worker) -> None:
     action_graph_service = worker.get_service("actiongraphservice")
     assert isinstance(action_graph_service, ActionGraphService)
-    assert isinstance(action_graph_service.store, InMemoryActionGraphStore)
+    assert isinstance(action_graph_service.store, ActionGraphStore)
     assert isinstance(action_graph_service.store.graph, NetworkXBackingStore)
     assert isinstance(action_graph_service.store.graph.db, nx.DiGraph)

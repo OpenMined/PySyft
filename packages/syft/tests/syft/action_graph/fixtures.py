@@ -7,7 +7,7 @@ import pytest
 import syft as sy
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
-from syft.service.action.action_graph import InMemoryActionGraphStore
+from syft.service.action.action_graph import ActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
 from syft.service.action.action_graph import NetworkXBackingStore
 from syft.service.action.action_graph import NodeActionData
@@ -100,16 +100,16 @@ def networkx_store_with_nodes(
 @pytest.fixture
 def in_mem_graph_store(
     in_mem_graph_config: InMemoryGraphConfig,
-) -> InMemoryActionGraphStore:
-    graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config, reset=True)
+) -> ActionGraphStore:
+    graph_store = ActionGraphStore(store_config=in_mem_graph_config, reset=True)
     return graph_store
 
 
 @pytest.fixture
 def simple_in_memory_action_graph(
-    in_mem_graph_store: InMemoryActionGraphStore,
+    in_mem_graph_store: ActionGraphStore,
     verify_key: SyftVerifyKey,
-) -> InMemoryActionGraphStore:
+) -> ActionGraphStore:
     """
     Create a simple in memory graph with 3 nodes without node mutation
         node_1: action_obj_node_a
@@ -145,6 +145,6 @@ def simple_in_memory_action_graph(
 
 @pytest.fixture
 def in_mem_action_graph_service(
-    in_mem_graph_store: InMemoryActionGraphStore,
+    in_mem_graph_store: ActionGraphStore,
 ) -> ActionGraphService:
     return ActionGraphService(store=in_mem_graph_store)

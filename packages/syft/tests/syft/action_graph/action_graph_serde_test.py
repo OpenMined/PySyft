@@ -12,7 +12,7 @@ import syft as sy
 from syft import Worker
 from syft.client.client import SyftClient
 from syft.node.credentials import SyftVerifyKey
-from syft.service.action.action_graph import InMemoryActionGraphStore
+from syft.service.action.action_graph import ActionGraphStore
 from syft.service.action.action_graph import NodeActionData
 
 # relative
@@ -36,7 +36,7 @@ def test_node_action_data_serde(verify_key: SyftVerifyKey) -> None:
 def test_in_memory_action_graph_serde(
     obj: Any, request: FixtureRequest, verify_key: SyftVerifyKey
 ) -> None:
-    in_memory_graph: InMemoryActionGraphStore = request.getfixturevalue(obj)
+    in_memory_graph: ActionGraphStore = request.getfixturevalue(obj)
     serialized_graph: bytes = sy.serialize(in_memory_graph, to_bytes=True)
     deserialized_graph = sy.deserialize(serialized_graph, from_bytes=True)
 

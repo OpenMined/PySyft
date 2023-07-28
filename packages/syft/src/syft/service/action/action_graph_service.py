@@ -20,8 +20,8 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
-from .action_graph import ActionGraphStore
 from .action_graph import ExecutionStatus
+from .action_graph import GraphStore
 from .action_graph import NodeActionData
 from .action_graph import NodeActionDataUpdate
 from .action_graph import NodeType
@@ -33,9 +33,9 @@ ExecutionStatusPartitionKey = PartitionKey(key="status", type_=ExecutionStatus)
 
 @serializable()
 class ActionGraphService(AbstractService):
-    store: ActionGraphStore
+    store: GraphStore
 
-    def __init__(self, store: ActionGraphStore):
+    def __init__(self, store: GraphStore):
         self.store = store
 
     @service_method(path="graph.add_action", name="add_action", roles=GUEST_ROLE_LEVEL)

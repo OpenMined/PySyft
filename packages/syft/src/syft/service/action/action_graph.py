@@ -362,12 +362,12 @@ class InMemoryGraphConfig(StoreConfig):
 
 
 @serializable()
-class ActionGraphStore:
+class GraphStore:
     pass
 
 
 @serializable()
-class InMemoryActionGraphStore(ActionGraphStore):
+class ActionGraphStore(GraphStore):
     def __init__(self, store_config: StoreConfig, reset: bool = False):
         self.store_config: StoreConfig = store_config
         self.graph: Type[BaseGraphStore] = self.store_config.store_type(

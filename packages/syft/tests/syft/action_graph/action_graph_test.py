@@ -3,7 +3,7 @@ Tests for the classes in /syft/src/syft/service/action/action_graph.py:
     - NodeActionData, NodeActionDataUpdate
     - InMemoryStoreClientConfig, InMemoryGraphConfig
     - NetworkXBackingStore
-    - InMemoryActionGraphStore
+    - ActionGraphStore
 """
 
 # stdlib
@@ -19,8 +19,8 @@ from result import Err
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
+from syft.service.action.action_graph import ActionGraphStore
 from syft.service.action.action_graph import ExecutionStatus
-from syft.service.action.action_graph import InMemoryActionGraphStore
 from syft.service.action.action_graph import InMemoryGraphConfig
 from syft.service.action.action_graph import InMemoryStoreClientConfig
 from syft.service.action.action_graph import NetworkXBackingStore
@@ -327,7 +327,7 @@ def test_networkx_backing_store_subgraph(
 def test_in_memory_action_graph_store_init(
     in_mem_graph_config: InMemoryGraphConfig,
 ) -> None:
-    graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config)
+    graph_store = ActionGraphStore(store_config=in_mem_graph_config)
 
     assert graph_store.store_config == in_mem_graph_config
     assert isinstance(graph_store.graph, NetworkXBackingStore)
@@ -335,11 +335,11 @@ def test_in_memory_action_graph_store_init(
 
 
 def test_in_memory_action_graph_store_set_get_delete_no_mutations(
-    in_mem_graph_store: InMemoryActionGraphStore,
+    in_mem_graph_store: ActionGraphStore,
     verify_key: SyftVerifyKey,
 ) -> None:
     """
-    Test these methods of InMemoryActionGraphStore: set, get, delete, nodes, edges, is_parent
+    Test these methods of ActionGraphStore: set, get, delete, nodes, edges, is_parent
     when there is no mutations.
     """
     # add the first node
@@ -408,7 +408,7 @@ def test_in_memory_action_graph_store_set_get_delete_no_mutations(
 
 
 def test_in_memory_action_graph_store_update(
-    in_mem_graph_store: InMemoryActionGraphStore,
+    in_mem_graph_store: ActionGraphStore,
     verify_key: SyftVerifyKey,
 ) -> None:
     action_obj_node: NodeActionData = create_action_obj_node(verify_key)
@@ -428,7 +428,7 @@ def test_in_memory_action_graph_store_update(
 
 
 def test_simple_in_memory_action_graph(
-    simple_in_memory_action_graph: InMemoryActionGraphStore,
+    simple_in_memory_action_graph: ActionGraphStore,
     verify_key: SyftVerifyKey,
 ) -> None:
     """
@@ -463,7 +463,7 @@ def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -
 
     execution_err = None
     store_config = InMemoryGraphConfig()
-    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
+    graph_store = ActionGraphStore(store_config=store_config, reset=True)
 
     def _cbk(tid: int) -> None:
         nonlocal execution_err
@@ -514,7 +514,7 @@ def test_multithreaded_graph_store_delete_node(verify_key: SyftVerifyKey) -> Non
 
     execution_err = None
     store_config = InMemoryGraphConfig()
-    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
+    graph_store = ActionGraphStore(store_config=store_config, reset=True)
 
     thread_id_node_map = {}
     for tid in range(thread_cnt):
@@ -554,7 +554,7 @@ def test_multithreaded_graph_store_delete_node(verify_key: SyftVerifyKey) -> Non
 
 
 def test_simple_in_memory_action_graph_query(
-    simple_in_memory_action_graph: InMemoryActionGraphStore,
+    simple_in_memory_action_graph: ActionGraphStore,
     verify_key: SyftVerifyKey,
 ) -> None:
     qks = QueryKeys(
@@ -584,7 +584,7 @@ def test_simple_in_memory_action_graph_query(
 def test_multithreaded_graph_store_update_node(verify_key: SyftVerifyKey) -> None:
     execution_err = None
     store_config = InMemoryGraphConfig()
-    graph_store = InMemoryActionGraphStore(store_config=store_config, reset=True)
+    graph_store = ActionGraphStore(store_config=store_config, reset=True)
 
     action_obj_node: NodeActionData = create_action_obj_node(verify_key)
     result = graph_store.set(action_obj_node, credentials=verify_key).ok()
