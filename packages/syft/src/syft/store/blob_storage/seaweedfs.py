@@ -2,11 +2,11 @@
 from typing import Union
 
 # relative
+from . import BlobDeposit
 from . import BlobStorageClient
 from . import BlobStorageClientConfig
 from . import BlobStorageConfig
 from . import BlobStorageConnection
-from . import SyftWriteResource
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
@@ -14,8 +14,8 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 
 
 @serializable()
-class SeaweedFSSyftWriteResource(SyftWriteResource):
-    __canonical_name__ = "SeaweedFSSyftWriteResource"
+class SeaweedFSBlobDeposit(BlobDeposit):
+    __canonical_name__ = "SeaweedFSBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
     def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:

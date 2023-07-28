@@ -27,10 +27,10 @@ Write/persist SyftObject to blob storage
 ----------------------------------------
 
 - create a CreateFileObject from SyftObject `create_file_object = CreateFileObject.from(obj)`
-- pre-allocate the file object `write_resource = api.services.blob_storage.allocate(create_file_object)`
-  (this returns a SyftWriteResource)
-- use `SyftWriteResource.write` to upload/save/persist the SyftObject
-  `write_resource.write(sy.serialize(user_object, to_bytes=True))`
+- pre-allocate the file object `blob_deposit = api.services.blob_storage.allocate(create_file_object)`
+  (this returns a BlobDeposit)
+- use `BlobDeposit.write` to upload/save/persist the SyftObject
+  `blob_deposit.write(sy.serialize(user_object, to_bytes=True))`
 
 Read/retrieve SyftObject from blob storage
 ------------------------------------------
@@ -93,8 +93,8 @@ class BlobRetrievalByURL(BlobRetrieval):
 
 
 @serializable()
-class SyftWriteResource(SyftObject):
-    __canonical_name__ = "SyftWriteResource"
+class BlobDeposit(SyftObject):
+    __canonical_name__ = "BlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
     file_object: FileObject
@@ -115,7 +115,7 @@ class BlobStorageConnection:
     def allocate(self, obj: CreateFileObject) -> SecureFilePathLocation:
         raise NotImplementedError
 
-    def create_resource(self, obj: FileObject) -> SyftWriteResource:
+    def write(self, obj: FileObject) -> BlobDeposit:
         raise NotImplementedError
 
 

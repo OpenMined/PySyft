@@ -5,8 +5,8 @@ from typing import Union
 
 # relative
 from ...serde.serializable import serializable
+from ...store.blob_storage import BlobDeposit
 from ...store.blob_storage import BlobRetrieval
-from ...store.blob_storage import SyftWriteResource
 from ...store.document_store import DocumentStore
 from ...types.file_object import CreateFileObject
 from ...types.file_object import FileObject
@@ -60,7 +60,7 @@ class BlobStorageService(AbstractService):
     @service_method(path="blob_storage.allocate", name="allocate")
     def allocate(
         self, context: AuthedServiceContext, obj: CreateFileObject
-    ) -> Union[SyftWriteResource, SyftError]:
+    ) -> Union[BlobDeposit, SyftError]:
         with context.node.blob_storage_client as conn:
             secure_location = conn.allocate(obj)
 
@@ -71,10 +71,10 @@ class BlobStorageService(AbstractService):
                 file_size=obj.file_size,
                 uploaded_by=context.credentials,
             )
-            write_resource = conn.create_resource(file_object)
+            blob_deposit = conn.write(file_object)
 
         self.stash.set(context.credentials, file_object)
-        return write_resource
+        return blob_deposit
 
     @service_method(path="blob_storage.write_to_disk", name="write_to_disk")
     def write_to_disk(

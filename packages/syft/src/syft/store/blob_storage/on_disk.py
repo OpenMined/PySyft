@@ -9,13 +9,13 @@ from typing import Union
 from pydantic import PrivateAttr
 
 # relative
+from . import BlobDeposit
 from . import BlobRetrieval
 from . import BlobStorageClient
 from . import BlobStorageClientConfig
 from . import BlobStorageConfig
 from . import BlobStorageConnection
 from . import SyftObjectRetrieval
-from . import SyftWriteResource
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
@@ -26,8 +26,8 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 
 
 @serializable()
-class OnDiskSyftWriteResource(SyftWriteResource):
-    __canonical_name__ = "OnDiskSyftWriteResource"
+class OnDiskBlobDeposit(BlobDeposit):
+    __canonical_name__ = "OnDiskBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
     def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
@@ -57,8 +57,8 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
             path=str((self._base_directory / str(obj.id)).absolute())
         )
 
-    def create_resource(self, obj: FileObject) -> SyftWriteResource:
-        return OnDiskSyftWriteResource(file_object=obj)
+    def write(self, obj: FileObject) -> BlobDeposit:
+        return OnDiskBlobDeposit(file_object=obj)
 
 
 @serializable()
