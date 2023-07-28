@@ -45,6 +45,7 @@ from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
+from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
@@ -54,7 +55,6 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
-from ..service.file_object.file_service import FileObjectService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
@@ -245,7 +245,7 @@ class Node(AbstractNode):
                 ProjectService,
                 EnclaveService,
                 MetadataService,
-                FileObjectService,
+                BlobStorageService,
             ]
             if services is None
             else services
@@ -511,7 +511,7 @@ class Node(AbstractNode):
                 ProjectService,
                 EnclaveService,
                 MetadataService,
-                FileObjectService,
+                BlobStorageService,
             ]
 
             if OBLV:

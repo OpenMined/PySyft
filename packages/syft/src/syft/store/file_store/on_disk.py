@@ -38,7 +38,7 @@ class OnDiskSyftWriteResource(SyftWriteResource):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.file.write_to_disk(data=data, obj=self.file_object)
+        return api.services.blob_storage.write_to_disk(data=data, obj=self.file_object)
 
 
 class OnDiskFileClientConnection(FileClientConnection):

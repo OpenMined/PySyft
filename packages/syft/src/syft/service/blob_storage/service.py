@@ -17,19 +17,19 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from .file_stash import FileObjectStash
+from .stash import BlobStorageStash
 
 
 @serializable()
-class FileObjectService(AbstractService):
+class BlobStorageService(AbstractService):
     store: DocumentStore
-    stash: FileObjectStash
+    stash: BlobStorageStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = FileObjectStash(store=store)
+        self.stash = BlobStorageStash(store=store)
 
-    @service_method(path="file.get_all", name="get_all")
+    @service_method(path="blob_storage.get_all", name="get_all")
     def get_all_file_objects(
         self, context: AuthedServiceContext
     ) -> Union[List[FileObject], SyftError]:
@@ -38,7 +38,7 @@ class FileObjectService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
-    @service_method(path="file.get_by_uid", name="get_by_uid")
+    @service_method(path="blob_storage.get_by_uid", name="get_by_uid")
     def get_file_object_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[FileObject, SyftError]:
@@ -47,7 +47,7 @@ class FileObjectService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
-    @service_method(path="file.read", name="read")
+    @service_method(path="blob_storage.read", name="read")
     def read(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftResource, SyftError]:
@@ -57,7 +57,7 @@ class FileObjectService(AbstractService):
                 return conn.read(result.ok().location)
         return SyftError(message=result.err())
 
-    @service_method(path="file.allocate", name="allocate")
+    @service_method(path="blob_storage.allocate", name="allocate")
     def allocate(
         self, context: AuthedServiceContext, obj: CreateFileObject
     ) -> Union[SyftWriteResource, SyftError]:
@@ -76,7 +76,7 @@ class FileObjectService(AbstractService):
         self.stash.set(context.credentials, file_object)
         return write_resource
 
-    @service_method(path="file.write_to_disk", name="write_to_disk")
+    @service_method(path="blob_storage.write_to_disk", name="write_to_disk")
     def write_to_disk(
         self, context: AuthedServiceContext, obj: FileObject, data: bytes
     ) -> Union[SyftSuccess, SyftError]:

@@ -455,7 +455,7 @@ class ActionObject(SyftObject):
     #         node_uid=self.node_uid,
     #         user_verify_key=self.syft_client_verify_key,
     #     )
-    #     syft_object_resource = api.services.file.read(
+    #     syft_object_resource = api.services.blob_storage.read(
     #         uid=self.syft_action_proxy_reference.id
     #     )
     #     return syft_object_resource.read()

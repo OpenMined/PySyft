@@ -7,7 +7,7 @@ from ...types.file_object import FileObject
 
 
 @serializable()
-class FileObjectStash(BaseUIDStoreStash):
+class BlobStorageStash(BaseUIDStoreStash):
     object_type = FileObject
     settings: PartitionSettings = PartitionSettings(
         name=FileObject.__canonical_name__, object_type=FileObject
