@@ -61,7 +61,7 @@ class CodeHistoryView(SyftObject):
         rows = get_repr_values_table(self.user_code_history, True)
         for i, r in enumerate(rows):
             r["Version"] = f"v{i}"
-        rows = sorted(rows, key=lambda x: x["Version"], reverse=True)
+        rows = sorted(rows, key=lambda x: x["Version"])
         return create_table_template(rows, "CodeVersions", table_icon=None)
 
     def __getitem__(self, index: int):
@@ -123,9 +123,5 @@ class UsersCodeHistoriesDict(SyftObject):
     def _repr_html_(self):
         rows = []
         for user, funcs in self.user_dict.items():
-            if len(funcs) == 0:
-                funcs_str = ""
-            else:
-                funcs_str = str(["my_func"] * 100)
-            rows += [{"user": user, "UserCodes": funcs_str}]
+            rows += [{"user": user, "UserCodes": funcs}]
         return create_table_template(rows, "UserCodeHistory", table_icon=None)

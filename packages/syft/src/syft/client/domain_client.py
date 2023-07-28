@@ -13,7 +13,6 @@ from tqdm import tqdm
 from ..abstract_node import NodeSideType
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
-from ..service.code.user_code import SubmitUserCode
 from ..service.code_history.code_history import CodeHistoriesDict
 from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
@@ -118,11 +117,6 @@ class DomainClient(SyftClient):
                 message=f"Connected {self.metadata.node_type} to {client.name} gateway"
             )
         return res
-
-    def request_code_execution(
-        self, code: SubmitUserCode, comment: Optional[str] = None
-    ) -> Union[SyftSuccess, SyftError]:
-        return self.api.services.code_history.submit_version(code=code, comment=comment)
 
     @property
     def data_subject_registry(self) -> Optional[APIModule]:

@@ -44,31 +44,15 @@ class CodeHistoryService(AbstractService):
         context: AuthedServiceContext,
         code: Union[SubmitUserCode, UserCode],
         comment: Optional[str] = None,
-        add_request: Optional[bool] = True,
-        reason: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         user_code_service = context.node.get_service("usercodeservice")
 
         final_result = None
         if isinstance(code, SubmitUserCode):
-            if add_request:
-                result = user_code_service.request_code_execution(
-                    context=context, code=code, reason=reason
-                )
-                if isinstance(result, SyftError):
-                    return result
-                code = (
-                    result.ok()
-                    .changes[0]
-                    .linked_obj.resolve_with_context(context=context)
-                    .ok()
-                )
-                final_result = result
-            else:
-                result = user_code_service._submit(context=context, code=code)
-                if result.is_err():
-                    return SyftError(message=str(result.err()))
-                code: UserCode = result.ok()
+            result = user_code_service._submit(context=context, code=code)
+            if result.is_err():
+                return SyftError(message=str(result.err()))
+            code: UserCode = result.ok()
 
         elif isinstance(code, UserCode):
             result = user_code_service.get_by_uid(context=context, uid=code.id)
