@@ -8,8 +8,8 @@ from ...serde.serializable import serializable
 from ...store.blob_storage import BlobDeposit
 from ...store.blob_storage import BlobRetrieval
 from ...store.document_store import DocumentStore
-from ...types.file_object import CreateFileObject
-from ...types.file_object import FileObject
+from ...types.blob_storage import CreateFileObject
+from ...types.blob_storage import FileObject
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError

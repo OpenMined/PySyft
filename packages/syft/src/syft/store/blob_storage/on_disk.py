@@ -19,9 +19,9 @@ from . import SyftObjectRetrieval
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
-from ...types.file_object import CreateFileObject
-from ...types.file_object import FileObject
-from ...types.file_object import SecureFilePathLocation
+from ...types.blob_storage import CreateFileObject
+from ...types.blob_storage import FileObject
+from ...types.blob_storage import SecureFilePathLocation
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 
 
