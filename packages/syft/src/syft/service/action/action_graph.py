@@ -3,9 +3,11 @@ from enum import Enum
 from functools import partial
 import os
 from pathlib import Path
+import sqlite3
 import tempfile
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -40,6 +42,7 @@ from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ...util.util import thread_ident
 from .action_object import Action
 from .action_object import ActionObject
 
@@ -148,26 +151,54 @@ class NodeActionDataUpdate(PartialSyftObject):
 class BaseGraphStore:
     graph_type: Any
     client_config: Optional[StoreClientConfig]
+    lock: SyftLock
 
-    def set(self, uid: Any, data: Any) -> None:
+    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
+        locked = self.lock.acquire(blocking=True)
+        if not locked:
+            return Err("Failed to acquire lock for the operation")
+        try:
+            result = cbk(*args, **kwargs)
+        except BaseException as e:
+            result = Err(str(e))
+        self.lock.release()
+
+        return result
+
+    def set(self, uid: UID, data: Any) -> None:
+        self._thread_safe_cbk(self._set, uid=uid, data=data)
+
+    def _set(self, uid: Any, data: Any) -> None:
         raise NotImplementedError
 
     def get(self, uid: Any) -> Any:
         raise NotImplementedError
 
-    def delete(self, uid: Any) -> None:
+    def delete(self, uid: UID) -> None:
+        self._thread_safe_cbk(self._delete, uid=uid)
+
+    def _delete(self, uid: Any) -> None:
         raise NotImplementedError
 
     def find_neighbors(self, uid: Any) -> List[Any]:
         raise NotImplementedError
 
-    def update(self, uid: Any, data: Any) -> None:
+    def update(self, uid: UID, data: Any) -> None:
+        self._thread_safe_cbk(self._update, uid=uid, data=data)
+
+    def _update(self, uid: Any, data: Any) -> None:
         raise NotImplementedError
 
     def add_edge(self, parent: Any, child: Any) -> None:
+        self._thread_safe_cbk(self._add_edge, parent=parent, child=child)
+
+    def _add_edge(self, parent: Any, child: Any) -> None:
         raise NotImplementedError
 
     def remove_edge(self, parent: Any, child: Any) -> None:
+        self._thread_safe_cbk(self._remove_edge, parent=parent, child=child)
+
+    def _remove_edge(self, parent: Any, child: Any) -> None:
         raise NotImplementedError
 
     def nodes(self) -> Any:
@@ -239,22 +270,6 @@ class NetworkXBackingStore(BaseGraphStore):
     def db(self) -> nx.Graph:
         return self._db
 
-    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
-        # TODO copied method from document_store, have it in one place and reuse?
-        locked = self.lock.acquire(blocking=True)
-        if not locked:
-            return Err("Failed to acquire lock for the operation")
-        try:
-            result = cbk(*args, **kwargs)
-        except BaseException as e:
-            result = Err(str(e))
-        self.lock.release()
-
-        return result
-
-    def set(self, uid: UID, data: Any) -> None:
-        self._thread_safe_cbk(self._set, uid=uid, data=data)
-
     def _set(self, uid: UID, data: Any) -> None:
         if self.exists(uid=uid):
             self.update(uid=uid, data=data)
@@ -271,9 +286,6 @@ class NetworkXBackingStore(BaseGraphStore):
     def exists(self, uid: Any) -> bool:
         return uid in self.nodes()
 
-    def delete(self, uid: UID) -> None:
-        self._thread_safe_cbk(self._delete, uid=uid)
-
     def _delete(self, uid: UID) -> None:
         if self.exists(uid=uid):
             self.db.remove_node(uid)
@@ -284,23 +296,14 @@ class NetworkXBackingStore(BaseGraphStore):
             neighbors = self.db.neighbors(uid)
             return neighbors
 
-    def update(self, uid: UID, data: Any) -> None:
-        self._thread_safe_cbk(self._update, uid=uid, data=data)
-
     def _update(self, uid: UID, data: Any) -> None:
         if self.exists(uid=uid):
             self.db.nodes[uid]["data"] = data
         self.save()
 
-    def add_edge(self, parent: Any, child: Any) -> None:
-        self._thread_safe_cbk(self._add_edge, parent=parent, child=child)
-
     def _add_edge(self, parent: Any, child: Any) -> None:
         self.db.add_edge(parent, child)
         self.save()
-
-    def remove_edge(self, parent: Any, child: Any) -> None:
-        self._thread_safe_cbk(self._remove_edge, parent=parent, child=child)
 
     def _remove_edge(self, parent: Any, child: Any) -> None:
         self.db.remove_edge(parent, child)
@@ -364,6 +367,169 @@ class InMemoryGraphConfig(StoreConfig):
 @serializable()
 class GraphStore:
     pass
+
+
+@serializable(
+    attrs=["store_config"],
+    without=["_lock"],
+)
+class SQLBackingGraphStore(BaseGraphStore):
+    def __init__(
+        self,
+        store_config: StoreConfig,
+        ddtype: Optional[type] = None,
+    ) -> None:
+        self.store_config = store_config
+        self._ddtype = ddtype
+        self._db: Dict[int, sqlite3.Connection] = {}
+        self._cur: Dict[int, sqlite3.Cursor] = {}
+        self.create_table()
+
+    def _connect(self) -> None:
+        # SQLite is not thread safe by default so we ensure that each connection
+        # comes from a different thread. In cases of Uvicorn and other AWSGI servers
+        # there will be many threads handling incoming requests so we need to ensure
+        # that different connections are used in each thread. By using a dict for the
+        # _db and _cur we can ensure they are never shared
+        self.file_path = self.store_config.client_config.file_path
+        self._db[thread_ident()] = sqlite3.connect(
+            self.file_path,
+            timeout=self.store_config.client_config.timeout,
+            check_same_thread=self.store_config.client_config.check_same_thread,
+        )
+
+    def create_table(self):
+        try:
+            self.cur.execute()
+            self.db.commit(
+                """CREATE TABLE IF NOT EXISTS nodes (
+                    uid VARCHAR(32) NOT NULL PRIMARY KEY
+                    data BLOB,
+                );
+                CREATE INDEX IF NOT EXISTS id_idx ON nodes(uid);
+                CREATE TABLE IF NOT EXISTS edges (
+                    source VARCHAR(32),
+                    target VARCHAR(32),
+                    properties BLOB,
+                    UNIQUE(source, target, properties) ON CONFLICT REPLACE,
+                    FOREIGN KEY(source) REFERENCES nodes(uid),
+                    FOREIGN KEY(target) REFERENCES nodes(uid)
+                );
+                CREATE INDEX IF NOT EXISTS source_idx ON edges(source);
+                CREATE INDEX IF NOT EXISTS target_idx ON edges(target);"""
+            )
+        except sqlite3.OperationalError as e:
+            table_exists = [
+                "table node already exists" not in str(e),
+                "table edges already exists" not in str(e),
+            ]
+            if not any(table_exists):
+                raise e
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        if thread_ident() not in self._db:
+            self._connect()
+        return self._db[thread_ident()]
+
+    @property
+    def cur(self) -> sqlite3.Cursor:
+        if thread_ident() not in self._cur:
+            self._cur[thread_ident()] = self.db.cursor()
+
+        return self._cur[thread_ident()]
+
+    def _close(self) -> None:
+        self._commit()
+        self.db.close()
+
+    def _commit(self) -> None:
+        self.db.commit()
+
+    def _execute(
+        self, sql: str, *args: Optional[List[Any]]
+    ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
+        cursor: Optional[sqlite3.Cursor] = None
+        err = None
+        try:
+            cursor = self.cur.execute(sql, *args)
+        except BaseException as e:
+            self.db.rollback()  # Roll back all changes if an exception occurs.
+            err = Err(str(e))
+        else:
+            self.db.commit()  # Commit if everything went ok
+
+        if err is not None:
+            return err
+
+        return Ok(cursor)
+
+    def _set(self, uid: Any, data: Any) -> None:
+        if self._exists(uid):
+            self._update(uid, data)
+        else:
+            insert_sql = "INSERT INTO nodes (uid, data) VALUES(?, ?)"
+            data = _serialize(data, to_bytes=True)
+            res = self._execute(insert_sql, [str(uid), data])
+            if res.is_err():
+                raise ValueError(res.err())
+
+    def get(self, uid: Any) -> Any:
+        select_sql = "SELECT * FROM nodes WHERE uid = ?"
+        res = self._execute(select_sql, [str(uid)])
+        if res.is_err():
+            raise KeyError(f"Query {select_sql} failed")
+        cursor = res.ok()
+        row = cursor.fetchone()
+        if row is None or len(row) == 0:
+            raise KeyError(f"{uid} not in {type(self)}")
+        data = row[1]
+        return {"data": _deserialize(data, from_bytes=True)}
+
+    def exists(self, uid: Any) -> bool:
+        select_sql = "SELECT uid FROM nodes WHERE uid = ?"
+
+        res = self._execute(select_sql, [str(uid)])
+        if res.is_err():
+            return False
+        cursor = res.ok()
+
+        row = cursor.fetchone()
+        if row is None:
+            return False
+
+        return bool(row)
+
+    def _delete(self, uid: UID) -> None:
+        delete_sql = "DELETE FROM nodes WHERE id = ?"
+        res = self._execute(delete_sql, [str(uid)])
+        if res.is_err():
+            raise ValueError(res.err())
+
+    def _update(self, uid: UID, data: Any) -> None:
+        insert_sql = "UPDATE nodes SET data = ? where uid = ?"  # nosec
+        data = _serialize(data, to_bytes=True)
+        res = self._execute(insert_sql, [data, str(uid)])
+        if res.is_err():
+            raise ValueError(res.err())
+
+    def _add_edge(
+        self, parent: Any, child: Any, properties: Optional[Any] = None
+    ) -> None:
+        insert_sql = "INSERT INTO edges (source, target, properties) VALUES(?, ?, ?)"
+        properties = _serialize(properties, to_bytes=True)
+        res = self._execute(
+            insert_sql,
+            [str(parent), str(child), properties],
+        )
+        if res.is_err():
+            raise ValueError(res.err())
+
+    def _remove_edge(self, parent: Any, child: Any) -> None:
+        insert_sql = "DELETE FROM edges WHERE source = ? OR target = ?"
+        res = self._execute(insert_sql, [str(parent), str(child)])
+        if res.is_err():
+            raise ValueError(res.err())
 
 
 @serializable()
