@@ -34,8 +34,7 @@ class CodeHistory(SyftObject):
     service_func_name: str
     comment_history: List[str] = []
 
-    __attr_unique__ = ["service_func_name"]
-    __attr_searchable__ = ["user_verify_key"]
+    __attr_searchable__ = ["user_verify_key", "service_func_name"]
 
     def add_code(self, code: UserCode, comment: Optional[str] = None):
         self.user_code_history.append(code.id)
