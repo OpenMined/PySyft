@@ -4,6 +4,8 @@ ARG VITE_PUBLIC_API_BASE_URL
 ENV VITE_PUBLIC_API_BASE_URL ${VITE_PUBLIC_API_BASE_URL}
 ENV NODE_TYPE domain
 
+RUN apk update && apk upgrade --available
+
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate

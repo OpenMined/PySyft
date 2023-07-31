@@ -17,6 +17,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -35,6 +36,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.notebook_addons import REQUEST_ICON
+from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
@@ -189,7 +191,20 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        shared_with_line = ""
+        if self.code and len(self.code.output_readers) > 0:
+            # owner_names = ["canada", "US"]
+            owners_string = " and ".join(
+                [f"<strong>{x}</strong>" for x in self.code.output_reader_names]
+            )
+            shared_with_line += (
+                f"<p><strong>Custom Policy: </strong> "
+                f"outputs are <strong>shared</strong> with the owners of {owners_string} once computed"
+            )
 
+        metadata = api.services.metadata.get_metadata()
+        admin_email = metadata.admin_email
+        node_name = api.node_name.capitalize() if api.node_name is not None else ""
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -199,9 +214,11 @@ class Request(SyftObject):
                 <p><strong>Id: </strong>{self.id}</p>
                 <p><strong>Request time: </strong>{self.request_time}</p>
                 {updated_at_line}
+                {shared_with_line}
                 <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
-                <p><strong>Sent to Domain </strong>{api.node_name}</p>
+                <p><strong>Requested on: </strong> {node_name} of type <strong> \
+                    {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
             </div>
             """
 
@@ -234,6 +251,9 @@ class Request(SyftObject):
         return SyftError(
             message="This type of request does not have code associated with it."
         )
+
+    def get_results(self) -> Any:
+        return self.code.get_results()
 
     @property
     def current_change_state(self) -> Dict[UID, bool]:
@@ -268,6 +288,25 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        # TODO: Refactor so that object can also be passed to generate warnings
+        metadata = api.connection.get_node_metadata(api.signing_key)
+        code = self.code
+        message, is_enclave = None, False
+
+        if code and not isinstance(code, SyftError):
+            is_enclave = getattr(code, "enclave_metadata", None) is not None
+
+        if is_enclave:
+            message = "On approval, the result will be released to the enclave."
+        elif metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+            message = (
+                "You're approving a request on "
+                f"{metadata.node_side_type} side {metadata.node_type} "
+                "which may host datasets with private information."
+            )
+        if message and metadata.show_warnings:
+            prompt_warning_message(message=message, confirm=True)
+
         print(f"Request approved for domain {api.node_name}")
         return api.services.request.apply(self.id)
 
@@ -718,8 +757,11 @@ class UserCodeStatusChange(Change):
             return obj
         return res
 
-    def is_enclave_request(self, req_enclave_metadata):
-        return req_enclave_metadata is not None and self.value == UserCodeStatus.EXECUTE
+    def is_enclave_request(self, user_code: UserCode):
+        return (
+            user_code.is_enclave_code is not None
+            and self.value == UserCodeStatus.APPROVED
+        )
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -742,7 +784,7 @@ class UserCodeStatusChange(Change):
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
                 user_code = res
-                if self.is_enclave_request(user_code.enclave_metadata):
+                if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=res, context=context
                     )

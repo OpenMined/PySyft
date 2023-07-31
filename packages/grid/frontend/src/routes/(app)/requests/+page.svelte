@@ -23,7 +23,6 @@
     if (searchTerm === '') requests = await getAllRequests();
     else requests = await filterRequests(searchTerm);
   }, 300);
-
 </script>
 
 <section class="p-10">
@@ -50,7 +49,11 @@
     {:else}
       <div class="flex flex-col divide-y divide-gray-100">
         {#each requests as request}
-          <RequestListItem user={request.user} request={request.request} message={request.message} />
+          <RequestListItem
+            user={request.user}
+            request={request.request}
+            message={request.message}
+          />
         {/each}
       </div>
     {/if}

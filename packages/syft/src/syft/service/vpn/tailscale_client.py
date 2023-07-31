@@ -157,10 +157,9 @@ class TailscaleClient(BaseVPNClient):
         self, headscale_host: str, headscale_auth_token: str
     ) -> Union[SyftSuccess, SyftError]:
         CONNECT_TIMEOUT = 60
-
         command_args = {
             "args": [
-                "-login-server",
+                "--login-server",
                 f"{headscale_host}",
                 "--reset",
                 "--force-reauth",

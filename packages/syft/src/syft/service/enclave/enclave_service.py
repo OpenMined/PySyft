@@ -57,7 +57,7 @@ class EnclaveService(AbstractService):
             return user_code
 
         status_update = user_code.status.mutate(
-            value=UserCodeStatus.EXECUTE,
+            value=UserCodeStatus.APPROVED,
             node_name=node_name,
             node_id=node_id,
             verify_key=context.credentials,

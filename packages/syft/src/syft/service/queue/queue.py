@@ -20,7 +20,7 @@ class QueueManager(BaseQueueManager):
     config: QueueConfig
 
     def post_init(self):
-        self.client_config = self.config.client_config()
+        self.client_config = self.config.client_config
         self._client = self.config.client_type(self.client_config)
 
     def close(self):
