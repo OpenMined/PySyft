@@ -200,8 +200,8 @@ class Node(AbstractNode):
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-        queue_config: Type[QueueConfig] = ZMQQueueConfig,
         blob_storage_config: Optional[BlobStorageConfig] = None,
+        queue_config: Optional[QueueConfig] = None,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
     ):
@@ -300,10 +300,12 @@ class Node(AbstractNode):
         config_ = OnDiskBlobStorageConfig() if config is None else config
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
-    def init_queue_manager(self, queue_config: QueueConfig) -> None:
+    def init_queue_manager(self, queue_config: Optional[QueueConfig]):
+        queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
+
         MessageHandlers = [APICallMessageHandler]
 
-        self.queue_manager = QueueManager(queue_config)
+        self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
             producer = self.queue_manager.create_producer(
