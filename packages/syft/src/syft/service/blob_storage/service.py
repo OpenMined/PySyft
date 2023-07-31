@@ -73,7 +73,9 @@ class BlobStorageService(AbstractService):
             )
             blob_deposit = conn.write(blob_storage_entry)
 
-        self.stash.set(context.credentials, blob_storage_entry)
+        result = self.stash.set(context.credentials, blob_storage_entry)
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
         return blob_deposit
 
     @service_method(path="blob_storage.write_to_disk", name="write_to_disk")
