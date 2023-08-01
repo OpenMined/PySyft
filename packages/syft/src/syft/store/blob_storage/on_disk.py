@@ -30,16 +30,25 @@ class OnDiskBlobDeposit(BlobDeposit):
     __canonical_name__ = "OnDiskBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    # policy_hash: str
+    # expiry_time: DateTime
+    # encryption_key: str
+
     def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
         # relative
         from ...client.api import APIRegistry
+
+        # validate the object against the hash
+        # get the encryption key from the blob deposit object
+        # create a hash using the encryption key
+        # compare it with the policy hash
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         return api.services.blob_storage.write_to_disk(
-            data=data, obj=self.blob_storage_entry
+            data=data, storage_entry_id=self.blob_storage_entry_id
         )
 
 
@@ -60,7 +69,7 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
         )
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
-        return OnDiskBlobDeposit(blob_storage_entry=obj)
+        return OnDiskBlobDeposit(blob_storage_entry_id=obj.id)
 
 
 @serializable()
