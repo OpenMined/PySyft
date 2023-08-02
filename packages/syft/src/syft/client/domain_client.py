@@ -10,8 +10,11 @@ from typing import Union
 from tqdm import tqdm
 
 # relative
+from ..abstract_node import NodeSideType
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
+from ..service.code_history.code_history import CodeHistoriesDict
+from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
@@ -123,6 +126,8 @@ class DomainClient(SyftClient):
 
     @property
     def code(self) -> Optional[APIModule]:
+        # if self.api.refresh_api_callback is not None:
+        #     self.api.refresh_api_callback()
         if self.api.has_service("code"):
             return self.api.services.code
         return None
@@ -144,6 +149,20 @@ class DomainClient(SyftClient):
         if self.api.has_service("project"):
             return self.api.services.project
         return None
+
+    @property
+    def code_history_service(self) -> Optional[APIModule]:
+        if self.api is not None and self.api.has_service("code_history"):
+            return self.api.services.code_history
+        return None
+
+    @property
+    def code_history(self) -> CodeHistoriesDict:
+        return self.api.services.code_history.get_history()
+
+    @property
+    def code_histories(self) -> UsersCodeHistoriesDict:
+        return self.api.services.code_history.get_histories()
 
     def get_project(
         self,
@@ -213,6 +232,21 @@ class DomainClient(SyftClient):
 
         small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
 
+        url = getattr(self.connection, "url", None)
+        node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
+        node_details += (
+            f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
+        )
+        node_side_type = (
+            "Low Side"
+            if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+            else "High Side"
+        )
+        node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
+        node_details += (
+            f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
+        )
+
         return f"""
         <style>
             {fonts_css}
@@ -242,10 +276,7 @@ class DomainClient(SyftClient):
             style="width:48px;height:48px;padding:3px;">
             <h2>Welcome to {self.name}</h2>
             <div class="syft-space">
-                <!-- <strong>Institution:</strong> TODO<br /> -->
-                <!-- <strong>Owner:</strong> TODO<br /> -->
-                <strong>URL:</strong> {getattr(self.connection, 'url', '')}<br />
-                <!-- <strong>PyGrid Admin:</strong> TODO<br /> -->
+                {node_details}
             </div>
             <div class='syft-alert-info syft-space'>
                 &#9432;&nbsp;

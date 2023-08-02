@@ -21,10 +21,17 @@ class NodeType(Enum):
         return self.value
 
 
+@serializable()
+class NodeSideType(str, Enum):
+    LOW_SIDE = "low"
+    HIGH_SIDE = "high"
+
+
 class AbstractNode:
     id: Optional[UID]
     name: Optional[str]
     node_type: Optional[NodeType]
+    node_side_type: Optional[NodeSideType]
 
     def get_service(self, path_or_func: Union[str, Callable]) -> Callable:
         raise NotImplementedError

@@ -25,6 +25,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..settings.settings_stash import SettingsStash
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -94,14 +95,21 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.get_all", name="get_all", roles=DATA_OWNER_ROLE_LEVEL)
+    @service_method(
+        path="user.get_all",
+        name="get_all",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
     def get_all(
         self,
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
     ) -> Union[Optional[UserViewPage], Optional[UserView], SyftError]:
-        result = self.stash.get_all(context.credentials)
+        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            result = self.stash.get_all(context.credentials, has_permission=True)
+        else:
+            result = self.stash.get_all(context.credentials)
         if result.is_ok():
             results = [user.to(UserView) for user in result.ok()]
 
@@ -175,10 +183,21 @@ class UserService(AbstractService):
 
         return results
 
+    # @service_method(path="user.get_admin", name="get_admin", roles=GUEST_ROLE_LEVEL)
+    # def get_admin(self, context: AuthedServiceContext) -> UserView:
+    #     result = self.stash.admin_user()
+    #     if result.is_ok():
+    #         user = result.ok()
+    #         if user:
+    #             return user
+    #     return SyftError(message=str(result.err()))
+
     @service_method(
         path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
     )
-    def get_current_user(self, context: AuthedServiceContext) -> UserView:
+    def get_current_user(
+        self, context: AuthedServiceContext
+    ) -> Union[UserView, SyftError]:
         result = self.stash.get_by_verify_key(
             credentials=context.credentials, verify_key=context.credentials
         )
@@ -186,7 +205,9 @@ class UserService(AbstractService):
             # this seems weird that we get back None as Ok(None)
             user = result.ok()
             if user:
-                return user
+                return user.to(UserView)
+            else:
+                SyftError(message="User not found!")
         return SyftError(message=str(result.err()))
 
     @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
@@ -205,6 +226,16 @@ class UserService(AbstractService):
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
 
         # TODO: ADD Email Validation
+        # check if the email already exists
+        if user_update.email is not Empty:
+            user_with_email = self.stash.get_by_email(
+                credentials=context.credentials, email=user_update.email
+            )
+            if user_with_email.ok() is not None:
+                return SyftError(
+                    message=f"A user with the email {user_update.email} already exists."
+                )
+
         if result.is_err():
             error_msg = (
                 f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
@@ -270,6 +301,15 @@ class UserService(AbstractService):
             return SyftError(message=error_msg)
 
         user = result.ok()
+        if user.role == ServiceRole.ADMIN:
+            settings_stash = SettingsStash(store=self.store)
+            settings = settings_stash.get_all(context.credentials)
+            if settings.is_ok() and len(settings.ok()) > 0:
+                settings_data = settings.ok()[0]
+                settings_data.admin_email = user.email
+                settings_stash.update(
+                    credentials=context.credentials, settings=settings_data
+                )
 
         return user.to(UserView)
 
@@ -412,7 +452,7 @@ class UserService(AbstractService):
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
         result = self.stash.get_by_email(credentials=credentials, email=email)
-        if result.is_ok():
+        if result.ok() is not None:
             return result.ok().verify_key
         return SyftError(message=f"No user with email: {email}")
 

@@ -26,13 +26,16 @@ from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..warnings import HighSideCRUDWarning
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_object import ActionType
 from .action_object import AnyActionObject
 from .action_object import TwinMode
+from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
+from .action_permissions import ActionPermission
 from .action_store import ActionStore
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
@@ -55,7 +58,12 @@ class ActionService(AbstractService):
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
-    @service_method(path="action.set", name="set", roles=GUEST_ROLE_LEVEL)
+    @service_method(
+        path="action.set",
+        name="set",
+        roles=GUEST_ROLE_LEVEL,
+        warning=HighSideCRUDWarning(confirmation=True),
+    )
     def set(
         self,
         context: AuthedServiceContext,
@@ -205,8 +213,18 @@ class ActionService(AbstractService):
             syft_object=result_action_object,
             has_result_read_permission=True,
         )
+
         if set_result.is_err():
             return set_result.err()
+
+        if len(code_item.output_policy.output_readers) > 0:
+            self.store.add_permissions(
+                [
+                    ActionObjectPermission(result_id, ActionPermission.READ, x)
+                    for x in code_item.output_policy.output_readers
+                ]
+            )
+
         return Ok(result_action_object)
 
     def execute_plan(

@@ -39,6 +39,10 @@ jobs:
     if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
     runs-on: om-ci-16vcpu-ubuntu2204
     steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
+
       - uses: actions/checkout@v3
         with:
           token: ${{ secrets.SYFT_BUMP_TOKEN }}

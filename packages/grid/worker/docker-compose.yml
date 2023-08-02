@@ -22,6 +22,8 @@ services:
       - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
+      - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
+      - ENABLE_WARNINGS=${ENABLE_WARNINGS}
     command: "/app/start.sh"
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"

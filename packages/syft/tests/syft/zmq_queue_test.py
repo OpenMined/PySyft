@@ -146,7 +146,7 @@ def test_zmq_pub_sub(faker: Faker):
 def test_zmq_queue_manager() -> None:
     config = ZMQQueueConfig()
 
-    assert config.client_config == ZMQClientConfig
+    assert isinstance(config.client_config, ZMQClientConfig)
     assert config.client_type == ZMQClient
 
     queue_manager = QueueManager(config=config)
