@@ -146,7 +146,7 @@ Y88b.Y8b88P Y88b 888 888 Y88b.    888 "88b      X88 Y88b.  888  888 888     Y88b
 
 
 def hagrid() -> None:
-    """Print a random hagrid image with the caption "hold on tight harry" """
+    """Print a random hagrid image with the caption "hold on tight harry"."""
     options = [motorcycle, hagrid1, hagrid2]
     i = secrets.randbelow(3)
     options[i]()
