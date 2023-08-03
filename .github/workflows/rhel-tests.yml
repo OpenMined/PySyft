@@ -35,14 +35,14 @@ jobs:
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          python-version: "3.x"
-          cache: "pip"
-        env:
-          AGENT_TOOLSDIRECTORY: /opt/hostedtoolache
+      #   - name: Set up Python ${{ matrix.python-version }}
+      #     uses: actions/setup-python@v3
+      #     if: steps.changes.outputs.stack == 'true'
+      #     with:
+      #       python-version: "3.x"
+      #       cache: "pip"
+      #     env:
+      #       AGENT_TOOLSDIRECTORY: /opt/hostedtoolache
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
