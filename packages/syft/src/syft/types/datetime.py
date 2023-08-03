@@ -1,5 +1,6 @@
 # stdlib
 from datetime import datetime
+from functools import total_ordering
 from typing import Optional
 
 # third party
@@ -13,6 +14,7 @@ from .uid import UID
 
 
 @serializable()
+@total_ordering
 class DateTime(SyftObject):
     __canonical_name__ = "DateTime"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -36,9 +38,6 @@ class DateTime(SyftObject):
 
     def __lt__(self, other: Self) -> bool:
         return self.utc_timestamp < other.utc_timestamp
-
-    def __gt__(self, other: Self) -> bool:
-        return self.utc_timestamp > other.utc_timestamp
 
     def __sub__(self, other: Self) -> float:
         return self.utc_timestamp - other.utc_timestamp
