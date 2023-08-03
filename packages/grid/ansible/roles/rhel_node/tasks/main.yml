@@ -21,6 +21,9 @@
     state: present
   become: true
 
+- name: Pull docker images with Podman
+  ansible.builtin.script: pull_images.sh
+
 - name: Ensure firewalld is enabled and running
   ansible.builtin.systemd:
     name: firewalld
@@ -50,47 +53,47 @@
     gather_subset: hardware
   register: system_info
 
-- name: Install ctop Docker CLI Utility - arm64
-  shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-arm64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
-  become: yes
-  when: "not ctop_exists.stat.exists and 'aarch64' in system_info['ansible_facts']['ansible_architecture']"
+# - name: Install ctop Docker CLI Utility - arm64
+#   shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-arm64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
+#   become: yes
+#   when: "not ctop_exists.stat.exists and 'aarch64' in system_info['ansible_facts']['ansible_architecture']"
 
-- name: Install ctop Docker CLI Utility - x86
-  shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-amd64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
-  become: yes
-  when: "not ctop_exists.stat.exists and 'x86' in system_info['ansible_facts']['ansible_architecture']"
+# - name: Install ctop Docker CLI Utility - x86
+#   shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-amd64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
+#   become: yes
+#   when: "not ctop_exists.stat.exists and 'x86' in system_info['ansible_facts']['ansible_architecture']"
 
-- name: Get the system architecture
-  ansible.builtin.setup:
-    gather_subset: hardware
-  register: system_info
+# - name: Get the system architecture
+#   ansible.builtin.setup:
+#     gather_subset: hardware
+#   register: system_info
 
-- name: Set docker compose arm64 binary URL
-  set_fact:
-    docker_compose_binary_url: "{{ docker_compose_url_arm64 }}"
-  when: "'aarch64' in system_info['ansible_facts']['ansible_architecture']"
+# - name: Set docker compose arm64 binary URL
+#   set_fact:
+#     docker_compose_binary_url: "{{ docker_compose_url_arm64 }}"
+#   when: "'aarch64' in system_info['ansible_facts']['ansible_architecture']"
 
-- name: Set docker compose x86 binary URL
-  set_fact:
-    docker_compose_binary_url: "{{ docker_compose_url_x86 }}"
-  when: "'x86' in system_info['ansible_facts']['ansible_architecture']"
+# - name: Set docker compose x86 binary URL
+#   set_fact:
+#     docker_compose_binary_url: "{{ docker_compose_url_x86 }}"
+#   when: "'x86' in system_info['ansible_facts']['ansible_architecture']"
 
-- name: Download Docker CLI
-  get_url:
-    url: "{{ docker_compose_binary_url }}"
-    dest: "/usr/local/bin/docker-compose"
+# - name: Download Docker CLI
+#   get_url:
+#     url: "{{ docker_compose_binary_url }}"
+#     dest: "/usr/local/bin/docker-compose"
 
-- name: Add execute permissions to docker-compose
-  become: yes
-  ansible.builtin.file:
-    path: /usr/local/bin/docker-compose
-    mode: u+x,g+x,o+x
+# - name: Add execute permissions to docker-compose
+#   become: yes
+#   ansible.builtin.file:
+#     path: /usr/local/bin/docker-compose
+#     mode: u+x,g+x,o+x
 
-- name: Create /etc/containers/nodocker file
-  become: yes
-  ansible.builtin.file:
-    path: /etc/containers/nodocker
-    state: touch
+# - name: Create /etc/containers/nodocker file
+#   become: yes
+#   ansible.builtin.file:
+#     path: /etc/containers/nodocker
+#     state: touch
 
 - name: Add unprivileged port start configuration
   become: yes
@@ -105,7 +108,6 @@
   ansible.builtin.command:
     cmd: sysctl -p
   when: sysctl_config.changed
-
 # - name: Enable and start podman.socket
 #   become: yes
 #   ansible.builtin.systemd:
@@ -113,22 +115,22 @@
 #     enabled: yes
 #     state: started
 
-- name: Install Docker
-  import_tasks: docker.yml
+# - name: Install Docker
+#   import_tasks: docker.yml
 
-- name: Install HAGrid
-  import_tasks: hagrid.yml
+# - name: Install HAGrid
+#   import_tasks: hagrid.yml
 
 # - name: Start Docker Containers (root)
 #   shell:
 #     cmd: /usr/local/bin/hagrid launch node domain to docker:80 --dev --no-health-checks --verbose --build-kit=0
 #   become: yes
 #   when: tls == "false" and install == "true"
-- name: Start Docker Containers
-  shell:
-    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }}'
-  become: yes
-  when: tls == "false" and install == "true"
+# - name: Start Docker Containers
+#   shell:
+#     cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }}'
+#   become: yes
+#   when: tls == "false" and install == "true"
 # - name: Stop existing cronjobs if provisioning from outside
 #   shell: (crontab -r  || true) && sudo kill -9 $(pgrep cron)
 #   become: yes

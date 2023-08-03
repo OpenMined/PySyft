@@ -1,39 +1,37 @@
 # ---
-# - name: Install Podman
-#   tasks:
-#     - name: Install Podman
-#       ansible.builtin.dnf:
-#         name: podman
-#         state: present
-#       become: true
 
-# # - name: Enable container-tools module
-# #   shell: dnf module enable -y container-tools:rhel9
-# #   tags: podman
+- name: Install Podman
+  ansible.builtin.dnf:
+    name: podman
+    state: present
+  become: true
 
-# # - name: Install podman
-# #   package:
-# #     name: podman
-# #     state: present
-# #   tags: podman
+- name: Enable container-tools module
+  shell: dnf module enable -y container-tools:rhel9
+  tags: podman
 
-# # - name: Install podman-docker
-# #   package:
-# #     name: podman-docker
-# #     state: present
-# #   tags: podman
+- name: Install podman
+  package:
+    name: podman
+    state: present
+  tags: podman
 
-# # - name: Start podman socket
-# #   service:
-# #     name: podman.socket
-# #     state: started
-# #     enabled: yes
-# #   tags: podman
+- name: Install podman-docker
+  package:
+    name: podman-docker
+    state: present
+  tags: podman
 
-# # - name: Start podman service
-# #   service:
-# #     name: podman
-# #     state: started
-# #     enabled: yes
-# #   tags: podman
+- name: Start podman socket
+  service:
+    name: podman.socket
+    state: started
+    enabled: yes
+  tags: podman
 
+- name: Start podman service
+  service:
+    name: podman
+    state: started
+    enabled: yes
+  tags: podman

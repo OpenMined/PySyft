@@ -91,8 +91,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.hostname = "rhel-9-x86.openmined.grid"
     node.vm.network :private_network, ip: "192.168.56.2"
 
-    # node.vm.synced_folder ".", "/home/om/PySyft",create: true,
-    #   mount_options: ["dmode=775,fmode=774"]
+    node.vm.synced_folder "../../", "/home/om/PySyft",
+      mount_options: ["dmode=775,fmode=774"]
 
     node.vm.provider "virtualbox" do |vb, override|
       #vb.update_guest_tools = true
