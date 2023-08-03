@@ -21,8 +21,28 @@
     state: present
   become: true
 
-- name: Pull docker images with Podman
-  ansible.builtin.script: pull_images.sh
+# - name: copy pull_images.sh script
+#   ansible.builtin.copy:
+#     src: pull_images.sh
+#     dest: /home/{{ om_user }}/pull_images.sh
+#     owner: "{{ om_user }}"
+#     group: "{{ om_group }}"
+#     mode: 0755
+
+# - name: execute pull_images.sh script
+#   ansible.builtin.command: /home/{{ om_user }}/pull_images.sh
+#   become: true
+
+# Pull images via podman
+- name: Pull images
+  ansible.builtin.command: podman pull {{ item }}
+  become: true
+  with_items:
+    - docker.io/openmined/grid-frontend:0.8.2-beta.6
+    - docker.io/openmined/grid-backend:0.8.2-beta.6
+    - docker.io/library/mongo:latest
+    - docker.io/traefik:v2.8.1
+    - docker.io/openmined/grid-node-jupyter:0.8.2-beta.6
 
 - name: Ensure firewalld is enabled and running
   ansible.builtin.systemd:
