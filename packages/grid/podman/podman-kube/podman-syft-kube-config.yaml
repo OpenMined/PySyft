@@ -103,6 +103,7 @@ data:
   SYFT_TUTORIAL_MODE: False
   ENABLE_WARNINGS: True
   BACKEND_STORAGE_PATH: credentials-data
+  NODE_SIDE_TYPE: high
 
   # Worker
   USE_BLOB_STORAGE: False
