@@ -93,7 +93,7 @@ class DatasetService(AbstractService):
                 results = results[page_index]
                 results = DatasetPageView(datasets=results, total=total)
             else:
-                results = DatasetPageView(datasets=datasets, total=len(datasets)) 
+                results = DatasetPageView(datasets=datasets, total=len(datasets))
 
             return results
         return SyftError(message=result.err())
