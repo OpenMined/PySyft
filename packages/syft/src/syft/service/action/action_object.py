@@ -421,6 +421,7 @@ class ActionObject(SyftObject):
 
     __attr_searchable__: List[str] = []
     syft_action_data: Optional[Any] = None
+    # syft_action_proxy_reference: Optional[LinkedObject] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
 
     # Help with calculating history hash for code verification
@@ -436,6 +437,28 @@ class ActionObject(SyftObject):
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     # syft_dont_wrap_attrs = ["shape"]
+
+    # @property
+    # def syft_action_proxy(self) -> Optional[BlobStorageEntry]:
+    #     return (
+    #         self.syft_action_proxy_reference.resolve
+    #         if self.syft_action_proxy_reference is not None
+    #         else None
+    #     )
+
+    # @property
+    # def syft_action_data(self) -> Any:
+    #     # relative
+    #     from ...client.api import APIRegistry
+
+    #     api = APIRegistry.api_for(
+    #         node_uid=self.node_uid,
+    #         user_verify_key=self.syft_client_verify_key,
+    #     )
+    #     syft_object_resource = api.services.blob_storage.read(
+    #         uid=self.syft_action_proxy_reference.id
+    #     )
+    #     return syft_object_resource.read()
 
     @property
     def is_pointer(self) -> bool:

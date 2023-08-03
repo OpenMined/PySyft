@@ -4,6 +4,7 @@
   import Filter from '$lib/components/Filter.svelte';
   import Search from '$lib/components/Search.svelte';
   import Button from '$lib/components/Button.svelte';
+  import LoadingDatasets from '$lib/components/LoadingDatasets.svelte';
   import Pagination from '$lib/components/Pagination.svelte';
   import DatasetListItem from '$lib/components/Datasets/DatasetListItem.svelte';
   import NoDatasetFound from '$lib/components/Datasets/DatasetNoneFound.svelte';
@@ -89,7 +90,7 @@
       </div>
 
       {#if datasets === null}
-        <h2>Loading</h2>
+        <LoadingDatasets />
       {:else if datasets.length === 0}
         <NoDatasetFound />
       {:else if datasets.length > 0}
