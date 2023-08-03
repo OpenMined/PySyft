@@ -59,6 +59,7 @@ from .api import APIRegistry
 from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
+from .api import SyftTypes
 from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
 
@@ -119,6 +120,7 @@ DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 class Routes(Enum):
     ROUTE_METADATA = f"{API_PATH}/metadata"
     ROUTE_API = f"{API_PATH}/api"
+    ROUTE_TYPES = f"{API_PATH}/types"
     ROUTE_LOGIN = f"{API_PATH}/login"
     ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
@@ -208,6 +210,22 @@ class HTTPConnection(NodeConnection):
             metadata_json = json.loads(response)
             return NodeMetadataJSON(**metadata_json)
 
+    def get_types(self, credentials: SyftSigningKey) -> SyftTypes:
+        params = {"verify_key": str(credentials.verify_key)}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="types",
+                kwargs={"credentials": credentials},
+                credentials=credentials,
+            )
+        else:
+            content = self._make_get(self.routes.ROUTE_TYPES.value, params=params)
+            obj = _deserialize(content, from_bytes=True)
+
+        return cast(SyftTypes, obj)
+
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         params = {"verify_key": str(credentials.verify_key)}
         if self.proxy_target_uid:
@@ -221,6 +239,7 @@ class HTTPConnection(NodeConnection):
         else:
             content = self._make_get(self.routes.ROUTE_API.value, params=params)
             obj = _deserialize(content, from_bytes=True)
+
         obj.connection = self
         obj.signing_key = credentials
         if self.proxy_target_uid:
@@ -327,6 +346,19 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
+    def get_types(self, credentials: SyftSigningKey) -> SyftTypes:
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="types",
+                kwargs={"credentials": credentials},
+                credentials=credentials,
+            )
+        else:
+            obj = self.node.get_types(for_user=credentials.verify_key)
+        return obj
+
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
@@ -339,6 +371,7 @@ class PythonConnection(NodeConnection):
             )
         else:
             obj = self.node.get_api(for_user=credentials.verify_key)
+
         obj.connection = self
         obj.signing_key = credentials
         if self.proxy_target_uid:
@@ -712,7 +745,13 @@ class SyftClient:
             self.metadata = metadata
 
     def _fetch_api(self, credentials: SyftSigningKey):
+        # need to fetch custom types first so they are registered
+        _types: SyftTypes = self.connection.get_types(credentials=credentials)
+        _types.register_serde_types()
+
+        # attach custom types for future reference on client.api
         _api: SyftAPI = self.connection.get_api(credentials=credentials)
+        _api.syft_types = _types
 
         def refresh_callback():
             return self._fetch_api(self.credentials)

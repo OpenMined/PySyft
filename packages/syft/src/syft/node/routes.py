@@ -88,6 +88,26 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_syft_new_api(user_verify_key)
 
+    def handle_syft_types(user_verify_key: SyftVerifyKey) -> Response:
+        return Response(
+            serialize(worker.get_types(user_verify_key), to_bytes=True),
+            media_type="application/octet-stream",
+        )
+
+    # get the SyftAPI object
+    @router.get("/types")
+    def syft_types(request: Request, verify_key: str) -> Response:
+        user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
+        if TRACE_MODE:
+            with trace.get_tracer(syft_types.__module__).start_as_current_span(
+                syft_types.__qualname__,
+                context=extract(request.headers),
+                kind=trace.SpanKind.SERVER,
+            ):
+                return handle_syft_types(user_verify_key)
+        else:
+            return handle_syft_types(user_verify_key)
+
     def handle_new_api_call(data: bytes) -> Response:
         obj_msg = deserialize(blob=data, from_bytes=True)
         result = worker.handle_api_call(api_call=obj_msg)

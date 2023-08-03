@@ -280,6 +280,8 @@ def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
         if k in autosplat:
             sub_mapping = deconstruct_param(v)
             for s, t in sub_mapping.items():
+                if s in ["id", "syft_node_location", "syft_client_verify_key"]:
+                    continue
                 new_t_kwargs = {
                     "annotation": t.annotation,
                     "name": t.name,

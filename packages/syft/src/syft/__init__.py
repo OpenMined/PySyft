@@ -43,6 +43,13 @@ from .service.action.plan import planify  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function_single_use  # noqa: F401; noqa: F401
+from .service.container.container import ContainerCommand  # noqa: F401
+from .service.container.container import ContainerCommandKwarg  # noqa: F401
+from .service.container.container import ContainerCommandKwargBool  # noqa: F401
+from .service.container.container import ContainerCommandKwargTemplate  # noqa: F401
+from .service.container.container import ContainerMount  # noqa: F401
+from .service.container.container import ContainerUpload  # noqa: F401
+from .service.container.container import ContainerVolume  # noqa: F401
 from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .service.dataset.dataset import Contributor  # noqa: F401
 from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
@@ -61,6 +68,8 @@ from .service.response import SyftNotReady  # noqa: F401
 from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
+from .types.file import SyftFile  # noqa: F401
+from .types.file import SyftFolder  # noqa: F401
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401

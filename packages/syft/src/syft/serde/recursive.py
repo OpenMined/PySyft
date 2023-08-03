@@ -148,7 +148,6 @@ def recursive_serde_register(
         cls,
         attribute_types,
     )
-
     TYPE_BANK[fqn] = serde_attributes
 
     if isinstance(alias_fqn, tuple):
@@ -214,7 +213,12 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         return msg
 
     if attribute_list is None:
-        attribute_list = self.__dict__.keys()
+        if hasattr(self, "__dict__"):
+            attribute_list = self.__dict__.keys()
+        elif hasattr(self, "__slots__"):
+            attribute_list = self.__slots__
+        else:
+            attribute_list = []  # type: ignore
 
     hash_exclude_attrs_set = (
         set(hash_exclude_attrs).union(set(DYNAMIC_SYFT_ATTRIBUTES))

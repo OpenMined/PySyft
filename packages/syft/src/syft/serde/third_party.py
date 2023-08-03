@@ -13,6 +13,9 @@ from nacl.signing import VerifyKey
 import networkx as nx
 from networkx import DiGraph
 import numpy as np
+from openapi3 import OpenAPI
+from openapi3.object_base import Map
+from openapi3.schemas import Schema
 from pandas import DataFrame
 from pandas import Series
 from pandas._libs.tslibs.timestamps import Timestamp
@@ -192,3 +195,29 @@ recursive_serde_register(
     serialize=serialize_networkx_graph,
     deserialize=deserialize_networkx_graph,
 )
+
+
+def serialize_openapi(api: OpenAPI) -> bytes:
+    kwargs = {
+        "raw_document": api.raw_element,
+        "validate": api.validation_mode,
+        "ssl_verify": api._ssl_verify,
+        "use_session": bool(api._session),
+    }
+    return serialize(kwargs, to_bytes=True)
+
+
+def deserialize_openapi(buf: bytes) -> OpenAPI:
+    d = deserialize(buf, from_bytes=True)
+    return OpenAPI(**d)
+
+
+recursive_serde_register(
+    OpenAPI,
+    serialize=serialize_openapi,
+    deserialize=deserialize_openapi,
+)
+
+recursive_serde_register(Schema)
+
+recursive_serde_register(Map)
