@@ -68,6 +68,7 @@ class BridgeService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = BridgeStash(store=store)
+        self.fake_auth_result = None
 
     @service_method(path="bridge.add", name="add")
     def add(
@@ -108,5 +109,43 @@ class BridgeService(AbstractService):
         method = bridge.openapi._operation_map[method_name]
         callable_op = bridge.openapi._get_callable(method.request)
         parameters, data = bridge.kwargs_to_parameters(method, kwargs)
+
+        if self.fake_auth_result is not None:
+            headers = {"Authorization": f"Bearer {self.fake_auth_result.access_token}"}
+            # NOTE: we rely on workaround in openapi3 paths.py
+            # to apply the session headers properly to the request
+            callable_op.session.headers.update(headers)
+
         result = callable_op(parameters=parameters, data=data)
+        return result
+
+    @service_method(
+        path="bridge.authenticate", name="authenticate", roles=GUEST_ROLE_LEVEL
+    )
+    def authenticate(
+        self,
+        context: AuthedServiceContext,
+        bridge: str,
+        method_name: str,
+        **kwargs: Any,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Authenticate to Bridge API"""
+
+        # TODO: instead of providing the method name,
+        # we could try to authentication details from the
+        # OpenAPI spec
+
+        results = self.stash.get_all(context.credentials)
+        if not results.is_ok():
+            return SyftError(message=f"Bridge: {bridge} does not exist")
+        results = results.ok()
+        bridge = results[0]
+        method = bridge.openapi._operation_map[method_name]
+        callable_op = bridge.openapi._get_callable(method.request)
+        parameters, data = bridge.kwargs_to_parameters(method, kwargs)
+        result = callable_op(parameters=parameters, data=data)
+
+        # TODO: store to user session
+        self.fake_auth_result = result
+
         return result
