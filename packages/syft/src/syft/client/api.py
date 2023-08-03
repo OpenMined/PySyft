@@ -43,6 +43,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.identity import Identity
@@ -427,6 +428,7 @@ class SyftAPI(SyftObject):
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
+    __user_role: ServiceRole = ServiceRole.NONE
 
     # def __post_init__(self) -> None:
     #     pass
@@ -562,7 +564,12 @@ class SyftAPI(SyftObject):
             node_uid=node.id,
             endpoints=endpoints,
             lib_endpoints=lib_endpoints,
+            __user_role=role,
         )
+
+    @property
+    def user_role(self) -> ServiceRole:
+        return self.__user_role
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
@@ -833,11 +840,18 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
             try:
                 if t is not inspect.Parameter.empty:
                     if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                        success = False
                         for v in t.__args__:
                             if issubclass(v, EmailStr):
                                 v = str
-                            check_type(key, value, v)  # raises Exception
-                            break  # only need one to match
+                            try:
+                                check_type(key, value, v)  # raises Exception
+                                success = True
+                                break  # only need one to match
+                            except Exception:  # nosec
+                                pass
+                        if not success:
+                            raise TypeError()
                     else:
                         check_type(key, value, t)  # raises Exception
             except TypeError:

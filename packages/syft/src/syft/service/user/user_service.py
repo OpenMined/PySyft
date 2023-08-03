@@ -452,7 +452,7 @@ class UserService(AbstractService):
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
         result = self.stash.get_by_email(credentials=credentials, email=email)
-        if result.is_ok():
+        if result.ok() is not None:
             return result.ok().verify_key
         return SyftError(message=f"No user with email: {email}")
 
