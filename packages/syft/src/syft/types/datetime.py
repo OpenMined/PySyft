@@ -20,9 +20,9 @@ class DateTime(SyftObject):
     id: Optional[UID]
     utc_timestamp: float
 
-    @staticmethod
-    def now() -> Self:
-        return DateTime(utc_timestamp=datetime.utcnow().timestamp())
+    @classmethod
+    def now(cls) -> Self:
+        return cls(utc_timestamp=datetime.utcnow().timestamp())
 
     def __str__(self) -> str:
         utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
@@ -40,5 +40,5 @@ class DateTime(SyftObject):
     def __gt__(self, other: Self) -> bool:
         return self.utc_timestamp > other.utc_timestamp
 
-    def __sub__(self, other: Self) -> bool:
+    def __sub__(self, other: Self) -> float:
         return self.utc_timestamp - other.utc_timestamp
