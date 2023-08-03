@@ -85,9 +85,9 @@ def run_command(
     volumes = {temp_dir: {"bind": "/sandbox", "mode": "rw"}}
 
     for container_mount in container_image.volumes:
-        print("got container_mount", container_mount, type(container_mount))
+        # print("got container_mount", container_mount, type(container_mount))
         volume = client.volumes.create(name=container_mount.name)
-        print("got volume", volume, type(volume))
+        # print("got volume", volume, type(volume))
         volumes[volume.name] = {
             "bind": container_mount.internal_mountpath,
             "mode": container_mount.mode,
@@ -106,7 +106,7 @@ def run_command(
             "mode": container_mount.mode,
         }
         volumes[local_path] = mount
-        print("local path", local_path, "mount", mount)
+        # print("local path", local_path, "mount", mount)
 
     # start container
     container = None
@@ -130,7 +130,7 @@ def run_command(
         result = container.exec_run(
             cmd="bash /start.sh || true", stdout=True, stderr=True, demux=True
         )
-        print("result of start.sh", result)
+        # print("result of start.sh", result)
 
         # write the files
         for _k, v in files.items():
@@ -144,10 +144,10 @@ def run_command(
                 if not write_result:
                     return write_result
 
-        print("user_kwargs", user_kwargs)
-        print("files", files)
+        # print("user_kwargs", user_kwargs)
+        # print("files", files)
         cmd = command.cmd(run_user_kwargs=user_kwargs, run_files=files)
-        print("running cmd", cmd)
+        print("> running cmd", cmd)
         result = container.exec_run(cmd=cmd, stdout=True, stderr=True, demux=True)
         container_result = ContainerResult.from_execresult(result=result)
         container_result.image_name = container_image.name
@@ -163,8 +163,9 @@ def run_command(
         if container:
             pass
             # container.stop()
-        for temp_dir in temp_dirs:
-            print("remove temp_dir", temp_dir)
+        for _ in temp_dirs:
+            pass
+            # print("remove temp_dir", temp_dir)
             # shutil.rmtree(temp_dir)
 
 
@@ -290,7 +291,10 @@ class ContainerService(AbstractService):
     def get_commands(
         self, context: AuthedServiceContext
     ) -> Union[List[ContainerCommand], SyftError]:
-        results = self.command_stash.get_all(context.credentials)
+        # TODO: Add ability to specify which roles see which endpoints
+        # for now skip auth
+        # results = self.command_stash.get_all(context.credentials)
+        results = self.command_stash.get_all(context.node.verify_key)
         if results.is_ok():
             return results.ok()
         return SyftError(messages="Unable to get ContainerCommands")
@@ -305,13 +309,15 @@ class ContainerService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Call a ContainerCommand"""
 
-        result = self.stash.get_by_name(context.credentials, name=image_name)
+        result = self.stash.get_by_name(context.node.verify_key, name=image_name)
         if result.is_ok():
             if not result.ok():
                 return SyftError(message=f"ContainerImage {image_name} does not exist.")
         image = result.ok()
 
-        result = self.command_stash.get_by_name(context.credentials, name=command_name)
+        result = self.command_stash.get_by_name(
+            context.node.verify_key, name=command_name
+        )
         if result.is_ok():
             if not result.ok():
                 return SyftError(

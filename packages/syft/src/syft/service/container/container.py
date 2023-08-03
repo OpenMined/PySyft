@@ -15,6 +15,8 @@ from docker.models.containers import ExecResult
 
 # relative
 from ...serde.serializable import serializable
+from ...service.response import SyftError
+from ...service.response import SyftSuccess
 from ...types.file import SyftFile
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -262,6 +264,26 @@ class ContainerResult(SyftObject):
     jsonstd: List[Dict[str, Any]]
     jsonerr: List[Dict[str, Any]]
     return_file: Optional[SyftFile] = None
+
+    def _repr_html_(self) -> str:
+        return_file_name = ""
+        if self.return_file:
+            return_file_name = f" With file: {self.return_file.filename}."
+
+        if self.exit_code == 0:
+            with_json = ""
+            if self.jsonstd:
+                with_json = " With json."
+            return SyftSuccess(
+                message=f"Command Succeeded.{return_file_name}{with_json}"
+            )._repr_html_()
+        else:
+            with_json = ""
+            if self.jsonerr:
+                with_json = " With json."
+            return SyftError(
+                message=f"Command Failed.{return_file_name}{with_json}"
+            )._repr_html_()
 
     @staticmethod
     def from_execresult(result: ExecResult) -> Self:
