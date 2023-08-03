@@ -1,0 +1,20 @@
+Vagrant.configure("2") do |config|
+    config.vm.box = "bento/fedora-38-arm64"
+    config.vm.hostname = "fedora-38-arm64"
+
+    config.vm.provider "virtualbox" do |vb|
+        vb.memory = "4096"
+        vb.cpus = "2"
+    end
+
+    config.vm.provider "vmware_desktop" do |vd|
+        vd.memory = "4096"
+        vd.cpus = "2"
+        vd.gui = true
+    end
+    config.vm.synced_folder "../../podman-kube", "/home/vagrant/podman-kube"
+    config.vm.box_check_update = false
+    config.vm.network "forwarded_port", guest: 8080, host: 4455, host_ip: "127.0.0.1"
+
+
+  end
