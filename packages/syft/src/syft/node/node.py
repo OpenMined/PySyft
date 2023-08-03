@@ -45,7 +45,9 @@ from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
+from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
+from ..service.code_history.code_history_service import CodeHistoryService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
 from ..service.context import UnauthedServiceContext
@@ -79,6 +81,8 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..store.blob_storage import BlobStorageConfig
+from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
@@ -197,7 +201,8 @@ class Node(AbstractNode):
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-        queue_config: QueueConfig = ZMQQueueConfig,
+        blob_storage_config: Optional[BlobStorageConfig] = None,
+        queue_config: Optional[QueueConfig] = None,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
     ):
@@ -240,7 +245,9 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                CodeHistoryService,
                 MetadataService,
+                BlobStorageService,
             ]
             if services is None
             else services
@@ -287,12 +294,20 @@ class Node(AbstractNode):
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
 
+        self.init_blob_storage(config=blob_storage_config)
+
         NodeRegistry.set_node_for(self.id, self)
 
-    def init_queue_manager(self, queue_config: QueueConfig):
+    def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
+        config_ = OnDiskBlobStorageConfig() if config is None else config
+        self.blob_storage_client = config_.client_type(config=config_.client_config)
+
+    def init_queue_manager(self, queue_config: Optional[QueueConfig]):
+        queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
+
         MessageHandlers = [APICallMessageHandler]
 
-        self.queue_manager = QueueManager(queue_config)
+        self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
             producer = self.queue_manager.create_producer(
@@ -499,7 +514,9 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                CodeHistoryService,
                 MetadataService,
+                BlobStorageService,
             ]
 
             if OBLV:

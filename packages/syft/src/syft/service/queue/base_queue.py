@@ -65,8 +65,8 @@ class QueueClient:
 class QueueConfig:
     """Base Queue configuration"""
 
-    client_config: Type[QueueClientConfig]
     client_type: Type[QueueClient]
+    client_config: QueueClientConfig
 
 
 @serializable()
