@@ -3,11 +3,9 @@ name: RHEL 9 VM Tests
 on:
   workflow_call:
 
-  # pull_request:
-  #   branches:
-  #     - dev
-  #     - main
-  #     - "0.8"
+  pull_request:
+    branches:
+      - dev
 
   workflow_dispatch:
     inputs:
