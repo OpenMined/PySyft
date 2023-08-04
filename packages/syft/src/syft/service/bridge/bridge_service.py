@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Union
 
 # third party
+from openapi3.errors import UnexpectedResponseError
 from result import Result
 
 # relative
@@ -106,6 +107,17 @@ class BridgeService(AbstractService):
             return SyftError(message=f"Bridge: {bridge} does not exist")
         results = results.ok()
         bridge = results[0]
+
+        if "HTTPBearer" in bridge.openapi.components.securitySchemes:
+            token = context.session.get_auth(key="HTTPBearer")
+            if token:
+                bridge.openapi.authenticate("HTTPBearer", token)
+
+        # if "OAuth2PasswordBearer" in bridge.openapi.components.securitySchemes:
+        #     token = context.session.get_auth(key="OAuth2PasswordBearer")
+        #     if token:
+        #         bridge.openapi.authenticate("OAuth2PasswordBearer", token)
+
         method = bridge.openapi._operation_map[method_name]
         callable_op = bridge.openapi._get_callable(method.request)
         parameters, data = bridge.kwargs_to_parameters(method, kwargs)
@@ -115,37 +127,22 @@ class BridgeService(AbstractService):
             # NOTE: we rely on workaround in openapi3 paths.py
             # to apply the session headers properly to the request
             callable_op.session.headers.update(headers)
-
-        result = callable_op(parameters=parameters, data=data)
+        try:
+            result = callable_op(parameters=parameters, data=data)
+        except UnexpectedResponseError as e:
+            if e.status_code in [401, 403]:
+                return SyftError(
+                    message=f"{e.status_code} Unauthorized. Call authenticate(token=)."
+                )
         return result
 
     @service_method(
         path="bridge.authenticate", name="authenticate", roles=GUEST_ROLE_LEVEL
     )
     def authenticate(
-        self,
-        context: AuthedServiceContext,
-        bridge: str,
-        method_name: str,
-        **kwargs: Any,
+        self, context: AuthedServiceContext, token: str
     ) -> Union[SyftSuccess, SyftError]:
         """Authenticate to Bridge API"""
-
-        # TODO: instead of providing the method name,
-        # we could try to authentication details from the
-        # OpenAPI spec
-
-        results = self.stash.get_all(context.credentials)
-        if not results.is_ok():
-            return SyftError(message=f"Bridge: {bridge} does not exist")
-        results = results.ok()
-        bridge = results[0]
-        method = bridge.openapi._operation_map[method_name]
-        callable_op = bridge.openapi._get_callable(method.request)
-        parameters, data = bridge.kwargs_to_parameters(method, kwargs)
-        result = callable_op(parameters=parameters, data=data)
-
-        # TODO: store to user session
-        self.fake_auth_result = result
-
-        return result
+        # let the user set a token to their session
+        context.session.set_auth(key="HTTPBearer", value=token)
+        return SyftSuccess(message="Token set.")

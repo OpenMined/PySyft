@@ -55,6 +55,7 @@ from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
 from ..service.context import UnauthedServiceContext
 from ..service.context import UserLoginCredentials
+from ..service.context import UserSession
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
@@ -685,6 +686,12 @@ class Node(AbstractNode):
         )
         return role
 
+    def get_user_session(self, credentials: SyftVerifyKey) -> Optional[UserSession]:
+        session = self.get_service("userservice").get_user_session(
+            credentials=credentials
+        )
+        return session
+
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SignedSyftAPICall, Err]:
@@ -724,8 +731,9 @@ class Node(AbstractNode):
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
+            session = self.get_user_session(credentials=credentials)
             context = AuthedServiceContext(
-                node=self, credentials=credentials, role=role
+                node=self, credentials=credentials, role=role, session=session
             )
 
             user_config_registry = UserServiceConfigRegistry.from_role(role)

@@ -8,35 +8,41 @@ from typing import Optional
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi import Request
 from fastapi import status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 
 app = FastAPI(title="Blue Book", version="0.2.0")
 
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = HTTPBearer()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-
-class UserOut(BaseModel):
+class UserView(BaseModel):
     username: str
 
 
-class User(UserOut):
+class User(UserView):
     password: str
 
 
-fake_user = User(username="johndoe", password="secret")
+secret_token = "letmein"
+allowed_user = User(username="caleb.smith@bluebook.ai", password="secret")
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
-    if token != fake_user.username:
+async def get_current_user(
+    request: Request, token: Annotated[str, Depends(oauth2_scheme)]
+) -> User:
+    # show headers during auth requests
+    print(request.headers)
+    if token.credentials != secret_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid Authentication Credentials",
+            headers={"www-authenticate": "Bearer"},
         )
-    return fake_user
+    return allowed_user
 
 
 class ResearchModel(BaseModel):
@@ -59,39 +65,48 @@ api_state: Dict[int, ResearchModel] = {7: ResearchModel(name="Ava")}
 # async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def login(form_data: Annotated[User, Depends()]) -> LoginResponse:
     if (
-        form_data.username != fake_user.username
-        or form_data.password != fake_user.password
+        form_data.username != allowed_user.username
+        or form_data.password != allowed_user.password
     ):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
-    response = {"access_token": fake_user.username, "token_type": "bearer"}
+    response = {"access_token": secret_token, "token_type": "Bearer"}
     return LoginResponse(**response)
 
 
 @app.get("/users/me", operation_id="get_me", summary="Get the current user")
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)]
-) -> UserOut:
+) -> UserView:
     return current_user
 
 
 @app.get("/", operation_id="home", summary="Home Page")
-def read_root() -> Dict:
-    return {"Caleb": "Smith"}
+def read_root(request: Request) -> Dict:
+    print("headers", request.headers)
+    return {}
 
 
 @app.get("/models/", operation_id="get_all", summary="Get all the Models")
-def get_all() -> List[ResearchModel]:
+def get_all(
+    current_user: Annotated[User, Depends(get_current_user)]
+) -> List[ResearchModel]:
     return list(api_state.values())
 
 
 @app.get("/models/{model_id}", operation_id="get_model", summary="Get a Model by index")
-def get_model(model_id: int) -> Optional[ResearchModel]:
+def get_model(
+    current_user: Annotated[User, Depends(get_current_user)], model_id: int
+) -> Optional[ResearchModel]:
     model = api_state.get(model_id, None)
     return model
 
 
 @app.put("/models/{model_id}", operation_id="set_model", summary="Set a Model by index")
-def set_model(model_id: int, model: ResearchModel) -> ResearchModel:
+def set_model(
+    current_user: Annotated[User, Depends(get_current_user)],
+    model_id: int,
+    model: ResearchModel,
+) -> ResearchModel:
     api_state[model_id] = model
     return model
