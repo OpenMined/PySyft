@@ -3,6 +3,7 @@ name: CD - HAGrid
 on:
   schedule:
     - cron: "00 15 * * */1" # At 15:00 UTC on every day
+
   workflow_dispatch:
     inputs:
       skip_tests:
@@ -12,20 +13,20 @@ on:
 
 jobs:
   call-pr-tests-linting:
-    if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
 
   call-pr-tests-syft:
-    if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
 
   call-pr-tests-stack:
-    if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
     secrets: inherit
 
   call-hagrid-tests:
-    if: github.repository == 'OpenMined/PySyft' && github.event.inputs.skip_tests == 'false' # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-hagrid.yml@dev
 
   deploy-hagrid:
