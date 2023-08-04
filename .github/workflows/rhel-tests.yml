@@ -41,7 +41,6 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: buildjet/setup-python@v4
-        if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
