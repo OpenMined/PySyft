@@ -1,6 +1,7 @@
 # stdlib
 from pathlib import Path
 from typing import List
+from typing import Optional
 from typing import Union
 
 # relative
@@ -80,8 +81,22 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.write_to_disk", name="write_to_disk")
     def write_to_disk(
-        self, context: AuthedServiceContext, obj: BlobStorageEntry, data: bytes
+        self, context: AuthedServiceContext, blob_storage_entry_id: UID, data: bytes
     ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.get_by_uid(
+            credentials=context.credentials,
+            uid=blob_storage_entry_id,
+        )
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        obj: Optional[BlobStorageEntry] = result.ok()
+
+        if obj is None:
+            return SyftError(
+                message=f"No blob storage entry exists for uid: {blob_storage_entry_id}"
+            )
+
         try:
             Path(obj.location.path).write_bytes(data)
             return SyftSuccess(message="File successfully saved.")
