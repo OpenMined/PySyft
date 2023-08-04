@@ -18,7 +18,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [om-ci-rhel9]
+        os: [om-ci-rhel-9]
         python-version: ["3.11"]
       fail-fast: false
 
