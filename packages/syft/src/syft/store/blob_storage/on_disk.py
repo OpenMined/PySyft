@@ -39,7 +39,7 @@ class OnDiskBlobDeposit(BlobDeposit):
             user_verify_key=self.syft_client_verify_key,
         )
         return api.services.blob_storage.write_to_disk(
-            data=data, blob_storage_entry_id=self.blob_storage_entry_id
+            data=data, uid=self.blob_storage_entry_id
         )
 
 
