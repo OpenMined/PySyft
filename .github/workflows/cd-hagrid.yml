@@ -51,9 +51,10 @@ jobs:
           pip install --upgrade checksumdir
       - name: Get the hashes
         id: get-hashes
+        shell: bash
         run: |
           current_hash=$(checksumdir ./packages/hagrid)
-          echo "::set-output name=current_hash::$current_hash"
+          echo "current_hash=$current_hash" >> $GITHUB_OUTPUT
           previous_hash=$(cat ./scripts/hagrid_hash)
 
       - name: Set up Python
