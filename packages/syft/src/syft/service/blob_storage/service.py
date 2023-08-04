@@ -1,7 +1,6 @@
 # stdlib
 from pathlib import Path
 from typing import List
-from typing import Optional
 from typing import Union
 
 # relative
@@ -11,7 +10,6 @@ from ...store.blob_storage import BlobRetrieval
 from ...store.document_store import DocumentStore
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import UploadStatus
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -74,7 +72,6 @@ class BlobStorageService(AbstractService):
                 uploaded_by=context.credentials,
             )
             blob_deposit = conn.write(blob_storage_entry)
-            # create a hash using the upload policy
 
         result = self.stash.set(context.credentials, blob_storage_entry)
         if result.is_err():
@@ -83,33 +80,10 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.write_to_disk", name="write_to_disk")
     def write_to_disk(
-        self, context: AuthedServiceContext, storage_entry_id: UID, data: bytes
+        self, context: AuthedServiceContext, obj: BlobStorageEntry, data: bytes
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.stash.get_by_uid(
-            credentials=context.credentials,
-            uid=storage_entry_id,
-        )
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-
-        obj: Optional[BlobStorageEntry] = result.ok()
-
-        if obj is None:
-            return SyftError(
-                message=f"No Blob storage entry exists for uid: {storage_entry_id}"
-            )
-
-        validation_result = obj.is_valid()
-
-        if validation_result.is_err():
-            self.stash.update(context.credentials, obj)
-            return SyftError(message=f"{validation_result.err()}")
-
         try:
-            # validate the object against the upload policy hash
             Path(obj.location.path).write_bytes(data)
-            obj.status = UploadStatus.DONE
-            self.stash.update(context.credentials, obj=obj)
             return SyftSuccess(message="File successfully saved.")
         except Exception as e:
             return SyftError(message=f"Failed to write object to disk: {e}")

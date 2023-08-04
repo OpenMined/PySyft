@@ -59,7 +59,6 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.uid import UID
 
 
 @serializable()
@@ -98,18 +97,10 @@ class BlobDeposit(SyftObject):
     __canonical_name__ = "BlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    blob_storage_entry_id: UID
+    blob_storage_entry: BlobStorageEntry
 
     def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
         pass
-
-
-@serializable()
-class BlobDepositByURL(BlobDeposit):
-    __canonical_name__ = "BlobDepositByURL"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    url: str
 
 
 @serializable()
@@ -125,9 +116,6 @@ class BlobStorageConnection:
         raise NotImplementedError
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
-        raise NotImplementedError
-
-    def exists(self, fp: SecureFilePathLocation) -> bool:
         raise NotImplementedError
 
 

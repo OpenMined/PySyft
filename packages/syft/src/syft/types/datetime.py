@@ -38,6 +38,3 @@ class DateTime(SyftObject):
 
     def __lt__(self, other: Self) -> bool:
         return self.utc_timestamp < other.utc_timestamp
-
-    def __sub__(self, other: Self) -> float:
-        return self.utc_timestamp - other.utc_timestamp
