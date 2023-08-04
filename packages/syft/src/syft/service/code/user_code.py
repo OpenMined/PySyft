@@ -19,6 +19,7 @@ from typing import Type
 from typing import Union
 
 # third party
+from IPython.display import display
 from typing_extensions import Self
 
 # relative
@@ -60,6 +61,7 @@ from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
 
@@ -432,7 +434,10 @@ class UserCode(SyftObject):
 
     @property
     def unsafe_function(self) -> Optional[Callable]:
-        print("WARNING: This code was submitted by a User and could be UNSAFE.")
+        warning = SyftWarning(
+            message="WARNING: This code was submitted by a User and could be UNSAFE."
+        )
+        display(warning)
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
         def wrapper(*args: Any, **kwargs: Any) -> Callable:
