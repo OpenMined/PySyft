@@ -180,7 +180,13 @@ class NodeHandle:
         client = self.client
         if email and password:
             return client.login(email=email, password=password, **kwargs)
-        return None
+        elif not email:
+            email = input("Email: ")
+            password = getpass.getpass("Password: ")
+            return client.login(email=email, password=password, **kwargs)
+        elif not password:
+            password = getpass.getpass("Password: ")
+            return client.login(email=email, password=password, **kwargs)
 
     def register(
         self,
