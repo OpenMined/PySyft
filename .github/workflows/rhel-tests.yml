@@ -18,7 +18,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [om-ci-centos-8]
+        os: [om-ci-rhel9]
         python-version: ["3.11"]
       fail-fast: false
 
@@ -29,7 +29,7 @@ jobs:
 
       - name: check python version
         run: |
-          python3 --version
+          python${{matrix.python-version}} --version
 
       # - name: Check for file changes
       #   uses: dorny/paths-filter@v2
@@ -39,10 +39,10 @@ jobs:
       #     token: ${{ github.token }}
       #     filters: .github/file-filters.yml
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: buildjet/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+      # - name: Set up Python ${{ matrix.python-version }}
+      #   uses: buildjet/setup-python@v4
+      #   with:
+      #     python-version: ${{ matrix.python-version }}
 
       # - name: Get pip cache dir
       #   if: steps.changes.outputs.stack == 'true'
@@ -64,14 +64,14 @@ jobs:
       #   run: |
       #     python -m pip install --upgrade --user pip
 
-      # - name: Install tox
-      #   if: steps.changes.outputs.stack == 'true'
-      #   run: |
-      #     pip install -U tox
+      - name: Install tox
+        # if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip${{matrix.python-version}} install -U tox
 
-      # - name: Run notebook tests
-      #   if: steps.changes.outputs.stack == 'true'
-      #   # env:
-      #   #   ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
-      #   run: |
-      #     tox -e stack.test.rhel
+      - name: Run notebook tests
+        if: steps.changes.outputs.stack == 'true'
+        # env:
+        #   ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
+        run: |
+          tox -e stack.test.rhel
