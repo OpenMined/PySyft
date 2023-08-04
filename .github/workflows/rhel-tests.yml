@@ -18,7 +18,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [om-ci-rhel-9]
+        os: [om-ci-centos-8]
         python-version: ["3.11"]
       fail-fast: false
 
@@ -39,10 +39,7 @@ jobs:
         uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
-          python-version: "3.9"
-          cache: "pip"
-        env:
-          AGENT_TOOLSDIRECTORY: /opt/hostedtoolache
+          python-version: ${{ matrix.python-version }}
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
