@@ -435,7 +435,7 @@ class UserCode(SyftObject):
     @property
     def unsafe_function(self) -> Optional[Callable]:
         warning = SyftWarning(
-            message="WARNING: This code was submitted by a User and could be UNSAFE."
+            message="This code was submitted by a User and could be UNSAFE."
         )
         display(warning)
 
@@ -604,11 +604,6 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
-        print(
-            f"Syft function '{f.__name__}' successfully created. "
-            f"To add a code request, please create a project using `project = syft.Project(...)`, "
-            f"then use command `project.create_code_request`."
-        )
         res = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -625,6 +620,14 @@ def syft_function(
             res.output_policy_init_kwargs[
                 "output_readers"
             ] = res.input_owner_verify_keys
+
+        success_message = SyftSuccess(
+            message=f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
+        )
+        display(success_message)
+
         return res
 
     return decorator
