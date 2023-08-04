@@ -33,6 +33,7 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
+from ..context import UserSession
 from ..response import SyftError
 from ..response import SyftSuccess
 from .user_roles import ServiceRole
@@ -61,6 +62,7 @@ class User(SyftObject):
     institution: Optional[str]
     website: Optional[str] = None
     created_at: Optional[str] = None
+    session: Optional[UserSession] = None
 
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
