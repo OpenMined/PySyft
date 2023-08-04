@@ -70,7 +70,7 @@ jobs:
           pip${{matrix.python-version}} install -U tox
 
       - name: Run notebook tests
-        if: steps.changes.outputs.stack == 'true'
+        #if: steps.changes.outputs.stack == 'true'
         # env:
         #   ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
         run: |
