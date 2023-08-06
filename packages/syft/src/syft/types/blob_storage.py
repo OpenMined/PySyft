@@ -23,6 +23,7 @@ from .uid import UID
 class SecureFilePathLocation(SyftObject):
     __canonical_name__ = "SecureFilePathLocation"
     __version__ = SYFT_OBJECT_VERSION_1
+
     id: UID
     path: str
 
@@ -31,6 +32,7 @@ class SecureFilePathLocation(SyftObject):
 class BlobStorageEntry(SyftObject):
     __canonical_name__ = "BlobStorageEntry"
     __version__ = SYFT_OBJECT_VERSION_1
+
     id: UID
     location: SecureFilePathLocation
     type_: Optional[Type[SyftObject]]
