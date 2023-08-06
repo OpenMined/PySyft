@@ -82,6 +82,7 @@ from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
 from ..store.blob_storage import BlobStorageConfig
+from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
@@ -93,6 +94,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
+from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
 from ..util.util import thread_ident
@@ -299,7 +301,14 @@ class Node(AbstractNode):
         NodeRegistry.set_node_for(self.id, self)
 
     def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
-        config_ = OnDiskBlobStorageConfig() if config is None else config
+        # set path to ~/.syft/node_uid/
+        if config is None:
+            root_directory = get_root_data_path()
+            base_directory = root_directory / f"{self.id}"
+            client_config = OnDiskBlobStorageClientConfig(base_directory=base_directory)
+            config_ = OnDiskBlobStorageConfig(client_config=client_config)
+        else:
+            config_ = config
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
