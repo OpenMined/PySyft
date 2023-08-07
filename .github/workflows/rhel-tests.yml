@@ -64,14 +64,19 @@ jobs:
       #   run: |
       #     python -m pip install --upgrade --user pip
 
-      - name: Install tox
+      # - name: Install tox
+      #   # if: steps.changes.outputs.stack == 'true'
+      #   run: |
+      #     pip${{matrix.python-version}} install -U tox
+
+      - name: Install Pytest and nbmake
         # if: steps.changes.outputs.stack == 'true'
         run: |
-          pip${{matrix.python-version}} install -U tox
+          pip${{matrix.python-version}} install -U pytest nbmake
 
       - name: Run notebook tests
         #if: steps.changes.outputs.stack == 'true'
         # env:
         #   ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
         run: |
-          tox -e stack.test.rhel
+          pytest --nbmake notebooks/api/0.8 -p no:randomly -vvvv
