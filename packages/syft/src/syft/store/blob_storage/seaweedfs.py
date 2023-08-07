@@ -66,7 +66,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                 response.raise_for_status()
                 etag = response.headers["ETag"]
                 etags.append({"ETag": etag, "PartNumber": part_no})
-        except requests.HTTPError as e:
+        except requests.RequestException as e:
             return SyftError(message=str(e))
 
         api = APIRegistry.api_for(

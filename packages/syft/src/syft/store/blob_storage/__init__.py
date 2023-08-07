@@ -92,12 +92,11 @@ class BlobRetrievalByURL(BlobRetrieval):
     url: str
 
     def read(self) -> Union[SyftObject, SyftError]:
-        response = requests.get(self.url)
-
         try:
+            response = requests.get(self.url)
             response.raise_for_status()
             return deserialize(response.content, from_bytes=True)
-        except requests.HTTPError as e:
+        except requests.RequestException as e:
             return SyftError(message=f"Failed to retrieve with Error: {e}")
 
 
