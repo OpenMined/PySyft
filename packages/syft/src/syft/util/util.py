@@ -192,7 +192,7 @@ def get_root_data_path() -> Path:
     # on Windows the directory is: C:/Users/$USER/.syft/data
 
     data_dir = Path.home() / ".syft" / "data"
-    data_dir.mkdir(exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
 
     return data_dir
 
