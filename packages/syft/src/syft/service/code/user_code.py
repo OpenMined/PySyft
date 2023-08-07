@@ -452,10 +452,6 @@ class UserCode(SyftObject):
                     )
                     on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
 
-                print(f"{ArgumentType.PRIVATE = }")
-                print(f"{ArgumentType.MOCK = }")
-                print(f"{arg_type = }")
-
                 if on_private_data:
                     display(
                         SyftInfo(
@@ -465,6 +461,10 @@ class UserCode(SyftObject):
                 elif on_mock_data:
                     display(
                         SyftInfo(message="The result you see is computed on MOCK data.")
+                    )
+                else:
+                    display(
+                        SyftInfo(message="The result you see is computed on REAL data.")
                     )
 
                 # remove the decorator
@@ -553,7 +553,6 @@ class SubmitUserCode(SyftObject):
             on_private_data, on_mock_data = False, False
             for k, v in kwargs.items():
                 filtered_kwargs[k], arg_type = debox_asset(v)
-                print(f"{arg_type = }")
                 on_private_data = on_private_data or arg_type == ArgumentType.PRIVATE
                 on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
             if on_private_data:
@@ -579,13 +578,11 @@ def debox_asset(arg: Any) -> Any:
     deboxed_arg = arg
     if isinstance(deboxed_arg, Asset):
         asset = deboxed_arg
-        print(f"{asset.has_data_permission() = }")
         if asset.has_data_permission():
             return asset.data, ArgumentType.PRIVATE
         else:
             return asset.mock, ArgumentType.MOCK
     if hasattr(deboxed_arg, "syft_action_data"):
-        print(f'{hasattr(deboxed_arg, "syft_action_data") = }')
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg, ArgumentType.REAL
 
