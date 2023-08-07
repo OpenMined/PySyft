@@ -198,16 +198,15 @@ def get_root_data_path() -> Path:
 
 
 def download_file(url: str, full_path: Union[str, Path]) -> Optional[Path]:
-    if not os.path.exists(full_path):
+    full_path = Path(full_path)
+    if not full_path.exists():
         r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
-        if r.status_code < 199 or 299 < r.status_code:
+        if not r.ok:
             print(f"Got {r.status_code} trying to download {url}")
             return None
-        path = os.path.dirname(full_path)
-        os.makedirs(path, exist_ok=True)
-        with open(full_path, "wb") as f:
-            f.write(r.content)
-    return Path(full_path)
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_bytes(r.content)
+    return full_path
 
 
 def verify_tls() -> bool:
