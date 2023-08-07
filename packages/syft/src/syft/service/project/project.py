@@ -1122,12 +1122,12 @@ class Project(SyftObject):
         return [
             event.request for event in self.events if isinstance(event, ProjectRequest)
         ]
-    
+
     @property
     def pending_requests(self) -> int:
-        return sum([request.status == RequestStatus.PENDING for request in self.requests])
-    
-
+        return sum(
+            [request.status == RequestStatus.PENDING for request in self.requests]
+        )
 
 
 @serializable(without=["bootstrap_events", "clients"])
