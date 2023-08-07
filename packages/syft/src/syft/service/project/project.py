@@ -1125,7 +1125,7 @@ class Project(SyftObject):
     
     @property
     def pending_requests(self) -> int:
-        return len([request.status == RequestStatus.PENDING for request in self.requests])
+        return sum([request.status == RequestStatus.PENDING for request in self.requests])
     
 
 
