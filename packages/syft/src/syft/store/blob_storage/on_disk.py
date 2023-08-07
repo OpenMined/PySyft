@@ -1,5 +1,4 @@
 # stdlib
-import os
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
@@ -81,7 +80,7 @@ class OnDiskBlobStorageClient(BlobStorageClient):
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        os.makedirs(self.config.base_directory, exist_ok=True)
+        self.config.base_directory.mkdir(exist_ok=True)
 
     def connect(self) -> BlobStorageConnection:
         return OnDiskBlobStorageConnection(self.config.base_directory)
