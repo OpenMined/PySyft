@@ -65,7 +65,6 @@ class QueueItem(SyftObject):
             self.resolved = True
             self.result = result.result
             self.status = result.status
-        return result
 
     @property
     def resolve(self) -> Union[Any, SyftNotReady]:
