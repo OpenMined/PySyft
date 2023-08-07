@@ -31,6 +31,7 @@ from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
+from ...util.constants import DEFAULT_TIMEOUT
 
 READ_EXPIRATION_TIME = 1800  # seconds
 WRITE_EXPIRATION_TIME = 900  # seconds
@@ -62,7 +63,9 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             for part_no, (byte_chunk, url) in enumerate(
                 zip(_byte_chunks(BytesIO(data), DEFAULT_CHUNK_SIZE), self.urls), start=1
             ):
-                response = requests.put(url=url, data=byte_chunk)
+                response = requests.put(
+                    url=url, data=byte_chunk, timeout=DEFAULT_TIMEOUT
+                )
                 response.raise_for_status()
                 etag = response.headers["ETag"]
                 etags.append({"ETag": etag, "PartNumber": part_no})

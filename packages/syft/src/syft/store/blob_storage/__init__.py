@@ -62,6 +62,7 @@ from ...types.blob_storage import SecureFilePathLocation
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ...util.constants import DEFAULT_TIMEOUT
 
 
 @serializable()
@@ -93,7 +94,7 @@ class BlobRetrievalByURL(BlobRetrieval):
 
     def read(self) -> Union[SyftObject, SyftError]:
         try:
-            response = requests.get(self.url)
+            response = requests.get(self.url, timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             return deserialize(response.content, from_bytes=True)
         except requests.RequestException as e:
