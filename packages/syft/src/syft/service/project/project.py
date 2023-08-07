@@ -52,6 +52,7 @@ from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
 from ..request.request import Request
+from ..request.request import RequestStatus
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
@@ -690,6 +691,7 @@ class Project(SyftObject):
             "Name": self.name,
             "description": self.description,
             "created by": self.created_by,
+            "pending requests": self.pending_requests,
         }
 
     def _repr_html_(self) -> Any:
@@ -1120,6 +1122,12 @@ class Project(SyftObject):
         return [
             event.request for event in self.events if isinstance(event, ProjectRequest)
         ]
+    
+    @property
+    def pending_requests(self) -> int:
+        return len([request.status == RequestStatus.PENDING for request in self.requests])
+    
+
 
 
 @serializable(without=["bootstrap_events", "clients"])
