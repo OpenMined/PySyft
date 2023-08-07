@@ -59,6 +59,7 @@ from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
+from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
@@ -450,10 +451,21 @@ class UserCode(SyftObject):
                         on_private_data or arg_type == ArgumentType.PRIVATE
                     )
                     on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
+
+                print(f"{ArgumentType.PRIVATE = }")
+                print(f"{ArgumentType.MOCK = }")
+                print(f"{arg_type = }")
+
                 if on_private_data:
-                    print("Warning: The result you see is computed on PRIVATE data.")
+                    display(
+                        SyftInfo(
+                            message="The result you see is computed on PRIVATE data."
+                        )
+                    )
                 elif on_mock_data:
-                    print("Warning: The result you see is computed on MOCK data.")
+                    display(
+                        SyftInfo(message="The result you see is computed on MOCK data.")
+                    )
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
@@ -541,6 +553,7 @@ class SubmitUserCode(SyftObject):
             on_private_data, on_mock_data = False, False
             for k, v in kwargs.items():
                 filtered_kwargs[k], arg_type = debox_asset(v)
+                print(f"{arg_type = }")
                 on_private_data = on_private_data or arg_type == ArgumentType.PRIVATE
                 on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
             if on_private_data:
@@ -566,11 +579,13 @@ def debox_asset(arg: Any) -> Any:
     deboxed_arg = arg
     if isinstance(deboxed_arg, Asset):
         asset = deboxed_arg
+        print(f"{asset.has_data_permission() = }")
         if asset.has_data_permission():
             return asset.data, ArgumentType.PRIVATE
         else:
             return asset.mock, ArgumentType.MOCK
     if hasattr(deboxed_arg, "syft_action_data"):
+        print(f'{hasattr(deboxed_arg, "syft_action_data") = }')
         deboxed_arg = deboxed_arg.syft_action_data
     return deboxed_arg, ArgumentType.REAL
 
