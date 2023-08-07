@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from enum import Enum
-import hashlib
 import json
 from typing import Any
 from typing import Callable
@@ -17,6 +16,7 @@ from typing import Union
 from typing import cast
 
 # third party
+from argon2 import PasswordHasher
 import pydantic
 import requests
 from requests import Response
@@ -829,7 +829,8 @@ class SyftClientSessionCache:
         key = cls.__cache_key_format__.format(
             email=email, password=password, connection=connection
         )
-        return hashlib.sha256(key.encode("utf-8")).hexdigest()
+        ph = PasswordHasher()
+        return ph.hash(key)
 
     @classmethod
     def add_client(
