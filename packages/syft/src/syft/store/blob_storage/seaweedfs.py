@@ -1,6 +1,7 @@
 # stdlib
 from io import BytesIO
 import math
+from typing import Generator
 from typing import List
 from typing import Union
 
@@ -36,12 +37,12 @@ WRITE_EXPIRATION_TIME = 900  # seconds
 DEFAULT_CHUNK_SIZE = 1024  # GB
 
 
-# def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes]:
-#     while True:
-#         try:
-#             yield bytes.read(size)
-#         except BlockingIOError:
-#             return
+def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes]:
+    while True:
+        try:
+            yield bytes.read(size)
+        except BlockingIOError:
+            return
 
 
 @serializable()
@@ -56,19 +57,17 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         from ...client.api import APIRegistry
 
         etags = []
-        part_no = 1
 
         try:
-            for byte_chunk, url in zip(
-                BytesIO(data).read(DEFAULT_CHUNK_SIZE), self.urls
+            for part_no, (byte_chunk, url) in enumerate(
+                zip(_byte_chunks(BytesIO(data), DEFAULT_CHUNK_SIZE), self.urls), start=1
             ):
                 response = requests.put(url=url, data=byte_chunk)
                 response.raise_for_status()
                 etag = response.headers["ETag"]
                 etags.append({"ETag": etag, "PartNumber": part_no})
-                part_no += 1
         except requests.HTTPError as e:
-            return SyftError(message=f"{e}")
+            return SyftError(message=str(e))
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -139,31 +138,32 @@ class SeaweedFSConnection(BlobStorageConnection):
 
     def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
         try:
+            obj_id = str(obj.id)
             result = self.create_multipart_upload(
                 Bucket=self.bucket_name,
-                Key=str(obj.id),
+                Key=obj_id,
             )
             upload_id = UID(result["UploadId"])
-            return SecureFilePathLocation(id=upload_id, path=str(obj.id))
+            return SecureFilePathLocation(id=upload_id, path=obj_id)
         except BotoClientError as e:
             raise SyftException(e)
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         total_parts = math.ceil(obj.file_size / DEFAULT_CHUNK_SIZE)
-        urls = []
-        for part_no in range(total_parts):
-            # Creating presigned urls
-            signed_url = self.client.generate_presigned_url(
+
+        urls = [
+            self.client.generate_presigned_url(
                 ClientMethod="upload_part",
                 Params={
                     "Bucket": self.bucket_name,
                     "Key": obj.location.path,
                     "UploadId": obj.location.id.value,
-                    "PartNumber": part_no + 1,
+                    "PartNumber": i + 1,
                 },
                 ExpiresIn=WRITE_EXPIRATION_TIME,
             )
-            urls.append(signed_url)
+            for i in range(total_parts)
+        ]
 
         return SeaweedFSBlobDeposit(urls=urls)
 
@@ -181,7 +181,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             )
             return SyftSuccess("Successfully saved file.")
         except BotoClientError as e:
-            return SyftError(f"{e}")
+            return SyftError(message=str(e))
 
 
 class SeaweedFSConfig(BlobStorageConfig):
