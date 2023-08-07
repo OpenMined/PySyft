@@ -218,18 +218,19 @@ class ContainerCommand(SyftObject):
                     param_type = kwarg.value
                 else:
                     param_type = type(kwarg.value)
+                if not kwarg.required:
+                    param_type = Optional[param_type]
             else:
                 param_name = key.replace("-", "_")
                 param_type = Union[SyftFile, List[SyftFile]]
-
-            if not kwarg.required:
-                param_type = Optional[param_type]
+            
 
             parameter = Parameter(
                 name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
             )
             parameters.append(parameter)
-
+        import sys
+        print(parameters, file=sys.stderr)
         return Signature(parameters=parameters)
 
 
