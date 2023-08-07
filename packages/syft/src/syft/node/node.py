@@ -301,7 +301,6 @@ class Node(AbstractNode):
         NodeRegistry.set_node_for(self.id, self)
 
     def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
-        # set path to ~/.syft/node_uid/
         if config is None:
             root_directory = get_root_data_path()
             base_directory = root_directory / f"{self.id}"

@@ -54,7 +54,7 @@ class BlobStorageService(AbstractService):
     ) -> Union[BlobRetrieval, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
-            with context.node.blob_storage_client as conn:
+            with context.node.blob_storage_client.connect() as conn:
                 return conn.read(result.ok().location)
         return SyftError(message=result.err())
 
@@ -62,7 +62,7 @@ class BlobStorageService(AbstractService):
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
     ) -> Union[BlobDeposit, SyftError]:
-        with context.node.blob_storage_client as conn:
+        with context.node.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
 
             blob_storage_entry = BlobStorageEntry(
@@ -100,6 +100,27 @@ class BlobStorageService(AbstractService):
             return SyftSuccess(message="File successfully saved.")
         except Exception as e:
             return SyftError(message=f"Failed to write object to disk: {e}")
+
+    @service_method(path="blob_storage.mark_write_complete", name="make_write_complete")
+    def mark_write_complete(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        etags: List,
+    ) -> Union[SyftError, SyftSuccess]:
+        result = self.stash.get_by_uid(
+            credentials=context.credentials,
+            uid=uid,
+        )
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        obj: Optional[BlobStorageEntry] = result.ok()
+
+        with context.node.blob_storage_client.connect() as conn:
+            result = conn.complete_multipart_upload(obj, etags)
+
+        return result
 
 
 TYPE_TO_SERVICE[BlobStorageEntry] = BlobStorageEntry

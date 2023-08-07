@@ -47,6 +47,8 @@ from typing import Union
 
 # third party
 from pydantic import BaseModel
+import requests
+from typing_extensions import Self
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -78,7 +80,7 @@ class SyftObjectRetrieval(BlobRetrieval):
 
     syft_object: bytes
 
-    def read(self) -> SyftObject:
+    def read(self) -> Union[SyftObject, SyftError]:
         return deserialize(self.syft_object, from_bytes=True)
 
 
@@ -89,8 +91,14 @@ class BlobRetrievalByURL(BlobRetrieval):
 
     url: str
 
-    def read(self) -> SyftObject:
-        pass
+    def read(self) -> Union[SyftObject, SyftError]:
+        response = requests.get(self.url)
+
+        try:
+            response.raise_for_status()
+            return deserialize(response.content, from_bytes=True)
+        except requests.HTTPError as e:
+            return SyftError(message=f"Failed to retrieve with Error: {e}")
 
 
 @serializable()
@@ -110,6 +118,12 @@ class BlobStorageClientConfig(BaseModel):
 
 
 class BlobStorageConnection:
+    def __enter__(self) -> Self:
+        raise NotImplementedError
+
+    def __exit__(self, *exc) -> None:
+        raise NotImplementedError
+
     def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
         raise NotImplementedError
 
@@ -124,10 +138,7 @@ class BlobStorageConnection:
 class BlobStorageClient(SyftBaseModel):
     config: BlobStorageClientConfig
 
-    def __enter__(self) -> BlobStorageConnection:
-        raise NotImplementedError
-
-    def __exit__(self, *exc) -> None:
+    def connect(self) -> BlobStorageConnection:
         raise NotImplementedError
 
 

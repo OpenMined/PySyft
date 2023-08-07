@@ -7,7 +7,7 @@ from typing import Type
 from typing import Union
 
 # third party
-from pydantic import PrivateAttr
+from typing_extensions import Self
 
 # relative
 from . import BlobDeposit
@@ -50,6 +50,12 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def __init__(self, base_directory: Path) -> None:
         self._base_directory = base_directory
 
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc) -> None:
+        pass
+
     def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
         return SyftObjectRetrieval(
             syft_object=(self._base_directory / fp.path).read_bytes()
@@ -72,20 +78,16 @@ class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
 @serializable()
 class OnDiskBlobStorageClient(BlobStorageClient):
     config: OnDiskBlobStorageClientConfig
-    _connection: OnDiskBlobStorageConnection = PrivateAttr()
 
     def __init__(self, **data: Any):
         super().__init__(**data)
         os.makedirs(self.config.base_directory, exist_ok=True)
-        self._connection = OnDiskBlobStorageConnection(self.config.base_directory)
 
-    def __enter__(self) -> BlobStorageConnection:
-        return self._connection
-
-    def __exit__(self, *exc) -> None:
-        pass
+    def connect(self) -> BlobStorageConnection:
+        return OnDiskBlobStorageConnection(self.config.base_directory)
 
 
 class OnDiskBlobStorageConfig(BlobStorageConfig):
     client_type: Type[BlobStorageClient] = OnDiskBlobStorageClient
+    client_config: OnDiskBlobStorageClientConfig = OnDiskBlobStorageClientConfig()
     client_config: OnDiskBlobStorageClientConfig = OnDiskBlobStorageClientConfig()

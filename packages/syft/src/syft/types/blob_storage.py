@@ -39,7 +39,7 @@ class BlobStorageEntry(SyftObject):
     mimetype: str = "bytes"
     file_size: int
     uploaded_by: SyftVerifyKey
-    create_at: DateTime = DateTime.now()
+    created_at: DateTime = DateTime.now()
 
 
 @serializable()
