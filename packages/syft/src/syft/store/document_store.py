@@ -574,10 +574,12 @@ class BaseStash:
 
         for qk in qks.all:
             pk = qk.partition_key
-            if self.partition.matches_unique_cks(pk):
-                unique_keys.append(qk)
-            elif self.partition.matches_searchable_cks(pk):
+            # temp workaround to fix issue with unique indexes not being lists
+            # needed in the get_wrappers on path query
+            if self.partition.matches_searchable_cks(pk):
                 searchable_keys.append(qk)
+            elif self.partition.matches_unique_cks(pk):
+                unique_keys.append(qk)
             else:
                 return Err(
                     f"{qk} not in {type(self.partition)} unique or searchable keys"

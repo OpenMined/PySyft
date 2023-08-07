@@ -54,6 +54,24 @@ class LoginResponse(BaseModel):
     token_type: str
 
 
+class ComputeResource(BaseModel):
+    name: str
+    cloud: str
+    accelerator: Optional[str]
+    price_unit_cents: int
+    time_unit_secs: int = 3600
+
+
+azure_cpu = ComputeResource(
+    name="azure_cpu", cloud="azure", accelerator=None, price_unit_cents=30
+)
+gcp_t4 = ComputeResource(
+    name="gcp_t4", cloud="gcp", accelerator="t4", price_unit_cents=70
+)
+
+all_compute: Dict = {"azure_cpu": azure_cpu, "gcp_t4": gcp_t4}
+
+
 api_state: Dict[int, ResearchModel] = {7: ResearchModel(name="Ava")}
 
 
@@ -110,3 +128,24 @@ def set_model(
 ) -> ResearchModel:
     api_state[model_id] = model
     return model
+
+
+@app.get(
+    "/compute/", operation_id="get_all_compute", summary="Get all the Compute Options"
+)
+def get_all_compute(
+    current_user: Annotated[User, Depends(get_current_user)]
+) -> List[ComputeResource]:
+    return list(all_compute.values())
+
+
+@app.get(
+    "/compute/{compute_name}",
+    operation_id="get_compute_config",
+    summary="Get Compute Config",
+)
+def get_compute(
+    current_user: Annotated[User, Depends(get_current_user)], compute_name: str
+) -> Optional[ComputeResource]:
+    compute = all_compute.get(compute_name, None)
+    return compute

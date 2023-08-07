@@ -564,12 +564,11 @@ class KeyValueStorePartition(StorePartition):
             if pk_value in ck_col:
                 matches.append(pk_key)
 
-        if len(matches) == 0:
-            return UniqueKeyCheck.EMPTY
-        elif len(matches) == len(qks):
+        if len(matches) == len(qks):
             return UniqueKeyCheck.MATCHES
-
-        return UniqueKeyCheck.ERROR
+        # if there is only a partial match for multiple unique this should be empty
+        return UniqueKeyCheck.EMPTY
+        # return UniqueKeyCheck.ERROR
 
     def _set_data_and_keys(
         self,

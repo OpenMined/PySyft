@@ -23,15 +23,31 @@ from .user.user_roles import ServiceRole
 from .user.user_roles import ServiceRoleCapability
 
 
-@serializable(attrs=["authentication"])
+@serializable(attrs=["authentication", "kv_store"])
 class UserSession(SyftObject):
     # version
     __canonical_name__ = "UserSession"
     __version__ = SYFT_OBJECT_VERSION_1
 
     authentication: Dict[str, str] = {}
+    kv_store: Dict[str, Any] = {}
     verify_key: Optional[SyftVerifyKey] = None
     stash: Optional[BaseStash] = None
+
+    def __getitem__(self, key: str) -> Any:
+        return self.get_key(key)
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.set_key(key, value)
+
+    def get_key(self, key: str) -> Optional[str]:
+        user = self.get_user_session()
+        self.kv_store = user.kv_store
+        return self.kv_store.get(key, None)
+
+    def set_key(self, key: str, value: str) -> None:
+        self.kv_store[key] = value
+        self.update_user_session()
 
     def get_auth(self, key: str) -> Optional[str]:
         user = self.get_user_session()
@@ -64,6 +80,7 @@ class UserSession(SyftObject):
         user = self.get_user()
         if user.session:
             user.session.authentication = self.authentication
+            user.session.kv_store = self.kv_store
         else:
             user.session = self
         self.stash.update(credentials=self.verify_key, user=user)
