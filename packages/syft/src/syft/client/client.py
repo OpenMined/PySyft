@@ -122,6 +122,7 @@ class Routes(Enum):
     ROUTE_LOGIN = f"{API_PATH}/login"
     ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
+    ROUTE_BLOB_STORE = "/blob"
 
 
 @serializable(attrs=["proxy_target_uid", "url"])
@@ -147,6 +148,10 @@ class HTTPConnection(NodeConnection):
     @property
     def api_url(self) -> GridURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
+
+    def to_blob_route(self, path: str) -> GridURL:
+        _path = self.routes.ROUTE_BLOB_STORE.value + path
+        return self.url.with_path(_path)
 
     @property
     def session(self) -> Session:

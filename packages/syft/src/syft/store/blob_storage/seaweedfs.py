@@ -52,7 +52,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    urls: list[str]
+    urls: List[GridURL]
 
     def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
         # relative
@@ -70,12 +70,9 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                 zip(_byte_chunks(BytesIO(data), DEFAULT_CHUNK_SIZE), self.urls),
                 start=1,
             ):
-                # TODO: 🟡 Do this in a much clean way
-                url = (
-                    str(api.connection.url) + "/blob" + url.split("seaweedfs:8333")[-1]
-                )
+                blob_url = api.connection.to_blob_route(url.url_path)
                 response = requests.put(
-                    url=url, data=byte_chunk, timeout=DEFAULT_TIMEOUT
+                    url=str(blob_url), data=byte_chunk, timeout=DEFAULT_TIMEOUT
                 )
                 response.raise_for_status()
                 etag = response.headers["ETag"]
@@ -143,10 +140,7 @@ class SeaweedFSConnection(BlobStorageConnection):
                 Params={"Bucket": self.bucket_name, "Key": fp.path},
                 ExpiresIn=READ_EXPIRATION_TIME,
             )
-
-            # TODO: 🟡 Do this in a much clean way
-            url = "http://localhost:8081" + "/blob" + url.split("seaweedfs:8333")[-1]
-            return BlobRetrievalByURL(url=url)
+            return BlobRetrievalByURL(url=GridURL.from_url(url))
         except BotoClientError as e:
             raise SyftException(e)
 
@@ -166,15 +160,17 @@ class SeaweedFSConnection(BlobStorageConnection):
         total_parts = math.ceil(obj.file_size / DEFAULT_CHUNK_SIZE)
 
         urls = [
-            self.client.generate_presigned_url(
-                ClientMethod="upload_part",
-                Params={
-                    "Bucket": self.bucket_name,
-                    "Key": obj.location.path,
-                    "UploadId": obj.location.upload_id,
-                    "PartNumber": i + 1,
-                },
-                ExpiresIn=WRITE_EXPIRATION_TIME,
+            GridURL.from_url(
+                self.client.generate_presigned_url(
+                    ClientMethod="upload_part",
+                    Params={
+                        "Bucket": self.bucket_name,
+                        "Key": obj.location.path,
+                        "UploadId": obj.location.upload_id,
+                        "PartNumber": i + 1,
+                    },
+                    ExpiresIn=WRITE_EXPIRATION_TIME,
+                )
             )
             for i in range(total_parts)
         ]

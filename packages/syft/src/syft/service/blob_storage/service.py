@@ -104,7 +104,10 @@ class BlobStorageService(AbstractService):
         except Exception as e:
             return SyftError(message=f"Failed to write object to disk: {e}")
 
-    @service_method(path="blob_storage.mark_write_complete", name="mark_write_complete")
+    @service_method(
+        path="blob_storage.mark_write_complete",
+        name="mark_write_complete",
+    )
     def mark_write_complete(
         self,
         context: AuthedServiceContext,

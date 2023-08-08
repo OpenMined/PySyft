@@ -59,6 +59,7 @@ from ...types.base import SyftBaseModel
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
+from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -70,7 +71,7 @@ class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def read(self) -> SyftObject:
+    def read(self) -> Union[SyftObject, SyftError]:
         pass
 
 
@@ -90,11 +91,19 @@ class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    url: str
+    url: GridURL
 
     def read(self) -> Union[SyftObject, SyftError]:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        blob_url = api.connection.to_blob_route(self.url.url_path)
         try:
-            response = requests.get(self.url, timeout=DEFAULT_TIMEOUT)
+            response = requests.get(str(blob_url), timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             return deserialize(response.content, from_bytes=True)
         except requests.RequestException as e:
