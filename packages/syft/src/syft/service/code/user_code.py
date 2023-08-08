@@ -464,7 +464,9 @@ class UserCode(SyftObject):
                     )
                 else:
                     display(
-                        SyftInfo(message="The result you see is computed on REAL data.")
+                        SyftInfo(
+                            message="The result you see is computed on user's specified data."
+                        )
                     )
 
                 # remove the decorator
