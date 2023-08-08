@@ -69,6 +69,11 @@ jobs:
       #   run: |
       #     pip${{matrix.python-version}} install -U tox
 
+      - name: Install Syft
+        # if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip${{matrix.python-version}} install -e packages/syft
+
       - name: Install Pytest and nbmake
         # if: steps.changes.outputs.stack == 'true'
         run: |
