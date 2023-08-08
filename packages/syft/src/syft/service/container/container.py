@@ -6,12 +6,12 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Self
 from typing import Type
 from typing import Union
 
 # third party
 from docker.models.containers import ExecResult
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable

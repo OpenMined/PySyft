@@ -19,6 +19,7 @@ from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..context import NodeServiceContext
 from ..context import UnauthedServiceContext
+from ..context import UserSession
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -133,20 +134,36 @@ class UserService(AbstractService):
     ) -> Union[Optional[ServiceRole], SyftError]:
         # they could be different
 
-        if isinstance(credentials, SyftVerifyKey):
-            result = self.stash.get_by_verify_key(
-                credentials=credentials, verify_key=credentials
-            )
-        else:
-            result = self.stash.get_by_signing_key(
-                credentials=credentials, signing_key=credentials
-            )
+        result = self.stash.get_by_verify_key(
+            credentials=credentials, verify_key=credentials
+        )
         if result.is_ok():
             # this seems weird that we get back None as Ok(None)
             user = result.ok()
             if user:
                 return user.role
         return ServiceRole.GUEST
+
+    def get_user_session(
+        self, credentials: Union[SyftVerifyKey, SyftSigningKey]
+    ) -> Union[Optional[UserSession], SyftError]:
+        # they could be different
+
+        result = self.stash.get_by_verify_key(
+            credentials=credentials, verify_key=credentials
+        )
+        if result.is_ok():
+            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+            if user:
+                if user.session:
+                    session = user.session
+                    session.stash = self.stash
+                    session.verify_key = credentials
+                    return session
+                else:
+                    return UserSession(verify_key=credentials, stash=self.stash)
+        return SyftError(message="No user with those credentials")
 
     @service_method(path="user.search", name="search", autosplat=["user_search"])
     def search(

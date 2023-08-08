@@ -35,7 +35,7 @@ def consume_api(url: str, base_url: Optional[str] = None) -> OpenAPI:
     else:
         base_url = GridURL.from_url(url)
     x["servers"] = [{"url": str(base_url)}]
-    api = OpenAPI(x)
+    api = OpenAPI(x, use_session=True)
     return api, base_url
 
 

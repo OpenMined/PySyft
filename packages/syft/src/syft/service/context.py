@@ -1,4 +1,6 @@
 # stdlib
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -9,6 +11,8 @@ from typing_extensions import Self
 from ..abstract_node import AbstractNode
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
+from ..serde.serializable import serializable
+from ..store.document_store import BaseStash
 from ..types.syft_object import Context
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
@@ -17,6 +21,52 @@ from ..types.uid import UID
 from .user.user_roles import ROLE_TO_CAPABILITIES
 from .user.user_roles import ServiceRole
 from .user.user_roles import ServiceRoleCapability
+
+
+@serializable(attrs=["authentication"])
+class UserSession(SyftObject):
+    # version
+    __canonical_name__ = "UserSession"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    authentication: Dict[str, str] = {}
+    verify_key: Optional[SyftVerifyKey] = None
+    stash: Optional[BaseStash] = None
+
+    def get_auth(self, key: str) -> Optional[str]:
+        user = self.get_user_session()
+        self.authentication = user.authentication
+        return self.authentication.get(key, None)
+
+    def set_auth(self, key: str, value: str) -> None:
+        self.authentication[key] = value
+        self.update_user_session()
+
+    def get_user(self) -> Any:
+        result = self.stash.get_by_verify_key(
+            credentials=self.verify_key, verify_key=self.verify_key
+        )
+        if result.is_ok():
+            user = result.ok()
+            if user:
+                return user
+        return None
+
+    def get_user_session(self) -> Self:
+        user = self.get_user()
+        if user:
+            if user.session:
+                return user.session
+            return self
+        return None
+
+    def update_user_session(self) -> None:
+        user = self.get_user()
+        if user.session:
+            user.session.authentication = self.authentication
+        else:
+            user.session = self
+        self.stash.update(credentials=self.verify_key, user=user)
 
 
 class NodeServiceContext(Context, SyftObject):
@@ -32,6 +82,7 @@ class AuthedServiceContext(NodeServiceContext):
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
+    session: Optional[UserSession]
 
     def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])

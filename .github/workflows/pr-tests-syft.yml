@@ -8,6 +8,7 @@ on:
       - dev
       - main
       - "0.8"
+      - "23_8_bridge"
 
   workflow_dispatch:
     inputs:
