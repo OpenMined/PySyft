@@ -11,6 +11,7 @@ from typing_extensions import Self
 
 # relative
 from ..node.credentials import SyftVerifyKey
+from ..serde import serialize
 from ..serde.serializable import serializable
 from ..service.response import SyftException
 from .datetime import DateTime
@@ -29,12 +30,20 @@ class SecureFilePathLocation(SyftObject):
 
 
 @serializable()
+class SeaweedSecureFilePathLocation(SecureFilePathLocation):
+    __canonical_name__ = "SeaweedSecureFilePathLocation"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    upload_id: str
+
+
+@serializable()
 class BlobStorageEntry(SyftObject):
     __canonical_name__ = "BlobStorageEntry"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    location: SecureFilePathLocation
+    location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
     type_: Optional[Type[SyftObject]]
     mimetype: str = "bytes"
     file_size: int
@@ -54,7 +63,8 @@ class CreateBlobStorageEntry(SyftObject):
 
     @classmethod
     def from_obj(cls, obj: SyftObject) -> Self:
-        return cls(file_size=sys.getsizeof(obj), type_=type(obj))
+        file_size = sys.getsizeof(serialize._serialize(obj=obj, to_bytes=True))
+        return cls(file_size=file_size, type_=type(obj))
 
     @classmethod
     def from_path(cls, fp: Union[str, Path], mimetype: Optional[str] = None) -> Self:

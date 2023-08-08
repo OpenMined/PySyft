@@ -372,7 +372,6 @@ def debox_signed_syftapicall_response(
 
     if not signed_result.is_valid:
         return SyftError(message="The result signature is invalid")  # type: ignore
-
     return signed_result.message.data
 
 

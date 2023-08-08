@@ -6,8 +6,9 @@ from typing import Union
 
 # relative
 from ...serde.serializable import serializable
-from ...store.blob_storage import BlobDeposit
 from ...store.blob_storage import BlobRetrieval
+from ...store.blob_storage.on_disk import OnDiskBlobDeposit
+from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
@@ -19,6 +20,8 @@ from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from .stash import BlobStorageStash
+
+BlobDepositType = Union[OnDiskBlobDeposit, SeaweedFSBlobDeposit]
 
 
 @serializable()
@@ -61,7 +64,7 @@ class BlobStorageService(AbstractService):
     @service_method(path="blob_storage.allocate", name="allocate")
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
-    ) -> Union[BlobDeposit, SyftError]:
+    ) -> Union[BlobDepositType, SyftError]:
         with context.node.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
 
@@ -101,7 +104,7 @@ class BlobStorageService(AbstractService):
         except Exception as e:
             return SyftError(message=f"Failed to write object to disk: {e}")
 
-    @service_method(path="blob_storage.mark_write_complete", name="make_write_complete")
+    @service_method(path="blob_storage.mark_write_complete", name="mark_write_complete")
     def mark_write_complete(
         self,
         context: AuthedServiceContext,

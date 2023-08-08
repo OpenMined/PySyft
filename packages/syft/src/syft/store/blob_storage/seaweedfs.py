@@ -3,6 +3,7 @@ from io import BytesIO
 import math
 from typing import Generator
 from typing import List
+from typing import Type
 from typing import Union
 
 # third party
@@ -27,18 +28,18 @@ from ...service.response import SyftException
 from ...service.response import SyftSuccess
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
 
 READ_EXPIRATION_TIME = 1800  # seconds
 WRITE_EXPIRATION_TIME = 900  # seconds
-DEFAULT_CHUNK_SIZE = 1024  # GB
+DEFAULT_CHUNK_SIZE = 1024**2  # 1 GB
 
 
-def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes]:
+def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes, None, None]:
     while True:
         try:
             yield bytes.read(size)
@@ -57,12 +58,22 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         # relative
         from ...client.api import APIRegistry
 
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
         etags = []
 
         try:
             for part_no, (byte_chunk, url) in enumerate(
-                zip(_byte_chunks(BytesIO(data), DEFAULT_CHUNK_SIZE), self.urls), start=1
+                zip(_byte_chunks(BytesIO(data), DEFAULT_CHUNK_SIZE), self.urls),
+                start=1,
             ):
+                # TODO: 🟡 Do this in a much clean way
+                url = (
+                    str(api.connection.url) + "/blob" + url.split("seaweedfs:8333")[-1]
+                )
                 response = requests.put(
                     url=url, data=byte_chunk, timeout=DEFAULT_TIMEOUT
                 )
@@ -72,10 +83,6 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         except requests.RequestException as e:
             return SyftError(message=str(e))
 
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
         return api.services.blob_storage.mark_write_complete(
             etags=etags, uid=self.blob_storage_entry_id
         )
@@ -121,6 +128,7 @@ class SeaweedFSConnection(BlobStorageConnection):
 
     def __init__(self, client: S3BaseClient, bucket_name: str):
         self.client = client
+        self.bucket_name = bucket_name
 
     def __enter__(self) -> Self:
         return self
@@ -135,6 +143,9 @@ class SeaweedFSConnection(BlobStorageConnection):
                 Params={"Bucket": self.bucket_name, "Key": fp.path},
                 ExpiresIn=READ_EXPIRATION_TIME,
             )
+
+            # TODO: 🟡 Do this in a much clean way
+            url = "http://localhost:8081" + "/blob" + url.split("seaweedfs:8333")[-1]
             return BlobRetrievalByURL(url=url)
         except BotoClientError as e:
             raise SyftException(e)
@@ -142,12 +153,12 @@ class SeaweedFSConnection(BlobStorageConnection):
     def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
         try:
             obj_id = str(obj.id)
-            result = self.create_multipart_upload(
+            result = self.client.create_multipart_upload(
                 Bucket=self.bucket_name,
                 Key=obj_id,
             )
-            upload_id = UID(result["UploadId"])
-            return SecureFilePathLocation(id=upload_id, path=obj_id)
+            upload_id = result["UploadId"]
+            return SeaweedSecureFilePathLocation(upload_id=upload_id, path=obj_id)
         except BotoClientError as e:
             raise SyftException(e)
 
@@ -160,7 +171,7 @@ class SeaweedFSConnection(BlobStorageConnection):
                 Params={
                     "Bucket": self.bucket_name,
                     "Key": obj.location.path,
-                    "UploadId": obj.location.id.value,
+                    "UploadId": obj.location.upload_id,
                     "PartNumber": i + 1,
                 },
                 ExpiresIn=WRITE_EXPIRATION_TIME,
@@ -168,7 +179,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             for i in range(total_parts)
         ]
 
-        return SeaweedFSBlobDeposit(urls=urls)
+        return SeaweedFSBlobDeposit(blob_storage_entry_id=obj.id, urls=urls)
 
     def complete_multipart_upload(
         self,
@@ -180,13 +191,13 @@ class SeaweedFSConnection(BlobStorageConnection):
                 Bucket=self.bucket_name,
                 Key=blob_entry.location.path,
                 MultipartUpload={"Parts": etags},
-                UploadId=blob_entry.location.id.to_string(),
+                UploadId=blob_entry.location.upload_id,
             )
-            return SyftSuccess("Successfully saved file.")
+            return SyftSuccess(message="Successfully saved file.")
         except BotoClientError as e:
             return SyftError(message=str(e))
 
 
 class SeaweedFSConfig(BlobStorageConfig):
-    client_type = SeaweedFSClient
+    client_type: Type[BlobStorageClient] = SeaweedFSClient
     client_config: SeaweedFSClientConfig
