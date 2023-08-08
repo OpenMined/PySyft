@@ -2,6 +2,7 @@
 import io
 import json
 import os
+import sys
 import tempfile
 from typing import Any
 from typing import Dict
@@ -130,10 +131,9 @@ def run_command(
         result = container.exec_run(
             cmd="bash /start.sh || true", stdout=True, stderr=True, demux=True
         )
-        # print("result of start.sh", result)
 
         # write the files
-        for _k, v in files.items():
+        for _, v in files.items():
             if isinstance(v, list):
                 for sub_v in v:
                     write_result = sub_v.write_file(path=temp_dir)
@@ -144,21 +144,27 @@ def run_command(
                 if not write_result:
                     return write_result
 
-        # print("user_kwargs", user_kwargs)
-        # print("files", files)
         cmd = command.cmd(run_user_kwargs=user_kwargs, run_files=files)
-        print("> running cmd", cmd)
         result = container.exec_run(cmd=cmd, stdout=True, stderr=True, demux=True)
         container_result = ContainerResult.from_execresult(result=result)
         container_result.image_name = container_image.name
         container_result.image_tag = container_image.tag
         container_result.command_name = command.name
         if command.return_filepath:
-            return_file = SyftFile.from_path(f"{temp_dir}/{command.return_filepath}")
-            container_result.return_file = return_file
+            full_path = f"{temp_dir}/{command.return_filepath}"
+            return_file = SyftFile.from_path(full_path)
+            if return_file is None:
+                container_result.return_file = SyftError(
+                    "Failed not found at path:", full_path
+                )
+            else:
+                container_result.return_file = return_file
         return container_result
     except Exception as e:
-        print(f"Failed to run command in container. {command} {container_image}. {e}")
+        print(
+            f"Failed to run command in container. {command} {container_image}. {e}",
+            file=sys.stderr,
+        )
     finally:
         if container:
             pass
