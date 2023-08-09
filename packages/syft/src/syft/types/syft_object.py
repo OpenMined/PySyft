@@ -343,6 +343,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         warnings.warn(
             "`SyftObject.to_dict` is deprecated and will be removed in a future version",
             PendingDeprecationWarning,
+            stacklevel=2,
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none and not exclude_empty:
