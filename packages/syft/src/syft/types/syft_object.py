@@ -591,7 +591,7 @@ def list_dict_repr_html(self) -> str:
             if hasattr(values[0], "icon"):
                 table_icon = values[0].icon
             # this is a list of dicts
-            is_homogenous = len(set([type(x) for x in values])) == 1
+            is_homogenous = len({type(x) for x in values}) == 1
             # third party
             first_value = values[0]
             if is_homogenous:

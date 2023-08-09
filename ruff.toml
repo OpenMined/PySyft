@@ -2,6 +2,11 @@ line-length = 120
 
 # Enable flake8-bugbear (`B`) rules.
 # https://beta.ruff.rs/docs/configuration/#using-rufftoml
-select = ["E", "F", "B"]
+select = ["E", "F", "B", "C4", "UP"]
 
 ignore = ["B904", "B905"]
+
+target-version = "py38"
+
+[pyupgrade]
+keep-runtime-typing = true

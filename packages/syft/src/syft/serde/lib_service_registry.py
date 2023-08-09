@@ -22,9 +22,13 @@ from .lib_permissions import CMPPermission
 from .lib_permissions import NONE_EXECUTE
 from .signature import get_signature
 
-LIB_IGNORE_ATTRIBUTES = set(
-    ["os", "__abstractmethods__", "__base__", " __bases__", "__class__"]
-)
+LIB_IGNORE_ATTRIBUTES = {
+    "os",
+    "__abstractmethods__",
+    "__base__",
+    " __bases__",
+    "__class__",
+}
 
 
 def import_from_path(path: str) -> type:
@@ -59,7 +63,7 @@ class CMPBase:
         self.absolute_path = absolute_path
         self.signature: Optional[Signature] = None
 
-        self.children: Dict[str, CMPBase] = dict()
+        self.children: Dict[str, CMPBase] = {}
         if isinstance(children, list):
             self.children = {f"{c.path}": c for c in children}
         elif isinstance(children, dict):
@@ -86,9 +90,9 @@ class CMPBase:
         if self.signature is None:
             self.set_signature()
 
-        child_paths = set([p for p in self.children.keys()])
+        child_paths = set(self.children.keys())
 
-        for attr_name in getattr(self.obj, "__dict__", dict()).keys():
+        for attr_name in getattr(self.obj, "__dict__", {}).keys():
             if attr_name not in LIB_IGNORE_ATTRIBUTES:
                 if attr_name in child_paths:
                     child = self.children[attr_name]

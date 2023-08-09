@@ -160,7 +160,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 
     @property
     def approved(self) -> bool:
-        return all([x == UserCodeStatus.APPROVED for x in self.status_dict.values()])
+        return all(x == UserCodeStatus.APPROVED for x in self.status_dict.values())
 
     @property
     def denied(self) -> bool:

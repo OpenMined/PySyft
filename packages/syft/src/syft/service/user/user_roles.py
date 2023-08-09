@@ -40,7 +40,7 @@ class ServiceRole(Enum):
         tuples = []
         for x in cls:
             tuples.append((x.value, x))
-        return list(reversed(sorted(tuples)))
+        return sorted(tuples, reverse=True)
 
     @staticmethod
     def roles_for_level(level: Union[int, Self]) -> List[Self]:

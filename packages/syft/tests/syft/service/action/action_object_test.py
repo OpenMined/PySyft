@@ -177,8 +177,8 @@ def test_actionobject_hooks_init(orig_obj: Any):
         # (object, operation)
         ("abc", "__len__"),
         (ActionDataEmpty(), "__version__"),
-        (int(1), "__add__"),
-        (float(1.2), "__add__"),
+        (1, "__add__"),
+        (1.2, "__add__"),
         (True, "__and__"),
         ((1, 2, 3), "count"),
         ([1, 2, 3], "count"),
@@ -230,8 +230,8 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
     "orig_obj_op",
     [
         # (object, operation, *args, **kwargs)
-        (int(1), "__len__", [1], {}),
-        (float(1.2), "__len__", [1], {}),
+        (1, "__len__", [1], {}),
+        (1.2, "__len__", [1], {}),
         (True, "__len__", [True], {}),
         ([1, 2, 3], "__len__", [4], {}),
         ({"a": 1, "b": 2}, "__len__", [7], {}),
@@ -258,8 +258,8 @@ def test_actionobject_hooks_send_action_side_effect_ignore_op(
         ("abc", "capitalize", [], {}),
         ("abc", "find", ["b"], {}),
         # (ActionDataEmpty(), "__version__", [], {}), TODO :ActionService cannot handle ActionDataEmpty
-        (int(1), "__add__", [1], {}),
-        (float(1.2), "__add__", [1], {}),
+        (1, "__add__", [1], {}),
+        (1.2, "__add__", [1], {}),
         (True, "__and__", [True], {}),
         ((1, 2, 3), "count", [1], {}),
         ([1, 2, 3], "count", [1], {}),
@@ -329,8 +329,8 @@ def test_actionobject_syft_point_to():
         # (object, operation, *args, **kwargs, expected_result)
         ("abc", "capitalize", [], {}, "Abc"),
         ("abc", "find", ["b"], {}, 1),
-        (int(1), "__add__", [1], {}, 2),
-        (float(1.2), "__add__", [1], {}, 2.2),
+        (1, "__add__", [1], {}, 2),
+        (1.2, "__add__", [1], {}, 2.2),
         (True, "__and__", [False], {}, False),
         ((1, 1, 3), "count", [1], {}, 2),
         ([1, 2, 1], "count", [1], {}, 2),
@@ -367,8 +367,8 @@ def test_actionobject_syft_execute_ok(worker, testcase):
         # (object, operation, *args, **kwargs)
         ("abc", "capitalize", [], {}),
         ("abc", "find", ["b"], {}),
-        (int(1), "__add__", [1], {}),
-        (float(1.2), "__add__", [1], {}),
+        (1, "__add__", [1], {}),
+        (1.2, "__add__", [1], {}),
         (True, "__and__", [False], {}),
         ((1, 1, 3), "count", [1], {}),
         ([1, 2, 1], "count", [1], {}),
@@ -398,8 +398,8 @@ def test_actionobject_syft_make_action(worker, testcase):
         # (object, operation, *args, **kwargs)
         ("abc", "capitalize", [], {}),
         ("abc", "find", ["b"], {}),
-        (int(1), "__add__", [1], {}),
-        (float(1.2), "__add__", [1], {}),
+        (1, "__add__", [1], {}),
+        (1.2, "__add__", [1], {}),
         (True, "__and__", [False], {}),
         ((1, 1, 3), "count", [1], {}),
         ([1, 2, 1], "count", [1], {}),
@@ -431,8 +431,8 @@ def test_actionobject_syft_make_action_with_self(worker, testcase):
         # (object, operation, *args, **kwargs)
         ("abc", "capitalize", [], {}),
         ("abc", "find", ["b"], {}),
-        (int(1), "__add__", [1], {}),
-        (float(1.2), "__add__", [1], {}),
+        (1, "__add__", [1], {}),
+        (1.2, "__add__", [1], {}),
         (True, "__and__", [False], {}),
         ((1, 1, 3), "count", [1], {}),
         ([1, 2, 1], "count", [1], {}),
@@ -462,8 +462,8 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
@@ -484,8 +484,8 @@ def test_actionobject_syft_get_path(testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
@@ -516,8 +516,8 @@ def test_actionobject_syft_send_get(worker, testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
@@ -563,8 +563,8 @@ def test_actionobject_syft_get_attr_context():
     "testcase",
     [
         # (object, operation, *args, **kwargs, expected_result)
-        (int(1), "__add__", [1], {}, 2),
-        (float(1.2), "__add__", [1], {}, 2.2),
+        (1, "__add__", [1], {}, 2),
+        (1.2, "__add__", [1], {}, 2.2),
         (True, "__and__", [False], {}, False),
         ([1, 2, 3], "append", [4], {}, [1, 2, 3, 4]),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
@@ -601,8 +601,8 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
@@ -622,8 +622,8 @@ def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
@@ -655,8 +655,8 @@ def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
@@ -979,8 +979,8 @@ def test_actionobject_syft_getattr_float(orig_obj: float, worker, scenario):
 
 
 def test_actionobject_syft_getattr_float_history():
-    obj1 = ActionObject.from_obj(float(5.5))
-    obj2 = ActionObject.from_obj(float(5.2))
+    obj1 = ActionObject.from_obj(5.5)
+    obj2 = ActionObject.from_obj(5.2)
 
     res1 = obj1 + obj2
     res2 = obj1 + obj2
