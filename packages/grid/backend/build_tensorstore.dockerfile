@@ -1,4 +1,4 @@
-FROM python:3.11.3-slim as build
+FROM python:3.12.0b4-slim as build
 RUN apt-get -y update --allow-insecure-repositories
 RUN apt-get -y upgrade
 RUN apt-get -y dist-upgrade
