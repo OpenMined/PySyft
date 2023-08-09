@@ -79,6 +79,7 @@ from .lib import generate_user_table
 from .lib import gitpod_url
 from .lib import hagrid_root
 from .lib import is_gitpod
+from .lib import manifest_template_path
 from .lib import name_tag
 from .lib import save_vm_details_as_json
 from .lib import update_repo
@@ -442,6 +443,20 @@ def clean(location: str) -> None:
     "--low-side",
     is_flag=True,
     help="Launch a low side node type else a high side node type",
+)
+@click.option(
+    "--set-s3-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Set root username for s3 blob storage",
+)
+@click.option(
+    "--set-s3-password",
+    default=None,
+    required=False,
+    type=str,
+    help="Set root password for s3 blob storage",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
@@ -1236,6 +1251,10 @@ def create_launch_cmd(
 
     parsed_kwargs["use_blob_storage"] = not bool(kwargs["no_blob_storage"])
 
+    if parsed_kwargs["use_blob_storage"]:
+        parsed_kwargs["set_s3_username"] = kwargs["set_s3_username"]
+        parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
+
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
     )
@@ -1333,6 +1352,9 @@ def create_launch_cmd(
     parsed_kwargs["compose_src_path"] = kwargs["compose_src_path"]
 
     parsed_kwargs["enable_signup"] = str_to_bool(cast(str, kwargs["enable_signup"]))
+
+    if parsed_kwargs["template"] is None and EDITABLE_MODE:
+        parsed_kwargs["template"] = str(manifest_template_path())
 
     # Override template tag with user input tag
     if (
@@ -2188,6 +2210,12 @@ def create_launch_docker_cmd(
 
     if "set_root_email" in kwargs and kwargs["set_root_email"] is not None:
         envs["DEFAULT_ROOT_EMAIL"] = kwargs["set_root_email"]
+
+    if "set_s3_username" in kwargs and kwargs["set_s3_username"] is not None:
+        envs["S3_ROOT_USER"] = kwargs["set_s3_username"]
+
+    if "set_s3_password" in kwargs and kwargs["set_s3_password"] is not None:
+        envs["S3_ROOT_PWD"] = kwargs["set_s3_password"]
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
