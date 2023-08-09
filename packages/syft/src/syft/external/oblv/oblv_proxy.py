@@ -28,11 +28,15 @@ def check_oblv_proxy_installation_status():
             system_name = platform.system()
             result = "Oblv Proxy Not Installed. Call the method install_oblv_proxy "
             if system_name == "Windows":
-                result += "to install the proxy for this session. If you already have the proxy installed,"
-                +" add it to your PATH."
+                result += (
+                    "to install the proxy for this session. If you already have the proxy installed,"
+                    " add it to your PATH."
+                )
             elif system_name == "Linux":
-                result += "to install the proxy globally. If you already have the proxy installed,"
-                +" create a link to the installation as /usr/local/bin/oblv"
+                result += (
+                    "to install the proxy globally. If you already have the proxy installed,"
+                    " create a link to the installation as /usr/local/bin/oblv"
+                )
 
             print(
                 bcolors.RED
