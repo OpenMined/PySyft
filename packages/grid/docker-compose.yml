@@ -220,7 +220,10 @@ services:
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
     environment:
       - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
-    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
+      - S3_ROOT_USER=${S3_ROOT_USER:-admin}
+      - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
+    command:
+      - "server -s3 -s3.config=/etc/s3config.json -s3.port=S3_PORT -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
     volumes:
       - seaweedfs-data:/data/blob
       - ./seaweedfs/s3config.json:/etc/s3config.json

@@ -4,8 +4,8 @@
       "name": "admin",
       "credentials": [
         {
-          "accessKey": "{{ S3_ROOT_USER }}",
-          "secretKey": "{{ S3_ROOT_PWD }}"
+          "accessKey": "admin",
+          "secretKey": "admin"
         }
       ],
       "actions": ["Admin", "Read", "List", "Tagging", "Write"]

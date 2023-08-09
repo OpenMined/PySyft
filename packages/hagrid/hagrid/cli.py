@@ -79,7 +79,6 @@ from .lib import generate_user_table
 from .lib import gitpod_url
 from .lib import hagrid_root
 from .lib import is_gitpod
-from .lib import manifest_template_path
 from .lib import name_tag
 from .lib import save_vm_details_as_json
 from .lib import update_repo
@@ -1352,9 +1351,6 @@ def create_launch_cmd(
     parsed_kwargs["compose_src_path"] = kwargs["compose_src_path"]
 
     parsed_kwargs["enable_signup"] = str_to_bool(cast(str, kwargs["enable_signup"]))
-
-    if parsed_kwargs["template"] is None and EDITABLE_MODE:
-        parsed_kwargs["template"] = str(manifest_template_path())
 
     # Override template tag with user input tag
     if (
