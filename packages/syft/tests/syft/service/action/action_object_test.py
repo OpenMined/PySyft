@@ -88,7 +88,7 @@ def test_action_sanity(path_op: Tuple[str, str]):
         (1, 2, 3),
         [1, 2, 3],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
         ActionDataEmpty(),
     ],
 )
@@ -156,7 +156,7 @@ def test_actionobject_make_empty_sanity(dtype: Type):
         (1, 2, 3),
         [1, 2, 3],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
         ActionDataEmpty(),
     ],
 )
@@ -183,7 +183,7 @@ def test_actionobject_hooks_init(orig_obj: Any):
         ((1, 2, 3), "count"),
         ([1, 2, 3], "count"),
         ({"a": 1, "b": 2}, "keys"),
-        (set({1, 2, 3, 3}), "add"),
+        (set({1, 2, 3}), "add"),
     ],
 )
 def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
@@ -235,7 +235,7 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
         (True, "__len__", [True], {}),
         ([1, 2, 3], "__len__", [4], {}),
         ({"a": 1, "b": 2}, "__len__", [7], {}),
-        (set({1, 2, 3, 3}), "__len__", [5], {}),
+        (set({1, 2, 3}), "__len__", [5], {}),
     ],
 )
 def test_actionobject_hooks_send_action_side_effect_ignore_op(
@@ -266,8 +266,8 @@ def test_actionobject_hooks_send_action_side_effect_ignore_op(
         ([1, 2, 3], "append", [4], {}),
         # ({"a"  :1, "b" : 2}, "keys", [], {}), TODO: dict_keys cannot be serialized
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
-        (set({1, 2, 3, 3}), "add", [5], {}),
-        (set({1, 2, 3, 3}), "clear", [], {}),
+        (set({1, 2, 3}), "add", [5], {}),
+        (set({1, 2, 3}), "clear", [], {}),
     ],
 )
 def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
@@ -336,8 +336,8 @@ def test_actionobject_syft_point_to():
         ([1, 2, 1], "count", [1], {}, 2),
         ([1, 2, 3], "append", [4], {}, [1, 2, 3, 4]),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
-        (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
-        (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        (set({1, 2, 3}), "add", [5], {}, set({1, 2, 3, 5})),
+        (set({1, 2, 3}), "clear", [], {}, set({})),
         (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
@@ -374,8 +374,8 @@ def test_actionobject_syft_execute_ok(worker, testcase):
         ([1, 2, 1], "count", [1], {}),
         ([1, 2, 3], "append", [4], {}),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
-        (set({1, 2, 3, 3}), "add", [5], {}),
-        (set({1, 2, 3, 3}), "clear", [], {}),
+        (set({1, 2, 3}), "add", [5], {}),
+        (set({1, 2, 3}), "clear", [], {}),
     ],
 )
 def test_actionobject_syft_make_action(worker, testcase):
@@ -405,8 +405,8 @@ def test_actionobject_syft_make_action(worker, testcase):
         ([1, 2, 1], "count", [1], {}),
         ([1, 2, 3], "append", [4], {}),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
-        (set({1, 2, 3, 3}), "add", [5], {}),
-        (set({1, 2, 3, 3}), "clear", [], {}),
+        (set({1, 2, 3}), "add", [5], {}),
+        (set({1, 2, 3}), "clear", [], {}),
         (complex(1, 2), "conjugate", [], {}),
     ],
 )
@@ -438,8 +438,8 @@ def test_actionobject_syft_make_action_with_self(worker, testcase):
         ([1, 2, 1], "count", [1], {}),
         ([1, 2, 3], "append", [4], {}),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
-        (set({1, 2, 3, 3}), "add", [5], {}),
-        (set({1, 2, 3, 3}), "clear", [], {}),
+        (set({1, 2, 3}), "add", [5], {}),
+        (set({1, 2, 3}), "clear", [], {}),
         (complex(1, 2), "conjugate", [], {}),
     ],
 )
@@ -468,7 +468,7 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
         complex(1, 2),
     ],
 )
@@ -490,7 +490,7 @@ def test_actionobject_syft_get_path(testcase):
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
         complex(1, 2),
     ],
 )
@@ -522,7 +522,7 @@ def test_actionobject_syft_send_get(worker, testcase):
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
         complex(1, 2),
     ],
 )
@@ -540,7 +540,7 @@ def test_actionobject_syft_passthrough_attrs(testcase):
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
     ],
 )
 def test_actionobject_syft_dont_wrap_output_attrs(testcase):
@@ -568,8 +568,8 @@ def test_actionobject_syft_get_attr_context():
         (True, "__and__", [False], {}, False),
         ([1, 2, 3], "append", [4], {}, [1, 2, 3, 4]),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
-        (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
-        (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        (set({1, 2, 3}), "add", [5], {}, set({1, 2, 3, 5})),
+        (set({1, 2, 3}), "clear", [], {}, set({})),
         (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
@@ -607,7 +607,7 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
         complex(1, 2),
     ],
 )
@@ -628,7 +628,7 @@ def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
         complex(1, 2),
     ],
 )
@@ -661,7 +661,7 @@ def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        set({1, 2, 3}),
         complex(1, 2),
     ],
 )
