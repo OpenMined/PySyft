@@ -2,11 +2,22 @@ line-length = 120
 
 # Enable flake8-bugbear (`B`) rules.
 # https://beta.ruff.rs/docs/configuration/#using-rufftoml
-select = ["E", "F", "B", "C4", "UP"]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflake
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+]
 
-ignore = ["B904", "B905"]
+ignore = [
+    "B904",  # check for raise statements in exception handlers that lack a from clause
+    "B905",  # zip() without an explicit strict= parameter
+]
 
 target-version = "py38"
 
 [pyupgrade]
+# this keeps annotation syntaxes like Union[X, Y] instead of X | Y
+# https://beta.ruff.rs/docs/settings/#pyupgrade-keep-runtime-typing
 keep-runtime-typing = true
