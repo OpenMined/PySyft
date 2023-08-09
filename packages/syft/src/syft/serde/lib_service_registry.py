@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import importlib
 import inspect
@@ -13,6 +16,8 @@ from typing import Sequence
 from typing import Union
 
 # third party
+import jax
+from jaxlib.xla_extension import CompiledFunction
 import numpy
 from typing_extensions import Self
 
@@ -21,6 +26,7 @@ from .lib_permissions import ALL_EXECUTE
 from .lib_permissions import CMPPermission
 from .lib_permissions import NONE_EXECUTE
 from .signature import get_signature
+from .serializable import serializable
 
 LIB_IGNORE_ATTRIBUTES = set(
     ["os", "__abstractmethods__", "__base__", " __bases__", "__class__"]
@@ -40,7 +46,7 @@ def import_from_path(path: str) -> type:
         res = getattr(res, attr)
     return res  # type: ignore
 
-
+@serializable()
 class CMPBase:
     """cmp: cascading module permissions"""
 
@@ -79,9 +85,12 @@ class CMPBase:
     def set_signature(self) -> None:
         pass
 
-    def build(self) -> None:
+    def build(self, stack: List, root: Optional[CMPBase] = None) -> None:
         if self.obj is None:
             self.obj = import_from_path(self.absolute_path)
+
+        if root is None:
+            root = self
 
         if self.signature is None:
             self.set_signature()
@@ -98,13 +107,13 @@ class CMPBase:
                     except Exception:  # nosec
                         continue
                     child = self.init_child(  # type: ignore
-                        self.obj,
+                        root.obj,
                         f"{self.path}.{attr_name}",
                         attr,
                         f"{self.absolute_path}.{attr_name}",
                     )
                 if child is not None:
-                    child.build()
+                    stack.append(child)
                     self.children[attr_name] = child
 
     def __getattr__(self, __name: str) -> Any:
@@ -119,7 +128,7 @@ class CMPBase:
         child_path: str,
         child_obj: Union[type, object],
         absolute_path: str,
-    ) -> Optional[Self]:
+    ) -> Optional[CMPBase]:
         """Get the child of parent as a CMPBase object
 
         Args:
@@ -129,65 +138,76 @@ class CMPBase:
 
         Returns:
             _type_: _description_
-        """
-        parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
-        if CMPBase.isfunction(child_obj) and parent_is_parent_module:
-            return CMPFunction(
-                child_path,
-                permissions=self.permissions,
-                obj=child_obj,
-                absolute_path=absolute_path,
-            )  # type: ignore
-        elif inspect.ismodule(child_obj) and CMPBase.is_submodule(
-            parent_obj, child_obj
-        ):
+        """  # If the child is not a module, then
+        is_child_valid = CMPBase.check_package_membership(parent_obj, child_obj)
+        if not is_child_valid:
+            return None
+
+        if inspect.ismodule(child_obj):
             ## TODO, we could register modules and functions in 2 ways:
             # A) as numpy.float32 (what we are doing now)
             # B) as numpy.core.float32 (currently not supported)
             # only allow submodules
-
             return CMPModule(
                 child_path,
                 permissions=self.permissions,
                 obj=child_obj,
                 absolute_path=absolute_path,
             )  # type: ignore
-        elif inspect.isclass(child_obj) and parent_is_parent_module:
+
+        # Here we have our own isfunction as there are multiple callable objects worth considering
+        if CMPBase.isfunction(child_obj):
+            return CMPFunction(
+                child_path,
+                permissions=self.permissions,
+                obj=child_obj,
+                absolute_path=absolute_path,
+            )  # type: ignore
+
+        if inspect.isclass(child_obj):
             return CMPClass(
                 child_path,
                 permissions=self.permissions,
                 obj=child_obj,
                 absolute_path=absolute_path,
             )  # type: ignore
-        else:
-            return None
+
+        # default case if we didnt cover it
+        # currently used for objects
+        return CMPBase(
+            child_path,
+            permissions=self.permissions,
+            obj=child_obj,
+            absolute_path=absolute_path,
+        )
 
     @staticmethod
-    def is_submodule(parent: type, child: type) -> bool:
+    def check_package_membership(parent_obj: Any, child_obj: Any) -> bool:
+        # we are wrapping this as some objects might not have some of the dunder methods
+        # TODO: check if that is truly necessary
         try:
-            if "." not in child.__package__:
+            # if we find the same name we should avoid a circular import (probably obsolete)
+            if child_obj.__name__ == parent_obj.__name__:
                 return False
+
+            # if the name of the parent can be found at the start of the name of the child we are good
+            if child_obj.__name__.startswith(parent_obj.__name__):
+                return True
+
+            # if the child has a module, then we should just make sure it has the same start
+            # as the parent, but not the entire name, as there might be relative imports
+            # in other parts of the codebase
+            if hasattr(child_obj, "__module__"):
+                return child_obj.__module__.startswith(
+                    parent_obj.__name__.split(".")[0]
+                )
             else:
-                child_parent_module = child.__package__.rsplit(".", 1)[0]
-                if parent.__package__ == child_parent_module:
-                    return True
-                else:
-                    return False
+                # same idea as the with the child name
+                # TODO: this is a fix for for instance numpy ufuncs
+                return child_obj.__class__.__module__.startswith(parent_obj.__name__)
         except Exception:  # nosec
             pass
         return False
-
-    @staticmethod
-    def parent_is_parent_module(parent_obj: Any, child_obj: Any) -> Optional[str]:
-        try:
-            if hasattr(child_obj, "__module__"):
-                return child_obj.__module__ == parent_obj.__name__
-            else:
-                # TODO: this is a fix for for instance numpy ufuncs
-                return child_obj.__class__.__module__ == parent_obj.__name__
-        except Exception:  # nosec
-            pass
-        return None
 
     def flatten(self) -> List[Self]:
         res = [self]
@@ -201,6 +221,8 @@ class CMPBase:
             inspect.isfunction(obj)
             or type(obj) == numpy.ufunc
             or isinstance(obj, BuiltinFunctionType)
+            or isinstance(obj, CompiledFunction)
+            or isinstance(obj, jax.core.AbstractValue)
         )
 
     def __repr__(
@@ -249,12 +271,24 @@ class CMPBase:
             path = self.path
         return f"{indent_str}{path} ({self.permissions})\n{children_string}"
 
+    def get_path(self, path: str) -> Any:
+        segments = path.split(".")
+        root = segments[0]
+        if root in self.children:
+            if len(segments) == 1:
+                return self.children[root]
+            else:
+                return self.children[root].get_path(".".join(segments[1:]))
+        else:
+            raise ValueError(f"property {path} does not exist")
 
+
+@serializable()
 class CMPModule(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-
+@serializable()
 class CMPFunction(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -270,7 +304,7 @@ class CMPFunction(CMPBase):
         except Exception:  # nosec
             pass
 
-
+@serializable()
 class CMPClass(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -291,17 +325,17 @@ class CMPClass(CMPBase):
             except Exception:  # nosec
                 pass
 
-
+@serializable()
 class CMPMethod(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-
+@serializable()
 class CMPProperty(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-
+@serializable()
 class CMPTree:
     """root node of the Tree(s), with one child per library"""
 
@@ -309,9 +343,13 @@ class CMPTree:
         self.children = {c.path: c for c in children}
 
     def build(self) -> Self:
+        self.stack = []
         for c in self.children.values():
             c.absolute_path = c.path
-            c.build()
+            self.stack.append(c)
+        while len(self.stack) > 0:
+            c = self.stack.pop(0)
+            c.build(stack=self.stack, root=c)
         return self
 
     def flatten(self) -> Sequence[CMPBase]:
@@ -329,27 +367,42 @@ class CMPTree:
     def __repr__(self) -> str:
         return "\n".join([c.__repr__() for c in self.children.values()])
 
+    def get_path(self, path: str) -> Any:
+        segments = path.split(".")
+        root = segments[0]
+        if root in self.children:
+            if len(segments) == 1:
+                return self.children[root]
+            else:
+                return self.children[root].get_path(".".join(segments[1:]))
+        else:
+            raise ValueError(f"property {path} does not exist")
+
 
 action_execute_registry_libs = CMPTree(
     children=[
-        CMPModule(
-            "numpy",
-            permissions=ALL_EXECUTE,
-            children=[
-                CMPFunction(
-                    "concatenate",
-                    permissions=ALL_EXECUTE,
-                    text_signature="concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
-                ),
-                CMPFunction("source", permissions=NONE_EXECUTE),
-                CMPFunction("fromfile", permissions=NONE_EXECUTE),
-                CMPFunction(
-                    "set_numeric_ops",
-                    permissions=ALL_EXECUTE,
-                    text_signature="set_numeric_ops(op1,op2, *args)",
-                ),
-                CMPModule("testing", permissions=NONE_EXECUTE),
-            ],
-        ),
+        # CMPModule(
+        #     "numpy",
+        #     permissions=ALL_EXECUTE,
+        #     children=[
+        #         CMPFunction(
+        #             "concatenate",
+        #             permissions=ALL_EXECUTE,
+        #             text_signature="concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
+        #         ),
+        #         CMPFunction("source", permissions=NONE_EXECUTE),
+        #         CMPFunction("fromfile", permissions=NONE_EXECUTE),
+        #         CMPFunction(
+        #             "set_numeric_ops",
+        #             permissions=ALL_EXECUTE,
+        #             text_signature="set_numeric_ops(op1,op2, *args)",
+        #         ),
+        #         CMPModule("testing", permissions=NONE_EXECUTE),
+        #     ],
+        # ),
+        # CMPModule(
+        #     "jax",
+        #     permissions=ALL_EXECUTE,
+        # ),
     ]
 ).build()
