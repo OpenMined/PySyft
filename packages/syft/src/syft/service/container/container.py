@@ -121,10 +121,8 @@ class ContainerCommandKwargBool(ContainerCommandKwarg):
 
     def format(self, run_kwargs: Dict[str, Any]) -> Optional[str]:
         value = self.value
-        print("value", value)
         if self.name in run_kwargs["user_kwargs"]:
             value = bool(run_kwargs["user_kwargs"][self.name])
-            print("second value", value)
         if self.flag and value:
             return f"{self.hyphens}{self.name}"
         if self.flag and not self.value:

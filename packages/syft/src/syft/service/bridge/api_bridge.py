@@ -49,6 +49,8 @@ class SerdeType(SyftObject):
     types: List[Type]
     type_: Optional[Type] = None
 
+    __attr_unique__ = ["fqn"]
+
     @property
     def _parts(self) -> List[str]:
         return self.fqn.split(".")
@@ -128,9 +130,11 @@ class APIBridge(SyftObject):
             serde_types.append(st)
         return serde_types
 
-    def register_serde_types(self) -> None:
-        for serde_type in self.get_serde_types():
+    def register_serde_types(self) -> List[SerdeType]:
+        serde_types = self.get_serde_types()
+        for serde_type in serde_types:
             serde_type.register_type()
+        return serde_types
 
     @classmethod
     def op_to_signature(cls, method: Operation) -> Signature:
