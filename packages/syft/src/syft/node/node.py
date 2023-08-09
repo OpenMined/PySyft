@@ -436,6 +436,10 @@ class Node(AbstractNode):
             user_code_service = self.get_service(UserCodeService)
             user_code_service.load_user_code(context=context)
 
+        if BridgeService in self.services:
+            bridge_service = self.get_service(BridgeService)
+            bridge_service.load_serde_types(context=context)
+
         if self.is_subprocess or current_process().name != "MainProcess":
             # print(f"> Starting Subprocess {self}")
             pass
@@ -445,7 +449,9 @@ class Node(AbstractNode):
             # print(f"> {self}")
 
         def reload_user_code() -> None:
+            # TODO: if statements above can cause this to fail
             user_code_service.load_user_code(context=context)
+            bridge_service.load_serde_types(context=context)
 
         CODE_RELOADER[thread_ident()] = reload_user_code
 
