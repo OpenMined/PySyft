@@ -564,6 +564,14 @@ class KeyValueStorePartition(StorePartition):
             if pk_value in ck_col:
                 matches.append(pk_key)
 
+        # tech debt to fix
+        # if len(matches) == len(qks):
+        #     return UniqueKeyCheck.MATCHES
+        # # if there is only a partial match for multiple unique this should be empty
+        # return UniqueKeyCheck.EMPTY
+        # # return UniqueKeyCheck.ERROR
+
+        # old code
         if len(matches) == 0:
             return UniqueKeyCheck.EMPTY
         elif len(matches) == len(qks):
