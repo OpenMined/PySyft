@@ -2,6 +2,7 @@
 import io
 import json
 import os
+import shutil
 import sys
 import tempfile
 from typing import Any
@@ -71,8 +72,10 @@ def build_image(container_image: ContainerImage) -> Union[SyftSuccess, SyftError
 def run_command(
     container_image: ContainerImage,
     command: ContainerCommand,
-    user_kwargs: Dict[str, SyftFile],
+    user_kwargs: Dict[str, Any],
     files: Dict[str, SyftFile],
+    extra_kwargs: Dict[str, Any],
+    debug: bool = False,
 ) -> ContainerResult:
     client = docker.from_env()
 
@@ -107,7 +110,6 @@ def run_command(
             "mode": container_mount.mode,
         }
         volumes[local_path] = mount
-        # print("local path", local_path, "mount", mount)
 
     # start container
     container = None
@@ -144,8 +146,14 @@ def run_command(
                 if not write_result:
                     return write_result
 
-        cmd = command.cmd(run_user_kwargs=user_kwargs, run_files=files)
-        result = container.exec_run(cmd=cmd, stdout=True, stderr=True, demux=True)
+        cmd = command.cmd(
+            run_user_kwargs=user_kwargs, run_files=files, run_extra_kwargs=extra_kwargs
+        )
+        # redirecting output to main log
+        shell_cmd_logs = "sh -c '{}'".format(cmd + " 2>&1 | tee /proc/1/fd/1")
+        result = container.exec_run(
+            cmd=shell_cmd_logs, stdout=True, stderr=True, demux=True
+        )
         container_result = ContainerResult.from_execresult(result=result)
         container_result.image_name = container_image.name
         container_result.image_tag = container_image.tag
@@ -155,7 +163,7 @@ def run_command(
             return_file = SyftFile.from_path(full_path)
             if return_file is None:
                 container_result.return_file = SyftError(
-                    "Failed not found at path:", full_path
+                    message=f"Failed not found at path: {full_path}"
                 )
             else:
                 container_result.return_file = return_file
@@ -166,13 +174,13 @@ def run_command(
             file=sys.stderr,
         )
     finally:
-        if container:
-            pass
-            # container.stop()
-        for _ in temp_dirs:
-            pass
-            # print("remove temp_dir", temp_dir)
-            # shutil.rmtree(temp_dir)
+        if not debug:
+            if container:
+                container.stop()
+
+            for temp_dir in temp_dirs:
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
 
 
 @instrument
@@ -309,6 +317,7 @@ class ContainerService(AbstractService):
     def call(
         self,
         context: AuthedServiceContext,
+        module_path: str,
         image_name: str,
         command_name: str,
         **kwargs: Any,
@@ -332,11 +341,27 @@ class ContainerService(AbstractService):
 
         command = result.ok()
 
+        bridge_service = context.node.get_service("BridgeService")
+        pre_wrapper, post_wrapper = bridge_service.get_wrappers(
+            context=context, path=module_path
+        )
+
+        if pre_wrapper:
+            context, kwargs = pre_wrapper.exec(context, kwargs)
+            context.session.update_user_session()
+
         files = {}
         user_kwargs = {}
+        extra_kwargs = {}
+
+        # TODO: this is getting a bit complex we need to split up the allowed user input
+        # filtering from the AO pre_hook overriding steps
+
         for k, v in kwargs.items():
             key = k
-            for possible_keys in command.user_kwargs:
+            for possible_keys in command.user_kwargs + list(
+                command.extra_user_kwargs.keys()
+            ):
                 # some cli args are - but only _ allowed in python signatures
                 if "-" in possible_keys and possible_keys.replace("-", "_") == key:
                     key = key.replace("_", "-")
@@ -348,17 +373,35 @@ class ContainerService(AbstractService):
                         raise Exception("All files in a list must be files")
                 files[key] = v
 
-            if isinstance(v, SyftFile):
-                files[key] = v
+            if key in command.user_kwargs:
+                if isinstance(v, SyftFile):
+                    files[key] = v
+                else:
+                    user_kwargs[key] = v
             else:
-                user_kwargs[key] = v
+                if isinstance(v, SyftFile):
+                    files[key] = v
+                else:
+                    extra_kwargs[key] = v
+
+        debug = False
+        if "debug" in kwargs:
+            debug = bool(kwargs["debug"])
+        if debug:
+            print(f"ContainerCommand debug {debug}. Container will not be deleted.")
         try:
             result = run_command(
                 container_image=image,
                 command=command,
                 user_kwargs=user_kwargs,
                 files=files,
+                extra_kwargs=extra_kwargs,
+                debug=debug,
             )
+
+            if post_wrapper:
+                context, result = post_wrapper.exec(context, result)
+
             return result
         except Exception as e:
             return SyftError(f"Failed to run command. {e}")

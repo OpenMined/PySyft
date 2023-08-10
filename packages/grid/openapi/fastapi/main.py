@@ -57,7 +57,10 @@ class LoginResponse(BaseModel):
 class ComputeResource(BaseModel):
     name: str
     cloud: str
+    instance_type: Optional[str]
     accelerator: Optional[str]
+    region: Optional[str]
+    disk_size: Optional[int] = 256
     price_unit_cents: int
     time_unit_secs: int = 3600
 
@@ -65,11 +68,22 @@ class ComputeResource(BaseModel):
 azure_cpu = ComputeResource(
     name="azure_cpu", cloud="azure", accelerator=None, price_unit_cents=30
 )
+
 gcp_t4 = ComputeResource(
-    name="gcp_t4", cloud="gcp", accelerator="t4", price_unit_cents=70
+    name="gcp_t4", cloud="gcp", accelerator="T4", price_unit_cents=70
 )
 
-all_compute: Dict = {"azure_cpu": azure_cpu, "gcp_t4": gcp_t4}
+azure_a100 = ComputeResource(
+    name="azure_a100",
+    cloud="azure",
+    region="eastus2",
+    instance_type="Standard_NCC24ads_A100_v4",
+    accelerator="A100-80GB",
+    disk_size=512,
+    price_unit_cents=370,
+)
+
+all_compute: Dict = {"azure_cpu": azure_cpu, "gcp_t4": gcp_t4, "azure_a100": azure_a100}
 
 
 api_state: Dict[int, ResearchModel] = {7: ResearchModel(name="Ava")}
