@@ -85,4 +85,4 @@ jobs:
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "rhel_podman"
         run: |
-          pytest --nbmake notebooks/api/0.8 -p no:randomly -vvvv
+          tox -e notebook-tests
