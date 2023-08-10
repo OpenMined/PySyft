@@ -2,6 +2,7 @@
 from inspect import Parameter
 from inspect import Signature
 import json
+import re
 from typing import Any
 from typing import Dict
 from typing import List
@@ -20,6 +21,8 @@ from ...service.response import SyftSuccess
 from ...types.file import SyftFile
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+
+ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 @serializable()
@@ -216,18 +219,16 @@ class ContainerCommand(SyftObject):
                     param_type = kwarg.value
                 else:
                     param_type = type(kwarg.value)
+                if not kwarg.required:
+                    param_type = Optional[param_type]
             else:
                 param_name = key.replace("-", "_")
                 param_type = Union[SyftFile, List[SyftFile]]
-
-            if not kwarg.required:
-                param_type = Optional[param_type]
 
             parameter = Parameter(
                 name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
             )
             parameters.append(parameter)
-
         return Signature(parameters=parameters)
 
 
@@ -293,10 +294,12 @@ class ContainerResult(SyftObject):
             out, err = result.output
             if out is not None:
                 stdout = out.decode("utf-8").strip()
+                stdout = ansi_escape.sub("", stdout)
                 jsonstd = list(extract_json_objects(stdout))
                 stdout = stdout.splitlines()
             if err is not None:
                 stderr = err.decode("utf-8").strip()
+                stderr = ansi_escape.sub("", stderr)
                 jsonerr = list(extract_json_objects(stderr))
                 stderr = stderr.splitlines()
 
