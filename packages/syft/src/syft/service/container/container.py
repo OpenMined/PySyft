@@ -229,10 +229,6 @@ class ContainerCommand(SyftObject):
                 name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
             )
             parameters.append(parameter)
-        # stdlib
-        import sys
-
-        print(parameters, file=sys.stderr)
         return Signature(parameters=parameters)
 
 
