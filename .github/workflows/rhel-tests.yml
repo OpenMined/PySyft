@@ -85,4 +85,4 @@ jobs:
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "rhel_podman"
         run: |
-          tox -e notebook-tests
+          tox -e stack.test.podman
