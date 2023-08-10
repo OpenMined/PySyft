@@ -72,12 +72,12 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         result = getattr(ufunc, method)(*inputs, **kwargs)
         if type(result) is tuple:
             return tuple(
-                NumpyArrayObject(syft_action_data=x, dtype=x.dtype, shape=x.shape)
+                NumpyArrayObject(_syft_action_data=x, dtype=x.dtype, shape=x.shape)
                 for x in result
             )
         else:
             return NumpyArrayObject(
-                syft_action_data=result, dtype=result.dtype, shape=result.shape
+                _syft_action_data=result, dtype=result.dtype, shape=result.shape
             )
 
 

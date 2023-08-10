@@ -11,6 +11,7 @@ from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
 from ...types.blob_storage import BlobStorageEntry
+from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.uid import UID
 from ..context import AuthedServiceContext
@@ -49,6 +50,16 @@ class BlobStorageService(AbstractService):
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
+        return SyftError(message=result.err())
+
+    @service_method(path="blob_storage.get_metadata", name="get_metadata")
+    def get_blob_storage_metadata_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[BlobStorageEntry, SyftError]:
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
+        if result.is_ok():
+            blob_storage_entry = result.ok()
+            return blob_storage_entry.to(BlobStorageMetadata)
         return SyftError(message=result.err())
 
     @service_method(path="blob_storage.read", name="read")

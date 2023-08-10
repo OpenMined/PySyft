@@ -18,6 +18,8 @@ from .datetime import DateTime
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
+from ..types.transforms import keep
+from ..types.transforms import transform
 
 
 @serializable()
@@ -49,6 +51,16 @@ class BlobStorageEntry(SyftObject):
     file_size: int
     uploaded_by: SyftVerifyKey
     created_at: DateTime = DateTime.now()
+
+
+@serializable()
+class BlobStorageMetadata(SyftObject):
+    __canonical_name__ = "BlobStorageMetadata"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    type_: Optional[Type[SyftObject]]
+    mimetype: str = "bytes"
+    file_size: int
 
 
 @serializable()
@@ -85,3 +97,9 @@ class CreateBlobStorageEntry(SyftObject):
                 )
 
         return cls(mimetype=mimetype, file_size=path.stat().st_size)
+
+
+
+@transform(BlobStorageEntry, BlobStorageMetadata)
+def storage_entry_to_metadata():
+    return [keep(["id", "type_", "mimetype", "file_size"])]

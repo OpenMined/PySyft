@@ -30,6 +30,8 @@ from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
+from ...types.blob_storage import BlobStorageEntry
+from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
@@ -295,8 +297,9 @@ def convert_to_pointers(
     if args is not None:
         for arg in args:
             if not isinstance(arg, ActionObject):
-                arg = ActionObject.from_obj(arg)
+                arg = ActionObject.from_obj(syft_action_data_cache=arg)
                 arg.syft_node_uid = node_uid
+                arg.save()
                 arg = api.services.action.set(arg)
                 # arg = action_obj.send(
                 #     client
@@ -306,8 +309,9 @@ def convert_to_pointers(
     if kwargs is not None:
         for k, arg in kwargs.items():
             if not isinstance(arg, ActionObject):
-                arg = ActionObject.from_obj(arg)
+                arg = ActionObject.from_obj(syft_action_data_cache=arg)
                 arg.syft_node_uid = node_uid
+                arg.save()
                 arg = api.services.action.set(arg)
                 # arg = action_obj.send(client)
 
@@ -410,6 +414,8 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_debug_",
     "as_empty",
     "get",
+    "save",
+    "__set_syft_action_data_cache",
 ]
 
 
@@ -420,8 +426,8 @@ class ActionObject(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__: List[str] = []
-    syft_action_data: Optional[Any] = None
-    # syft_action_proxy_reference: Optional[LinkedObject] = None
+    syft_action_data_cache: Optional[Any] = None
+    syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
 
     # Help with calculating history hash for code verification
@@ -436,29 +442,52 @@ class ActionObject(SyftObject):
     _syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_action_data_type: Optional[Any]
+    syft_action_data_repr_:Optional[str]
+    syft_action_data_str_: Optional[str]
     # syft_dont_wrap_attrs = ["shape"]
 
-    # @property
-    # def syft_action_proxy(self) -> Optional[BlobStorageEntry]:
-    #     return (
-    #         self.syft_action_proxy_reference.resolve
-    #         if self.syft_action_proxy_reference is not None
-    #         else None
-    #     )
+    @property
+    def syft_action_data(self) -> Any:
+        # relative
+        from ...client.api import APIRegistry
 
-    # @property
-    # def syft_action_data(self) -> Any:
-    #     # relative
-    #     from ...client.api import APIRegistry
+        if self.syft_action_data_cache is None:
+            api = APIRegistry.api_for(
+                node_uid=self.node_uid,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            blob_retrieval_object = api.services.blob_storage.read(
+                uid=self.syft_blob_storage_entry_id
+            )
+            self.syft_action_data_cache = blob_retrieval_object.read()
+        return self.syft_action_data_cache
 
-    #     api = APIRegistry.api_for(
-    #         node_uid=self.node_uid,
-    #         user_verify_key=self.syft_client_verify_key,
-    #     )
-    #     syft_object_resource = api.services.blob_storage.read(
-    #         uid=self.syft_action_proxy_reference.id
-    #     )
-    #     return syft_object_resource.read()
+    def __set_syft_action_data_cache(self, data: Any) -> None:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is not None:
+            storage_entry = CreateBlobStorageEntry.from_obj(data)
+            blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
+            blob_deposit_object.write(data)
+            self.syft_blob_storage_entry_id = storage_entry.id
+
+        self.syft_action_data_cache = data
+        self.syft_action_data_type = type(data)
+
+        self.syft_action_data_repr_ = (
+            data._repr_markdown_()
+            if hasattr(data, "_repr_markdown_")
+            else data.__repr__()
+        )
+        self.syft_action_data_str_ = str(data)
+
+    syft_action_data = syft_action_data.setter(__set_syft_action_data_cache)
 
     @property
     def is_pointer(self) -> bool:
@@ -474,6 +503,46 @@ class ActionObject(SyftObject):
         """Generate or reuse an UID"""
         return Action.make_id(v)
 
+    class Config:
+        validate_assignment = True
+
+    @pydantic.root_validator()
+    def __check_action_data(cls, values: dict) -> dict:
+        v = values.get("syft_action_data_cache")
+        values["syft_action_data_type"] = type(v)
+
+        values["syft_action_data_repr_"] = (
+            v._repr_markdown_()
+            if hasattr(v, "_repr_markdown_")
+            else v.__repr__()
+        )
+        values["syft_action_data_str_"] = str(v)
+        return values
+
+
+    # @pydantic.validator("syft_action_data_cache", pre=True, always=True)
+    # def check_action_data(cls, v: Optional[Any], values: Dict) -> Any:
+    #     """Generate or reuse an UID"""
+    #     values["syft_action_data_type"] = type(v)
+
+    #     values["syft_action_data_type"] = (
+    #         v._repr_markdown_()
+    #         if hasattr(v, "_repr_markdown_")
+    #         else v.__repr__()
+    #     )
+    #     values["syft_action_data_type"] = str(v)
+    #     return v
+
+
+    # action_obj = ActionObject.from_obj(syft_action_data_cache=np.array[1, 2, 3])
+    # api.set
+    #        action_obj.save()
+
+    def save(self) -> None:
+        data = self.syft_action_data
+        self.__set_syft_action_data_cache(data)
+        self.syft_action_data_cache = None
+
     @property
     def is_mock(self):
         return self.syft_twin_type == TwinMode.MOCK
@@ -486,17 +555,17 @@ class ActionObject(SyftObject):
     def is_twin(self):
         return self.syft_twin_type != TwinMode.NONE
 
-    @pydantic.validator("syft_action_data", pre=True, always=True)
-    def check_action_data(
-        cls, v: ActionObject.syft_pointer_type
-    ) -> ActionObject.syft_pointer_type:
-        if cls == AnyActionObject or isinstance(
-            v, (cls.syft_internal_type, ActionDataEmpty)
-        ):
-            return v
-        raise SyftException(
-            f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
-        )
+    # @pydantic.validator("syft_action_data", pre=True, always=True)
+    # def check_action_data(
+    #     cls, v: ActionObject.syft_pointer_type
+    # ) -> ActionObject.syft_pointer_type:
+    #     if cls == AnyActionObject or isinstance(
+    #         v, (cls.syft_internal_type, ActionDataEmpty)
+    #     ):
+    #         return v
+    #     raise SyftException(
+    #         f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
+    #     )
 
     def syft_point_to(self, node_uid: UID) -> "ActionObject":
         """Set the syft_node_uid, used in the post hooks"""
@@ -716,7 +785,7 @@ class ActionObject(SyftObject):
     def syft_get_path(self) -> str:
         """Get the type path of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
-            return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
+            return f"{self.syft_action_data_type.__name__}"  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
 
     def syft_remote_method(
@@ -743,6 +812,7 @@ class ActionObject(SyftObject):
 
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
+        self.save()
         res = client.api.services.action.set(self)
         res.syft_node_location = client.id
         res.syft_client_verify_key = client.verify_key
@@ -795,19 +865,19 @@ class ActionObject(SyftObject):
             syft_lineage_id: Optional[LineageID]
                 Which LineageID to use for the ActionObject. Optional
         """
-        if id and syft_lineage_id and id != syft_lineage_id.id:
+        if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
         action_type = action_type_for_object(syft_action_data)
-        action_object = action_type(syft_action_data=syft_action_data)
+        action_object = action_type(syft_action_data_cache=syft_action_data)
 
-        if id:
+        if id is not None:
             action_object.id = id
 
-        if syft_lineage_id:
+        if syft_lineage_id is not None:
             action_object.id = syft_lineage_id.id
             action_object.syft_history_hash = syft_lineage_id.syft_history_hash
-        elif id:
+        elif id is not None:
             action_object.syft_history_hash = hash(id)
 
         return action_object
@@ -842,14 +912,13 @@ class ActionObject(SyftObject):
 
         empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
         res = ActionObject.from_obj(
-            syft_action_data=empty, id=id, syft_lineage_id=syft_lineage_id
+            id=id, syft_lineage_id=syft_lineage_id, syft_action_data_cache=empty
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
 
     def delete_data(self):
-        empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
-        self.syft_action_data = empty
+        empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type, syft_action_data_cache=empty)
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
@@ -966,8 +1035,7 @@ class ActionObject(SyftObject):
         syft_twin_type = TwinMode.NONE
         if context.result_twin_type is not None:
             syft_twin_type = context.result_twin_type
-        result = constructor(syft_action_data=result, syft_twin_type=syft_twin_type)
-
+        result = constructor(syft_twin_type=syft_twin_type, syft_action_data_cache=result)
         return result
 
     def _syft_passthrough_attrs(self) -> List[str]:
@@ -1240,13 +1308,8 @@ class ActionObject(SyftObject):
             res = "TwinPointer(Real)"
         elif not self.is_twin:
             res = "Pointer"
-        child_repr = (
-            self.syft_action_data._repr_markdown_()
-            if hasattr(self.syft_action_data, "_repr_markdown_")
-            else self.syft_action_data.__repr__()
-        )
 
-        return f"```python\n{res}\n```\n{child_repr}"
+        return f"```python\n{res}\n```\n{self.syft_action_data_repr_}"
 
     def __repr__(self) -> str:
         if self.is_mock:
@@ -1255,7 +1318,7 @@ class ActionObject(SyftObject):
             res = "TwinPointer(Real)"
         if not self.is_twin:
             res = "Pointer"
-        return f"{res}:\n{str(self.syft_action_data)}"
+        return f"{res}:\n{self.syft_action_data_str_}"
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.__call__(*args, **kwds)
