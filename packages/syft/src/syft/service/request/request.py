@@ -149,6 +149,8 @@ class Request(SyftObject):
 
     requesting_user_verify_key: SyftVerifyKey
     requesting_user_name: str = ""
+    requesting_user_email: Optional[str] = ""
+    requesting_user_institution: Optional[str] = ""
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
     updated_at: Optional[DateTime]
@@ -205,6 +207,16 @@ class Request(SyftObject):
         metadata = api.services.metadata.get_metadata()
         admin_email = metadata.admin_email
         node_name = api.node_name.capitalize() if api.node_name is not None else ""
+
+        email_str = (
+            f"({self.requesting_user_email})" if self.requesting_user_email else ""
+        )
+        institution_str = (
+            f"<strong>Institution:</strong> {self.requesting_user_institution}"
+            if self.requesting_user_institution
+            else ""
+        )
+
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -219,7 +231,9 @@ class Request(SyftObject):
                 <p><strong>Status: </strong>{self.status}</p>
                 <p><strong>Requested on: </strong> {node_name} of type <strong> \
                     {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
+                <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
             </div>
+
             """
 
     def _coll_repr_(self):
@@ -235,6 +249,9 @@ class Request(SyftObject):
             "changes": " ".join([x.__repr_syft_nested__() for x in self.changes]),
             "request time": str(self.request_time),
             "status": status_badge,
+            "user_name": self.requesting_user_name,
+            "user_email": self.requesting_user_email,
+            "user_institution": self.requesting_user_institution,
             "requesting user": {
                 "value": str(self.requesting_user_verify_key),
                 "type": "clipboard",
@@ -525,12 +542,16 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
     return context
 
 
-def add_requesting_user_name(context: TransformContext) -> TransformContext:
+def add_requesting_user_info(context: TransformContext) -> TransformContext:
     try:
         user_key = context.output["requesting_user_verify_key"]
         user_service = context.node.get_service("UserService")
         user = user_service.get_by_verify_key(user_key)
         context.output["requesting_user_name"] = user.name
+        context.output["requesting_user_email"] = user.email
+        context.output["requesting_user_institution"] = (
+            user.institution if user.institution else ""
+        )
     except Exception:
         context.output["requesting_user_name"] = "guest_user"
     return context
@@ -543,7 +564,7 @@ def submit_request_to_request() -> List[Callable]:
         add_node_uid_for_key("node_uid"),
         add_request_time,
         check_requesting_user_verify_key,
-        add_requesting_user_name,
+        add_requesting_user_info,
         hash_changes,
     ]
 
