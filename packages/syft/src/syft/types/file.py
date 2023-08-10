@@ -6,6 +6,7 @@ import tempfile
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import Any
 
 # third party
 from typing_extensions import Self
@@ -51,6 +52,10 @@ class SyftFile(SyftObject):
     mimetype: str
 
     __attr_repr_cols__ = ["filename", "mimetype", "size_bytes"]
+
+    @property
+    def name(self):
+        return self.filename
 
     def head(self, length: int = 200) -> str:
         print(self.decode(length=length))
@@ -117,7 +122,8 @@ class SyftFile(SyftObject):
 class SyftFolder(SyftObject):
     __canonical_name__ = "SyftFolder"
     __version__ = SYFT_OBJECT_VERSION_1
-    files: List[SyftFile]
+    # files: List[Union[SyftFile, SyftFolder]]
+    files: List[Any]
     name: str
 
     @property
@@ -138,6 +144,7 @@ class SyftFolder(SyftObject):
         path = Path(tempfile.gettempdir()) / self.name
         os.makedirs(path, exist_ok=True)
         for syft_file in self.files:
+            print(syft_file.name)
             syft_file.write_file(path)
         return path
 
@@ -162,7 +169,35 @@ class SyftFolder(SyftObject):
                                 mimetype=get_mimetype(entry.name, entry.path),
                                 data=f.read(),
                             )
-                            syft_files.append(syft_file)
+                        # syft_file = SyftFile.from_path(entry.path)
+                        syft_files.append(syft_file)
                     except Exception:
                         print(f"Failed to load: {entry} as syft file")
+                if entry.is_dir():
+                    try:
+                        print(entry.path.split('/')[-1])
+                        syft_folder = SyftFolder.from_dir(name=entry.path.split('/')[-1], path=entry.path)
+                        print(syft_folder.name)
+                        syft_files.append(syft_folder)
+                    except Exception as e:
+                        print(e)
+                        print(f"Failed to load: {entry} as syft folder: {entry.path}")        
+                    
         return SyftFolder(name=name, files=syft_files)
+
+    def write_file(self, path):
+        try:
+            full_path = f"{path}/{self.name}"
+            print(full_path)
+            if os.path.exists(full_path):
+                return SyftSuccess(message=f"File already exists: {full_path}")
+            # with open(full_path, "wb") as f:
+            #     f.write(self.data)
+            os.makedirs(full_path, exist_ok=True)
+            print("HERE????")
+            for syft_file in self.files:
+                print(syft_file.name)
+                syft_file.write_file(full_path)
+            return SyftSuccess(message=f"File saved: {full_path}")
+        except Exception as e:
+            return SyftError(message=f"Failed to write {type(self)} to {path}. {e}")

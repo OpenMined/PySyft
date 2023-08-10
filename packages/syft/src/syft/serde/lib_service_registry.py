@@ -222,7 +222,6 @@ class CMPBase:
             or type(obj) == numpy.ufunc
             or isinstance(obj, BuiltinFunctionType)
             or isinstance(obj, CompiledFunction)
-            or isinstance(obj, jax.core.AbstractValue)
         )
 
     def __repr__(
