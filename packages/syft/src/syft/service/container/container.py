@@ -183,6 +183,7 @@ class ContainerCommand(SyftObject):
     args: str
     kwargs: Dict[str, ContainerCommandArg] = {}
     user_kwargs: List[str] = []
+    extra_user_kwargs: Dict[str, Type] = {}
     user_files: List[str] = []
     return_filepath: Optional[str] = None
     mounts: List[ContainerMount] = []
@@ -192,7 +193,10 @@ class ContainerCommand(SyftObject):
     __repr_attrs__ = ["module_name", "name", "image_name"]
 
     def cmd(
-        self, run_user_kwargs: Dict[str, str], run_files: Dict[str, SyftFile]
+        self,
+        run_user_kwargs: Dict[str, Any],
+        run_files: Dict[str, SyftFile],
+        run_extra_kwargs: Dict[str, Any],
     ) -> str:
         run_kwargs = {}
         run_kwargs["user_kwargs"] = run_user_kwargs
@@ -229,6 +233,14 @@ class ContainerCommand(SyftObject):
                 name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
             )
             parameters.append(parameter)
+
+        for key, param_type in self.extra_user_kwargs.items():
+            param_name = key.replace("-", "_")
+            parameter = Parameter(
+                name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
+            )
+            parameters.append(parameter)
+
         return Signature(parameters=parameters)
 
 
