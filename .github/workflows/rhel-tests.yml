@@ -1,4 +1,4 @@
-name: RHEL 9 VM Tests
+name: Rhel Podman Stack Tests
 
 on:
   workflow_call:
@@ -14,7 +14,7 @@ on:
         required: false
 
 jobs:
-  vm-tests-stack:
+  podman-tests-stack:
     strategy:
       max-parallel: 99
       matrix:
@@ -64,24 +64,25 @@ jobs:
       #   run: |
       #     python -m pip install --upgrade --user pip
 
-      # - name: Install tox
+      - name: Install tox
+        # if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip${{matrix.python-version}} install -U tox
+
+      # - name: Install Syft & Hagrid
       #   # if: steps.changes.outputs.stack == 'true'
       #   run: |
-      #     pip${{matrix.python-version}} install -U tox
+      #     pip${{matrix.python-version}} install -e packages/syft
+      #     pip${{matrix.python-version}} install -e packages/hagrid
 
-      - name: Install Syft
-        # if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip${{matrix.python-version}} install -e packages/syft
-
-      - name: Install Pytest and nbmake
-        # if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip${{matrix.python-version}} install -U pytest nbmake
+      # - name: Install Pytest and nbmake
+      #   # if: steps.changes.outputs.stack == 'true'
+      #   run: |
+      #     pip${{matrix.python-version}} install -U pytest nbmake
 
       - name: Run notebook tests
         #if: steps.changes.outputs.stack == 'true'
-        # env:
-        #   ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
+        env:
+          ORCHESTRA_DEPLOYMENT_TYPE: "rhel_podman"
         run: |
-          pytest --nbmake notebooks/api/0.8 -p no:randomly -vvvv
+          tox -e stack.test.podman
