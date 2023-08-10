@@ -22,7 +22,7 @@ from syft.service.action.action_types import action_types
         [1, 2, 3],
         (1, 2, 3),
         {"a": 1, "b": 2},
-        set({1, 2, 3}),
+        {1, 2, 3},
         ActionDataEmpty(),
     ],
 )
