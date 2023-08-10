@@ -913,7 +913,8 @@ class ActionObject(SyftObject):
         return res
 
     def delete_data(self):
-        ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+        empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+        self.syft_action_data = empty
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
