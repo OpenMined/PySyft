@@ -458,15 +458,9 @@ class UserCode(SyftObject):
                             message="The result you see is computed on PRIVATE data."
                         )
                     )
-                elif on_mock_data:
+                if on_mock_data:
                     display(
                         SyftInfo(message="The result you see is computed on MOCK data.")
-                    )
-                else:
-                    display(
-                        SyftInfo(
-                            message="The result you see is computed on user's specified data."
-                        )
                     )
 
                 # remove the decorator
