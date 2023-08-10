@@ -14,12 +14,12 @@ from ..node.credentials import SyftVerifyKey
 from ..serde import serialize
 from ..serde.serializable import serializable
 from ..service.response import SyftException
+from ..types.transforms import keep
+from ..types.transforms import transform
 from .datetime import DateTime
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
-from ..types.transforms import keep
-from ..types.transforms import transform
 
 
 @serializable()
@@ -97,7 +97,6 @@ class CreateBlobStorageEntry(SyftObject):
                 )
 
         return cls(mimetype=mimetype, file_size=path.stat().st_size)
-
 
 
 @transform(BlobStorageEntry, BlobStorageMetadata)

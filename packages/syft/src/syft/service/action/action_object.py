@@ -30,7 +30,6 @@ from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
-from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
@@ -443,7 +442,7 @@ class ActionObject(SyftObject):
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_action_data_type: Optional[Any]
-    syft_action_data_repr_:Optional[str]
+    syft_action_data_repr_: Optional[str]
     syft_action_data_str_: Optional[str]
     # syft_dont_wrap_attrs = ["shape"]
 
@@ -512,13 +511,10 @@ class ActionObject(SyftObject):
         values["syft_action_data_type"] = type(v)
 
         values["syft_action_data_repr_"] = (
-            v._repr_markdown_()
-            if hasattr(v, "_repr_markdown_")
-            else v.__repr__()
+            v._repr_markdown_() if hasattr(v, "_repr_markdown_") else v.__repr__()
         )
         values["syft_action_data_str_"] = str(v)
         return values
-
 
     # @pydantic.validator("syft_action_data_cache", pre=True, always=True)
     # def check_action_data(cls, v: Optional[Any], values: Dict) -> Any:
@@ -532,7 +528,6 @@ class ActionObject(SyftObject):
     #     )
     #     values["syft_action_data_type"] = str(v)
     #     return v
-
 
     # action_obj = ActionObject.from_obj(syft_action_data_cache=np.array[1, 2, 3])
     # api.set
@@ -918,7 +913,7 @@ class ActionObject(SyftObject):
         return res
 
     def delete_data(self):
-        empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type, syft_action_data_cache=empty)
+        ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
@@ -1035,7 +1030,9 @@ class ActionObject(SyftObject):
         syft_twin_type = TwinMode.NONE
         if context.result_twin_type is not None:
             syft_twin_type = context.result_twin_type
-        result = constructor(syft_twin_type=syft_twin_type, syft_action_data_cache=result)
+        result = constructor(
+            syft_twin_type=syft_twin_type, syft_action_data_cache=result
+        )
         return result
 
     def _syft_passthrough_attrs(self) -> List[str]:
