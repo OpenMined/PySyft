@@ -110,6 +110,7 @@ def run_command(
 
     # start container
     container = None
+    import sys
     try:
         # try:
         #     container = client.containers.get(container_name)
@@ -130,7 +131,7 @@ def run_command(
         result = container.exec_run(
             cmd="bash /start.sh || true", stdout=True, stderr=True, demux=True
         )
-        # print("result of start.sh", result)
+        print("result of start.sh", result, file=sys.stderr)
 
         # write the files
         for _k, v in files.items():
@@ -144,8 +145,8 @@ def run_command(
                 if not write_result:
                     return write_result
 
-        # print("user_kwargs", user_kwargs)
-        # print("files", files)
+        print("user_kwargs", user_kwargs, file=sys.stderr)
+        print("files", files, file=sys.stderr)
         cmd = command.cmd(run_user_kwargs=user_kwargs, run_files=files)
         print("> running cmd", cmd)
         result = container.exec_run(cmd=cmd, stdout=True, stderr=True, demux=True)

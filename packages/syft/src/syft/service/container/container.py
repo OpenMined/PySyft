@@ -17,7 +17,7 @@ from typing_extensions import Self
 from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
-from ...types.file import SyftFile
+from ...types.file import SyftFile, SyftFolder
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 
@@ -36,7 +36,18 @@ class ContainerVolume(SyftObject):
     internal_mountpath: str
     mode: str = "ro"
 
+@serializable()
+class ContainerPackage(SyftObject):
+    __canonical_name__ = "ContainerPackages"
+    __version__ = SYFT_OBJECT_VERSION_1
 
+    __attr_searchable__ = ["name"]
+    __attr_unique__ = ["name"]
+    __repr_attrs__ = ["name"]
+    
+    name: str
+    folder: SyftFolder
+    
 @serializable()
 class ContainerImage(SyftObject):
     # version
@@ -51,6 +62,7 @@ class ContainerImage(SyftObject):
     tag: str
     dockerfile: Optional[str]
     volumes: List[ContainerVolume] = []
+    packages: List[ContainerPackage] = []
 
 
 @serializable()
@@ -161,7 +173,7 @@ class ContainerMount(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     internal_filepath: str
-    file: SyftFile
+    file: Union[SyftFile, SyftFolder]
     mode: str = "ro"
     unix_permission: str = "644"
 
