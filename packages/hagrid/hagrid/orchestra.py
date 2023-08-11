@@ -133,7 +133,7 @@ class DeploymentType(Enum):
     SINGLE_CONTAINER = "single_container"
     CONTAINER_STACK = "container_stack"
     K8S = "k8s"
-    RHEL_PODMAN = "rhel_podman"
+    PODMAN = "podman"
 
 
 class NodeHandle:
@@ -525,7 +525,7 @@ class Orchestra:
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
             )
-        elif deployment_type_enum == DeploymentType.RHEL_PODMAN:
+        elif deployment_type_enum == DeploymentType.PODMAN:
             return deploy_to_podman(
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,

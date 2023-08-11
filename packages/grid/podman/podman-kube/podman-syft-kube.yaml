@@ -35,11 +35,13 @@ spec:
       env:
         - name: PORT
           value: "8001"
+        - name: ENABLE_WARNINGS
+          value: "False"
       envFrom:
         - configMapRef:
             name: podman-syft-config
 
-      image: docker.io/openmined/grid-backend:0.8.2-beta.6
+      image: docker.io/openmined/grid-backend:0.8.2-beta.9
       imagePullPolicy: IfNotPresent
       resources: {}
       tty: true
@@ -55,7 +57,7 @@ spec:
       envFrom:
         - configMapRef:
             name: podman-syft-config
-      image: docker.io/openmined/grid-frontend:0.8.2-beta.6
+      image: docker.io/openmined/grid-frontend:0.8.2-beta.9
       imagePullPolicy: IfNotPresent
       resources: {}
       tty: true
