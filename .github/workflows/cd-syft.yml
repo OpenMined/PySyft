@@ -113,8 +113,8 @@ jobs:
           fi
 
       - name: Set Grid package version
-        run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
-
+        shell: bash
+        run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
