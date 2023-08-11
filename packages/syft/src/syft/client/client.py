@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from enum import Enum
-import getpass
+from getpass import getpass
 import json
 from typing import Any
 from typing import Callable
@@ -645,9 +645,9 @@ class SyftClient:
         if not email:
             email = input("Email: ")
         if not password:
-            password = getpass.getpass("Password: ")
+            password = getpass("Password: ")
         if not password_verify:
-            password_verify = getpass.getpass("Confirm Password: ")
+            password_verify = getpass("Confirm Password: ")
         if password is not password_verify:
             return SyftError(message="Passwords do not match")
 
