@@ -416,6 +416,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "get",
     "save",
     "_set_syft_action_data",
+    "syft_action_data",
 ]
 
 
@@ -454,9 +455,13 @@ class ActionObject(SyftObject):
 
         if self.syft_action_data_cache is None:
             api = APIRegistry.api_for(
-                node_uid=self.node_uid,
+                node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            # service = context.node.get_service(BlobStorageService)
+            # action_object.with_node_context(context)
+            # action_object.node_context = context
+            # action_object.clear_context()
             blob_retrieval_object = api.services.blob_storage.read(
                 uid=self.syft_blob_storage_entry_id
             )
@@ -475,7 +480,7 @@ class ActionObject(SyftObject):
             storage_entry = CreateBlobStorageEntry.from_obj(data)
             blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
             blob_deposit_object.write(serialize(data, to_bytes=True))
-            self.syft_blob_storage_entry_id = storage_entry.id
+            self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
 
         self.syft_action_data_cache = data
         self.syft_action_data_type = type(data)
@@ -1077,6 +1082,9 @@ class ActionObject(SyftObject):
         result.syft_node_location = context.syft_node_location
         result.syft_client_verify_key = context.syft_client_verify_key
 
+        # Propogate Syft blob storage entry id
+        result.syft_blob_storage_entry_id = context.obj.syft_blob_storage_entry_id
+
         # Propagate Result ID
         if context.result_id is not None:
             result.id = context.result_id
@@ -1105,7 +1113,14 @@ class ActionObject(SyftObject):
         context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
 
         # no input needs to propagate
-        result = self._syft_run_post_hooks__(context, name, bool(self.syft_action_data))
+        result = self._syft_run_post_hooks__(
+            context,
+            name,
+            any(
+                x is not None
+                for x in (self.syft_blob_storage_entry_id, self.syft_action_data_cache)
+            ),
+        )
         result = self._syft_attr_propagate_ids(context, name, result)
 
         def __wrapper__bool__() -> bool:
