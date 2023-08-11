@@ -28,6 +28,7 @@ from typing_extensions import Self
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.blob_storage import CreateBlobStorageEntry
@@ -414,7 +415,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "as_empty",
     "get",
     "save",
-    "__set_syft_action_data_cache",
+    "_set_syft_action_data",
 ]
 
 
@@ -462,18 +463,18 @@ class ActionObject(SyftObject):
             self.syft_action_data_cache = blob_retrieval_object.read()
         return self.syft_action_data_cache
 
-    def __set_syft_action_data_cache(self, data: Any) -> None:
+    def _set_syft_action_data(self, data: Any) -> None:
         # relative
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is not None:
             storage_entry = CreateBlobStorageEntry.from_obj(data)
             blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
-            blob_deposit_object.write(data)
+            blob_deposit_object.write(serialize(data, to_bytes=True))
             self.syft_blob_storage_entry_id = storage_entry.id
 
         self.syft_action_data_cache = data
@@ -486,7 +487,7 @@ class ActionObject(SyftObject):
         )
         self.syft_action_data_str_ = str(data)
 
-    syft_action_data = syft_action_data.setter(__set_syft_action_data_cache)
+    syft_action_data = syft_action_data.setter(_set_syft_action_data)
 
     @property
     def is_pointer(self) -> bool:
@@ -535,7 +536,7 @@ class ActionObject(SyftObject):
 
     def save(self) -> None:
         data = self.syft_action_data
-        self.__set_syft_action_data_cache(data)
+        self._set_syft_action_data(data)
         self.syft_action_data_cache = None
 
     @property
@@ -807,10 +808,10 @@ class ActionObject(SyftObject):
 
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
+        self.syft_node_location = client.id
+        self.syft_client_verify_key = client.verify_key
         self.save()
         res = client.api.services.action.set(self)
-        res.syft_node_location = client.id
-        res.syft_client_verify_key = client.verify_key
         return res
 
     def get_from(self, client: SyftClient) -> Any:

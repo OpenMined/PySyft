@@ -46,7 +46,7 @@ class BlobStorageEntry(SyftObject):
 
     id: UID
     location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
-    type_: Optional[Type[SyftObject]]
+    type_: Optional[Type]
     mimetype: str = "bytes"
     file_size: int
     uploaded_by: SyftVerifyKey
@@ -69,7 +69,7 @@ class CreateBlobStorageEntry(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    type_: Optional[Type[SyftObject]]
+    type_: Optional[Type]
     mimetype: str = "bytes"
     file_size: int
 
