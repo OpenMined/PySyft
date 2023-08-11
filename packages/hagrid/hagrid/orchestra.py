@@ -178,15 +178,12 @@ class NodeHandle:
             )
             prompt_warning_message(message)
         client = self.client
-        if email and password:
-            return client.login(email=email, password=password, **kwargs)
-        elif not email:
+        if not email:
             email = input("Email: ")
             password = getpass.getpass("Password: ")
-            return client.login(email=email, password=password, **kwargs)
         elif not password:
             password = getpass.getpass("Password: ")
-            return client.login(email=email, password=password, **kwargs)
+        return client.login(email=email, password=password, **kwargs)
 
     def register(
         self,
