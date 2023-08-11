@@ -223,12 +223,13 @@ services:
       - S3_ROOT_USER=${S3_ROOT_USER:-admin}
       - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
       - S3_PORT=${S3_PORT:-8888}
-    entrypoint: ["/bin/sh", "-c"]
+    entrypoint: ["/bin/sh"]
     command:
-      - sleep 30 && echo 's3.configure -access_key ${S3_ROOT_USER} -secret_key ${S3_ROOT_PWD} -user iam -actions Read,Write,List,Tagging,Admin -apply' | weed shell > /dev/null 2>&1 & weed server -s3 -s3.port=${S3_PORT} -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}
+      - "/etc/seaweedfs/start.sh"
     volumes:
       - seaweedfs-data:/data/blob
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
+      - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
   mongo:
     image: mongo:latest
     restart: always
