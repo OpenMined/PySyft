@@ -27,6 +27,7 @@ try:
     from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
     from syft.node.node import get_default_root_password
+    from syft.service.response import SyftError
     from syft.util.util import prompt_warning_message
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
@@ -171,31 +172,51 @@ class NodeHandle:
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
+        client = self.client
+
+        if not email:
+            email = input("Email: ")
+        if not password:
+            password = getpass.getpass("Password: ")
+
+        session = client.login(email=email, password=password, **kwargs)
+        if isinstance(session, SyftError):
+            return session
+
         if password == get_default_root_password():
             message = (
                 "You are using a default password. Please change the password "
                 "using `[your_client].me.set_password([new_password])`."
             )
             prompt_warning_message(message)
-        client = self.client
-        if email and password:
-            return client.login(email=email, password=password, **kwargs)
-        return None
+
+        return session
 
     def register(
         self,
         name: str,
-        email: str,
-        password: str,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        password_verify: Optional[str] = None,
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ) -> Any:
+        if not email:
+            email = input("Email: ")
+        if not password:
+            password = getpass.getpass("Password: ")
+        if not password_verify:
+            password_verify = getpass.getpass("Confirm Password: ")
+        if password is not password_verify:
+            return SyftError(message="Passwords do not match")
+
         client = self.client
         return client.register(
             name=name,
             email=email,
             password=password,
             institution=institution,
+            password_verify=password_verify,
             website=website,
         )
 
