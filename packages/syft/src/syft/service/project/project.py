@@ -688,7 +688,7 @@ class Project(SyftObject):
 
     def _coll_repr_(self):
         return {
-            "Name": self.name,
+            "name": self.name,
             "description": self.description,
             "created by": self.created_by,
             "pending requests": self.pending_requests,
