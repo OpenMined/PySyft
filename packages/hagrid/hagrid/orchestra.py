@@ -195,17 +195,28 @@ class NodeHandle:
     def register(
         self,
         name: str,
-        email: str,
-        password: str,
+        email: Optional[str] = "",
+        password: Optional[str] = "",
+        password_verify: Optional[str] = "",
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ) -> Any:
+        if not email:
+            email = input("Email: ")
+        if not password:
+            password = getpass.getpass("Password: ")
+        if not password_verify:
+            password_verify = getpass.getpass("Confirm Password: ")
+        if password is not password_verify:
+            return SyftError(message="Passwords do not match")
+
         client = self.client
         return client.register(
             name=name,
             email=email,
             password=password,
             institution=institution,
+            password_verify=password_verify,
             website=website,
         )
 

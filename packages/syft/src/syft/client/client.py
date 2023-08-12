@@ -581,7 +581,13 @@ class SyftClient:
         self, email: str, password: str, cache: bool = True, register=False, **kwargs
     ) -> Self:
         if register:
-            self.register(email=email, password=password, **kwargs)
+            if not email:
+                email = input("Email: ")
+            if not password:
+                password = getpass("Password: ")
+            self.register(
+                email=email, password=password, password_verify=password, **kwargs
+            )
         user_private_key = self.connection.login(email=email, password=password)
         if isinstance(user_private_key, SyftError):
             return user_private_key
