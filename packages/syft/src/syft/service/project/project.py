@@ -1190,7 +1190,7 @@ class ProjectSubmit(SyftObject):
         self.users = [UserIdentity.from_client(client) for client in self.clients]
 
         # Assign logged in user name as project creator
-        self.username = self.clients[0].me.name or ''
+        self.username = self.clients[0].me.name or ""
 
         # Convert SyftClients to NodeIdentities
         self.members = list(map(self.to_node_identity, self.members))
@@ -1353,9 +1353,11 @@ def check_permissions(context: TransformContext) -> TransformContext:
 
     return context
 
+
 def add_creator_name(context: TransformContext) -> TransformContext:
     context.output["username"] = context.obj.username
     return context
+
 
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:

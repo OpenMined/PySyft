@@ -471,7 +471,7 @@ class SyftClient:
     @property
     def logged_in_user(self) -> Optional[str]:
         return self.__logged_in_user
-    
+
     @property
     def logged_in_username(self) -> Optional[str]:
         return self.__logged_in_username
@@ -599,7 +599,7 @@ class SyftClient:
 
             # Get current logged in user name
             self.__logged_in_username = self.users.get_current_user().name
-            
+
             # TODO: How to get the role of the user?
             # self.__user_role =
             self._fetch_api(self.credentials)
