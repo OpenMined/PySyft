@@ -68,18 +68,19 @@ def container_exists(name: str) -> bool:
     return len(output) > 0
 
 
-def container_id(name: str) -> Optional[str]:
-    output = shell(f"docker ps -q -f name='{name}'")
-    if len(output) > 0:
-        return output[0].strip()
-    return None
+def port_from_container(name: str, deployment_type: DeploymentType) -> Optional[int]:
+    container_suffix = ""
+    if deployment_type == DeploymentType.SINGLE_CONTAINER:
+        container_suffix = "-worker-1"
+    elif deployment_type == DeploymentType.CONTAINER_STACK:
+        container_suffix = "-proxy-1"
+    else:
+        raise NotImplementedError(
+            f"port_from_container not implemented for the deployment type:{deployment_type}"
+        )
 
-
-def port_from_container(name: str) -> Optional[int]:
-    cid = container_id(name)
-    if cid is None:
-        return None
-    output = shell(f"docker port {cid}")
+    container_name = name + container_suffix
+    output = shell(f"docker port {container_name}")
     if len(output) > 0:
         try:
             # 80/tcp -> 0.0.0.0:8080
@@ -336,7 +337,7 @@ def deploy_to_container(
 ) -> Optional[NodeHandle]:
     if port == "auto" or port is None:
         if container_exists(name=name):
-            port = port_from_container(name=name)  # type: ignore
+            port = port_from_container(name=name, deployment_type=deployment_type_enum)  # type: ignore
         else:
             port = find_available_port(host="localhost", port=DEFAULT_PORT, search=True)
 
