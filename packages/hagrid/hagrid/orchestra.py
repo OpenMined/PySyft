@@ -195,9 +195,9 @@ class NodeHandle:
     def register(
         self,
         name: str,
-        email: Optional[str] = "",
-        password: Optional[str] = "",
-        password_verify: Optional[str] = "",
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        password_verify: Optional[str] = None,
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ) -> Any:
