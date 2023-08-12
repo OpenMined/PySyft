@@ -378,6 +378,7 @@ def test_user_view_set_role_admin() -> None:
         name="Sheldon Cooper",
         email="sheldon2@caltech.edu",
         password="changethis",
+        password_verify="changethis",
         institution="Caltech",
         website="https://www.caltech.edu/",
     )
