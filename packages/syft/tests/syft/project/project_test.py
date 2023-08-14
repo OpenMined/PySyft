@@ -10,7 +10,10 @@ def test_project_creation(worker):
     root_client = worker.root_client
 
     root_client.register(
-        name="sheldon", email="sheldon@caltech.edu", password="bazinga"
+        name="sheldon",
+        email="sheldon@caltech.edu",
+        password="bazinga",
+        password_verify="bazinga",
     )
 
     ds_client = sy.login(node=worker, email="sheldon@caltech.edu", password="bazinga")
@@ -33,7 +36,10 @@ def test_error_data_owner_project_creation(worker):
     root_client = worker.root_client
 
     root_client.register(
-        name="sheldon", email="sheldon@caltech.edu", password="bazinga"
+        name="sheldon",
+        email="sheldon@caltech.edu",
+        password="bazinga",
+        password_verify="bazinga",
     )
 
     new_project = sy.Project(
@@ -50,11 +56,17 @@ def test_exception_different_email(worker):
     root_client = worker.root_client
 
     root_client.register(
-        name="sheldon", email="sheldon@caltech.edu", password="bazinga"
+        name="sheldon",
+        email="sheldon@caltech.edu",
+        password="bazinga",
+        password_verify="bazinga",
     )
 
     root_client.register(
-        name="leonard", email="leonard@princeton.edu", password="penny"
+        name="leonard",
+        email="leonard@princeton.edu",
+        password="penny",
+        password_verify="penny",
     )
 
     ds_sheldon = sy.login(node=worker, email="sheldon@caltech.edu", password="bazinga")
@@ -75,7 +87,10 @@ def test_project_serde(worker):
     root_client = worker.root_client
 
     root_client.register(
-        name="sheldon", email="sheldon@caltech.edu", password="bazinga"
+        name="sheldon",
+        email="sheldon@caltech.edu",
+        password="bazinga",
+        password_verify="bazinga",
     )
 
     new_project = sy.Project(
