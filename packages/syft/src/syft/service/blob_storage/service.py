@@ -139,5 +139,22 @@ class BlobStorageService(AbstractService):
 
         return result
 
+    @service_method(path="blob_storage.delete", name="delete")
+    def delete(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.get_by_uid(context.credentials, uid=uid)
+        if result.is_ok():
+            with context.node.blob_storage_client.connect() as conn:
+                file_unlinked = conn.delete(result.ok().location)
+            blob_storage_entry_deleted = self.stash.delete_by_uid(
+                context.credentials, uid=uid
+            )
+            if file_unlinked and blob_storage_entry_deleted:
+                return SyftSuccess(message="File successfully deleted.")
+            else:
+                return SyftError(message="File deletion failed.")
+        return SyftError(message=result.err())
+
 
 TYPE_TO_SERVICE[BlobStorageEntry] = BlobStorageEntry

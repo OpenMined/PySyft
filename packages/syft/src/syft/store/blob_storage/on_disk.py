@@ -68,6 +68,13 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         return OnDiskBlobDeposit(blob_storage_entry_id=obj.id)
 
+    def delete(self, fp: SecureFilePathLocation) -> bool:
+        try:
+            (self._base_directory / fp.path).unlink()
+            return True
+        except FileNotFoundError:
+            return False
+
 
 @serializable()
 class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
