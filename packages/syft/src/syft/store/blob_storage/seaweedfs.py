@@ -193,6 +193,21 @@ class SeaweedFSConnection(BlobStorageConnection):
         except BotoClientError as e:
             return SyftError(message=str(e))
 
+    def delete(
+        self,
+        fp: SecureFilePathLocation,
+    ) -> Union[SyftError, SyftSuccess]:
+        # try:
+        result = self.client.delete_object(
+            Bucket=self.bucket_name,
+            Key=fp.path,
+        )
+        print(result)
+        return result
+        # return SyftSuccess(message="Successfully deleted file.")
+        # except BotoClientError as e:
+        #     return SyftError(message=str(e))
+
 
 class SeaweedFSConfig(BlobStorageConfig):
     client_type: Type[BlobStorageClient] = SeaweedFSClient
