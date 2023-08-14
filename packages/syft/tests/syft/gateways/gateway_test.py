@@ -126,6 +126,7 @@ def test_enclave_connect_to_gateway(faker: Faker):
         name=faker.name(),
         email=user_email,
         password=password,
+        password_verify=password,
     )
 
     enclave_client.login(email=user_email, password=password)

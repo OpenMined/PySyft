@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from enum import Enum
+from getpass import getpass
 import json
 from typing import Any
 from typing import Callable
@@ -580,7 +581,13 @@ class SyftClient:
         self, email: str, password: str, cache: bool = True, register=False, **kwargs
     ) -> Self:
         if register:
-            self.register(email=email, password=password, **kwargs)
+            if not email:
+                email = input("Email: ")
+            if not password:
+                password = getpass("Password: ")
+            self.register(
+                email=email, password=password, password_verify=password, **kwargs
+            )
         user_private_key = self.connection.login(email=email, password=password)
         if isinstance(user_private_key, SyftError):
             return user_private_key
@@ -635,17 +642,27 @@ class SyftClient:
     def register(
         self,
         name: str,
-        email: str,
-        password: str,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        password_verify: Optional[str] = None,
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ):
+        if not email:
+            email = input("Email: ")
+        if not password:
+            password = getpass("Password: ")
+        if not password_verify:
+            password_verify = getpass("Confirm Password: ")
+        if password is not password_verify:
+            return SyftError(message="Passwords do not match")
+
         try:
             new_user = UserCreate(
                 name=name,
                 email=email,
                 password=password,
-                password_verify=password,
+                password_verify=password_verify,
                 institution=institution,
                 website=website,
                 created_by=self.credentials,

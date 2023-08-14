@@ -6,7 +6,10 @@ def test_client_logged_in_user(worker):
     assert guest_client.logged_in_user == "info@openmined.org"
 
     guest_client.register(
-        name="sheldon", email="sheldon@caltech.edu", password="bazinga"
+        name="sheldon",
+        email="sheldon@caltech.edu",
+        password="bazinga",
+        password_verify="bazinga",
     )
 
     guest_client.login(email="sheldon@caltech.edu", password="bazinga")
