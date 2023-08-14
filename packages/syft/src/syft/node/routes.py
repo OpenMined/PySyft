@@ -89,9 +89,7 @@ def make_routes(worker: Worker) -> APIRouter:
             return handle_syft_new_api(user_verify_key)
 
     def handle_new_api_call(data: bytes) -> Response:
-        print("Reached the endpoint...." * 10)
         obj_msg = deserialize(blob=data, from_bytes=True)
-        print("HErere deserialized blob store" * 10)
         result = worker.handle_api_call(api_call=obj_msg)
         return Response(
             serialize(result, to_bytes=True),

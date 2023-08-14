@@ -181,6 +181,8 @@ passthrough_attrs = [
     "get_from",  # syft
     "get",  # syft
     "delete_data",  # syft
+    "_set_syft_action_data",  # syft
+    "syft_action_data",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -462,6 +464,9 @@ class ActionObject(SyftObject):
             # action_object.with_node_context(context)
             # action_object.node_context = context
             # action_object.clear_context()
+            #
+            #
+
             blob_retrieval_object = api.services.blob_storage.read(
                 uid=self.syft_blob_storage_entry_id
             )
@@ -521,23 +526,6 @@ class ActionObject(SyftObject):
         )
         values["syft_action_data_str_"] = str(v)
         return values
-
-    # @pydantic.validator("syft_action_data_cache", pre=True, always=True)
-    # def check_action_data(cls, v: Optional[Any], values: Dict) -> Any:
-    #     """Generate or reuse an UID"""
-    #     values["syft_action_data_type"] = type(v)
-
-    #     values["syft_action_data_type"] = (
-    #         v._repr_markdown_()
-    #         if hasattr(v, "_repr_markdown_")
-    #         else v.__repr__()
-    #     )
-    #     values["syft_action_data_type"] = str(v)
-    #     return v
-
-    # action_obj = ActionObject.from_obj(syft_action_data_cache=np.array[1, 2, 3])
-    # api.set
-    #        action_obj.save()
 
     def save(self) -> None:
         data = self.syft_action_data

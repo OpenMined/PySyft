@@ -39,7 +39,7 @@ def numpy_like_eq(left: Any, right: Any) -> bool:
 
 # 🔵 TODO 7: Map TPActionObjects and their 3rd Party types like numpy type to these
 # classes for bi-directional lookup.
-@serializable()
+@serializable(without=["syft_action_data_cache"])
 class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -72,12 +72,12 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         result = getattr(ufunc, method)(*inputs, **kwargs)
         if type(result) is tuple:
             return tuple(
-                NumpyArrayObject(_syft_action_data=x, dtype=x.dtype, shape=x.shape)
+                NumpyArrayObject(syft_action_data_cache=x, dtype=x.dtype, shape=x.shape)
                 for x in result
             )
         else:
             return NumpyArrayObject(
-                _syft_action_data=result, dtype=result.dtype, shape=result.shape
+                syft_action_data_cache=result, dtype=result.dtype, shape=result.shape
             )
 
 
