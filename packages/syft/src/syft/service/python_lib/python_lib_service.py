@@ -50,3 +50,9 @@ class PythonLibService(AbstractService):
     @service_method(path="python_lib.show_lib", name="show_lib")
     def show_lib(self, context: AuthedServiceContext):
         return list(LibConfigRegistry.__service_config_registry__.keys())
+    
+    @service_method(path="python_lib.send_cmp", name="send_cmp")
+    def send_cmp(self, context: AuthedServiceContext, cmp: CMPTree):
+        import sys
+        print(cmp, file=sys.stderr)
+        return SyftSuccess(message="CMP received succesfully!")

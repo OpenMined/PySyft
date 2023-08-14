@@ -281,6 +281,17 @@ class CMPBase:
         else:
             raise ValueError(f"property {path} does not exist")
 
+    def rebuild(self):
+        self.obj = import_from_path(self.absolute_path)
+        for child in self.children.values():
+            child.rebuild()
+        
+    def reset_objs(self):
+        self.obj = None
+        for child in self.children.values():
+            child.reset_objs()
+        
+
 
 @serializable()
 class CMPModule(CMPBase):
