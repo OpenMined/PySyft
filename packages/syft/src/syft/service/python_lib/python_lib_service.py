@@ -15,7 +15,11 @@ from ..service import LibConfigRegistry
 from ...types.file import SyftFolder
 from ...serde.lib_permissions import ALL_EXECUTE
 # import subprocess
-from gevent import subprocess
+# from gevent import subprocess
+import subprocess
+from gevent.select import select
+import sys
+import pip
 # @instrument
 @serializable()
 class PythonLibService(AbstractService):
@@ -25,27 +29,28 @@ class PythonLibService(AbstractService):
     @service_method(path="python_lib.add_lib", name="add_lib")
     def add_lib(self, context: AuthedServiceContext, syft_folder: SyftFolder):
         path = syft_folder.model_folder
+        pip.main(['install', str(path)])
+        # proc = subprocess.Popen(
+        #     [
+        #         "pip",
+        #         "install",
+        #         {path}
+        #     ],
+        #     shell=True,
+        #     stdout=subprocess.PIPE,
+        #     stderr=subprocess.PIPE
+        # )
+
+        # cmp_module: CMPTree = CMPModule(
+        #     syft_folder.name,
+        #     permissions=ALL_EXECUTE,
+        #     )
         
-        result = subprocess.run(
-            [
-                "pip",
-                "install",
-                {path}
-            ],
-            capture_output=True
-        )
-        if result.stderr:
-            return SyftError(message=f"{result.returncode}")
-        
-        cmp_module: CMPTree = CMPModule(
-            syft_folder.name,
-            permissions=ALL_EXECUTE,
-            )
-        
-        for lib_obj in cmp_module.flatten():
-            if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
-                register_lib_obj(lib_obj)
-        return SyftSuccess(message="Lib added succesfully!")
+        # for lib_obj in cmp_module.flatten():
+        #     if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+        #         register_lib_obj(lib_obj)
+        # inner()
+        return SyftSuccess(message="Lib added succesfully:" + str(path))
     
     @service_method(path="python_lib.show_lib", name="show_lib")
     def show_lib(self, context: AuthedServiceContext):

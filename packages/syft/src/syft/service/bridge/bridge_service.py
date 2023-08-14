@@ -5,6 +5,7 @@ import inspect
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -164,7 +165,6 @@ class APIWrapperStash(BaseUIDStoreStash):
     ) -> Result[List[APIWrapper], str]:
         # qks = QueryKeys(qks=[PathPartitionKey.with_obj(path)])
         results = self.get_all(credentials=credentials)
-        print("got results", results)
         items = []
         if results.is_ok() and results.ok():
             results = results.ok()
@@ -239,22 +239,20 @@ class BridgeService(AbstractService):
             return SyftSuccess(message=f"APIWrapper added: {wrapper}")
         return SyftError(message=f"Failed to add APIWrapper {wrapper}. {result.err()}")
 
-    @service_method(path="bridge.get_wrappers", name="get_wrappers")
-    def get_wrappers(
-        self, context: AuthedServiceContext, path: str
-    ) -> Union[SyftSuccess, SyftError]:
-        """Get an APIWrappers."""
-        results = self.wrapper_stash.get_by_path(context.credentials, path=path)
-        if results.is_ok() and results.ok():
-            return results
-        return SyftError(
-            message=f"Failed to get APIWrapper for {path}. {results.err()}"
-        )
-
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[List[APIBridge], SyftError]:
         results = self.stash.get_all(context.credentials)
+        if results.is_ok():
+            return results.ok()
+        return SyftError(messages="Unable to get API Bridges")
+
+    def get_bridges(
+        self, context: AuthedServiceContext
+    ) -> Union[List[APIBridge], SyftError]:
+        # TODO: Add ability to specify which roles see which endpoints
+        # for now skip auth
+        results = self.stash.get_all(context.node.verify_key)
         if results.is_ok():
             return results.ok()
         return SyftError(messages="Unable to get API Bridges")
@@ -288,17 +286,7 @@ class BridgeService(AbstractService):
         method = bridge.openapi._operation_map[method_name]
         callable_op = bridge.openapi._get_callable(method.request)
 
-        wrappers = self.wrapper_stash.get_by_path(context.node.verify_key, path=path)
-
-        pre_wrapper = None
-        post_wrapper = None
-        if wrappers.is_ok() and wrappers.ok():
-            wrappers = wrappers.ok()
-            for wrapper in wrappers:
-                if wrapper.order == APIWrapperOrder.PRE_HOOK:
-                    pre_wrapper = wrapper
-                elif wrapper.order == APIWrapperOrder.POST_HOOK:
-                    post_wrapper = wrapper
+        pre_wrapper, post_wrapper = self.get_wrappers(context=context, path=path)
 
         if pre_wrapper:
             context, kwargs = pre_wrapper.exec(context, kwargs)
@@ -321,6 +309,22 @@ class BridgeService(AbstractService):
         if post_wrapper:
             context, result = post_wrapper.exec(context, result)
         return result
+
+    def get_wrappers(
+        self, context: AuthedServiceContext, path: str
+    ) -> Tuple[Optional[APIWrapper], Optional[APIWrapper]]:
+        wrappers = self.wrapper_stash.get_by_path(context.node.verify_key, path=path)
+        pre_wrapper = None
+        post_wrapper = None
+        if wrappers.is_ok() and wrappers.ok():
+            wrappers = wrappers.ok()
+            for wrapper in wrappers:
+                if wrapper.order == APIWrapperOrder.PRE_HOOK:
+                    pre_wrapper = wrapper
+                elif wrapper.order == APIWrapperOrder.POST_HOOK:
+                    post_wrapper = wrapper
+
+        return (pre_wrapper, post_wrapper)
 
     @service_method(
         path="bridge.authenticate", name="authenticate", roles=GUEST_ROLE_LEVEL

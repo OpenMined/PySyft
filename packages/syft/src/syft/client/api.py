@@ -395,7 +395,7 @@ class SyftTypes(SyftObject):
         from ..service.bridge.bridge_service import BridgeService
 
         context = AuthedServiceContext(node=node, credentials=user_verify_key)
-        method = node.get_method_with_context(BridgeService.get_all, context)
+        method = node.get_method_with_context(BridgeService.get_bridges, context)
         bridges = method()
 
         serde_types = []
@@ -512,7 +512,7 @@ class SyftAPI(SyftObject):
 
         # get bridge APIs
         # 🟡 TODO 35: fix root context
-        method = node.get_method_with_context(BridgeService.get_all, context)
+        method = node.get_method_with_context(BridgeService.get_bridges, context)
         bridges = method()
         for bridge in bridges:
             for m in list(sorted(bridge.openapi._operation_map.keys())):
@@ -540,13 +540,14 @@ class SyftAPI(SyftObject):
         commands = method()
         for command in commands:
             signature = command.user_signature()
-            pre_kwargs = {
-                "image_name": command.image_name,
-                "command_name": command.name,
-            }
             service_path = "container.call"
             method_name = command.name
             module_path = f"{command.module_name}.{method_name}"
+            pre_kwargs = {
+                "module_path": module_path,
+                "image_name": command.image_name,
+                "command_name": command.name,
+            }
             endpoint = APIEndpoint(
                 service_path=service_path,
                 module_path=module_path,

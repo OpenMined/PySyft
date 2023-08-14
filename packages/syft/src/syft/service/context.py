@@ -40,6 +40,18 @@ class UserSession(SyftObject):
     def __setitem__(self, key: str, value: Any) -> None:
         self.set_key(key, value)
 
+    def __iter__(self) -> Any:
+        return self.kv_store.__iter__()
+
+    def __next__(self) -> Any:
+        return self.kv_store.__next__()
+
+    def keys(self) -> Any:
+        return self.kv_store.keys()
+
+    def values(self) -> Any:
+        return self.kv_store.values()
+
     def get_key(self, key: str) -> Optional[str]:
         user = self.get_user_session()
         self.kv_store = user.kv_store

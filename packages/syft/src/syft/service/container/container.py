@@ -2,6 +2,7 @@
 from inspect import Parameter
 from inspect import Signature
 import json
+import re
 from typing import Any
 from typing import Dict
 from typing import List
@@ -20,6 +21,8 @@ from ...service.response import SyftSuccess
 from ...types.file import SyftFile, SyftFolder
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+
+ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 @serializable()
@@ -192,6 +195,7 @@ class ContainerCommand(SyftObject):
     args: str
     kwargs: Dict[str, ContainerCommandArg] = {}
     user_kwargs: List[str] = []
+    extra_user_kwargs: Dict[str, Type] = {}
     user_files: List[str] = []
     return_filepath: Optional[str] = None
     mounts: List[ContainerMount] = []
@@ -201,7 +205,10 @@ class ContainerCommand(SyftObject):
     __repr_attrs__ = ["module_name", "name", "image_name"]
 
     def cmd(
-        self, run_user_kwargs: Dict[str, str], run_files: Dict[str, SyftFile]
+        self,
+        run_user_kwargs: Dict[str, Any],
+        run_files: Dict[str, SyftFile],
+        run_extra_kwargs: Dict[str, Any],
     ) -> str:
         run_kwargs = {}
         run_kwargs["user_kwargs"] = run_user_kwargs
@@ -228,13 +235,19 @@ class ContainerCommand(SyftObject):
                     param_type = kwarg.value
                 else:
                     param_type = type(kwarg.value)
+                if not kwarg.required:
+                    param_type = Optional[param_type]
             else:
                 param_name = key.replace("-", "_")
                 param_type = Union[SyftFile, List[SyftFile]]
 
-            if not kwarg.required:
-                param_type = Optional[param_type]
+            parameter = Parameter(
+                name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
+            )
+            parameters.append(parameter)
 
+        for key, param_type in self.extra_user_kwargs.items():
+            param_name = key.replace("-", "_")
             parameter = Parameter(
                 name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
             )
@@ -305,10 +318,12 @@ class ContainerResult(SyftObject):
             out, err = result.output
             if out is not None:
                 stdout = out.decode("utf-8").strip()
+                stdout = ansi_escape.sub("", stdout)
                 jsonstd = list(extract_json_objects(stdout))
                 stdout = stdout.splitlines()
             if err is not None:
                 stderr = err.decode("utf-8").strip()
+                stderr = ansi_escape.sub("", stderr)
                 jsonerr = list(extract_json_objects(stderr))
                 stderr = stderr.splitlines()
 
