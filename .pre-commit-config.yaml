@@ -69,8 +69,6 @@ repos:
       - id: black
         args: ["."]
         always_run: true
-        # exclude: ^(packages/syft/src/syft/proto)
-        files: "^packages/syft(?!(.*_pb2\\.py$)).*\\.py"
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
