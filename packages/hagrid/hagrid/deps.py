@@ -333,7 +333,7 @@ class BinaryInfo:
                     if "-gitpod" in self.version:
                         parts = self.version.split("-gitpod")
                         self.version = parts[0]
-                    if "-desktop":
+                    if "-desktop" in self.version:
                         parts = self.version.split("-desktop")
                         self.version = parts[0]
                     self.version = version.parse(self.version)
