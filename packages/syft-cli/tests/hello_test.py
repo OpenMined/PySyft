@@ -5,7 +5,7 @@ from typer.testing import CliRunner
 runner = CliRunner()
 
 
-def test_hello():
+def test_hello() -> None:
     result = runner.invoke(app, ["hello"])
     assert result.exit_code == 0
     assert "Syft CLI 👋" in result.stdout

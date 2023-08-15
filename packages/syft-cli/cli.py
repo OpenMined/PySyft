@@ -10,20 +10,27 @@ console = Console()
 
 
 @app.command()
-def hello():
+def hello() -> None:
     typer.echo("Syft CLI 👋")
 
 
 @app.command()
-def version():
-    # syft absolute
-    import syft
-
+def version() -> None:
     table = Table(box=box.HORIZONTALS)
     table.add_column("Package", no_wrap=True)
     table.add_column("Version", style="cyan")
 
     table.add_row("CLI", __version__)
-    table.add_row("Library", syft.__version__)
+    table.add_row("Library", get_syft_version())
 
     console.print(table)
+
+
+def get_syft_version() -> str:
+    try:
+        # syft absolute
+        import syft
+
+        return syft.__version__
+    except ModuleNotFoundError:
+        return "Not Installed"
