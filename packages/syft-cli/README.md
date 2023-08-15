@@ -2,9 +2,13 @@
 
 ## Development
 
-    $ pip install -e packages/syft-cli[dev]
-    $ syftcli hello
+```sh
+pip install -e packages/syft-cli[dev]
+syftcli hello
+```
 
 ## Building
 
-    $ bash packages/syft-cli/scripts/build-cli.sh
+```sh
+bash packages/syft-cli/scripts/build-cli.sh
+```
