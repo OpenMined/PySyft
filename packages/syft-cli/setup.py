@@ -10,6 +10,7 @@ packages = [
 
 dev_packages = [
     "pyinstaller==5.13.0",
+    "pytest",
 ]
 
 setup(
