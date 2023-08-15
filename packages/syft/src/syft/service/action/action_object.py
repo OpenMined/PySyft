@@ -448,6 +448,7 @@ class ActionObject(SyftObject):
     syft_action_data_type: Optional[Any]
     syft_action_data_repr_: Optional[str]
     syft_action_data_str_: Optional[str]
+    syft_has_bool_attr: Optional[bool]
     # syft_dont_wrap_attrs = ["shape"]
 
     @property
@@ -496,6 +497,7 @@ class ActionObject(SyftObject):
             else data.__repr__()
         )
         self.syft_action_data_str_ = str(data)
+        self.syft_has_bool_attr = hasattr(data, "__bool__")
 
     syft_action_data = syft_action_data.setter(_set_syft_action_data)
 
@@ -940,8 +942,8 @@ class ActionObject(SyftObject):
             if side_effect not in self._syft_post_hooks__[HOOK_ALWAYS]:
                 self._syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
 
-        if isinstance(self.syft_action_data, ActionObject):
-            raise Exception("Nested ActionObjects", self.syft_action_data)
+        if isinstance(self.syft_action_data_type, ActionObject):
+            raise Exception("Nested ActionObjects", self.syft_action_data_repr_)
 
         self.syft_history_hash = hash(self.id)
 
@@ -1086,7 +1088,7 @@ class ActionObject(SyftObject):
                 "[_wrap_attribute_for_bool_on_nonbools] Use this only for the __bool__ operator"
             )
 
-        if hasattr(self.syft_action_data, "__bool__"):
+        if self.syft_has_bool_attr:
             raise RuntimeError(
                 "[_wrap_attribute_for_bool_on_nonbools] self.syft_action_data already implements the bool operator"
             )
@@ -1150,7 +1152,7 @@ class ActionObject(SyftObject):
 
         debug(f"[__getattribute__] Handling method {name} ")
         if (
-            isinstance(self.syft_action_data, ActionDataEmpty)
+            isinstance(self.syft_action_data_type, ActionDataEmpty)
             and name not in action_data_empty_must_run
         ):
             original_func = fake_func
@@ -1219,9 +1221,9 @@ class ActionObject(SyftObject):
         def fake_func(*args: Any, **kwargs: Any) -> Any:
             return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
-        if isinstance(self.syft_action_data, ActionDataEmpty) or has_action_data_empty(
-            args=args, kwargs=kwargs
-        ):
+        if isinstance(
+            self.syft_action_data_type, ActionDataEmpty
+        ) or has_action_data_empty(args=args, kwargs=kwargs):
             local_func = fake_func
         else:
             local_func = getattr(self.syft_action_data, op_name)
@@ -1271,7 +1273,7 @@ class ActionObject(SyftObject):
         context_self = self._syft_get_attr_context(name)
 
         # Handle bool operator on nonbools
-        if name == "__bool__" and not hasattr(self.syft_action_data, "__bool__"):
+        if name == "__bool__" and not self.syft_has_bool_attr:
             return self._syft_wrap_attribute_for_bool_on_nonbools(name)
 
         # Handle Properties
@@ -1472,7 +1474,7 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__rrshift__(other))
 
 
-@serializable()
+@serializable(without=["syft_action_data_cache"])
 class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -1503,7 +1505,7 @@ def debug_original_func(name: str, func: Callable) -> None:
 
 def is_action_data_empty(obj: Any) -> bool:
     return isinstance(obj, AnyActionObject) and isinstance(
-        obj.syft_action_data, ActionDataEmpty
+        obj.syft_action_data_type, ActionDataEmpty
     )
 
 
