@@ -71,6 +71,15 @@ class SyftWarning(SyftResponseMessage):
 
 
 @serializable()
+class SyftInfo(SyftResponseMessage):
+    _bool: bool = False
+
+    @property
+    def _repr_html_class_(self) -> str:
+        return "alert-info"
+
+
+@serializable()
 class SyftException(Exception):
     traceback: bool = False
     traceback_limit: int = 10

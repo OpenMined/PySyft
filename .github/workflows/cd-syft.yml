@@ -113,8 +113,10 @@ jobs:
           fi
 
       - name: Set Grid package version
+        id: grid-version
         shell: bash
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -134,7 +136,7 @@ jobs:
         with:
           images: openmined/grid-backend
           tags: |
-            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
             type=raw,value=beta
 
       - name: Build and push `grid-backend` image to DockerHub
@@ -155,7 +157,7 @@ jobs:
         with:
           images: openmined/grid-enclave
           tags: |
-            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
             type=raw,value=beta
 
       - name: Build and push `grid-enclave` image to DockerHub
@@ -176,7 +178,7 @@ jobs:
         with:
           images: openmined/grid-frontend
           tags: |
-            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
             type=raw,value=beta
 
       - name: Build and push `grid-frontend` image to DockerHub
@@ -197,7 +199,7 @@ jobs:
         with:
           images: openmined/grid-vpn-headscale
           tags: |
-            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
             type=raw,value=beta
 
       - name: Build and push `grid-headscale` image to DockerHub
@@ -217,7 +219,7 @@ jobs:
         with:
           images: openmined/grid-vpn-tailscale
           tags: |
-            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
             type=raw,value=beta
 
       - name: Build and push `grid-tailscale` image to DockerHub
@@ -237,7 +239,7 @@ jobs:
         with:
           images: openmined/grid-vpn-iptables
           tags: |
-            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
             type=raw,value=beta
 
       - name: Build and push `grid-vpn-iptables` image to DockerHub
