@@ -443,6 +443,11 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Launch a low side node type else a high side node type",
 )
+@click.option(
+    "--prune-vol",
+    is_flag=True,
+    help="Prune docker volumes after land.",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -3127,7 +3132,9 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
         target = verb.get_named_term_grammar("node_name").input
         if target == "all":
             # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
-            return "docker rm `docker ps -aq` --force"
+            if 'prune-vol' in kwargs:
+                return "docker rm `docker ps -aq` --force && docker volume prune"
+
 
         version = check_docker_version()
         if version:
