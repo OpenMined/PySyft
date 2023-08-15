@@ -252,3 +252,23 @@ jobs:
           tags: ${{ steps.meta_grid_vpn_iptables.outputs.tags }}
           cache-from: type=registry,ref=  ${{ steps.meta_grid_vpn_iptables.outputs.tags }}
           cache-to: type=inline
+
+      # Check if the version is a pre-release
+      - name: Check if the version is a pre-release
+        id: is_pre_release
+        run: |
+          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
+            echo "is_pre_release=rue" >> $GITHUB_OUTPUT
+          else
+            echo "is_pre_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ steps.grid-version.outputs.GRID_VERSION }}
+          generate_release_notes: True
+          prerelease: ${{ steps.is_pre_release.outputs.is_pre_release }}
+          files: |
+            ./packages/hagrid/hagrid/manifest_template.yml
+          tag_name: v${{ steps.grid-version.outputs.GRID_VERSION }}
