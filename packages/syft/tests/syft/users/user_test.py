@@ -38,7 +38,9 @@ def get_mock_client(root_client, role):
     mail = Faker().email()
     name = Faker().name()
     password = "pw"
-    assert root_client.register(name=name, email=mail, password=password)
+    assert root_client.register(
+        name=name, email=mail, password=password, password_verify=password
+    )
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
     assert worker.root_client.api.services.user.update(
         user_id, UserUpdate(user_id=user_id, role=role)
@@ -325,6 +327,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
         name="Sheldon Cooper",
         email="sheldon@caltech.edu",
         password="changethis",
+        password_verify="changethis",
         institution="Caltech",
         website="https://www.caltech.edu/",
     )
@@ -367,6 +370,7 @@ def test_user_view_set_role_admin() -> None:
         name="Sheldon Cooper",
         email="sheldon@caltech.edu",
         password="changethis",
+        password_verify="changethis",
         institution="Caltech",
         website="https://www.caltech.edu/",
     )
@@ -374,6 +378,7 @@ def test_user_view_set_role_admin() -> None:
         name="Sheldon Cooper",
         email="sheldon2@caltech.edu",
         password="changethis",
+        password_verify="changethis",
         institution="Caltech",
         website="https://www.caltech.edu/",
     )

@@ -42,7 +42,7 @@ from .nb_output import NBOutput
 from .version import __version__
 
 LATEST_STABLE_SYFT = "0.8.1"
-LATEST_BETA_SYFT = "0.8.2-beta.9"
+LATEST_BETA_SYFT = "0.8.2-beta.11"
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
@@ -332,6 +332,9 @@ class BinaryInfo:
                 try:
                     if "-gitpod" in self.version:
                         parts = self.version.split("-gitpod")
+                        self.version = parts[0]
+                    if "-desktop" in self.version:
+                        parts = self.version.split("-desktop")
                         self.version = parts[0]
                     self.version = version.parse(self.version)
                 except Exception:  # nosec
