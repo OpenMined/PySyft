@@ -82,7 +82,5 @@ jobs:
 
       - name: Run notebook tests
         #if: steps.changes.outputs.stack == 'true'
-        env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "rhel_podman"
         run: |
           tox -e stack.test.podman
