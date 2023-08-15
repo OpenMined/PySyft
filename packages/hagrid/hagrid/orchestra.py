@@ -210,7 +210,7 @@ class NodeHandle:
             password = getpass.getpass("Password: ")
         if not password_verify:
             password_verify = getpass.getpass("Confirm Password: ")
-        if password is not password_verify:
+        if password != password_verify:
             return SyftError(message="Passwords do not match")
 
         client = self.client
