@@ -95,7 +95,9 @@ def port_from_container(name: str, deployment_type: DeploymentType) -> Optional[
 
 
 def container_exists_with(name: str, port: int) -> bool:
-    output = shell(f"docker ps -q -f name='{name}' -f expose='{port}'")
+    output = shell(
+        f"docker ps -q -f name={name} | xargs -n 1 docker port | grep 0.0.0.0:{port}"
+    )
     return len(output) > 0
 
 
@@ -567,16 +569,19 @@ class Orchestra:
 
             snake_name = to_snake_case(name)
 
-            volume_output = shell(
-                f"docker volume rm {snake_name}_credentials-data --force || true"
-            )
+            volumes = ["mongo-data", "credentials-data"]
 
-            if "Error" not in volume_output:
-                print(f" ✅ {snake_name} Volume Removed")
-            else:
-                print(
-                    f"❌ Unable to remove container volume: {snake_name} :{volume_output}"
+            for volume in volumes:
+                volume_output = shell(
+                    f"docker volume rm {snake_name}_{volume} --force || true"
                 )
+
+                if "Error" not in volume_output:
+                    print(f" ✅ {snake_name}_{volume} Volume Removed")
+                else:
+                    print(
+                        f"❌ Unable to remove container volume: {snake_name} :{volume_output}"
+                    )
         else:
             raise NotImplementedError(
                 f"Reset not implemented for the deployment type:{deployment_type_enum}"
