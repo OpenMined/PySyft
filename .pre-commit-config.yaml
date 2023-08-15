@@ -69,8 +69,6 @@ repos:
       - id: black
         args: ["."]
         always_run: true
-        # exclude: ^(packages/syft/src/syft/proto)
-        files: "^packages/syft(?!(.*_pb2\\.py$)).*\\.py"
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
@@ -93,7 +91,7 @@ repos:
     rev: v1.0.0
     hooks:
       - id: mypy
-        name: mypy-hagrid
+        name: "mypy: hagrid"
         always_run: true
         files: ^packages/hagrid
         args: [
@@ -118,9 +116,34 @@ repos:
     rev: v1.0.0
     hooks:
       - id: mypy
-        name: mypy-grid
+        name: "mypy: syft-cli"
         always_run: true
+        files: ^packages/syft-cli
+        args: [
+            "--ignore-missing-imports",
+            "--scripts-are-modules",
+            "--disallow-incomplete-defs",
+            "--no-implicit-optional",
+            "--warn-unused-ignores",
+            "--warn-redundant-casts",
+            "--strict-equality",
+            "--warn-unreachable",
+            # "--disallow-untyped-decorators",
+            "--disallow-untyped-defs",
+            "--disallow-untyped-calls",
+            "--namespace-packages",
+            "--install-types",
+            "--non-interactive",
+            "--config-file=tox.ini",
+          ]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.0.0
+    hooks:
+      - id: mypy
+        name: "mypy: grid"
         files: ^packages/grid
+        always_run: true
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -143,7 +166,7 @@ repos:
     rev: v1.0.0
     hooks:
       - id: mypy
-        name: mypy-syft
+        name: "mypy: syft"
         always_run: true
         # files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util"
         files: "^packages/syft/src/syft/serde"
