@@ -19,6 +19,7 @@ from typing import Type
 from typing import Union
 
 # third party
+from IPython.display import display
 from typing_extensions import Self
 
 # relative
@@ -58,8 +59,10 @@ from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
+from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
 
@@ -157,7 +160,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 
     @property
     def approved(self) -> bool:
-        return all([x == UserCodeStatus.APPROVED for x in self.status_dict.values()])
+        return all(x == UserCodeStatus.APPROVED for x in self.status_dict.values())
 
     @property
     def denied(self) -> bool:
@@ -432,7 +435,10 @@ class UserCode(SyftObject):
 
     @property
     def unsafe_function(self) -> Optional[Callable]:
-        print("WARNING: This code was submitted by a User and could be UNSAFE.")
+        warning = SyftWarning(
+            message="This code was submitted by a User and could be UNSAFE."
+        )
+        display(warning)
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
         def wrapper(*args: Any, **kwargs: Any) -> Callable:
@@ -445,10 +451,17 @@ class UserCode(SyftObject):
                         on_private_data or arg_type == ArgumentType.PRIVATE
                     )
                     on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
+
                 if on_private_data:
-                    print("Warning: The result you see is computed on PRIVATE data.")
-                elif on_mock_data:
-                    print("Warning: The result you see is computed on MOCK data.")
+                    display(
+                        SyftInfo(
+                            message="The result you see is computed on PRIVATE data."
+                        )
+                    )
+                if on_mock_data:
+                    display(
+                        SyftInfo(message="The result you see is computed on MOCK data.")
+                    )
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
@@ -599,11 +612,6 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
-        print(
-            f"Syft function '{f.__name__}' successfully created. "
-            f"To add a code request, please create a project using `project = syft.Project(...)`, "
-            f"then use command `project.create_code_request`."
-        )
         res = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -620,6 +628,14 @@ def syft_function(
             res.output_policy_init_kwargs[
                 "output_readers"
             ] = res.input_owner_verify_keys
+
+        success_message = SyftSuccess(
+            message=f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
+        )
+        display(success_message)
+
         return res
 
     return decorator
