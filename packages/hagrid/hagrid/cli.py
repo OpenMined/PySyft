@@ -443,11 +443,7 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Launch a low side node type else a high side node type",
 )
-@click.option(
-    "--prune-vol",
-    is_flag=True,
-    help="Prune docker volumes after land.",
-)
+
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -3270,6 +3266,11 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     "--force",
     is_flag=True,
     help="Bypass the prompt during hagrid land",
+)
+@click.option(
+    "--prune-vol",
+    is_flag=True,
+    help="Prune docker volumes after land.",
 )
 def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
