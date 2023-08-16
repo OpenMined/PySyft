@@ -37,8 +37,8 @@ NODE_UID = "NODE_UID"
 def get_credentials_file() -> Dict[str, str]:
     try:
         if os.path.exists(CREDENTIALS_PATH):
-            with open(CREDENTIALS_PATH, "r") as f:
-                return json.loads(f.read())
+            with open(CREDENTIALS_PATH) as f:
+                return json.load(f)
     except Exception:
         pass
     return {}

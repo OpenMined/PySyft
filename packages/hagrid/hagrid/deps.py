@@ -259,7 +259,7 @@ def new_pypi_version(
     else:
         latest_release = current
 
-        releases = sorted(list(pypi_json["releases"].keys()))
+        releases = sorted(pypi_json["releases"].keys())
         for release in releases:
             pre_release_version = version.parse(release)
             if latest_release < pre_release_version:

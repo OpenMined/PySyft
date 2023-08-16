@@ -15,7 +15,7 @@ def test_check_base_version_success() -> None:
 
 
 def test_check_base_version_fail() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         check_version(
             client_version="x.x.x", server_version=__version__, server_name="test"
         )

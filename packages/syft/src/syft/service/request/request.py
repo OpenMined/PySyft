@@ -519,7 +519,7 @@ def hash_changes(context: TransformContext) -> TransformContext:
     ).digest()
     key_hash = hashlib.sha256(bytes(key.verify_key)).digest()
     changes_hash = hashlib.sha256(_serialize(changes, to_bytes=True)).digest()
-    final_hash = hashlib.sha256((time_hash + key_hash + changes_hash)).hexdigest()
+    final_hash = hashlib.sha256(time_hash + key_hash + changes_hash).hexdigest()
 
     context.output["request_hash"] = final_hash
     return context
