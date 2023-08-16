@@ -23,7 +23,7 @@ def to_action_object(obj: Any) -> ActionObject:
         return obj
 
     if type(obj) in action_types:
-        return action_types[type(obj)](syft_action_data=obj)
+        return action_types[type(obj)](syft_action_data_cache=obj)
     raise Exception(f"{type(obj)} not in action_types")
 
 
@@ -35,9 +35,9 @@ class TwinObject(SyftObject):
     __attr_searchable__ = []
 
     id: UID
-    private_obj: ActionObject
+    private_obj: Optional[ActionObject] = None
     private_obj_id: UID = None  # type: ignore
-    mock_obj: ActionObject
+    mock_obj: Optional[ActionObject]
     mock_obj_id: UID = None  # type: ignore
 
     @pydantic.validator("private_obj", pre=True, always=True)
@@ -71,3 +71,13 @@ class TwinObject(SyftObject):
         mock.syft_twin_type = TwinMode.MOCK
         mock.id = twin_id
         return mock
+
+    def save(self):
+        # Set node location and verify key
+        self.private_obj.syft_node_location = self.syft_node_location
+        self.private_obj.syft_client_verify_key = self.syft_client_verify_key
+        self.mock_obj.syft_node_location = self.syft_node_location
+        self.mock_obj.syft_client_verify_key = self.syft_client_verify_key
+
+        self.private_obj.save()
+        self.mock_obj.save()
