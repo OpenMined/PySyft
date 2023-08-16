@@ -654,7 +654,7 @@ class SyftClient:
             password = getpass("Password: ")
         if not password_verify:
             password_verify = getpass("Confirm Password: ")
-        if password is not password_verify:
+        if password != password_verify:
             return SyftError(message="Passwords do not match")
 
         try:
