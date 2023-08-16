@@ -47,8 +47,9 @@ jobs:
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v3

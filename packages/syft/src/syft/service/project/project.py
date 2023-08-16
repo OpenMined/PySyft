@@ -52,6 +52,7 @@ from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
 from ..request.request import Request
+from ..request.request import RequestStatus
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
@@ -690,6 +691,7 @@ class Project(SyftObject):
             "Name": self.name,
             "description": self.description,
             "created by": self.created_by,
+            "pending requests": self.pending_requests,
         }
 
     def _repr_html_(self) -> Any:
@@ -1121,6 +1123,12 @@ class Project(SyftObject):
             event.request for event in self.events if isinstance(event, ProjectRequest)
         ]
 
+    @property
+    def pending_requests(self) -> int:
+        return sum(
+            [request.status == RequestStatus.PENDING for request in self.requests]
+        )
+
 
 @serializable(without=["bootstrap_events", "clients"])
 class ProjectSubmit(SyftObject):
@@ -1201,7 +1209,7 @@ class ProjectSubmit(SyftObject):
         # SyftClients must be logged in by the same emails
         clients = cls.get_syft_clients(val)
         if len(clients) > 0:
-            emails = set([client.logged_in_user for client in clients])
+            emails = {client.logged_in_user for client in clients}
             if len(emails) > 1:
                 raise SyftException(
                     f"All clients must be logged in from the same account. Found multiple: {emails}"
@@ -1287,7 +1295,7 @@ class ProjectSubmit(SyftObject):
         self.leader_node_route = connection_to_route(leader.connection)
 
     def _create_projects(self, clients: List[SyftClient]):
-        projects: Dict[SyftClient, Project] = dict()
+        projects: Dict[SyftClient, Project] = {}
 
         for client in clients:
             result = client.api.services.project.create_project(project=self)

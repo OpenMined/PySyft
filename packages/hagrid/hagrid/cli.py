@@ -2220,7 +2220,7 @@ def create_launch_docker_cmd(
         # old path
         default_env = f"{template_grid_dir}/.env"
     default_envs = {}
-    with open(default_env, "r") as f:
+    with open(default_env) as f:
         for line in f.readlines():
             if "=" in line:
                 parts = line.strip().split("=")

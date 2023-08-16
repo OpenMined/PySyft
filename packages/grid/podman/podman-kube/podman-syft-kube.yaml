@@ -1,0 +1,92 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-4.4.1
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    bind-mount-options: ./traefik:Z
+  creationTimestamp: "2023-07-28T10:22:55Z"
+  labels:
+    app: syft
+  name: syft
+spec:
+  containers:
+    - name: mongo-db
+      args:
+        - mongod
+      env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: root
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: example
+      image: docker.io/library/mongo:latest
+      imagePullPolicy: IfNotPresent
+      resources: {}
+      tty: true
+      volumeMounts:
+        - mountPath: /data/configdb
+          name: f1b3ce32d0fb1a523f83e89dbd0446a37a8609c85507deaaba0567f98155d84b-pvc
+        - mountPath: /data/db
+          name: 89196523be4d26c2ec522a40974fd101abd2fc1ec608db27ad40758cc2b52215-pvc
+
+    - name: backend
+      env:
+        - name: PORT
+          value: "8001"
+        - name: ENABLE_WARNINGS
+          value: "False"
+      envFrom:
+        - configMapRef:
+            name: podman-syft-config
+
+      image: docker.io/openmined/grid-backend:0.8.2-beta.19
+      imagePullPolicy: IfNotPresent
+      resources: {}
+      tty: true
+
+    - name: frontend
+      args:
+        - /bin/sh
+        - -c
+        - pnpm dev
+      env:
+        - name: PORT
+          value: "80"
+      envFrom:
+        - configMapRef:
+            name: podman-syft-config
+      image: docker.io/openmined/grid-frontend:0.8.2-beta.19
+      imagePullPolicy: IfNotPresent
+      resources: {}
+      tty: true
+
+    - name: traefik
+      ports:
+        - containerPort: 81
+          hostPort: 8080
+      args:
+        - --configFile=/traefik_config/traefik.yml
+      image: docker.io/library/traefik:v2.8.1
+      imagePullPolicy: IfNotPresent
+      resources: {}
+      tty: true
+      volumeMounts:
+        - mountPath: /traefik_config
+          name: traefik-host-0
+          readOnly: true
+  hostname: syft
+  restartPolicy: Always
+  volumes:
+    - name: f1b3ce32d0fb1a523f83e89dbd0446a37a8609c85507deaaba0567f98155d84b-pvc
+      persistentVolumeClaim:
+        claimName: f1b3ce32d0fb1a523f83e89dbd0446a37a8609c85507deaaba0567f98155d84b
+    - name: 89196523be4d26c2ec522a40974fd101abd2fc1ec608db27ad40758cc2b52215-pvc
+      persistentVolumeClaim:
+        claimName: 89196523be4d26c2ec522a40974fd101abd2fc1ec608db27ad40758cc2b52215
+    - hostPath:
+        path: ./traefik
+        type: Directory
+      name: traefik-host-0
+status: {}

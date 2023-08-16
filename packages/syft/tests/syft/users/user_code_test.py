@@ -52,10 +52,12 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
 
     root_client = worker.root_client
 
+    password = random_hash()
     credentials = {
         "name": faker.name(),
         "email": faker.email(),
-        "password": random_hash(),
+        "password": password,
+        "password_verify": password,
     }
 
     root_client.register(**credentials)
