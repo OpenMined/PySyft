@@ -19,13 +19,11 @@ class ActionPermission(Enum):
     ALL_EXECUTE = 128
 
 
-COMPOUND_ACTION_PERMISSION = set(
-    [
-        ActionPermission.ALL_READ,
-        ActionPermission.ALL_WRITE,
-        ActionPermission.ALL_EXECUTE,
-    ]
-)
+COMPOUND_ACTION_PERMISSION = {
+    ActionPermission.ALL_READ,
+    ActionPermission.ALL_WRITE,
+    ActionPermission.ALL_EXECUTE,
+}
 
 
 @serializable()

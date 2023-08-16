@@ -265,7 +265,7 @@ def test_settings_allow_guest_registration(
         )
         assert isinstance(response_2, SyftError)
 
-        assert any([user.email == email1 for user in root_domain_client.users])
+        assert any(user.email == email1 for user in root_domain_client.users)
 
     # only after the root client enable other users to signup, they can
     mock_node_metadata.signup_enabled = True
@@ -287,7 +287,7 @@ def test_settings_allow_guest_registration(
         )
         assert isinstance(response_3, SyftSuccess)
 
-        assert any([user.email == email2 for user in root_domain_client.users])
+        assert any(user.email == email2 for user in root_domain_client.users)
 
 
 def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):

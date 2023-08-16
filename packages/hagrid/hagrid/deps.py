@@ -42,7 +42,7 @@ from .nb_output import NBOutput
 from .version import __version__
 
 LATEST_STABLE_SYFT = "0.8.1"
-LATEST_BETA_SYFT = "0.8.2-beta.12"
+LATEST_BETA_SYFT = "0.8.2-beta.17"
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
@@ -259,7 +259,7 @@ def new_pypi_version(
     else:
         latest_release = current
 
-        releases = sorted(list(pypi_json["releases"].keys()))
+        releases = sorted(pypi_json["releases"].keys())
         for release in releases:
             pre_release_version = version.parse(release)
             if latest_release < pre_release_version:

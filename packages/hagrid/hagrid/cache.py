@@ -48,7 +48,7 @@ class ArgCache:
 
     def __init__(self) -> None:
         try:
-            with open(ArgCache.cache_file_path(), "r") as f:
+            with open(ArgCache.cache_file_path()) as f:
                 self.__cache = json.loads(f.read())
         except Exception:  # nosec
             self.__cache = {}
