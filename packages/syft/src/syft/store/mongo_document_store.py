@@ -348,6 +348,10 @@ class MongoStorePartition(StorePartition):
         # TODO: implement
         return True
 
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        # TODO: implemenet
+        pass
+
     def _all(
         self,
         credentials: SyftVerifyKey,
