@@ -213,7 +213,7 @@ class KeyValueActionStore(ActionStore):
         return False
 
     def has_permissions(self, permissions: List[ActionObjectPermission]) -> bool:
-        return all([self.has_permission(p) for p in permissions])
+        return all(self.has_permission(p) for p in permissions)
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]

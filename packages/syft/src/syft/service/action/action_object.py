@@ -574,7 +574,7 @@ class ActionObject(SyftObject):
     #         f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
     #     )
 
-    def syft_point_to(self, node_uid: UID) -> "ActionObject":
+    def syft_point_to(self, node_uid: UID) -> ActionObject:
         """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
         return self
@@ -661,7 +661,7 @@ class ActionObject(SyftObject):
             remote_self=None,
             result_id=obj.id,
             args=[],
-            kwargs=dict(),
+            kwargs={},
             action_type=ActionType.CREATEOBJECT,
             create_object=obj,
         )
@@ -1231,7 +1231,7 @@ class ActionObject(SyftObject):
 
     def _syft_setattr(self, name, value):
         args = (name, value)
-        kwargs = dict()
+        kwargs = {}
         op_name = "__setattr__"
 
         def fake_func(*args: Any, **kwargs: Any) -> Any:

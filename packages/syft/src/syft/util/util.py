@@ -359,7 +359,7 @@ def get_subclasses(obj_type: type) -> List[type]:
 
     """
 
-    classes = list()
+    classes = []
     for sc in obj_type.__subclasses__():
         classes.append(sc)
         classes += get_subclasses(obj_type=sc)

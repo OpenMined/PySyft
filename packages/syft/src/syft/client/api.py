@@ -314,7 +314,7 @@ def generate_remote_lib_function(
             node_uid=wrapper_node_uid,
             path=path,
             args=service_args,
-            kwargs=dict(),
+            kwargs={},
             blocking=blocking,
         )
 
@@ -508,7 +508,7 @@ class SyftAPI(SyftObject):
         from ..service.request.request import UserCodeStatusChange
 
         if isinstance(api_call_result, Request) and any(
-            [isinstance(x, UserCodeStatusChange) for x in api_call_result.changes]
+            isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
         ):
             if self.refresh_api_callback is not None:
                 self.refresh_api_callback()
@@ -629,15 +629,13 @@ def _render_signature(obj_signature, obj_name) -> str:
     # add up name, parameters, braces (2), and commas
     if len(obj_name) + sum(len(r) + 2 for r in result) > 75:
         # This doesn’t fit behind “Signature: ” in an inspect window.
-        rendered = "{}(\n{})".format(
-            obj_name, "".join("    {},\n".format(r) for r in result)
-        )
+        rendered = "{}(\n{})".format(obj_name, "".join(f"    {r},\n" for r in result))
     else:
         rendered = "{}({})".format(obj_name, ", ".join(result))
 
     if obj_signature.return_annotation is not inspect._empty:
         anno = inspect.formatannotation(obj_signature.return_annotation)
-        rendered += " -> {}".format(anno)
+        rendered += f" -> {anno}"
 
     return rendered
 

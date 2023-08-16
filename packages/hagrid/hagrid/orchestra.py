@@ -69,18 +69,19 @@ def container_exists(name: str) -> bool:
     return len(output) > 0
 
 
-def container_id(name: str) -> Optional[str]:
-    output = shell(f"docker ps -q -f name='{name}'")
-    if len(output) > 0:
-        return output[0].strip()
-    return None
+def port_from_container(name: str, deployment_type: DeploymentType) -> Optional[int]:
+    container_suffix = ""
+    if deployment_type == DeploymentType.SINGLE_CONTAINER:
+        container_suffix = "-worker-1"
+    elif deployment_type == DeploymentType.CONTAINER_STACK:
+        container_suffix = "-proxy-1"
+    else:
+        raise NotImplementedError(
+            f"port_from_container not implemented for the deployment type:{deployment_type}"
+        )
 
-
-def port_from_container(name: str) -> Optional[int]:
-    cid = container_id(name)
-    if cid is None:
-        return None
-    output = shell(f"docker port {cid}")
+    container_name = name + container_suffix
+    output = shell(f"docker port {container_name}")
     if len(output) > 0:
         try:
             # 80/tcp -> 0.0.0.0:8080
@@ -94,7 +95,9 @@ def port_from_container(name: str) -> Optional[int]:
 
 
 def container_exists_with(name: str, port: int) -> bool:
-    output = shell(f"docker ps -q -f name='{name}' -f expose='{port}'")
+    output = shell(
+        f"docker ps -q -f name={name} | xargs -n 1 docker port | grep 0.0.0.0:{port}"
+    )
     return len(output) > 0
 
 
@@ -134,6 +137,7 @@ class DeploymentType(Enum):
     SINGLE_CONTAINER = "single_container"
     CONTAINER_STACK = "container_stack"
     K8S = "k8s"
+    PODMAN = "podman"
 
 
 class NodeHandle:
@@ -207,7 +211,7 @@ class NodeHandle:
             password = getpass.getpass("Password: ")
         if not password_verify:
             password_verify = getpass.getpass("Confirm Password: ")
-        if password is not password_verify:
+        if password != password_verify:
             return SyftError(message="Passwords do not match")
 
         client = self.client
@@ -340,6 +344,23 @@ def deploy_to_k8s(
     )
 
 
+def deploy_to_podman(
+    node_type_enum: NodeType,
+    deployment_type_enum: DeploymentType,
+    name: str,
+    node_side_type: NodeSideType,
+) -> NodeHandle:
+    node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
+    return NodeHandle(
+        node_type=node_type_enum,
+        deployment_type=deployment_type_enum,
+        name=name,
+        port=node_port,
+        url="http://localhost",
+        node_side_type=node_side_type,
+    )
+
+
 def deploy_to_container(
     node_type_enum: NodeType,
     deployment_type_enum: DeploymentType,
@@ -357,7 +378,7 @@ def deploy_to_container(
 ) -> Optional[NodeHandle]:
     if port == "auto" or port is None:
         if container_exists(name=name):
-            port = port_from_container(name=name)  # type: ignore
+            port = port_from_container(name=name, deployment_type=deployment_type_enum)  # type: ignore
         else:
             port = find_available_port(host="localhost", port=DEFAULT_PORT, search=True)
 
@@ -528,6 +549,13 @@ class Orchestra:
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
             )
+        elif deployment_type_enum == DeploymentType.PODMAN:
+            return deploy_to_podman(
+                node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
+                name=name,
+                node_side_type=node_side_type_enum,
+            )
         else:
             print(f"deployment_type: {deployment_type_enum} is not supported")
             return None
@@ -566,16 +594,19 @@ class Orchestra:
 
             snake_name = to_snake_case(name)
 
-            volume_output = shell(
-                f"docker volume rm {snake_name}_credentials-data --force || true"
-            )
+            volumes = ["mongo-data", "credentials-data"]
 
-            if "Error" not in volume_output:
-                print(f" ✅ {snake_name} Volume Removed")
-            else:
-                print(
-                    f"❌ Unable to remove container volume: {snake_name} :{volume_output}"
+            for volume in volumes:
+                volume_output = shell(
+                    f"docker volume rm {snake_name}_{volume} --force || true"
                 )
+
+                if "Error" not in volume_output:
+                    print(f" ✅ {snake_name}_{volume} Volume Removed")
+                else:
+                    print(
+                        f"❌ Unable to remove container volume: {snake_name} :{volume_output}"
+                    )
         else:
             raise NotImplementedError(
                 f"Reset not implemented for the deployment type:{deployment_type_enum}"
