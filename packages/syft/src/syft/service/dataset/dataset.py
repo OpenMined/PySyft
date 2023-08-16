@@ -11,6 +11,8 @@ from typing import Tuple
 from typing import Union
 
 # third party
+from IPython.display import HTML
+from IPython.display import display
 import itables
 import pandas as pd
 from pydantic import ValidationError
@@ -89,6 +91,31 @@ class Contributor(SyftObject):
 
 
 @serializable()
+class MarkdownDescription(SyftObject):
+    # version
+    __canonical_name__ = "MarkdownDescription"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    text: str
+
+    def _repr_markdown_(self):
+        style = """
+        <style>
+            .jp-RenderedHTMLCommon pre {
+                background-color: #282c34 !important;
+                padding: 10px 10px 10px;
+            }
+            .jp-RenderedHTMLCommon pre code {
+                background-color: #282c34 !important;  /* Set the background color for the text in the code block */
+                color: #abb2bf !important;  /* Set text color */
+            }
+        </style>
+        """
+        display(HTML(style))
+        return self.text
+
+
+@serializable()
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
@@ -97,7 +124,7 @@ class Asset(SyftObject):
     action_id: UID
     node_uid: UID
     name: str
-    description: Optional[str]
+    description: Optional[MarkdownDescription] = None
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
@@ -106,6 +133,9 @@ class Asset(SyftObject):
     uploader: Contributor
 
     __repr_attrs__ = ["name", "shape"]
+
+    def __init__(self, description: Optional[str] = "", **data):
+        super().__init__(**data, description=MarkdownDescription(text=description))
 
     def _repr_html_(self) -> Any:
         itables_css = f"""
@@ -300,7 +330,7 @@ class CreateAsset(SyftObject):
             return SyftError(message=f"Failed to add contributor. Error: {e}")
 
     def set_description(self, description: str) -> None:
-        self.description = description
+        self.description = MarkdownDescription(text=description)
 
     def set_obj(self, data: Any) -> None:
         if isinstance(data, SyftError):
@@ -376,7 +406,7 @@ class Dataset(SyftObject):
     contributors: List[Contributor] = []
     citation: Optional[str]
     url: Optional[str]
-    description: Optional[str]
+    description: Optional[MarkdownDescription] = None
     updated_at: Optional[str]
     requests: Optional[int] = 0
     mb_size: Optional[int]
@@ -386,6 +416,9 @@ class Dataset(SyftObject):
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
+
+    def __init__(self, description: Optional[str] = "", **data):
+        super().__init__(**data, description=MarkdownDescription(text=description))
 
     @property
     def icon(self):
@@ -548,7 +581,7 @@ class CreateDataset(Dataset):
         return asset_list
 
     def set_description(self, description: str) -> None:
-        self.description = description
+        self.description = MarkdownDescription(text=description)
 
     def add_citation(self, citation: str) -> None:
         self.citation = citation
