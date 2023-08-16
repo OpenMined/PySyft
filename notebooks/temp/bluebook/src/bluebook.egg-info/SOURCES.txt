@@ -1,0 +1,9 @@
+LICENSE
+README.md
+pyproject.toml
+src/bluebook/__init__.py
+src/bluebook/example.py
+src/bluebook.egg-info/PKG-INFO
+src/bluebook.egg-info/SOURCES.txt
+src/bluebook.egg-info/dependency_links.txt
+src/bluebook.egg-info/top_level.txt
