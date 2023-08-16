@@ -2,7 +2,7 @@ name: CD - Syft
 
 on:
   schedule:
-    - cron: "00 12 * * */3" # At 12:00 UTC on every three days
+    - cron: "00 12 * * */7" # At 12:00 UTC on every seven days
 
   workflow_dispatch:
     inputs:
@@ -136,7 +136,7 @@ jobs:
         with:
           name: v${{ steps.release_checks.outputs.github_release_version }}
           generate_release_notes: true
-          prerelease: ${{ steps.is_pre_release.outputs.is_pre_release }}
+          prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
           files: |
             ./packages/hagrid/hagrid/manifest_template.yml
           tag_name: v${{ steps.release_checks.outputs.github_release_version }}
