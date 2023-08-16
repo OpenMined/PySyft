@@ -12,6 +12,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ...serde.recursive import is_serializable
 from ...serde.serializable import serializable
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
@@ -439,6 +440,10 @@ class ActionService(AbstractService):
         has_result_read_permission = self.has_read_permission_for_action_result(
             context, action
         )
+        
+        if not is_serializable(result_action_object.syft_action_data):
+            str_repr = result_action_object.syft_action_data.__repr__()
+            result_action_object = ActionObject.from_obj(syft_action_data=str_repr)
 
         set_result = self.store.set(
             uid=action.result_id,

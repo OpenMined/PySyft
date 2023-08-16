@@ -3,6 +3,7 @@ from typing import Callable
 from typing import List
 from typing import Optional
 from typing import TypeVar
+from typing import Any
 
 # syft absolute
 import syft

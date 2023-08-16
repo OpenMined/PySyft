@@ -15,42 +15,35 @@ from ..service import LibConfigRegistry
 from ...types.file import SyftFolder
 from ...serde.lib_permissions import ALL_EXECUTE
 # import subprocess
-# from gevent import subprocess
-import subprocess
+from gevent import subprocess
+# import subprocess
 from gevent.select import select
 import sys
 import pip
-# @instrument
+import asyncio
+import gevent
+import os
+
+@instrument
 @serializable()
 class PythonLibService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
     
     @service_method(path="python_lib.add_lib", name="add_lib")
-    def add_lib(self, context: AuthedServiceContext, syft_folder: SyftFolder):
+    def add_lib(self, context: AuthedServiceContext, syft_folder: SyftFolder, cmp: CMPTree):
+        from gevent import monkey
+        monkey.patch_all()
         path = syft_folder.model_folder
-        pip.main(['install', str(path)])
-        # proc = subprocess.Popen(
-        #     [
-        #         "pip",
-        #         "install",
-        #         {path}
-        #     ],
-        #     shell=True,
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE
-        # )
 
-        # cmp_module: CMPTree = CMPModule(
-        #     syft_folder.name,
-        #     permissions=ALL_EXECUTE,
-        #     )
+        proc = os.system(f"pip install {str(path)} > /tmp/out.txt")
+
+        cmp = cmp.build()
         
-        # for lib_obj in cmp_module.flatten():
-        #     if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
-        #         register_lib_obj(lib_obj)
-        # inner()
-        return SyftSuccess(message="Lib added succesfully:" + str(path))
+        for lib_obj in cmp.flatten():
+            if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+                register_lib_obj(lib_obj)
+        return SyftSuccess(message="Lib added succesfully:" + str(proc))
     
     @service_method(path="python_lib.show_lib", name="show_lib")
     def show_lib(self, context: AuthedServiceContext):

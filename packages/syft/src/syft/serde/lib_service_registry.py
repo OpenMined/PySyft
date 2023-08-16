@@ -388,6 +388,9 @@ class CMPTree:
         else:
             raise ValueError(f"property {path} does not exist")
 
+# @serializable()
+# class PathWrapper(syftObject)
+
 
 action_execute_registry_libs = CMPTree(
     children=[

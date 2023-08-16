@@ -711,6 +711,8 @@ def _render_signature(obj_signature, obj_name) -> str:
     Look there for the comments.
     The only change is to add linebreaks when this gets too long.
     """
+    import sys
+    print("YEY we made it", file=sys.stderr)
     result = []
     pos_only = False
     kw_only = True
@@ -752,6 +754,8 @@ def _getdef(self, obj, oname="") -> Union[str, None]:
     """Return the call signature for any callable object.
     If any exception is generated, None is returned instead and the
     exception is suppressed."""
+    import sys
+    print("Oh no", file=sys.stderr)
     try:
         return _render_signature(signature(obj), oname)
     except:  # noqa: E722

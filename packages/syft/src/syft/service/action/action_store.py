@@ -31,7 +31,6 @@ from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import ActionPermission
 
-
 class ActionStore:
     pass
 

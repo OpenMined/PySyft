@@ -359,6 +359,11 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
     return obj
 
+def is_serializable(obj: Any) -> bool:
+    cls = type(obj) if not isinstance(obj, type) else obj
+    fqn = f"{cls.__module__}.{cls.__name__}"
+    print(fqn, file=sys.stderr)
+    return fqn in TYPE_BANK
 
 # how else do you import a relative file to execute it?
 NOTHING = None
