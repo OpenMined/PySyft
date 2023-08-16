@@ -1209,7 +1209,7 @@ class ProjectSubmit(SyftObject):
         # SyftClients must be logged in by the same emails
         clients = cls.get_syft_clients(val)
         if len(clients) > 0:
-            emails = set([client.logged_in_user for client in clients])
+            emails = {client.logged_in_user for client in clients}
             if len(emails) > 1:
                 raise SyftException(
                     f"All clients must be logged in from the same account. Found multiple: {emails}"
@@ -1295,7 +1295,7 @@ class ProjectSubmit(SyftObject):
         self.leader_node_route = connection_to_route(leader.connection)
 
     def _create_projects(self, clients: List[SyftClient]):
-        projects: Dict[SyftClient, Project] = dict()
+        projects: Dict[SyftClient, Project] = {}
 
         for client in clients:
             result = client.api.services.project.create_project(project=self)

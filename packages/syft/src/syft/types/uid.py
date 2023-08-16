@@ -76,7 +76,7 @@ class UID:
     def from_string(value: str) -> "UID":
         try:
             return UID(value=uuid.UUID(value))
-        except Exception as e:
+        except ValueError as e:
             critical(f"Unable to convert {value} to UUID. {e}")
             traceback_and_raise(e)
 

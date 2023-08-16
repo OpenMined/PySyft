@@ -343,6 +343,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         warnings.warn(
             "`SyftObject.to_dict` is deprecated and will be removed in a future version",
             PendingDeprecationWarning,
+            stacklevel=2,
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none and not exclude_empty:
@@ -590,7 +591,7 @@ def list_dict_repr_html(self) -> str:
             if hasattr(values[0], "icon"):
                 table_icon = values[0].icon
             # this is a list of dicts
-            is_homogenous = len(set([type(x) for x in values])) == 1
+            is_homogenous = len({type(x) for x in values}) == 1
             # third party
             first_value = values[0]
             if is_homogenous:

@@ -37,7 +37,7 @@ class PartialModelMetaclass(ModelMetaclass):
     def __new__(
         meta: Type["PartialModelMetaclass"], *args: Any, **kwargs: Any
     ) -> "PartialModelMetaclass":
-        cls = super(PartialModelMetaclass, meta).__new__(meta, *args, *kwargs)
+        cls = super().__new__(meta, *args, *kwargs)
         cls_init = cls.__init__
         # Because the class will be modified temporarily, need to lock __init__
         init_lock = threading.Lock()

@@ -99,7 +99,7 @@ class DomainClient(SyftClient):
         via_client: Optional[SyftClient] = None,
         url: Optional[str] = None,
         port: Optional[int] = None,
-        handle: Optional["NodeHandle"] = None,  # noqa: F821
+        handle: Optional[NodeHandle] = None,  # noqa: F821
         **kwargs,
     ) -> None:
         if via_client is not None:
