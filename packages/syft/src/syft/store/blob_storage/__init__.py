@@ -101,7 +101,10 @@ class BlobRetrievalByURL(BlobRetrieval):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        blob_url = api.connection.to_blob_route(self.url.url_path)
+        if api is not None:
+            blob_url = api.connection.to_blob_route(self.url.url_path)
+        else:
+            blob_url = self.url
         try:
             response = requests.get(str(blob_url), timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()

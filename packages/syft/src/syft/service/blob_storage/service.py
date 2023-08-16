@@ -80,6 +80,7 @@ class BlobStorageService(AbstractService):
             secure_location = conn.allocate(obj)
 
             blob_storage_entry = BlobStorageEntry(
+                id=obj.id,
                 location=secure_location,
                 type_=obj.type_,
                 mimetype=obj.mimetype,

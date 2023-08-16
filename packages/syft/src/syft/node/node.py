@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import binascii
+from collections import OrderedDict
 import contextlib
 from datetime import datetime
 from functools import partial
@@ -16,6 +17,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 import uuid
@@ -179,6 +181,32 @@ node_uid_env = get_node_uid_env()
 
 default_root_email = get_default_root_email()
 default_root_password = get_default_root_password()
+
+
+class AuthNodeContextRegistry:
+    __node_context_registry__: Dict[Tuple, Node] = OrderedDict()
+
+    @classmethod
+    def set_node_context(
+        cls,
+        node_uid: Union[UID, str],
+        context: NodeServiceContext,
+        user_verify_key: Union[SyftVerifyKey, str],
+    ):
+        if isinstance(node_uid, str):
+            node_uid = UID.from_string(node_uid)
+
+        if isinstance(user_verify_key, str):
+            user_verify_key = SyftVerifyKey.from_string(user_verify_key)
+
+        key = (node_uid, user_verify_key)
+
+        cls.__node_context_registry__[key] = context
+
+    @classmethod
+    def get_auth_context(cls) -> AuthedServiceContext:
+        if len(cls.__node_context_registry__) > 0:
+            return list(cls.__node_context_registry__.values())[0]
 
 
 @instrument
@@ -433,6 +461,7 @@ class Node(AbstractNode):
 
     def post_init(self) -> None:
         context = AuthedServiceContext(node=self, credentials=self.verify_key)
+        AuthNodeContextRegistry.set_node_context(self.id, context, self.verify_key)
 
         if UserCodeService in self.services:
             user_code_service = self.get_service(UserCodeService)

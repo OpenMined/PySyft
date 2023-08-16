@@ -46,6 +46,8 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
+    stdin_open: true
+    tty: true
 
   # backend_stream:
   #   volumes:

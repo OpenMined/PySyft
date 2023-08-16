@@ -53,8 +53,9 @@ class ActionService(AbstractService):
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         np_obj = NumpyArrayObject(
-            syft_action_data=data, dtype=data.dtype, shape=data.shape
+            dtype=data.dtype, shape=data.shape, syft_action_data_cache=data
         )
+        np_obj.save()
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
@@ -207,6 +208,7 @@ class ActionService(AbstractService):
         except Exception as e:
             return Err(f"_user_code_execute failed. {e}")
 
+        result_action_object.save()
         set_result = self.store.set(
             uid=result_id,
             credentials=context.credentials,
@@ -409,7 +411,7 @@ class ActionService(AbstractService):
                 )
             resolved_self = resolved_self.ok()
             if action.op == "__call__" and isinstance(
-                resolved_self.syft_action_data, Plan
+                resolved_self.syft_action_data_type, Plan
             ):
                 result_action_object = self.execute_plan(
                     plan=resolved_self.syft_action_data,
@@ -439,7 +441,7 @@ class ActionService(AbstractService):
         has_result_read_permission = self.has_read_permission_for_action_result(
             context, action
         )
-
+        result_action_object.save()
         set_result = self.store.set(
             uid=action.result_id,
             credentials=context.credentials,
@@ -666,7 +668,7 @@ def execute_object(
 def wrap_result(result_id: UID, result: Any) -> ActionObject:
     # 🟡 TODO 11: Figure out how we want to store action object results
     action_type = action_type_for_type(result)
-    result_action_object = action_type(id=result_id, syft_action_data=result)
+    result_action_object = action_type(id=result_id, syft_action_data_cache=result)
     return result_action_object
 
 
