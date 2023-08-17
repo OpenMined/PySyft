@@ -667,6 +667,7 @@ class Project(SyftObject):
     description: Optional[str]
     members: List[NodeIdentity]
     users: List[UserIdentity] = []
+    username: Optional[str]
     created_by: str
     start_hash: Optional[str]
     # WARNING:  Do not add it to hash keys or print directly
@@ -688,7 +689,7 @@ class Project(SyftObject):
 
     def _coll_repr_(self):
         return {
-            "Name": self.name,
+            "Project Name": self.name,
             "description": self.description,
             "created by": self.created_by,
             "pending requests": self.pending_requests,
@@ -704,7 +705,7 @@ class Project(SyftObject):
             + "<div class='syft-project'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
             + self.requests._repr_html_()
             + "<p>To see a list of projects, use command `&lt;your_client&gt;.projects`</p>"
             + "</div>"
@@ -1158,6 +1159,7 @@ class ProjectSubmit(SyftObject):
     # These will be automatically populated
     users: List[UserIdentity] = []
     created_by: Optional[str] = None
+    username: Optional[str]
     clients: List[SyftClient] = []  # List of member clients
     start_hash: str = ""
 
@@ -1187,6 +1189,9 @@ class ProjectSubmit(SyftObject):
         # Extract information of logged in user from syft clients
         self.users = [UserIdentity.from_client(client) for client in self.clients]
 
+        # Assign logged in user name as project creator
+        self.username = self.clients[0].me.name or ""
+
         # Convert SyftClients to NodeIdentities
         self.members = list(map(self.to_node_identity, self.members))
 
@@ -1200,7 +1205,7 @@ class ProjectSubmit(SyftObject):
             + "<div class='syft-project-create'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
             + "</div>"
         )
 
@@ -1349,9 +1354,14 @@ def check_permissions(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_creator_name(context: TransformContext) -> TransformContext:
+    context.output["username"] = context.obj.username
+    return context
+
+
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
-    return [elect_leader, check_permissions]
+    return [elect_leader, check_permissions, add_creator_name]
 
 
 def hash_object(obj: Any) -> Tuple[bytes, str]:
