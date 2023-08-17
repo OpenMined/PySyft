@@ -245,18 +245,17 @@ class Request(SyftObject):
             badge_color = "badge-red"
 
         status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+
+        user_data = [
+            self.requesting_user_name,
+            self.requesting_user_email,
+            self.requesting_user_institution,
+        ]
+
         return {
-            "changes": " ".join([x.__repr_syft_nested__() for x in self.changes]),
-            "request time": str(self.request_time),
-            "status": status_badge,
-            "user_name": self.requesting_user_name,
-            "user_email": self.requesting_user_email,
-            "user_institution": self.requesting_user_institution,
-            "requesting user": {
-                "value": str(self.requesting_user_verify_key),
-                "type": "clipboard",
-            },
-            "reviewed_at": str(self.updated_at),
+            "Description": " ".join([x.__repr_syft_nested__() for x in self.changes]),
+            "Requested By": "\n".join(user_data),
+            "Status": status_badge,
         }
 
     @property

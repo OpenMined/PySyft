@@ -205,6 +205,7 @@ CSS_CODE = """
         flex-direction: column;
         align-items: flex-start;
         padding: 6px 4px;
+        height: 20px;
 
         /* Lt On Surface/Surface */
         background: #ECEBEF;
