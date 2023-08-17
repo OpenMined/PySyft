@@ -53,7 +53,7 @@ def test_call_lib_wo_permission(worker):
         path="numpy",
         op="fromfile",
         args=[LineageID(obj1_pointer.id)],
-        kwargs=dict(),
+        kwargs={},
         result_id=LineageID(),
     )
     kwargs = {"action": action}
