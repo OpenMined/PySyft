@@ -203,7 +203,7 @@ class SeaweedFSConnection(BlobStorageConnection):
                 Key=fp.path,
             )
             return True
-        except BotoClientError as e:
+        except BotoClientError:
             return False
 
 
