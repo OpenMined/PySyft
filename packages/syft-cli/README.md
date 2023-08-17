@@ -3,7 +3,7 @@
 ## Development
 
 ```sh
-pip install -e packages/syft-cli[dev]
+pip install -e "packages/syft-cli[dev]"
 syftcli hello
 ```
 
