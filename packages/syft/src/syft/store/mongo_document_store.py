@@ -23,6 +23,7 @@ from ..serde.serialize import _serialize
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
+from ..service.action.action_permissions import ActionPermission
 from ..service.response import SyftSuccess
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
@@ -346,10 +347,15 @@ class MongoStorePartition(StorePartition):
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         # TODO: implement
+        print("checking permission inside MongoStorePartition!!!")
+        if not isinstance(permission.permission, ActionPermission):
+            raise TypeError(f"ObjectPermission type: {permission.permission} not valid")
+
         return True
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
         # TODO: implemenet
+        print("adding permissions inside MongoStorePartition")
         pass
 
     def _all(
