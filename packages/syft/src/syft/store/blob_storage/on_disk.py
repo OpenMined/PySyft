@@ -68,12 +68,12 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         return OnDiskBlobDeposit(blob_storage_entry_id=obj.id)
 
-    def delete(self, fp: SecureFilePathLocation) -> bool:
+    def delete(self, fp: SecureFilePathLocation) -> Union[SyftSuccess, SyftError]:
         try:
             (self._base_directory / fp.path).unlink()
-            return True
-        except FileNotFoundError:
-            return False
+            return SyftSuccess(message="Successfully deleted file.")
+        except FileNotFoundError as e:
+            return SyftError(message=f"Failed to delete file: {e}")
 
 
 @serializable()
