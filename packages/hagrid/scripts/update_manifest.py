@@ -24,7 +24,7 @@ def update_manifest(docker_tag: Optional[str]) -> None:
     template_filepath = os.path.join(template_dir, "hagrid/manifest_template.yml")
 
     # open the manifest file
-    with open(template_filepath, "r") as stream:
+    with open(template_filepath) as stream:
         template_dict = yaml.safe_load(stream)
 
     # update commit id

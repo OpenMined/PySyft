@@ -55,7 +55,7 @@ class TupleDict(OrderedDict):
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int):
             return list(self.values())[key]
-        return super(TupleDict, self).__getitem__(key)
+        return super().__getitem__(key)
 
 
 NamePartitionKey = PartitionKey(key="name", type_=str)

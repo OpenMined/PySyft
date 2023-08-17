@@ -95,7 +95,7 @@ def test_from_string() -> None:
 def test_from_string_exception() -> None:
     """Tests that UID throws exception when invalid string is given."""
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         UID.from_string(value="Hello world")
 
 

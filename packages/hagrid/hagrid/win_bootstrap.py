@@ -1,4 +1,3 @@
-# coding=utf-8
 # stdlib
 import subprocess  # nosec
 from typing import Callable

@@ -125,7 +125,7 @@ class ZMQClient(QueueClient):
 
     def __init__(self, config: ZMQClientConfig) -> None:
         self.host = config.hostname
-        self.producers = dict()
+        self.producers = {}
         self.consumers = defaultdict(list)
 
     @staticmethod
