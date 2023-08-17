@@ -478,7 +478,7 @@ def new_getfile(object):
         ):
             return inspect.getfile(member)
     else:
-        raise TypeError("Source for {!r} not found".format(object))
+        raise TypeError(f"Source for {object!r} not found")
 
 
 def get_code_from_class(policy):

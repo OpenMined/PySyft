@@ -132,7 +132,7 @@ def recursive_serde_register(
         # pydantic objects inherit by default
         cls.__syft_serializable__ = attribute_list
 
-    attributes = set(list(attribute_list)) if attribute_list else None
+    attributes = set(attribute_list) if attribute_list else None
     attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 

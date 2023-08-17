@@ -71,8 +71,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: buildjet/cache@v3
@@ -154,8 +155,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: buildjet/cache@v3
@@ -223,8 +225,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: buildjet/cache@v3
@@ -321,8 +324,9 @@ jobs:
       - name: Get pip cache dir
         if: steps.changes.outputs.syft == 'true'
         id: pip-cache
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: buildjet/cache@v3

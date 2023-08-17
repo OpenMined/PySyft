@@ -72,7 +72,7 @@ class UserCodeService(AbstractService):
     ):
         user_code: UserCode = code.to(UserCode, context=context)
         if not all(
-            [x in user_code.input_owner_verify_keys for x in user_code.output_readers]
+            x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
             raise ValueError("outputs can only be distributed to input owners")
         result = self.stash.set(context.credentials, user_code)

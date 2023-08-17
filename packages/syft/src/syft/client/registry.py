@@ -95,7 +95,7 @@ class NetworkRegistry:
                 executor.map(lambda network: check_network(network), networks)
             )
 
-        online_networks = list()
+        online_networks = []
         for each in _online_networks:
             if each is not None:
                 online_networks.append(each)
@@ -199,7 +199,7 @@ class DomainRegistry:
                 executor.map(lambda network: check_network(network), networks)
             )
 
-        online_networks = list()
+        online_networks = []
         for each in _online_networks:
             if each is not None:
                 online_networks.append(each)
@@ -232,7 +232,7 @@ class DomainRegistry:
                 )
                 _all_online_domains += _online_domains
 
-        online_domains = list()
+        online_domains = []
         for each in _all_online_domains:
             if each is not None:
                 online_domains.append(each)
@@ -345,7 +345,7 @@ class EnclaveRegistry:
                 executor.map(lambda enclave: check_enclave(enclave), enclaves)
             )
 
-        online_enclaves = list()
+        online_enclaves = []
         for each in _online_enclaves:
             if each is not None:
                 online_enclaves.append(each)
