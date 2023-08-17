@@ -3127,8 +3127,8 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
         target = verb.get_named_term_grammar("node_name").input
         if target == "all":
             # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
-            
-            if 'prune-vol' in kwargs:
+
+            if "prune-vol" in kwargs:
                 return "docker rm `docker ps -aq` --force && docker volume prune"
 
         version = check_docker_version()
