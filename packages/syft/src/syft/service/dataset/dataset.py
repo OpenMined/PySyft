@@ -271,7 +271,7 @@ class CreateAsset(SyftObject):
 
     id: Optional[UID] = None
     name: str
-    description: Optional[str]
+    description: Optional[MarkdownDescription] = None
     contributors: List[Contributor] = []
     data_subjects: List[DataSubjectCreate] = []
     node_uid: Optional[UID]
@@ -287,6 +287,9 @@ class CreateAsset(SyftObject):
 
     class Config:
         validate_assignment = True
+
+    def __init__(self, description: Optional[str] = "", **data):
+        super().__init__(**data, description=MarkdownDescription(text=description))
 
     @root_validator()
     def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
