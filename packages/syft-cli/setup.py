@@ -8,10 +8,11 @@ packages = [
     "typing_extensions==4.6.3",
 ]
 
-dev_packages = [
+build_packages = [
     "pyinstaller==5.13.0",
-    "pytest",
 ]
+
+dev_packages = ["pytest"]
 
 setup(
     name="Syft CLI",
@@ -22,7 +23,7 @@ setup(
     author="OpenMined <info@openmined.org>",
     packages=find_packages(),
     install_requires=packages,
-    extras_require={"dev": dev_packages},
+    extras_require={"dev": dev_packages, "build": build_packages},
     include_package_data=True,
     entry_points={
         "console_scripts": [
