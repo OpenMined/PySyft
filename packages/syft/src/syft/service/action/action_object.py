@@ -300,7 +300,7 @@ def convert_to_pointers(
     if args is not None:
         for arg in args:
             if not isinstance(arg, ActionObject):
-                arg = ActionObject.from_obj(syft_action_data_cache=arg)
+                arg = ActionObject.from_obj(syft_action_data=arg)
                 arg.syft_node_uid = node_uid
                 arg.save()
                 arg = api.services.action.set(arg)
@@ -312,7 +312,7 @@ def convert_to_pointers(
     if kwargs is not None:
         for k, arg in kwargs.items():
             if not isinstance(arg, ActionObject):
-                arg = ActionObject.from_obj(syft_action_data_cache=arg)
+                arg = ActionObject.from_obj(syft_action_data=arg)
                 arg.syft_node_uid = node_uid
                 arg.save()
                 arg = api.services.action.set(arg)
@@ -420,6 +420,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "save",
     "_set_syft_action_data",
     "syft_action_data",
+    "__check_action_data",
 ]
 
 
@@ -476,9 +477,10 @@ class ActionObject(SyftObject):
             syft_node_location=self.syft_node_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
-        blob_deposit_object = allocate_method(storage_entry)
-        blob_deposit_object.write(serialize(data, to_bytes=True))
-        self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
+        if allocate_method is not None:
+            blob_deposit_object = allocate_method(storage_entry)
+            blob_deposit_object.write(serialize(data, to_bytes=True))
+            self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
 
         self.syft_action_data_cache = data
         self.syft_action_data_type = type(data)
@@ -1020,7 +1022,10 @@ class ActionObject(SyftObject):
         if context.result_twin_type is not None:
             syft_twin_type = context.result_twin_type
         result = constructor(
-            syft_twin_type=syft_twin_type, syft_action_data_cache=result
+            syft_twin_type=syft_twin_type,
+            syft_action_data_cache=result,
+            syft_node_location=self.syft_node_location,
+            syft_client_verify_key=self.syft_client_verify_key,
         )
         return result
 

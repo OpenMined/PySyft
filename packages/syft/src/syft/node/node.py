@@ -461,7 +461,6 @@ class Node(AbstractNode):
 
     def post_init(self) -> None:
         context = AuthedServiceContext(node=self, credentials=self.verify_key)
-        AuthNodeContextRegistry.set_node_context(self.id, context, self.verify_key)
 
         if UserCodeService in self.services:
             user_code_service = self.get_service(UserCodeService)
@@ -755,6 +754,7 @@ class Node(AbstractNode):
             context = AuthedServiceContext(
                 node=self, credentials=credentials, role=role
             )
+            AuthNodeContextRegistry.set_node_context(self.id, context, self.verify_key)
 
             user_config_registry = UserServiceConfigRegistry.from_role(role)
 

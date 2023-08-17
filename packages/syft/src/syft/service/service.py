@@ -414,7 +414,6 @@ def from_api_or_context(
     func_or_path: str,
     syft_node_location: Optional[UID] = None,
     syft_client_verify_key: Optional[SyftVerifyKey] = None,
-    role: Optional[ServiceRole] = None,
 ):
     # relative
     from ..client.api import APIRegistry
@@ -422,8 +421,6 @@ def from_api_or_context(
 
     if callable(func_or_path):
         func_or_path = func_or_path.__qualname__
-
-    node_context = AuthNodeContextRegistry.get_auth_context()
 
     if syft_node_location and syft_client_verify_key:
         api = APIRegistry.api_for(
@@ -435,14 +432,16 @@ def from_api_or_context(
             for path in func_or_path.split("."):
                 service_method = getattr(service_method, path)
             return service_method
-    elif node_context:
+
+    node_context = AuthNodeContextRegistry.get_auth_context()
+    if node_context is not None:
         user_config_registry = UserServiceConfigRegistry.from_role(
             node_context.role,
         )
         if func_or_path not in user_config_registry:
             if ServiceConfigRegistry.path_exists(func_or_path):
                 return SyftError(
-                    message=f"As a `{role}` you have has no access to: {func_or_path}"
+                    message=f"As a `{node_context.role}` you have has no access to: {func_or_path}"
                 )
             else:
                 return SyftError(
