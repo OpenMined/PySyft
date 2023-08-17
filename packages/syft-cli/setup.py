@@ -3,6 +3,9 @@ from setuptools import find_packages
 from setuptools import setup
 from syft_cli.version import __version__
 
+__version__ = "0.1.0"
+
+
 packages = [
     "typer[all]==0.9.0",
     "typing_extensions==4.6.3",
