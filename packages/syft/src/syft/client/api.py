@@ -515,7 +515,7 @@ class SyftAPI(SyftObject):
         method = node.get_method_with_context(BridgeService.get_bridges, context)
         bridges = method()
         for bridge in bridges:
-            for m in list(sorted(bridge.openapi._operation_map.keys())):
+            for m in sorted(bridge.openapi._operation_map.keys()):
                 method = bridge.openapi._operation_map[m]
                 method_name = method.operationId
                 signature = bridge.op_to_signature(method)
