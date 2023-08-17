@@ -32,15 +32,14 @@ class OnDiskBlobDeposit(BlobDeposit):
 
     def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
         # relative
-        from ...client.api import APIRegistry
+        from ...service.service import from_api_or_context
 
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
+        write_to_disk_method = from_api_or_context(
+            func_or_path="blob_storage.write_to_disk",
+            syft_node_location=self.syft_node_location,
+            syft_client_verify_key=self.syft_client_verify_key,
         )
-        return api.services.blob_storage.write_to_disk(
-            data=data, uid=self.blob_storage_entry_id
-        )
+        return write_to_disk_method(data=data, uid=self.blob_storage_entry_id)
 
 
 class OnDiskBlobStorageConnection(BlobStorageConnection):
