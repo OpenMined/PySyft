@@ -205,7 +205,7 @@ def register_lib_obj(lib_obj: CMPBase):
                 method_name=str(func_name),
                 doc_string=str(lib_obj.__doc__),
                 signature=signature,
-                permissions=set([lib_obj.permissions]),
+                permissions={lib_obj.permissions},
                 is_from_lib=True,
             )
 
