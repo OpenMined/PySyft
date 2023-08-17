@@ -3,10 +3,10 @@ import mimetypes
 import os
 from pathlib import Path
 import tempfile
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Union
-from typing import Any
 
 # third party
 from typing_extensions import Self
@@ -175,14 +175,16 @@ class SyftFolder(SyftObject):
                         print(f"Failed to load: {entry} as syft file")
                 if entry.is_dir():
                     try:
-                        print(entry.path.split('/')[-1])
-                        syft_folder = SyftFolder.from_dir(name=entry.path.split('/')[-1], path=entry.path)
+                        print(entry.path.split("/")[-1])
+                        syft_folder = SyftFolder.from_dir(
+                            name=entry.path.split("/")[-1], path=entry.path
+                        )
                         print(syft_folder.name)
                         syft_files.append(syft_folder)
                     except Exception as e:
                         print(e)
-                        print(f"Failed to load: {entry} as syft folder: {entry.path}")        
-                    
+                        print(f"Failed to load: {entry} as syft folder: {entry.path}")
+
         return SyftFolder(name=name, files=syft_files)
 
     def write_file(self, path):

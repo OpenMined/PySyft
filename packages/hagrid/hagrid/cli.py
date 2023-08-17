@@ -3282,7 +3282,8 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
 
     try:
         cmd = create_land_cmd(verb=verb, kwargs=kwargs)
-        cmd = None
+        # cmd = None
+        cmd = ""
     except Exception as e:
         print(f"{e}")
         return

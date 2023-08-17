@@ -1,1 +1,3 @@
-from .example import list_gpus, list_models
+# relative
+from .example import list_gpus
+from .example import list_models

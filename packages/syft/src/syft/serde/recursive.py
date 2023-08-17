@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 from enum import EnumMeta
+import inspect
 import sys
 import types
 from typing import Any
@@ -135,7 +136,7 @@ def recursive_serde_register(
     attributes = set(list(attribute_list)) if attribute_list else None
     attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
-
+    print("\t", attribute_list)
     # without fqn duplicate class names overwrite
     serde_attributes = (
         nonrecursive,
@@ -189,7 +190,14 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     fqn = get_fully_qualified_name(self)
     if fqn not in TYPE_BANK:
         # third party
-        raise Exception(f"{fqn} not in TYPE_BANK")
+        # raise Exception(f"{fqn} not in TYPE_BANK")
+        print(f"{fqn} not in TYPE_BANK, adding it now")
+        # print(inspect.isfunction(self))
+        recursive_serde_register(self.__class__)
+        if fqn == "builtins.method":
+            print(self)
+            print(self.__name__)
+            print(inspect.getfile(self))
 
     msg.fullyQualifiedName = fqn
     (
@@ -246,6 +254,9 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
 
         if isinstance(field_obj, types.FunctionType):
             continue
+        print("ATTR:", attr_name)
+        print("OBJ:", field_obj)
+        print("IS FUNCTION:", inspect.isfunction(field_obj))
 
         serialized = sy.serialize(field_obj, to_bytes=True, for_hashing=for_hashing)
         msg.fieldsName[idx] = attr_name
@@ -353,17 +364,24 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
             obj = class_type(**kwargs)
 
     else:
+        print("CLASS TYPE:", class_type)
+        print("fqn:", proto.fullyQualifiedName)
+        print("KLASS:", klass)
+        print(kwargs)
+        print(proto)
         obj = class_type.__new__(class_type)  # type: ignore
         for attr_name, attr_value in kwargs.items():
             setattr(obj, attr_name, attr_value)
 
     return obj
 
+
 def is_serializable(obj: Any) -> bool:
     cls = type(obj) if not isinstance(obj, type) else obj
     fqn = f"{cls.__module__}.{cls.__name__}"
     print(fqn, file=sys.stderr)
     return fqn in TYPE_BANK
+
 
 # how else do you import a relative file to execute it?
 NOTHING = None

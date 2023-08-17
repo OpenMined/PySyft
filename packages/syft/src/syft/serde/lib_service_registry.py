@@ -16,17 +16,14 @@ from typing import Sequence
 from typing import Union
 
 # third party
-import jax
 from jaxlib.xla_extension import CompiledFunction
 import numpy
 from typing_extensions import Self
 
 # relative
-from .lib_permissions import ALL_EXECUTE
 from .lib_permissions import CMPPermission
-from .lib_permissions import NONE_EXECUTE
-from .signature import get_signature
 from .serializable import serializable
+from .signature import get_signature
 
 LIB_IGNORE_ATTRIBUTES = set(
     ["os", "__abstractmethods__", "__base__", " __bases__", "__class__"]
@@ -45,6 +42,7 @@ def import_from_path(path: str) -> type:
     for attr in path_parts:
         res = getattr(res, attr)
     return res  # type: ignore
+
 
 @serializable()
 class CMPBase:
@@ -281,22 +279,22 @@ class CMPBase:
         else:
             raise ValueError(f"property {path} does not exist")
 
-    def rebuild(self):
+    def rebuild(self) -> None:
         self.obj = import_from_path(self.absolute_path)
         for child in self.children.values():
             child.rebuild()
-        
-    def reset_objs(self):
+
+    def reset_objs(self) -> None:
         self.obj = None
         for child in self.children.values():
             child.reset_objs()
-        
 
 
 @serializable()
 class CMPModule(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+
 
 @serializable()
 class CMPFunction(CMPBase):
@@ -313,6 +311,7 @@ class CMPFunction(CMPBase):
             self.signature = get_signature(self.obj)
         except Exception:  # nosec
             pass
+
 
 @serializable()
 class CMPClass(CMPBase):
@@ -335,15 +334,18 @@ class CMPClass(CMPBase):
             except Exception:  # nosec
                 pass
 
+
 @serializable()
 class CMPMethod(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
+
 @serializable()
 class CMPProperty(CMPBase):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+
 
 @serializable()
 class CMPTree:
@@ -388,6 +390,7 @@ class CMPTree:
         else:
             raise ValueError(f"property {path} does not exist")
 
+
 # @serializable()
 # class PathWrapper(syftObject)
 
@@ -404,7 +407,7 @@ action_execute_registry_libs = CMPTree(
         #             text_signature="concatenate(a1,a2, *args,axis=0,out=None,dtype=None,casting='same_kind')",
         #         ),
         #         CMPFunction("source", permissions=NONE_EXECUTE),
-        #         CMPFunction("fromfile", permissions=NONE_EXECUTE),
+        #         CMPFunction("fromfile", permissions=NONE_EXECUTE, pre_hook=func, post_hook=post_func),
         #         CMPFunction(
         #             "set_numeric_ops",
         #             permissions=ALL_EXECUTE,

@@ -3,7 +3,6 @@ import io
 import json
 import os
 import shutil
-import sys
 import tempfile
 from typing import Any
 from typing import Dict
@@ -113,7 +112,9 @@ def run_command(
 
     # start container
     container = None
+    # stdlib
     import sys
+
     try:
         # try:
         #     container = client.containers.get(container_name)

@@ -1,3 +1,4 @@
+# third party
 import torch
 from transformers import AutoModelForCausalLM
 
@@ -9,4 +10,4 @@ def list_gpus():
     return [torch.cuda.get_device_name(i) for i in range(num_gpus)]
 
 def list_models():
-    return model    
+    return model

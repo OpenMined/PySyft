@@ -61,12 +61,12 @@ from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.python_lib.python_lib_service import PythonLibService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.python_lib.python_lib_service import PythonLibService
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_stash import QueueItem
@@ -255,7 +255,7 @@ class Node(AbstractNode):
                 BlobStorageService,
                 BridgeService,
                 ContainerService,
-                PythonLibService
+                PythonLibService,
             ]
             if services is None
             else services
@@ -533,7 +533,7 @@ class Node(AbstractNode):
                 BlobStorageService,
                 BridgeService,
                 ContainerService,
-                PythonLibService
+                PythonLibService,
             ]
 
             if OBLV:
