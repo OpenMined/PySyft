@@ -35,9 +35,9 @@ class TwinObject(SyftObject):
     __attr_searchable__ = []
 
     id: UID
-    private_obj: Optional[ActionObject] = None
+    private_obj: ActionObject
     private_obj_id: UID = None  # type: ignore
-    mock_obj: Optional[ActionObject]
+    mock_obj: ActionObject
     mock_obj_id: UID = None  # type: ignore
 
     @pydantic.validator("private_obj", pre=True, always=True)

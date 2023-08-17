@@ -26,6 +26,7 @@ from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftException
 from ...service.response import SyftSuccess
+from ...service.service import from_api_or_context
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
@@ -57,15 +58,11 @@ class SeaweedFSBlobDeposit(BlobDeposit):
     def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
         # relative
         from ...client.api import APIRegistry
-        from ...node.node import AuthNodeContextRegistry
-        from ...service.blob_storage.service import BlobStorageService
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-
-        node_context = AuthNodeContextRegistry.get_auth_context()
 
         etags = []
 
@@ -87,17 +84,15 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         except requests.RequestException as e:
             return SyftError(message=str(e))
 
-        if api is not None:
-            return api.services.blob_storage.mark_write_complete(
-                etags=etags, uid=self.blob_storage_entry_id
-            )
-        else:
-            mark_as_complete = node_context.node.get_service_method(
-                BlobStorageService.mark_write_complete
-            )
-            return mark_as_complete(
-                node_context, etags=etags, uid=self.blob_storage_entry_id
-            )
+        mark_write_complete_method = from_api_or_context(
+            func_or_path="blob_storage.mark_write_complete",
+            syft_node_location=self.syft_node_location,
+            syft_client_verify_key=self.syft_client_verify_key,
+        )
+        return mark_write_complete_method(
+            etags=etags,
+            uid=self.blob_storage_entry_id,
+        )
 
 
 @serializable()

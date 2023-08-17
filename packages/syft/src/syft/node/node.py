@@ -204,7 +204,7 @@ class AuthNodeContextRegistry:
         cls.__node_context_registry__[key] = context
 
     @classmethod
-    def get_auth_context(cls) -> AuthedServiceContext:
+    def get_auth_context(cls) -> Optional[AuthedServiceContext]:
         if len(cls.__node_context_registry__) > 0:
             return list(cls.__node_context_registry__.values())[0]
 

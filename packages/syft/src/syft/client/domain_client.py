@@ -81,9 +81,9 @@ class DomainClient(SyftClient):
                     syft_node_location=self.id,
                     syft_client_verify_key=self.verify_key,
                 )
+                twin.save()
             except Exception as e:
                 return SyftError(message=f"Failed to create twin. {e}")
-            twin.save()
             response = self.api.services.action.set(twin)
             if isinstance(response, SyftError):
                 print(f"Failed to upload asset\n: {asset}")

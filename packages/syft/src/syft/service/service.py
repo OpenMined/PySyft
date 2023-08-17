@@ -1,6 +1,7 @@
 # stdlib
 from collections import defaultdict
 from copy import deepcopy
+from functools import partial
 import inspect
 from inspect import Parameter
 from typing import Any
@@ -407,3 +408,49 @@ class SyftServiceRegistry:
         version_to = type_to.__version__
         mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
         return cls.__object_transform_registry__[mapping_string]
+
+
+def from_api_or_context(
+    func_or_path: str,
+    syft_node_location: Optional[UID] = None,
+    syft_client_verify_key: Optional[SyftVerifyKey] = None,
+    role: Optional[ServiceRole] = None,
+):
+    # relative
+    from ..client.api import APIRegistry
+    from ..node.node import AuthNodeContextRegistry
+
+    if callable(func_or_path):
+        func_or_path = func_or_path.__qualname__
+
+    node_context = AuthNodeContextRegistry.get_auth_context()
+
+    if syft_node_location and syft_client_verify_key:
+        api = APIRegistry.api_for(
+            node_uid=syft_node_location,
+            user_verify_key=syft_client_verify_key,
+        )
+        if api is not None:
+            service_method = api.services
+            for path in func_or_path.split("."):
+                service_method = getattr(service_method, path)
+            return service_method
+    elif node_context:
+        user_config_registry = UserServiceConfigRegistry.from_role(
+            node_context.role,
+        )
+        if func_or_path not in user_config_registry:
+            if ServiceConfigRegistry.path_exists(func_or_path):
+                return SyftError(
+                    message=f"As a `{role}` you have has no access to: {func_or_path}"
+                )
+            else:
+                return SyftError(
+                    message=f"API call not in registered services: {func_or_path}"
+                )
+
+        _private_api_path = user_config_registry.private_path_for(func_or_path)
+        service_method = node_context.node.get_service_method(
+            _private_api_path,
+        )
+        return partial(service_method, node_context)

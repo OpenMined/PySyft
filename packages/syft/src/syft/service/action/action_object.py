@@ -38,8 +38,8 @@ from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
-from ..blob_storage.service import BlobStorageService
 from ..response import SyftException
+from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
@@ -454,53 +454,29 @@ class ActionObject(SyftObject):
 
     @property
     def syft_action_data(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-        from ...node.node import AuthNodeContextRegistry
-
         if self.syft_action_data_cache is None:
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
+            blob_storage_read_method = from_api_or_context(
+                func_or_path="blob_storage.read",
+                syft_node_location=self.syft_node_location,
+                syft_client_verify_key=self.syft_client_verify_key,
             )
 
-            if api is not None:
-                blob_retrieval_object = api.services.blob_storage.read(
-                    uid=self.syft_blob_storage_entry_id
-                )
-                self.syft_action_data_cache = blob_retrieval_object.read()
-            else:
-                node_context = AuthNodeContextRegistry.get_auth_context()
-                blob_service: BlobStorageService = node_context.node.get_service(
-                    BlobStorageService
-                )
-                blob_retrieval_object = blob_service.read(
-                    node_context, self.syft_blob_storage_entry_id
-                )
-                self.syft_action_data_cache = blob_retrieval_object.read()
+            blob_retrieval_object = blob_storage_read_method(
+                uid=self.syft_blob_storage_entry_id
+            )
+            self.syft_action_data_cache = blob_retrieval_object.read()
 
         return self.syft_action_data_cache
 
     def _set_syft_action_data(self, data: Any) -> None:
-        # relative
-        from ...client.api import APIRegistry
-        from ...node.node import AuthNodeContextRegistry
-
         storage_entry = CreateBlobStorageEntry.from_obj(data)
 
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
+        allocate_method = from_api_or_context(
+            func_or_path="blob_storage.allocate",
+            syft_node_location=self.syft_node_location,
+            syft_client_verify_key=self.syft_client_verify_key,
         )
-        if api is not None:
-            blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
-        else:
-            node_context = AuthNodeContextRegistry.get_auth_context()
-            blob_service: BlobStorageService = node_context.node.get_service(
-                BlobStorageService
-            )
-            blob_deposit_object = blob_service.allocate(node_context, storage_entry)
-
+        blob_deposit_object = allocate_method(storage_entry)
         blob_deposit_object.write(serialize(data, to_bytes=True))
         self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
 
