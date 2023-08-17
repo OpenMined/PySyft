@@ -134,8 +134,12 @@ class Asset(SyftObject):
 
     __repr_attrs__ = ["name", "shape"]
 
-    def __init__(self, description: Optional[str] = "", **data):
-        super().__init__(**data, description=MarkdownDescription(text=description))
+    def __init__(
+        self, description: Optional[Union[MarkdownDescription, str]] = "", **data
+    ):
+        if isinstance(description, str):
+            description = MarkdownDescription(text=description)
+        super().__init__(**data, description=description)
 
     def _repr_html_(self) -> Any:
         itables_css = f"""
@@ -289,7 +293,7 @@ class CreateAsset(SyftObject):
         validate_assignment = True
 
     def __init__(self, description: Optional[str] = "", **data):
-        super().__init__(**data, description=MarkdownDescription(text=description))
+        super().__init__(**data, description=MarkdownDescription(text=str(description)))
 
     @root_validator()
     def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
@@ -420,8 +424,12 @@ class Dataset(SyftObject):
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
 
-    def __init__(self, description: Optional[str] = "", **data):
-        super().__init__(**data, description=MarkdownDescription(text=description))
+    def __init__(
+        self, description: Optional[Union[str, MarkdownDescription]] = "", **data
+    ):
+        if isinstance(description, str):
+            description = MarkdownDescription(text=description)
+        super().__init__(**data, description=description)
 
     @property
     def icon(self):
@@ -454,7 +462,7 @@ class Dataset(SyftObject):
             </style>
             <div class='syft-dataset'>
             <h3>{self.name}</h3>
-            <p>{self.description}</p>
+            <p>{self.description.text}</p>
             {uploaded_by_line}
             <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
             <p class='paragraph-sm'><strong><span class='pr-8'>URL:
@@ -482,13 +490,13 @@ class Dataset(SyftObject):
         _repr_str = f"Syft Dataset: {self.name}\n"
         _repr_str += "Assets:\n"
         for asset in self.asset_list:
-            _repr_str += f"\t{asset.name}: {asset.description}\n"
+            _repr_str += f"\t{asset.name}: {asset.description.text}\n"
         if self.citation:
             _repr_str += f"Citation: {self.citation}\n"
         if self.url:
             _repr_str += f"URL: {self.url}\n"
         if self.description:
-            _repr_str += f"Description: {self.description}\n"
+            _repr_str += f"Description: {self.description.text}\n"
         return as_markdown_python_code(_repr_str)
 
     def _repr_markdown_(self) -> str:
@@ -499,13 +507,13 @@ class Dataset(SyftObject):
         _repr_str = f"Syft Dataset: {self.name}\n\n"
         _repr_str += "Assets:\n\n"
         for asset in self.asset_list:
-            _repr_str += f"\t{asset.name}: {asset.description}\n\n"
+            _repr_str += f"\t{asset.name}: {asset.description.text}\n\n"
         if self.citation:
             _repr_str += f"Citation: {self.citation}\n\n"
         if self.url:
             _repr_str += f"URL: {self.url}\n\n"
         if self.description:
-            _repr_str += f"Description: \n\n{self.description}\n\n"
+            _repr_str += f"Description: \n\n{self.description.text}\n\n"
         return _repr_str
 
     @property
