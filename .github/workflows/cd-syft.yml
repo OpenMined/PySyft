@@ -2,7 +2,7 @@ name: CD - Syft
 
 on:
   schedule:
-    - cron: "00 12 * * */3" # At 12:00 UTC on every three days
+    - cron: "00 12 * * */7" # At 12:00 UTC on every seven days
 
   workflow_dispatch:
     inputs:
@@ -39,6 +39,8 @@ jobs:
     needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
     if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
     runs-on: om-ci-16vcpu-ubuntu2204
+    permissions:
+      contents: write # For tag and release notes.
     steps:
       - name: Permission to home directory
         run: |
@@ -88,7 +90,7 @@ jobs:
           author_name: Madhava Jay
           author_email: madhava@openmined.org
           message: "bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml', 'packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py']"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml', 'packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml']"
           pull: NO-PULL
 
       - name: Scheduled Build and Publish
@@ -116,6 +118,28 @@ jobs:
         id: grid-version
         shell: bash
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+
+      # Check if the version is a pre-release
+      - name: Check if the version is a pre-release and modify version string
+        id: release_checks
+        run: |
+          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
+            echo "is_pre_release=true" >> $GITHUB_OUTPUT
+            echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
+          else
+            echo "is_pre_release=false" >> $GITHUB_OUTPUT
+            echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ steps.release_checks.outputs.github_release_version }}
+          generate_release_notes: true
+          prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
+          files: |
+            ./packages/hagrid/hagrid/manifest_template.yml
+          tag_name: v${{ steps.release_checks.outputs.github_release_version }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2

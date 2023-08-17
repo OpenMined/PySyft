@@ -135,6 +135,7 @@ class DeploymentType(Enum):
     SINGLE_CONTAINER = "single_container"
     CONTAINER_STACK = "container_stack"
     K8S = "k8s"
+    PODMAN = "podman"
 
 
 class NodeHandle:
@@ -201,7 +202,7 @@ class NodeHandle:
             password = getpass.getpass("Password: ")
         if not password_verify:
             password_verify = getpass.getpass("Confirm Password: ")
-        if password is not password_verify:
+        if password != password_verify:
             return SyftError(message="Passwords do not match")
 
         client = self.client
@@ -318,6 +319,23 @@ def deploy_to_python(
 
 
 def deploy_to_k8s(
+    node_type_enum: NodeType,
+    deployment_type_enum: DeploymentType,
+    name: str,
+    node_side_type: NodeSideType,
+) -> NodeHandle:
+    node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
+    return NodeHandle(
+        node_type=node_type_enum,
+        deployment_type=deployment_type_enum,
+        name=name,
+        port=node_port,
+        url="http://localhost",
+        node_side_type=node_side_type,
+    )
+
+
+def deploy_to_podman(
     node_type_enum: NodeType,
     deployment_type_enum: DeploymentType,
     name: str,
@@ -521,6 +539,13 @@ class Orchestra:
                 name=name,
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
+            )
+        elif deployment_type_enum == DeploymentType.PODMAN:
+            return deploy_to_podman(
+                node_type_enum=node_type_enum,
+                deployment_type_enum=deployment_type_enum,
+                name=name,
+                node_side_type=node_side_type_enum,
             )
         else:
             print(f"deployment_type: {deployment_type_enum} is not supported")

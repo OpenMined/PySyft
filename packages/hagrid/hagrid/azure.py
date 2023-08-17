@@ -43,7 +43,7 @@ def azure_service_principal() -> Optional[TypeDict[str, str]]:
     sp_json = {}
     if not os.path.exists(AZURE_SERVICE_PRINCIPAL_PATH):
         raise AzureException("No service principal so we need to create one first")
-    with open(AZURE_SERVICE_PRINCIPAL_PATH, "r") as f:
+    with open(AZURE_SERVICE_PRINCIPAL_PATH) as f:
         sp_json = json.loads(f.read())
 
     required_keys = ["appId", "displayName", "name", "password", "tenant"]

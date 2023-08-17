@@ -34,7 +34,7 @@ def check_version(
         f"{server_name} node requires {server_version}"
     )
     if client_syft_version.base_version != node_syft_version.base_version:
-        raise Exception(msg)
+        raise ValueError(msg)
     if client_syft_version.pre != node_syft_version.pre:
         if not silent:
             print(f"Warning: {msg}")

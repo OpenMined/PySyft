@@ -1,4 +1,5 @@
 # third party
+from pydantic import ValidationError
 import pytest
 
 # syft absolute
@@ -75,7 +76,7 @@ def test_exception_different_email(worker):
         node=worker, email="leonard@princeton.edu", password="starwars"
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         sy.Project(
             name="My Cool Project",
             description="My Cool Description",
