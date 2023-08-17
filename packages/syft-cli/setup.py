@@ -1,7 +1,7 @@
 # third party
 from setuptools import find_packages
 from setuptools import setup
-from version import __version__
+from syft_cli.version import __version__
 
 packages = [
     "typer[all]==0.9.0",
@@ -27,10 +27,10 @@ setup(
     include_package_data=True,
     entry_points={
         "console_scripts": [
-            "syft = cli:app",
-            "syft-cli = cli:app",
-            "syftcli = cli:app",
-            "syftctl = cli:app",
+            "syft = syft_cli.cli:app",
+            "syft-cli = syft_cli.cli:app",
+            "syftcli = syft_cli.cli:app",
+            "syftctl = syft_cli.cli:app",
         ]
     },
 )
