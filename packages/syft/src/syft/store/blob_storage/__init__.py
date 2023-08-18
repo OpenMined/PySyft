@@ -145,6 +145,9 @@ class BlobStorageConnection:
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         raise NotImplementedError
 
+    def delete(self, fp: SecureFilePathLocation) -> bool:
+        raise NotImplementedError
+
 
 @serializable()
 class BlobStorageClient(SyftBaseModel):
