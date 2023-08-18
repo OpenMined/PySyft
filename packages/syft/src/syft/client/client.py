@@ -430,6 +430,7 @@ class SyftClient:
     metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
     __logged_in_user: str = ""
+    __logged_in_username: str = ""
     __user_role: ServiceRole = ServiceRole.NONE
 
     def __init__(
@@ -476,6 +477,10 @@ class SyftClient:
     @property
     def logged_in_user(self) -> Optional[str]:
         return self.__logged_in_user
+
+    @property
+    def logged_in_username(self) -> Optional[str]:
+        return self.__logged_in_username
 
     @property
     def user_role(self) -> ServiceRole:
@@ -603,6 +608,10 @@ class SyftClient:
         if signing_key is not None:
             self.credentials = signing_key
             self.__logged_in_user = email
+
+            # Get current logged in user name
+            self.__logged_in_username = self.users.get_current_user().name
+
             # TODO: How to get the role of the user?
             # self.__user_role =
             self._fetch_api(self.credentials)
