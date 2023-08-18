@@ -75,6 +75,7 @@ class ActionService(AbstractService):
             uid=action_object.id,
             credentials=context.credentials,
             syft_object=action_object,
+            has_result_read_permission=True,
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):

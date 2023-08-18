@@ -21,6 +21,7 @@ from ...service.response import SyftSuccess
 from ...types.file import SyftFile
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ..dataset.dataset import Asset
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -178,68 +179,88 @@ class ContainerCommand(SyftObject):
     module_name: str
     image_name: str
     doc_string: str = ""
-    name: str
+    api_name: str
     command: str
-    args: str
-    kwargs: Dict[str, ContainerCommandArg] = {}
-    user_kwargs: List[str] = []
-    extra_user_kwargs: Dict[str, Type] = {}
+    cmd_args: str
+    cmd_kwargs: Dict[str, ContainerCommandArg] = {}
+    api_kwargs: Dict[str, Type] = {}
+    dataset_file_mounts: Dict[str, str] = {}
     user_files: List[str] = []
     return_filepath: Optional[str] = None
     mounts: List[ContainerMount] = []
 
-    __attr_searchable__ = ["module_name", "name", "image_name"]
-    __attr_unique__ = ["name"]
-    __repr_attrs__ = ["module_name", "name", "image_name"]
+    __attr_searchable__ = ["module_name", "api_name", "image_name"]
+    __attr_unique__ = ["api_name"]
+    __repr_attrs__ = ["module_name", "api_name", "image_name"]
 
     def cmd(
         self,
         run_user_kwargs: Dict[str, Any],
         run_files: Dict[str, SyftFile],
-        run_extra_kwargs: Dict[str, Any],
     ) -> str:
-        run_kwargs = {}
-        run_kwargs["user_kwargs"] = run_user_kwargs
-        run_kwargs["files"] = run_files
-        cmd = ""
-        cmd += f"{self.command} "
-        cmd += f"{self.args} "
-        for _k, v in self.kwargs.items():
+        run_kwargs = {"user_kwargs": run_user_kwargs, "files": run_files}
+        cmd = f"{self.command} {self.cmd_args} "
+        for _k, v in self.cmd_kwargs.items():
             value = v.format(run_kwargs)
             if value is not None:
                 cmd += f"{value} "
         return cmd.strip()
 
+    @property
+    def api_kwargs_used_in_cmd(self):
+        return {k: v for k, v in self.api_kwargs.items() if k in self.cmd_kwargs}
+
     def user_signature(self) -> Signature:
         parameters = []
-        keys = self.user_kwargs + self.user_files
-        for key in keys:
-            if key in self.kwargs:
-                kwarg = self.kwargs[key]
-                param_name = kwarg.name.replace("-", "_")
-                if isinstance(kwarg.value, ContainerUpload):
-                    param_type = SyftFile
-                elif isinstance(kwarg.value, type):
-                    param_type = kwarg.value
-                else:
-                    param_type = type(kwarg.value)
-                if not kwarg.required:
-                    param_type = Optional[param_type]
-            else:
-                param_name = key.replace("-", "_")
-                param_type = Union[SyftFile, List[SyftFile]]
+        # keys = self.api_kwargs + self.user_files
+        fname2type = {name: Union[SyftFile, List[SyftFile]] for name in self.user_files}
+        name2type = {**self.api_kwargs, **fname2type}
 
-            parameter = Parameter(
-                name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
+        for name, _type in name2type.items():
+            parameters.append(
+                Parameter(
+                    name=name.replace("-", "_"),
+                    kind=Parameter.KEYWORD_ONLY,
+                    annotation=_type,
+                )
             )
-            parameters.append(parameter)
 
-        for key, param_type in self.extra_user_kwargs.items():
-            param_name = key.replace("-", "_")
-            parameter = Parameter(
-                name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
+        for k in self.dataset_file_mounts.keys():
+            parameters.append(
+                Parameter(
+                    name=k,
+                    kind=Parameter.KEYWORD_ONLY,
+                    annotation=Asset,
+                )
             )
-            parameters.append(parameter)
+
+        # for key in keys:
+        #     if key in self.cmd_kwargs:
+        #         kwarg = self.cmd_kwargs[key]
+        #         param_name = kwarg.name.replace("-", "_")
+        #         if isinstance(kwarg.value, ContainerUpload):
+        #             param_type = SyftFile
+        #         elif isinstance(kwarg.value, type):
+        #             param_type = kwarg.value
+        #         else:
+        #             param_type = type(kwarg.value)
+        #         if not kwarg.required:
+        #             param_type = Optional[param_type]
+        #     else:
+        #         param_name = key.replace("-", "_")
+        #         param_type = Union[SyftFile, List[SyftFile]]
+
+        #     parameter = Parameter(
+        #         name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
+        #     )
+        #     parameters.append(parameter)
+
+        # for key, param_type in self.extra_user_kwargs.items():
+        #     param_name = key.replace("-", "_")
+        #     parameter = Parameter(
+        #         name=param_name, kind=Parameter.KEYWORD_ONLY, annotation=param_type
+        #     )
+        #     parameters.append(parameter)
 
         return Signature(parameters=parameters)
 
@@ -274,7 +295,8 @@ class ContainerResult(SyftObject):
     stderr: List[str]
     jsonstd: List[Dict[str, Any]]
     jsonerr: List[Dict[str, Any]]
-    return_file: Optional[SyftFile] = None
+    return_file: Optional[Union[SyftFile, SyftError]] = None
+    return_file_obj: Optional[Union[Any, SyftError]] = None
 
     def _repr_html_(self) -> str:
         return_file_name = ""

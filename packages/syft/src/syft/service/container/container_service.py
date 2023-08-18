@@ -27,6 +27,8 @@ from ...store.document_store import QueryKeys
 from ...types.file import SyftFile
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
+from ..dataset.dataset import Asset
+from ..dataset.dataset import CreateAsset
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -37,12 +39,20 @@ from .container import ContainerImage
 from .container import ContainerResult
 
 ImageNamePartitionKey = PartitionKey(key="name", type_=str)
-CommandNamePartitionKey = PartitionKey(key="name", type_=str)
+CommandNamePartitionKey = PartitionKey(key="api_name", type_=str)
 
 
 @serializable()
 class ContainerCommandAdded(SyftSuccess):
     pass
+
+
+def is_jsonable(x):
+    try:
+        json.dumps(x)
+        return True
+    except (TypeError, OverflowError):
+        return False
 
 
 def parse_output(log_iterator: Iterator) -> str:
@@ -72,9 +82,8 @@ def build_image(container_image: ContainerImage) -> Union[SyftSuccess, SyftError
 def run_command(
     container_image: ContainerImage,
     command: ContainerCommand,
-    user_kwargs: Dict[str, Any],
+    cmd_kwargs: Dict[str, Any],
     files: Dict[str, SyftFile],
-    extra_kwargs: Dict[str, Any],
     debug: bool = False,
 ) -> ContainerResult:
     client = docker.from_env()
@@ -146,9 +155,8 @@ def run_command(
                 if not write_result:
                     return write_result
 
-        cmd = command.cmd(
-            run_user_kwargs=user_kwargs, run_files=files, run_extra_kwargs=extra_kwargs
-        )
+        cmd = command.cmd(run_user_kwargs=cmd_kwargs, run_files=files)
+        print("COMMAND", cmd)
         # redirecting output to main log
         shell_cmd_logs = "sh -c '{}'".format(cmd + " 2>&1 | tee /proc/1/fd/1")
         result = container.exec_run(
@@ -157,7 +165,7 @@ def run_command(
         container_result = ContainerResult.from_execresult(result=result)
         container_result.image_name = container_image.name
         container_result.image_tag = container_image.tag
-        container_result.command_name = command.name
+        container_result.command_name = command.api_name
         if command.return_filepath:
             full_path = f"{temp_dir}/{command.return_filepath}"
             return_file = SyftFile.from_path(full_path)
@@ -351,17 +359,14 @@ class ContainerService(AbstractService):
             context.session.update_user_session()
 
         files = {}
-        user_kwargs = {}
-        extra_kwargs = {}
+        cmd_kwargs = {}
 
         # TODO: this is getting a bit complex we need to split up the allowed user input
         # filtering from the AO pre_hook overriding steps
 
         for k, v in kwargs.items():
             key = k
-            for possible_keys in command.user_kwargs + list(
-                command.extra_user_kwargs.keys()
-            ):
+            for possible_keys in command.api_kwargs.keys():
                 # some cli args are - but only _ allowed in python signatures
                 if "-" in possible_keys and possible_keys.replace("-", "_") == key:
                     key = key.replace("_", "-")
@@ -372,35 +377,56 @@ class ContainerService(AbstractService):
                     if not isinstance(item, SyftFile):
                         raise Exception("All files in a list must be files")
                 files[key] = v
+            elif isinstance(v, SyftFile):
+                files[key] = v
+            elif isinstance(v, Asset) or isinstance(v, CreateAsset):
+                fname = command.dataset_file_mounts[k]
+                data = v.data
+                # check if json
+                if is_jsonable(data):
+                    data = json.dumps(data)
+                else:
+                    return SyftError("passed data not writable")
 
-            if key in command.user_kwargs:
-                if isinstance(v, SyftFile):
-                    files[key] = v
-                else:
-                    user_kwargs[key] = v
+                files[key] = SyftFile.from_string(content=data, filename=fname)
+
             else:
-                if isinstance(v, SyftFile):
-                    files[key] = v
-                else:
-                    extra_kwargs[key] = v
+                if key in command.api_kwargs_used_in_cmd:
+                    cmd_kwargs[key] = v
 
         debug = False
         if "debug" in kwargs:
             debug = bool(kwargs["debug"])
         if debug:
             print(f"ContainerCommand debug {debug}. Container will not be deleted.")
+
         try:
-            result = run_command(
+            print(command)
+            result: ContainerResult = run_command(
                 container_image=image,
                 command=command,
-                user_kwargs=user_kwargs,
+                cmd_kwargs=cmd_kwargs,
                 files=files,
-                extra_kwargs=extra_kwargs,
                 debug=debug,
             )
 
             if post_wrapper:
                 context, result = post_wrapper.exec(context, result)
+
+            if (file := result.return_file) is not None:
+                # relative
+                from ..action.action_object import ActionObject
+
+                # TODO, proper reading here
+                action_service = context.node.get_service("actionservice")
+                obj = ActionObject.from_obj(file.data.decode("utf-8"))
+                ptr_res = action_service.set(context, obj)
+                if ptr_res.is_ok():
+                    result.return_file_obj = ptr_res.ok()
+                else:
+                    result.return_file_obj = SyftError(
+                        "Failed to write result file object to store"
+                    )
 
             return result
         except Exception as e:

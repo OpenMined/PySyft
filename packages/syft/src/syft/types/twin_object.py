@@ -24,6 +24,7 @@ def to_action_object(obj: Any) -> ActionObject:
 
     if type(obj) in action_types:
         return action_types[type(obj)](syft_action_data=obj)
+    print(obj)
     raise Exception(f"{type(obj)} not in action_types")
 
 
