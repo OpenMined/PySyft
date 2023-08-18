@@ -51,6 +51,7 @@ from ..service.bridge.bridge_service import BridgeService
 from ..service.code.user_code_service import UserCodeService
 from ..service.code_history.code_history_service import CodeHistoryService
 from ..service.container.container_service import ContainerService
+from ..service.billing.billing_service import BillingService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
 from ..service.context import UnauthedServiceContext
@@ -254,6 +255,7 @@ class Node(AbstractNode):
                 BlobStorageService,
                 BridgeService,
                 ContainerService,
+                BillingService,
             ]
             if services is None
             else services
