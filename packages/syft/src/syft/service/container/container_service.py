@@ -384,7 +384,7 @@ class ContainerService(AbstractService):
                 else:
                     extra_kwargs[key] = v
 
-        debug = False
+        debug = True
         if "debug" in kwargs:
             debug = bool(kwargs["debug"])
         if debug:

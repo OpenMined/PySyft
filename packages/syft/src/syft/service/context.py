@@ -97,6 +97,24 @@ class UserSession(SyftObject):
             user.session = self
         self.stash.update(credentials=self.verify_key, user=user)
 
+    def start_billing_item(self, name, price, time_units) -> None:
+        self.current_billing_item = { # TODO: Use fresh billing class
+            'name': name,
+            'price': price,
+            'time_units': time_units,
+            'start_time': datetime.now()
+        }
+
+    def end_billing_item(self) -> None:
+        if self.current_billing_item is not None:
+            self.current_billing_item['end_time'] = datetime.now()
+
+            # TODO: Make billing item persistant (Use SyftObject so it hangs around!!)
+            self.current_billing_item = None
+
+    def get_billing_item(self) -> dict:
+        return self.current_billing_item
+
 
 class NodeServiceContext(Context, SyftObject):
     __canonical_name__ = "NodeServiceContext"
@@ -136,3 +154,5 @@ class ChangeContext(SyftBaseObject):
         return ChangeContext(
             node=context.node, approving_user_credentials=context.credentials
         )
+
+# TODO: Make billing class
