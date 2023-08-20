@@ -521,12 +521,14 @@ class ActionObject(SyftObject):
     @pydantic.root_validator()
     def __check_action_data(cls, values: dict) -> dict:
         v = values.get("syft_action_data_cache")
-        values["syft_action_data_type"] = type(v)
+        if not isinstance(v, ActionDataEmpty):
+            values["syft_action_data_type"] = type(v)
 
-        values["syft_action_data_repr_"] = (
-            v._repr_markdown_() if hasattr(v, "_repr_markdown_") else v.__repr__()
-        )
-        values["syft_action_data_str_"] = str(v)
+            values["syft_action_data_repr_"] = (
+                v._repr_markdown_() if hasattr(v, "_repr_markdown_") else v.__repr__()
+            )
+            values["syft_action_data_str_"] = str(v)
+            values["syft_has_bool_attr"] = hasattr(v, "__bool__")
         return values
 
     def _save_to_blob_store(self) -> None:
