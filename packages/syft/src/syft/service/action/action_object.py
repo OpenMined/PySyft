@@ -10,7 +10,6 @@ from typing import Any
 from typing import Callable
 from typing import ClassVar
 from typing import Dict
-from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -32,6 +31,7 @@ from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
@@ -302,7 +302,7 @@ def convert_to_pointers(
             if not isinstance(arg, ActionObject):
                 arg = ActionObject.from_obj(syft_action_data=arg)
                 arg.syft_node_uid = node_uid
-                arg.save()
+                arg._save_to_blob_store()
                 arg = api.services.action.set(arg)
                 # arg = action_obj.send(
                 #     client
@@ -314,7 +314,7 @@ def convert_to_pointers(
             if not isinstance(arg, ActionObject):
                 arg = ActionObject.from_obj(syft_action_data=arg)
                 arg.syft_node_uid = node_uid
-                arg.save()
+                arg._save_to_blob_store()
                 arg = api.services.action.set(arg)
                 # arg = action_obj.send(client)
 
@@ -417,7 +417,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_debug_",
     "as_empty",
     "get",
-    "save",
+    "_save_to_blob_store",
     "_set_syft_action_data",
     "syft_action_data",
     "__check_action_data",
@@ -447,15 +447,17 @@ class ActionObject(SyftObject):
     _syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
-    syft_action_data_type: Optional[Any]
+    syft_action_data_type: Optional[Type]
     syft_action_data_repr_: Optional[str]
     syft_action_data_str_: Optional[str]
     syft_has_bool_attr: Optional[bool]
+    syft_resolve_data: Optional[bool]
+    syft_created_at: Optional[DateTime]
     # syft_dont_wrap_attrs = ["shape"]
 
     @property
     def syft_action_data(self) -> Any:
-        if self.syft_action_data_cache is None:
+        if self.syft_blob_storage_entry_id and self.syft_created_at:
             blob_storage_read_method = from_api_or_context(
                 func_or_path="blob_storage.read",
                 syft_node_location=self.syft_node_location,
@@ -470,28 +472,32 @@ class ActionObject(SyftObject):
         return self.syft_action_data_cache
 
     def _set_syft_action_data(self, data: Any) -> None:
-        storage_entry = CreateBlobStorageEntry.from_obj(data)
+        if not isinstance(data, ActionDataEmpty):
+            storage_entry = CreateBlobStorageEntry.from_obj(data)
 
-        allocate_method = from_api_or_context(
-            func_or_path="blob_storage.allocate",
-            syft_node_location=self.syft_node_location,
-            syft_client_verify_key=self.syft_client_verify_key,
-        )
-        if allocate_method is not None:
-            blob_deposit_object = allocate_method(storage_entry)
-            blob_deposit_object.write(serialize(data, to_bytes=True))
-            self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
+            allocate_method = from_api_or_context(
+                func_or_path="blob_storage.allocate",
+                syft_node_location=self.syft_node_location,
+                syft_client_verify_key=self.syft_client_verify_key,
+            )
+            if allocate_method is not None:
+                blob_deposit_object = allocate_method(storage_entry)
+                blob_deposit_object.write(serialize(data, to_bytes=True))
+                self.syft_blob_storage_entry_id = (
+                    blob_deposit_object.blob_storage_entry_id
+                )
+
+            self.syft_action_data_type = type(data)
+
+            self.syft_action_data_repr_ = (
+                data._repr_markdown_()
+                if hasattr(data, "_repr_markdown_")
+                else data.__repr__()
+            )
+            self.syft_action_data_str_ = str(data)
+            self.syft_has_bool_attr = hasattr(data, "__bool__")
 
         self.syft_action_data_cache = data
-        self.syft_action_data_type = type(data)
-
-        self.syft_action_data_repr_ = (
-            data._repr_markdown_()
-            if hasattr(data, "_repr_markdown_")
-            else data.__repr__()
-        )
-        self.syft_action_data_str_ = str(data)
-        self.syft_has_bool_attr = hasattr(data, "__bool__")
 
     syft_action_data = syft_action_data.setter(_set_syft_action_data)
 
@@ -523,10 +529,10 @@ class ActionObject(SyftObject):
         values["syft_action_data_str_"] = str(v)
         return values
 
-    def save(self) -> None:
+    def _save_to_blob_store(self) -> None:
         data = self.syft_action_data
         self._set_syft_action_data(data)
-        self.syft_action_data_cache = None
+        self.syft_action_data_cache = self.as_empty()
 
     @property
     def is_mock(self):
@@ -632,6 +638,8 @@ class ActionObject(SyftObject):
 
         # relative
         from ...client.api import APIRegistry
+
+        obj._save_to_blob_store()
 
         action = Action(
             path="",
@@ -799,7 +807,7 @@ class ActionObject(SyftObject):
         """Send the object to a Syft Client"""
         self.syft_node_location = client.id
         self.syft_client_verify_key = client.verify_key
-        self.save()
+        self._save_to_blob_store()
         res = client.api.services.action.set(self)
         return res
 
@@ -1294,8 +1302,8 @@ class ActionObject(SyftObject):
             context_self = self.syft_action_data  # type: ignore
             return context_self.__setattr__(name, value)
 
-    def keys(self) -> KeysView[str]:
-        return self.syft_action_data.keys()  # type: ignore
+    # def keys(self) -> KeysView[str]:
+    #     return self.syft_action_data.keys()  # type: ignore
 
     ###### __DUNDER_MIFFLIN__
 
@@ -1471,7 +1479,7 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__rrshift__(other))
 
 
-@serializable(without=["syft_action_data_cache"])
+@serializable()
 class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1

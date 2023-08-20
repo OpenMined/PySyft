@@ -16,7 +16,7 @@ from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
 
-@serializable(without=["syft_action_data_cache"])
+@serializable()
 class PandasDataFrameObject(ActionObject):
     __canonical_name__ = "PandasDataframeObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -42,7 +42,7 @@ class PandasDataFrameObject(ActionObject):
         return super().syft_is_property(obj, method)
 
 
-@serializable(without=["syft_action_data_cache"])
+@serializable()
 class PandasSeriesObject(ActionObject):
     __canonical_name__ = "PandasSeriesObject"
     __version__ = SYFT_OBJECT_VERSION_1

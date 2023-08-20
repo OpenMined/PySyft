@@ -13,6 +13,7 @@ from result import Result
 
 # relative
 from ...serde.serializable import serializable
+from ...types.datetime import DateTime
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..code.user_code import UserCode
@@ -55,7 +56,7 @@ class ActionService(AbstractService):
         np_obj = NumpyArrayObject(
             dtype=data.dtype, shape=data.shape, syft_action_data_cache=data
         )
-        np_obj.save()
+        np_obj._save_to_blob_store()
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
@@ -72,6 +73,13 @@ class ActionService(AbstractService):
     ) -> Result[ActionObject, str]:
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
+
+        if isinstance(action_object, ActionObject):
+            action_object.syft_created_at = DateTime.now()
+        else:
+            action_object.private_obj.syft_created_at = DateTime.now()
+            action_object.mock_obj.syft_created_at = DateTime.now()
+
         result = self.store.set(
             uid=action_object.id,
             credentials=context.credentials,
@@ -208,7 +216,7 @@ class ActionService(AbstractService):
         except Exception as e:
             return Err(f"_user_code_execute failed. {e}")
 
-        result_action_object.save()
+        result_action_object._save_to_blob_store()
         set_result = self.store.set(
             uid=result_id,
             credentials=context.credentials,
@@ -394,8 +402,10 @@ class ActionService(AbstractService):
         # relative
         from .plan import Plan
 
+        has_value_mutated = True
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
+            has_value_mutated = False
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action)
         else:
@@ -441,7 +451,8 @@ class ActionService(AbstractService):
         has_result_read_permission = self.has_read_permission_for_action_result(
             context, action
         )
-        result_action_object.save()
+        if has_value_mutated:
+            result_action_object._save_to_blob_store()
         set_result = self.store.set(
             uid=action.result_id,
             credentials=context.credentials,
