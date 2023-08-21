@@ -130,8 +130,14 @@ class MongoStorePartition(StorePartition):
         )
         if collection_status.is_err():
             return collection_status
+        collection_permissions_status = client.with_collection_permissions(
+            collection_settings=self.settings, store_config=self.store_config
+        )
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
 
         self._collection = collection_status.ok()
+        self._permissions = collection_permissions_status.ok()
 
         return self._create_update_index()
 
