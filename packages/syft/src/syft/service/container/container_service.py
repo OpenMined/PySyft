@@ -332,32 +332,73 @@ class ContainerService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Call a ContainerCommand"""
 
-        result = self.stash.get_by_name(context.node.verify_key, name=image_name)
-        if result.is_ok():
-            if not result.ok():
-                return SyftError(message=f"ContainerImage {image_name} does not exist.")
-        image = result.ok()
+        image_result = self.stash.get_by_name(context.node.verify_key, name=image_name)
+        if not (image := image_result.ok()):
+            return SyftError(message=f"ContainerImage {image_name} does not exist.")
 
-        result = self.command_stash.get_by_name(
+        cmd_result = self.command_stash.get_by_name(
             context.node.verify_key, name=command_name
         )
-        if result.is_ok():
-            if not result.ok():
-                return SyftError(
-                    message=f"ContainerCommand {command_name} does not exist."
-                )
-
-        command = result.ok()
+        if not (command := cmd_result.ok()):
+            return SyftError(message=f"ContainerCommand {command_name} does not exist.")
 
         bridge_service = context.node.get_service("BridgeService")
+
         pre_wrapper, post_wrapper = bridge_service.get_wrappers(
             context=context, path=module_path
         )
 
+        # pre hooks
         if pre_wrapper:
             context, kwargs = pre_wrapper.exec(context, kwargs)
             context.session.update_user_session()
 
+        # kwargs
+        res = self.gather_cmd_kwargs(command, kwargs)
+        if isinstance(res, SyftError):
+            return res
+        else:
+            files, cmd_kwargs, debug = res
+
+        try:
+            # run
+            print(command)
+            result: ContainerResult = run_command(
+                container_image=image,
+                command=command,
+                cmd_kwargs=cmd_kwargs,
+                files=files,
+                debug=debug,
+            )
+
+            if post_wrapper:
+                context, result = post_wrapper.exec(context, result)
+
+        except Exception as e:
+            return SyftError(f"Failed to run command. {e}")
+
+        # write output files to store
+        if (file := result.return_file) is not None:
+            # relative
+            from ..action.action_object import ActionObject
+
+            # TODO, proper reading here
+            action_service = context.node.get_service("actionservice")
+            obj = ActionObject.from_obj(file.data.decode("utf-8"))
+            ptr_res = action_service._set(
+                context, obj, has_result_read_permission=False
+            )
+            if ptr_res.is_ok():
+                ptr = ptr_res.ok()
+                result.return_file_obj = ptr.as_empty()
+            else:
+                result.return_file_obj = SyftError(
+                    "Failed to write cmd result file object to store"
+                )
+
+        return result
+
+    def gather_cmd_kwargs(self, command, kwargs):
         files = {}
         cmd_kwargs = {}
 
@@ -379,16 +420,21 @@ class ContainerService(AbstractService):
                 files[key] = v
             elif isinstance(v, SyftFile):
                 files[key] = v
-            elif isinstance(v, Asset) or isinstance(v, CreateAsset):
-                fname = command.dataset_file_mounts[k]
-                data = v.data
+            elif isinstance(v, dict) and any(
+                isinstance(x, (Asset, CreateAsset)) for x in v.values()
+            ):
+                if len(v) > 1:
+                    return SyftError("file dict with multiple values passed")
+                asset, fname = v.popitem()
+                # fname = command.dataset_file_mounts[k]
+                data = asset.data
                 # check if json
                 if is_jsonable(data):
-                    data = json.dumps(data)
+                    file_data = json.dumps(data)
                 else:
                     return SyftError("passed data not writable")
 
-                files[key] = SyftFile.from_string(content=data, filename=fname)
+                files[key] = SyftFile.from_string(content=file_data, filename=fname)
 
             else:
                 if key in command.api_kwargs_used_in_cmd:
@@ -399,35 +445,4 @@ class ContainerService(AbstractService):
             debug = bool(kwargs["debug"])
         if debug:
             print(f"ContainerCommand debug {debug}. Container will not be deleted.")
-
-        try:
-            print(command)
-            result: ContainerResult = run_command(
-                container_image=image,
-                command=command,
-                cmd_kwargs=cmd_kwargs,
-                files=files,
-                debug=debug,
-            )
-
-            if post_wrapper:
-                context, result = post_wrapper.exec(context, result)
-
-            if (file := result.return_file) is not None:
-                # relative
-                from ..action.action_object import ActionObject
-
-                # TODO, proper reading here
-                action_service = context.node.get_service("actionservice")
-                obj = ActionObject.from_obj(file.data.decode("utf-8"))
-                ptr_res = action_service.set(context, obj)
-                if ptr_res.is_ok():
-                    result.return_file_obj = ptr_res.ok()
-                else:
-                    result.return_file_obj = SyftError(
-                        "Failed to write result file object to store"
-                    )
-
-            return result
-        except Exception as e:
-            return SyftError(f"Failed to run command. {e}")
+        return files, cmd_kwargs, debug

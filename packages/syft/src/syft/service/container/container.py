@@ -3,6 +3,7 @@ from inspect import Parameter
 from inspect import Signature
 import json
 import re
+import typing
 from typing import Any
 from typing import Dict
 from typing import List
@@ -21,7 +22,6 @@ from ...service.response import SyftSuccess
 from ...types.file import SyftFile
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ..dataset.dataset import Asset
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -183,8 +183,8 @@ class ContainerCommand(SyftObject):
     command: str
     cmd_args: str
     cmd_kwargs: Dict[str, ContainerCommandArg] = {}
-    api_kwargs: Dict[str, Type] = {}
-    dataset_file_mounts: Dict[str, str] = {}
+    api_kwargs: Dict[str, Union[Type, typing._GenericAlias]] = {}
+    # dataset_file_mounts: Dict[str, str] = {}
     user_files: List[str] = []
     return_filepath: Optional[str] = None
     mounts: List[ContainerMount] = []
@@ -225,14 +225,14 @@ class ContainerCommand(SyftObject):
                 )
             )
 
-        for k in self.dataset_file_mounts.keys():
-            parameters.append(
-                Parameter(
-                    name=k,
-                    kind=Parameter.KEYWORD_ONLY,
-                    annotation=Asset,
-                )
-            )
+        # for k in self.dataset_file_mounts.keys():
+        #     parameters.append(
+        #         Parameter(
+        #             name=k,
+        #             kind=Parameter.KEYWORD_ONLY,
+        #             annotation=Asset,
+        #         )
+        #     )
 
         # for key in keys:
         #     if key in self.cmd_kwargs:
