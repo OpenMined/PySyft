@@ -37,7 +37,7 @@ class PythonLibService(AbstractService):
     ):
         path = syft_folder.model_folder
 
-        proc = os.system(f"pip install {str(path)} > /tmp/out.txt")
+        proc = os.system(f"pip install -e {str(path)} > /tmp/out.txt")
 
         cmp = cmp.build()
 

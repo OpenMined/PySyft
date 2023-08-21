@@ -1,6 +1,7 @@
 LICENSE
 README.md
 pyproject.toml
+src/__init__.py
 src/bluebook/__init__.py
 src/bluebook/example.py
 src/bluebook.egg-info/PKG-INFO

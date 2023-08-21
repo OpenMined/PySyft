@@ -21,6 +21,7 @@ from typing import _GenericAlias
 from typing import _SpecialForm
 from typing import cast
 import weakref
+import torch 
 
 # relative
 from .capnp import get_capnp_schema
@@ -399,3 +400,4 @@ if sys.version_info >= (3, 9):
 
 recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)
+recursive_serde_register_type(torch.dtype)

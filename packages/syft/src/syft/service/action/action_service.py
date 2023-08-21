@@ -441,9 +441,9 @@ class ActionService(AbstractService):
             context, action
         )
 
-        if not is_serializable(result_action_object.syft_action_data):
-            str_repr = result_action_object.syft_action_data.__repr__()
-            result_action_object = ActionObject.from_obj(syft_action_data=str_repr)
+        # if not is_serializable(result_action_object.syft_action_data):
+        #     str_repr = result_action_object.syft_action_data.__repr__()
+        #     result_action_object = ActionObject.from_obj(syft_action_data=str_repr)
 
         set_result = self.store.set(
             uid=action.result_id,
