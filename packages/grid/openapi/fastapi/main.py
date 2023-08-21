@@ -162,4 +162,4 @@ def get_compute(
     current_user: Annotated[User, Depends(get_current_user)], compute_name: str
 ) -> ComputeResource:
     compute = all_compute.get(compute_name, None)
-    return compute # type: ignore
+    return compute  # type: ignore
