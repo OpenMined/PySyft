@@ -57,17 +57,15 @@ class LoginResponse(BaseModel):
 class ComputeResource(BaseModel):
     name: str
     cloud: str
-    instance_type: Optional[str]
-    accelerator: Optional[str]
-    region: Optional[str]
-    disk_size: Optional[int] = 256
+    instance_type: str = ""
+    accelerator: str = ""
+    region: str = ""
+    disk_size: int = 256
     price_unit_cents: int
     time_unit_secs: int = 3600
 
 
-azure_cpu = ComputeResource(
-    name="azure_cpu", cloud="azure", accelerator=None, price_unit_cents=30
-)
+azure_cpu = ComputeResource(name="azure_cpu", cloud="azure", price_unit_cents=30)
 
 gcp_t4 = ComputeResource(
     name="gcp_t4", cloud="gcp", accelerator="T4", price_unit_cents=70
