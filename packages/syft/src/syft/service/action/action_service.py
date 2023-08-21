@@ -92,23 +92,6 @@ class ActionService(AbstractService):
             return Ok(action_object)
         return result.err()
 
-    @service_method(path="action.save", name="save")
-    def save(
-        self,
-        context: AuthedServiceContext,
-        action_object: Union[ActionObject, TwinObject],
-    ) -> Result[SyftSuccess, str]:
-        """Save an object to the action store"""
-        # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
-        result = self.store.set(
-            uid=action_object.id,
-            credentials=context.credentials,
-            syft_object=action_object,
-        )
-        if result.is_ok():
-            return Ok(SyftSuccess(message=f"{type(action_object)} saved"))
-        return result.err()
-
     @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
     def get(
         self,
@@ -402,10 +385,12 @@ class ActionService(AbstractService):
         # relative
         from .plan import Plan
 
-        has_value_mutated = True
+        data_uploaded_to_blob_store = True
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
-            has_value_mutated = False
+            data_uploaded_to_blob_store = (
+                action.create_object.blob_storage_entry_id is not None
+            )
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action)
         else:
@@ -451,7 +436,7 @@ class ActionService(AbstractService):
         has_result_read_permission = self.has_read_permission_for_action_result(
             context, action
         )
-        if has_value_mutated:
+        if not data_uploaded_to_blob_store:
             result_action_object._save_to_blob_store()
         set_result = self.store.set(
             uid=action.result_id,

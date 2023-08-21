@@ -72,7 +72,7 @@ class TwinObject(SyftObject):
         mock.id = twin_id
         return mock
 
-    def _save_to_store(self):
+    def _save_to_blob_store(self):
         # Set node location and verify key
         # Only save private data to blob store
         # Mock data is still attached to Twin object.

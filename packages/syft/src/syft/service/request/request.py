@@ -443,15 +443,26 @@ class Request(SyftObject):
                     message="Already approved, if you want to force updating the result use force=True"
                 )
             action_obj_id = state.output_history[0].outputs[0]
-            action_object = ActionObject.from_obj(result, id=action_obj_id)
-            result = api.services.action.save(action_object)
-            if not result:
+            action_object = ActionObject.from_obj(
+                result,
+                id=action_obj_id,
+                syft_client_verify_key=api.syft_client_verify_key,
+                syft_node_location=api.syft_node_location,
+            )
+            action_object._save_to_blob_store()
+            result = api.services.action.set(action_object)
+            if isinstance(result, SyftError):
                 return result
             return SyftSuccess(message="Request submitted for updating result.")
         else:
-            action_object = ActionObject.from_obj(result)
-            result = api.services.action.save(action_object)
-            if not result:
+            action_object = ActionObject.from_obj(
+                result,
+                syft_client_verify_key=api.syft_client_verify_key,
+                syft_node_location=api.syft_node_location,
+            )
+            action_object._save_to_blob_store()
+            result = api.services.action.set(action_object)
+            if isinstance(result, SyftError):
                 return result
             ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 

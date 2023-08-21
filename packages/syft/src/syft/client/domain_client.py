@@ -81,7 +81,7 @@ class DomainClient(SyftClient):
                     syft_node_location=self.id,
                     syft_client_verify_key=self.verify_key,
                 )
-                twin.save()
+                twin._save_to_blob_store()
             except Exception as e:
                 return SyftError(message=f"Failed to create twin. {e}")
             response = self.api.services.action.set(twin)

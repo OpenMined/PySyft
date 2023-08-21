@@ -26,6 +26,7 @@ from typing_extensions import Self
 # relative
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
+from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
@@ -300,7 +301,11 @@ def convert_to_pointers(
     if args is not None:
         for arg in args:
             if not isinstance(arg, ActionObject):
-                arg = ActionObject.from_obj(syft_action_data=arg)
+                arg = ActionObject.from_obj(
+                    syft_action_data=arg,
+                    syft_client_verify_key=api.syft_client_verify_key,
+                    syft_node_location=api.syft_node_location,
+                )
                 arg.syft_node_uid = node_uid
                 arg._save_to_blob_store()
                 arg = api.services.action.set(arg)
@@ -312,7 +317,11 @@ def convert_to_pointers(
     if kwargs is not None:
         for k, arg in kwargs.items():
             if not isinstance(arg, ActionObject):
-                arg = ActionObject.from_obj(syft_action_data=arg)
+                arg = ActionObject.from_obj(
+                    syft_action_data=arg,
+                    syft_client_verify_key=api.syft_client_verify_key,
+                    syft_node_location=api.syft_node_location,
+                )
                 arg.syft_node_uid = node_uid
                 arg._save_to_blob_store()
                 arg = api.services.action.set(arg)
@@ -850,6 +859,8 @@ class ActionObject(SyftObject):
         syft_action_data: Any,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
+        syft_client_verify_key: Optional[SyftVerifyKey] = None,
+        syft_node_location: Optional[UID] = None,
     ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
@@ -869,6 +880,12 @@ class ActionObject(SyftObject):
 
         if id is not None:
             action_object.id = id
+
+        if syft_client_verify_key is not None:
+            action_object.syft_client_verify_key = syft_client_verify_key
+
+        if syft_node_location is not None:
+            action_object.syft_node_location = syft_node_location
 
         if syft_lineage_id is not None:
             action_object.id = syft_lineage_id.id
