@@ -30,13 +30,13 @@ pip install -e ".[build]"
 ## Linux
 
 ```sh
-pyinstaller --onefile src/cli.py
+pyinstaller --onefile src/syftcli/cli.py
 ```
 
 ## Windows
 
 ```sh
-pyinstaller --onefile src\\cli.py
+pyinstaller --onefile src\\syftcli\\cli.py
 ```
 
 ## Mac
@@ -44,7 +44,7 @@ pyinstaller --onefile src\\cli.py
 To able to build a binary for you current platform (Intel or Apple Silicon) run
 
 ```sh
-pyinstaller --onefile src/cli.py
+pyinstaller --onefile src/syftcli/cli.py
 ```
 
 ## Building universal binary for Mac
@@ -67,7 +67,7 @@ mentioning both arm and x86
 To create a universal2 binary run
 
 ```sh
-pyinstaller --onefile src/cli.py --target-arch universal2
+pyinstaller --onefile src/syftcli/cli.py --target-arch universal2
 ```
 
 Finally, The binary executable could be found under
