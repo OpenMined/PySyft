@@ -2,8 +2,8 @@
 from rich import box
 from rich.console import Console
 from rich.table import Table
+from syftcli.version import __version__
 import typer
-from version import __version__
 
 app = typer.Typer(name="Syft CLI", no_args_is_help=True)
 console = Console()
@@ -34,3 +34,7 @@ def get_syft_version() -> str:
         return syft.__version__
     except ModuleNotFoundError:
         return "Not Installed"
+
+
+if __name__ == "__main__":
+    app()
