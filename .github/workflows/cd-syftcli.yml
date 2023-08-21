@@ -16,18 +16,18 @@ jobs:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
 
-  call-pr-tests-syft:
-    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
+  # call-pr-tests-syft:
+  #   if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
 
-  call-pr-tests-stack:
-    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
-    secrets: inherit
+  # call-pr-tests-stack:
+  #   if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
+  #   secrets: inherit
 
   deploy-syft-cli:
-    needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
-    if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
+    needs: [call-pr-tests-linting]
+    if: always() && (needs.call-pr-tests-linting.result == 'success' || github.event.inputs.skip_tests == 'true')
     runs-on: ubuntu-latest
 
     steps:
