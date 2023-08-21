@@ -1,7 +1,8 @@
 # third party
 from setuptools import find_packages
 from setuptools import setup
-from src.version import __version__
+
+__version__ = "0.1.0"
 
 packages = [
     "typer[all]==0.9.0",
@@ -21,16 +22,17 @@ setup(
     long_description_content_type="text/plain",
     version=__version__,
     author="OpenMined <info@openmined.org>",
-    packages=find_packages(),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=packages,
     extras_require={"dev": dev_packages, "build": build_packages},
     include_package_data=True,
     entry_points={
         "console_scripts": [
-            "syft = src.cli:app",
-            "syft-cli = src.cli:app",
-            "syftcli = src.cli:app",
-            "syftctl = src.cli:app",
+            "syft = syftcli.cli:app",
+            "syft-cli = syftcli.cli:app",
+            "syftcli = syftcli.cli:app",
+            "syftctl = syftcli.cli:app",
         ]
     },
 )
