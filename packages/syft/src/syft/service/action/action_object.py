@@ -421,6 +421,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "_set_syft_action_data",
     "syft_action_data",
     "__check_action_data",
+    "as_empty_data",
 ]
 
 
@@ -534,7 +535,7 @@ class ActionObject(SyftObject):
     def _save_to_blob_store(self) -> None:
         data = self.syft_action_data
         self._set_syft_action_data(data)
-        self.syft_action_data_cache = self.as_empty()
+        self.syft_action_data_cache = self.as_empty_data()
 
     @property
     def is_mock(self):
@@ -888,6 +889,9 @@ class ActionObject(SyftObject):
         return True
         # self._syft_pre_hooks__[HOOK_ALWAYS].pop(trace_action_side_effct, None)
 
+    def as_empty_data(self) -> ActionDataEmpty:
+        return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
     @staticmethod
     def empty(
         syft_internal_type: Type[Any] = NoneType,
@@ -1080,7 +1084,16 @@ class ActionObject(SyftObject):
         result.syft_client_verify_key = context.syft_client_verify_key
 
         # Propogate Syft blob storage entry id
-        result.syft_blob_storage_entry_id = context.obj.syft_blob_storage_entry_id
+        object_attrs = [
+            "syft_blob_storage_entry_id",
+            "syft_action_data_repr_",
+            "syft_action_data_str_",
+            "syft_action_data_type",
+            "syft_has_bool_attr",
+        ]
+        for attr_name in object_attrs:
+            attr_value = getattr(context.obj, attr_name, None)
+            setattr(result, attr_name, attr_value)
 
         # Propagate Result ID
         if context.result_id is not None:
