@@ -1,5 +1,5 @@
 # third party
-from cli import app
+from src.cli import app
 from typer.testing import CliRunner
 
 runner = CliRunner()
