@@ -250,6 +250,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
+            if hasattr(value, "syft_action_data_str_"):
+                value = value.syft_action_data_str_
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"  {attr}: {value_type} = {value}\n"
         return _repr_str
