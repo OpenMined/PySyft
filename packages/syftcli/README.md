@@ -3,13 +3,13 @@
 ## Development
 
 ```sh
-pip install -e "packages/syft-cli[dev]"
+pip install -e "packages/syftcli[dev]"
 syftcli hello
 ```
 
 ## Building a Standalone Executable of Syft CLI
 
-Keep the working directory as `packages/syft-cli`
+Keep the working directory as `packages/syftcli`
 
 ### Requirements
 
@@ -30,13 +30,13 @@ pip install -e ".[build]"
 ## Linux
 
 ```sh
-pyinstaller --onefile syft_cli/cli.py
+pyinstaller --onefile src/syftcli/cli.py
 ```
 
 ## Windows
 
 ```sh
-pyinstaller --onefile syft_cli\\cli.py
+pyinstaller --onefile src\\syftcli\\cli.py
 ```
 
 ## Mac
@@ -44,7 +44,7 @@ pyinstaller --onefile syft_cli\\cli.py
 To able to build a binary for you current platform (Intel or Apple Silicon) run
 
 ```sh
-pyinstaller --onefile syft_cli/cli.py
+pyinstaller --onefile src/syftcli/cli.py
 ```
 
 ## Building universal binary for Mac
@@ -67,7 +67,7 @@ mentioning both arm and x86
 To create a universal2 binary run
 
 ```sh
-pyinstaller --onefile syft_cli/cli.py --target-arch universal2
+pyinstaller --onefile src/syftcli/cli.py --target-arch universal2
 ```
 
 Finally, The binary executable could be found under
