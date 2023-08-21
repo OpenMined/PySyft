@@ -309,9 +309,6 @@ def convert_to_pointers(
                 arg.syft_node_uid = node_uid
                 arg._save_to_blob_store()
                 arg = api.services.action.set(arg)
-                # arg = action_obj.send(
-                #     client
-                # )  # make sure this doesn't break things later on in send_method_action
             arg_list.append(arg)
 
     if kwargs is not None:
@@ -325,7 +322,6 @@ def convert_to_pointers(
                 arg.syft_node_uid = node_uid
                 arg._save_to_blob_store()
                 arg = api.services.action.set(arg)
-                # arg = action_obj.send(client)
 
             kwarg_dict[k] = arg
 
@@ -651,6 +647,9 @@ class ActionObject(SyftObject):
         # relative
         from ...client.api import APIRegistry
 
+        if obj.syft_node_location is None:
+            obj.syft_node_location = obj.syft_node_uid
+
         obj._save_to_blob_store()
 
         action = Action(
@@ -691,7 +690,13 @@ class ActionObject(SyftObject):
         # We got a raw object. We need to create the ActionObject from scratch and save it in the store.
         obj_id = Action.make_id(None)
         lin_obj_id = Action.make_result_id(obj_id)
-        act_obj = ActionObject.from_obj(obj, id=obj_id, syft_lineage_id=lin_obj_id)
+        act_obj = ActionObject.from_obj(
+            obj,
+            id=obj_id,
+            syft_lineage_id=lin_obj_id,
+            syft_client_verify_key=self.syft_client_verify_key,
+            syft_node_location=self.syft_node_location,
+        )
 
         self._syft_try_to_save_to_store(act_obj)
 
