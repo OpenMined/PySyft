@@ -1,7 +1,7 @@
 # third party
 from setuptools import find_packages
 from setuptools import setup
-from syft_cli.version import __version__
+from src.version import __version__
 
 packages = [
     "typer[all]==0.9.0",
@@ -12,7 +12,7 @@ build_packages = [
     "pyinstaller==5.13.0",
 ]
 
-dev_packages = ["pytest"]
+dev_packages = ["pytest"] + build_packages
 
 setup(
     name="Syft CLI",
@@ -27,10 +27,10 @@ setup(
     include_package_data=True,
     entry_points={
         "console_scripts": [
-            "syft = syft_cli.cli:app",
-            "syft-cli = syft_cli.cli:app",
-            "syftcli = syft_cli.cli:app",
-            "syftctl = syft_cli.cli:app",
+            "syft = src.cli:app",
+            "syft-cli = src.cli:app",
+            "syftcli = src.cli:app",
+            "syftctl = src.cli:app",
         ]
     },
 )
