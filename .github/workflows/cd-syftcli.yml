@@ -1,8 +1,8 @@
-name: CD - syft-cli
+name: CD - Syft-CLI
 
 on:
   schedule:
-    - cron: "00 10 * * */3" # At 10:00 UTC on every three days
+    - cron: "00 10 * * */7" # At 10:00 UTC on every three days
 
   workflow_dispatch:
     inputs:
@@ -25,27 +25,15 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
     secrets: inherit
 
-  # call-syft-cli-tests:
-  #   if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-  #   uses: OpenMined/PySyft/.github/workflows/pr-tests-syft-cli.yml@dev
-
   deploy-syft-cli:
-    needs: [
-        call-pr-tests-linting,
-        call-pr-tests-syft,
-        call-pr-tests-stack,
-        #  call-syft-cli-tests,
-      ]
+    needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
     if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
     runs-on: ubuntu-latest
 
-    outputs:
-      current_hash: ${{ steps.get_hash.outputs.current_hash }}
-      previous_hash: ${{ steps.get_hash.outputs.previous_hash }}
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.SYFT_BUMP_TOKEN }}
+          token: ${{ secrets.SYFT_BUMP_TOKEN  }}
       - name: Install checksumdir
         run: |
           pip install --upgrade checksumdir
@@ -56,6 +44,7 @@ jobs:
           current_hash=$(checksumdir ./packages/syft-cli)
           echo "current_hash=$current_hash" >> $GITHUB_OUTPUT
           previous_hash=$(cat ./scripts/syft-cli_hash)
+          echo "previous_hash=$previous_hash" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -63,13 +52,13 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        if: ${{needs.syft-cli-deploy.outputs.current_hash}} != ${{needs.syft-cli-deploy.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade tox setuptools wheel twine bump2version PyYAML
 
       - name: Bump the Version
-        if: ${{needs.syft-cli-deploy.outputs.current_hash}} != ${{needs.syft-cli-deploy.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
         run: |
           python3 syft-cli/version.py
           python3 scripts/update_manifest.py
@@ -79,11 +68,11 @@ jobs:
         working-directory: ./packages/syft-cli
 
       - name: Write the new hash
-        if: ${{needs.syft-cli-deploy.outputs.current_hash}} != ${{needs.syft-cli-deploy.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
         run: echo $(checksumdir packages/syft-cli) > ./scripts/syft-cli_hash
 
       - name: Commit changes
-        if: ${{needs.syft-cli-deploy.outputs.current_hash}} != ${{needs.syft-cli-deploy.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
         uses: EndBug/add-and-commit@v7
         with:
           author_name: Madhava Jay
@@ -93,10 +82,10 @@ jobs:
           pull_strategy: NO-PULL
 
       - name: Build and publish
-        if: ${{needs.syft-cli-deploy.outputs.current_hash}} != ${{needs.syft-cli-deploy.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.syft-cli_BUMP_TOKEN }}
+          TWINE_PASSWORD: ${{ secrets.OM_SYFTCLI_PYPI_TOKEN }}
         run: |
           tox -e syft-cli.publish
           twine upload packages/syft-cli/dist/*
