@@ -16,7 +16,7 @@ build_packages = [
 dev_packages = ["pytest"] + build_packages
 
 setup(
-    name="Syft CLI",
+    name="syftcli",
     description="Command line utility for Syft",
     long_description="",
     long_description_content_type="text/plain",
