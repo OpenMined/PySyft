@@ -592,6 +592,22 @@ def syft_function_single_use(
         share_results_with_owners=share_results_with_owners,
     )
 
+# stdlib
+from typing import Any
+
+# third party
+import numpy as np
+import pandas as pd
+
+SUPPORTED_TYPES = (pd.DataFrame, pd.Series, np.ndarray, int, float, str)
+
+def create_input_policy_init_kwargs(args: list, annotations: dict) -> dict:
+    input_policy_init_kwargs = {}
+    
+    for arg, annotation in zip(args, annotations.values()):
+        if annotation in SUPPORTED_TYPES:
+            input_policy_init_kwargs[arg] = annotation
+    return input_policy_init_kwargs
 
 def syft_function(
     input_policy: Union[InputPolicy, UID],
@@ -611,23 +627,47 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f):
+    def decorator(f: Callable) -> SubmitUserCode:
+        args = list(inspect.signature(f).parameters.keys())
+        annotations = f.__annotations__
+        input_policy_init_kwargs = create_input_policy_init_kwargs(args, annotations)
+        
+        # Ensure that the return type is annotated
+        if 'return' not in annotations:
+            raise ValueError(f"Function '{f.__name__}' is missing return type annotation.")
+        return_annotation = annotations['return']
+
         res = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
-            input_policy_init_kwargs=input_policy.init_kwargs,
+            input_policy_init_kwargs=input_policy_init_kwargs,
             output_policy_type=output_policy_type,
             output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
-            input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+            input_kwargs=args,
         )
 
         if share_results_with_owners:
             res.output_policy_init_kwargs[
                 "output_readers"
             ] = res.input_owner_verify_keys
+
+        try:
+            # Try to infer the return type without calling the function
+            return_type = return_annotation
+            display(return_type)
+            display(return_type.__name__)
+            display(any(isinstance(return_type, t) for t in SUPPORTED_TYPES))
+            
+            if not any(isinstance(return_type, t) for t in SUPPORTED_TYPES):
+                warning_message = SyftWarning(
+                    message=f"The return type '{return_type.__name__}' of function '{f.__name__}' might not be supported."
+                )
+                display(warning_message)
+        except:
+            pass
 
         success_message = SyftSuccess(
             message=f"Syft function '{f.__name__}' successfully created. "
@@ -639,6 +679,34 @@ def syft_function(
         return res
 
     return decorator
+        
+    #     res = SubmitUserCode(
+    #         code=inspect.getsource(f),
+    #         func_name=f.__name__,
+    #         signature=inspect.signature(f),
+    #         input_policy_type=input_policy_type,
+    #         input_policy_init_kwargs=input_policy.init_kwargs,
+    #         output_policy_type=output_policy_type,
+    #         output_policy_init_kwargs=output_policy.init_kwargs,
+    #         local_function=f,
+    #         input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+    #     )
+
+    #     if share_results_with_owners:
+    #         res.output_policy_init_kwargs[
+    #             "output_readers"
+    #         ] = res.input_owner_verify_keys
+
+    #     success_message = SyftSuccess(
+    #         message=f"Syft function '{f.__name__}' successfully created. "
+    #         f"To add a code request, please create a project using `project = syft.Project(...)`, "
+    #         f"then use command `project.create_code_request`."
+    #     )
+    #     display(success_message)
+
+    #     return res
+
+    # return decorator
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
