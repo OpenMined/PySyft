@@ -55,7 +55,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
     urls: List[GridURL]
 
-    def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
+    def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
         # relative
         from ...client.api import APIRegistry
 
@@ -68,7 +68,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
         try:
             for part_no, (byte_chunk, url) in enumerate(
-                zip(_byte_chunks(BytesIO(data), DEFAULT_CHUNK_SIZE), self.urls),
+                zip(_byte_chunks(data, DEFAULT_CHUNK_SIZE), self.urls),
                 start=1,
             ):
                 if api is not None:
@@ -156,13 +156,13 @@ class SeaweedFSConnection(BlobStorageConnection):
 
     def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
         try:
-            obj_id = str(obj.id)
+            file_name = obj.file_name
             result = self.client.create_multipart_upload(
                 Bucket=self.bucket_name,
-                Key=obj_id,
+                Key=file_name,
             )
             upload_id = result["UploadId"]
-            return SeaweedSecureFilePathLocation(upload_id=upload_id, path=obj_id)
+            return SeaweedSecureFilePathLocation(upload_id=upload_id, path=file_name)
         except BotoClientError as e:
             raise SyftException(e)
 

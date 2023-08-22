@@ -2,6 +2,7 @@
 import mimetypes
 from pathlib import Path
 import sys
+from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -72,6 +73,7 @@ class CreateBlobStorageEntry(SyftObject):
     type_: Optional[Type]
     mimetype: str = "bytes"
     file_size: int
+    extensions: List[str]
 
     @classmethod
     def from_obj(cls, obj: SyftObject) -> Self:
@@ -96,7 +98,13 @@ class CreateBlobStorageEntry(SyftObject):
                     "Please specify mimetype manually `from_path(..., mimetype = ...)`."
                 )
 
-        return cls(mimetype=mimetype, file_size=path.stat().st_size)
+        return cls(
+            mimetype=mimetype, file_size=path.stat().st_size, extensions=path.suffixes
+        )
+
+    @property
+    def file_name(self) -> str:
+        return str(self.id) + "".join(self.extensions)
 
 
 @transform(BlobStorageEntry, BlobStorageMetadata)

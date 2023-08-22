@@ -1,4 +1,5 @@
 # stdlib
+from io import BytesIO
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
@@ -30,7 +31,7 @@ class OnDiskBlobDeposit(BlobDeposit):
     __canonical_name__ = "OnDiskBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
+    def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
         # relative
         from ...service.service import from_api_or_context
 
@@ -39,7 +40,7 @@ class OnDiskBlobDeposit(BlobDeposit):
             syft_node_location=self.syft_node_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
-        return write_to_disk_method(data=data, uid=self.blob_storage_entry_id)
+        return write_to_disk_method(data=data.read(), uid=self.blob_storage_entry_id)
 
 
 class OnDiskBlobStorageConnection(BlobStorageConnection):

@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from enum import Enum
 import inspect
+from io import BytesIO
 import traceback
 import types
 from typing import Any
@@ -42,6 +43,7 @@ from ...util.logger import debug
 from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
+from .action_data_empty import ActionFileData
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
 from .action_types import action_type_for_type
@@ -481,7 +483,10 @@ class ActionObject(SyftObject):
 
     def _set_syft_action_data(self, data: Any) -> None:
         if not isinstance(data, ActionDataEmpty):
-            storage_entry = CreateBlobStorageEntry.from_obj(data)
+            if isinstance(data, ActionFileData):
+                storage_entry = CreateBlobStorageEntry.from_path(data.filepath)
+            else:
+                storage_entry = CreateBlobStorageEntry.from_obj(data)
 
             allocate_method = from_api_or_context(
                 func_or_path="blob_storage.allocate",
@@ -490,7 +495,13 @@ class ActionObject(SyftObject):
             )
             if allocate_method is not None:
                 blob_deposit_object = allocate_method(storage_entry)
-                blob_deposit_object.write(serialize(data, to_bytes=True))
+
+                if isinstance(data, ActionFileData):
+                    buffer = data.as_buffer()
+                else:
+                    buffer = BytesIO(serialize(data, to_bytes=True))
+
+                blob_deposit_object.write(buffer)
                 self.syft_blob_storage_entry_id = (
                     blob_deposit_object.blob_storage_entry_id
                 )
@@ -860,6 +871,41 @@ class ActionObject(SyftObject):
         if isinstance(id, LineageID):
             id = id.id
         return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id)
+
+    @staticmethod
+    def from_file(
+        filepath: str,
+        id: Optional[UID] = None,
+        syft_lineage_id: Optional[LineageID] = None,
+        syft_client_verify_key: Optional[SyftVerifyKey] = None,
+        syft_node_location: Optional[UID] = None,
+    ):
+        """Create an Action Object from a file."""
+
+        if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
+            raise ValueError("UID and LineageID should match")
+
+        syft_action_data = ActionFileData(filepath=filepath)
+        action_type = action_type_for_object(syft_action_data)
+
+        action_object = action_type(syft_action_data_cache=syft_action_data)
+
+        if id is not None:
+            action_object.id = id
+
+        if syft_client_verify_key is not None:
+            action_object.syft_client_verify_key = syft_client_verify_key
+
+        if syft_node_location is not None:
+            action_object.syft_node_location = syft_node_location
+
+        if syft_lineage_id is not None:
+            action_object.id = syft_lineage_id.id
+            action_object.syft_history_hash = syft_lineage_id.syft_history_hash
+        elif id is not None:
+            action_object.syft_history_hash = hash(id)
+
+        return action_object
 
     @staticmethod
     def from_obj(
