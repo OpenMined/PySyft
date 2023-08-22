@@ -87,10 +87,15 @@ class ActionService(AbstractService):
             action_object.private_obj.syft_created_at = DateTime.now()
             action_object.mock_obj.syft_created_at = DateTime.now()
 
+        has_result_read_permission = context.extra_kwargs.get(
+            "has_result_read_permission", False
+        )
+
         result = self.store.set(
             uid=action_object.id,
             credentials=context.credentials,
             syft_object=action_object,
+            has_result_read_permission=has_result_read_permission,
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
