@@ -45,6 +45,7 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.constants import SUPPORTED_RETURN_TYPES
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
@@ -619,6 +620,15 @@ def add_code_request_to_project(
 
     if not isinstance(client, SyftClient):
         return SyftError(message="Client should be a valid SyftClient")
+
+    if "return" not in code.local_function.__annotations__:
+        return SyftError(message="Return type annotation is missing for the function.")
+
+    return_annotation = code.local_function.__annotations__["return"]
+    if return_annotation not in SUPPORTED_RETURN_TYPES:
+        return SyftError(
+            message=f"Return type '{return_annotation.__name__}' is not supported."
+        )
 
     if reason is None:
         reason = f"Code Request for Project: {project.name} has been submitted by {project.created_by}"

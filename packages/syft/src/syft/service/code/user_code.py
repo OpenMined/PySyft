@@ -42,6 +42,7 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.constants import SUPPORTED_RETURN_TYPES
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ..context import AuthedServiceContext
@@ -62,6 +63,7 @@ from ..response import SyftError
 from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ..response import SyftValueError
 from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
@@ -583,6 +585,19 @@ def debox_asset(arg: Any) -> Any:
     return deboxed_arg, ArgumentType.REAL
 
 
+def create_input_policy_init_kwargs(args: list, annotations: dict) -> dict:
+    """
+    Create input_policy_init_kwargs from function annotations.
+    """
+
+    input_policy_init_kwargs = {}
+
+    for arg, annotation in zip(args, annotations.values()):
+        if annotation in SUPPORTED_RETURN_TYPES:
+            input_policy_init_kwargs[arg] = annotation
+    return input_policy_init_kwargs
+
+
 def syft_function_single_use(
     *args: Any, share_results_with_owners=False, **kwargs: Any
 ):
@@ -592,22 +607,6 @@ def syft_function_single_use(
         share_results_with_owners=share_results_with_owners,
     )
 
-# stdlib
-from typing import Any
-
-# third party
-import numpy as np
-import pandas as pd
-
-SUPPORTED_TYPES = (pd.DataFrame, pd.Series, np.ndarray, int, float, str)
-
-def create_input_policy_init_kwargs(args: list, annotations: dict) -> dict:
-    input_policy_init_kwargs = {}
-    
-    for arg, annotation in zip(args, annotations.values()):
-        if annotation in SUPPORTED_TYPES:
-            input_policy_init_kwargs[arg] = annotation
-    return input_policy_init_kwargs
 
 def syft_function(
     input_policy: Union[InputPolicy, UID],
@@ -631,11 +630,12 @@ def syft_function(
         args = list(inspect.signature(f).parameters.keys())
         annotations = f.__annotations__
         input_policy_init_kwargs = create_input_policy_init_kwargs(args, annotations)
-        
-        # Ensure that the return type is annotated
-        if 'return' not in annotations:
-            raise ValueError(f"Function '{f.__name__}' is missing return type annotation.")
-        return_annotation = annotations['return']
+
+        if "return" not in annotations:
+            raise SyftValueError(
+                f"Function '{f.__name__}' is missing return type annotation."
+            )
+        return_annotation = annotations["return"]
 
         res = SubmitUserCode(
             code=inspect.getsource(f),
@@ -655,18 +655,14 @@ def syft_function(
             ] = res.input_owner_verify_keys
 
         try:
-            # Try to infer the return type without calling the function
             return_type = return_annotation
-            display(return_type)
-            display(return_type.__name__)
-            display(any(isinstance(return_type, t) for t in SUPPORTED_TYPES))
-            
-            if not any(isinstance(return_type, t) for t in SUPPORTED_TYPES):
+            if return_type not in SUPPORTED_RETURN_TYPES:
                 warning_message = SyftWarning(
-                    message=f"The return type '{return_type.__name__}' of function '{f.__name__}' might not be supported."
+                    message=f"The return type '{return_type.__name__}' "
+                    f"of function '{f.__name__}' might not be supported."
                 )
                 display(warning_message)
-        except:
+        except (AttributeError, KeyError, TypeError):
             pass
 
         success_message = SyftSuccess(
@@ -679,34 +675,6 @@ def syft_function(
         return res
 
     return decorator
-        
-    #     res = SubmitUserCode(
-    #         code=inspect.getsource(f),
-    #         func_name=f.__name__,
-    #         signature=inspect.signature(f),
-    #         input_policy_type=input_policy_type,
-    #         input_policy_init_kwargs=input_policy.init_kwargs,
-    #         output_policy_type=output_policy_type,
-    #         output_policy_init_kwargs=output_policy.init_kwargs,
-    #         local_function=f,
-    #         input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
-    #     )
-
-    #     if share_results_with_owners:
-    #         res.output_policy_init_kwargs[
-    #             "output_readers"
-    #         ] = res.input_owner_verify_keys
-
-    #     success_message = SyftSuccess(
-    #         message=f"Syft function '{f.__name__}' successfully created. "
-    #         f"To add a code request, please create a project using `project = syft.Project(...)`, "
-    #         f"then use command `project.create_code_request`."
-    #     )
-    #     display(success_message)
-
-    #     return res
-
-    # return decorator
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:

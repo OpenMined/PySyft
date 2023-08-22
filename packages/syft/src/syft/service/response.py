@@ -131,3 +131,8 @@ except Exception:
 @serializable()
 class SyftAttributeError(AttributeError, SyftException):
     pass
+
+
+@serializable()
+class SyftValueError(ValueError, SyftException):
+    pass
