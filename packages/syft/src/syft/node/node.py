@@ -533,6 +533,7 @@ class Node(AbstractNode):
                 BlobStorageService,
                 BridgeService,
                 ContainerService,
+                BillingService,
             ]
 
             if OBLV:

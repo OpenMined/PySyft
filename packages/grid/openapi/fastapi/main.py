@@ -12,6 +12,8 @@ from fastapi import status
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 
+from syft.service.billing.billing_object import ComputeResource
+
 app = FastAPI(title="Blue Book", version="0.2.0")
 # force to the older version for now
 app.openapi_version = "3.0.2"
@@ -55,15 +57,15 @@ class LoginResponse(BaseModel):
     token_type: str
 
 
-class ComputeResource(BaseModel):
-    name: str
-    cloud: str
-    instance_type: str = ""
-    accelerator: str = ""
-    region: str = ""
-    disk_size: int = 256
-    price_unit_cents: int
-    time_unit_secs: int = 3600
+# class ComputeResource(BaseModel):
+#     name: str
+#     cloud: str
+#     instance_type: str = ""
+#     accelerator: str = ""
+#     region: str = ""
+#     disk_size: int = 256
+#     price_unit_cents: int
+#     time_unit_secs: int = 3600
 
 
 azure_cpu = ComputeResource(name="azure_cpu", cloud="azure", price_unit_cents=30)
