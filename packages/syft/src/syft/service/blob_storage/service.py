@@ -20,6 +20,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import GUEST_ROLE_LEVEL
 from .stash import BlobStorageStash
 
 BlobDepositType = Union[OnDiskBlobDeposit, SeaweedFSBlobDeposit]
@@ -62,17 +63,29 @@ class BlobStorageService(AbstractService):
             return blob_storage_entry.to(BlobStorageMetadata)
         return SyftError(message=result.err())
 
-    @service_method(path="blob_storage.read", name="read")
+    @service_method(
+        path="blob_storage.read",
+        name="read",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def read(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[BlobRetrieval, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
+            obj = result.ok()
+            if obj is None:
+                return SyftError(message=f"No blob storage entry exists for uid: {uid}")
+
             with context.node.blob_storage_client.connect() as conn:
-                return conn.read(result.ok().location)
+                return conn.read(obj.location)
         return SyftError(message=result.err())
 
-    @service_method(path="blob_storage.allocate", name="allocate")
+    @service_method(
+        path="blob_storage.allocate",
+        name="allocate",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
     ) -> Union[BlobDepositType, SyftError]:
@@ -94,7 +107,11 @@ class BlobStorageService(AbstractService):
             return SyftError(message=f"{result.err()}")
         return blob_deposit
 
-    @service_method(path="blob_storage.write_to_disk", name="write_to_disk")
+    @service_method(
+        path="blob_storage.write_to_disk",
+        name="write_to_disk",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def write_to_disk(
         self, context: AuthedServiceContext, uid: UID, data: bytes
     ) -> Union[SyftSuccess, SyftError]:
@@ -119,6 +136,7 @@ class BlobStorageService(AbstractService):
     @service_method(
         path="blob_storage.mark_write_complete",
         name="mark_write_complete",
+        roles=GUEST_ROLE_LEVEL,
     )
     def mark_write_complete(
         self,
@@ -135,6 +153,9 @@ class BlobStorageService(AbstractService):
 
         obj: Optional[BlobStorageEntry] = result.ok()
 
+        if obj is None:
+            return SyftError(message=f"No blob storage entry exists for uid: {uid}")
+
         with context.node.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)
 
@@ -146,9 +167,13 @@ class BlobStorageService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
+            obj = result.ok()
+
+            if obj is None:
+                return SyftError(message=f"No blob storage entry exists for uid: {uid}")
             try:
                 with context.node.blob_storage_client.connect() as conn:
-                    file_unlinked_result = conn.delete(result.ok().location)
+                    file_unlinked_result = conn.delete(obj.location)
             except Exception as e:
                 return SyftError(message=f"Failed to delete file: {e}")
 

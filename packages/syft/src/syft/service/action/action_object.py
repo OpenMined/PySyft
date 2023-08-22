@@ -473,6 +473,8 @@ class ActionObject(SyftObject):
             blob_retrieval_object = blob_storage_read_method(
                 uid=self.syft_blob_storage_entry_id
             )
+            if isinstance(blob_retrieval_object, SyftError):
+                return blob_retrieval_object
             self.syft_action_data_cache = blob_retrieval_object.read()
 
         return self.syft_action_data_cache
