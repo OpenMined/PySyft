@@ -1,3 +1,5 @@
+from syft.service.billing.billing_object import ComputeResource
+
 # stdlib
 from typing import Annotated
 from typing import Dict
@@ -12,7 +14,7 @@ from fastapi import status
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 
-from syft.service.billing.billing_object import ComputeResource
+
 
 app = FastAPI(title="Blue Book", version="0.2.0")
 # force to the older version for now

@@ -14,12 +14,21 @@ class ComputeResource(BaseModel):
     # __canonical_name__ = "ComputeResource"
     # __version__ = SYFT_OBJECT_VERSION_1
 
+    # name: str
+    # cloud: str
+    # instance_type: Optional[str]
+    # accelerator: Optional[str]
+    # region: Optional[str]
+    # disk_size: Optional[int] = 256
+    # price_unit_cents: int
+    # time_unit_secs: int = 3600
+
     name: str
     cloud: str
-    instance_type: Optional[str]
-    accelerator: Optional[str]
-    region: Optional[str]
-    disk_size: Optional[int] = 256
+    instance_type: str = ""
+    accelerator: str = ""
+    region: str = ""
+    disk_size: int = 256
     price_unit_cents: int
     time_unit_secs: int = 3600
 
