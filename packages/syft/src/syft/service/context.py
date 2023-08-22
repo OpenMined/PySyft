@@ -109,7 +109,6 @@ class UserSession(SyftObject):
         if self.current_billing_item is not None:
             self.current_billing_item['end_time'] = datetime.now()
 
-            # TODO: Make billing item persistant (Use SyftObject so it hangs around!!)
             self.current_billing_item = None
 
     def get_billing_item(self) -> dict:
@@ -154,5 +153,3 @@ class ChangeContext(SyftBaseObject):
         return ChangeContext(
             node=context.node, approving_user_credentials=context.credentials
         )
-
-# TODO: Make billing class

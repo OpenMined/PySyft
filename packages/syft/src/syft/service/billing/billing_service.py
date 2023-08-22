@@ -4,6 +4,13 @@ from .billing_object import BillingResourceUsage
 from ...util.telemetry import instrument
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import PartitionSettings
+from ...store.document_store import DocumentStore
+from ..context import AuthedServiceContext
+from ..service import AbstractService
+from ..service import service_method
+from ..response import SyftError
+from ..response import SyftSuccess
 
 @instrument
 @serializable()
@@ -22,7 +29,6 @@ class BillingResourceUsageStash(BaseUIDStoreStash):
 class BillingService(AbstractService):
     store: DocumentStore
     stash: BillingResourceUsageStash
-    command_stash: ContainerCommandStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
