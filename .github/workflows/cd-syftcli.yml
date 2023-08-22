@@ -34,9 +34,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           token: ${{ secrets.SYFT_BUMP_TOKEN  }}
+
       - name: Install checksumdir
         run: |
           pip install --upgrade checksumdir
+
       - name: Get the hashes
         id: get-hashes
         shell: bash
@@ -87,5 +89,5 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.OM_SYFTCLI_PYPI_TOKEN }}
         run: |
-          tox -e syft-cli.publish
+          tox -e syftcli.publish
           twine upload packages/syft-cli/dist/*
