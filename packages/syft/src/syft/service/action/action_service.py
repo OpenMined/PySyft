@@ -223,12 +223,10 @@ class ActionService(AbstractService):
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
 
-        set_result = self.store.set(
-            uid=result_id,
-            credentials=context.credentials,
-            syft_object=result_action_object,
-            has_result_read_permission=True,
-        )
+        # pass permission information to the action store as extra kwargs
+        context.extra_kwargs = {"has_result_read_permission": True}
+
+        set_result = self.set(context, result_action_object)
 
         if set_result.is_err():
             return set_result.err()
@@ -241,7 +239,7 @@ class ActionService(AbstractService):
                 ]
             )
 
-        return Ok(result_action_object)
+        return set_result
 
     def execute_plan(
         self, plan, context: AuthedServiceContext, plan_kwargs: Dict[str, ActionObject]
@@ -467,24 +465,19 @@ class ActionService(AbstractService):
             blob_store_result = result_action_object._save_to_blob_store()
             if isinstance(blob_store_result, SyftError):
                 return blob_store_result
-        set_result = self.store.set(
-            uid=action.result_id,
-            credentials=context.credentials,
-            syft_object=result_action_object,
-            has_result_read_permission=has_result_read_permission,
-        )
+
+        # pass permission information to the action store as extra kwargs
+        context.extra_kwargs = {
+            "has_result_read_permission": has_result_read_permission
+        }
+
+        set_result = self.set(context, result_action_object)
         if set_result.is_err():
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"
             )
 
-        if isinstance(result_action_object, TwinObject):
-            result_action_object = result_action_object.mock
-            # we patch this on the object, because this is the thing we are getting back
-            result_action_object.id = action.result_id
-        result_action_object.syft_point_to(context.node.id)
-
-        return Ok(result_action_object)
+        return set_result
 
     def has_read_permission_for_action_result(
         self, context: AuthedServiceContext, action: Action

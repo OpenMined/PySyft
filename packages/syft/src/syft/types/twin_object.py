@@ -78,9 +78,9 @@ class TwinObject(SyftObject):
             self.syft_node_location,
             self.syft_client_verify_key,
         )
-        self.mock_obj._set_obj_location_(
-            self.syft_node_location,
-            self.syft_client_verify_key,
-        )
+        # self.mock_obj._set_obj_location_(
+        #     self.syft_node_location,
+        #     self.syft_client_verify_key,
+        # )
         self.private_obj._save_to_blob_store()
-        self.mock_obj._save_to_blob_store()
+        # self.mock_obj._save_to_blob_store()

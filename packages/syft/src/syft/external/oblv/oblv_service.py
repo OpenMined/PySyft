@@ -391,12 +391,8 @@ class OblvService(AbstractService):
             dict_object = ActionObject.from_obj({})
             dict_object.id = user_code_id
             dict_object[str(context.credentials)] = inputs
-            action_service.store.set(
-                uid=user_code_id,
-                credentials=context.node.verify_key,
-                syft_object=dict_object,
-                has_result_read_permission=True,
-            )
+            context.extra_kwargs = {"has_result_read_permission": True}
+            action_service.set(context, dict_object)
 
         else:
             res = action_service.store.get(
@@ -405,11 +401,7 @@ class OblvService(AbstractService):
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object[str(context.credentials)] = inputs
-                action_service.store.set(
-                    uid=user_code_id,
-                    credentials=context.node.verify_key,
-                    syft_object=dict_object,
-                )
+                action_service.set(context, dict_object)
             else:
                 return res
 

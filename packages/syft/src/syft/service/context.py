@@ -1,4 +1,5 @@
 # stdlib
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -32,6 +33,7 @@ class AuthedServiceContext(NodeServiceContext):
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
+    extra_kwargs: Dict = {}
 
     def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])

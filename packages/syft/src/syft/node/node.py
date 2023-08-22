@@ -203,6 +203,7 @@ class AuthNodeContextRegistry:
 
         cls.__node_context_registry__[key] = context
 
+    @classmethod
     def auth_context_for_user(
         cls,
         node_uid: UID,
