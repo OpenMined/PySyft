@@ -56,12 +56,16 @@ class CMPBase:
         obj: Optional[Any] = None,
         absolute_path: Optional[str] = None,
         text_signature: Optional[str] = None,
+        pre_hook=None,
+        post_hook=None,
     ):
         self.permissions: Optional[CMPPermission] = permissions
         self.path: str = path
         self.obj: Optional[Any] = obj if obj is not None else None
         self.absolute_path = absolute_path
         self.signature: Optional[Signature] = None
+        self.pre_hook = pre_hook
+        self.post_hook = post_hook
 
         self.children: Dict[str, CMPBase] = dict()
         if isinstance(children, list):

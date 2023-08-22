@@ -393,6 +393,12 @@ class ActionService(AbstractService):
         # relative
         from .plan import Plan
 
+        path = f"{action.path}.{action.op}"
+        import sys
+        print(path, file=sys.stderr)
+        lib_wrapper_service = context.node.get_service('LibWrapperService')
+        pre_wrapper, post_wrapper = lib_wrapper_service.get_wrappers(context=context, path=path)
+        
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
         elif action.action_type == ActionType.FUNCTION:
@@ -428,6 +434,9 @@ class ActionService(AbstractService):
                 result_action_object = self.call_method(context, action, resolved_self)
             else:
                 return Err("Unknown action")
+
+        # if post_wrapper:
+        #     context, result = post_wrapper.exec(context, result)
 
         if result_action_object.is_err():
             return Err(
@@ -553,6 +562,10 @@ def execute_callable(
 
     target_callable = _get_target_callable(action.path, action.op)
 
+    path = f"{action.path}.{action.op}"
+    lib_wrapper_service = context.node.get_service('LibWrapperService')
+    pre_wrapper, post_wrapper = lib_wrapper_service.get_wrappers(context=context, path=path)
+    
     result = None
     try:
         if target_callable:
@@ -563,12 +576,17 @@ def execute_callable(
                 filtered_args = filter_twin_args(args, twin_mode=twin_mode)
                 filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 result = target_callable(*filtered_args, **filtered_kwargs)
+                
+                if post_wrapper:
+                    context, result = post_wrapper.exec(context, result)
                 result_action_object = wrap_result(action.result_id, result)
             else:
                 twin_mode = TwinMode.PRIVATE
                 private_args = filter_twin_args(args, twin_mode=twin_mode)
                 private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 private_result = target_callable(*private_args, **private_kwargs)
+                if post_wrapper:
+                    context, result = post_wrapper.exec(context, private_result)
                 result_action_object_private = wrap_result(
                     action.result_id, private_result
                 )
@@ -577,6 +595,9 @@ def execute_callable(
                 mock_args = filter_twin_args(args, twin_mode=twin_mode)
                 mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 mock_result = target_callable(*mock_args, **mock_kwargs)
+                if post_wrapper:
+                    context, result = post_wrapper.exec(context, mock_result)
+                
                 result_action_object_mock = wrap_result(action.result_id, mock_result)
 
                 result_action_object = TwinObject(
