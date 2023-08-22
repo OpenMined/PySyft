@@ -619,6 +619,16 @@ class SyftClient:
                 f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()} side "
                 f"{self.metadata.node_type.capitalize()}> as <{email}>"
             )
+            # relative
+            from ..node.node import get_default_root_password
+
+            if password == get_default_root_password():
+                message = (
+                    "You are using a default password. Please change the password "
+                    "using `[your_client].me.set_password([new_password])`."
+                )
+                prompt_warning_message(message)
+
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,
