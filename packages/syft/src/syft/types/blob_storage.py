@@ -73,7 +73,7 @@ class CreateBlobStorageEntry(SyftObject):
     type_: Optional[Type]
     mimetype: str = "bytes"
     file_size: int
-    extensions: List[str]
+    extensions: List[str] = []
 
     @classmethod
     def from_obj(cls, obj: SyftObject) -> Self:

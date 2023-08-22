@@ -485,6 +485,15 @@ class StorePartition:
     def _all(self) -> Result[List[BaseStash.object_type], str]:
         raise NotImplementedError
 
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        raise NotImplementedError
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        raise NotImplementedError
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        raise NotImplementedError
+
 
 @instrument
 @serializable()
@@ -542,6 +551,15 @@ class BaseStash:
         has_permission: bool = False,
     ) -> Result[List[BaseStash.object_type], str]:
         return self.partition.all(credentials, order_by, has_permission)
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        self.partition.add_permissions(permissions)
+
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        self.partition.add_permission(permission)
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        self.partition.remove_permission(permission)
 
     def __len__(self) -> int:
         return len(self.partition)
@@ -678,9 +696,6 @@ class BaseUIDStoreStash(BaseStash):
     ) -> Result[Optional[BaseUIDStoreStash.object_type], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks)
-
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
-        self.partition.add_permissions(permissions)
 
     def set(
         self,

@@ -41,6 +41,7 @@ from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
 from ..action.action_store import ActionPermission
+from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
@@ -97,12 +98,23 @@ class ActionStoreChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            action_service = context.node.get_service(ActionService)
+            action_service: ActionService = context.node.get_service(ActionService)
+            blob_storage_service = context.node.get_service(BlobStorageService)
             action_store = action_service.store
 
             # can we ever have a lineage ID in the store?
             obj_uid = self.linked_obj.object_uid
             obj_uid = obj_uid.id if isinstance(obj_uid, LineageID) else obj_uid
+
+            action_obj = action_store.get(
+                uid=obj_uid,
+                credentials=context.approving_user_credentials,
+            )
+
+            if action_obj.is_err():
+                return Err(SyftError(message=f"{action_obj.err()}"))
+
+            action_obj = action_obj.ok()
 
             owner_permission = ActionObjectPermission(
                 uid=obj_uid,
@@ -110,16 +122,27 @@ class ActionStoreChange(Change):
                 permission=self.apply_permission_type,
             )
             if action_store.has_permission(permission=owner_permission):
-                requesting_permission = ActionObjectPermission(
-                    uid=obj_uid,
+                requesting_permission_action_obj = ActionObjectPermission(
+                    uid=action_obj.id,
+                    credentials=context.requesting_user_credentials,
+                    permission=self.apply_permission_type,
+                )
+                requesting_permission_blob_obj = ActionObjectPermission(
+                    uid=action_obj.syft_blob_storage_entry_id,
                     credentials=context.requesting_user_credentials,
                     permission=self.apply_permission_type,
                 )
                 if apply:
-                    action_store.add_permission(requesting_permission)
+                    action_store.add_permission(requesting_permission_action_obj)
+                    blob_storage_service.stash.add_permission(
+                        requesting_permission_blob_obj
+                    )
                 else:
-                    if action_store.has_permission(requesting_permission):
-                        action_store.remove_permission(requesting_permission)
+                    if action_store.has_permission(requesting_permission_action_obj):
+                        action_store.remove_permission(requesting_permission_action_obj)
+                        blob_storage_service.stash.remove_permission(
+                            requesting_permission_blob_obj
+                        )
             else:
                 return Err(
                     SyftError(
@@ -445,10 +468,12 @@ class Request(SyftObject):
             action_object = ActionObject.from_obj(
                 result,
                 id=action_obj_id,
-                syft_client_verify_key=api.syft_client_verify_key,
-                syft_node_location=api.syft_node_location,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
             )
-            action_object._save_to_blob_store()
+            blob_store_result = action_object._save_to_blob_store()
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result
@@ -456,10 +481,12 @@ class Request(SyftObject):
         else:
             action_object = ActionObject.from_obj(
                 result,
-                syft_client_verify_key=api.syft_client_verify_key,
-                syft_node_location=api.syft_node_location,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
             )
-            action_object._save_to_blob_store()
+            blob_store_result = action_object._save_to_blob_store()
+            if isinstance(result, SyftError):
+                return result
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result

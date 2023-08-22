@@ -422,18 +422,23 @@ def from_api_or_context(
     if callable(func_or_path):
         func_or_path = func_or_path.__qualname__
 
-    if syft_node_location and syft_client_verify_key:
-        api = APIRegistry.api_for(
-            node_uid=syft_node_location,
-            user_verify_key=syft_client_verify_key,
-        )
-        if api is not None:
-            service_method = api.services
-            for path in func_or_path.split("."):
-                service_method = getattr(service_method, path)
-            return service_method
+    if not (syft_node_location and syft_client_verify_key):
+        return None
 
-    node_context = AuthNodeContextRegistry.get_auth_context()
+    api = APIRegistry.api_for(
+        node_uid=syft_node_location,
+        user_verify_key=syft_client_verify_key,
+    )
+    if api is not None:
+        service_method = api.services
+        for path in func_or_path.split("."):
+            service_method = getattr(service_method, path)
+        return service_method
+
+    node_context = AuthNodeContextRegistry.auth_context_for_user(
+        node_uid=syft_node_location,
+        user_verify_key=syft_client_verify_key,
+    )
     if node_context is not None:
         user_config_registry = UserServiceConfigRegistry.from_role(
             node_context.role,

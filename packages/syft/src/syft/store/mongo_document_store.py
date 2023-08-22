@@ -30,6 +30,7 @@ from ..types.syft_object import SyftObject
 from ..types.transforms import TransformContext
 from ..types.transforms import transform
 from ..types.transforms import transform_method
+from ..types.uid import UID
 from .document_store import DocumentStore
 from .document_store import PartitionKey
 from .document_store import QueryKey
@@ -349,7 +350,21 @@ class MongoStorePartition(StorePartition):
         return True
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
-        # TODO: implemenet
+        # TODO: Implement this
+        pass
+
+    def take_ownership(
+        self, uid: UID, credentials: SyftVerifyKey
+    ) -> Result[SyftSuccess, str]:
+        # TODO: Implement this
+        pass
+
+    def remove_permission(self, permission: ActionObjectPermission):
+        # TODO: Implement this
+        pass
+
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        # TODO: Implement this
         pass
 
     def _all(

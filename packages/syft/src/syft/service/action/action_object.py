@@ -305,8 +305,8 @@ def convert_to_pointers(
             if not isinstance(arg, ActionObject):
                 arg = ActionObject.from_obj(
                     syft_action_data=arg,
-                    syft_client_verify_key=api.syft_client_verify_key,
-                    syft_node_location=api.syft_node_location,
+                    syft_client_verify_key=api.signing_key.verify_key,
+                    syft_node_location=api.node_uid,
                 )
                 arg.syft_node_uid = node_uid
                 arg._save_to_blob_store()
@@ -318,8 +318,8 @@ def convert_to_pointers(
             if not isinstance(arg, ActionObject):
                 arg = ActionObject.from_obj(
                     syft_action_data=arg,
-                    syft_client_verify_key=api.syft_client_verify_key,
-                    syft_node_location=api.syft_node_location,
+                    syft_client_verify_key=api.signing_key.verify_key,
+                    syft_node_location=api.node_uid,
                 )
                 arg.syft_node_uid = node_uid
                 arg._save_to_blob_store()
@@ -429,6 +429,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_action_data",
     "__check_action_data",
     "as_empty_data",
+    "_set_obj_location_",
 ]
 
 
@@ -496,12 +497,17 @@ class ActionObject(SyftObject):
             if allocate_method is not None:
                 blob_deposit_object = allocate_method(storage_entry)
 
+                if isinstance(blob_deposit_object, SyftError):
+                    return blob_deposit_object
+
                 if isinstance(data, ActionFileData):
                     buffer = data.as_buffer()
                 else:
                     buffer = BytesIO(serialize(data, to_bytes=True))
 
-                blob_deposit_object.write(buffer)
+                result = blob_deposit_object.write(buffer)
+                if isinstance(result, SyftError):
+                    return result
                 self.syft_blob_storage_entry_id = (
                     blob_deposit_object.blob_storage_entry_id
                 )
@@ -552,7 +558,9 @@ class ActionObject(SyftObject):
 
     def _save_to_blob_store(self) -> None:
         data = self.syft_action_data
-        self._set_syft_action_data(data)
+        result = self._set_syft_action_data(data)
+        if isinstance(result, SyftError):
+            return result
         self.syft_action_data_cache = self.as_empty_data()
 
     @property

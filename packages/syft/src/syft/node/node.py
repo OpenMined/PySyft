@@ -203,10 +203,13 @@ class AuthNodeContextRegistry:
 
         cls.__node_context_registry__[key] = context
 
-    @classmethod
-    def get_auth_context(cls) -> Optional[AuthedServiceContext]:
-        if len(cls.__node_context_registry__) > 0:
-            return list(cls.__node_context_registry__.values())[0]
+    def auth_context_for_user(
+        cls,
+        node_uid: UID,
+        user_verify_key: SyftVerifyKey,
+    ) -> Optional[AuthedServiceContext]:
+        key = (node_uid, user_verify_key)
+        return cls.__node_context_registry__.get(key)
 
 
 @instrument
@@ -754,7 +757,7 @@ class Node(AbstractNode):
             context = AuthedServiceContext(
                 node=self, credentials=credentials, role=role
             )
-            AuthNodeContextRegistry.set_node_context(self.id, context, self.verify_key)
+            AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 
             user_config_registry = UserServiceConfigRegistry.from_role(role)
 

@@ -54,9 +54,16 @@ class ActionService(AbstractService):
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         np_obj = NumpyArrayObject(
-            dtype=data.dtype, shape=data.shape, syft_action_data_cache=data
+            dtype=data.dtype,
+            shape=data.shape,
+            syft_action_data_cache=data,
+            syft_node_location=context.node.id,
+            syft_client_verify_key=context.credentials,
         )
-        np_obj._save_to_blob_store()
+        blob_store_result = np_obj._save_to_blob_store()
+        if isinstance(blob_store_result, SyftError):
+            return blob_store_result
+
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
@@ -114,7 +121,11 @@ class ActionService(AbstractService):
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
         if result.is_ok():
-            obj = result.ok()
+            obj: Union[TwinObject, ActionObject] = result.ok()
+            obj._set_obj_location_(
+                context.node.id,
+                context.credentials,
+            )
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
                     obj = obj.private
@@ -140,6 +151,11 @@ class ActionService(AbstractService):
             uid=uid, credentials=context.credentials, node_uid=context.node.id
         )
         if result.is_ok():
+            obj = result.ok()
+            obj._set_obj_location_(
+                context.node.id,
+                context.credentials,
+            )
             return Ok(result.ok())
         return Err(result.err())
 
@@ -199,7 +215,14 @@ class ActionService(AbstractService):
         except Exception as e:
             return Err(f"_user_code_execute failed. {e}")
 
-        result_action_object._save_to_blob_store()
+        result_action_object._set_obj_location_(
+            context.node.id,
+            context.credentials,
+        )
+        blob_store_result = result_action_object._save_to_blob_store()
+        if isinstance(blob_store_result, SyftError):
+            return blob_store_result
+
         set_result = self.store.set(
             uid=result_id,
             credentials=context.credentials,
@@ -437,7 +460,13 @@ class ActionService(AbstractService):
             context, action
         )
         if not data_uploaded_to_blob_store:
-            result_action_object._save_to_blob_store()
+            result_action_object._set_obj_location_(
+                context.node.id,
+                context.credentials,
+            )
+            blob_store_result = result_action_object._save_to_blob_store()
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
         set_result = self.store.set(
             uid=action.result_id,
             credentials=context.credentials,
