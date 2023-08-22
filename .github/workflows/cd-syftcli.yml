@@ -41,10 +41,8 @@ jobs:
         id: get-hashes
         shell: bash
         run: |
-          current_hash=$(checksumdir ./packages/syft-cli)
-          echo "current_hash=$current_hash" >> $GITHUB_OUTPUT
-          previous_hash=$(cat ./scripts/syft-cli_hash)
-          echo "previous_hash=$previous_hash" >> $GITHUB_OUTPUT
+          echo "current_hash=$(checksumdir ./packages/syftcli/src -e packages/syftcli/src/syftcli/version.py)" >> $GITHUB_OUTPUT
+          echo "previous_hash=$(cat ./scripts/syftcli_hash)" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -60,16 +58,15 @@ jobs:
       - name: Bump the Version
         if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
         run: |
-          python3 syft-cli/version.py
-          python3 scripts/update_manifest.py
+          python3 src/syftcli/version.py
           bump2version patch --allow-dirty --no-commit
           tox -e lint || true
-          python3 syft_cli/version.py
-        working-directory: ./packages/syft-cli
+          python3 src/syftcli/version.py
+        working-directory: ./packages/syftcli
 
       - name: Write the new hash
         if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
-        run: echo $(checksumdir packages/syft-cli) > ./scripts/syft-cli_hash
+        run: echo $(checksumdir packages/syftcli/src -e packages/syftcli/src/syftcli/version.py) > ./scripts/syftcli_hash
 
       - name: Commit changes
         if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
@@ -78,7 +75,7 @@ jobs:
           author_name: Madhava Jay
           author_email: madhava@openmined.org
           message: "bump version"
-          add: "['./packages/syft-cli/.bumpversion.cfg','./packages/syft-cli/setup.py','./packages/syft-cli/syft_cli/version.py', './scripts/syft-cli_hash']"
+          add: "['./packages/syftcli/.bumpversion.cfg','./packages/syftcli/setup.py','./packages/syftcli/src/syftcli/version.py', './scripts/syftcli_hash']"
           pull_strategy: NO-PULL
 
       - name: Build and publish
@@ -87,5 +84,5 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.OM_SYFTCLI_PYPI_TOKEN }}
         run: |
-          tox -e syft-cli.publish
-          twine upload packages/syft-cli/dist/*
+          tox -e cli.publish
+          twine upload packages/syftcli/dist/*
