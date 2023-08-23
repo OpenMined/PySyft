@@ -12,4 +12,9 @@ SUPPORTED_RETURN_TYPES = (
     str,
     bytes,
     bool,
+    tuple,
+    dict,
+    list,
+    set,
+    type(None),
 )
