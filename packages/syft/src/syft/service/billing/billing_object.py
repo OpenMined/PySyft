@@ -44,7 +44,6 @@ class BillingOverviewObject(BaseModel):
 
     def _repr_html_(self):
         """Returns a table of different computing resources used"""
-        # name, accelerator, cost
         # third party
         import itables
         import pandas as pd
