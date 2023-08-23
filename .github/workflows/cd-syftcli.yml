@@ -46,6 +46,12 @@ jobs:
           echo "current_hash=$(checksumdir ./packages/syftcli/src -e version.py)" >> $GITHUB_OUTPUT
           echo "previous_hash=$(cat ./scripts/syftcli_hash)" >> $GITHUB_OUTPUT
 
+      - name: Current Hash
+        run: echo ${{steps.get-hashes.outputs.current_hash}}
+
+      - name: Previous Hash
+        run: echo ${{steps.get-hashes.outputs.previous_hash}}
+
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
