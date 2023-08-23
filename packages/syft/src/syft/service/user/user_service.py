@@ -41,6 +41,7 @@ from .user_roles import GUEST_ROLE_LEVEL
 from .user_roles import ServiceRole
 from .user_roles import ServiceRoleCapability
 from .user_stash import UserStash
+
 # from .datetime import DateTime
 
 
@@ -53,7 +54,6 @@ class UserService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = UserStash(store=store)
-        self.current_billing_item = None # TODO: Add typing
 
     @service_method(path="user.create", name="create")
     def create(
@@ -484,6 +484,7 @@ class UserService(AbstractService):
         if result.is_ok():
             return result.ok()
         return SyftError(message=f"No User with verify_key: {verify_key}")
+
 
 TYPE_TO_SERVICE[User] = UserService
 SERVICE_TO_TYPES[UserService].update({User})
