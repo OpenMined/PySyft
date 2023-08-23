@@ -226,9 +226,8 @@ class KeyValueActionStore(ActionStore):
         self.permissions[permission.uid] = permissions
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
-        results = []
         for permission in permissions:
-            results.append(self.add_permission(permission))
+            self.add_permission(permission)
 
 
 @serializable()

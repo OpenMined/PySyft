@@ -140,6 +140,9 @@ class ActionStoreChange(Change):
                 else:
                     if action_store.has_permission(requesting_permission_action_obj):
                         action_store.remove_permission(requesting_permission_action_obj)
+                    if blob_storage_service.stash.has_permission(
+                        requesting_permission_blob_obj
+                    ):
                         blob_storage_service.stash.remove_permission(
                             requesting_permission_blob_obj
                         )

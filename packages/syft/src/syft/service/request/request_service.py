@@ -236,7 +236,7 @@ class RequestService(AbstractService):
 
         if result.is_err():
             return SyftError(
-                f"Failed to undo Request: <{uid}> with error: {result.err()}"
+                message=f"Failed to undo Request: <{uid}> with error: {result.err()}"
             )
 
         link = LinkedObject.with_context(request, context=context)

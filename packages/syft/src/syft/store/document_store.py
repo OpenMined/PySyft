@@ -494,6 +494,9 @@ class StorePartition:
     def remove_permission(self, permission: ActionObjectPermission) -> None:
         raise NotImplementedError
 
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
+        raise NotImplementedError
+
 
 @instrument
 @serializable()
@@ -560,6 +563,9 @@ class BaseStash:
 
     def remove_permission(self, permission: ActionObjectPermission) -> None:
         self.partition.remove_permission(permission)
+
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
+        return self.partition.has_permission(permission=permission)
 
     def __len__(self) -> int:
         return len(self.partition)
