@@ -2,7 +2,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 packages = [
     "typer[all]==0.9.0",
