@@ -46,19 +46,25 @@ jobs:
           echo "current_hash=$(checksumdir ./packages/syftcli/src -e version.py)" >> $GITHUB_OUTPUT
           echo "previous_hash=$(cat ./scripts/syftcli_hash)" >> $GITHUB_OUTPUT
 
+      - name: Current Hash
+        run: echo ${{steps.get-hashes.outputs.current_hash}}
+
+      - name: Previous Hash
+        run: echo ${{steps.get-hashes.outputs.previous_hash}}
+
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
           python-version: "3.11"
 
       - name: Install dependencies
-        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade tox setuptools wheel twine bump2version PyYAML
 
       - name: Bump the Version
-        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
         run: |
           python3 src/syftcli/version.py
           bump2version patch --allow-dirty --no-commit
@@ -67,11 +73,11 @@ jobs:
         working-directory: ./packages/syftcli
 
       - name: Write the new hash
-        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
         run: echo $(checksumdir packages/syftcli/src -e version.py) > ./scripts/syftcli_hash
 
       - name: Commit changes
-        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
         uses: EndBug/add-and-commit@v7
         with:
           author_name: Madhava Jay
@@ -81,7 +87,7 @@ jobs:
           pull_strategy: NO-PULL
 
       - name: Build and publish
-        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.OM_SYFTCLI_PYPI_TOKEN }}
