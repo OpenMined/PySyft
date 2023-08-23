@@ -43,7 +43,7 @@ jobs:
         id: get-hashes
         shell: bash
         run: |
-          echo "current_hash=$(checksumdir ./packages/syftcli/src -e packages/syftcli/src/syftcli/version.py)" >> $GITHUB_OUTPUT
+          echo "current_hash=$(checksumdir ./packages/syftcli/src -e version.py)" >> $GITHUB_OUTPUT
           echo "previous_hash=$(cat ./scripts/syftcli_hash)" >> $GITHUB_OUTPUT
 
       - name: Set up Python
@@ -68,7 +68,7 @@ jobs:
 
       - name: Write the new hash
         if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
-        run: echo $(checksumdir packages/syftcli/src -e packages/syftcli/src/syftcli/version.py) > ./scripts/syftcli_hash
+        run: echo $(checksumdir packages/syftcli/src -e version.py) > ./scripts/syftcli_hash
 
       - name: Commit changes
         if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
@@ -87,4 +87,4 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.OM_SYFTCLI_PYPI_TOKEN }}
         run: |
           tox -e syftcli.publish
-          twine upload packages/syft-cli/dist/*
+          twine upload packages/syftcli/dist/*
