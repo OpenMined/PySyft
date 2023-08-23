@@ -3,12 +3,6 @@
 # stdlib
 import os
 
-# third party
-
-# import subprocess
-
-# import subprocess
-
 # relative
 from ...serde.lib_service_registry import CMPClass
 from ...serde.lib_service_registry import CMPFunction
@@ -23,6 +17,10 @@ from ..service import AbstractService
 from ..service import LibConfigRegistry
 from ..service import register_lib_obj
 from ..service import service_method
+
+# import subprocess
+
+# import subprocess
 
 
 @instrument
@@ -40,18 +38,22 @@ class PythonLibService(AbstractService):
         proc = os.system(f"pip install -e {str(path)} > /tmp/out.txt")
 
         cmp = cmp.build()
-        lib_wrapper_service = context.node.get_service('LibWrapperService')
+        lib_wrapper_service = context.node.get_service("LibWrapperService")
 
         for lib_obj in cmp.flatten():
             if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
                 register_lib_obj(lib_obj)
+                # stdlib
                 import sys
-                print(lib_obj.path, lib_obj.pre_hook,lib_obj.post_hook, file=sys.stderr)
+
+                print(
+                    lib_obj.path, lib_obj.pre_hook, lib_obj.post_hook, file=sys.stderr
+                )
                 if lib_obj.pre_hook is not None:
                     lib_wrapper_service.set_wrapper(context, lib_obj.pre_hook)
                 if lib_obj.post_hook is not None:
                     lib_wrapper_service.set_wrapper(context, lib_obj.post_hook)
-                    
+
         return SyftSuccess(message="Lib added succesfully:" + str(proc))
 
     @service_method(path="python_lib.show_lib", name="show_lib")

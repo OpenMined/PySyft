@@ -42,8 +42,6 @@ from .service.action.plan import Plan  # noqa: F401
 from .service.action.plan import planify  # noqa: F401
 from .service.bridge.bridge_service import api_post_hook  # noqa: F401
 from .service.bridge.bridge_service import api_pre_hook  # noqa: F401
-from .service.python_lib.python_lib import lib_post_hook  # noqa: F401
-from .service.python_lib.python_lib import lib_pre_hook  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function_single_use  # noqa: F401; noqa: F401
@@ -67,6 +65,8 @@ from .service.policy.policy import SingleExecutionExactOutput  # noqa: F401
 from .service.policy.policy import UserInputPolicy  # noqa: F401
 from .service.policy.policy import UserOutputPolicy  # noqa: F401
 from .service.project.project import ProjectSubmit as Project  # noqa: F401
+from .service.python_lib.python_lib import lib_post_hook  # noqa: F401
+from .service.python_lib.python_lib import lib_pre_hook  # noqa: F401
 from .service.request.request import SubmitRequest as Request  # noqa: F401
 from .service.response import SyftError  # noqa: F401
 from .service.response import SyftNotReady  # noqa: F401

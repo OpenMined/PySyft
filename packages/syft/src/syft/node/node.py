@@ -66,6 +66,7 @@ from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.python_lib.python_lib import LibWrapperService
 from ..service.python_lib.python_lib_service import PythonLibService
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
@@ -104,7 +105,6 @@ from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .worker_settings import WorkerSettings
-from ..service.python_lib.python_lib import LibWrapperService
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific node UID and thread
@@ -257,7 +257,7 @@ class Node(AbstractNode):
                 BridgeService,
                 ContainerService,
                 PythonLibService,
-                LibWrapperService
+                LibWrapperService,
             ]
             if services is None
             else services
@@ -536,7 +536,7 @@ class Node(AbstractNode):
                 BridgeService,
                 ContainerService,
                 PythonLibService,
-                LibWrapperService
+                LibWrapperService,
             ]
 
             if OBLV:

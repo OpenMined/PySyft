@@ -12,7 +12,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...serde.recursive import is_serializable
 from ...serde.serializable import serializable
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
@@ -394,11 +393,15 @@ class ActionService(AbstractService):
         from .plan import Plan
 
         path = f"{action.path}.{action.op}"
+        # stdlib
         import sys
+
         print(path, file=sys.stderr)
-        lib_wrapper_service = context.node.get_service('LibWrapperService')
-        pre_wrapper, post_wrapper = lib_wrapper_service.get_wrappers(context=context, path=path)
-        
+        lib_wrapper_service = context.node.get_service("LibWrapperService")
+        pre_wrapper, post_wrapper = lib_wrapper_service.get_wrappers(
+            context=context, path=path
+        )
+
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
         elif action.action_type == ActionType.FUNCTION:
@@ -563,9 +566,11 @@ def execute_callable(
     target_callable = _get_target_callable(action.path, action.op)
 
     path = f"{action.path}.{action.op}"
-    lib_wrapper_service = context.node.get_service('LibWrapperService')
-    pre_wrapper, post_wrapper = lib_wrapper_service.get_wrappers(context=context, path=path)
-    
+    lib_wrapper_service = context.node.get_service("LibWrapperService")
+    pre_wrapper, post_wrapper = lib_wrapper_service.get_wrappers(
+        context=context, path=path
+    )
+
     result = None
     try:
         if target_callable:
@@ -576,7 +581,7 @@ def execute_callable(
                 filtered_args = filter_twin_args(args, twin_mode=twin_mode)
                 filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 result = target_callable(*filtered_args, **filtered_kwargs)
-                
+
                 if post_wrapper:
                     context, result = post_wrapper.exec(context, result)
                 result_action_object = wrap_result(action.result_id, result)
@@ -597,7 +602,7 @@ def execute_callable(
                 mock_result = target_callable(*mock_args, **mock_kwargs)
                 if post_wrapper:
                     context, result = post_wrapper.exec(context, mock_result)
-                
+
                 result_action_object_mock = wrap_result(action.result_id, mock_result)
 
                 result_action_object = TwinObject(

@@ -21,7 +21,9 @@ from typing import _GenericAlias
 from typing import _SpecialForm
 from typing import cast
 import weakref
-import torch 
+
+# third party
+import torch
 
 # relative
 from .capnp import get_capnp_schema

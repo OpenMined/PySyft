@@ -8,6 +8,7 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 # model = None
 
+
 def list_gpus():
     num_gpus = torch.cuda.device_count()
     return [torch.cuda.get_device_name(i) for i in range(num_gpus)]

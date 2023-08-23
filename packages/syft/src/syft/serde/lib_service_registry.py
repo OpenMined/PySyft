@@ -21,6 +21,7 @@ import numpy
 from typing_extensions import Self
 
 # relative
+from ..service.python_lib.python_lib import LibWrapper
 from .lib_permissions import CMPPermission
 from .serializable import serializable
 from .signature import get_signature
@@ -56,8 +57,8 @@ class CMPBase:
         obj: Optional[Any] = None,
         absolute_path: Optional[str] = None,
         text_signature: Optional[str] = None,
-        pre_hook=None,
-        post_hook=None,
+        pre_hook: Optional[LibWrapper] = None,
+        post_hook: Optional[LibWrapper] = None,
     ):
         self.permissions: Optional[CMPPermission] = permissions
         self.path: str = path

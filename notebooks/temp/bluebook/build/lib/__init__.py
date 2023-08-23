@@ -1,1 +1,3 @@
-from .bluebook.example import list_gpus, list_models
+# relative
+from .bluebook.example import list_gpus
+from .bluebook.example import list_models

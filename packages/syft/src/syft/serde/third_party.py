@@ -33,7 +33,6 @@ from .deserialize import _deserialize as deserialize
 from .recursive_primitives import recursive_serde_register
 from .recursive_primitives import recursive_serde_register_type
 from .serialize import _serialize as serialize
-from torch import dtype
 
 recursive_serde_register(
     SigningKey,

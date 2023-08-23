@@ -307,7 +307,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         # print(klass)
         recursive_serde_register(klass)
         # raise Exception(f"{proto.fullyQualifiedName} not in TYPE_BANK")
-        
+
     if proto.fullyQualifiedName not in TYPE_BANK:
         raise Exception(f"{proto.fullyQualifiedName} not in TYPE_BANK")
 

@@ -17,9 +17,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...util.telemetry import instrument
@@ -28,12 +26,13 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
+
 
 @serializable()
 class LibWrapperOrder(Enum):
     PRE_HOOK = "pre_hook"
     POST_HOOK = "post_hook"
+
 
 @serializable()
 class LibWrapper(SyftObject):
@@ -86,6 +85,7 @@ def lib_wrapper(path: str, order: LibWrapperOrder) -> LibWrapper:
 
     return decorator
 
+
 @serializable()
 class LibWrapperStash(BaseUIDStoreStash):
     object_type = LibWrapper
@@ -124,12 +124,13 @@ class LibWrapperStash(BaseUIDStoreStash):
         )
         return result
 
+
 @instrument
 @serializable()
 class LibWrapperService(AbstractService):
     store: DocumentStore
     stash: LibWrapperStash
-    
+
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = LibWrapperStash(store=store)
