@@ -130,7 +130,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
         input_policy=syft.ExactMatch(data=action_obj),
         output_policy=syft.SingleExecutionExactOutput(),
     )
-    def simple_function(data):
+    def simple_function(data) -> int:
         return sum(data)
 
     simple_function.code = dedent(simple_function.code)
@@ -177,7 +177,7 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
         input_policy=syft.ExactMatch(data=action_obj),
         output_policy=syft.SingleExecutionExactOutput(),
     )
-    def simple_function(data):
+    def simple_function(data) -> int:
         return sum(data)
 
     simple_function.code = dedent(simple_function.code)

@@ -33,7 +33,7 @@ def test_api_cache_invalidation(worker):
         input_policy=sy.ExactMatch(x=asset),
         output_policy=sy.SingleExecutionExactOutput(),
     )
-    def my_func(x):
+    def my_func(x) -> int:
         return x + 1
 
     my_func.code = dedent(my_func.code)

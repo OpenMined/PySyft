@@ -16,7 +16,7 @@ from syft.service.user.user import User
 @sy.syft_function(
     input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
 )
-def test_func():
+def test_func() -> int:
     return 1
 
 
@@ -71,7 +71,7 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
     asset_input = root_client.datasets.search(name=dataset_name)[0].asset_list[0]
 
     @sy.syft_function_single_use(asset=asset_input)
-    def func(asset):
+    def func(asset) -> int:
         return 0
 
     func.code = dedent(func.code)
