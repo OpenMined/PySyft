@@ -467,18 +467,21 @@ class ActionObject(SyftObject):
     @property
     def syft_action_data(self) -> Any:
         if self.syft_blob_storage_entry_id and self.syft_created_at:
-            blob_storage_read_method = from_api_or_context(
-                func_or_path="blob_storage.read",
-                syft_node_location=self.syft_node_location,
-                syft_client_verify_key=self.syft_client_verify_key,
-            )
+            # If ActionDataEmpty then try to fetch it from store.
+            if isinstance(self.syft_action_data_cache, ActionDataEmpty):
+                blob_storage_read_method = from_api_or_context(
+                    func_or_path="blob_storage.read",
+                    syft_node_location=self.syft_node_location,
+                    syft_client_verify_key=self.syft_client_verify_key,
+                )
 
-            blob_retrieval_object = blob_storage_read_method(
-                uid=self.syft_blob_storage_entry_id
-            )
-            if isinstance(blob_retrieval_object, SyftError):
-                return blob_retrieval_object
-            self.syft_action_data_cache = blob_retrieval_object.read()
+                if blob_storage_read_method is not None:
+                    blob_retrieval_object = blob_storage_read_method(
+                        uid=self.syft_blob_storage_entry_id
+                    )
+                    if isinstance(blob_retrieval_object, SyftError):
+                        return blob_retrieval_object
+                    self.syft_action_data_cache = blob_retrieval_object.read()
 
         return self.syft_action_data_cache
 
@@ -556,8 +559,10 @@ class ActionObject(SyftObject):
             values["syft_has_bool_attr"] = hasattr(v, "__bool__")
         return values
 
-    def _save_to_blob_store(self) -> None:
+    def _save_to_blob_store(self) -> Optional[SyftError]:
         data = self.syft_action_data
+        if isinstance(data, SyftError):
+            return data
         result = self._set_syft_action_data(data)
         if isinstance(result, SyftError):
             return result

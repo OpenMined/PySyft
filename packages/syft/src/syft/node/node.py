@@ -199,7 +199,7 @@ class AuthNodeContextRegistry:
         if isinstance(user_verify_key, str):
             user_verify_key = SyftVerifyKey.from_string(user_verify_key)
 
-        key = (node_uid, user_verify_key)
+        key = "-".join(str(x) for x in (node_uid, user_verify_key))
 
         cls.__node_context_registry__[key] = context
 

@@ -16,6 +16,7 @@ from ...serde.serializable import serializable
 from ...types.datetime import DateTime
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
+from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
@@ -178,6 +179,17 @@ class ActionService(AbstractService):
         if filtered_kwargs.is_err():
             return filtered_kwargs
         filtered_kwargs = filtered_kwargs.ok()
+
+        expected_input_kwargs = set()
+        for _inp_kwarg in code_item.input_policy.inputs.values():
+            expected_input_kwargs.update(_inp_kwarg.keys())
+        permitted_input_kwargs = list(filtered_kwargs.keys())
+        not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+        if len(not_approved_kwargs) > 0:
+            return Err(
+                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+            )
+
         has_twin_inputs = False
 
         real_kwargs = {}
@@ -236,10 +248,24 @@ class ActionService(AbstractService):
         if set_result.is_err():
             return set_result.err()
 
+        blob_storage_service: BlobStorageService = context.node.get_service(
+            BlobStorageService
+        )
+
         if len(code_item.output_policy.output_readers) > 0:
             self.store.add_permissions(
                 [
                     ActionObjectPermission(result_id, ActionPermission.READ, x)
+                    for x in code_item.output_policy.output_readers
+                ]
+            )
+            blob_storage_service.stash.add_permissions(
+                [
+                    ActionObjectPermission(
+                        result_action_object.syft_blob_storage_entry_id,
+                        ActionPermission.READ,
+                        x,
+                    )
                     for x in code_item.output_policy.output_readers
                 ]
             )

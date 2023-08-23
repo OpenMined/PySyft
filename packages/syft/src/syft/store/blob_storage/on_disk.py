@@ -60,10 +60,15 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
             syft_object=(self._base_directory / fp.path).read_bytes()
         )
 
-    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
-        return SecureFilePathLocation(
-            path=str((self._base_directory / str(obj.id)).absolute())
-        )
+    def allocate(
+        self, obj: CreateBlobStorageEntry
+    ) -> Union[SecureFilePathLocation, SyftError]:
+        try:
+            return SecureFilePathLocation(
+                path=str((self._base_directory / str(obj.id)).absolute())
+            )
+        except Exception as e:
+            return SyftError(message=f"Failed to allocate: {e}")
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         return OnDiskBlobDeposit(blob_storage_entry_id=obj.id)

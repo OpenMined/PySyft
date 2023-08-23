@@ -139,7 +139,9 @@ class BlobStorageConnection:
     def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
         raise NotImplementedError
 
-    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
+    def allocate(
+        self, obj: CreateBlobStorageEntry
+    ) -> Union[SecureFilePathLocation, SyftError]:
         raise NotImplementedError
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:

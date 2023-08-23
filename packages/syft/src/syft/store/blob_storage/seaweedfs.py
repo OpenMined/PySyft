@@ -154,7 +154,9 @@ class SeaweedFSConnection(BlobStorageConnection):
         except BotoClientError as e:
             raise SyftException(e)
 
-    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
+    def allocate(
+        self, obj: CreateBlobStorageEntry
+    ) -> Union[SecureFilePathLocation, SyftError]:
         try:
             file_name = obj.file_name
             result = self.client.create_multipart_upload(
@@ -164,7 +166,9 @@ class SeaweedFSConnection(BlobStorageConnection):
             upload_id = result["UploadId"]
             return SeaweedSecureFilePathLocation(upload_id=upload_id, path=file_name)
         except BotoClientError as e:
-            raise SyftException(e)
+            return SyftError(
+                message=f"Failed to allocate space for {obj} with error: {e}"
+            )
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         total_parts = math.ceil(obj.file_size / DEFAULT_CHUNK_SIZE)

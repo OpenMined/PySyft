@@ -644,7 +644,7 @@ class ObjectMutation(Change):
         try:
             obj = self.linked_obj.resolve_with_context(context)
             if obj.is_err():
-                return SyftError(message=obj.err())
+                return Err(SyftError(message=obj.err()))
             obj = obj.ok()
             if apply:
                 obj = self.mutate(obj, value=self.value)
@@ -833,7 +833,7 @@ class UserCodeStatusChange(Change):
                 return Err(valid)
             obj = self.linked_obj.resolve_with_context(context)
             if obj.is_err():
-                return SyftError(message=obj.err())
+                return Err(SyftError(message=obj.err()))
             obj = obj.ok()
             if apply:
                 res = self.mutate(obj, context, undo=False)

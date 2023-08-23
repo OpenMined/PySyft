@@ -92,6 +92,9 @@ class BlobStorageService(AbstractService):
         with context.node.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
 
+            if isinstance(secure_location, SyftError):
+                return secure_location
+
             blob_storage_entry = BlobStorageEntry(
                 id=obj.id,
                 location=secure_location,
