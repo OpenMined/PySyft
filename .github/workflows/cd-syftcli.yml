@@ -1,0 +1,90 @@
+name: CD - Syft-CLI
+
+on:
+  schedule:
+    - cron: "00 10 * * */7" # At 10:00 UTC on every three days
+
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "If true, skip tests"
+        required: false
+        default: "false"
+
+jobs:
+  call-pr-tests-linting:
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
+
+  # call-pr-tests-syft:
+  #   if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
+
+  # call-pr-tests-stack:
+  #   if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
+  #   secrets: inherit
+
+  deploy-syft-cli:
+    needs: [call-pr-tests-linting]
+    if: always() && (needs.call-pr-tests-linting.result == 'success' || github.event.inputs.skip_tests == 'true')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN  }}
+
+      - name: Install checksumdir
+        run: |
+          pip install --upgrade checksumdir
+
+      - name: Get the hashes
+        id: get-hashes
+        shell: bash
+        run: |
+          echo "current_hash=$(checksumdir ./packages/syftcli/src -e version.py)" >> $GITHUB_OUTPUT
+          echo "previous_hash=$(cat ./scripts/syftcli_hash)" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade tox setuptools wheel twine bump2version PyYAML
+
+      - name: Bump the Version
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        run: |
+          python3 src/syftcli/version.py
+          bump2version patch --allow-dirty --no-commit
+          tox -e lint || true
+          python3 src/syftcli/version.py
+        working-directory: ./packages/syftcli
+
+      - name: Write the new hash
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        run: echo $(checksumdir packages/syftcli/src -e version.py) > ./scripts/syftcli_hash
+
+      - name: Commit changes
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "bump version"
+          add: "['./packages/syftcli/.bumpversion.cfg','./packages/syftcli/setup.py','./packages/syftcli/src/syftcli/version.py', './scripts/syftcli_hash']"
+          pull_strategy: NO-PULL
+
+      - name: Build and publish
+        if: ${{steps.get-hashes.outputs.current_hash}} != ${{steps.get-hashes.outputs.previous_hash}}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.OM_SYFTCLI_PYPI_TOKEN }}
+        run: |
+          tox -e syftcli.publish
+          twine upload packages/syftcli/dist/*
