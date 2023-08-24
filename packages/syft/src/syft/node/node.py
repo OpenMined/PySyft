@@ -383,6 +383,7 @@ class Node(AbstractNode):
             raise Exception(f"Invalid UID: {name_hash_string} for name: {name}")
         uid = UID(name_hash_string)
         key = SyftSigningKey(signing_key=SigningKey(name_hash))
+        blob_storage_config = None
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"
@@ -406,6 +407,18 @@ class Node(AbstractNode):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
 
+            # Reset blob storage
+            root_directory = get_root_data_path()
+            base_directory = root_directory / f"{uid}"
+            for file in base_directory.iterdir():
+                file.unlink()
+            blob_client_config = OnDiskBlobStorageClientConfig(
+                base_directory=base_directory
+            )
+            blob_storage_config = OnDiskBlobStorageConfig(
+                client_config=blob_client_config
+            )
+
         return cls(
             name=name,
             id=uid,
@@ -416,6 +429,7 @@ class Node(AbstractNode):
             node_type=node_type,
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
+            blob_storage_config=blob_storage_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -876,6 +890,7 @@ def task_runner(
         signing_key=worker_settings.signing_key,
         document_store_config=worker_settings.document_store_config,
         action_store_config=worker_settings.action_store_config,
+        blob_storage_config=worker_settings.blob_store_config,
         is_subprocess=True,
     )
     try:

@@ -28,6 +28,7 @@ class WorkerSettings(SyftObject):
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
+    blob_store_config: StoreConfig
 
     @staticmethod
     def from_node(node: AbstractNode) -> Self:
@@ -39,4 +40,5 @@ class WorkerSettings(SyftObject):
             document_store_config=node.document_store_config,
             action_store_config=node.action_store_config,
             node_side_type=node.node_side_type.value,
+            blob_store_config=node.blob_store_config,
         )
