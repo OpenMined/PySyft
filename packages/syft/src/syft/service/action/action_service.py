@@ -393,15 +393,6 @@ class ActionService(AbstractService):
         from .plan import Plan
 
         path = f"{action.path}.{action.op}"
-        # stdlib
-        import sys
-
-        print(path, file=sys.stderr)
-        lib_wrapper_service = context.node.get_service("LibWrapperService")
-        pre_wrapper, post_wrapper = lib_wrapper_service.get_wrappers(
-            context=context, path=path
-        )
-
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
         elif action.action_type == ActionType.FUNCTION:
@@ -574,12 +565,21 @@ def execute_callable(
     result = None
     try:
         if target_callable:
+            import sys
+            print(args, file=sys.stderr)
+            print(kwargs, file=sys.stderr)
             if not has_twin_inputs:
                 # if twin_mode == TwinMode.NONE and not has_twin_inputs:
                 twin_mode = TwinMode.NONE
                 # no twins
                 filtered_args = filter_twin_args(args, twin_mode=twin_mode)
                 filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                print(context, file=sys.stderr)
+                print(filtered_args, file=sys.stderr)
+                print(filtered_kwargs, file=sys.stderr)
+                if pre_wrapper:
+                    context, (filtered_args, filtered_kwargs) = pre_wrapper.exec(context, (filtered_args, filtered_kwargs))
+                    context.session.update_user_session()
                 result = target_callable(*filtered_args, **filtered_kwargs)
 
                 if post_wrapper:
@@ -589,6 +589,11 @@ def execute_callable(
                 twin_mode = TwinMode.PRIVATE
                 private_args = filter_twin_args(args, twin_mode=twin_mode)
                 private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                print(private_args, file=sys.stderr)
+                print(private_kwargs, file=sys.stderr)
+                if pre_wrapper:
+                    context, (private_args, private_kwargs) = pre_wrapper.exec(context, (private_args, private_kwargs))
+                    context.session.update_user_session()
                 private_result = target_callable(*private_args, **private_kwargs)
                 if post_wrapper:
                     context, result = post_wrapper.exec(context, private_result)
@@ -599,6 +604,11 @@ def execute_callable(
                 twin_mode = TwinMode.MOCK
                 mock_args = filter_twin_args(args, twin_mode=twin_mode)
                 mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                print(mock_args, file=sys.stderr)
+                print(mock_kwargs, file=sys.stderr)
+                if pre_wrapper:
+                    context, (mock_args, mock_kwargs) = pre_wrapper.exec(context, (mock_args, mock_kwargs))
+                    context.session.update_user_session()
                 mock_result = target_callable(*mock_args, **mock_kwargs)
                 if post_wrapper:
                     context, result = post_wrapper.exec(context, mock_result)

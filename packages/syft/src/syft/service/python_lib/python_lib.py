@@ -52,7 +52,7 @@ class LibWrapper(SyftObject):
             # load it
             exec(raw_byte_code)  # nosec
             # execute it
-            evil_string = f"{self.func_name}(context, arg)"
+            evil_string = f"{self.func_name}(context, *arg)"
             result = eval(evil_string, None, locals())  # nosec
             # return the results
             return context, result
