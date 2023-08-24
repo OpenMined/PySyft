@@ -25,6 +25,13 @@ class NotificationStatus(Enum):
     READ = 1
 
 
+@serializable()
+class NotificationRequestStatus(Enum):
+    NO_ACTION = 0
+    PENDING = 1
+    RESPONDED = 2
+
+
 class NotificationExpiryStatus(Enum):
     AUTO = 0
     NEVER = 1
@@ -51,7 +58,7 @@ class Notification(SyftObject):
     from_user_verify_key: SyftVerifyKey
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
-    status: NotificationStatus = NotificationStatus.UNREAD
+    status: NotificationRequestStatus = NotificationRequestStatus.NO_ACTION
     linked_obj: Optional[LinkedObject]
     replies: Optional[List[ReplyNotification]] = []
 
@@ -69,9 +76,11 @@ class Notification(SyftObject):
         return None
 
     def _coll_repr_(self):
+        print(f"Linked Object:{self.linked_obj}")
+
         return {
             "Subject": self.subject,
-            "Status": self.status.name.capitalize(),
+            "Status": self.determine_status(self.linked_obj),
             "Created At": str(self.created_at),
             "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
         }
@@ -87,6 +96,15 @@ class Notification(SyftObject):
             self.node_uid, user_verify_key=self.syft_client_verify_key
         )
         return api.services.notifications.mark_as_unread(uid=self.id)
+
+    def determine_status(linkedObj: LinkedObject) -> NotificationRequestStatus:
+        # relative
+        from ..request.request import Request
+
+        if isinstance(linkedObj.resolve, Request):
+            return NotificationRequestStatus.RESPONDED
+
+        return NotificationRequestStatus.NO_ACTION
 
 
 @serializable()
