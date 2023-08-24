@@ -71,10 +71,21 @@ class ActionService(AbstractService):
     ) -> Result[ActionObject, str]:
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
+        return self._set(context, action_object, has_result_read_permission=True)
+
+    def _set(
+        self,
+        context: AuthedServiceContext,
+        action_object: Union[ActionObject, TwinObject],
+        has_result_read_permission=True,
+    ) -> Result[ActionObject, str]:
+        """Save an object to the action store"""
+        # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
         result = self.store.set(
             uid=action_object.id,
             credentials=context.credentials,
             syft_object=action_object,
+            has_result_read_permission=has_result_read_permission,
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):

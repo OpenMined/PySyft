@@ -547,10 +547,23 @@ class ActionObject(SyftObject):
         )
         return api.make_call(api_call)
 
-    def request(self, client):
+    def request(self, client=None):
         # relative
         from ..request.request import ActionStoreChange
         from ..request.request import SubmitRequest
+
+        if client is None:
+            # relative
+            from ...client.api import APIRegistry
+
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_location,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            verify_key = self.syft_client_verify_key
+        else:
+            api = client.api
+            verify_key = client.credentials.verify_key
 
         action_object_link = LinkedObject.from_obj(self, node_uid=self.syft_node_uid)
         permission_change = ActionStoreChange(
@@ -559,9 +572,9 @@ class ActionObject(SyftObject):
 
         submit_request = SubmitRequest(
             changes=[permission_change],
-            requesting_user_verify_key=client.credentials.verify_key,
+            requesting_user_verify_key=verify_key,
         )
-        return client.api.services.request.submit(submit_request)
+        return api.services.request.submit(submit_request)
 
     def _syft_try_to_save_to_store(self, obj) -> None:
         if self.syft_node_uid is None or self.syft_client_verify_key is None:

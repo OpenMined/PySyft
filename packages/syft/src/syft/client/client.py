@@ -680,14 +680,15 @@ class SyftClient:
         password_verify: Optional[str] = None,
         institution: Optional[str] = None,
         website: Optional[str] = None,
+        skip_verify: bool = False,
     ):
         if not email:
             email = input("Email: ")
         if not password:
             password = getpass("Password: ")
-        if not password_verify:
+        if not password_verify and not skip_verify:
             password_verify = getpass("Confirm Password: ")
-        if password != password_verify:
+        if password != password_verify and not skip_verify:
             return SyftError(message="Passwords do not match")
 
         try:

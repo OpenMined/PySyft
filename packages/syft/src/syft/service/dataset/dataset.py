@@ -133,28 +133,31 @@ class Asset(SyftObject):
             data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
         else:
             data_table_line = self.data
-        return f"""
-            <style>
-            {fonts_css}
-            .syft-asset {{color: {SURFACE[options.color_theme]};}}
-            .syft-asset h3,
-            .syft-asset p
-              {{font-family: 'Open Sans'}}
-            {ITABLES_CSS}
-            </style>
+        if isinstance(self.mock, pd.DataFrame):
+            return f"""
+                <style>
+                {fonts_css}
+                .syft-asset {{color: {SURFACE[options.color_theme]};}}
+                .syft-asset h3,
+                .syft-asset p
+                {{font-family: 'Open Sans'}}
+                {ITABLES_CSS}
+                </style>
 
-            <div class="syft-asset">
-            <h3>{self.name}</h3>
-            <p>{self.description}</p>
-            <p><strong>Asset ID: </strong>{self.id}</p>
-            <p><strong>Action Object ID: </strong>{self.action_id}</p>
-            {uploaded_by_line}
-            <p><strong>Created on: </strong>{self.created_at}</p>
-            <p><strong>Data:</strong></p>
-            {data_table_line}
-            <p><strong>Mock Data:</strong></p>
-            {itables.to_html_datatable(df=self.mock, css=itables_css)}
-            </div>"""
+                <div class="syft-asset">
+                <h3>{self.name}</h3>
+                <p>{self.description}</p>
+                <p><strong>Asset ID: </strong>{self.id}</p>
+                <p><strong>Action Object ID: </strong>{self.action_id}</p>
+                {uploaded_by_line}
+                <p><strong>Created on: </strong>{self.created_at}</p>
+                <p><strong>Data:</strong></p>
+                {data_table_line}
+                <p><strong>Mock Data:</strong></p>
+                {itables.to_html_datatable(df=self.mock, css=itables_css)}
+                </div>"""
+        else:
+            return str(self.mock)
 
     def _repr_markdown_(self) -> str:
         _repr_str = f"Asset: {self.name}\n"

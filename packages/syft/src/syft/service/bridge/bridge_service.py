@@ -112,7 +112,7 @@ class APIWrapper(SyftObject):
     __attr_searchable__ = ["path", "order"]
     __attr_unique__ = []
 
-    def exec(self, context: AuthedServiceContext, arg: Any) -> Any:
+    def exec(self, context: AuthedServiceContext, arg) -> Any:
         try:
             inner_function = ast.parse(self.wrapper_code).body[0]
             inner_function.decorator_list = []
@@ -127,6 +127,7 @@ class APIWrapper(SyftObject):
             return context, result
         except Exception as e:
             print(f"Failed to run APIWrapper Code. {e}")
+            return SyftError(e)
 
 
 def api_pre_hook(path: str) -> APIWrapper:

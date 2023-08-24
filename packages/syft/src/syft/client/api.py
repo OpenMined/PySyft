@@ -541,12 +541,12 @@ class SyftAPI(SyftObject):
         for command in commands:
             signature = command.user_signature()
             service_path = "container.call"
-            method_name = command.name
+            method_name = command.api_name
             module_path = f"{command.module_name}.{method_name}"
             pre_kwargs = {
                 "module_path": module_path,
                 "image_name": command.image_name,
-                "command_name": command.name,
+                "command_name": command.api_name,
             }
             endpoint = APIEndpoint(
                 service_path=service_path,

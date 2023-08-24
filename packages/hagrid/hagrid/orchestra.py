@@ -151,6 +151,7 @@ class NodeHandle:
         url: Optional[str] = None,
         python_node: Optional[Any] = None,
         shutdown: Optional[Callable] = None,
+        dev_mode: bool = False,
     ) -> None:
         self.node_type = node_type
         self.name = name
@@ -160,6 +161,7 @@ class NodeHandle:
         self.shutdown = shutdown
         self.deployment_type = deployment_type
         self.node_side_type = node_side_type
+        self.dev_mode = dev_mode
 
     @property
     def client(self) -> Any:
@@ -204,14 +206,16 @@ class NodeHandle:
         password_verify: Optional[str] = None,
         institution: Optional[str] = None,
         website: Optional[str] = None,
+        skip_verify: bool = False,
     ) -> Any:
+        skip_verify = skip_verify or self.dev_mode
         if not email:
             email = input("Email: ")
         if not password:
             password = getpass.getpass("Password: ")
-        if not password_verify:
+        if not password_verify and (not skip_verify):
             password_verify = getpass.getpass("Confirm Password: ")
-        if password != password_verify:
+        if password != password_verify and (not skip_verify):
             return SyftError(message="Passwords do not match")
 
         client = self.client
@@ -222,6 +226,7 @@ class NodeHandle:
             institution=institution,
             password_verify=password_verify,
             website=website,
+            skip_verify=skip_verify,
         )
 
     def land(self) -> None:
@@ -293,6 +298,7 @@ def deploy_to_python(
             url="http://localhost",
             shutdown=stop,
             node_side_type=node_side_type,
+            dev_mode=dev_mode,
         )
     else:
         if node_type_enum in worker_classes:
@@ -324,6 +330,7 @@ def deploy_to_python(
             name=name,
             python_node=worker,
             node_side_type=node_side_type,
+            dev_mode=dev_mode,
         )
 
 
