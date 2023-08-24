@@ -55,6 +55,18 @@ repos:
               packages/syft/src/syft/federated/model_serialization/protos.py
           )$
 
+  - repo: https://github.com/MarcoGorelli/absolufy-imports
+    rev: v0.3.1
+    hooks:
+      - id: absolufy-imports
+        name: "absolufy-imports: syft-cli"
+        always_run: true
+        files: ^packages/syftcli
+        # This will ignore all src/**/*.py where relative imports are okay
+        # but absolufy only top-level src/<file>.py /etc. where relative imports is not okay for pyinstaller
+        exclude: ^packages/syftcli/src/(.*)/
+        args: ["--application-directories=packages/syftcli/"]
+
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
