@@ -24,6 +24,18 @@ from .uid import UID
 
 
 @serializable()
+class BlobFile(SyftObject):
+    __canonical_name__ = "BlobFile"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    file_name: str
+
+
+class BlobFileType(type):
+    pass
+
+
+@serializable()
 class SecureFilePathLocation(SyftObject):
     __canonical_name__ = "SecureFilePathLocation"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -99,7 +111,10 @@ class CreateBlobStorageEntry(SyftObject):
                 )
 
         return cls(
-            mimetype=mimetype, file_size=path.stat().st_size, extensions=path.suffixes
+            mimetype=mimetype,
+            file_size=path.stat().st_size,
+            extensions=path.suffixes,
+            type_=BlobFileType,
         )
 
     @property

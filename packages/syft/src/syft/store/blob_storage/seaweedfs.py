@@ -1,8 +1,10 @@
 # stdlib
 from io import BytesIO
 import math
+from pathlib import Path
 from typing import Generator
 from typing import List
+from typing import Optional
 from typing import Type
 from typing import Union
 
@@ -143,14 +145,17 @@ class SeaweedFSConnection(BlobStorageConnection):
     def __exit__(self, *exc) -> None:
         self.client.close()
 
-    def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
+    def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
         try:
             url = self.client.generate_presigned_url(
                 ClientMethod="get_object",
                 Params={"Bucket": self.bucket_name, "Key": fp.path},
                 ExpiresIn=READ_EXPIRATION_TIME,
             )
-            return BlobRetrievalByURL(url=GridURL.from_url(url))
+
+            return BlobRetrievalByURL(
+                url=GridURL.from_url(url), file_name=Path(fp.path).name, type_=type_
+            )
         except BotoClientError as e:
             raise SyftException(e)
 

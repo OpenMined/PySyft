@@ -42,8 +42,10 @@ Read/retrieve SyftObject from blob storage
 
 
 # stdlib
+from typing import Optional
 from typing import Type
 from typing import Union
+from urllib.request import urlretrieve
 
 # third party
 from pydantic import BaseModel
@@ -56,6 +58,8 @@ from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...types.base import SyftBaseModel
+from ...types.blob_storage import BlobFile
+from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
@@ -71,6 +75,9 @@ class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    type_: Optional[Type]
+    file_name: str
+
     def read(self) -> Union[SyftObject, SyftError]:
         pass
 
@@ -83,6 +90,10 @@ class SyftObjectRetrieval(BlobRetrieval):
     syft_object: bytes
 
     def read(self) -> Union[SyftObject, SyftError]:
+        if self.type_ is BlobFileType:
+            with open(self.file_name, "wb") as fp:
+                fp.write(self.syft_object)
+            return BlobFile(file_name=self.file_name)
         return deserialize(self.syft_object, from_bytes=True)
 
 
@@ -106,6 +117,9 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             blob_url = self.url
         try:
+            if self.type_ is BlobFileType:
+                urlretrieve(str(blob_url), filename=self.file_name)
+                return BlobFile(file_name=self.file_name)
             response = requests.get(str(blob_url), timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()
             return deserialize(response.content, from_bytes=True)
@@ -136,7 +150,7 @@ class BlobStorageConnection:
     def __exit__(self, *exc) -> None:
         raise NotImplementedError
 
-    def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
+    def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
         raise NotImplementedError
 
     def allocate(

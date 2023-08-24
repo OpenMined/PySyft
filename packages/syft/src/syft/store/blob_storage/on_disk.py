@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
+from typing import Optional
 from typing import Type
 from typing import Union
 
@@ -55,9 +56,12 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def __exit__(self, *exc) -> None:
         pass
 
-    def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
+    def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
+        file_path = self._base_directory / fp.path
         return SyftObjectRetrieval(
-            syft_object=(self._base_directory / fp.path).read_bytes()
+            syft_object=file_path.read_bytes(),
+            file_name=file_path.name,
+            type_=type_,
         )
 
     def allocate(
@@ -65,7 +69,7 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     ) -> Union[SecureFilePathLocation, SyftError]:
         try:
             return SecureFilePathLocation(
-                path=str((self._base_directory / str(obj.id)).absolute())
+                path=str((self._base_directory / obj.file_name).absolute())
             )
         except Exception as e:
             return SyftError(message=f"Failed to allocate: {e}")

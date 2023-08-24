@@ -73,12 +73,12 @@ class BlobStorageService(AbstractService):
     ) -> Union[BlobRetrieval, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
-            obj = result.ok()
+            obj: BlobStorageEntry = result.ok()
             if obj is None:
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
 
             with context.node.blob_storage_client.connect() as conn:
-                return conn.read(obj.location)
+                return conn.read(obj.location, obj.type_)
         return SyftError(message=result.err())
 
     @service_method(
