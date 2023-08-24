@@ -28,7 +28,7 @@ from ...util.constants import DEFAULT_TIMEOUT
 
 def consume_api(url: str, base_url: Optional[str] = None) -> OpenAPI:
     grid_url = GridURL.from_url(url)
-    d = requests.get(grid_url, timeout=DEFAULT_TIMEOUT)
+    d = requests.get(str(grid_url), timeout=DEFAULT_TIMEOUT)
     x = d.json()
     if not base_url:
         base_url = GridURL.from_url(grid_url.base_url)
@@ -97,7 +97,7 @@ class APIBridge(SyftObject):
     openapi: OpenAPI
 
     def from_url(url: str, base_url: Optional[str] = None) -> Self:
-        grid_url = GridURL.from_url(url)
+        grid_url = GridURL.from_url(url).as_container_host()
         api, base_url = consume_api(grid_url, base_url)
         return APIBridge(
             title=api.info.title,

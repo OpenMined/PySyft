@@ -156,12 +156,27 @@ def run_command(
                     return write_result
 
         cmd = command.cmd(run_user_kwargs=cmd_kwargs, run_files=files)
+        print("FILES", files)
         print("COMMAND", cmd)
         # redirecting output to main log
         shell_cmd_logs = "sh -c '{}'".format(cmd + " 2>&1 | tee /proc/1/fd/1")
         result = container.exec_run(
             cmd=shell_cmd_logs, stdout=True, stderr=True, demux=True
         )
+        if command.post_command is not None:
+            print("running post command")
+            print(command.post_command)
+            print(cmd_kwargs)
+            post_command = command.post_command.format(**cmd_kwargs)
+            print(post_command)
+            shell_cmd_logs = "sh -c '{}'".format(
+                post_command + " 2>&1 | tee /proc/1/fd/1"
+            )
+            post_result = container.exec_run(
+                cmd=shell_cmd_logs, stdout=True, stderr=True, demux=True
+            )
+            print(post_result)
+
         container_result = ContainerResult.from_execresult(result=result)
         container_result.image_name = container_image.name
         container_result.image_tag = container_image.tag
@@ -181,6 +196,7 @@ def run_command(
             f"Failed to run command in container. {command} {container_image}. {e}",
             file=sys.stderr,
         )
+        return SyftError(e)
     finally:
         if not debug:
             if container:
@@ -350,11 +366,17 @@ class ContainerService(AbstractService):
 
         # pre hooks
         if pre_wrapper:
-            context, kwargs = pre_wrapper.exec(context, kwargs)
+            res = pre_wrapper.exec(context, kwargs)
+            if isinstance(res, SyftError):
+                return res
+            context, post_prehook_kwargs = res
             context.session.update_user_session()
+        else:
+            post_prehook_kwargs = kwargs
+        # post_prehook_kwargs are the kwargs left after the prehook
 
         # kwargs
-        res = self.gather_cmd_kwargs(command, kwargs)
+        res = self.gather_cmd_kwargs(command, post_prehook_kwargs)
         if isinstance(res, SyftError):
             return res
         else:
@@ -362,7 +384,6 @@ class ContainerService(AbstractService):
 
         try:
             # run
-            print(command)
             result: ContainerResult = run_command(
                 container_image=image,
                 command=command,
@@ -370,31 +391,41 @@ class ContainerService(AbstractService):
                 files=files,
                 debug=debug,
             )
+            if isinstance(result, SyftError):
+                return result
 
             if post_wrapper:
-                context, result = post_wrapper.exec(context, result)
+                post_res = post_wrapper.exec(context, result)
+                if isinstance(post_res, SyftError):
+                    return post_res
+                context, result = post_res
 
         except Exception as e:
             return SyftError(f"Failed to run command. {e}")
 
         # write output files to store
         if (file := result.return_file) is not None:
-            # relative
-            from ..action.action_object import ActionObject
-
-            # TODO, proper reading here
-            action_service = context.node.get_service("actionservice")
-            obj = ActionObject.from_obj(file.data.decode("utf-8"))
-            ptr_res = action_service._set(
-                context, obj, has_result_read_permission=False
-            )
-            if ptr_res.is_ok():
-                ptr = ptr_res.ok()
-                result.return_file_obj = ptr.as_empty()
+            if isinstance(file, SyftError):
+                result.return_file_obj = file
             else:
-                result.return_file_obj = SyftError(
-                    "Failed to write cmd result file object to store"
+                # relative
+                from ..action.action_object import ActionObject
+
+                # TODO, proper reading here
+                action_service = context.node.get_service("actionservice")
+                obj = ActionObject.from_obj(file.data.decode("utf-8"))
+                ptr_res = action_service._set(
+                    context, obj, has_result_read_permission=False
                 )
+                if ptr_res.is_ok():
+                    ptr = ptr_res.ok()
+                    return_file_obj = ptr.as_empty()
+                    return_file_obj.syft_point_to(context.node.id)
+                    result.return_file_obj = return_file_obj
+                else:
+                    result.return_file_obj = SyftError(
+                        "Failed to write cmd result file object to store"
+                    )
 
         return result
 
@@ -421,7 +452,7 @@ class ContainerService(AbstractService):
             elif isinstance(v, SyftFile):
                 files[key] = v
             elif isinstance(v, dict) and any(
-                isinstance(x, (Asset, CreateAsset)) for x in v.values()
+                isinstance(x, (Asset, CreateAsset)) for x in v.keys()
             ):
                 if len(v) > 1:
                     return SyftError("file dict with multiple values passed")

@@ -200,10 +200,12 @@ class UserView(SyftObject):
         )
 
     def set_password(
-        self, new_password: str, confirm: bool = True
+        self, new_password: Optional[str] = None, confirm: bool = True
     ) -> Union[SyftError, SyftSuccess]:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
+        if not new_password:
+            new_password = getpass("New Password: ")
 
         if confirm:
             confirmed_password: str = getpass("Please confirm your password: ")

@@ -112,7 +112,7 @@ class APIWrapper(SyftObject):
     __attr_searchable__ = ["path", "order"]
     __attr_unique__ = []
 
-    def exec(self, context: AuthedServiceContext, arg: Any) -> Any:
+    def exec(self, context: AuthedServiceContext, arg) -> Any:
         try:
             inner_function = ast.parse(self.wrapper_code).body[0]
             inner_function.decorator_list = []
@@ -127,6 +127,7 @@ class APIWrapper(SyftObject):
             return context, result
         except Exception as e:
             print(f"Failed to run APIWrapper Code. {e}")
+            return SyftError(e)
 
 
 def api_pre_hook(path: str) -> APIWrapper:
@@ -221,6 +222,26 @@ class BridgeService(AbstractService):
                 self.type_stash.set(credentials=context.node.verify_key, obj=serde_type)
             return BridgeAdded(message=f"API Bridge added: {url}")
         return SyftError(message=f"Failed to add API Bridge {url}. {result.err()}")
+
+    @service_method(path="bridge.remove", name="remove")
+    def remove(
+        self, context: AuthedServiceContext, url: str, base_url: Optional[str] = None
+    ) -> Union[BridgeAdded, SyftError]:
+        """Remove an API Bridge."""
+
+        bridge = APIBridge.from_url(url, base_url)
+        results = self.stash.get_all(context.node.verify_key)
+        if not results.is_ok():
+            return SyftError(message=f"Bridge: {bridge} does not exist")
+        results = results.ok()
+        for result in results:
+            if str(result.base_url) == str(bridge.base_url):
+                resp = self.stash.delete_by_uid(
+                    credentials=context.node.verify_key, uid=result.id
+                )
+                if resp.is_ok():
+                    return BridgeAdded(message=f"API Bridge removed: {url}")
+        return SyftError(message=f"Failed to remove API Bridge {url}.")
 
     def load_serde_types(self, context: AuthedServiceContext) -> None:
         serde_types = self.type_stash.get_all(credentials=context.credentials)

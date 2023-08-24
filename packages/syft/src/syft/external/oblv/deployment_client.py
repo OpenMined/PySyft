@@ -212,20 +212,20 @@ class DeploymentClient:
                     stdout=log_file,
                     stderr=log_file,
                 )
-            log_file_read = open(log_file_name, "r")
-            while True:
-                log_line = log_file_read.readline()
-                if "Error:  Invalid PCR Values" in log_line:
-                    raise Exception("PCR Validation Failed")
-                if "Only one usage of each socket address" in log_line:
-                    raise Exception(
-                        "Another oblv proxy instance running. Either close that connection"
-                        + "or change the *connection_port*"
-                    )
-                elif "error" in log_line.lower():
-                    raise Exception(log_line)
-                elif "listening on" in log_line:
-                    break
+            with open(log_file_name) as log_file_read:
+                while True:
+                    log_line = log_file_read.readline()
+                    if "Error:  Invalid PCR Values" in log_line:
+                        raise Exception("PCR Validation Failed")
+                    if "Only one usage of each socket address" in log_line:
+                        raise Exception(
+                            "Another oblv proxy instance running. Either close that connection"
+                            + "or change the *connection_port*"
+                        )
+                    elif "error" in log_line.lower():
+                        raise Exception(log_line)
+                    elif "listening on" in log_line:
+                        break
         except Exception as e:
             raise e
         else:
@@ -354,7 +354,7 @@ class DeploymentClient:
                 + ": Logs not initiated",
                 file=sys.stderr,
             )
-        log_file = open(self.__logs, "r")
+        log_file = open(self.__logs)
         if not follow:
             print(log_file.read())
         else:

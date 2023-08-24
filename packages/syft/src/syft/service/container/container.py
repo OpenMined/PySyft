@@ -68,6 +68,7 @@ class ContainerUpload(SyftObject):
 
     def format(self, run_kwargs: Dict[str, Any]) -> str:
         if self.arg_name not in run_kwargs["files"]:
+            # third party
             raise Exception(f"Missing arg_name: {self.arg_name}")
         syft_file = run_kwargs["files"][self.arg_name]
         path = ""
@@ -182,6 +183,7 @@ class ContainerCommand(SyftObject):
     api_name: str
     command: str
     cmd_args: str
+    post_command: Optional[str] = None
     cmd_kwargs: Dict[str, ContainerCommandArg] = {}
     api_kwargs: Dict[str, Union[Type, typing._GenericAlias]] = {}
     # dataset_file_mounts: Dict[str, str] = {}

@@ -28,11 +28,15 @@ def check_oblv_proxy_installation_status():
             system_name = platform.system()
             result = "Oblv Proxy Not Installed. Call the method install_oblv_proxy "
             if system_name == "Windows":
-                result += "to install the proxy for this session. If you already have the proxy installed,"
-                +" add it to your PATH."
+                result += (
+                    "to install the proxy for this session. If you already have the proxy installed,"
+                    " add it to your PATH."
+                )
             elif system_name == "Linux":
-                result += "to install the proxy globally. If you already have the proxy installed,"
-                +" create a link to the installation as /usr/local/bin/oblv"
+                result += (
+                    "to install the proxy globally. If you already have the proxy installed,"
+                    " create a link to the installation as /usr/local/bin/oblv"
+                )
 
             print(
                 bcolors.RED
@@ -71,7 +75,7 @@ def windows_proxy_installation(with_package: bool = False):
             path = os.path.join(os.path.expanduser("~"), "oblv-0.4.0-x86_64.msi")
             with open(path, "wb") as f:
                 f.write(res.content)
-            os.system("msiexec /I {} /quiet /QB-!".format(path))  # nosec
+            os.system(f"msiexec /I {path} /quiet /QB-!")  # nosec
         else:
             url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-pc-windows-msvc.zip"
             res = requests.get(url)  # nosec
@@ -110,14 +114,14 @@ def linux_proxy_installation(with_package: bool = False):
                 path = os.path.join(os.path.expanduser("~"), "oblv-0.4.0-1.x86_64.rpm")
                 with open(path, "wb") as f:
                     f.write(res.content)
-                os.system("rpm -i {}".format(path))  # nosec
+                os.system(f"rpm -i {path}")  # nosec
             else:
                 url = "https://api.oblivious.ai/oblv-ccli/0.4.0/packages/oblv_0.4.0_amd64.deb"
                 res = requests.get(url)  # nosec
                 path = os.path.join(os.path.expanduser("~"), "oblv_0.4.0_amd64.deb")
                 with open(path, "wb") as f:
                     f.write(res.content)
-                os.system("dpkg -i {}".format(path))  # nosec
+                os.system(f"dpkg -i {path}")  # nosec
         else:
             url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz"
             file_name = "oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz"

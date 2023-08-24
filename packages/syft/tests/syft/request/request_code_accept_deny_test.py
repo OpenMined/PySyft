@@ -34,7 +34,10 @@ def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClien
     guest_email = faker.email()
     password = "mysecretpassword"
     result = root_client.register(
-        name=faker.name(), email=guest_email, password=password
+        name=faker.name(),
+        email=guest_email,
+        password=password,
+        password_verify=password,
     )
     assert isinstance(result, SyftSuccess)
     guest_client.login(email=guest_email, password=password)

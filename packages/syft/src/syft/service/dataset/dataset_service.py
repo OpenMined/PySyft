@@ -17,7 +17,6 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDReminder
@@ -39,7 +38,7 @@ class DatasetService(AbstractService):
         self.store = store
         self.stash = DatasetStash(store=store)
 
-    @service_method(path="dataset.add", name="add", roles=DATA_OWNER_ROLE_LEVEL)
+    @service_method(path="dataset.add", name="add", roles=GUEST_ROLE_LEVEL)
     def add(
         self, context: AuthedServiceContext, dataset: CreateDataset
     ) -> Union[SyftSuccess, SyftError]:
@@ -96,7 +95,9 @@ class DatasetService(AbstractService):
             return results
         return SyftError(message=result.err())
 
-    @service_method(path="dataset.search", name="search")
+    @service_method(
+        path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def search(
         self,
         context: AuthedServiceContext,

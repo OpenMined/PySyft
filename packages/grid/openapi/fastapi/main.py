@@ -2,7 +2,6 @@
 from typing import Annotated
 from typing import Dict
 from typing import List
-from typing import Optional
 
 # third party
 from fastapi import Depends
@@ -14,6 +13,8 @@ from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 
 app = FastAPI(title="Blue Book", version="0.2.0")
+# force to the older version for now
+app.openapi_version = "3.0.2"
 
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 oauth2_scheme = HTTPBearer()
@@ -57,17 +58,15 @@ class LoginResponse(BaseModel):
 class ComputeResource(BaseModel):
     name: str
     cloud: str
-    instance_type: Optional[str]
-    accelerator: Optional[str]
-    region: Optional[str]
-    disk_size: Optional[int] = 256
+    instance_type: str = ""
+    accelerator: str = ""
+    region: str = ""
+    disk_size: int = 256
     price_unit_cents: int
     time_unit_secs: int = 3600
 
 
-azure_cpu = ComputeResource(
-    name="azure_cpu", cloud="azure", accelerator=None, price_unit_cents=30
-)
+azure_cpu = ComputeResource(name="azure_cpu", cloud="azure", price_unit_cents=30)
 
 gcp_t4 = ComputeResource(
     name="gcp_t4", cloud="gcp", accelerator="T4", price_unit_cents=70
@@ -129,9 +128,10 @@ def get_all(
 @app.get("/models/{model_id}", operation_id="get_model", summary="Get a Model by index")
 def get_model(
     current_user: Annotated[User, Depends(get_current_user)], model_id: int
-) -> Optional[ResearchModel]:
+) -> ResearchModel:
+    # do not return Optional[ResearchModel] as it breaks the openapiv3 library
     model = api_state.get(model_id, None)
-    return model
+    return model  # type: ignore
 
 
 @app.put("/models/{model_id}", operation_id="set_model", summary="Set a Model by index")
@@ -160,6 +160,6 @@ def get_all_compute(
 )
 def get_compute(
     current_user: Annotated[User, Depends(get_current_user)], compute_name: str
-) -> Optional[ComputeResource]:
+) -> ComputeResource:
     compute = all_compute.get(compute_name, None)
-    return compute
+    return compute  # type: ignore
