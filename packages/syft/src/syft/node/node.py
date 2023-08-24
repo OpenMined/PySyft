@@ -344,6 +344,7 @@ class Node(AbstractNode):
             config_ = OnDiskBlobStorageConfig(client_config=client_config)
         else:
             config_ = config
+        self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):

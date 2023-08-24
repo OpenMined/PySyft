@@ -102,6 +102,7 @@ class OnDiskBlobStorageClient(BlobStorageClient):
         return OnDiskBlobStorageConnection(self.config.base_directory)
 
 
+@serializable()
 class OnDiskBlobStorageConfig(BlobStorageConfig):
     client_type: Type[BlobStorageClient] = OnDiskBlobStorageClient
     client_config: OnDiskBlobStorageClientConfig = OnDiskBlobStorageClientConfig()

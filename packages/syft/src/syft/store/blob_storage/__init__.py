@@ -173,6 +173,7 @@ class BlobStorageClient(SyftBaseModel):
         raise NotImplementedError
 
 
+@serializable()
 class BlobStorageConfig(SyftBaseModel):
     client_type: Type[BlobStorageClient]
     client_config: BlobStorageClientConfig

@@ -223,6 +223,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             return SyftError(message=str(e))
 
 
+@serializable()
 class SeaweedFSConfig(BlobStorageConfig):
     client_type: Type[BlobStorageClient] = SeaweedFSClient
     client_config: SeaweedFSClientConfig

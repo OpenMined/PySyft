@@ -1,6 +1,9 @@
 # future
 from __future__ import annotations
 
+# stdlib
+from typing import Optional
+
 # third party
 from typing_extensions import Self
 
@@ -10,6 +13,7 @@ from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
+from ..store.blob_storage import BlobStorageConfig
 from ..store.document_store import StoreConfig
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
@@ -28,7 +32,7 @@ class WorkerSettings(SyftObject):
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
-    blob_store_config: StoreConfig
+    blob_store_config: Optional[BlobStorageConfig]
 
     @staticmethod
     def from_node(node: AbstractNode) -> Self:
