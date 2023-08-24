@@ -57,9 +57,11 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
 ## Deploy Kubernetes Helm Chart
 
-```
+```sh
 $ kubectl create namespace syft
 $ helm install my-domain syft --namespace syft --version 0.8.1 --repo https://openmined.github.io/PySyft/helm
+# Installation via dockerhub-openmined
+$ # helm install my-domain syft --namespace syft --version 0.8.1 --repo oci://registry-1.docker.io/param29/syft --version 0.8.2-beta.6
 ```
 
 ### Azure or GCP Ingress
