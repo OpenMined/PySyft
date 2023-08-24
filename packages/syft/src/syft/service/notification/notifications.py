@@ -28,8 +28,6 @@ class NotificationStatus(Enum):
 @serializable()
 class NotificationRequestStatus(Enum):
     NO_ACTION = 0
-    PENDING = 1
-    RESPONDED = 2
 
 
 class NotificationExpiryStatus(Enum):
@@ -58,7 +56,7 @@ class Notification(SyftObject):
     from_user_verify_key: SyftVerifyKey
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
-    status: NotificationRequestStatus = NotificationRequestStatus.NO_ACTION
+    status: NotificationStatus = NotificationStatus.UNREAD
     linked_obj: Optional[LinkedObject]
     replies: Optional[List[ReplyNotification]] = []
 
@@ -76,11 +74,9 @@ class Notification(SyftObject):
         return None
 
     def _coll_repr_(self):
-        print(f"Linked Object:{self.linked_obj}")
-
         return {
             "Subject": self.subject,
-            "Status": self.determine_status(self.linked_obj),
+            "Status": self.determine_status().name.capitalize(),
             "Created At": str(self.created_at),
             "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
         }
@@ -97,12 +93,12 @@ class Notification(SyftObject):
         )
         return api.services.notifications.mark_as_unread(uid=self.id)
 
-    def determine_status(linkedObj: LinkedObject) -> NotificationRequestStatus:
+    def determine_status(self) -> Enum:
         # relative
         from ..request.request import Request
 
-        if isinstance(linkedObj.resolve, Request):
-            return NotificationRequestStatus.RESPONDED
+        if isinstance(self.linked_obj.resolve, Request):
+            return self.linked_obj.resolve.status
 
         return NotificationRequestStatus.NO_ACTION
 
