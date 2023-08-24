@@ -66,7 +66,7 @@ from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
-from ..service.python_lib.python_lib import LibWrapperService
+from ..service.python_lib.python_lib_service import LibWrapperService
 from ..service.python_lib.python_lib_service import PythonLibService
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager

@@ -20,12 +20,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import service_method
 
 
 @serializable()
@@ -124,40 +119,3 @@ class LibWrapperStash(BaseUIDStoreStash):
         )
         return result
 
-
-@instrument
-@serializable()
-class LibWrapperService(AbstractService):
-    store: DocumentStore
-    stash: LibWrapperStash
-
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
-        self.stash = LibWrapperStash(store=store)
-
-    @service_method(path="lib_wrapper.set_wrapper", name="set_wrapper")
-    def set_wrapper(
-        self, context: AuthedServiceContext, wrapper: LibWrapper
-    ) -> Union[SyftSuccess, SyftError]:
-        """Register an APIWrapper."""
-        result = self.stash.update(context.credentials, wrapper=wrapper)
-        if result.is_ok():
-            return SyftSuccess(message=f"APIWrapper added: {wrapper}")
-        return SyftError(message=f"Failed to add APIWrapper {wrapper}. {result.err()}")
-
-    @service_method(path="lib_wrapper.get_wrappers", name="get_wrappers")
-    def get_wrappers(
-        self, context: AuthedServiceContext, path: str
-    ) -> Tuple[Optional[LibWrapper], Optional[LibWrapper]]:
-        wrappers = self.stash.get_by_path(context.node.verify_key, path=path)
-        pre_wrapper = None
-        post_wrapper = None
-        if wrappers.is_ok() and wrappers.ok():
-            wrappers = wrappers.ok()
-            for wrapper in wrappers:
-                if wrapper.order == LibWrapperOrder.PRE_HOOK:
-                    pre_wrapper = wrapper
-                elif wrapper.order == LibWrapperOrder.POST_HOOK:
-                    post_wrapper = wrapper
-
-        return (pre_wrapper, post_wrapper)

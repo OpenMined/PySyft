@@ -2,6 +2,10 @@
 
 # stdlib
 import os
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
 
 # relative
 from ...serde.lib_service_registry import CMPClass
@@ -17,6 +21,9 @@ from ..service import AbstractService
 from ..service import LibConfigRegistry
 from ..service import register_lib_obj
 from ..service import service_method
+from .python_lib import LibWrapperStash, LibWrapper, LibWrapperOrder
+from ..response import SyftError
+from ..response import SyftSuccess
 
 # import subprocess
 
@@ -67,3 +74,40 @@ class PythonLibService(AbstractService):
 
         print(cmp, file=sys.stderr)
         return SyftSuccess(message="CMP received succesfully!")
+
+@instrument
+@serializable()
+class LibWrapperService(AbstractService):
+    store: DocumentStore
+    stash: LibWrapperStash
+
+    def __init__(self, store: DocumentStore) -> None:
+        self.store = store
+        self.stash = LibWrapperStash(store=store)
+
+    @service_method(path="lib_wrapper.set_wrapper", name="set_wrapper")
+    def set_wrapper(
+        self, context: AuthedServiceContext, wrapper: LibWrapper
+    ) -> Union[SyftSuccess, SyftError]:
+        """Register an APIWrapper."""
+        result = self.stash.update(context.credentials, wrapper=wrapper)
+        if result.is_ok():
+            return SyftSuccess(message=f"APIWrapper added: {wrapper}")
+        return SyftError(message=f"Failed to add APIWrapper {wrapper}. {result.err()}")
+
+    @service_method(path="lib_wrapper.get_wrappers", name="get_wrappers")
+    def get_wrappers(
+        self, context: AuthedServiceContext, path: str
+    ) -> Tuple[Optional[LibWrapper], Optional[LibWrapper]]:
+        wrappers = self.stash.get_by_path(context.node.verify_key, path=path)
+        pre_wrapper = None
+        post_wrapper = None
+        if wrappers.is_ok() and wrappers.ok():
+            wrappers = wrappers.ok()
+            for wrapper in wrappers:
+                if wrapper.order == LibWrapperOrder.PRE_HOOK:
+                    pre_wrapper = wrapper
+                elif wrapper.order == LibWrapperOrder.POST_HOOK:
+                    post_wrapper = wrapper
+
+        return (pre_wrapper, post_wrapper)
