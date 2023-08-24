@@ -324,7 +324,7 @@ def generate_remote_lib_function(
         result = wrapper_make_call(api_call=api_call)
         return result
 
-    wrapper.__ipython_inspector_signature_override__ = signature
+    wrapper.__signature__ = signature
     return wrapper
 
 
@@ -655,8 +655,9 @@ class SyftAPI(SyftObject):
                         self.make_call,
                         pre_kwargs=v.pre_kwargs,
                     )
-
                 endpoint_function.__doc__ = v.doc_string
+                endpoint_function.__name__ = v.name
+
                 self._add_route(api_module, v, endpoint_function)
             return api_module
 

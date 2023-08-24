@@ -198,12 +198,13 @@ def register_lib_obj(lib_obj: CMPBase):
 
     if signature is not None:
         if path != "numpy.source":
+            doc_string = lib_obj.doc_string if lib_obj.doc_string else lib_obj.obj.__doc__
             lib_config = LibConfig(
                 public_path=str(path),
                 private_path=str(path),
                 public_name=str(func_name),
                 method_name=str(func_name),
-                doc_string=str(lib_obj.__doc__),
+                doc_string=doc_string,
                 signature=signature,
                 permissions=set([lib_obj.permissions]),
                 is_from_lib=True,

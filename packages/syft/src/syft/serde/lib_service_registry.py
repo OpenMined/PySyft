@@ -59,6 +59,7 @@ class CMPBase:
         text_signature: Optional[str] = None,
         pre_hook: Optional[LibWrapper] = None,
         post_hook: Optional[LibWrapper] = None,
+        doc_string: Optional[str] = None
     ):
         self.permissions: Optional[CMPPermission] = permissions
         self.path: str = path
@@ -67,6 +68,7 @@ class CMPBase:
         self.signature: Optional[Signature] = None
         self.pre_hook = pre_hook
         self.post_hook = post_hook
+        self.doc_string = doc_string
 
         self.children: Dict[str, CMPBase] = dict()
         if isinstance(children, list):
