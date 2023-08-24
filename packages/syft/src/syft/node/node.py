@@ -199,9 +199,13 @@ class AuthNodeContextRegistry:
         if isinstance(user_verify_key, str):
             user_verify_key = SyftVerifyKey.from_string(user_verify_key)
 
-        key = "-".join(str(x) for x in (node_uid, user_verify_key))
+        key = cls._get_key(node_uid=node_uid, user_verify_key=user_verify_key)
 
         cls.__node_context_registry__[key] = context
+
+    @staticmethod
+    def _get_key(node_uid: UID, user_verify_key: SyftVerifyKey) -> str:
+        return "-".join(str(x) for x in (node_uid, user_verify_key))
 
     @classmethod
     def auth_context_for_user(
@@ -209,7 +213,7 @@ class AuthNodeContextRegistry:
         node_uid: UID,
         user_verify_key: SyftVerifyKey,
     ) -> Optional[AuthedServiceContext]:
-        key = (node_uid, user_verify_key)
+        key = cls._get_key(node_uid=node_uid, user_verify_key=user_verify_key)
         return cls.__node_context_registry__.get(key)
 
 
@@ -478,7 +482,12 @@ class Node(AbstractNode):
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}{service_string}"
 
     def post_init(self) -> None:
-        context = AuthedServiceContext(node=self, credentials=self.verify_key)
+        context = AuthedServiceContext(
+            node=self, credentials=self.verify_key, role=ServiceRole.ADMIN
+        )
+        AuthNodeContextRegistry.set_node_context(
+            node_uid=self.id, user_verify_key=self.verify_key, context=context
+        )
 
         if UserCodeService in self.services:
             user_code_service = self.get_service(UserCodeService)
