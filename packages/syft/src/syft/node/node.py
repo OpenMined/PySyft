@@ -415,8 +415,9 @@ class Node(AbstractNode):
             # Reset blob storage
             root_directory = get_root_data_path()
             base_directory = root_directory / f"{uid}"
-            for file in base_directory.iterdir():
-                file.unlink()
+            if base_directory.exists():
+                for file in base_directory.iterdir():
+                    file.unlink()
             blob_client_config = OnDiskBlobStorageClientConfig(
                 base_directory=base_directory
             )
