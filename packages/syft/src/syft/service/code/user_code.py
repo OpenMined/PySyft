@@ -585,19 +585,6 @@ def debox_asset(arg: Any) -> Any:
     return deboxed_arg, ArgumentType.REAL
 
 
-def create_input_policy_init_kwargs(args: list, annotations: dict) -> dict:
-    """
-    Create input_policy_init_kwargs from function annotations.
-    """
-
-    input_policy_init_kwargs = {}
-
-    for arg, annotation in zip(args, annotations.values()):
-        if annotation in SUPPORTED_RETURN_TYPES:
-            input_policy_init_kwargs[arg] = annotation
-    return input_policy_init_kwargs
-
-
 def syft_function_single_use(
     *args: Any, share_results_with_owners=False, **kwargs: Any
 ):
@@ -627,9 +614,8 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f: Callable) -> SubmitUserCode:
-        args = list(inspect.signature(f).parameters.keys())
+        list(inspect.signature(f).parameters.keys())
         annotations = f.__annotations__
-        input_policy_init_kwargs = create_input_policy_init_kwargs(args, annotations)
 
         if "return" not in annotations:
             raise SyftValueError(
@@ -642,11 +628,11 @@ def syft_function(
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
-            input_policy_init_kwargs=input_policy_init_kwargs,
+            input_policy_init_kwargs=input_policy.init_kwargs,
             output_policy_type=output_policy_type,
             output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
-            input_kwargs=args,
+            input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
         )
 
         if share_results_with_owners:
