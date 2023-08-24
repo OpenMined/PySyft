@@ -125,11 +125,13 @@ class MongoStorePartition(StorePartition):
             return store_status
 
         client = MongoClient(config=self.store_config.client_config)
+
         collection_status = client.with_collection(
             collection_settings=self.settings, store_config=self.store_config
         )
         if collection_status.is_err():
             return collection_status
+
         collection_permissions_status = client.with_collection_permissions(
             collection_settings=self.settings, store_config=self.store_config
         )
@@ -209,6 +211,15 @@ class MongoStorePartition(StorePartition):
 
         return Ok(self._collection)
 
+    @property
+    def permissions(self) -> Result[MongoCollection, Err]:
+        if not hasattr(self, "_permissions"):
+            res = self.init_store()
+            if res.is_err():
+                return res
+
+        return Ok(self._permissions)
+
     def _set(
         self,
         credentials: SyftVerifyKey,
@@ -218,9 +229,10 @@ class MongoStorePartition(StorePartition):
     ) -> Result[SyftObject, str]:
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write = self.has_permission(write_permission)
+        print("----------- Inside MongoStorePartition._set() -----------")
+        print(f"{can_write = }")
         if can_write:
             storage_obj = obj.to(self.storage_type)
-
             collection_status = self.collection
             if collection_status.is_err():
                 return collection_status
@@ -232,9 +244,22 @@ class MongoStorePartition(StorePartition):
                 collection.insert_one(storage_obj)
             except DuplicateKeyError as e:
                 return Err(f"Duplicate Key Error for {obj}: {e}")
+
+            # adding permissions
+            collection_permissions_status = self.permissions
+            if collection_permissions_status.is_err():
+                return collection_permissions_status
+            collection_permissions: MongoCollection = collection_permissions_status.ok()
+            permission: str = f"{credentials.verify}_READ"
+            print(f"{permission = }")
+            permissions: dict = collection_permissions.find_one({"uid": obj.id})
+            print(f"{permissions = }")
+            collection_permissions.insert_one({"uid": obj.id, "repr": {permission}})
+            permissions: dict = collection_permissions.find_one({"uid": obj.id})
+            print(f"{permissions = }")
             if add_permissions is not None:
-                pass
                 # TODO: update permissions
+                pass
             return Ok(obj)
         else:
             return Err(f"No permission to write object with id {obj.id}")
@@ -353,16 +378,31 @@ class MongoStorePartition(StorePartition):
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         # TODO: implement
-        print("checking permission inside MongoStorePartition!!!")
+        # print("---- checking permission inside MongoStorePartition!!! ---- ")
         if not isinstance(permission.permission, ActionPermission):
             raise TypeError(f"ObjectPermission type: {permission.permission} not valid")
 
+        # print(f"{self.permissions = }")
+        # print(self._permissions.find_one({"uid": "025b1ecac15e40929e427ebabca922db"}))
+        # print(type(self._permissions.find_one({"uid": "025b1ecac15e40929e427ebabca922db"})))
+
+        if self.root_verify_key.verify == permission.credentials.verify:
+            return True
+
         return True
 
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
-        # TODO: implemenet
-        print("adding permissions inside MongoStorePartition")
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        print("---- adding permission inside MongoStorePartition!!! ---- ")
+        # permissions = self.permissions[permission.uid]
+        # print(f"{permissions = }")
+        # permissions.add(permission.permission_string)
+        # self.permissions[permission.uid] = permissions
         pass
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        results = []
+        for permission in permissions:
+            results.append(self.add_permission(permission))
 
     def _all(
         self,
