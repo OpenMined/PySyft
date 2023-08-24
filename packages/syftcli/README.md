@@ -2,77 +2,112 @@
 
 ## Development
 
+Install the syftcli package in editable mode
+
 ```sh
 pip install -e "packages/syftcli[dev]"
 syftcli hello
 ```
 
-## Building a Standalone Executable of Syft CLI
+Run as a module
 
-Keep the working directory as `packages/syftcli`
+```sh
+cd packages/syftcli
+python -m src.cli hello
+```
+
+Debug in VSCode with the following `launch.json`
+
+```json
+{
+    "name": "Python: Syft CLI",
+    "type": "python",
+    "request": "launch",
+    "module": "src.cli",
+    "args": ["bundle", "create"], # CLI command to run
+    "console": "integratedTerminal",
+    "cwd": "${workspaceFolder}/packages/syftcli",
+    "justMyCode": true
+}
+```
+
+## Building a standalone executable
 
 ### Requirements
 
 - Python >= 3.8
 
+### The fast way
+
+```sh
+tox -re syftcli.build
+```
+
+NOTE: The `-re` flag is neecessary to re-create tox environment for the build.
+
+Once the build is successful, the executable will be at `packages/syft/dist`
+
+### The manual way
+
+Keep the working directory as `packages/syftcli`
+
 ### Setup
 
 It is recommended to create a fresh virtual environment for the build process.
 
-### Installation
-
-Inside the new virtual environment run
-
 ```sh
+cd packages/syftcli
+
+rm -rf .venv
+python -m venv .venv
+
+source .venv/bin/activate
+
 pip install -e ".[build]"
 ```
 
-## Linux
+### Linux/WSL
 
 ```sh
-pyinstaller --onefile src/syftcli/cli.py
+pyinstaller --onefile src/cli.py --name=syftcli
 ```
 
-## Windows
+### Windows
 
 ```sh
-pyinstaller --onefile src\\syftcli\\cli.py
+pyinstaller --onefile src\\cli.py --name=syftcli
 ```
 
-## Mac
+### Mac
 
 To able to build a binary for you current platform (Intel or Apple Silicon) run
 
 ```sh
-pyinstaller --onefile src/syftcli/cli.py
+pyinstaller --onefile src/cli.py --name=syftcli
 ```
 
-## Building universal binary for Mac
+### Universal binary for Mac
 
-To be able to build a universal2 binary that could operate on Intel or Apple Silicon.
+Universal binary is a single executable that can run on both Intel and Apple Silicon.
 
-Initially install universal2 python: https://www.python.org/downloads/macos/
+Make sure you have Universal2 Python installed on your macOS: https://www.python.org/downloads/macos/
 
-To check if you have universal2 python run the command
+Check if you have universal2 python
 
 ```sh
 lipo -info `which python3`
 ```
 
-This should return the output
-`Architectures in the fat file: /Users/rasswanth/.venv/bin/python3 are: x86_64 arm64`
+This should return the output mentioning both arm and x86
 
-mentioning both arm and x86
-
-To create a universal2 binary run
-
-```sh
-pyinstaller --onefile src/syftcli/cli.py --target-arch universal2
+```
+Architectures in the fat file: .venv/bin/python3 are: x86_64 arm64
 ```
 
-Finally, The binary executable could be found under
-`/dist/cli`
+Once confirmed, run the following to create a universal2 binary
 
-#### Notes
+```sh
+pyinstaller --onefile src/cli.py --target-arch universal2 --name=syftcli
+```
 
-To customize the binary name, you add `--name=<your_cli_name>` to the pyinstaller command
+TThe binary executable could be found under `packages/syftcli/dist/syftcli`
