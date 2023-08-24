@@ -12,6 +12,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user_roles import GUEST_ROLE_LEVEL
 from .billing_object import BillingOverviewObject
 from .billing_object import BillingResourceUsage
 
@@ -53,7 +54,11 @@ class BillingService(AbstractService):
             message=f"Failed to add BillingObject {billing_object}. {result.err()}"
         )
 
-    @service_method(path="billing.get_billing_overview", name="get_billing_overview")
+    @service_method(
+        path="billing.get_billing_overview",
+        name="get_billing_overview",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def get_billing_overview(
         self,
         context: AuthedServiceContext,
