@@ -118,7 +118,7 @@ class BlobRetrievalByURL(BlobRetrieval):
             blob_url = self.url
         try:
             if self.type_ is BlobFileType:
-                urlretrieve(str(blob_url), filename=self.file_name)
+                urlretrieve(str(blob_url), filename=self.file_name)  # nosec
                 return BlobFile(file_name=self.file_name)
             response = requests.get(str(blob_url), timeout=DEFAULT_TIMEOUT)
             response.raise_for_status()

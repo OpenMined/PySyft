@@ -206,10 +206,10 @@ class InputPolicy(Policy):
             action_object_value = action_object.ok()
             # resolve syft action data from blob store
             if isinstance(action_object_value, TwinObject):
-                action_object_value.private_obj.syft_action_data
-                action_object_value.mock_obj.syft_action_data
+                action_object_value.private_obj.syft_action_data  # noqa: B018
+                action_object_value.mock_obj.syft_action_data  # noqa: B018
             elif isinstance(action_object_value, ActionObject):
-                action_object_value.syft_action_data
+                action_object_value.syft_action_data  # noqa: B018
             inputs[var_name] = action_object_value
         return inputs
 
