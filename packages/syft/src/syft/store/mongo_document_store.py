@@ -31,6 +31,7 @@ from ..types.syft_object import SyftObject
 from ..types.transforms import TransformContext
 from ..types.transforms import transform
 from ..types.transforms import transform_method
+from ..types.uid import UID
 from .document_store import DocumentStore
 from .document_store import PartitionKey
 from .document_store import QueryKey
@@ -229,8 +230,7 @@ class MongoStorePartition(StorePartition):
     ) -> Result[SyftObject, str]:
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write = self.has_permission(write_permission)
-        print("----------- Inside MongoStorePartition._set() -----------")
-        print(f"{can_write = }")
+        print("----------- MongoStorePartition._set() -----------")
         if can_write:
             storage_obj = obj.to(self.storage_type)
             collection_status = self.collection
@@ -250,12 +250,11 @@ class MongoStorePartition(StorePartition):
             if collection_permissions_status.is_err():
                 return collection_permissions_status
             collection_permissions: MongoCollection = collection_permissions_status.ok()
-            permission: str = f"{credentials.verify}_READ"
-            print(f"{permission = }")
-            permissions: dict = collection_permissions.find_one({"uid": obj.id})
-            print(f"{permissions = }")
-            collection_permissions.insert_one({"uid": obj.id, "repr": {permission}})
-            permissions: dict = collection_permissions.find_one({"uid": obj.id})
+            read_permission: str = f"{credentials.verify}_READ"
+            collection_permissions.insert_one(
+                {"uid": obj.id, "repr": {read_permission}}
+            )
+            permissions: Dict = collection_permissions.find_one({"uid": obj.id})
             print(f"{permissions = }")
             if add_permissions is not None:
                 # TODO: update permissions
@@ -378,13 +377,24 @@ class MongoStorePartition(StorePartition):
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         # TODO: implement
-        # print("---- checking permission inside MongoStorePartition!!! ---- ")
+        print("---- MongoStorePartition.has_permission() ---- ")
+        print(f"{permission = }")
         if not isinstance(permission.permission, ActionPermission):
             raise TypeError(f"ObjectPermission type: {permission.permission} not valid")
 
-        # print(f"{self.permissions = }")
-        # print(self._permissions.find_one({"uid": "025b1ecac15e40929e427ebabca922db"}))
-        # print(type(self._permissions.find_one({"uid": "025b1ecac15e40929e427ebabca922db"})))
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return False
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
+        permissions: Optional[Dict] = collection_permissions.find_one(
+            {"uid": permission.uid}
+        )
+        print(f"got back {permissions = }")
+        if (
+            permissions is not None
+            and permission.permission_string in permissions["repr"]
+        ):
+            return True
 
         if self.root_verify_key.verify == permission.credentials.verify:
             return True
@@ -392,7 +402,7 @@ class MongoStorePartition(StorePartition):
         return True
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
-        print("---- adding permission inside MongoStorePartition!!! ---- ")
+        print("---- MongoStorePartition.add_permission() ----")
         # permissions = self.permissions[permission.uid]
         # print(f"{permissions = }")
         # permissions.add(permission.permission_string)
@@ -403,6 +413,12 @@ class MongoStorePartition(StorePartition):
         results = []
         for permission in permissions:
             results.append(self.add_permission(permission))
+
+    def take_ownership(
+        self, uid: UID, credentials: SyftVerifyKey
+    ) -> Result[SyftSuccess, str]:
+        print("--- MongoStorePartition.take_ownership() ---")
+        return "a"
 
     def _all(
         self,
