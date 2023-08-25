@@ -1,11 +1,13 @@
 # third party
 from rich import box
 from rich.table import Table
+from typer import Typer
+from typer import echo
+
+# first party
 from src.bundle import cmd as bundle_cmd
 from src.core.console import console
 from src.version import __version__
-from typer import Typer
-from typer import echo
 
 __all__ = "app"
 
