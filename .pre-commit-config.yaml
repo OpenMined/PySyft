@@ -118,7 +118,7 @@ repos:
       - id: mypy
         name: "mypy: syft-cli"
         always_run: true
-        files: ^packages/syft-cli
+        files: ^packages/syftcli
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

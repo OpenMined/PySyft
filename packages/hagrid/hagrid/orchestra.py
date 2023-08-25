@@ -26,9 +26,7 @@ try:
     # syft absolute
     from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
-    from syft.node.node import get_default_root_password
     from syft.service.response import SyftError
-    from syft.util.util import prompt_warning_message
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
     pass
@@ -186,13 +184,6 @@ class NodeHandle:
         session = client.login(email=email, password=password, **kwargs)
         if isinstance(session, SyftError):
             return session
-
-        if password == get_default_root_password():
-            message = (
-                "You are using a default password. Please change the password "
-                "using `[your_client].me.set_password([new_password])`."
-            )
-            prompt_warning_message(message)
 
         return session
 

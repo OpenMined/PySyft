@@ -425,6 +425,7 @@ class SyftClient:
     metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
     __logged_in_user: str = ""
+    __logged_in_username: str = ""
     __user_role: ServiceRole = ServiceRole.NONE
 
     def __init__(
@@ -471,6 +472,10 @@ class SyftClient:
     @property
     def logged_in_user(self) -> Optional[str]:
         return self.__logged_in_user
+
+    @property
+    def logged_in_username(self) -> Optional[str]:
+        return self.__logged_in_username
 
     @property
     def user_role(self) -> ServiceRole:
@@ -598,6 +603,10 @@ class SyftClient:
         if signing_key is not None:
             self.credentials = signing_key
             self.__logged_in_user = email
+
+            # Get current logged in user name
+            self.__logged_in_username = self.users.get_current_user().name
+
             # TODO: How to get the role of the user?
             # self.__user_role =
             self._fetch_api(self.credentials)
@@ -605,6 +614,16 @@ class SyftClient:
                 f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()} side "
                 f"{self.metadata.node_type.capitalize()}> as <{email}>"
             )
+            # relative
+            from ..node.node import get_default_root_password
+
+            if password == get_default_root_password():
+                message = (
+                    "You are using a default password. Please change the password "
+                    "using `[your_client].me.set_password([new_password])`."
+                )
+                prompt_warning_message(message)
+
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,
