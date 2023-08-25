@@ -37,7 +37,7 @@ def create(
 
     engine_sdk = get_container_engine(engine)
     if not engine_sdk.is_installed():
-        print(f"[bold red]{engine} is not installed")
+        print(f"[bold red]{engine} is not running or not installed")
         raise Exit(1)
 
     print(
