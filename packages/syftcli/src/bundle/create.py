@@ -41,7 +41,7 @@ def create(
         raise Exit(1)
 
     print(
-        f"[bold green]Creating Syft {version} image bundle at '{tarfile}' using {engine}"
+        f"[bold green]Creating Syft {version} image bundle at '{tarfile.resolve()}' using {engine}"
     )
 
     tarfile.parent.mkdir(parents=True, exist_ok=True)

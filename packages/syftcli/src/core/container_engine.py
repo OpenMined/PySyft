@@ -53,9 +53,10 @@ class Podman(ContainerEngine):
 class Docker(ContainerEngine):
     def __init__(self) -> None:
         # third party
-        import docker
+        # import docker
 
-        self.client = docker.from_env()
+        # self.client = docker.from_env()
+        pass
 
     def is_installed(self) -> bool:
         result = run_command("docker version")
