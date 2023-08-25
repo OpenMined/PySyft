@@ -154,11 +154,6 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Login to Docker-Helm
-        run: |
-          helm registry login registry-1.docker.io -u ${{ secrets.DOCKER_LOGIN }} --password ${{secrets.DOCKER_PASSWORD}}
-          cd packages/grid/helm/repo && helm push syft-${{ steps.grid-version.outputs.GRID_VERSION }}.tgz oci://registry-1.docker.io/openmined
-      
       - name: Docker meta for Grid-Backend
         id: meta_grid_backend
         uses: docker/metadata-action@v3
@@ -281,3 +276,8 @@ jobs:
           tags: ${{ steps.meta_grid_vpn_iptables.outputs.tags }}
           cache-from: type=registry,ref=  ${{ steps.meta_grid_vpn_iptables.outputs.tags }}
           cache-to: type=inline
+
+      - name: Login to Docker-Helm
+        run: |
+          helm registry login registry-1.docker.io -u ${{ secrets.DOCKER_LOGIN }} --password ${{secrets.DOCKER_PASSWORD}}
+          cd packages/grid/helm/repo && helm push syft-${{ steps.grid-version.outputs.GRID_VERSION }}.tgz oci://registry-1.docker.io/openmined
