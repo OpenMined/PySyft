@@ -2,7 +2,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.1.0"
+__version__ = "0.1.3"
 
 packages = [
     "typer[all]==0.9.0",
@@ -16,7 +16,7 @@ build_packages = [
 dev_packages = ["pytest"] + build_packages
 
 setup(
-    name="Syft CLI",
+    name="syftcli",
     description="Command line utility for Syft",
     long_description="",
     long_description_content_type="text/plain",
