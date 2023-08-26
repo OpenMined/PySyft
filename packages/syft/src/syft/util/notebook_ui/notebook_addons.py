@@ -7,6 +7,18 @@ from ...types.uid import UID
 
 CSS_CODE = """
 <style>
+    :root {
+        --primary-color: #ffffff;
+        --secondary-color: #f5f5f5;
+        --tertiary-color: #000000de;
+        --button-color: #d1d5db;
+    }
+    .dark-theme {
+        --primary-color: #111111;
+        --secondary-color: #212121;
+        --tertiary-color: #CFCDD6;
+        --button-color: #111111;
+    }
   .header-1 {
         font-style: normal;
         font-weight: 600;
@@ -34,7 +46,7 @@ CSS_CODE = """
         line-height: 100%;
         leading-trim: both;
         text-edge: cap;
-        color: #17161D;
+        color: var(--tertiary-color);
     }
 
   .header-4 {
@@ -139,6 +151,10 @@ CSS_CODE = """
         align-items: center;
     }
 
+    .folder-icon {
+        color: var(--tertiary-color);
+    }
+
     .search-input{
         display: flex;
         flex-direction: row;
@@ -147,11 +163,11 @@ CSS_CODE = """
         width: 343px;
         height: 24px;
         /* Lt On Surface/Low */
-        background: #F1F0F4;
+        background-color: var(--secondary-color);
         border-radius: 30px;
 
         /* Lt On Surface/Highest */
-        color: #B4B0BF;
+        color: var(--tertiary-color);
         border:none;
         /* Inside auto layout */
         flex: none;
@@ -160,6 +176,11 @@ CSS_CODE = """
     }
     .search-input:focus {
         outline: none;
+    }
+        .search-input:focus::placeholder,
+    .search-input::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+        color: var(--tertiary-color);
+        opacity: 1; /* Firefox */
     }
 
     .search-button{
@@ -171,10 +192,14 @@ CSS_CODE = """
         text-align: center;
 
         /* Primary/On Light */
-        color: #464A91;
+        background-color: var(--button-color);
+        color: var(--tertiary-color);
 
         border-radius: 30px;
-        border-color: #464A91;
+        border-color: var(--secondary-color);
+        border-style: solid;
+        box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+        cursor: pointer;
         /* Inside auto layout */
         flex: none;
         order: 1;
@@ -194,9 +219,10 @@ CSS_CODE = """
     }
     .grid-index-cells {
         grid-column: span 1;
-        background: #ECEBEF;
         /* tmp fix to make left col stand out (fix with font-family) */
         font-weight: 600;
+        background-color: var(--secondary-color) !important;
+        color: var(--tertiary-color);
     }
 
     .grid-header {
@@ -208,22 +234,23 @@ CSS_CODE = """
         height: 20px;
 
         /* Lt On Surface/Surface */
-        background: #ECEBEF;
         /* Lt On Surface/High */
         border: 1px solid #CFCDD6;
-        color: #2E2B3B;
         /* tmp fix to make header stand out (fix with font-family) */
         font-weight: 600;
+        background-color: var(--secondary-color);
+        color: var(--tertiary-color);
     }
 
     .grid-row {
-        color: #5E5A72;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         padding: 6px 4px;
         overflow: hidden;
         border: 1px solid #CFCDD6;
+        background-color: var(--primary-color);
+        color: var(--tertiary-color);
     }
 
     .badge {
@@ -269,11 +296,13 @@ CSS_CODE = """
         justify-content: center;
         gap: 8px;
         padding: 5px;
+        color: var(--tertiary-color);
     }
 
     .page{
         color: black;
         font-weight: bold;
+        color: var(--tertiary-color);
     }
     .page:hover {
       color: #38bdf8;
@@ -281,13 +310,14 @@ CSS_CODE = """
     }
     .clipboard:hover{
         cursor: pointer;
+        color: var(--tertiary-color);
     }
 
     .search-field {
         display: flex;
         align-items: center;
-        background: #F1F0F4;
         border-radius: 30px;
+        background-color: var(--secondary-color);
     }
 
     .syft-dropdown {
@@ -296,7 +326,7 @@ CSS_CODE = """
         position: relative;
         display: inline-block;
         text-align: center;
-        background-color: #d1d5db;
+        background-color: var(--button-color);
         min-width: 100px;
         padding: 2px;
         border-radius: 30px;
@@ -309,11 +339,12 @@ CSS_CODE = """
         margin-top:26px;
         display: none;
         position: absolute;
-        background-color: #f9f9f9;
         min-width: 100px;
         box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
         padding: 12px 6px;
         z-index: 1;
+        background-color: var(--primary-color);
+        color: var(--tertiary-color);
     }
     .dd-options {
         padding-top: 4px;
@@ -359,7 +390,7 @@ SEARCH_ICON = (
     " 2.3355 8.22984 2.93687 8.36006 3.59155C8.49029 4.24624 8.42345 4.92484 8.168"
     " 5.54154C7.91256 6.15824 7.47998 6.68535 6.92496 7.05619C6.36995 7.42704 5.71742"
     " 7.62498 5.04991 7.62498C4.15511 7.62399 3.29724 7.26809 2.66452 6.63537C2.0318"
-    ' 6.00265 1.6759 5.14479 1.67491 4.24998Z" fill="#464A91"/></svg>'
+    ' 6.00265 1.6759 5.14479 1.67491 4.24998Z" fill="currentColor"/></svg>'
 )
 CLIPBOARD_ICON = (
     "<svg width='8' height='8' viewBox='0 0 8 8' fill='none'"
@@ -400,7 +431,7 @@ FOLDER_ICON = (
     " 6.45059 4.99946 6.66687 5H11V10.5ZM13 8.5H12V5C12 4.73478 11.8946 4.48043 11.7071"
     " 4.29289C11.5196 4.10536 11.2652 4 11 4H6.66687L4.93313 2.7C4.75978 2.57066"
     " 4.54941 2.50054 4.33313 2.5H3.5V1.5H6.33313L8.06688 2.8C8.24022 2.92934 8.45059"
-    ' 2.99946 8.66687 3H13V8.5Z" fill="#343330"/></svg>'
+    ' 2.99946 8.66687 3H13V8.5Z" fill="currentColor"/></svg>'
 )
 REQUEST_ICON = (
     '<svg width="32"  height="32" viewBox="0 0 12 12" fill="none"'
@@ -421,7 +452,7 @@ REQUEST_ICON = (
 custom_code = """
     <div style='margin-top:15px;'>
         <div class='flex gap-10' style='align-items: center;'>
-            <div>${icon}</div>
+            <div class='folder-icon'>${icon}</div>
             <div><p class='header-3'>${list_name}</p></div>
         </div>
 
@@ -482,7 +513,7 @@ custom_code = """
                         </div>
                         <input id='searchKey${uid}' class='search-input' placeholder='Enter search here ...'  />
                     </div>
-                    <button class='search-button'  onclick="searchGrid${uid}(element${uid})">
+                    <button class='search-button' type="button" onclick="searchGrid${uid}(element${uid})">
                         ${searchIcon}
                         <span class='pl-8'>Search</span>
                     </button>
@@ -503,8 +534,7 @@ custom_code = """
                     }
 
                     function searchGrid${uid}(elements){
-                        let searchKey = document.getElementById('searchKey${uid}').value
-                        console.log("Search Key: ", searchKey)
+                        let searchKey = document.getElementById('searchKey${uid}').value;
                         let result;
                         if (searchKey === ''){
                             result = elements;
@@ -529,6 +559,14 @@ custom_code = """
                         buildPaginationContainer${uid}(result);
                     }
 
+                    function setTheme${uid}(){
+                        const theme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'light' : 'dark';
+
+                        if (theme === 'dark') document.body.classList.add('dark-theme');
+                        else document.body.classList.remove('dark-theme');
+                        
+                    }
+
                     function resetById${uid}(id){
                         let element = document.getElementById(id);
                         while (element.firstChild) {
@@ -543,6 +581,7 @@ custom_code = """
                                 let div = document.createElement("div");
                                 div.classList.add('grid-header', 'grid-index-cells');
                                 grid.appendChild(div);
+                                setTheme${uid}();
                                 headers.forEach((title) =>{
                                     let div = document.createElement("div");
                                     div.classList.add('grid-header', 'grid-std-cells');
@@ -633,11 +672,12 @@ custom_code = """
                             for (let i = 0; i < paginatedElements.length; i++) {
                                   let div = document.createElement("div");
                                   div.classList.add('page');
-                                  div.style.color = 'gray';
+                                  if(i===0) div.style.color = "gray";
+                                  else div.style.color = 'var(--tertiary-color, "gray")';
                                   div.onclick = function(event) {
                                       let indexes = document.getElementsByClassName('page');
-                                      for (let index of indexes) { index.style.color = 'gray' }
-                                      event.target.style.color = "black"
+                                      for (let index of indexes) { index.style.color = 'var(--tertiary-color, "gray")' }
+                                      event.target.style.color = "gray";
                                       setPage${uid}(i + 1);
                                   };
                                   div.innerText = i + 1;
