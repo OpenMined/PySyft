@@ -450,7 +450,9 @@ class Node(AbstractNode):
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
-        return client_type(connection=connection, credentials=self.signing_key)
+        root_client = client_type(connection=connection, credentials=self.signing_key)
+        root_client.api.refresh_api_callback()
+        return root_client
 
     @property
     def guest_client(self):
@@ -471,7 +473,11 @@ class Node(AbstractNode):
         if isinstance(client_type, SyftError):
             return client_type
 
-        return client_type(connection=connection, credentials=SyftSigningKey.generate())
+        guest_client = client_type(
+            connection=connection, credentials=SyftSigningKey.generate()
+        )
+        guest_client.api.refresh_api_callback()
+        return guest_client
 
     def __repr__(self) -> str:
         service_string = ""

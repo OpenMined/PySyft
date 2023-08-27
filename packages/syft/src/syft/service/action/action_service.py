@@ -437,11 +437,11 @@ class ActionService(AbstractService):
         # relative
         from .plan import Plan
 
-        data_uploaded_to_blob_store = True
+        data_uploaded_to_blob_store = False
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
             data_uploaded_to_blob_store = (
-                action.create_object.blob_storage_entry_id is not None
+                action.create_object.syft_blob_storage_entry_id is not None
             )
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action)
@@ -671,15 +671,15 @@ def execute_object(
                 result_action_object = wrap_result(action.result_id, result)
             elif twin_mode == TwinMode.NONE and has_twin_inputs:
                 # self isn't a twin but one of the inputs is
-                private_args = filter_twin_args(args, twin_mode=twin_mode)
-                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE)
+                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE)
                 private_result = target_method(*private_args, **private_kwargs)
                 result_action_object_private = wrap_result(
                     action.result_id, private_result
                 )
 
-                mock_args = filter_twin_args(args, twin_mode=twin_mode)
-                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                mock_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
+                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.MOCK)
                 mock_result = target_method(*mock_args, **mock_kwargs)
                 result_action_object_mock = wrap_result(action.result_id, mock_result)
 

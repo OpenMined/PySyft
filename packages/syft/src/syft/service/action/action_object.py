@@ -676,7 +676,13 @@ class ActionObject(SyftObject):
         if obj.syft_node_location is None:
             obj.syft_node_location = obj.syft_node_uid
 
-        obj._save_to_blob_store()
+        api = None
+        if TraceResult._client is not None:
+            api = TraceResult._client.api
+
+        if api is not None:
+            obj._set_node_location(api.node_uid, api.signing_key.verify_key)
+            obj._save_to_blob_store()
 
         action = Action(
             path="",
@@ -689,12 +695,11 @@ class ActionObject(SyftObject):
             create_object=obj,
         )
 
-        if TraceResult._client is not None:
-            api = TraceResult._client.api
+        if api is not None:
             TraceResult.result += [action]
         else:
             api = APIRegistry.api_for(
-                node_uid=self.syft_node_uid,
+                node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
         api.services.action.execute(action)
@@ -848,8 +853,7 @@ class ActionObject(SyftObject):
 
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
-        self.syft_node_location = client.id
-        self.syft_client_verify_key = client.verify_key
+        self._set_obj_location_(client.id, client.verify_key)
         self._save_to_blob_store()
         res = client.api.services.action.set(self)
         return res
@@ -1416,7 +1420,16 @@ class ActionObject(SyftObject):
         elif not self.is_twin:
             res = "Pointer"
 
-        return f"```python\n{res}\n```\n{self.syft_action_data_repr_}"
+        if isinstance(self.syft_action_data_cache, ActionDataEmpty):
+            data_repr_ = self.syft_action_data_repr_
+        else:
+            data_repr_ = (
+                self.syft_action_data_cache._repr_markdown_()
+                if hasattr(self.syft_action_data_cache, "_repr_markdown_")
+                else self.syft_action_data_cache.__repr__()
+            )
+
+        return f"```python\n{res}\n```\n{data_repr_}"
 
     def __repr__(self) -> str:
         if self.is_mock:
@@ -1425,7 +1438,11 @@ class ActionObject(SyftObject):
             res = "TwinPointer(Real)"
         if not self.is_twin:
             res = "Pointer"
-        return f"{res}:\n{self.syft_action_data_str_}"
+        if isinstance(self.syft_action_data_cache, ActionDataEmpty):
+            data_repr_ = self.syft_action_data_repr_
+        else:
+            data_repr_ = self.syft_action_data_cache.__repr__()
+        return f"{res}:\n{data_repr_}"
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.__call__(*args, **kwds)
