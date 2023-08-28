@@ -103,7 +103,7 @@ jobs:
 
   create-syftcli-binaries:
     needs: [deploy-syft-cli]
-    if: always() && (needs.deploy-syft-cli.result == 'success' && ${{needs.deploy-syft-cli.outputs.current_hash != needs.deploy-syft-cli.outputs.previous_hash }}  || github.event.inputs.skip_tests == 'true')
+    if: always() && (needs.deploy-syft-cli.result == 'success' && ${{needs.deploy-syft-cli.outputs.current_hash != needs.deploy-syft-cli.outputs.previous_hash }})
     strategy:
       max-parallel: 99
       matrix:
@@ -161,7 +161,7 @@ jobs:
 
   create-syftcli-github-release:
     needs: [create-syftcli-binaries]
-    if: always() && (needs.create-syftcli-binaries.result == 'success' || github.event.inputs.skip_tests == 'true')
+    if: always() && (needs.create-syftcli-binaries.result == 'success')
     runs-on: ubuntu-latest
 
     steps:
@@ -172,11 +172,11 @@ jobs:
       - name: Check if version is released on Pypi
         id: check-pypi
         run: |
-          VERSION = ${{needs.deploy-syft-cli.outputs.deployed_version}}
+          VERSION=${{needs.deploy-syft-cli.outputs.deployed_version}}
 
           RESPONSE=$(curl -s --head https://pypi.org/pypi/syftcli/$VERSION/json)
 
-          if [[ $RESPONSE == *"200 OK"* ]]; then
+          if [[ $RESPONSE == *"HTTP/2 200"* ]]; then
             echo "released=true" >> $GITHUB_OUTPUT
           else
             echo "released=false" >> $GITHUB_OUTPUT
