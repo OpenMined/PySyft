@@ -168,8 +168,8 @@ repos:
       - id: mypy
         name: "mypy: syft"
         always_run: true
-        # files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util"
-        files: "^packages/syft/src/syft/serde"
+        files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util/env.py|^packages/syft/src/syft/util/logger.py|^packages/syft/src/syft/util/markdown.py|^packages/syft/src/syft/util/notebook_ui/notebook_addons.py"
+        #files: "^packages/syft/src/syft/serde"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
