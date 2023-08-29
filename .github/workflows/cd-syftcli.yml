@@ -124,8 +124,6 @@ jobs:
       - name: Install build dependencies for syftcli
         run: |
           pip install --upgrade pip
-          pip install -e ".[build]"
-        working-directory: ./packages/syftcli
 
       - name: Install Tox
         run: |
