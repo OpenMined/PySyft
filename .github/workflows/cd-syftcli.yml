@@ -75,7 +75,8 @@ jobs:
           python3 src/syftcli/version.py
           bump2version patch --allow-dirty --no-commit
           tox -e lint || true
-           echo "deployed_version=$(python3 src/syftcli/version.py)" >> $GITHUB_OUTPUT
+          echo "deployed_version=$(python3 src/syftcli/version.py)" >> $GITHUB_OUTPUT
+          python3 src/syftcli/version.py
         working-directory: ./packages/syftcli
 
       - name: Write the new hash
