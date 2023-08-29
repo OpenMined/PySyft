@@ -592,6 +592,8 @@ class ActionObject(SyftObject):
                 )
             values["syft_action_data_str_"] = str(v)
             values["syft_has_bool_attr"] = hasattr(v, "__bool__")
+        else:
+            values["syft_action_data_type"] = ActionDataEmpty
         return values
 
     def _save_to_blob_store(self) -> Optional[SyftError]:
@@ -1311,7 +1313,7 @@ class ActionObject(SyftObject):
 
         debug(f"[__getattribute__] Handling method {name} ")
         if (
-            isinstance(self.syft_action_data_type, ActionDataEmpty)
+            self.syft_action_data_type == ActionDataEmpty
             and name not in action_data_empty_must_run
         ):
             original_func = fake_func
