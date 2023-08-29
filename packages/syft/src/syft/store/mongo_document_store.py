@@ -23,7 +23,6 @@ from ..serde.serialize import _serialize
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
-from ..service.action.action_permissions import ActionPermission
 from ..service.response import SyftSuccess
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
@@ -230,7 +229,8 @@ class MongoStorePartition(StorePartition):
     ) -> Result[SyftObject, str]:
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write = self.has_permission(write_permission)
-        print("----------- MongoStorePartition._set() -----------")
+        print("---- MongoStorePartition._set() ----")
+
         if can_write:
             storage_obj = obj.to(self.storage_type)
             collection_status = self.collection
@@ -245,14 +245,19 @@ class MongoStorePartition(StorePartition):
             except DuplicateKeyError as e:
                 return Err(f"Duplicate Key Error for {obj}: {e}")
 
+            store_query_key = self.settings.store_key.with_obj(obj)
+            print(f"{store_query_key = }")
+
             # adding permissions
             collection_permissions_status = self.permissions
             if collection_permissions_status.is_err():
                 return collection_permissions_status
             collection_permissions: MongoCollection = collection_permissions_status.ok()
             read_permission: str = f"{credentials.verify}_READ"
+            write_permission: str = f"{credentials.verify}_READ"
+            permissions: set = {read_permission, write_permission}
             collection_permissions.insert_one(
-                {"uid": obj.id, "repr": {read_permission}}
+                {"_id": obj.id, "permissions": permissions}
             )
             permissions: Dict = collection_permissions.find_one({"uid": obj.id})
             print(f"{permissions = }")
@@ -379,9 +384,6 @@ class MongoStorePartition(StorePartition):
         # TODO: implement
         print("---- MongoStorePartition.has_permission() ---- ")
         print(f"{permission = }")
-        if not isinstance(permission.permission, ActionPermission):
-            raise TypeError(f"ObjectPermission type: {permission.permission} not valid")
-
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
             return False
@@ -403,22 +405,29 @@ class MongoStorePartition(StorePartition):
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
         print("---- MongoStorePartition.add_permission() ----")
-        # permissions = self.permissions[permission.uid]
-        # print(f"{permissions = }")
-        # permissions.add(permission.permission_string)
-        # self.permissions[permission.uid] = permissions
-        pass
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
+        # find the permissions with permission.uid that are already inside the database
+        permissions: Dict = collection_permissions.find_one({"_id": permission.uid})
+        #  {"_id": "adasdafa", "permissions": ["Permiss", "permission2"...]}
+        # update the permissions with the new permission string
+        permissions_strings: set = permissions["permissions"]
+        print(permissions_strings)
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        print("---- 2nd MongoStorePartition.add_permission() ----")
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
-        results = []
         for permission in permissions:
-            results.append(self.add_permission(permission))
+            self.add_permission(permission)
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
         print("--- MongoStorePartition.take_ownership() ---")
-        return "a"
+        return Err(f"UID: {uid} already owned.")
 
     def _all(
         self,
