@@ -245,22 +245,18 @@ class MongoStorePartition(StorePartition):
             except DuplicateKeyError as e:
                 return Err(f"Duplicate Key Error for {obj}: {e}")
 
-            store_query_key = self.settings.store_key.with_obj(obj)
-            print(f"{store_query_key = }")
-
             # adding permissions
             collection_permissions_status = self.permissions
             if collection_permissions_status.is_err():
                 return collection_permissions_status
             collection_permissions: MongoCollection = collection_permissions_status.ok()
             read_permission: str = f"{credentials.verify}_READ"
-            write_permission: str = f"{credentials.verify}_READ"
-            permissions: set = {read_permission, write_permission}
+            permissions: set = {read_permission}
             collection_permissions.insert_one(
                 {"_id": obj.id, "permissions": permissions}
             )
-            permissions: Dict = collection_permissions.find_one({"uid": obj.id})
-            print(f"{permissions = }")
+            permissions_get: Dict = collection_permissions.find_one({"_id": obj.id})
+            print(f"{permissions_get = }")
             if add_permissions is not None:
                 # TODO: update permissions
                 pass
@@ -410,18 +406,22 @@ class MongoStorePartition(StorePartition):
             return collection_permissions_status
         collection_permissions: MongoCollection = collection_permissions_status.ok()
         # find the permissions with permission.uid that are already inside the database
+        # e.g. permissions = {"_id": "7b88fdef6bff42a8991d294c3d66f757",
+        #                     "permissions": set(["permission_str_1", "permission_str_2"]}}
         permissions: Dict = collection_permissions.find_one({"_id": permission.uid})
-        #  {"_id": "adasdafa", "permissions": ["Permiss", "permission2"...]}
         # update the permissions with the new permission string
         permissions_strings: set = permissions["permissions"]
-        print(permissions_strings)
-
-    def remove_permission(self, permission: ActionObjectPermission) -> None:
-        print("---- 2nd MongoStorePartition.add_permission() ----")
+        permissions_strings.add(permission.permission_string)
+        collection_permissions.update_one(
+            {"_id": permission.uid}, {"$set": {"permissions": permissions_strings}}
+        )
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
         for permission in permissions:
             self.add_permission(permission)
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        print("---- MongoStorePartition.add_permission() ----")
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
