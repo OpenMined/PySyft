@@ -33,7 +33,7 @@ def get_syft_version() -> str:
 
         return syft.__version__
     except ModuleNotFoundError:
-        return "Not Installed"
+        return "Not Installed."
 
 
 if __name__ == "__main__":
