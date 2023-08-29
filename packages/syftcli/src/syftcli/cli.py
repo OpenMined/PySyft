@@ -28,6 +28,7 @@ def version() -> None:
 
 def get_syft_version() -> str:
     try:
+        # syft absolute.
         # syft absolute
         import syft
 
