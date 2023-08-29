@@ -132,6 +132,8 @@ jobs:
           pip install -U tox
 
       - name: Build syftcli
+        env:
+          SYFT_CLI_VERSION: ${{ needs.deploy-syft-cli.outputs.deployed_version }}
         run: |
           tox -e syftcli.build
 
