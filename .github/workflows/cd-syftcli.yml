@@ -155,6 +155,9 @@ jobs:
         with:
           token: ${{ secrets.SYFT_BUMP_TOKEN  }}
 
+      - name: Deployed Version
+        run: echo ${{needs.deploy-syft-cli.outputs.deployed_version}}
+
       - name: Check if version is released on Pypi
         id: check-pypi
         run: |
