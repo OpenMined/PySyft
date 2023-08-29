@@ -551,6 +551,7 @@ class ActionObject(SyftObject):
                 )
             self.syft_action_data_str_ = str(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
+            print("setting has bool", self.syft_has_bool_attr, self)
         else:
             print("skipping writing actionobject to store, passed data was empty")
 
@@ -1228,7 +1229,6 @@ class ActionObject(SyftObject):
             "syft_action_data_repr_",
             "syft_action_data_str_",
             "syft_action_data_type",
-            "syft_has_bool_attr",
         ]
         for attr_name in object_attrs:
             attr_value = getattr(context.obj, attr_name, None)

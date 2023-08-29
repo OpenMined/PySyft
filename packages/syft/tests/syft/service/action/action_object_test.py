@@ -552,7 +552,7 @@ def test_actionobject_syft_get_attr_context():
 
     assert obj._syft_get_attr_context("capitalize") is orig_obj
     assert obj._syft_get_attr_context("__add__") is orig_obj
-    assert obj._syft_get_attr_context("syft_action_data") is obj
+    assert obj._syft_get_attr_context("syft_action_data") is obj.syft_action_data
 
 
 @pytest.mark.parametrize(
