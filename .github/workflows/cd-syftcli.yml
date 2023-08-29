@@ -139,8 +139,8 @@ jobs:
       - name: upload binaries
         uses: actions/upload-artifact@v3
         with:
-          name: syftcli-binaries
-          path: ./packages/syftcli/dist/cli
+          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
+          path: ./packages/syftcli/dist/cli/*
           if-no-files-found: error
 
   create-syftcli-github-release:
@@ -169,24 +169,24 @@ jobs:
           fi
 
       - name: Make sure directory exists
-        if: ${{steps.check-pypi.outputs.released == 'true'}}
+        if: steps.check-pypi.outputs.released == 'true'
         run: |
           mkdir -p ./downloaded-binaries
 
       - name: Download binary
-        if: ${{steps.check-pypi.outputs.released == 'true'}}
+        if: steps.check-pypi.outputs.released == 'true'
         uses: actions/download-artifact@v3
         with:
-          name: syftcli-binaries
+          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
           path: ./downloaded-binaries/
 
       - name: GitHub Release
-        if: ${{steps.check-pypi.outputs.released == 'true'}}
+        if: steps.check-pypi.outputs.released == 'true'
         uses: softprops/action-gh-release@v1
         with:
           name: syftcli-v${{ needs.deploy-syft-cli.outputs.deployed_version }}
           generate_release_notes: false
           prerelease: false
           files: |
-            ./packages/syftcli/dist/cli/*
+            ./downloaded-binaries/*
           tag_name: syftcli-v${{ needs.deploy-syft-cli.outputs.deployed_version }}
