@@ -58,6 +58,7 @@ class Plan(SyftObject):
 def planify(func):
     TraceResult.reset()
     ActionObject.add_trace_hook()
+    TraceResult.is_tracing = True
     worker = Worker.named(name="plan_building", reset=True, processes=0)
     client = worker.root_client
     TraceResult._client = client
@@ -69,7 +70,12 @@ def planify(func):
     actions = TraceResult.result
     TraceResult.reset()
     code = inspect.getsource(func)
+    for a in actions:
+        if a.create_object is not None:
+            # warmup cache
+            a.create_object.syft_action_data  # noqa: B018
     plan = Plan(inputs=plan_kwargs, actions=actions, outputs=outputs, code=code)
+    TraceResult.is_tracing = False
     return ActionObject.from_obj(plan)
 
 
