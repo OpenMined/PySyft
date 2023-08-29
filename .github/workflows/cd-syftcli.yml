@@ -144,7 +144,7 @@ jobs:
           if-no-files-found: error
 
   create-syftcli-github-release:
-    needs: [create-syftcli-binaries]
+    needs: [create-syftcli-binaries, deploy-syft-cli]
     if: always() && (needs.create-syftcli-binaries.result == 'success')
     runs-on: ubuntu-latest
     permissions:
