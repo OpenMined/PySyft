@@ -147,6 +147,8 @@ jobs:
     needs: [create-syftcli-binaries]
     if: always() && (needs.create-syftcli-binaries.result == 'success')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # For tag and release notes.
 
     steps:
       - uses: actions/checkout@v3
