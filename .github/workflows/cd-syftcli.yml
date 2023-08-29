@@ -138,28 +138,11 @@ jobs:
           tox -e syftcli.build
 
       - name: upload binaries
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: syftcli-binaries
-          path: ./packages/syftcli/dist
-
-      # - name: Build syftcli for 'Linux'
-      #   if: matrix.os == 'ubuntu-latest'
-      #   run: |
-      #     pyinstaller --clean --onefile --name syftcli --distpath ./dist/cli src/syftcli/cli.py
-      #   working-directory: ./packages/syftcli
-
-      # - name: Build syftcli for 'MacOS'
-      #   if: matrix.os == 'macos-latest'
-      #   run: |
-      #     pyinstaller --clean --onefile --name syftcli --distpath ./dist/cli src/syftcli/cli.py --target-arch universal2
-      #   working-directory: ./packages/syftcli
-
-      # - name: Build syftcli for 'Windows'
-      #   if: matrix.os == 'windows-latest'
-      #   run: |
-      #     pyinstaller --clean --onefile --name syftcli --distpath ./dist/cli src/syftcli/cli.py
-      #   working-directory: ./packages/syftcli
+          path: ./packages/syftcli/dist/cli
+          if-no-files-found: error
 
   create-syftcli-github-release:
     needs: [create-syftcli-binaries]
@@ -184,6 +167,18 @@ jobs:
             echo "released=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Make sure directory exists
+        if: ${{steps.check-pypi.outputs.released == 'true'}}
+        run: |
+          mkdir -p ./downloaded-binaries
+
+      - name: Download binary
+        if: ${{steps.check-pypi.outputs.released == 'true'}}
+        uses: actions/download-artifact@v3
+        with:
+          name: syftcli-binaries
+          path: ./downloaded-binaries/
+
       - name: GitHub Release
         if: ${{steps.check-pypi.outputs.released == 'true'}}
         uses: softprops/action-gh-release@v1
@@ -192,5 +187,5 @@ jobs:
           generate_release_notes: false
           prerelease: false
           files: |
-            ./packages/hagrid/hagrid/manifest_template.yml
+            ./packages/syftcli/dist/cli/*
           tag_name: syftcli-v${{ needs.deploy-syft-cli.outputs.deployed_version }}
