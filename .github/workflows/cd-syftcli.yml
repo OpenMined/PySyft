@@ -104,7 +104,7 @@ jobs:
 
   create-syftcli-binaries:
     needs: [deploy-syft-cli]
-    if: always() && (needs.deploy-syft-cli.result == 'success' && ${{needs.deploy-syft-cli.outputs.current_hash != needs.deploy-syft-cli.outputs.previous_hash }})
+    if: always() && (needs.deploy-syft-cli.result == 'success' && (needs.deploy-syft-cli.outputs.current_hash != needs.deploy-syft-cli.outputs.previous_hash))
     strategy:
       max-parallel: 99
       matrix:
