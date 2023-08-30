@@ -112,11 +112,11 @@ class UserUpdate(PartialSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     @pydantic.validator("email", pre=True)
-    def make_email(cls, v: EmailStr) -> Optional[EmailStr]:
-        return EmailStr(v) if isinstance(v, str) else v
+    def make_email(cls, v: Any) -> Any:
+        return EmailStr(v) if isinstance(v, str) and not isinstance(v, EmailStr) else v
 
     @pydantic.validator("role", pre=True)
-    def str_to_role(cls, v: Union[str, ServiceRole]) -> Optional[ServiceRole]:
+    def str_to_role(cls, v: Any) -> Any:
         if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
             return getattr(ServiceRole, v.upper())
         return v
