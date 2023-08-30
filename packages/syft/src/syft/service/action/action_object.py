@@ -1295,15 +1295,16 @@ class ActionObject(SyftObject):
 
     def _syft_wrap_attribute_for_methods(self, name: str) -> Any:
         """Handle `__getattribute__` for methods."""
-
+        print(name, self.syft_action_data_type, self.id)
         # check for other types that aren't methods, functions etc
         def fake_func(*args: Any, **kwargs: Any) -> Any:
+            print("WHYYY???")
             return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
         debug(f"[__getattribute__] Handling method {name} ")
         if (
-            self.syft_action_data_type == ActionDataEmpty
-            and name not in action_data_empty_must_run
+            # self.syft_action_data_type == ActionDataEmpty
+            name not in action_data_empty_must_run and False
         ):
             original_func = fake_func
         else:
@@ -1604,9 +1605,11 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__rshift__(other))
 
     def __iter__(self):
+        print("yep...", self.__iter__())
         return self._syft_output_action_object(self.__iter__())
 
     def __next__(self):
+        print("oh no...", self.__next__())
         return self._syft_output_action_object(self.__next__())
 
     # r ops
@@ -1687,6 +1690,7 @@ def is_action_data_empty(obj: Any) -> bool:
 
 
 def has_action_data_empty(args: Any, kwargs: Any) -> bool:
+    print(args, kwargs)
     for a in args:
         if is_action_data_empty(a):
             return True
