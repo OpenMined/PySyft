@@ -30,6 +30,11 @@ jobs:
     if: always() && (needs.call-pr-tests-linting.result == 'success' || github.event.inputs.skip_tests == 'true')
     runs-on: ubuntu-latest
 
+    outputs:
+      deployed_version: ${{ steps.bump-version.outputs.deployed_version }}
+      current_hash: ${{ steps.get-hashes.outputs.current_hash }}
+      previous_hash: ${{ steps.get-hashes.outputs.previous_hash }}
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -65,10 +70,12 @@ jobs:
 
       - name: Bump the Version
         if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
+        id: bump-version
         run: |
           python3 src/syftcli/version.py
           bump2version patch --allow-dirty --no-commit
           tox -e lint || true
+          echo "deployed_version=$(python3 src/syftcli/version.py)" >> $GITHUB_OUTPUT
           python3 src/syftcli/version.py
         working-directory: ./packages/syftcli
 
@@ -94,3 +101,95 @@ jobs:
         run: |
           tox -e syftcli.publish
           twine upload packages/syftcli/dist/*
+
+  create-syftcli-binaries:
+    needs: [deploy-syft-cli]
+    if: always() && (needs.deploy-syft-cli.result == 'success' && (needs.deploy-syft-cli.outputs.current_hash != needs.deploy-syft-cli.outputs.previous_hash))
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: true
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN  }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install build dependencies for syftcli
+        run: |
+          pip install --upgrade pip
+
+      - name: Install Tox
+        run: |
+          pip install -U tox
+
+      - name: Build syftcli
+        env:
+          SYFT_CLI_VERSION: ${{ needs.deploy-syft-cli.outputs.deployed_version }}
+        run: |
+          tox -e syftcli.build
+
+      - name: upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
+          path: ./packages/syftcli/dist/cli/*
+          if-no-files-found: error
+
+  create-syftcli-github-release:
+    needs: [create-syftcli-binaries, deploy-syft-cli]
+    if: always() && (needs.create-syftcli-binaries.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # For tag and release notes.
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN  }}
+
+      - name: Deployed Version
+        run: echo ${{needs.deploy-syft-cli.outputs.deployed_version}}
+
+      - name: Check if version is released on Pypi
+        id: check-pypi
+        run: |
+          VERSION=${{needs.deploy-syft-cli.outputs.deployed_version}}
+
+          RESPONSE=$(curl -s --head https://pypi.org/pypi/syftcli/$VERSION/json)
+
+          if [[ $RESPONSE == *"HTTP/2 200"* ]]; then
+            echo "released=true" >> $GITHUB_OUTPUT
+          else
+            echo "released=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Make sure directory exists
+        if: steps.check-pypi.outputs.released == 'true'
+        run: |
+          mkdir -p ./downloaded-binaries
+
+      - name: Download binary
+        if: steps.check-pypi.outputs.released == 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
+          path: ./downloaded-binaries/
+
+      - name: GitHub Release
+        if: steps.check-pypi.outputs.released == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          name: syftcli-v${{ needs.deploy-syft-cli.outputs.deployed_version }}
+          generate_release_notes: false
+          prerelease: false
+          files: |
+            ./downloaded-binaries/*
+          tag_name: syftcli-v${{ needs.deploy-syft-cli.outputs.deployed_version }}
