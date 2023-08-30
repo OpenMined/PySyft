@@ -18,9 +18,6 @@ class ContainerEngine:
 
 
 class Podman(ContainerEngine):
-    def __init__(self) -> None:
-        pass
-
     def is_installed(self) -> bool:
         result = run_command("podman version")
         return result[-1] == 0
@@ -54,13 +51,6 @@ class Podman(ContainerEngine):
 
 
 class Docker(ContainerEngine):
-    def __init__(self) -> None:
-        # third party
-        # import docker
-
-        # self.client = docker.from_env()
-        pass
-
     def is_installed(self) -> bool:
         result = run_command("docker version")
         return result[-1] == 0
@@ -91,23 +81,3 @@ class Docker(ContainerEngine):
 
         result = run_command(command)
         handle_error(result)
-
-    # def pull_sdk(self, images: List[str]) -> None:
-    #     for image in track(images, description=""):
-    #         out_stream = self.client.api.pull(image, stream=True, decode=True)
-    #         for log in out_stream:
-    #             print(log)
-
-    # def save_sdk(self, images: List[str]) -> None:
-    #     for image in track(images, description=""):
-    #         image_name = image.split("/")[-1].replace(":", "_")
-    #         tar_name = Path(image_name + ".tar")
-
-    #         if tar_name.exists():
-    #             tar_name.unlink()
-
-    #         tar_stream = self.client.api.get_image(image)
-
-    #         with tar_name.open("wb") as fp:
-    #             for chunk in tar_stream:
-    #                 fp.write(chunk)
