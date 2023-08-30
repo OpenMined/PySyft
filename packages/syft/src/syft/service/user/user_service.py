@@ -214,7 +214,6 @@ class UserService(AbstractService):
         path="user.update",
         name="update",
         roles=GUEST_ROLE_LEVEL,
-        autosplat=["user_update"],
     )
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
