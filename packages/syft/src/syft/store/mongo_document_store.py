@@ -23,6 +23,7 @@ from ..serde.serialize import _serialize
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
+from ..service.action.action_permissions import ActionPermission
 from ..service.response import SyftSuccess
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
@@ -249,14 +250,13 @@ class MongoStorePartition(StorePartition):
             collection_permissions_status = self.permissions
             if collection_permissions_status.is_err():
                 return collection_permissions_status
-            collection_permissions: MongoCollection = collection_permissions_status.ok()
-            read_permission: str = f"{credentials.verify}_READ"
-            permissions: set = {read_permission}
-            collection_permissions.insert_one(
-                {"_id": obj.id, "permissions": permissions}
-            )
-            permissions_get: Dict = collection_permissions.find_one({"_id": obj.id})
-            print(f"{permissions_get = }")
+            # collection_permissions: MongoCollection = collection_permissions_status.ok()
+            # read_permission: str = f"{credentials.verify}_READ"
+            # permissions: set = {read_permission}
+            # collection_permissions.insert_one(
+            #     {"_id": obj.id, "permissions": permissions}
+            # )
+            # permissions_get: Dict = collection_permissions.find_one({"_id": obj.id})
             if add_permissions is not None:
                 # TODO: update permissions
                 pass
@@ -377,27 +377,37 @@ class MongoStorePartition(StorePartition):
         return Err(f"Failed to delete object with qk: {qk}")
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
-        # TODO: implement
-        print("---- MongoStorePartition.has_permission() ---- ")
-        print(f"{permission = }")
+        """Check if the permission is inside the permission collection"""
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
             return False
         collection_permissions: MongoCollection = collection_permissions_status.ok()
-        permissions: Optional[Dict] = collection_permissions.find_one(
-            {"uid": permission.uid}
-        )
-        print(f"got back {permissions = }")
-        if (
-            permissions is not None
-            and permission.permission_string in permissions["repr"]
-        ):
-            return True
 
+        # TODO: fix for other admins
         if self.root_verify_key.verify == permission.credentials.verify:
             return True
 
-        return True
+        permissions: Optional[Dict] = collection_permissions.find_one(
+            {"_id": permission.uid}
+        )
+        permissions_strings: set = permissions["permissions"]
+
+        if (
+            permissions is not None
+            and permission.permission_string in permissions_strings
+        ):
+            return True
+
+        if (
+            permission.permission == ActionPermission.READ
+            and ActionObjectPermission(
+                permission.uid, ActionPermission.ALL_READ
+            ).permission_string
+            in permissions_strings
+        ):
+            return True
+
+        return False
 
     def add_permission(self, permission: ActionObjectPermission) -> Result[None, Err]:
         collection_permissions_status = self.permissions
@@ -444,8 +454,7 @@ class MongoStorePartition(StorePartition):
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
-        print("--- MongoStorePartition.take_ownership() ---")
-        return Err(f"UID: {uid} already owned.")
+        raise NotImplementedError
 
     def _all(
         self,
