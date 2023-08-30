@@ -1298,14 +1298,12 @@ class ActionObject(SyftObject):
 
         # check for other types that aren't methods, functions etc
         def fake_func(*args: Any, **kwargs: Any) -> Any:
-            print("WHYYY???")
             return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
         debug(f"[__getattribute__] Handling method {name} ")
         if (
-            # self.syft_action_data_type == ActionDataEmpty
-            name not in action_data_empty_must_run
-            and False
+            self.syft_action_data_type == ActionDataEmpty
+            and name not in action_data_empty_must_run
         ):
             original_func = fake_func
         else:

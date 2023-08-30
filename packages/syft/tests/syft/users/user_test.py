@@ -12,6 +12,7 @@ from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
+from syft.service.user.user import UserUpdate
 from syft.service.user.user import UserView
 
 GUEST_ROLES = [ServiceRole.GUEST]
@@ -41,7 +42,9 @@ def get_mock_client(root_client, role):
         name=name, email=mail, password=password, password_verify=password
     )
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
-    assert worker.root_client.api.services.user.update(user_id, role=role)
+    assert worker.root_client.api.services.user.update(
+        user_id, UserUpdate(user_id=user_id, role=role)
+    )
     client.login(email=mail, password=password)
     client._fetch_api(client.credentials)
     # hacky, but useful for testing: patch user id and role on client
@@ -161,14 +164,14 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     clients = [get_mock_client(root_client, role) for role in DO_ROLES]
     for c in clients:
         assert worker.root_client.api.services.user.update(
-            c.user_id, role=ServiceRole.ADMIN
+            c.user_id, UserUpdate(role=ServiceRole.ADMIN)
         )
 
     # DOs can update the roles of lower roles
     clients = [get_mock_client(root_client, role) for role in DS_ROLES]
     for c in clients:
         assert do_client.api.services.user.update(
-            c.user_id, role=ServiceRole.DATA_SCIENTIST
+            c.user_id, UserUpdate(role=ServiceRole.DATA_SCIENTIST)
         )
 
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
@@ -176,7 +179,9 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
     # DOs cannot update roles to greater than / equal to own role
     for c in clients:
         for target_role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
-            assert not do_client.api.services.user.update(c.user_id, role=target_role)
+            assert not do_client.api.services.user.update(
+                c.user_id, UserUpdate(role=target_role)
+            )
 
     # DOs cannot downgrade higher roles to lower levels
     clients = [
@@ -187,21 +192,23 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
         for target_role in DO_ROLES:
             if target_role < c.role:
                 assert not do_client.api.services.user.update(
-                    c.user_id, role=target_role
+                    c.user_id, UserUpdate(role=target_role)
                 )
 
     # DSs cannot update any roles
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
     for c in clients:
         for target_role in ADMIN_ROLES:
-            assert not ds_client.api.services.user.update(c.user_id, role=target_role)
+            assert not ds_client.api.services.user.update(
+                c.user_id, UserUpdate(role=target_role)
+            )
 
     # Guests cannot update any roles
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
     for c in clients:
         for target_role in ADMIN_ROLES:
             assert not guest_client.api.services.user.update(
-                c.user_id, role=target_role
+                c.user_id, UserUpdate(role=target_role)
             )
 
 
@@ -213,16 +220,16 @@ def test_user_update(root_client):
         for target_client in target_clients:
             if executing_client.role != ServiceRole.ADMIN:
                 assert not executing_client.api.services.user.update(
-                    target_client.user_id, name="abc"
+                    target_client.user_id, UserUpdate(name="abc")
                 )
             else:
                 assert executing_client.api.services.user.update(
-                    target_client.user_id, name="abc"
+                    target_client.user_id, UserUpdate(name="abc")
                 )
 
         # you can update yourself
         assert executing_client.api.services.user.update(
-            executing_client.user_id, name=Faker().name()
+            executing_client.user_id, UserUpdate(name=Faker().name())
         )
 
 
