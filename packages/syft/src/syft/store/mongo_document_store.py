@@ -232,7 +232,6 @@ class MongoStorePartition(StorePartition):
     ) -> Result[SyftObject, str]:
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write = self.has_permission(write_permission)
-        print("---- MongoStorePartition._set() ----")
 
         if can_write:
             storage_obj = obj.to(self.storage_type)
@@ -249,19 +248,16 @@ class MongoStorePartition(StorePartition):
                 return Err(f"Duplicate Key Error for {obj}: {e}")
 
             # adding permissions
-            collection_permissions_status = self.permissions
-            if collection_permissions_status.is_err():
-                return collection_permissions_status
-            # collection_permissions: MongoCollection = collection_permissions_status.ok()
-            # read_permission: str = f"{credentials.verify}_READ"
-            # permissions: set = {read_permission}
-            # collection_permissions.insert_one(
-            #     {"_id": obj.id, "permissions": permissions}
-            # )
-            # permissions_get: Dict = collection_permissions.find_one({"_id": obj.id})
+            read_permission = ActionObjectPermission(
+                uid=obj.id,
+                credentials=credentials.verify_key,
+                permission=ActionPermission.READ,
+            )
+            self.add_permission(read_permission)
+
             if add_permissions is not None:
-                # TODO: update permissions
-                pass
+                self.add_permissions(add_permissions)
+
             return Ok(obj)
         else:
             return Err(f"No permission to write object with id {obj.id}")
@@ -417,20 +413,28 @@ class MongoStorePartition(StorePartition):
         if collection_permissions_status.is_err():
             return collection_permissions_status
         collection_permissions: MongoCollection = collection_permissions_status.ok()
-        # find the permissions with permission.uid that are already inside the database
+
+        # find the permissions for the given permission.uid
         # e.g. permissions = {"_id": "7b88fdef6bff42a8991d294c3d66f757",
-        #                     "permissions": set(["permission_str_1", "permission_str_2"]}}
+        #                      "permissions": set(["permission_str_1", "permission_str_2"]}}
         permissions: Optional[Dict] = collection_permissions.find_one(
             {"_id": permission.uid}
         )
         if permissions is None:
-            return Err(f"permission with UID {permission.uid} not found!")
-        # update the permissions with the new permission string
-        permissions_strings: set = permissions["permissions"]
-        permissions_strings.add(permission.permission_string)
-        collection_permissions.update_one(
-            {"_id": permission.uid}, {"$set": {"permissions": permissions_strings}}
-        )
+            # Permission doesn't exits, add a new one
+            collection_permissions.insert_one(
+                {
+                    "_id": permission.uid,
+                    "permissions": {permission.permission_string},
+                }
+            )
+        else:
+            # update the permissions with the new permission string
+            permission_strings: set = permissions["permissions"]
+            permission_strings.add(permission.permission_string)
+            collection_permissions.update_one(
+                {"_id": permission.uid}, {"$set": {"permissions": permission_strings}}
+            )
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
         for permission in permissions:
@@ -467,9 +471,11 @@ class MongoStorePartition(StorePartition):
             return collection_status
         collection: MongoCollection = collection_status.ok()
 
-        data_uids: List[UID] = collection.distinct("_id")
-        permission_uids: List[UID] = collection_permissions.distinct("_id")
-        if uid not in permission_uids and uid not in data_uids:
+        data: List[UID] = collection.find_one({"_id": uid})
+        permissions: List[UID] = collection_permissions.find_one({"_id": uid})
+
+        # first person using this UID can claim ownership
+        if permissions is None and data is None:
             self.add_permissions(
                 [
                     ActionObjectOWNER(uid=uid, credentials=credentials),
