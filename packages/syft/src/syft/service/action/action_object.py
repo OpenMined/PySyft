@@ -1692,8 +1692,8 @@ def debug_original_func(name: str, func: Callable) -> None:
 
 
 def is_action_data_empty(obj: Any) -> bool:
-    return isinstance(obj, AnyActionObject) and isinstance(
-        obj.syft_action_data_type, ActionDataEmpty
+    return isinstance(obj, AnyActionObject) and (
+        obj.syft_action_data_type == ActionDataEmpty
     )
 
 
