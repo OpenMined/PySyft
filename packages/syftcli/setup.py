@@ -5,6 +5,9 @@ from setuptools import setup
 __version__ = "0.1.7"
 
 packages = [
+    "requests==2.31.0",
+    "pyyaml==6.0.1",
+    "packaging==21.3",
     "typer[all]==0.9.0",
     "typing_extensions==4.6.3",
 ]
