@@ -30,6 +30,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
+from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
@@ -122,13 +123,22 @@ class ActionStoreChange(Change):
                 permission=self.apply_permission_type,
             )
             if action_store.has_permission(permission=owner_permission):
+                id_action = (
+                    action_obj.id
+                    if not isinstance(action_obj.id, LineageID)
+                    else action_obj.id.id
+                )
                 requesting_permission_action_obj = ActionObjectPermission(
-                    uid=action_obj.id,
+                    uid=id_action,
                     credentials=context.requesting_user_credentials,
                     permission=self.apply_permission_type,
                 )
+                if isinstance(action_obj, TwinObject):
+                    uid_blob = action_obj.private.syft_blob_storage_entry_id
+                else:
+                    uid_blob = action_obj.syft_blob_storage_entry_id
                 requesting_permission_blob_obj = ActionObjectPermission(
-                    uid=action_obj.syft_blob_storage_entry_id,
+                    uid=uid_blob,
                     credentials=context.requesting_user_credentials,
                     permission=self.apply_permission_type,
                 )
@@ -154,7 +164,7 @@ class ActionStoreChange(Change):
                 )
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}")
+            print(f"failed to apply {type(self)}", e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:

@@ -295,7 +295,7 @@ class ActionService(AbstractService):
 
         for plan_action in plan.actions:
             action_res = self.execute(context, plan_action)
-            if action_res.is_err():
+            if isinstance(action_res, SyftError):
                 return action_res
         result_id = plan.outputs[0].id
         return self._get(context, result_id, TwinMode.MOCK, has_permission=True)
@@ -437,12 +437,9 @@ class ActionService(AbstractService):
         # relative
         from .plan import Plan
 
-        data_uploaded_to_blob_store = False
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
-            data_uploaded_to_blob_store = (
-                action.create_object.syft_blob_storage_entry_id is not None
-            )
+            # print(action.create_object, "already in blob storage")
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action)
         else:
@@ -457,9 +454,7 @@ class ActionService(AbstractService):
                     f"Failed executing action {action}, could not resolve self: {resolved_self.err()}"
                 )
             resolved_self = resolved_self.ok()
-            if action.op == "__call__" and isinstance(
-                resolved_self.syft_action_data_type, Plan
-            ):
+            if action.op == "__call__" and resolved_self.syft_action_data_type == Plan:
                 result_action_object = self.execute_plan(
                     plan=resolved_self.syft_action_data,
                     context=context,
@@ -488,14 +483,15 @@ class ActionService(AbstractService):
         has_result_read_permission = self.has_read_permission_for_action_result(
             context, action
         )
-        if not data_uploaded_to_blob_store:
-            result_action_object._set_obj_location_(
-                context.node.id,
-                context.credentials,
-            )
-            blob_store_result = result_action_object._save_to_blob_store()
-            if isinstance(blob_store_result, SyftError):
-                return blob_store_result
+
+        result_action_object._set_obj_location_(
+            context.node.id,
+            context.credentials,
+        )
+
+        blob_store_result = result_action_object._save_to_blob_store()
+        if isinstance(blob_store_result, SyftError):
+            return blob_store_result
 
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {
@@ -645,12 +641,13 @@ def execute_object(
     twin_mode: TwinMode = TwinMode.NONE,
 ) -> Result[Ok[Union[TwinObject, ActionObject]], Err[str]]:
     unboxed_resolved_self = resolved_self.syft_action_data
-    args, has_arg_twins = resolve_action_args(action, context, service)
+    _args, has_arg_twins = resolve_action_args(action, context, service)
+
     kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service)
-    if args.is_err():
-        return args
+    if _args.is_err():
+        return _args
     else:
-        args = args.ok()
+        args = _args.ok()
     if kwargs.is_err():
         return kwargs
     else:

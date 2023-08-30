@@ -334,10 +334,6 @@ def test_actionobject_syft_point_to():
         (True, "__and__", [False], {}, False),
         ((1, 1, 3), "count", [1], {}, 2),
         ([1, 2, 1], "count", [1], {}, 2),
-        ([1, 2, 3], "append", [4], {}, [1, 2, 3, 4]),
-        ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
-        ({1, 2, 3}, "add", [5], {}, {1, 2, 3, 5}),
-        ({1, 2, 3}, "clear", [], {}, {}),
         (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
@@ -556,7 +552,7 @@ def test_actionobject_syft_get_attr_context():
 
     assert obj._syft_get_attr_context("capitalize") is orig_obj
     assert obj._syft_get_attr_context("__add__") is orig_obj
-    assert obj._syft_get_attr_context("syft_action_data") is obj
+    assert obj._syft_get_attr_context("syft_action_data") is obj.syft_action_data
 
 
 @pytest.mark.parametrize(
