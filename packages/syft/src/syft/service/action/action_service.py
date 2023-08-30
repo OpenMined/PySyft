@@ -491,10 +491,7 @@ class ActionService(AbstractService):
 
         blob_store_result = result_action_object._save_to_blob_store()
         if isinstance(blob_store_result, SyftError):
-            print("error storing", result_action_object)
             return blob_store_result
-        else:
-            print("stored", result_action_object)
 
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {

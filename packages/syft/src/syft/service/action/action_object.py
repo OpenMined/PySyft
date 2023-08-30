@@ -317,9 +317,7 @@ def convert_to_pointers(
                 arg.syft_node_uid = node_uid
                 r = arg._save_to_blob_store()
                 if isinstance(r, SyftError):
-                    print(r)
-                else:
-                    print("Set")
+                    print(r.message)
                 arg = api.services.action.set(arg)
             arg_list.append(arg)
 
@@ -334,7 +332,7 @@ def convert_to_pointers(
                 arg.syft_node_uid = node_uid
                 r = arg._save_to_blob_store()
                 if isinstance(r, SyftError):
-                    print(r)
+                    print(r.message)
                 arg = api.services.action.set(arg)
 
             kwarg_dict[k] = arg
@@ -498,7 +496,7 @@ class ActionObject(SyftObject):
                     )
                     if isinstance(blob_retrieval_object, SyftError):
                         print(
-                            "Detached actionobject, object exists but is not linked to data in the blob storage",
+                            "Detached action object, object exists but is not linked to data in the blob storage",
                             blob_retrieval_object,
                         )
                         return blob_retrieval_object
@@ -508,9 +506,6 @@ class ActionObject(SyftObject):
 
     def _set_syft_action_data(self, data: Any) -> None:
         if not isinstance(data, ActionDataEmpty):
-            print(
-                f"setting action data {data} to node with id", self.syft_node_location
-            )
             if isinstance(data, ActionFileData):
                 storage_entry = CreateBlobStorageEntry.from_path(data.filepath)
             else:
@@ -551,9 +546,8 @@ class ActionObject(SyftObject):
                 )
             self.syft_action_data_str_ = str(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
-            print("setting has bool", self.syft_has_bool_attr, self)
         else:
-            print("skipping writing actionobject to store, passed data was empty")
+            debug("skipping writing action object to store, passed data was empty.")
 
         self.syft_action_data_cache = data
 
@@ -699,10 +693,6 @@ class ActionObject(SyftObject):
         return client.api.services.request.submit(submit_request)
 
     def _syft_try_to_save_to_store(self, obj) -> None:
-        # print("trying to save to store", obj)
-        # print(self.syft_node_uid)
-        # print(self.syft_client_verify_key)
-        # print(obj.syft_node_uid)
         if self.syft_node_uid is None or self.syft_client_verify_key is None:
             return
         elif obj.syft_node_uid is not None:
@@ -730,10 +720,6 @@ class ActionObject(SyftObject):
             res = obj._save_to_blob_store()
             if isinstance(res, SyftError):
                 print(f"failed saving {obj} to blob storage, error: {res}")
-            else:
-                print("succesfully saved", obj)
-        else:
-            print("Did not save, api not found", obj)
 
         action = Action(
             path="",
@@ -1108,7 +1094,7 @@ class ActionObject(SyftObject):
                 if result.is_ok():
                     context, result_args, result_kwargs = result.ok()
                 else:
-                    print(f"Pre-hook failed with {result.err()}")
+                    debug(f"Pre-hook failed with {result.err()}")
         if name not in self._syft_dont_wrap_attrs():
             if HOOK_ALWAYS in self._syft_pre_hooks__:
                 for hook in self._syft_pre_hooks__[HOOK_ALWAYS]:
@@ -1117,7 +1103,7 @@ class ActionObject(SyftObject):
                         context, result_args, result_kwargs = result.ok()
                     else:
                         msg = result.err().replace("\\n", "\n")
-                        print(f"Pre-hook failed with {msg}")
+                        debug(f"Pre-hook failed with {msg}")
 
         if self.is_pointer:
             if name not in self._syft_dont_wrap_attrs():
@@ -1128,7 +1114,7 @@ class ActionObject(SyftObject):
                             context, result_args, result_kwargs = result.ok()
                         else:
                             msg = result.err().replace("\\n", "\n")
-                            print(f"Pre-hook failed with {msg}")
+                            debug(f"Pre-hook failed with {msg}")
 
         return context, result_args, result_kwargs
 
