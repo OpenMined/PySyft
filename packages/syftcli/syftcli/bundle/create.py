@@ -28,7 +28,9 @@ class ContainerEngineType(str, Enum):
 
 def create(
     version: str = "latest",
-    outdir: Annotated[Path, Option(dir_okay=True, writable=True)] = DEFAULT_OUTPUT_DIR,
+    outdir: Annotated[
+        Path, Option(dir_okay=True, file_okay=False, writable=True)
+    ] = DEFAULT_OUTPUT_DIR,
     engine: ContainerEngineType = ContainerEngineType.Docker,
     dryrun: bool = False,
 ) -> None:
@@ -99,7 +101,7 @@ def get_container_engine(engine_name: ContainerEngineType) -> ContainerEngine:
         engine = Podman()
 
     if not engine.is_installed():
-        print(f"[bold red]'{engine}' is not running or not installed")
+        print(f"[bold red]'{engine_name}' is not running or not installed")
         raise Exit(1)
 
     return engine
