@@ -18,6 +18,10 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
 RUN --mount=type=cache,target=/root/.cache \
     pip install -U pip
 
+#install jupyterlab
+RUN --mount=type=cache,target=/root/.cache \
+    pip install --user jupyterlab
+
 # copy precompiled arm64 packages
 COPY grid/backend/wheels /wheels
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
