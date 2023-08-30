@@ -20,6 +20,8 @@ from ..node.credentials import SyftVerifyKey
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
+from ..service.action.action_permissions import ActionObjectEXECUTE
+from ..service.action.action_permissions import ActionObjectOWNER
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
@@ -398,6 +400,7 @@ class MongoStorePartition(StorePartition):
         ):
             return True
 
+        # check ALL_READ permission
         if (
             permission.permission == ActionPermission.READ
             and ActionObjectPermission(
@@ -454,7 +457,30 @@ class MongoStorePartition(StorePartition):
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
-        raise NotImplementedError
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
+
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+
+        data_uids: List[UID] = collection.distinct("_id")
+        permission_uids: List[UID] = collection_permissions.distinct("_id")
+        if uid not in permission_uids and uid not in data_uids:
+            self.add_permissions(
+                [
+                    ActionObjectOWNER(uid=uid, credentials=credentials),
+                    ActionObjectWRITE(uid=uid, credentials=credentials),
+                    ActionObjectREAD(uid=uid, credentials=credentials),
+                    ActionObjectEXECUTE(uid=uid, credentials=credentials),
+                ]
+            )
+            return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
+
+        return Err(f"UID: {uid} already owned.")
 
     def _all(
         self,

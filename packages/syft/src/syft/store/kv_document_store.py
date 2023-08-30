@@ -191,7 +191,6 @@ class KeyValueStorePartition(StorePartition):
             if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
                 # attempt to claim it for writing
                 ownership_result = self.take_ownership(uid=uid, credentials=credentials)
-                print("---- KeyValueStorePartition._set() calls take_ownership ----")
                 can_write = ownership_result.is_ok()
             elif not ignore_duplicates:
                 keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
@@ -212,7 +211,6 @@ class KeyValueStorePartition(StorePartition):
                     obj=obj,
                 )
                 self.data[uid] = obj
-                print("---- KeyValueStorePartition._set() ----")
                 if uid not in self.permissions:
                     # create default permissions
                     self.permissions[uid] = set()
@@ -232,7 +230,6 @@ class KeyValueStorePartition(StorePartition):
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
         # first person using this UID can claim ownership
-        print("---- KeyValueStorePartition.take_ownership() ----")
         if uid not in self.permissions and uid not in self.data:
             self.add_permissions(
                 [
