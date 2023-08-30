@@ -29,10 +29,10 @@ setup(
     include_package_data=True,
     entry_points={
         "console_scripts": [
-            "syft = src.cli:app",
-            "syft-cli = src.cli:app",
-            "syftcli = src.cli:app",
-            "syftctl = src.cli:app",
+            "syft = syftcli.cli:app",
+            "syft-cli = syftcli.cli:app",
+            "syftcli = syftcli.cli:app",
+            "syftctl = syftcli.cli:app",
         ]
     },
 )

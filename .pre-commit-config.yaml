@@ -62,9 +62,9 @@ repos:
         name: "absolufy-imports: syft-cli"
         always_run: true
         files: ^packages/syftcli
-        # This will ignore all src/**/*.py where relative imports are okay
-        # but absolufy only top-level src/<file>.py. where relative imports are not okay for pyinstaller
-        exclude: ^packages/syftcli/src/(.*)/
+        # This will ignore all syftcli/**/*.py where relative imports are okay
+        # but absolufy only top-level syftcli/<file>.py. where relative imports are not okay for pyinstaller
+        exclude: ^packages/syftcli/syftcli/(.*)/
         args: ["--application-directories=packages/syftcli/"]
 
   - repo: https://github.com/pycqa/isort

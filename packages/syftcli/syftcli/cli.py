@@ -4,10 +4,10 @@ from rich.table import Table
 from typer import Typer
 from typer import echo
 
-# first party
-from src.bundle import cmd as bundle_cmd
-from src.core.console import console
-from src.version import __version__
+# syftcli absolute
+from syftcli.bundle import cmd as bundle_cmd
+from syftcli.core.console import console
+from syftcli.version import __version__
 
 __all__ = "app"
 
