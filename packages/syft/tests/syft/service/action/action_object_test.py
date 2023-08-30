@@ -1005,7 +1005,7 @@ def test_actionobject_syft_getattr_pandas(worker):
 
     obj = ActionObject.from_obj(orig_obj)
 
-    assert obj.columns == orig_obj.columns
+    assert (obj.columns == orig_obj.columns).all()
 
     obj.columns = ["a", "b", "c"]
-    assert obj.columns == ["a", "b", "c"]
+    assert (obj.columns == ["a", "b", "c"]).all()

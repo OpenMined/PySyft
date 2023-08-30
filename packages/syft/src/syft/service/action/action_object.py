@@ -578,7 +578,7 @@ class ActionObject(SyftObject):
     @pydantic.root_validator()
     def __check_action_data(cls, values: dict) -> dict:
         v = values.get("syft_action_data_cache")
-        if "syft_action_data_type" not in values:
+        if values.get("syft_action_data_type", None) is None:
             values["syft_action_data_type"] = type(v)
         if not isinstance(v, ActionDataEmpty):
             if inspect.isclass(v):
@@ -1295,7 +1295,7 @@ class ActionObject(SyftObject):
 
     def _syft_wrap_attribute_for_methods(self, name: str) -> Any:
         """Handle `__getattribute__` for methods."""
-        print(name, self.syft_action_data_type, self.id)
+
         # check for other types that aren't methods, functions etc
         def fake_func(*args: Any, **kwargs: Any) -> Any:
             print("WHYYY???")
@@ -1304,7 +1304,8 @@ class ActionObject(SyftObject):
         debug(f"[__getattribute__] Handling method {name} ")
         if (
             # self.syft_action_data_type == ActionDataEmpty
-            name not in action_data_empty_must_run and False
+            name not in action_data_empty_must_run
+            and False
         ):
             original_func = fake_func
         else:
@@ -1605,11 +1606,9 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__rshift__(other))
 
     def __iter__(self):
-        print("yep...", self.__iter__())
         return self._syft_output_action_object(self.__iter__())
 
     def __next__(self):
-        print("oh no...", self.__next__())
         return self._syft_output_action_object(self.__next__())
 
     # r ops
@@ -1690,7 +1689,6 @@ def is_action_data_empty(obj: Any) -> bool:
 
 
 def has_action_data_empty(args: Any, kwargs: Any) -> bool:
-    print(args, kwargs)
     for a in args:
         if is_action_data_empty(a):
             return True
