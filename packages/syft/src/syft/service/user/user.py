@@ -190,7 +190,8 @@ class UserView(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
         api.services.user.update(
-            uid=self.id, user_update=UserUpdate(password=new_password)
+            uid=self.id,
+            password=new_password,
         )
         return SyftSuccess(
             message=f"Successfully updated password for "
@@ -221,11 +222,11 @@ class UserView(SyftObject):
             return SyftError(message=f"You must login to {self.node_uid}")
 
         try:
-            user_update = UserUpdate(email=email)
-        except ValidationError as e:  # noqa: F841
+            UserUpdate(email=email)
+        except ValidationError:
             return SyftError(message="{email} is not a valid email address.")
 
-        result = api.services.user.update(uid=self.id, user_update=user_update)
+        result = api.services.user.update(uid=self.id, email=email)
 
         if isinstance(result, SyftError):
             return result
@@ -250,13 +251,13 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        user_update = UserUpdate(
+        result = api.services.user.update(
+            uid=self.id,
             name=name,
             institution=institution,
             website=website,
             role=role,
         )
-        result = api.services.user.update(uid=self.id, user_update=user_update)
 
         if isinstance(result, SyftError):
             return result
