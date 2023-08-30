@@ -441,6 +441,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "as_empty_data",
     "_set_obj_location_",
     "syft_action_data_cache",
+    "reload_cache",
 ]
 
 
@@ -482,27 +483,31 @@ class ActionObject(SyftObject):
             and self.syft_created_at
             and not TraceResult.is_tracing
         ):
-            # If ActionDataEmpty then try to fetch it from store.
-            if isinstance(self.syft_action_data_cache, ActionDataEmpty):
-                blob_storage_read_method = from_api_or_context(
-                    func_or_path="blob_storage.read",
-                    syft_node_location=self.syft_node_location,
-                    syft_client_verify_key=self.syft_client_verify_key,
-                )
-
-                if blob_storage_read_method is not None:
-                    blob_retrieval_object = blob_storage_read_method(
-                        uid=self.syft_blob_storage_entry_id
-                    )
-                    if isinstance(blob_retrieval_object, SyftError):
-                        print(
-                            "Detached action object, object exists but is not linked to data in the blob storage",
-                            blob_retrieval_object,
-                        )
-                        return blob_retrieval_object
-                    self.syft_action_data_cache = blob_retrieval_object.read()
+            self.reload_cache()
 
         return self.syft_action_data_cache
+
+    def reload_cache(self):
+        # If ActionDataEmpty then try to fetch it from store.
+        if isinstance(self.syft_action_data_cache, ActionDataEmpty):
+            blob_storage_read_method = from_api_or_context(
+                func_or_path="blob_storage.read",
+                syft_node_location=self.syft_node_location,
+                syft_client_verify_key=self.syft_client_verify_key,
+            )
+
+            if blob_storage_read_method is not None:
+                blob_retrieval_object = blob_storage_read_method(
+                    uid=self.syft_blob_storage_entry_id
+                )
+                if isinstance(blob_retrieval_object, SyftError):
+                    print(
+                        "Detached action object, object exists but is not linked to data in the blob storage",
+                        blob_retrieval_object,
+                    )
+                    return blob_retrieval_object
+                self.syft_action_data_cache = blob_retrieval_object.read()
+                self.syft_action_data_type = type(self.syft_action_data)
 
     def _set_syft_action_data(self, data: Any) -> None:
         if not isinstance(data, ActionDataEmpty):
@@ -573,9 +578,9 @@ class ActionObject(SyftObject):
     @pydantic.root_validator()
     def __check_action_data(cls, values: dict) -> dict:
         v = values.get("syft_action_data_cache")
-        if not isinstance(v, ActionDataEmpty):
+        if "syft_action_data_type" not in values:
             values["syft_action_data_type"] = type(v)
-
+        if not isinstance(v, ActionDataEmpty):
             if inspect.isclass(v):
                 values["syft_action_data_repr_"] = repr_cls(v)
             else:
@@ -586,8 +591,6 @@ class ActionObject(SyftObject):
                 )
             values["syft_action_data_str_"] = str(v)
             values["syft_has_bool_attr"] = hasattr(v, "__bool__")
-        else:
-            values["syft_action_data_type"] = ActionDataEmpty
         return values
 
     def _save_to_blob_store(self) -> Optional[SyftError]:
@@ -741,7 +744,7 @@ class ActionObject(SyftObject):
             )
         res = api.services.action.execute(action)
         if isinstance(res, SyftError):
-            print("Failed to to store (arg) to store", res)
+            print(f"Failed to to store (arg) {obj} to store, {res}")
 
     def _syft_prepare_obj_uid(self, obj) -> LineageID:
         # We got the UID
