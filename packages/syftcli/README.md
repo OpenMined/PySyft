@@ -13,7 +13,7 @@ Run as a module
 
 ```sh
 cd packages/syftcli
-python -m src.cli hello
+python -m syftcli.cli hello
 ```
 
 Debug in VSCode with the following `launch.json`
@@ -23,7 +23,7 @@ Debug in VSCode with the following `launch.json`
     "name": "Python: Syft CLI",
     "type": "python",
     "request": "launch",
-    "module": "src.cli",
+    "module": "syftcli.cli",
     "args": ["bundle", "create"], # CLI command to run
     "console": "integratedTerminal",
     "cwd": "${workspaceFolder}/packages/syftcli",
