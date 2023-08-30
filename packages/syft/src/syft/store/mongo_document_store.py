@@ -399,8 +399,7 @@ class MongoStorePartition(StorePartition):
 
         return True
 
-    def add_permission(self, permission: ActionObjectPermission) -> None:
-        print("---- MongoStorePartition.add_permission() ----")
+    def add_permission(self, permission: ActionObjectPermission) -> Result[None, Err]:
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
             return collection_permissions_status
@@ -408,7 +407,11 @@ class MongoStorePartition(StorePartition):
         # find the permissions with permission.uid that are already inside the database
         # e.g. permissions = {"_id": "7b88fdef6bff42a8991d294c3d66f757",
         #                     "permissions": set(["permission_str_1", "permission_str_2"]}}
-        permissions: Dict = collection_permissions.find_one({"_id": permission.uid})
+        permissions: Optional[Dict] = collection_permissions.find_one(
+            {"_id": permission.uid}
+        )
+        if permissions is None:
+            return Err(f"permission with UID {permission.uid} not found!")
         # update the permissions with the new permission string
         permissions_strings: set = permissions["permissions"]
         permissions_strings.add(permission.permission_string)
@@ -420,8 +423,23 @@ class MongoStorePartition(StorePartition):
         for permission in permissions:
             self.add_permission(permission)
 
-    def remove_permission(self, permission: ActionObjectPermission) -> None:
-        print("---- MongoStorePartition.add_permission() ----")
+    def remove_permission(
+        self, permission: ActionObjectPermission
+    ) -> Result[None, Err]:
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
+        permissions: Optional[Dict] = collection_permissions.find_one(
+            {"_id": permission.uid}
+        )
+        if permissions is None:
+            return Err(f"permission with UID {permission.uid} not found!")
+        permissions_strings: set = permissions["permissions"]
+        permissions_strings.remove(permission.permission_string)
+        collection_permissions.update_one(
+            {"_id": permission.uid}, {"$set": {"permissions": permissions_strings}}
+        )
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
