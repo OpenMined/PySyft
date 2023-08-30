@@ -578,7 +578,8 @@ class ActionObject(SyftObject):
     @pydantic.root_validator()
     def __check_action_data(cls, values: dict) -> dict:
         v = values.get("syft_action_data_cache")
-        if "syft_action_data_type" not in values:
+        obj_dtype = values.get("syft_action_data_type")
+        if obj_dtype is None:
             values["syft_action_data_type"] = type(v)
         if not isinstance(v, ActionDataEmpty):
             if inspect.isclass(v):
