@@ -16,7 +16,11 @@ from typing_extensions import Annotated
 from ..core.container_engine import ContainerEngine
 from ..core.container_engine import Docker
 from ..core.container_engine import Podman
+from ..core.syft_repo import SyftRepo
+from ..core.syft_version import InvalidVersion
 from ..core.syft_version import SyftVersion
+
+__all__ = "create"
 
 DEFAULT_OUTPUT_DIR = Path("~/.syft")
 
@@ -77,12 +81,12 @@ def validate_version(version: str) -> SyftVersion:
 
     try:
         _ver = SyftVersion(version)
-    except Exception:
-        print(f"[bold red]'Error: {version}' is not a valid version")
+    except InvalidVersion:
+        print(f"[bold red]Error: '{version}' is not a valid version")
         raise Exit(1)
 
-    if not _ver.match(">0.8.1"):
-        print("[bold red]Error: Minimum supported version is 0.8.2")
+    if _ver.match("<0.8.2b27"):
+        print(f"[bold red]Error: Minimum supported version is 0.8.2. Got: {_ver}")
         raise Exit(1)
 
     if not _ver.valid_version():
@@ -108,11 +112,5 @@ def get_container_engine(engine_name: ContainerEngineType) -> ContainerEngine:
 
 
 def get_syft_images(syft_ver: SyftVersion) -> List[str]:
-    # TODO: manifest file in releases does not have these values yet!
-    return [
-        f"docker.io/openmined/grid-frontend:{syft_ver.docker_tag}",
-        f"docker.io/openmined/grid-backend:{syft_ver.docker_tag}",
-        # f"docker.io/openmined/grid-node-jupyter:{syft_ver.docker_tag}",
-        "docker.io/library/mongo:7",
-        "docker.io/traefik:v2.8.1",
-    ]
+    manifest = SyftRepo.get_manifest(syft_ver.release_tag)
+    return manifest["images"]

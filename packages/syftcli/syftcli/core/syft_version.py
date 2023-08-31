@@ -7,9 +7,12 @@ from functools import cached_property
 # third party
 from packaging.specifiers import SpecifierSet
 from packaging.specifiers import Version
+from packaging.version import InvalidVersion
 
 # relative
 from .syft_repo import SyftRepo
+
+__all__ = ["SyftVersion", "InvalidVersion"]
 
 
 class SyftVersion:
@@ -30,7 +33,7 @@ class SyftVersion:
     @cached_property
     def docker_tag(self) -> str:
         """Returns the docker version/tag (e.g. 0.8.2-beta.26)"""
-        manifest = SyftRepo.get_manifest_template(self.release_tag)
+        manifest = SyftRepo.get_manifest(self.release_tag)
         return manifest["dockerTag"]
 
     def match(self, ver_spec: str, prereleases: bool = True) -> bool:
@@ -43,6 +46,8 @@ class SyftVersion:
     def _resolve(self, version: str) -> Version:
         if version == "latest":
             version = SyftRepo.latest_version()
+        if version == "latest-beta":
+            version = SyftRepo.latest_version(beta=True)
 
         return Version(version)
 

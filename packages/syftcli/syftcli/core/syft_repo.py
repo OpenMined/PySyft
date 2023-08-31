@@ -13,7 +13,7 @@ REPO = "OpenMined/PySyft"
 REPO_API_URL = f"https://api.github.com/repos/{REPO}"
 REPO_DL_URL = f"https://github.com/{REPO}/releases/download"
 
-ASSET_MANIFEST = "manifest_template.yml"
+ASSET_MANIFEST = "manifest.yml"
 
 
 class SyftRepo:
@@ -25,8 +25,21 @@ class SyftRepo:
         return [rel for rel in releases if rel.get("tag_name", "").startswith("v")]
 
     @staticmethod
-    def latest_version() -> str:
-        latest_release = SyftRepo.releases()[0]
+    @lru_cache(maxsize=None)
+    def prod_releases() -> List[dict]:
+        return [rel for rel in SyftRepo.releases() if not rel.get("prerelease")]
+
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def beta_releases() -> List[dict]:
+        return [rel for rel in SyftRepo.releases() if rel.get("prerelease")]
+
+    @staticmethod
+    def latest_version(beta: bool = False) -> str:
+        if beta:
+            latest_release = SyftRepo.beta_releases()[0]
+        else:
+            latest_release = SyftRepo.prod_releases()[0]
         return latest_release["tag_name"]
 
     @staticmethod
@@ -35,7 +48,7 @@ class SyftRepo:
 
     @staticmethod
     @lru_cache(maxsize=None)
-    def get_manifest_template(rel_ver: str) -> dict:
+    def get_manifest(rel_ver: str) -> dict:
         """
         Returns the manifest_template.yml for a given release version
 
