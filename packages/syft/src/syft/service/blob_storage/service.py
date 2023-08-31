@@ -10,6 +10,7 @@ from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
+from ...store.document_store import UIDPartitionKey
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
@@ -182,8 +183,8 @@ class BlobStorageService(AbstractService):
 
             if isinstance(file_unlinked_result, SyftError):
                 return file_unlinked_result
-            blob_storage_entry_deleted = self.stash.delete_by_uid(
-                context.credentials, uid=uid
+            blob_storage_entry_deleted = self.stash.delete(
+                context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
             )
             if blob_storage_entry_deleted.is_ok():
                 return file_unlinked_result
