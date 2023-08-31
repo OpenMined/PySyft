@@ -97,9 +97,16 @@ class KeyValueActionStore(ActionStore):
                 obj = self.data[uid]
                 read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
                 if isinstance(obj, TwinObject):
-                    obj = (
-                        obj.mock if not is_action_data_empty(obj.mock) else obj.private
-                    )
+                    if self.has_permission(read_permission):
+                        obj = (
+                            obj.mock
+                            if not is_action_data_empty(obj.mock)
+                            else obj.private
+                        )
+                    elif not is_action_data_empty(obj.mock):
+                        obj = obj.mock
+                    else:
+                        return Err(obj.as_empty())
                     # we patch the real id on it so we can keep using the twin
                     obj.id = uid
                 elif isinstance(obj, ActionObject) and not self.has_permission(
@@ -108,7 +115,7 @@ class KeyValueActionStore(ActionStore):
                     return Err(obj.as_empty())
                 else:
                     obj.syft_twin_type = TwinMode.NONE
-                obj.syft_point_to(node_uid)
+                    obj.syft_point_to(node_uid)
                 return Ok(obj)
             # third party
             return Err("Permission denied")
