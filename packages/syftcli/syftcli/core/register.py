@@ -1,6 +1,3 @@
-# future
-from __future__ import annotations
-
 # stdlib
 import importlib
 from typing import Any

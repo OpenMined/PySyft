@@ -1,8 +1,8 @@
-# future
-from __future__ import annotations
-
 # stdlib
 from functools import lru_cache
+from pathlib import Path
+import shutil
+from typing import Any
 from typing import List
 
 # third party
@@ -13,10 +13,13 @@ REPO = "OpenMined/PySyft"
 REPO_API_URL = f"https://api.github.com/repos/{REPO}"
 REPO_DL_URL = f"https://github.com/{REPO}/releases/download"
 
-ASSET_MANIFEST = "manifest.yml"
-
 
 class SyftRepo:
+    class Assets:
+        MANIFEST = "manifest.yml"
+        PODMAN_CONFIG = "podman_config.tar.gz"
+        DOCKER_CONFIG = "docker_config.tar.gz"
+
     @staticmethod
     @lru_cache(maxsize=None)
     def releases() -> List[dict]:
@@ -56,11 +59,21 @@ class SyftRepo:
             rel_ver: str - OpenMined/Syft github release version. Must start with "v"
         """
 
-        results = SyftRepo.get_asset(rel_ver, ASSET_MANIFEST)
+        results = SyftRepo.get_asset(rel_ver, SyftRepo.Assets.MANIFEST)
         parsed = yaml.safe_load(results.text)
         return parsed
 
     @staticmethod
-    def get_asset(rel_ver: str, asset_name: str) -> requests.Response:
+    def download_asset(asset_name: str, rel_ver: str, dl_dir: str) -> Path:
+        asset_path = Path(dl_dir, asset_name)
+        resp = SyftRepo.get_asset(rel_ver, asset_name, stream=True)
+
+        with open(asset_path, "wb") as fp:
+            shutil.copyfileobj(resp.raw, fp)
+
+        return asset_path
+
+    @staticmethod
+    def get_asset(rel_ver: str, asset_name: str, **kwargs: Any) -> requests.Response:
         url = REPO_DL_URL + f"/{rel_ver}/{asset_name}"
-        return requests.get(url)
+        return requests.get(url, **kwargs)
