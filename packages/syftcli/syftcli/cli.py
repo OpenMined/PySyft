@@ -1,17 +1,26 @@
+# future
+from __future__ import annotations
+
 # third party
 from rich import box
-from rich.console import Console
 from rich.table import Table
-from syftcli.version import __version__
-import typer
+from typer import Typer
+from typer import echo
 
-app = typer.Typer(name="Syft CLI", no_args_is_help=True)
-console = Console()
+# syftcli absolute
+from syftcli.bundle import cmd as bundle_cmd
+from syftcli.core.console import console
+from syftcli.version import __version__
+
+__all__ = "app"
+
+app = Typer(name="Syft CLI", no_args_is_help=True, pretty_exceptions_show_locals=False)
+app.add_typer(bundle_cmd, name="bundle")
 
 
 @app.command()
 def hello() -> None:
-    typer.echo("Syft CLI 👋")
+    echo("Syft CLI 👋")
 
 
 @app.command()
