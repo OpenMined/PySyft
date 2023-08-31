@@ -1,6 +1,3 @@
-# future
-from __future__ import annotations
-
 # stdlib
 from functools import cached_property
 

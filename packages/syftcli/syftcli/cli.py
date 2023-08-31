@@ -1,6 +1,3 @@
-# future
-from __future__ import annotations
-
 # third party
 from rich import box
 from rich.table import Table
