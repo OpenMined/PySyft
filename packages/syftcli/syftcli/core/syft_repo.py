@@ -13,7 +13,7 @@ REPO = "OpenMined/PySyft"
 REPO_API_URL = f"https://api.github.com/repos/{REPO}"
 REPO_DL_URL = f"https://github.com/{REPO}/releases/download"
 
-ASSET_MANIFEST = "manifest_template.yml"
+ASSET_MANIFEST = "manifest.yml"
 
 
 class SyftRepo:
@@ -35,7 +35,7 @@ class SyftRepo:
 
     @staticmethod
     @lru_cache(maxsize=None)
-    def get_manifest_template(rel_ver: str) -> dict:
+    def get_manifest(rel_ver: str) -> dict:
         """
         Returns the manifest_template.yml for a given release version
 
