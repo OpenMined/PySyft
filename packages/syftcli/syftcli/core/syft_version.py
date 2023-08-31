@@ -30,7 +30,7 @@ class SyftVersion:
     @cached_property
     def docker_tag(self) -> str:
         """Returns the docker version/tag (e.g. 0.8.2-beta.26)"""
-        manifest = SyftRepo.get_manifest_template(self.release_tag)
+        manifest = SyftRepo.get_manifest(self.release_tag)
         return manifest["dockerTag"]
 
     def match(self, ver_spec: str, prereleases: bool = True) -> bool:
