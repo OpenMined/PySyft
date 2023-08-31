@@ -233,6 +233,20 @@ class MongoStorePartition(StorePartition):
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write = self.has_permission(write_permission)
 
+        store_query_key = self.settings.store_key.with_obj(obj)
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection = collection_status.ok()
+        store_key_exists = (
+            collection.find_one({"_id": store_query_key.value}) is not None
+        )
+
+        if not store_key_exists:
+            # attempt to claim ownership for writing
+            ownership_result = self.take_ownership(uid=obj.id, credentials=credentials)
+            can_write: bool = ownership_result.is_ok()
+
         if can_write:
             storage_obj = obj.to(self.storage_type)
             collection_status = self.collection
@@ -250,7 +264,7 @@ class MongoStorePartition(StorePartition):
             # adding permissions
             read_permission = ActionObjectPermission(
                 uid=obj.id,
-                credentials=credentials.verify_key,
+                credentials=credentials,
                 permission=ActionPermission.READ,
             )
             self.add_permission(read_permission)
