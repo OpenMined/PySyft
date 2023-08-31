@@ -703,7 +703,7 @@ custom_code = """
 
 
 def create_table_template(
-    items: Any, list_name: Any, rows: int = 5, table_icon: Any = None
+    items: Sequence, list_name: Any, rows: int = 5, table_icon: Any = None
 ) -> str:
     if not table_icon:
         table_icon = TABLE_ICON
