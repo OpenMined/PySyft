@@ -131,6 +131,11 @@ jobs:
             echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           fi
 
+      - name: Create SyftCLI Config assets
+        run: |
+          pip install pyyaml
+          python scripts/create_syftcli_config.py
+
       - name: GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -138,7 +143,7 @@ jobs:
           generate_release_notes: true
           prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
           files: |
-            ./packages/hagrid/hagrid/manifest_template.yml
+            ./build/syftcli-config/*
           tag_name: v${{ steps.release_checks.outputs.github_release_version }}
 
       - name: Set up QEMU
