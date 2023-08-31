@@ -22,6 +22,7 @@ from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ..response import SyftSuccess
+from .action_object import ActionObject
 from .action_object import TwinMode
 from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
@@ -95,23 +96,20 @@ class KeyValueActionStore(ActionStore):
             if uid in self.data:
                 obj = self.data[uid]
                 read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-                if self.has_permission(read_permission):
-                    if isinstance(obj, TwinObject):
-                        obj = (
-                            obj.mock
-                            if not is_action_data_empty(obj.mock)
-                            else obj.private
-                        )
-                        # we patch the real id on it so we can keep using the twin
-                        obj.id = uid
-                    else:
-                        obj.syft_twin_type = TwinMode.NONE
-                    obj.syft_point_to(node_uid)
-                    return Ok(obj)
-                # If no pointer read permission, return empty object
+                if isinstance(obj, TwinObject):
+                    obj = (
+                        obj.mock if not is_action_data_empty(obj.mock) else obj.private
+                    )
+                    # we patch the real id on it so we can keep using the twin
+                    obj.id = uid
+                elif isinstance(obj, ActionObject) and not self.has_permission(
+                    read_permission
+                ):
+                    return Err(obj.as_empty())
                 else:
-                    empty_obj = obj.as_empty()
-                    return Err(empty_obj)
+                    obj.syft_twin_type = TwinMode.NONE
+                obj.syft_point_to(node_uid)
+                return Ok(obj)
             # third party
             return Err("Permission denied")
         except Exception as e:
