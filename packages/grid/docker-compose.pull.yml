@@ -6,8 +6,8 @@ services:
   # queue:
   #   image: rabbitmq:${RABBITMQ_VERSION?Variable not Set}${RABBITMQ_MANAGEMENT:-}
 
-  # seaweedfs:
-  #   image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
+  seaweedfs:
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${SEAWEEDFS_VERSION}"
 
   # docker-host:
   #   image: qoomon/docker-host
