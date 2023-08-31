@@ -18,6 +18,8 @@ from ..core.container_engine import Docker
 from ..core.container_engine import Podman
 from ..core.syft_version import SyftVersion
 
+__all__ = "create"
+
 DEFAULT_OUTPUT_DIR = Path("~/.syft")
 
 
