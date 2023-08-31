@@ -1302,7 +1302,7 @@ class ActionObject(SyftObject):
 
         debug(f"[__getattribute__] Handling method {name} ")
         if (
-            self.syft_action_data_type == ActionDataEmpty
+            issubclass(self.syft_action_data_type, ActionDataEmpty)
             and name not in action_data_empty_must_run
         ):
             original_func = fake_func
@@ -1681,8 +1681,8 @@ def debug_original_func(name: str, func: Callable) -> None:
 
 
 def is_action_data_empty(obj: Any) -> bool:
-    return isinstance(obj, AnyActionObject) and (
-        obj.syft_action_data_type == ActionDataEmpty
+    return isinstance(obj, AnyActionObject) and issubclass(
+        obj.syft_action_data_type, ActionDataEmpty
     )
 
 
