@@ -37,9 +37,9 @@ class ActionFileData(SyftObject):
     __canonical_name__ = "ActionFileData"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    filepath: Path
+    path: Path
 
-    @pydantic.validator("filepath", pre=True)
+    @pydantic.validator("path", pre=True)
     def __validate_file_path(cls, v: Union[str, Path]) -> Path:
         if isinstance(v, str):
             v = Path(v)

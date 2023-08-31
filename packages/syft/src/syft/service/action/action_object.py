@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import Enum
 import inspect
 from io import BytesIO
+from pathlib import Path
 import traceback
 import types
 from typing import Any
@@ -512,7 +513,7 @@ class ActionObject(SyftObject):
     def _set_syft_action_data(self, data: Any) -> None:
         if not isinstance(data, ActionDataEmpty):
             if isinstance(data, ActionFileData):
-                storage_entry = CreateBlobStorageEntry.from_path(data.filepath)
+                storage_entry = CreateBlobStorageEntry.from_path(data.path)
             else:
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
 
@@ -528,7 +529,7 @@ class ActionObject(SyftObject):
                     return blob_deposit_object
 
                 if isinstance(data, ActionFileData):
-                    with open(data.filepath, "rb") as f:
+                    with open(data.path, "rb") as f:
                         result = blob_deposit_object.write(f)
                 else:
                     result = blob_deposit_object.write(
@@ -936,8 +937,8 @@ class ActionObject(SyftObject):
         return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id)
 
     @staticmethod
-    def from_file(
-        filepath: str,
+    def from_path(
+        path: Union[str, Path],
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
         syft_client_verify_key: Optional[SyftVerifyKey] = None,
@@ -948,7 +949,9 @@ class ActionObject(SyftObject):
         if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
-        syft_action_data = ActionFileData(filepath=filepath)
+        syft_action_data = ActionFileData(
+            path=path if isinstance(path, Path) else Path(path)
+        )
         action_type = action_type_for_object(syft_action_data)
 
         action_object = action_type(syft_action_data_cache=syft_action_data)
