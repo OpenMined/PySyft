@@ -83,7 +83,10 @@ class KeyValueActionStore(ActionStore):
         return Err(f"Permission: {read_permission} denied")
 
     def get_pointer(
-        self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        node_uid: UID,
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -91,16 +94,24 @@ class KeyValueActionStore(ActionStore):
             # 🟡 TODO 34: do we want pointer read permissions?
             if uid in self.data:
                 obj = self.data[uid]
-                if isinstance(obj, TwinObject):
-                    obj = (
-                        obj.mock if not is_action_data_empty(obj.mock) else obj.private
-                    )
-                    # we patch the real id on it so we can keep using the twin
-                    obj.id = uid
+                read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+                if self.has_permission(read_permission):
+                    if isinstance(obj, TwinObject):
+                        obj = (
+                            obj.mock
+                            if not is_action_data_empty(obj.mock)
+                            else obj.private
+                        )
+                        # we patch the real id on it so we can keep using the twin
+                        obj.id = uid
+                    else:
+                        obj.syft_twin_type = TwinMode.NONE
+                    obj.syft_point_to(node_uid)
+                    return Ok(obj)
+                # If no pointer read permission, return empty object
                 else:
-                    obj.syft_twin_type = TwinMode.NONE
-                obj.syft_point_to(node_uid)
-                return Ok(obj)
+                    empty_obj = obj.as_empty()
+                    return Err(empty_obj)
             # third party
             return Err("Permission denied")
         except Exception as e:
