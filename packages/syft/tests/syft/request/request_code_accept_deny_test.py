@@ -34,7 +34,10 @@ def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClien
     guest_email = faker.email()
     password = "mysecretpassword"
     result = root_client.register(
-        name=faker.name(), email=guest_email, password=password
+        name=faker.name(),
+        email=guest_email,
+        password=password,
+        password_verify=password,
     )
     assert isinstance(result, SyftSuccess)
     guest_client.login(email=guest_email, password=password)
@@ -139,7 +142,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     linked_obj = LinkedObject.from_obj(user_code, node_uid=worker.id)
 
     user_code_change = UserCodeStatusChange(
-        value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
+        value=UserCodeStatus.APPROVED, linked_obj=linked_obj
     )
 
     change_context = ChangeContext(

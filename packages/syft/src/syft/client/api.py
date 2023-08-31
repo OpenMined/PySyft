@@ -17,7 +17,6 @@ from typing import _GenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
-from pydantic import BaseModel
 from pydantic import EmailStr
 from result import OkErr
 from result import Result
@@ -41,8 +40,10 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
+from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -313,7 +314,7 @@ def generate_remote_lib_function(
             node_uid=wrapper_node_uid,
             path=path,
             args=service_args,
-            kwargs=dict(),
+            kwargs={},
             blocking=blocking,
         )
 
@@ -393,6 +394,7 @@ class SyftAPI(SyftObject):
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
+    __user_role: ServiceRole = ServiceRole.NONE
 
     # def __post_init__(self) -> None:
     #     pass
@@ -477,7 +479,12 @@ class SyftAPI(SyftObject):
             node_uid=node.id,
             endpoints=endpoints,
             lib_endpoints=lib_endpoints,
+            __user_role=role,
         )
+
+    @property
+    def user_role(self) -> ServiceRole:
+        return self.__user_role
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
@@ -502,7 +509,7 @@ class SyftAPI(SyftObject):
         from ..service.request.request import UserCodeStatusChange
 
         if isinstance(api_call_result, Request) and any(
-            [isinstance(x, UserCodeStatusChange) for x in api_call_result.changes]
+            isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
         ):
             if self.refresh_api_callback is not None:
                 self.refresh_api_callback()
@@ -623,15 +630,13 @@ def _render_signature(obj_signature, obj_name) -> str:
     # add up name, parameters, braces (2), and commas
     if len(obj_name) + sum(len(r) + 2 for r in result) > 75:
         # This doesn’t fit behind “Signature: ” in an inspect window.
-        rendered = "{}(\n{})".format(
-            obj_name, "".join("    {},\n".format(r) for r in result)
-        )
+        rendered = "{}(\n{})".format(obj_name, "".join(f"    {r},\n" for r in result))
     else:
         rendered = "{}({})".format(obj_name, ", ".join(result))
 
     if obj_signature.return_annotation is not inspect._empty:
         anno = inspect.formatannotation(obj_signature.return_annotation)
-        rendered += " -> {}".format(anno)
+        rendered += f" -> {anno}"
 
     return rendered
 
@@ -671,19 +676,14 @@ except Exception:
 
 
 @serializable()
-class NodeView(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-
+class NodeIdentity(Identity):
     node_name: str
-    node_id: UID
-    verify_key: SyftVerifyKey
 
     @staticmethod
     def from_api(api: SyftAPI):
         # stores the name root verify key of the domain node
         node_metadata = api.connection.get_node_metadata(api.signing_key)
-        return NodeView(
+        return NodeIdentity(
             node_name=node_metadata.name,
             node_id=api.node_uid,
             verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
@@ -698,7 +698,7 @@ class NodeView(BaseModel):
         )
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, NodeView):
+        if not isinstance(other, NodeIdentity):
             return False
         return (
             self.node_name == other.node_name
@@ -708,6 +708,9 @@ class NodeView(BaseModel):
 
     def __hash__(self) -> int:
         return hash((self.node_name, self.verify_key))
+
+    def __repr__(self) -> str:
+        return f"NodeIdentity <name={self.node_name}, id={self.node_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
 
 
 def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
@@ -731,11 +734,18 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
             try:
                 if t is not inspect.Parameter.empty:
                     if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                        success = False
                         for v in t.__args__:
                             if issubclass(v, EmailStr):
                                 v = str
-                            check_type(key, value, v)  # raises Exception
-                            break  # only need one to match
+                            try:
+                                check_type(key, value, v)  # raises Exception
+                                success = True
+                                break  # only need one to match
+                            except Exception:  # nosec
+                                pass
+                        if not success:
+                            raise TypeError()
                     else:
                         check_type(key, value, t)  # raises Exception
             except TypeError:

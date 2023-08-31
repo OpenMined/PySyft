@@ -96,7 +96,9 @@ class DatasetService(AbstractService):
             return results
         return SyftError(message=result.err())
 
-    @service_method(path="dataset.search", name="search")
+    @service_method(
+        path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def search(
         self,
         context: AuthedServiceContext,

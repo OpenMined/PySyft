@@ -18,6 +18,10 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
 RUN --mount=type=cache,target=/root/.cache \
     pip install -U pip
 
+#install jupyterlab
+RUN --mount=type=cache,target=/root/.cache \
+    pip install --user jupyterlab
+
 # copy precompiled arm64 packages
 COPY grid/backend/wheels /wheels
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
@@ -56,8 +60,9 @@ RUN --mount=type=cache,target=/root/.cache \
     pip uninstall ansible ansible-core -y && \
     rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
 
-# clean up
-RUN apt purge --auto-remove linux-libc-dev -y
+# security patches
+RUN apt purge --auto-remove linux-libc-dev -y || true
+RUN apt purge --auto-remove libldap-2.5-0 -y || true
 
 # copy any changed source
 COPY syft/src /app/syft/src

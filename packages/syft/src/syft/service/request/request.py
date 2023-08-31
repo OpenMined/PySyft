@@ -149,6 +149,8 @@ class Request(SyftObject):
 
     requesting_user_verify_key: SyftVerifyKey
     requesting_user_name: str = ""
+    requesting_user_email: Optional[str] = ""
+    requesting_user_institution: Optional[str] = ""
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
     updated_at: Optional[DateTime]
@@ -191,9 +193,30 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        shared_with_line = ""
+        if self.code and len(self.code.output_readers) > 0:
+            # owner_names = ["canada", "US"]
+            owners_string = " and ".join(
+                [f"<strong>{x}</strong>" for x in self.code.output_reader_names]
+            )
+            shared_with_line += (
+                f"<p><strong>Custom Policy: </strong> "
+                f"outputs are <strong>shared</strong> with the owners of {owners_string} once computed"
+            )
+
         metadata = api.services.metadata.get_metadata()
         admin_email = metadata.admin_email
         node_name = api.node_name.capitalize() if api.node_name is not None else ""
+
+        email_str = (
+            f"({self.requesting_user_email})" if self.requesting_user_email else ""
+        )
+        institution_str = (
+            f"<strong>Institution:</strong> {self.requesting_user_institution}"
+            if self.requesting_user_institution
+            else ""
+        )
+
         return f"""
             <style>
             .syft-request {{color: {SURFACE[options.color_theme]};}}
@@ -203,11 +226,14 @@ class Request(SyftObject):
                 <p><strong>Id: </strong>{self.id}</p>
                 <p><strong>Request time: </strong>{self.request_time}</p>
                 {updated_at_line}
+                {shared_with_line}
                 <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
                 <p><strong>Requested on: </strong> {node_name} of type <strong> \
                     {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
+                <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
             </div>
+
             """
 
     def _coll_repr_(self):
@@ -219,15 +245,17 @@ class Request(SyftObject):
             badge_color = "badge-red"
 
         status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+
+        user_data = [
+            self.requesting_user_name,
+            self.requesting_user_email,
+            self.requesting_user_institution,
+        ]
+
         return {
-            "changes": " ".join([x.__repr_syft_nested__() for x in self.changes]),
-            "request time": str(self.request_time),
-            "status": status_badge,
-            "requesting user": {
-                "value": str(self.requesting_user_verify_key),
-                "type": "clipboard",
-            },
-            "reviewed_at": str(self.updated_at),
+            "Description": " ".join([x.__repr_syft_nested__() for x in self.changes]),
+            "Requested By": "\n".join(user_data),
+            "Status": status_badge,
         }
 
     @property
@@ -239,6 +267,9 @@ class Request(SyftObject):
         return SyftError(
             message="This type of request does not have code associated with it."
         )
+
+    def get_results(self) -> Any:
+        return self.code.get_results()
 
     @property
     def current_change_state(self) -> Dict[UID, bool]:
@@ -487,7 +518,7 @@ def hash_changes(context: TransformContext) -> TransformContext:
     ).digest()
     key_hash = hashlib.sha256(bytes(key.verify_key)).digest()
     changes_hash = hashlib.sha256(_serialize(changes, to_bytes=True)).digest()
-    final_hash = hashlib.sha256((time_hash + key_hash + changes_hash)).hexdigest()
+    final_hash = hashlib.sha256(time_hash + key_hash + changes_hash).hexdigest()
 
     context.output["request_hash"] = final_hash
     return context
@@ -510,12 +541,16 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
     return context
 
 
-def add_requesting_user_name(context: TransformContext) -> TransformContext:
+def add_requesting_user_info(context: TransformContext) -> TransformContext:
     try:
         user_key = context.output["requesting_user_verify_key"]
         user_service = context.node.get_service("UserService")
         user = user_service.get_by_verify_key(user_key)
         context.output["requesting_user_name"] = user.name
+        context.output["requesting_user_email"] = user.email
+        context.output["requesting_user_institution"] = (
+            user.institution if user.institution else ""
+        )
     except Exception:
         context.output["requesting_user_name"] = "guest_user"
     return context
@@ -528,7 +563,7 @@ def submit_request_to_request() -> List[Callable]:
         add_node_uid_for_key("node_uid"),
         add_request_time,
         check_requesting_user_verify_key,
-        add_requesting_user_name,
+        add_requesting_user_info,
         hash_changes,
     ]
 
@@ -742,8 +777,11 @@ class UserCodeStatusChange(Change):
             return obj
         return res
 
-    def is_enclave_request(self, req_enclave_metadata):
-        return req_enclave_metadata is not None and self.value == UserCodeStatus.EXECUTE
+    def is_enclave_request(self, user_code: UserCode):
+        return (
+            user_code.is_enclave_code is not None
+            and self.value == UserCodeStatus.APPROVED
+        )
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -766,7 +804,7 @@ class UserCodeStatusChange(Change):
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
                 user_code = res
-                if self.is_enclave_request(user_code.enclave_metadata):
+                if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=res, context=context
                     )

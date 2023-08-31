@@ -1302,7 +1302,10 @@ def create_launch_cmd(
     if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
         parsed_kwargs["tag"] = kwargs["tag"]
     else:
-        parsed_kwargs["tag"] = "latest"
+        if parsed_kwargs["dev"] is True:
+            parsed_kwargs["tag"] = "local"
+        else:
+            parsed_kwargs["tag"] = "latest"
 
     if "jupyter" in kwargs and kwargs["jupyter"] is not None:
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
@@ -2217,7 +2220,7 @@ def create_launch_docker_cmd(
         # old path
         default_env = f"{template_grid_dir}/.env"
     default_envs = {}
-    with open(default_env, "r") as f:
+    with open(default_env) as f:
         for line in f.readlines():
             if "=" in line:
                 parts = line.strip().split("=")
@@ -3124,7 +3127,9 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
         target = verb.get_named_term_grammar("node_name").input
         if target == "all":
             # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
-            return "docker rm `docker ps -aq` --force"
+
+            if "prune-vol" in kwargs:
+                return "docker rm `docker ps -aq` --force && docker volume prune"
 
         version = check_docker_version()
         if version:
@@ -3260,6 +3265,11 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     "--force",
     is_flag=True,
     help="Bypass the prompt during hagrid land",
+)
+@click.option(
+    "--prune-vol",
+    is_flag=True,
+    help="Prune docker volumes after land.",
 )
 def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()

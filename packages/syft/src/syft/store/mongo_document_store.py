@@ -300,6 +300,7 @@ class MongoStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         qks: QueryKeys,
         order_by: Optional[PartitionKey] = None,
+        has_permission: Optional[bool] = False,
     ) -> Result[List[SyftObject], str]:
         collection_status = self.collection
         if collection_status.is_err():
@@ -347,10 +348,22 @@ class MongoStorePartition(StorePartition):
         # TODO: implement
         return True
 
-    def _all(self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None):
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        # TODO: implemenet
+        pass
+
+    def _all(
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: Optional[bool] = False,
+    ):
         qks = QueryKeys(qks=())
         return self._get_all_from_store(
-            credentials=credentials, qks=qks, order_by=order_by
+            credentials=credentials,
+            qks=qks,
+            order_by=order_by,
+            has_permission=has_permission,
         )
 
     def __len__(self):

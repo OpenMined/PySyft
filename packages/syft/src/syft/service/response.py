@@ -56,6 +56,8 @@ class SyftSuccess(SyftResponseMessage):
 
 @serializable()
 class SyftNotReady(SyftResponseMessage):
+    _bool: bool = False
+
     @property
     def _repr_html_class_(self) -> str:
         return "alert-info"
@@ -66,6 +68,15 @@ class SyftWarning(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-warning"
+
+
+@serializable()
+class SyftInfo(SyftResponseMessage):
+    _bool: bool = False
+
+    @property
+    def _repr_html_class_(self) -> str:
+        return "alert-info"
 
 
 @serializable()

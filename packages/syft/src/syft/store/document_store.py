@@ -449,9 +449,12 @@ class StorePartition:
         )
 
     def all(
-        self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: Optional[bool] = False,
     ) -> Result[List[BaseStash.object_type], str]:
-        return self._thread_safe_cbk(self._all, credentials, order_by)
+        return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
 
     # Potentially thread-unsafe methods.
     # CAUTION:
@@ -533,9 +536,12 @@ class BaseStash:
         )
 
     def get_all(
-        self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: bool = False,
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.partition.all(credentials, order_by)
+        return self.partition.all(credentials, order_by, has_permission)
 
     def __len__(self) -> int:
         return len(self.partition)
@@ -672,6 +678,9 @@ class BaseUIDStoreStash(BaseStash):
     ) -> Result[Optional[BaseUIDStoreStash.object_type], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks)
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        self.partition.add_permissions(permissions)
 
     def set(
         self,

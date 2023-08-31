@@ -80,7 +80,7 @@ def test_shortand_parse_without_name_with_preposition() -> None:
     up a new node with a randomly chosen name."""
 
     # COMMAND: "hagrid launch"
-    args: Tuple[str, ...] = tuple(["to", "docker"])
+    args: Tuple[str, ...] = ("to", "docker")
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command
@@ -175,7 +175,7 @@ def test_shortand_parse_of_multiword_name() -> None:
     up a new node with a name that has multiple words."""
 
     # COMMAND: "hagrid launch"
-    args: Tuple[str, ...] = tuple(["United", "Nations"])
+    args: Tuple[str, ...] = ("United", "Nations")
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command
@@ -191,7 +191,7 @@ def test_shortand_parse_of_multiword_name_with_domain() -> None:
     up a new node with a name that has multiple words."""
 
     # COMMAND: "hagrid launch"
-    args: Tuple[str, ...] = tuple(["United", "Nations", "domain"])
+    args: Tuple[str, ...] = ("United", "Nations", "domain")
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command

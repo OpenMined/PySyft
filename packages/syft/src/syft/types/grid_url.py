@@ -96,11 +96,12 @@ class GridURL:
             container_host = os.getenv("CONTAINER_HOST", None)
 
         if container_host:
-            hostname = (
-                "host.docker.internal"
-                if container_host == "docker"
-                else "host.k3d.internal"
-            )
+            if container_host == "docker":
+                hostname = "host.docker.internal"
+            elif container_host == "podman":
+                hostname = "host.containers.internal"
+            else:
+                hostname = "host.k3d.internal"
         else:
             # convert it back for non container clients
             hostname = "localhost"

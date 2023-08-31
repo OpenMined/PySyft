@@ -64,7 +64,7 @@ class EnclaveClient(SyftClient):
         via_client: Optional[SyftClient] = None,
         url: Optional[str] = None,
         port: Optional[int] = None,
-        handle: Optional["NodeHandle"] = None,  # noqa: F821
+        handle: Optional[NodeHandle] = None,  # noqa: F821
         **kwargs,
     ) -> None:
         if via_client is not None:
@@ -122,7 +122,9 @@ class EnclaveClient(SyftClient):
                 apis += [api]
 
         for api in apis:
-            api.services.code.request_code_execution(code=code)
+            res = api.services.code.request_code_execution(code=code)
+            if isinstance(res, SyftError):
+                return res
 
         # we are using the real method here, see the .code property getter
         _ = self.code

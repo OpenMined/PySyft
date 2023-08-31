@@ -128,9 +128,9 @@ def test_basestash_set(
 def test_basestash_set_duplicate(
     root_verify_key, base_stash: MockStash, faker: Faker
 ) -> None:
-    original, duplicate = [
+    original, duplicate = (
         MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker, n=2, same=True)
-    ]
+    )
 
     result = base_stash.set(root_verify_key, original)
     assert result.is_ok()
@@ -142,10 +142,10 @@ def test_basestash_set_duplicate(
 def test_basestash_set_duplicate_unique_key(
     root_verify_key, base_stash: MockStash, faker: Faker
 ) -> None:
-    original, duplicate = [
+    original, duplicate = (
         MockObject(**kwargs)
         for kwargs in multiple_object_kwargs(faker, n=2, name=faker.name())
-    ]
+    )
 
     result = base_stash.set(root_verify_key, original)
     assert result.is_ok()
@@ -233,8 +233,8 @@ def test_basestash_set_get_all(
     stored_objects = stored_objects.ok()
     assert len(stored_objects) == len(mock_objects)
 
-    stored_objects_values = set(get_object_values(obj) for obj in stored_objects)
-    mock_objects_values = set(get_object_values(obj) for obj in mock_objects)
+    stored_objects_values = {get_object_values(obj) for obj in stored_objects}
+    mock_objects_values = {get_object_values(obj) for obj in mock_objects}
     assert stored_objects_values == mock_objects_values
 
 
@@ -285,7 +285,7 @@ def test_basestash_query_one(
         assert result.is_ok()
         assert result.ok() == obj
 
-    existing_names = set(obj.name for obj in mock_objects)
+    existing_names = {obj.name for obj in mock_objects}
     random_name = create_unique(faker.name, existing_names)
 
     for result in (
@@ -336,8 +336,8 @@ def test_basestash_query_all(
         objects = result.ok()
         assert len(objects) == n_same
         assert all(obj.desc == desc for obj in objects)
-        original_object_values = set(get_object_values(obj) for obj in similar_objects)
-        retrived_objects_values = set(get_object_values(obj) for obj in objects)
+        original_object_values = {get_object_values(obj) for obj in similar_objects}
+        retrived_objects_values = {get_object_values(obj) for obj in objects}
         assert original_object_values == retrived_objects_values
 
     random_desc = create_unique(
@@ -392,8 +392,8 @@ def test_basestash_query_all_kwargs_multiple_params(
         objects = result.ok()
         assert len(objects) == n_same
         assert all(obj.desc == desc for obj in objects)
-        original_object_values = set(get_object_values(obj) for obj in similar_objects)
-        retrived_objects_values = set(get_object_values(obj) for obj in objects)
+        original_object_values = {get_object_values(obj) for obj in similar_objects}
+        retrived_objects_values = {get_object_values(obj) for obj in objects}
         assert original_object_values == retrived_objects_values
 
     params = {

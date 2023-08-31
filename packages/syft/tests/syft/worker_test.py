@@ -320,7 +320,12 @@ def test_worker_handle_api_response(
 
     guest_client = root_client.guest()
 
-    guest_client.register(name="Alice", email="alice@caltech.edu", password="abc123")
+    guest_client.register(
+        name="Alice",
+        email="alice@caltech.edu",
+        password="abc123",
+        password_verify="abc123",
+    )
 
     # TODO: 🟡 Fix: root_client.guest is overriding root_client.
     root_client = worker.root_client
