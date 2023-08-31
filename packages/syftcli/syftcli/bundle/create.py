@@ -1,6 +1,3 @@
-# future
-from __future__ import annotations
-
 # stdlib
 from enum import Enum
 from pathlib import Path

@@ -1,6 +1,3 @@
-# future
-from __future__ import annotations
-
 # stdlib
 from typing import List
 from typing import Optional
