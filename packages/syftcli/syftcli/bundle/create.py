@@ -50,7 +50,7 @@ def create(
     img_path = Path(temp_path, "images.tar")
 
     # prepare output paths
-    bundle_path = Path(out_path, f"syft-{ver.release_tag}-{engine}.tar")
+    bundle_path = Path(out_path, f"syft-{ver.release_tag}-{engine.value}.tar")
 
     # Prepare container engine & images
     engine_sdk = get_container_engine(engine)
