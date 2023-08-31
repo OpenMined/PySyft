@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Sequence
 import json
 from string import Template
 from typing import Any
