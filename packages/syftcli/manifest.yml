@@ -1,0 +1,40 @@
+manifestVersion: 1.0
+
+syftVersion: 0.8.2-beta.26
+dockerTag: 0.8.2-beta.26
+
+images:
+  - docker.io/openmined/grid-frontend:0.8.2-beta.26
+  - docker.io/openmined/grid-backend:0.8.2-beta.26
+  - docker.io/library/mongo:latest
+  - docker.io/traefik:v2.10
+
+configFiles:
+  docker:
+    - packages/grid/default.env
+    - packages/grid/docker-compose.build.yml
+    - packages/grid/docker-compose.dev.yml
+    - packages/grid/docker-compose.pull.yml
+    - packages/grid/docker-compose.test.yml
+    - packages/grid/docker-compose.tls.yml
+    - packages/grid/docker-compose.yml
+    - packages/grid/traefik/docker/dynamic-tls.yml
+    - packages/grid/traefik/docker/dynamic.yml
+    - packages/grid/traefik/docker/traefik-tls.template.yml
+    - packages/grid/traefik/docker/traefik.yml
+    - packages/grid/vpn/headscale.dockerfile
+    - packages/grid/vpn/tailscale.dockerfile
+  k8s:
+    - packages/grid/devspace.yaml
+    - packages/grid/traefik/k8s/dynamic.yml
+    - packages/grid/traefik/k8s/traefik.yml
+  worker:
+    - packages/grid/worker/docker-compose.yml
+    - packages/grid/worker/docker-compose.dev.yml
+    - packages/grid/worker/docker-compose.pull.yml
+    - packages/grid/worker/docker-compose.build.yml
+  podman:
+    - packages/grid/podman/podman-kube/podman-syft-kube-config.yaml
+    - packages/grid/podman/podman-kube/podman-syft-kube.yaml
+    - packages/grid/podman/podman-kube/traefik/conf/dynamic.yml
+    - packages/grid/podman/podman-kube/traefik/traefik.yml
