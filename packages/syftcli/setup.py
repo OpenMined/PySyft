@@ -5,6 +5,9 @@ from setuptools import setup
 __version__ = "0.1.7"
 
 packages = [
+    "requests==2.31.0",
+    "pyyaml==6.0.1",
+    "packaging==21.3",
     "typer[all]==0.9.0",
     "typing_extensions==4.6.3",
 ]
@@ -22,8 +25,7 @@ setup(
     long_description_content_type="text/plain",
     version=__version__,
     author="OpenMined <info@openmined.org>",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    packages=find_packages(),
     install_requires=packages,
     extras_require={"dev": dev_packages, "build": build_packages},
     include_package_data=True,
