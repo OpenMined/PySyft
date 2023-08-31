@@ -238,6 +238,7 @@ class MongoStorePartition(StorePartition):
         if collection_status.is_err():
             return collection_status
         collection = collection_status.ok()
+
         store_key_exists = (
             collection.find_one({"_id": store_query_key.value}) is not None
         )
@@ -249,10 +250,6 @@ class MongoStorePartition(StorePartition):
 
         if can_write:
             storage_obj = obj.to(self.storage_type)
-            collection_status = self.collection
-            if collection_status.is_err():
-                return collection_status
-            collection = collection_status.ok()
 
             if ignore_duplicates:
                 collection = collection.with_options(write_concern=WriteConcern(w=0))
@@ -402,12 +399,11 @@ class MongoStorePartition(StorePartition):
         permissions: Optional[Dict] = collection_permissions.find_one(
             {"_id": permission.uid}
         )
-        permissions_strings: set = permissions["permissions"]
 
-        if (
-            permissions is not None
-            and permission.permission_string in permissions_strings
-        ):
+        if permissions is None:
+            return False
+
+        if permission.permission_string in permissions["permissions"]:
             return True
 
         # check ALL_READ permission
@@ -416,7 +412,7 @@ class MongoStorePartition(StorePartition):
             and ActionObjectPermission(
                 permission.uid, ActionPermission.ALL_READ
             ).permission_string
-            in permissions_strings
+            in permissions["permissions"]
         ):
             return True
 
