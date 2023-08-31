@@ -17,6 +17,7 @@ from ..core.container_engine import ContainerEngine
 from ..core.container_engine import Docker
 from ..core.container_engine import Podman
 from ..core.syft_repo import SyftRepo
+from ..core.syft_version import InvalidVersion
 from ..core.syft_version import SyftVersion
 
 __all__ = "create"
@@ -80,12 +81,12 @@ def validate_version(version: str) -> SyftVersion:
 
     try:
         _ver = SyftVersion(version)
-    except Exception:
-        print(f"[bold red]'Error: {version}' is not a valid version")
+    except InvalidVersion:
+        print(f"[bold red]Error: '{version}' is not a valid version")
         raise Exit(1)
 
     if _ver.match("<0.8.2b27"):
-        print("[bold red]Error: Minimum supported version is 0.8.2")
+        print(f"[bold red]Error: Minimum supported version is 0.8.2. Got: {_ver}")
         raise Exit(1)
 
     if not _ver.valid_version():

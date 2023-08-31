@@ -25,8 +25,21 @@ class SyftRepo:
         return [rel for rel in releases if rel.get("tag_name", "").startswith("v")]
 
     @staticmethod
-    def latest_version() -> str:
-        latest_release = SyftRepo.releases()[0]
+    @lru_cache(maxsize=None)
+    def prod_releases() -> List[dict]:
+        return [rel for rel in SyftRepo.releases() if not rel.get("prerelease")]
+
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def beta_releases() -> List[dict]:
+        return [rel for rel in SyftRepo.releases() if rel.get("prerelease")]
+
+    @staticmethod
+    def latest_version(beta: bool = False) -> str:
+        if beta:
+            latest_release = SyftRepo.beta_releases()[0]
+        else:
+            latest_release = SyftRepo.prod_releases()[0]
         return latest_release["tag_name"]
 
     @staticmethod
