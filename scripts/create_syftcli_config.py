@@ -6,7 +6,7 @@ import tarfile
 import yaml
 
 MANIFEST_PATH = Path("./packages/syftcli/manifest.yml")
-OUTPUT_PATH = Path("./build")
+OUTPUT_PATH = Path("./build/syftcli-config/")
 
 PREFIX_PATHS = {
     "k8s": "packages/grid/",
