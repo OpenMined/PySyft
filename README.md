@@ -59,7 +59,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
 ```sh
 $ kubectl create namespace syft
-$ SYFT_VERSION="0.8.2-beta.25"
+$ SYFT_VERSION="0.8.2-beta.26"
 $ helm pull oci://registry-1.docker.io/openmined/syft --version $SYFT_VERSION
 $ helm install my-domain "./syft-$SYFT_VERSION.tgz" --namespace syft --create-namespace
 ```
