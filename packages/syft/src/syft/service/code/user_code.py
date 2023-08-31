@@ -544,6 +544,12 @@ class SubmitUserCode(SyftObject):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
+            tree = ast.parse(inspect.getsource(self.local_function))
+
+            # check there are no globals
+            v = GlobalsVisitor()
+            v.visit(tree)
+
             # filtered_args = []
             filtered_kwargs = {}
             # for arg in args:
