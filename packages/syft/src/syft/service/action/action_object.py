@@ -528,11 +528,13 @@ class ActionObject(SyftObject):
                     return blob_deposit_object
 
                 if isinstance(data, ActionFileData):
-                    buffer = data.as_buffer()
+                    with open(data.filepath, "rb") as f:
+                        result = blob_deposit_object.write(f)
                 else:
-                    buffer = BytesIO(serialize(data, to_bytes=True))
+                    result = blob_deposit_object.write(
+                        BytesIO(serialize(data, to_bytes=True))
+                    )
 
-                result = blob_deposit_object.write(buffer)
                 if isinstance(result, SyftError):
                     return result
                 self.syft_blob_storage_entry_id = (

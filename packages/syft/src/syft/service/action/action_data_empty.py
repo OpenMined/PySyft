@@ -48,6 +48,3 @@ class ActionFileData(SyftObject):
             return v
 
         raise ValueError(f"Not a valid path to file. {v}")
-
-    def as_buffer(self):
-        return open(self.filepath, "rb")
