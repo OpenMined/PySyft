@@ -1,6 +1,8 @@
 # stdlib
+from collections.abc import Sequence
 import json
 from string import Template
+from typing import Any
 
 # relative
 from ...types.uid import UID
@@ -700,7 +702,9 @@ custom_code = """
 """
 
 
-def create_table_template(items, list_name, rows=5, table_icon=None):
+def create_table_template(
+    items: Sequence, list_name: Any, rows: int = 5, table_icon: Any = None
+) -> str:
     if not table_icon:
         table_icon = TABLE_ICON
 
