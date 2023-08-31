@@ -72,11 +72,11 @@ jobs:
         if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
         id: bump-version
         run: |
-          python3 src/syftcli/version.py
+          python3 syftcli/version.py
           bump2version patch --allow-dirty --no-commit
           tox -e lint || true
-          echo "deployed_version=$(python3 src/syftcli/version.py)" >> $GITHUB_OUTPUT
-          python3 src/syftcli/version.py
+          echo "deployed_version=$(python3 syftcli/version.py)" >> $GITHUB_OUTPUT
+          python3 syftcli/version.py
         working-directory: ./packages/syftcli
 
       - name: Write the new hash
@@ -90,7 +90,7 @@ jobs:
           author_name: Madhava Jay
           author_email: madhava@openmined.org
           message: "bump version"
-          add: "['./packages/syftcli/.bumpversion.cfg','./packages/syftcli/setup.py','./packages/syftcli/src/syftcli/version.py', './scripts/syftcli_hash']"
+          add: "['./packages/syftcli/.bumpversion.cfg','./packages/syftcli/setup.py','./packages/syftcli/syftcli/version.py', './scripts/syftcli_hash']"
           pull_strategy: NO-PULL
 
       - name: Build and publish
