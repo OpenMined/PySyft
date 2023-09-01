@@ -7,9 +7,7 @@ from typing import Type
 
 # third party
 from pymongo import ASCENDING
-from pymongo import WriteConcern
 from pymongo.collection import Collection as MongoCollection
-from pymongo.errors import DuplicateKeyError
 from result import Err
 from result import Ok
 from result import Result
@@ -234,7 +232,7 @@ class MongoStorePartition(StorePartition):
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write = self.has_permission(write_permission)
 
-        store_query_key = self.settings.store_key.with_obj(obj)
+        store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -243,21 +241,26 @@ class MongoStorePartition(StorePartition):
         store_key_exists = (
             collection.find_one({"_id": store_query_key.value}) is not None
         )
-
-        if not store_key_exists:
+        if (not store_key_exists) and (not self.item_keys_exist(obj, collection)):
             # attempt to claim ownership for writing
             ownership_result = self.take_ownership(uid=obj.id, credentials=credentials)
             can_write: bool = ownership_result.is_ok()
+        elif not ignore_duplicates:
+            unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
+            keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
+            return Err(
+                f"Duplication Key Error for {obj}.\n"
+                f"The fields that should be unique are {keys}."
+            )
+        else:
+            # we are not throwing an error, because we are ignoring duplicates
+            # we are also not writing though
+            return Ok(obj)
 
         if can_write:
             storage_obj = obj.to(self.storage_type)
 
-            if ignore_duplicates:
-                collection = collection.with_options(write_concern=WriteConcern(w=0))
-            try:
-                collection.insert_one(storage_obj)
-            except DuplicateKeyError as e:
-                return Err(f"Duplicate Key Error for {obj}: {e}")
+            collection.insert_one(storage_obj)
 
             # adding permissions
             read_permission = ActionObjectPermission(
@@ -273,6 +276,14 @@ class MongoStorePartition(StorePartition):
             return Ok(obj)
         else:
             return Err(f"No permission to write object with id {obj.id}")
+
+    def item_keys_exist(self, obj, collection):
+        qks: QueryKeys = self.settings.unique_keys.with_obj(obj)
+        query = {x.key: x.value for x in qks.qks}
+        if "id" in query:
+            query["_id"] = query.pop("id")
+        res = collection.find_one(query)
+        return res is not None
 
     def _update(
         self,

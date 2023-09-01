@@ -176,11 +176,11 @@ class KeyValueStorePartition(StorePartition):
         try:
             if obj.id is None:
                 obj.id = UID()
-            store_query_key = self.settings.store_key.with_obj(obj)
+            store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
             uid = store_query_key.value
             write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
             can_write = self.has_permission(write_permission)
-            unique_query_keys = self.settings.unique_keys.with_obj(obj)
+            unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
             store_key_exists = store_query_key.value in self.data
             searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
 
