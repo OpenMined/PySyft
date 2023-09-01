@@ -157,7 +157,7 @@ class MongoStorePartition(StorePartition):
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
-        collection = collection_status.ok()
+        collection: MongoCollection = collection_status.ok()
 
         def check_index_keys(current_keys, new_index_keys):
             current_keys.sort()
@@ -237,7 +237,7 @@ class MongoStorePartition(StorePartition):
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
-        collection = collection_status.ok()
+        collection: MongoCollection = collection_status.ok()
 
         store_key_exists = (
             collection.find_one({"_id": store_query_key.value}) is not None
@@ -283,7 +283,7 @@ class MongoStorePartition(StorePartition):
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
-        collection = collection_status.ok()
+        collection: MongoCollection = collection_status.ok()
 
         # TODO: optimize the update. The ID should not be overwritten,
         # but the qk doesn't necessarily have to include the `id` field either.
@@ -346,7 +346,7 @@ class MongoStorePartition(StorePartition):
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
-        collection = collection_status.ok()
+        collection: MongoCollection = collection_status.ok()
 
         if order_by is not None:
             storage_objs = collection.find(filter=qks.as_dict_mongo).sort(order_by.key)
@@ -372,7 +372,7 @@ class MongoStorePartition(StorePartition):
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
-        collection = collection_status.ok()
+        collection: MongoCollection = collection_status.ok()
 
         if has_permission or self.has_permission(
             ActionObjectWRITE(uid=qk.value, credentials=credentials)
@@ -516,7 +516,7 @@ class MongoStorePartition(StorePartition):
         collection_status = self.collection
         if collection_status.is_err():
             return 0
-        collection = collection_status.ok()
+        collection: MongoCollection = collection_status.ok()
         return collection.count_documents(filter={})
 
 
