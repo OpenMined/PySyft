@@ -6,12 +6,15 @@ import tarfile
 from typing import List
 
 # third party
-from rich import print
 from typer import Exit
 from typer import Option
 from typing_extensions import Annotated
 
 # relative
+from ..core.console import debug
+from ..core.console import error
+from ..core.console import info
+from ..core.console import success
 from ..core.container_engine import ContainerEngine
 from ..core.container_engine import ContainerEngineError
 from ..core.container_engine import Docker
@@ -58,27 +61,24 @@ def create(
     image_tags = get_syft_images(ver)
 
     # Begin bundling
-    print(
-        f"[bold green]"
-        f"Creating Syft {ver.release_tag} {engine} bundle at '{bundle_path}'"
-    )
+    info(f"Creating Syft {ver.release_tag} {engine} bundle at '{bundle_path}'")
 
-    print("\n[bold cyan]Pulling images...")
+    info("\nPulling images...")
     pull_images(engine_sdk, image_tags, dryrun=dryrun)
 
-    print("\n[bold cyan]Creating image archive...")
+    info("\nCreating image archive...")
     archive_images(engine_sdk, image_tags, img_path, dryrun=dryrun)
 
-    print(f"\n[bold cyan]Downloading {engine} config...")
+    info(f"\nDownloading {engine} config...")
     asset_path = get_engine_config(engine, ver, temp_path, dryrun=dryrun)
 
-    print("\n[bold cyan]Creating final bundle...")
+    info("\nCreating final bundle...")
     create_syft_bundle(bundle_path, images=img_path, assets=asset_path, dryrun=dryrun)
 
-    print("\n[bold cyan]Cleaning up...")
+    info("\nCleaning up...")
     cleanup_dir(temp_path)
 
-    print("\n[bold green]Done!")
+    success("\nDone!")
 
 
 def validate_version(version: str) -> SyftVersion:
@@ -87,15 +87,15 @@ def validate_version(version: str) -> SyftVersion:
     try:
         _ver = SyftVersion(version)
     except InvalidVersion:
-        print(f"[bold red]Error: '{version}' is not a valid version")
+        error(f"Error: '{version}' is not a valid version")
         raise Exit(1)
 
     if _ver.match("<0.8.2b27"):
-        print(f"[bold red]Error: Minimum supported version is 0.8.2. Got: {_ver}")
+        error(f"Error: Minimum supported version is '0.8.2' Got: '{_ver}'")
         raise Exit(1)
 
     if not _ver.valid_version():
-        print(f"[bold red]Error: Version '{_ver}' is not a valid Syft release")
+        error(f"Error: Version '{_ver}' is not a valid Syft release")
         raise Exit(1)
 
     return _ver
@@ -112,8 +112,9 @@ def get_container_engine(
         engine = Podman()
 
     if not dryrun and not engine.is_available():
-        print(
-            f"[bold red]Error: '{engine_name}' is unavailable. Make sure it is installed and running."
+        error(
+            f"Error: '{engine_name}' is unavailable. "
+            "Make sure it is installed and running."
         )
         raise Exit(1)
 
@@ -126,7 +127,7 @@ def pull_images(
     dryrun: bool = False,
 ) -> None:
     def fn_print_std(line: str) -> None:
-        print(f"[bright_black]{line}", end="", sep="")
+        debug(line, end="", sep="")
 
     try:
         results = engine_sdk.pull(
@@ -134,9 +135,9 @@ def pull_images(
             stream_output={"cb_stdout": fn_print_std, "cb_stderr": fn_print_std},
             dryrun=dryrun,
         )
-        dryrun and [print(f"[grey70]{result.args}") for result in results]
+        dryrun and [debug(result.args) for result in results]  # type: ignore[func-returns-value]
     except ContainerEngineError as e:
-        print("[bold red]Error:", e)
+        error("Error:", e)
         raise Exit(e.returncode)
 
 
@@ -148,9 +149,9 @@ def archive_images(
 ) -> None:
     try:
         result = engine_sdk.save(image_tags, archive_path, dryrun=dryrun)
-        dryrun and print(f"[grey70]{result.args}")
+        dryrun and debug(result.args)  # type: ignore[func-returns-value]
     except ContainerEngineError as e:
-        print("[bold red]Error:", e)
+        error("Error:", e)
         raise Exit(e.returncode)
 
 
