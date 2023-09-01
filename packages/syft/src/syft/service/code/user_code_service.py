@@ -260,7 +260,7 @@ class UserCodeService(AbstractService):
             result = output_result.ok()
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            output_policy.apply_output(context=context, outputs=result.syft_action_data)
+            output_policy.apply_output(context=context, outputs=result)
             code.output_policy = output_policy
             if not (
                 update_success := self.update_code_state(
