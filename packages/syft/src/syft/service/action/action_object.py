@@ -559,8 +559,6 @@ class ActionObject(SyftObject):
 
         self.syft_action_data_cache = data
 
-    syft_action_data = syft_action_data.setter(_set_syft_action_data)
-
     @property
     def is_pointer(self) -> bool:
         return self.syft_node_uid is not None
@@ -1051,10 +1049,6 @@ class ActionObject(SyftObject):
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
-
-    def delete_data(self):
-        empty = ActionDataEmpty(syft_internal_type=self.syft_internal_type)
-        self.syft_action_data = empty
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
