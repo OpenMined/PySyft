@@ -28,20 +28,24 @@ __all__ = "create"
 DEFAULT_OUTPUT_DIR = Path("~/.syft")
 
 
-class ContainerEngineType(str, Enum):
+class Engine(str, Enum):
     Docker = "docker"
     Podman = "podman"
 
 
+VersionOpts = Annotated[str, Option("--version", "-v")]
+EngineOpts = Annotated[Engine, Option("--engine", "-e")]
+DryrunOpts = Annotated[bool, Option("--dryrun")]
+OutdirOpts = Annotated[
+    Path, Option("--outdir", "-d", dir_okay=True, file_okay=False, writable=True)
+]
+
+
 def create(
-    version: Annotated[str, Option("--version", "-v")] = "latest",
-    outdir: Annotated[
-        Path, Option("--outdir", "-d", dir_okay=True, file_okay=False, writable=True)
-    ] = DEFAULT_OUTPUT_DIR,
-    engine: Annotated[
-        ContainerEngineType, Option("--engine", "-e")
-    ] = ContainerEngineType.Docker,
-    dryrun: bool = False,
+    version: VersionOpts = "latest",
+    outdir: OutdirOpts = DEFAULT_OUTPUT_DIR,
+    engine: EngineOpts = Engine.Docker,
+    dryrun: DryrunOpts = False,
 ) -> None:
     """Create an offline deployment bundle for Syft."""
 
@@ -51,7 +55,7 @@ def create(
     # Prepare temp paths
     out_path = prepare_output_dir(outdir)
     temp_path = prepare_tmp_dir(out_path)
-    img_path = Path(temp_path, "images.tar")
+    archive_path = Path(temp_path, "images.tar")
 
     # prepare output paths
     bundle_path = Path(out_path, f"syft-{ver.release_tag}-{engine.value}.tar")
@@ -67,13 +71,13 @@ def create(
     pull_images(engine_sdk, image_tags, dryrun=dryrun)
 
     info("\nCreating image archive...")
-    archive_images(engine_sdk, image_tags, img_path, dryrun=dryrun)
+    archive_images(engine_sdk, image_tags, archive_path, dryrun=dryrun)
 
-    info(f"\nDownloading {engine} config...")
-    asset_path = get_engine_config(engine, ver, temp_path, dryrun=dryrun)
+    info(f"\nDownloading {engine.value} config...")
+    config_path = get_engine_config(engine, ver, temp_path, dryrun=dryrun)
 
     info("\nCreating final bundle...")
-    create_syft_bundle(bundle_path, images=img_path, assets=asset_path, dryrun=dryrun)
+    create_syft_bundle(bundle_path, archive_path, config_path, dryrun=dryrun)
 
     info("\nCleaning up...")
     cleanup_dir(temp_path)
@@ -101,14 +105,12 @@ def validate_version(version: str) -> SyftVersion:
     return _ver
 
 
-def get_container_engine(
-    engine_name: ContainerEngineType, dryrun: bool = False
-) -> ContainerEngine:
+def get_container_engine(engine_name: Engine, dryrun: bool = False) -> ContainerEngine:
     engine: ContainerEngine
 
-    if engine_name == ContainerEngineType.Docker:
+    if engine_name == Engine.Docker:
         engine = Docker()
-    elif engine_name == ContainerEngineType.Podman:
+    elif engine_name == Engine.Podman:
         engine = Podman()
 
     if not dryrun and not engine.is_available():
@@ -184,40 +186,46 @@ def cleanup_dir(path: Path) -> None:
 
 
 def get_engine_config(
-    engine: ContainerEngineType,
+    engine: Engine,
     ver: SyftVersion,
     dl_dir: Path,
     dryrun: bool = False,
 ) -> Path:
     asset_name = (
         SyftRepo.Assets.PODMAN_CONFIG
-        if engine == ContainerEngineType.Podman
+        if engine == Engine.Podman
         else SyftRepo.Assets.DOCKER_CONFIG
     )
 
     if dryrun:
+        debug(f"Download: '{ver.release_tag}/{asset_name}' to '{dl_dir}'")
         return Path(dl_dir, asset_name)
 
     return SyftRepo.download_asset(asset_name, ver.release_tag, dl_dir)
 
 
 def create_syft_bundle(
-    path: Path,
-    images: Path,
-    assets: Path,
+    bundle_path: Path,
+    archive_path: Path,
+    config_path: Path,
     dryrun: bool = False,
 ) -> None:
     if dryrun:
+        debug(
+            f"Bundle: {bundle_path}\n"
+            f"+ Image: {archive_path}\n"
+            f"+ Deployment Config: {config_path}\n"
+        )
         return
 
-    if path.exists():
-        path.unlink()
+    if bundle_path.exists():
+        bundle_path.unlink()
 
-    with tarfile.open(str(path), "w") as bundle:
-        # extract assets as-is into bundle root
-        with tarfile.open(str(assets), "r:gz") as asset:
+    with tarfile.open(str(bundle_path), "w") as bundle:
+        # extract assets config as-is into bundle root
+        with tarfile.open(str(config_path), "r:gz") as asset:
             for member in asset.getmembers():
                 bundle.addfile(member, asset.extractfile(member))
 
-        # add images archive into the bundle
-        bundle.add(images, arcname=images.name)
+        # add image archive into the bundle
+        bundle.add(archive_path, arcname=archive_path.name)
