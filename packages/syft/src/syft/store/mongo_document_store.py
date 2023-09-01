@@ -147,6 +147,7 @@ class MongoStorePartition(StorePartition):
         return self._create_update_index()
 
     # Potentially thread-unsafe methods.
+    #
     # CAUTION:
     #       * Don't use self.lock here.
     #       * Do not call the public thread-safe methods here(with locking).
