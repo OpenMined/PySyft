@@ -564,8 +564,7 @@ class ActionObject(SyftObject):
         if isinstance(data, SyftError):
             return data
         if isinstance(data, ActionDataEmpty):
-            print(f"cannot store empty object {self.id}")
-            return data
+            return SyftError(f"cannot store empty object {self.id}")
         result = self._save_to_blob_storage_(data)
         if isinstance(result, SyftError):
             return result
