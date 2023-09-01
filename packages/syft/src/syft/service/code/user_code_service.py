@@ -240,6 +240,10 @@ class UserCodeService(AbstractService):
                 return SyftError("Output policy not approved", code)
 
             # Check if the OutputPolicy is valid
+            # stdlib
+            import sys
+
+            print(output_policy.valid, file=sys.stderr)
             if not (is_valid := output_policy.valid):
                 if len(output_policy.output_history) > 0:
                     result = resolve_outputs(
@@ -255,12 +259,14 @@ class UserCodeService(AbstractService):
                 Union[ActionObject, TwinObject], str
             ] = action_service._user_code_execute(context, code, kwarg2id)
 
+            print(output_result, file=sys.stderr)
             if output_result.is_err():
                 return SyftError(message=output_result.err())
             result = output_result.ok()
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            output_policy.apply_output(context=context, outputs=result)
+            output_policy.apply_output(context=context, outputs=result.syft_action_data)
+            print(output_policy, file=sys.stderr)
             code.output_policy = output_policy
             if not (
                 update_success := self.update_code_state(
