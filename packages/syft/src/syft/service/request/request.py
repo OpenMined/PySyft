@@ -498,14 +498,14 @@ class Request(SyftObject):
                 syft_node_location=api.node_uid,
             )
             blob_store_result = action_object._save_to_blob_store()
-            if isinstance(result, SyftError):
-                return result
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result
             ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
-            state.apply_output(context=ctx, outputs=action_object)
+            state.apply_output(context=ctx, outputs=result)
             policy_state_mutation = ObjectMutation(
                 linked_obj=change.linked_obj,
                 attr_name="output_policy",
@@ -513,9 +513,7 @@ class Request(SyftObject):
                 value=state,
             )
 
-            action_object_link = LinkedObject.from_obj(
-                action_object, node_uid=self.node_uid
-            )
+            action_object_link = LinkedObject.from_obj(result, node_uid=self.node_uid)
             permission_change = ActionStoreChange(
                 linked_obj=action_object_link,
                 apply_permission_type=ActionPermission.READ,
