@@ -43,6 +43,9 @@ class SecureFilePathLocation(SyftObject):
     id: UID
     path: str
 
+    def __repr__(self) -> str:
+        return f"{self.path}"
+
 
 @serializable()
 class SeaweedSecureFilePathLocation(SecureFilePathLocation):

@@ -1317,11 +1317,11 @@ def create_launch_cmd(
     else:
         parsed_kwargs["image_name"] = "default"
 
-    if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
-        parsed_kwargs["tag"] = kwargs["tag"]
+    if parsed_kwargs["dev"] is True:
+        parsed_kwargs["tag"] = "local"
     else:
-        if parsed_kwargs["dev"] is True:
-            parsed_kwargs["tag"] = "local"
+        if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
+            parsed_kwargs["tag"] = kwargs["tag"]
         else:
             parsed_kwargs["tag"] = "latest"
 
