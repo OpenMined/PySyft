@@ -497,10 +497,6 @@ class Request(SyftObject):
                 syft_client_verify_key=api.signing_key.verify_key,
                 syft_node_location=api.node_uid,
             )
-            # stdlib
-            import sys
-
-            print(action_object.syft_action_data, file=sys.stderr)
             blob_store_result = action_object._save_to_blob_store()
             if isinstance(blob_store_result, SyftError):
                 return blob_store_result
