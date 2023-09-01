@@ -1,14 +1,15 @@
 # stdlib
-import subprocess
-import sys
+from functools import wraps
+from subprocess import CalledProcessError
+from subprocess import CompletedProcess
+from subprocess import PIPE
+from subprocess import Popen
 import threading
 from typing import Any
 from typing import Callable
 from typing import Optional
-from typing import Tuple
-from typing import TypeAlias
 
-CmdResult: TypeAlias = Tuple[str, str, int]
+__all__ = ["run_command", "check_returncode", "CalledProcessError", "CompletedProcess"]
 
 
 def NOOP(x: Any) -> None:
@@ -18,12 +19,37 @@ def NOOP(x: Any) -> None:
 def run_command(
     command: str,
     working_dir: Optional[str] = None,
-    stdout: int = subprocess.PIPE,
-    stderr: int = subprocess.PIPE,
+    stdout: int = PIPE,
+    stderr: int = PIPE,
     stream_output: Optional[dict] = None,
-) -> CmdResult:
+    dryrun: bool = False,
+) -> CompletedProcess:
+    """
+    Run a command in a subprocess.
+
+    Args:
+        command       (str): The command to run.
+        working_dir   (str): The working directory to run the command in.
+        stdout        (int): The stdout file descriptor. Defaults to subprocess.PIPE.
+        stderr        (int): The stderr file descriptor. Defaults to subprocess.PIPE.
+        stream_output (dict): A dict containing callbacks to process stdout and stderr in real-time.
+        dryrun        (bool): If True, the command will not be executed.
+
+    Returns:
+        A CompletedProcess object.
+
+    Example:
+        >>> from syftcli.core.proc import run_command
+        >>> result = run_command("echo 'hello world'")
+        >>> result.check_returncode()
+        >>> result.stdout
+    """
+
+    if dryrun:
+        return CompletedProcess(command, 0, stdout="", stderr="")
+
     try:
-        process = subprocess.Popen(
+        process = Popen(
             command,
             shell=True,
             cwd=working_dir,
@@ -66,16 +92,23 @@ def run_command(
             stdout_thread.join()
             stderr_thread.join()
 
-            return _out, _err, process.returncode
         else:
             _out, _err = process.communicate()
-            return (_out, _err, process.returncode)
-    except subprocess.CalledProcessError as e:
-        return (e.stdout, e.stderr, e.returncode)
+
+        return CompletedProcess(command, process.returncode, _out, _err)
+    except CalledProcessError as e:
+        return CompletedProcess(command, e.returncode, e.stdout, e.stderr)
 
 
-def handle_error(result: CmdResult, exit_on_error: bool = False) -> None:
-    stdout, stderr, code = result
-    if code != 0:
-        print("Error:", stderr)
-        exit_on_error and sys.exit(-1)
+def check_returncode(
+    func: Callable[..., CompletedProcess]
+) -> Callable[..., CompletedProcess]:
+    """A decorator to wrap run_command and check the return code."""
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> CompletedProcess:
+        result = func(*args, **kwargs)
+        result.check_returncode()
+        return result
+
+    return wrapper

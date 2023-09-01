@@ -13,6 +13,7 @@ from typing_extensions import Annotated
 
 # relative
 from ..core.container_engine import ContainerEngine
+from ..core.container_engine import ContainerEngineError
 from ..core.container_engine import Docker
 from ..core.container_engine import Podman
 from ..core.syft_repo import SyftRepo
@@ -53,7 +54,7 @@ def create(
     bundle_path = Path(out_path, f"syft-{ver.release_tag}-{engine.value}.tar")
 
     # Prepare container engine & images
-    engine_sdk = get_container_engine(engine)
+    engine_sdk = get_container_engine(engine, dryrun=dryrun)
     image_tags = get_syft_images(ver)
 
     # Begin bundling
@@ -63,14 +64,10 @@ def create(
     )
 
     print("\n[bold cyan]Pulling images...")
-    engine_sdk.pull(
-        image_tags,
-        stream_output={"cb_stdout": fn_print_std, "cb_stderr": fn_print_std},
-        dryrun=dryrun,
-    )
+    pull_images(engine_sdk, image_tags, dryrun=dryrun)
 
     print("\n[bold cyan]Creating image archive...")
-    engine_sdk.save(image_tags, tarfile=img_path, dryrun=dryrun)
+    archive_images(engine_sdk, image_tags, img_path, dryrun=dryrun)
 
     print(f"\n[bold cyan]Downloading {engine} config...")
     asset_path = get_engine_config(engine, ver, temp_path, dryrun=dryrun)
@@ -82,10 +79,6 @@ def create(
     cleanup_dir(temp_path)
 
     print("\n[bold green]Done!")
-
-
-def fn_print_std(line: str) -> None:
-    print(f"[bright_black]{line}", end="", sep="")
 
 
 def validate_version(version: str) -> SyftVersion:
@@ -108,7 +101,9 @@ def validate_version(version: str) -> SyftVersion:
     return _ver
 
 
-def get_container_engine(engine_name: ContainerEngineType) -> ContainerEngine:
+def get_container_engine(
+    engine_name: ContainerEngineType, dryrun: bool = False
+) -> ContainerEngine:
     engine: ContainerEngine
 
     if engine_name == ContainerEngineType.Docker:
@@ -116,11 +111,47 @@ def get_container_engine(engine_name: ContainerEngineType) -> ContainerEngine:
     elif engine_name == ContainerEngineType.Podman:
         engine = Podman()
 
-    if not engine.is_installed():
-        print(f"[bold red]'{engine_name}' is not running or not installed")
+    if not dryrun and not engine.is_available():
+        print(
+            f"[bold red]Error: '{engine_name}' is unavailable. Make sure it is installed and running."
+        )
         raise Exit(1)
 
     return engine
+
+
+def pull_images(
+    engine_sdk: ContainerEngine,
+    image_tags: List[str],
+    dryrun: bool = False,
+) -> None:
+    def fn_print_std(line: str) -> None:
+        print(f"[bright_black]{line}", end="", sep="")
+
+    try:
+        results = engine_sdk.pull(
+            image_tags,
+            stream_output={"cb_stdout": fn_print_std, "cb_stderr": fn_print_std},
+            dryrun=dryrun,
+        )
+        dryrun and [print(f"[grey70]{result.args}") for result in results]
+    except ContainerEngineError as e:
+        print("[bold red]Error:", e)
+        raise Exit(e.returncode)
+
+
+def archive_images(
+    engine_sdk: ContainerEngine,
+    image_tags: List[str],
+    archive_path: Path,
+    dryrun: bool = False,
+) -> None:
+    try:
+        result = engine_sdk.save(image_tags, archive_path, dryrun=dryrun)
+        dryrun and print(f"[grey70]{result.args}")
+    except ContainerEngineError as e:
+        print("[bold red]Error:", e)
+        raise Exit(e.returncode)
 
 
 def get_syft_images(syft_ver: SyftVersion) -> List[str]:
