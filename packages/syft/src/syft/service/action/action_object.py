@@ -190,7 +190,7 @@ passthrough_attrs = [
     "get_from",  # syft
     "get",  # syft
     "delete_data",  # syft
-    "_set_syft_action_data",  # syft
+    "_save_to_blob_storage_",  # syft
     "syft_action_data",  # syft
 ]
 dont_wrap_output_attrs = [
@@ -316,7 +316,7 @@ def convert_to_pointers(
                     syft_node_location=api.node_uid,
                 )
                 arg.syft_node_uid = node_uid
-                r = arg._save_to_blob_store()
+                r = arg._save_to_blob_storage()
                 if isinstance(r, SyftError):
                     print(r.message)
                 arg = api.services.action.set(arg)
@@ -331,7 +331,7 @@ def convert_to_pointers(
                     syft_node_location=api.node_uid,
                 )
                 arg.syft_node_uid = node_uid
-                r = arg._save_to_blob_store()
+                r = arg._save_to_blob_storage()
                 if isinstance(r, SyftError):
                     print(r.message)
                 arg = api.services.action.set(arg)
@@ -435,8 +435,8 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_debug_",
     "as_empty",
     "get",
-    "_save_to_blob_store",
-    "_set_syft_action_data",
+    "_save_to_blob_storage",
+    "_save_to_blob_storage_",
     "syft_action_data",
     "__check_action_data",
     "as_empty_data",
@@ -510,7 +510,7 @@ class ActionObject(SyftObject):
                 self.syft_action_data_cache = blob_retrieval_object.read()
                 self.syft_action_data_type = type(self.syft_action_data)
 
-    def _set_syft_action_data(self, data: Any) -> None:
+    def _save_to_blob_storage_(self, data: Any) -> None:
         if not isinstance(data, ActionDataEmpty):
             if isinstance(data, ActionFileData):
                 storage_entry = CreateBlobStorageEntry.from_path(data.path)
@@ -559,6 +559,19 @@ class ActionObject(SyftObject):
 
         self.syft_action_data_cache = data
 
+    def _save_to_blob_storage(self) -> Optional[SyftError]:
+        data = self.syft_action_data
+        if isinstance(data, SyftError):
+            return data
+        if isinstance(data, ActionDataEmpty):
+            print(f"cannot store empty object {self.id}")
+            return data
+        result = self._save_to_blob_storage_(data)
+        if isinstance(result, SyftError):
+            return result
+        if not TraceResult.is_tracing:
+            self.syft_action_data_cache = self.as_empty_data()
+
     @property
     def is_pointer(self) -> bool:
         return self.syft_node_uid is not None
@@ -593,19 +606,6 @@ class ActionObject(SyftObject):
             values["syft_action_data_str_"] = str(v)
             values["syft_has_bool_attr"] = hasattr(v, "__bool__")
         return values
-
-    def _save_to_blob_store(self) -> Optional[SyftError]:
-        data = self.syft_action_data
-        if isinstance(data, SyftError):
-            return data
-        if isinstance(data, ActionDataEmpty):
-            print(f"cannot store empty object {self.id}")
-            return data
-        result = self._set_syft_action_data(data)
-        if isinstance(result, SyftError):
-            return result
-        if not TraceResult.is_tracing:
-            self.syft_action_data_cache = self.as_empty_data()
 
     @property
     def is_mock(self):
@@ -721,7 +721,7 @@ class ActionObject(SyftObject):
 
         if api is not None:
             obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
-            res = obj._save_to_blob_store()
+            res = obj._save_to_blob_storage()
             if isinstance(res, SyftError):
                 print(f"failed saving {obj} to blob storage, error: {res}")
 
@@ -897,7 +897,7 @@ class ActionObject(SyftObject):
     def send(self, client: SyftClient) -> Self:
         """Send the object to a Syft Client"""
         self._set_obj_location_(client.id, client.verify_key)
-        self._save_to_blob_store()
+        self._save_to_blob_storage()
         res = client.api.services.action.set(self)
         if isinstance(res, ActionObject):
             self.syft_created_at = res.syft_created_at

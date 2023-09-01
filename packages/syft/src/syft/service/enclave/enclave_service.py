@@ -163,7 +163,7 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
                 enclave_client.api.node_uid,
                 enclave_client.verify_key,
             )
-            var_value._save_to_blob_store()
+            var_value._save_to_blob_storage()
 
             inputs[var_name] = var_value
 

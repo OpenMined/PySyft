@@ -484,7 +484,7 @@ class Request(SyftObject):
                 syft_client_verify_key=api.signing_key.verify_key,
                 syft_node_location=api.node_uid,
             )
-            blob_store_result = action_object._save_to_blob_store()
+            blob_store_result = action_object._save_to_blob_storage()
             if isinstance(blob_store_result, SyftError):
                 return blob_store_result
             result = api.services.action.set(action_object)
@@ -497,7 +497,7 @@ class Request(SyftObject):
                 syft_client_verify_key=api.signing_key.verify_key,
                 syft_node_location=api.node_uid,
             )
-            blob_store_result = action_object._save_to_blob_store()
+            blob_store_result = action_object._save_to_blob_storage()
             if isinstance(blob_store_result, SyftError):
                 return blob_store_result
             result = api.services.action.set(action_object)

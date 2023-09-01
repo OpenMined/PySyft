@@ -61,7 +61,7 @@ class ActionService(AbstractService):
             syft_node_location=context.node.id,
             syft_client_verify_key=context.credentials,
         )
-        blob_store_result = np_obj._save_to_blob_store()
+        blob_store_result = np_obj._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
 
@@ -236,7 +236,7 @@ class ActionService(AbstractService):
             context.node.id,
             context.credentials,
         )
-        blob_store_result = result_action_object._save_to_blob_store()
+        blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
 
@@ -489,7 +489,7 @@ class ActionService(AbstractService):
             context.credentials,
         )
 
-        blob_store_result = result_action_object._save_to_blob_store()
+        blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
 
