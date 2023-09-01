@@ -241,7 +241,7 @@ class MongoStorePartition(StorePartition):
         collection: MongoCollection = collection_status.ok()
 
         store_key_exists = (
-            collection.find_one({"_id": store_query_key.value}) is not None
+            collection.find_one(store_query_key.as_dict_mongo) is not None
         )
 
         if not store_key_exists:
