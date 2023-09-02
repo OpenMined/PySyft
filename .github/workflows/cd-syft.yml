@@ -146,7 +146,7 @@ jobs:
             rm -rf infrastructure/gitops/environments/pre-release/*
             cp packages/grid/helm/syft/* packages/grid/helm/manifest.yaml infrastructure/gitops/environments/pre_release/
           else
-            rm -rf infrastructure/GitOps/environments/stable/*
+            rm -rf infrastructure/gitops/environments/stable/*
             cp packages/grid/helm/syft/* packages/grid/helm/manifest.yaml infrastructure/gitops/environments/pre_release/
           fi
 
