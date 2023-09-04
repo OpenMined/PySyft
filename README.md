@@ -10,12 +10,12 @@ Perform data science on `data` that remains in `someone else's` server
 
 # Quickstart
 
-✅ `Linux` ✅ `macOS` ✅ `Windows`\* ✅ `Docker` ✅ `Kubernetes`
+✅ `Linux` ✅ `macOS` ✅ `Windows` ✅ `Docker` ✅ `Podman` ✅ `Kubernetes`
 
 ## Install Client
 
 ```bash
-$ pip install -U syft -f https://whls.blob.core.windows.net/unstable/index.html
+$ pip install -U syft
 ```
 
 ## Launch Server
@@ -93,9 +93,8 @@ $ helm install ... --set ingress.ingressClass="gce"
 
 - HAGrid 0.3 Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`
-- PySyft 0.8.1 Requires: 🐍 `python 3.9 - 3.11` - Run: `pip install -U syft`  
-  \*`Windows` users must run this first: `pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html`
-- PyGrid Requires: 🐳 `docker`, ☸️ `kubernetes` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
+- PySyft 0.8.1 Requires: 🐍 `python 3.9 - 3.11` - Run: `pip install -U syft`
+- PyGrid Requires: 🐳 `docker`, 🦦 `podman` or ☸️ `kubernetes` - Run: `hagrid launch ...`
 
 # Versions
 
