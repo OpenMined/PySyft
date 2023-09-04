@@ -279,9 +279,7 @@ class MongoStorePartition(StorePartition):
 
     def item_keys_exist(self, obj, collection):
         qks: QueryKeys = self.settings.unique_keys.with_obj(obj)
-        query = {x.key: x.value for x in qks.qks}
-        if "id" in query:
-            query["_id"] = query.pop("id")
+        query = {"$or": [{k: v} for k, v in qks.as_dict_mongo.items()]}
         res = collection.find_one(query)
         return res is not None
 
