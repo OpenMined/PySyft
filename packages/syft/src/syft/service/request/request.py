@@ -30,6 +30,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
+from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
@@ -41,6 +42,7 @@ from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
 from ..action.action_store import ActionPermission
+from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
@@ -97,12 +99,23 @@ class ActionStoreChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            action_service = context.node.get_service(ActionService)
+            action_service: ActionService = context.node.get_service(ActionService)
+            blob_storage_service = context.node.get_service(BlobStorageService)
             action_store = action_service.store
 
             # can we ever have a lineage ID in the store?
             obj_uid = self.linked_obj.object_uid
             obj_uid = obj_uid.id if isinstance(obj_uid, LineageID) else obj_uid
+
+            action_obj = action_store.get(
+                uid=obj_uid,
+                credentials=context.approving_user_credentials,
+            )
+
+            if action_obj.is_err():
+                return Err(SyftError(message=f"{action_obj.err()}"))
+
+            action_obj = action_obj.ok()
 
             owner_permission = ActionObjectPermission(
                 uid=obj_uid,
@@ -110,16 +123,39 @@ class ActionStoreChange(Change):
                 permission=self.apply_permission_type,
             )
             if action_store.has_permission(permission=owner_permission):
-                requesting_permission = ActionObjectPermission(
-                    uid=obj_uid,
+                id_action = (
+                    action_obj.id
+                    if not isinstance(action_obj.id, LineageID)
+                    else action_obj.id.id
+                )
+                requesting_permission_action_obj = ActionObjectPermission(
+                    uid=id_action,
+                    credentials=context.requesting_user_credentials,
+                    permission=self.apply_permission_type,
+                )
+                if isinstance(action_obj, TwinObject):
+                    uid_blob = action_obj.private.syft_blob_storage_entry_id
+                else:
+                    uid_blob = action_obj.syft_blob_storage_entry_id
+                requesting_permission_blob_obj = ActionObjectPermission(
+                    uid=uid_blob,
                     credentials=context.requesting_user_credentials,
                     permission=self.apply_permission_type,
                 )
                 if apply:
-                    action_store.add_permission(requesting_permission)
+                    action_store.add_permission(requesting_permission_action_obj)
+                    blob_storage_service.stash.add_permission(
+                        requesting_permission_blob_obj
+                    )
                 else:
-                    if action_store.has_permission(requesting_permission):
-                        action_store.remove_permission(requesting_permission)
+                    if action_store.has_permission(requesting_permission_action_obj):
+                        action_store.remove_permission(requesting_permission_action_obj)
+                    if blob_storage_service.stash.has_permission(
+                        requesting_permission_blob_obj
+                    ):
+                        blob_storage_service.stash.remove_permission(
+                            requesting_permission_blob_obj
+                        )
             else:
                 return Err(
                     SyftError(
@@ -128,7 +164,7 @@ class ActionStoreChange(Change):
                 )
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}")
+            print(f"failed to apply {type(self)}", e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -442,19 +478,34 @@ class Request(SyftObject):
                     message="Already approved, if you want to force updating the result use force=True"
                 )
             action_obj_id = state.output_history[0].outputs[0]
-            action_object = ActionObject.from_obj(result, id=action_obj_id)
-            result = api.services.action.save(action_object)
-            if not result:
+            action_object = ActionObject.from_obj(
+                result,
+                id=action_obj_id,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
+            )
+            blob_store_result = action_object._save_to_blob_storage()
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
+            result = api.services.action.set(action_object)
+            if isinstance(result, SyftError):
                 return result
             return SyftSuccess(message="Request submitted for updating result.")
         else:
-            action_object = ActionObject.from_obj(result)
-            result = api.services.action.save(action_object)
-            if not result:
+            action_object = ActionObject.from_obj(
+                result,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
+            )
+            blob_store_result = action_object._save_to_blob_storage()
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
+            result = api.services.action.set(action_object)
+            if isinstance(result, SyftError):
                 return result
             ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
-            state.apply_output(context=ctx, outputs=action_object)
+            state.apply_output(context=ctx, outputs=result)
             policy_state_mutation = ObjectMutation(
                 linked_obj=change.linked_obj,
                 attr_name="output_policy",
@@ -462,9 +513,7 @@ class Request(SyftObject):
                 value=state,
             )
 
-            action_object_link = LinkedObject.from_obj(
-                action_object, node_uid=self.node_uid
-            )
+            action_object_link = LinkedObject.from_obj(result, node_uid=self.node_uid)
             permission_change = ActionStoreChange(
                 linked_obj=action_object_link,
                 apply_permission_type=ActionPermission.READ,
@@ -603,7 +652,7 @@ class ObjectMutation(Change):
         try:
             obj = self.linked_obj.resolve_with_context(context)
             if obj.is_err():
-                return SyftError(message=obj.err())
+                return Err(SyftError(message=obj.err()))
             obj = obj.ok()
             if apply:
                 obj = self.mutate(obj, value=self.value)
@@ -792,7 +841,7 @@ class UserCodeStatusChange(Change):
                 return Err(valid)
             obj = self.linked_obj.resolve_with_context(context)
             if obj.is_err():
-                return SyftError(message=obj.err())
+                return Err(SyftError(message=obj.err()))
             obj = obj.ok()
             if apply:
                 res = self.mutate(obj, context, undo=False)

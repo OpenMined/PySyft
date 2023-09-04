@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 # third party
 import requests
+from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
@@ -19,8 +20,8 @@ from ..util.util import verify_tls
 
 @serializable(attrs=["protocol", "host_or_ip", "port", "path", "query"])
 class GridURL:
-    @staticmethod
-    def from_url(url: Union[str, GridURL]) -> GridURL:
+    @classmethod
+    def from_url(cls, url: Union[str, GridURL]) -> Self:
         if isinstance(url, GridURL):
             return url
         try:
@@ -36,7 +37,7 @@ class GridURL:
             host_or_ip = host_or_ip_parts[0]
             if parts.scheme == "https":
                 port = 443
-            return GridURL(
+            return cls(
                 host_or_ip=host_or_ip,
                 path=parts.path,
                 port=port,
@@ -77,12 +78,12 @@ class GridURL:
         self.protocol = protocol
         self.query = query
 
-    def with_path(self, path: str) -> GridURL:
+    def with_path(self, path: str) -> Self:
         dupe = copy.copy(self)
         dupe.path = path
         return dupe
 
-    def as_container_host(self, container_host: Optional[str] = None) -> GridURL:
+    def as_container_host(self, container_host: Optional[str] = None) -> Self:
         if self.host_or_ip not in [
             "localhost",
             "host.docker.internal",
@@ -106,7 +107,7 @@ class GridURL:
             # convert it back for non container clients
             hostname = "localhost"
 
-        return GridURL(
+        return self.__class__(
             protocol=self.protocol,
             host_or_ip=hostname,
             port=self.port,
@@ -140,7 +141,7 @@ class GridURL:
     def url_path(self) -> str:
         return f"{self.path}{self.query_string}"
 
-    def to_tls(self) -> GridURL:
+    def to_tls(self) -> Self:
         if self.protocol == "https":
             return self
 
@@ -151,7 +152,9 @@ class GridURL:
         new_base_url = r.url
         if new_base_url.endswith("/"):
             new_base_url = new_base_url[0:-1]
-        return GridURL.from_url(url=f"{new_base_url}{self.path}{self.query_string}")
+        return self.__class__.from_url(
+            url=f"{new_base_url}{self.path}{self.query_string}"
+        )
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.url}>"
@@ -162,9 +165,9 @@ class GridURL:
     def __hash__(self) -> int:
         return hash(self.__str__())
 
-    def copy(self) -> GridURL:
-        return GridURL.from_url(self.url)
+    def __copy__(self) -> Self:
+        return self.__class__.from_url(self.url)
 
-    def set_port(self, port: int) -> GridURL:
+    def set_port(self, port: int) -> Self:
         self.port = port
         return self
