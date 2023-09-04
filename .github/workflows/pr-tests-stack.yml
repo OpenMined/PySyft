@@ -118,11 +118,6 @@ jobs:
         with:
           args: install visualstudio2019-workload-vctools -y
 
-      - name: Install jaxlib
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        run: |
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
@@ -333,11 +328,6 @@ jobs:
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install visualstudio2019-workload-vctools -y
-
-      - name: Install jaxlib
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        run: |
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
