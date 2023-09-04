@@ -13,8 +13,10 @@ from result import Result
 
 # relative
 from ...serde.serializable import serializable
+from ...types.datetime import DateTime
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
+from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
@@ -53,8 +55,16 @@ class ActionService(AbstractService):
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         np_obj = NumpyArrayObject(
-            syft_action_data=data, dtype=data.dtype, shape=data.shape
+            dtype=data.dtype,
+            shape=data.shape,
+            syft_action_data_cache=data,
+            syft_node_location=context.node.id,
+            syft_client_verify_key=context.credentials,
         )
+        blob_store_result = np_obj._save_to_blob_storage()
+        if isinstance(blob_store_result, SyftError):
+            return blob_store_result
+
         np_pointer = self.set(context, np_obj)
         return np_pointer
 
@@ -71,33 +81,28 @@ class ActionService(AbstractService):
     ) -> Result[ActionObject, str]:
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
+
+        if isinstance(action_object, ActionObject):
+            action_object.syft_created_at = DateTime.now()
+        else:
+            action_object.private_obj.syft_created_at = DateTime.now()
+            action_object.mock_obj.syft_created_at = DateTime.now()
+
+        has_result_read_permission = context.extra_kwargs.get(
+            "has_result_read_permission", False
+        )
+
         result = self.store.set(
             uid=action_object.id,
             credentials=context.credentials,
             syft_object=action_object,
+            has_result_read_permission=has_result_read_permission,
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
                 action_object = action_object.mock
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
-        return result.err()
-
-    @service_method(path="action.save", name="save")
-    def save(
-        self,
-        context: AuthedServiceContext,
-        action_object: Union[ActionObject, TwinObject],
-    ) -> Result[SyftSuccess, str]:
-        """Save an object to the action store"""
-        # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
-        result = self.store.set(
-            uid=action_object.id,
-            credentials=context.credentials,
-            syft_object=action_object,
-        )
-        if result.is_ok():
-            return Ok(SyftSuccess(message=f"{type(action_object)} saved"))
         return result.err()
 
     @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
@@ -122,7 +127,11 @@ class ActionService(AbstractService):
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
         if result.is_ok():
-            obj = result.ok()
+            obj: Union[TwinObject, ActionObject] = result.ok()
+            obj._set_obj_location_(
+                context.node.id,
+                context.credentials,
+            )
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
                     obj = obj.private
@@ -148,6 +157,11 @@ class ActionService(AbstractService):
             uid=uid, credentials=context.credentials, node_uid=context.node.id
         )
         if result.is_ok():
+            obj = result.ok()
+            obj._set_obj_location_(
+                context.node.id,
+                context.credentials,
+            )
             return Ok(result.ok())
         return Err(result.err())
 
@@ -165,6 +179,17 @@ class ActionService(AbstractService):
         if filtered_kwargs.is_err():
             return filtered_kwargs
         filtered_kwargs = filtered_kwargs.ok()
+
+        expected_input_kwargs = set()
+        for _inp_kwarg in code_item.input_policy.inputs.values():
+            expected_input_kwargs.update(_inp_kwarg.keys())
+        permitted_input_kwargs = list(filtered_kwargs.keys())
+        not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+        if len(not_approved_kwargs) > 0:
+            return Err(
+                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+            )
+
         has_twin_inputs = False
 
         real_kwargs = {}
@@ -207,15 +232,25 @@ class ActionService(AbstractService):
         except Exception as e:
             return Err(f"_user_code_execute failed. {e}")
 
-        set_result = self.store.set(
-            uid=result_id,
-            credentials=context.credentials,
-            syft_object=result_action_object,
-            has_result_read_permission=True,
+        result_action_object._set_obj_location_(
+            context.node.id,
+            context.credentials,
         )
+        blob_store_result = result_action_object._save_to_blob_storage()
+        if isinstance(blob_store_result, SyftError):
+            return blob_store_result
+
+        # pass permission information to the action store as extra kwargs
+        context.extra_kwargs = {"has_result_read_permission": True}
+
+        set_result = self.set(context, result_action_object)
 
         if set_result.is_err():
             return set_result.err()
+
+        blob_storage_service: BlobStorageService = context.node.get_service(
+            BlobStorageService
+        )
 
         if len(code_item.output_policy.output_readers) > 0:
             self.store.add_permissions(
@@ -224,8 +259,18 @@ class ActionService(AbstractService):
                     for x in code_item.output_policy.output_readers
                 ]
             )
+            blob_storage_service.stash.add_permissions(
+                [
+                    ActionObjectPermission(
+                        result_action_object.syft_blob_storage_entry_id,
+                        ActionPermission.READ,
+                        x,
+                    )
+                    for x in code_item.output_policy.output_readers
+                ]
+            )
 
-        return Ok(result_action_object)
+        return set_result
 
     def execute_plan(
         self, plan, context: AuthedServiceContext, plan_kwargs: Dict[str, ActionObject]
@@ -250,7 +295,7 @@ class ActionService(AbstractService):
 
         for plan_action in plan.actions:
             action_res = self.execute(context, plan_action)
-            if action_res.is_err():
+            if isinstance(action_res, SyftError):
                 return action_res
         result_id = plan.outputs[0].id
         return self._get(context, result_id, TwinMode.MOCK, has_permission=True)
@@ -298,7 +343,7 @@ class ActionService(AbstractService):
             # depending on permisisons?
             public_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
             public_val = public_args[0]
-            setattr(resolved_self.mock, name, public_val)
+            setattr(resolved_self.mock.syft_action_data, name, public_val)
             return Ok(
                 TwinObject(
                     id=action.result_id,
@@ -394,6 +439,7 @@ class ActionService(AbstractService):
 
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
+            # print(action.create_object, "already in blob storage")
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action)
         else:
@@ -408,9 +454,7 @@ class ActionService(AbstractService):
                     f"Failed executing action {action}, could not resolve self: {resolved_self.err()}"
                 )
             resolved_self = resolved_self.ok()
-            if action.op == "__call__" and isinstance(
-                resolved_self.syft_action_data, Plan
-            ):
+            if action.op == "__call__" and resolved_self.syft_action_data_type == Plan:
                 result_action_object = self.execute_plan(
                     plan=resolved_self.syft_action_data,
                     context=context,
@@ -440,24 +484,27 @@ class ActionService(AbstractService):
             context, action
         )
 
-        set_result = self.store.set(
-            uid=action.result_id,
-            credentials=context.credentials,
-            syft_object=result_action_object,
-            has_result_read_permission=has_result_read_permission,
+        result_action_object._set_obj_location_(
+            context.node.id,
+            context.credentials,
         )
+
+        blob_store_result = result_action_object._save_to_blob_storage()
+        if isinstance(blob_store_result, SyftError):
+            return blob_store_result
+
+        # pass permission information to the action store as extra kwargs
+        context.extra_kwargs = {
+            "has_result_read_permission": has_result_read_permission
+        }
+
+        set_result = self.set(context, result_action_object)
         if set_result.is_err():
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"
             )
 
-        if isinstance(result_action_object, TwinObject):
-            result_action_object = result_action_object.mock
-            # we patch this on the object, because this is the thing we are getting back
-            result_action_object.id = action.result_id
-        result_action_object.syft_point_to(context.node.id)
-
-        return Ok(result_action_object)
+        return set_result
 
     def has_read_permission_for_action_result(
         self, context: AuthedServiceContext, action: Action
@@ -594,12 +641,13 @@ def execute_object(
     twin_mode: TwinMode = TwinMode.NONE,
 ) -> Result[Ok[Union[TwinObject, ActionObject]], Err[str]]:
     unboxed_resolved_self = resolved_self.syft_action_data
-    args, has_arg_twins = resolve_action_args(action, context, service)
+    _args, has_arg_twins = resolve_action_args(action, context, service)
+
     kwargs, has_kwargs_twins = resolve_action_kwargs(action, context, service)
-    if args.is_err():
-        return args
+    if _args.is_err():
+        return _args
     else:
-        args = args.ok()
+        args = _args.ok()
     if kwargs.is_err():
         return kwargs
     else:
@@ -620,15 +668,15 @@ def execute_object(
                 result_action_object = wrap_result(action.result_id, result)
             elif twin_mode == TwinMode.NONE and has_twin_inputs:
                 # self isn't a twin but one of the inputs is
-                private_args = filter_twin_args(args, twin_mode=twin_mode)
-                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                private_args = filter_twin_args(args, twin_mode=TwinMode.PRIVATE)
+                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE)
                 private_result = target_method(*private_args, **private_kwargs)
                 result_action_object_private = wrap_result(
                     action.result_id, private_result
                 )
 
-                mock_args = filter_twin_args(args, twin_mode=twin_mode)
-                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
+                mock_args = filter_twin_args(args, twin_mode=TwinMode.MOCK)
+                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.MOCK)
                 mock_result = target_method(*mock_args, **mock_kwargs)
                 result_action_object_mock = wrap_result(action.result_id, mock_result)
 
@@ -666,7 +714,7 @@ def execute_object(
 def wrap_result(result_id: UID, result: Any) -> ActionObject:
     # 🟡 TODO 11: Figure out how we want to store action object results
     action_type = action_type_for_type(result)
-    result_action_object = action_type(id=result_id, syft_action_data=result)
+    result_action_object = action_type(id=result_id, syft_action_data_cache=result)
     return result_action_object
 
 

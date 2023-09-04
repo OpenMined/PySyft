@@ -46,6 +46,8 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
+    stdin_open: true
+    tty: true
 
   # backend_stream:
   #   volumes:
@@ -71,12 +73,12 @@ services:
     ports:
       - "4000"
 
-  # seaweedfs:
-  #   profiles:
-  #     - blob-storage
-  #   # volumes:
-  #   #   - ./data/seaweedfs:/data
-  #   ports:
-  #     - "9333" # admin web port
-  #     - "8888" # filer web port
-  #     # - "8333" # S3 API port
+  seaweedfs:
+    profiles:
+      - blob-storage
+    # volumes:
+    #   - ./data/seaweedfs:/data
+    ports:
+      - "9333" # admin web port
+      - "8888" # filer web port
+      - "8333" # S3 API port

@@ -361,7 +361,7 @@ class CreateAsset(SyftObject):
         # relative
         from ..action.action_object import ActionObject
 
-        self.mock = ActionObject.empty()
+        self.set_mock(ActionObject.empty(), False)
 
     def set_shape(self, shape: Tuple) -> None:
         self.shape = shape

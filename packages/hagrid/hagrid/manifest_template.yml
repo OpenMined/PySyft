@@ -12,7 +12,7 @@ files:
     - rabbitmq/rabbitmq.conf
     - redis/redis.conf
     - seaweedfs/filer.toml
-    - seaweedfs/s3config.json
+    - seaweedfs/start.sh
     - vpn/config.yaml
     - default.env
     docker:

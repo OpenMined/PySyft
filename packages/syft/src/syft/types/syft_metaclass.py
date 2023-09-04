@@ -7,10 +7,8 @@ import threading
 from typing import Any
 from typing import Dict
 from typing import Generator
-from typing import T
 from typing import Tuple
 from typing import Type
-from typing import Union
 
 # third party
 from pydantic.fields import UndefinedType
@@ -28,9 +26,6 @@ TupleGenerator = Generator[Tuple[str, Any], None, None]
 @serializable()
 class Empty:
     pass
-
-
-EmptyType = Union[T, Empty]
 
 
 class PartialModelMetaclass(ModelMetaclass):
