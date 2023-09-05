@@ -94,7 +94,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # Set journal mode to WAL.
         # self._db[thread_ident()].execute("pragma journal_mode=wal")
 
-    def create_table(self):
+    def create_table(self) -> None:
         try:
             self.cur.execute(
                 f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec

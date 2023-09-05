@@ -42,11 +42,15 @@ Read/retrieve SyftObject from blob storage
 
 
 # stdlib
+from typing import Optional
 from typing import Type
 from typing import Union
+from urllib.request import urlretrieve
 
 # third party
 from pydantic import BaseModel
+import requests
+from typing_extensions import Self
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -54,12 +58,16 @@ from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...types.base import SyftBaseModel
+from ...types.blob_storage import BlobFile
+from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
+from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ...util.constants import DEFAULT_TIMEOUT
 
 
 @serializable()
@@ -67,7 +75,10 @@ class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def read(self) -> SyftObject:
+    type_: Optional[Type]
+    file_name: str
+
+    def read(self) -> Union[SyftObject, SyftError]:
         pass
 
 
@@ -78,7 +89,11 @@ class SyftObjectRetrieval(BlobRetrieval):
 
     syft_object: bytes
 
-    def read(self) -> SyftObject:
+    def read(self) -> Union[SyftObject, SyftError]:
+        if self.type_ is BlobFileType:
+            with open(self.file_name, "wb") as fp:
+                fp.write(self.syft_object)
+            return BlobFile(file_name=self.file_name)
         return deserialize(self.syft_object, from_bytes=True)
 
 
@@ -87,10 +102,29 @@ class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    url: str
+    url: GridURL
 
-    def read(self) -> SyftObject:
-        pass
+    def read(self) -> Union[SyftObject, SyftError]:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is not None:
+            blob_url = api.connection.to_blob_route(self.url.url_path)
+        else:
+            blob_url = self.url
+        try:
+            if self.type_ is BlobFileType:
+                urlretrieve(str(blob_url), filename=self.file_name)  # nosec
+                return BlobFile(file_name=self.file_name)
+            response = requests.get(str(blob_url), timeout=DEFAULT_TIMEOUT)
+            response.raise_for_status()
+            return deserialize(response.content, from_bytes=True)
+        except requests.RequestException as e:
+            return SyftError(message=f"Failed to retrieve with Error: {e}")
 
 
 @serializable()
@@ -110,13 +144,24 @@ class BlobStorageClientConfig(BaseModel):
 
 
 class BlobStorageConnection:
-    def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
+    def __enter__(self) -> Self:
         raise NotImplementedError
 
-    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
+    def __exit__(self, *exc) -> None:
+        raise NotImplementedError
+
+    def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
+        raise NotImplementedError
+
+    def allocate(
+        self, obj: CreateBlobStorageEntry
+    ) -> Union[SecureFilePathLocation, SyftError]:
         raise NotImplementedError
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
+        raise NotImplementedError
+
+    def delete(self, fp: SecureFilePathLocation) -> bool:
         raise NotImplementedError
 
 
@@ -124,13 +169,11 @@ class BlobStorageConnection:
 class BlobStorageClient(SyftBaseModel):
     config: BlobStorageClientConfig
 
-    def __enter__(self) -> BlobStorageConnection:
-        raise NotImplementedError
-
-    def __exit__(self, *exc) -> None:
+    def connect(self) -> BlobStorageConnection:
         raise NotImplementedError
 
 
+@serializable()
 class BlobStorageConfig(SyftBaseModel):
     client_type: Type[BlobStorageClient]
     client_config: BlobStorageClientConfig

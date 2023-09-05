@@ -215,7 +215,10 @@ class RequestService(AbstractService):
                 )
                 send_notification(context=context, notification=notification)
 
-            return result.value
+            # TODO: check whereever we're return SyftError encapsulate it in Result.
+            if hasattr(result, "value"):
+                return result.value
+            return result
         return request.value
 
     @service_method(path="request.undo", name="undo")
@@ -236,7 +239,7 @@ class RequestService(AbstractService):
 
         if result.is_err():
             return SyftError(
-                f"Failed to undo Request: <{uid}> with error: {result.err()}"
+                message=f"Failed to undo Request: <{uid}> with error: {result.err()}"
             )
 
         link = LinkedObject.with_context(request, context=context)
