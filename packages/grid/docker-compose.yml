@@ -234,7 +234,7 @@ services:
       - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
 
   mongo:
-    image: mongo:latest
+    image: "${MONGO_IMAGE}:${MONGO_VERSION}"
     restart: always
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
