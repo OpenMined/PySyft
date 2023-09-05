@@ -94,7 +94,10 @@ def recursive_serde_register(
 
     alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
-    fqn = f"{cls.__module__}.{cls.__name__}"
+    if hasattr(cls, "__version__"):
+        fqn = f"{cls.__module__}.{cls.__name__}.{cls.__version__}"
+    else:
+        fqn = f"{cls.__module__}.{cls.__name__}"
 
     nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
