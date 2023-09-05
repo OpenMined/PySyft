@@ -198,7 +198,7 @@ deployments:
         version: "0.9.0"
       values:
         containers:
-          - image: mongo:latest
+          - image: "${MONGO_IMAGE}:${MONGO_VERSION}"
             env:
               - name: MONGO_INITDB_ROOT_USERNAME
                 value: "${MONGO_USERNAME}"
@@ -245,7 +245,7 @@ deployments:
 
 dev:
   mongo:
-    imageSelector: "mongo:latest"
+    imageSelector: "${MONGO_IMAGE}:${MONGO_VERSION}"
     ports:
       - port: "27017"
   backend:
