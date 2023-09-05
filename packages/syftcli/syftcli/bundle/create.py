@@ -6,13 +6,17 @@ import tarfile
 from typing import List
 
 # third party
-from rich import print
 from typer import Exit
 from typer import Option
 from typing_extensions import Annotated
 
 # relative
+from ..core.console import debug
+from ..core.console import error
+from ..core.console import info
+from ..core.console import success
 from ..core.container_engine import ContainerEngine
+from ..core.container_engine import ContainerEngineError
 from ..core.container_engine import Docker
 from ..core.container_engine import Podman
 from ..core.syft_repo import SyftRepo
@@ -24,20 +28,24 @@ __all__ = "create"
 DEFAULT_OUTPUT_DIR = Path("~/.syft")
 
 
-class ContainerEngineType(str, Enum):
+class Engine(str, Enum):
     Docker = "docker"
     Podman = "podman"
 
 
+VersionOpts = Annotated[str, Option("--version", "-v")]
+EngineOpts = Annotated[Engine, Option("--engine", "-e")]
+DryrunOpts = Annotated[bool, Option("--dryrun")]
+OutdirOpts = Annotated[
+    Path, Option("--outdir", "-d", dir_okay=True, file_okay=False, writable=True)
+]
+
+
 def create(
-    version: Annotated[str, Option("--version", "-v")] = "latest",
-    outdir: Annotated[
-        Path, Option("--outdir", "-d", dir_okay=True, file_okay=False, writable=True)
-    ] = DEFAULT_OUTPUT_DIR,
-    engine: Annotated[
-        ContainerEngineType, Option("--engine", "-e")
-    ] = ContainerEngineType.Docker,
-    dryrun: bool = False,
+    version: VersionOpts = "latest",
+    outdir: OutdirOpts = DEFAULT_OUTPUT_DIR,
+    engine: EngineOpts = Engine.Docker,
+    dryrun: DryrunOpts = False,
 ) -> None:
     """Create an offline deployment bundle for Syft."""
 
@@ -47,45 +55,34 @@ def create(
     # Prepare temp paths
     out_path = prepare_output_dir(outdir)
     temp_path = prepare_tmp_dir(out_path)
-    img_path = Path(temp_path, "images.tar")
+    archive_path = Path(temp_path, "images.tar")
 
     # prepare output paths
     bundle_path = Path(out_path, f"syft-{ver.release_tag}-{engine.value}.tar")
 
     # Prepare container engine & images
-    engine_sdk = get_container_engine(engine)
+    engine_sdk = get_container_engine(engine, dryrun=dryrun)
     image_tags = get_syft_images(ver)
 
     # Begin bundling
-    print(
-        f"[bold green]"
-        f"Creating Syft {ver.release_tag} {engine} bundle at '{bundle_path}'"
-    )
+    info(f"Creating Syft {ver.release_tag} {engine} bundle at '{bundle_path}'")
 
-    print("\n[bold cyan]Pulling images...")
-    engine_sdk.pull(
-        image_tags,
-        stream_output={"cb_stdout": fn_print_std, "cb_stderr": fn_print_std},
-        dryrun=dryrun,
-    )
+    info("\nPulling images...")
+    pull_images(engine_sdk, image_tags, dryrun=dryrun)
 
-    print("\n[bold cyan]Creating image archive...")
-    engine_sdk.save(image_tags, tarfile=img_path, dryrun=dryrun)
+    info("\nCreating image archive...")
+    archive_images(engine_sdk, image_tags, archive_path, dryrun=dryrun)
 
-    print(f"\n[bold cyan]Downloading {engine} config...")
-    asset_path = get_engine_config(engine, ver, temp_path, dryrun=dryrun)
+    info(f"\nDownloading {engine.value} config...")
+    config_path = get_engine_config(engine, ver, temp_path, dryrun=dryrun)
 
-    print("\n[bold cyan]Creating final bundle...")
-    create_syft_bundle(bundle_path, images=img_path, assets=asset_path, dryrun=dryrun)
+    info("\nCreating final bundle...")
+    create_syft_bundle(bundle_path, archive_path, config_path, dryrun=dryrun)
 
-    print("\n[bold cyan]Cleaning up...")
+    info("\nCleaning up...")
     cleanup_dir(temp_path)
 
-    print("\n[bold green]Done!")
-
-
-def fn_print_std(line: str) -> None:
-    print(f"[bright_black]{line}", end="", sep="")
+    success("\nDone!")
 
 
 def validate_version(version: str) -> SyftVersion:
@@ -94,33 +91,70 @@ def validate_version(version: str) -> SyftVersion:
     try:
         _ver = SyftVersion(version)
     except InvalidVersion:
-        print(f"[bold red]Error: '{version}' is not a valid version")
+        error(f"Error: '{version}' is not a valid version")
         raise Exit(1)
 
     if _ver.match("<0.8.2b27"):
-        print(f"[bold red]Error: Minimum supported version is 0.8.2. Got: {_ver}")
+        error(f"Error: Minimum supported version is '0.8.2' Got: '{_ver}'")
         raise Exit(1)
 
     if not _ver.valid_version():
-        print(f"[bold red]Error: Version '{_ver}' is not a valid Syft release")
+        error(f"Error: Version '{_ver}' is not a valid Syft release")
         raise Exit(1)
 
     return _ver
 
 
-def get_container_engine(engine_name: ContainerEngineType) -> ContainerEngine:
+def get_container_engine(engine_name: Engine, dryrun: bool = False) -> ContainerEngine:
     engine: ContainerEngine
 
-    if engine_name == ContainerEngineType.Docker:
+    if engine_name == Engine.Docker:
         engine = Docker()
-    elif engine_name == ContainerEngineType.Podman:
+    elif engine_name == Engine.Podman:
         engine = Podman()
 
-    if not engine.is_installed():
-        print(f"[bold red]'{engine_name}' is not running or not installed")
+    if not dryrun and not engine.is_available():
+        error(
+            f"Error: '{engine_name}' is unavailable. "
+            "Make sure it is installed and running."
+        )
         raise Exit(1)
 
     return engine
+
+
+def pull_images(
+    engine_sdk: ContainerEngine,
+    image_tags: List[str],
+    dryrun: bool = False,
+) -> None:
+    def fn_print_std(line: str) -> None:
+        debug(line, end="", sep="")
+
+    try:
+        results = engine_sdk.pull(
+            image_tags,
+            stream_output={"cb_stdout": fn_print_std, "cb_stderr": fn_print_std},
+            dryrun=dryrun,
+        )
+        dryrun and [debug(result.args) for result in results]  # type: ignore[func-returns-value]
+    except ContainerEngineError as e:
+        error("Error:", e)
+        raise Exit(e.returncode)
+
+
+def archive_images(
+    engine_sdk: ContainerEngine,
+    image_tags: List[str],
+    archive_path: Path,
+    dryrun: bool = False,
+) -> None:
+    try:
+        result = engine_sdk.save(image_tags, archive_path, dryrun=dryrun)
+        dryrun and debug(result.args)  # type: ignore[func-returns-value]
+    except ContainerEngineError as e:
+        error("Error:", e)
+        raise Exit(e.returncode)
 
 
 def get_syft_images(syft_ver: SyftVersion) -> List[str]:
@@ -152,40 +186,46 @@ def cleanup_dir(path: Path) -> None:
 
 
 def get_engine_config(
-    engine: ContainerEngineType,
+    engine: Engine,
     ver: SyftVersion,
     dl_dir: Path,
     dryrun: bool = False,
 ) -> Path:
     asset_name = (
         SyftRepo.Assets.PODMAN_CONFIG
-        if engine == ContainerEngineType.Podman
+        if engine == Engine.Podman
         else SyftRepo.Assets.DOCKER_CONFIG
     )
 
     if dryrun:
+        debug(f"Download: '{ver.release_tag}/{asset_name}' to '{dl_dir}'")
         return Path(dl_dir, asset_name)
 
     return SyftRepo.download_asset(asset_name, ver.release_tag, dl_dir)
 
 
 def create_syft_bundle(
-    path: Path,
-    images: Path,
-    assets: Path,
+    bundle_path: Path,
+    archive_path: Path,
+    config_path: Path,
     dryrun: bool = False,
 ) -> None:
     if dryrun:
+        debug(
+            f"Bundle: {bundle_path}\n"
+            f"+ Image: {archive_path}\n"
+            f"+ Deployment Config: {config_path}\n"
+        )
         return
 
-    if path.exists():
-        path.unlink()
+    if bundle_path.exists():
+        bundle_path.unlink()
 
-    with tarfile.open(str(path), "w") as bundle:
-        # extract assets as-is into bundle root
-        with tarfile.open(str(assets), "r:gz") as asset:
+    with tarfile.open(str(bundle_path), "w") as bundle:
+        # extract assets config as-is into bundle root
+        with tarfile.open(str(config_path), "r:gz") as asset:
             for member in asset.getmembers():
                 bundle.addfile(member, asset.extractfile(member))
 
-        # add images archive into the bundle
-        bundle.add(images, arcname=images.name)
+        # add image archive into the bundle
+        bundle.add(archive_path, arcname=archive_path.name)
