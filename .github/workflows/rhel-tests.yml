@@ -31,6 +31,10 @@ jobs:
         run: |
           python${{matrix.python-version}} --version
 
+      - name: tunshell debugging
+        run: |
+          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T suUE7jGTdhewPJFEZsuFfF liphLlAgWuccu9pg3ykY4d eu.relay.tunshell.com
+
       # - name: Check for file changes
       #   uses: dorny/paths-filter@v2
       #   id: changes
