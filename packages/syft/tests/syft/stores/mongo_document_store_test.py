@@ -34,6 +34,7 @@ def test_mongo_store_partition_sanity(
     assert res.is_ok()
 
     assert hasattr(mongo_store_partition, "_collection")
+    assert hasattr(mongo_store_partition, "_permissions")
 
 
 def test_mongo_store_partition_init_failed(root_verify_key) -> None:
