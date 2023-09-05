@@ -15,6 +15,7 @@ from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -69,6 +70,35 @@ class NodeMetadata(SyftObject):
     verify_key: SyftVerifyKey
     highest_object_version: int
     lowest_object_version: int
+    syft_version: str
+    node_type: NodeType = NodeType.DOMAIN
+    deployed_on: str = "Date"
+    organization: str = "OpenMined"
+    on_board: bool = False
+    description: str = "Text"
+    signup_enabled: bool
+    admin_email: str
+    node_side_type: str
+    show_warnings: bool
+
+    def check_version(self, client_version: str) -> bool:
+        return check_version(
+            client_version=client_version,
+            server_version=self.syft_version,
+            server_name=self.name,
+        )
+
+
+@serializable()
+class NodeMetadataV2(SyftObject):
+    __canonical_name__ = "NodeMetadata"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    name: str
+    highest_version: int
+    lowest_version: int
+    id: UID
+    verify_key: SyftVerifyKey
     syft_version: str
     node_type: NodeType = NodeType.DOMAIN
     deployed_on: str = "Date"
