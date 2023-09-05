@@ -22,8 +22,6 @@ from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ..response import SyftSuccess
-from .action_object import ActionObject
-from .action_object import TwinMode
 from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
 from .action_permissions import ActionObjectOWNER
@@ -83,6 +81,19 @@ class KeyValueActionStore(ActionStore):
                 return Err(f"Could not find item with uid {uid}, {e}")
         return Err(f"Permission: {read_permission} denied")
 
+    def get_mock(self, uid: UID) -> Result[SyftObject, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
+        try:
+            syft_object = self.data[uid]
+            if isinstance(syft_object, TwinObject) and not is_action_data_empty(
+                syft_object.mock
+            ):
+                return Ok(syft_object.mock)
+            return Err("No mock")
+        except Exception as e:
+            return Err(f"Could not find item with uid {uid}, {e}")
+
     def get_pointer(
         self,
         uid: UID,
@@ -92,32 +103,23 @@ class KeyValueActionStore(ActionStore):
         uid = uid.id  # We only need the UID from LineageID or UID
 
         try:
-            # 🟡 TODO 34: do we want pointer read permissions?
             if uid in self.data:
                 obj = self.data[uid]
                 read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-                if isinstance(obj, TwinObject):
-                    if self.has_permission(read_permission):
-                        obj = (
-                            obj.mock
-                            if not is_action_data_empty(obj.mock)
-                            else obj.private
-                        )
-                    elif not is_action_data_empty(obj.mock):
-                        obj = obj.mock
-                    else:
-                        return Err(obj.as_empty())
-                    # we patch the real id on it so we can keep using the twin
-                    obj.id = uid
-                elif isinstance(obj, ActionObject) and not self.has_permission(
-                    read_permission
-                ):
-                    return Err(obj.as_empty())
-                else:
-                    obj.syft_twin_type = TwinMode.NONE
-                    obj.syft_point_to(node_uid)
-                return Ok(obj)
-            # third party
+
+                # if you have permission you can have private data
+                if self.has_permission(read_permission):
+                    if isinstance(obj, TwinObject):
+                        return Ok(obj.private)
+                    return Ok(obj)
+
+                # if its a twin with a mock anyone can have this
+                if isinstance(obj, TwinObject) and not is_action_data_empty(obj.mock):
+                    return Ok(obj.mock)
+
+                # finally worst case you get ActionDataEmpty so you can still trace
+                return Ok(obj.as_empty())
+
             return Err("Permission denied")
         except Exception as e:
             return Err(str(e))
