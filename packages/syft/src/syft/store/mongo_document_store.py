@@ -442,7 +442,7 @@ class MongoStorePartition(StorePartition):
             {"_id": permission.uid}
         )
         if permissions is None:
-            # Permission doesn't exits, add a new one
+            # Permission doesn't exist, add a new one
             collection_permissions.insert_one(
                 {
                     "_id": permission.uid,
@@ -474,10 +474,13 @@ class MongoStorePartition(StorePartition):
         if permissions is None:
             return Err(f"permission with UID {permission.uid} not found!")
         permissions_strings: Set = permissions["permissions"]
-        permissions_strings.remove(permission.permission_string)
-        collection_permissions.update_one(
-            {"_id": permission.uid}, {"$set": {"permissions": permissions_strings}}
-        )
+        if permission.permission_string in permissions_strings:
+            permissions_strings.remove(permission.permission_string)
+            collection_permissions.update_one(
+                {"_id": permission.uid}, {"$set": {"permissions": permissions_strings}}
+            )
+        else:
+            return Err(f"the permission {permission.permission_string} does not exist!")
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey

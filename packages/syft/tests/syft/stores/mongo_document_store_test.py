@@ -9,6 +9,7 @@ from joblib import Parallel
 from joblib import delayed
 from pymongo.collection import Collection as MongoCollection
 import pytest
+from result import Err
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
@@ -619,33 +620,98 @@ def test_mongo_store_partition_permissions_collection(
     assert isinstance(collection_permissions, MongoCollection)
 
 
-def test_mongo_store_partition_add_permission(
+def test_mongo_store_partition_add_remove_permission(
     root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
 ) -> None:
+    """
+    Test the add_permission and remove_permission functions of MongoStorePartition
+    """
+    # setting up
     res = mongo_store_partition.init_store()
     assert res.is_ok()
-
     permissions_collection: MongoCollection = mongo_store_partition.permissions.ok()
     obj = MockSyftObject(data=1)
+
+    # add the first permission
     obj_read_permission = ActionObjectPermission(
         uid=obj.id, permission=ActionPermission.READ, credentials=root_verify_key
     )
-    print(permissions_collection, obj_read_permission)
+    mongo_store_partition.add_permission(obj_read_permission)
+    assert permissions_collection.count_documents({}) == 1
+    find_res_1 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    assert find_res_1 is not None
+    assert len(find_res_1["permissions"]) == 1
+    assert find_res_1["permissions"] == {
+        obj_read_permission.permission_string,
+    }
+
+    # add the second permission
+    obj_write_permission = ActionObjectPermission(
+        uid=obj.id, permission=ActionPermission.WRITE, credentials=root_verify_key
+    )
+    mongo_store_partition.add_permission(obj_write_permission)
+    assert permissions_collection.count_documents({}) == 1
+
+    find_res_2 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    assert find_res_2 is not None
+    assert len(find_res_2["permissions"]) == 2
+    assert find_res_2["permissions"] == {
+        obj_read_permission.permission_string,
+        obj_write_permission.permission_string,
+    }
+
+    # add duplicated permission
+    mongo_store_partition.add_permission(obj_write_permission)
+    assert permissions_collection.count_documents({}) == 1
+    find_res_3 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    assert len(find_res_3["permissions"]) == 2
+    assert find_res_3["permissions"] == find_res_2["permissions"]
+
+    # remove the write permission
+    mongo_store_partition.remove_permission(obj_write_permission)
+    find_res_4 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    assert len(find_res_4["permissions"]) == 1
+    assert find_res_1["permissions"] == {
+        obj_read_permission.permission_string,
+    }
+
+    # remove a non-existent permission
+    remove_res = mongo_store_partition.remove_permission(
+        ActionObjectPermission(
+            uid=obj.id, permission=ActionPermission.OWNER, credentials=root_verify_key
+        )
+    )
+    assert isinstance(remove_res, Err)
+    find_res_5 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    assert len(find_res_5["permissions"]) == 1
+    assert find_res_1["permissions"] == {
+        obj_read_permission.permission_string,
+    }
 
 
+@pytest.mark.skip(reason="To be implemented")
 def test_mongo_store_partition_add_permissions(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
     pass
 
 
+@pytest.mark.skip(reason="To be implemented")
 def test_mongo_store_partition_take_ownership(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
     pass
 
 
+@pytest.mark.skip(reason="To be implemented")
 def test_mongo_store_partition_remove_permission(
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    pass
+
+
+@pytest.mark.skip(reason="To be implemented")
+def test_mongo_store_partition_has_permission(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
     pass
@@ -674,5 +740,3 @@ def test_mongo_store_partition_permissions_set(
     assert permissions is not None
     assert isinstance(permissions["permissions"], Set)
     assert len(permissions["permissions"]) == 4
-
-    # import pdb; pdb.set_trace()
