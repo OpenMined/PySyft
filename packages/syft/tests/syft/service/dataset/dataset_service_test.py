@@ -199,9 +199,9 @@ def test_guest_client_get_empty_mock_as_private_pointer(
 
     mock = guest_dataset.assets[0].pointer
 
-    assert mock.is_real
+    assert not mock.is_real
     assert mock.is_pointer
-    assert mock.syft_twin_type is TwinMode.PRIVATE
+    assert mock.syft_twin_type is TwinMode.MOCK
 
 
 def test_domain_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> None:

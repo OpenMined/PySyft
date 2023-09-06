@@ -2,6 +2,7 @@
 import mimetypes
 from pathlib import Path
 import sys
+from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -11,12 +12,27 @@ from typing_extensions import Self
 
 # relative
 from ..node.credentials import SyftVerifyKey
+from ..serde import serialize
 from ..serde.serializable import serializable
 from ..service.response import SyftException
+from ..types.transforms import keep
+from ..types.transforms import transform
 from .datetime import DateTime
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
+
+
+@serializable()
+class BlobFile(SyftObject):
+    __canonical_name__ = "BlobFile"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    file_name: str
+
+
+class BlobFileType(type):
+    pass
 
 
 @serializable()
@@ -27,6 +43,17 @@ class SecureFilePathLocation(SyftObject):
     id: UID
     path: str
 
+    def __repr__(self) -> str:
+        return f"{self.path}"
+
+
+@serializable()
+class SeaweedSecureFilePathLocation(SecureFilePathLocation):
+    __canonical_name__ = "SeaweedSecureFilePathLocation"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    upload_id: str
+
 
 @serializable()
 class BlobStorageEntry(SyftObject):
@@ -34,12 +61,22 @@ class BlobStorageEntry(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    location: SecureFilePathLocation
-    type_: Optional[Type[SyftObject]]
+    location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
+    type_: Optional[Type]
     mimetype: str = "bytes"
     file_size: int
     uploaded_by: SyftVerifyKey
-    create_at: DateTime = DateTime.now()
+    created_at: DateTime = DateTime.now()
+
+
+@serializable()
+class BlobStorageMetadata(SyftObject):
+    __canonical_name__ = "BlobStorageMetadata"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    type_: Optional[Type[SyftObject]]
+    mimetype: str = "bytes"
+    file_size: int
 
 
 @serializable()
@@ -48,13 +85,15 @@ class CreateBlobStorageEntry(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    type_: Optional[Type[SyftObject]]
+    type_: Optional[Type]
     mimetype: str = "bytes"
     file_size: int
+    extensions: List[str] = []
 
     @classmethod
     def from_obj(cls, obj: SyftObject) -> Self:
-        return cls(file_size=sys.getsizeof(obj), type_=type(obj))
+        file_size = sys.getsizeof(serialize._serialize(obj=obj, to_bytes=True))
+        return cls(file_size=file_size, type_=type(obj))
 
     @classmethod
     def from_path(cls, fp: Union[str, Path], mimetype: Optional[str] = None) -> Self:
@@ -74,4 +113,18 @@ class CreateBlobStorageEntry(SyftObject):
                     "Please specify mimetype manually `from_path(..., mimetype = ...)`."
                 )
 
-        return cls(mimetype=mimetype, file_size=path.stat().st_size)
+        return cls(
+            mimetype=mimetype,
+            file_size=path.stat().st_size,
+            extensions=path.suffixes,
+            type_=BlobFileType,
+        )
+
+    @property
+    def file_name(self) -> str:
+        return str(self.id) + "".join(self.extensions)
+
+
+@transform(BlobStorageEntry, BlobStorageMetadata)
+def storage_entry_to_metadata():
+    return [keep(["id", "type_", "mimetype", "file_size"])]

@@ -123,6 +123,7 @@ class Routes(Enum):
     ROUTE_LOGIN = f"{API_PATH}/login"
     ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
+    ROUTE_BLOB_STORE = "/blob"
 
 
 @serializable(attrs=["proxy_target_uid", "url"])
@@ -148,6 +149,10 @@ class HTTPConnection(NodeConnection):
     @property
     def api_url(self) -> GridURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
+
+    def to_blob_route(self, path: str) -> GridURL:
+        _path = self.routes.ROUTE_BLOB_STORE.value + path
+        return self.url.with_path(_path)
 
     @property
     def session(self) -> Session:
@@ -425,6 +430,7 @@ class SyftClient:
     metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
     __logged_in_user: str = ""
+    __logged_in_username: str = ""
     __user_role: ServiceRole = ServiceRole.NONE
 
     def __init__(
@@ -471,6 +477,10 @@ class SyftClient:
     @property
     def logged_in_user(self) -> Optional[str]:
         return self.__logged_in_user
+
+    @property
+    def logged_in_username(self) -> Optional[str]:
+        return self.__logged_in_username
 
     @property
     def user_role(self) -> ServiceRole:
@@ -550,6 +560,12 @@ class SyftClient:
         return None
 
     @property
+    def numpy(self) -> Optional[APIModule]:
+        if self.api.has_lib("numpy"):
+            return self.api.lib.numpy
+        return None
+
+    @property
     def settings(self) -> Optional[APIModule]:
         if self.api.has_service("user"):
             return self.api.services.settings
@@ -598,6 +614,10 @@ class SyftClient:
         if signing_key is not None:
             self.credentials = signing_key
             self.__logged_in_user = email
+
+            # Get current logged in user name
+            self.__logged_in_username = self.users.get_current_user().name
+
             # TODO: How to get the role of the user?
             # self.__user_role =
             self._fetch_api(self.credentials)
@@ -605,6 +625,16 @@ class SyftClient:
                 f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()} side "
                 f"{self.metadata.node_type.capitalize()}> as <{email}>"
             )
+            # relative
+            from ..node.node import get_default_root_password
+
+            if password == get_default_root_password():
+                message = (
+                    "You are using a default password. Please change the password "
+                    "using `[your_client].me.set_password([new_password])`."
+                )
+                prompt_warning_message(message)
+
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,
@@ -685,18 +715,6 @@ class SyftClient:
         if isinstance(response, tuple):
             response = response[0]
         return response
-
-    def __getattr__(self, name):
-        if (
-            hasattr(self, "api")
-            and hasattr(self.api, "lib")
-            and hasattr(self.api.lib, name)
-        ):
-            return getattr(self.api.lib, name)
-        else:
-            raise AttributeError(
-                f"{self.__class__.__name__} object has no attribute {name}."
-            )
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)

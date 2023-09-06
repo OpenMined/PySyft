@@ -13,8 +13,8 @@ class Env(SyftObject):
     packages_dict: Dict[str, str]
 
     @property
-    def packages(self):
+    def packages(self) -> list[tuple[str, str]]:
         return [(k, v) for k, v in self.packages_dict.items()]
 
-    def create_local_env(self):
+    def create_local_env(self) -> None:
         venv.EnvBuilder()

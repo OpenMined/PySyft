@@ -443,6 +443,20 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Launch a low side node type else a high side node type",
 )
+@click.option(
+    "--set-s3-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Set root username for s3 blob storage",
+)
+@click.option(
+    "--set-s3-password",
+    default=None,
+    required=False,
+    type=str,
+    help="Set root password for s3 blob storage",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1236,6 +1250,10 @@ def create_launch_cmd(
 
     parsed_kwargs["use_blob_storage"] = not bool(kwargs["no_blob_storage"])
 
+    if parsed_kwargs["use_blob_storage"]:
+        parsed_kwargs["set_s3_username"] = kwargs["set_s3_username"]
+        parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
+
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
     )
@@ -1299,11 +1317,11 @@ def create_launch_cmd(
     else:
         parsed_kwargs["image_name"] = "default"
 
-    if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
-        parsed_kwargs["tag"] = kwargs["tag"]
+    if parsed_kwargs["dev"] is True:
+        parsed_kwargs["tag"] = "local"
     else:
-        if parsed_kwargs["dev"] is True:
-            parsed_kwargs["tag"] = "local"
+        if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
+            parsed_kwargs["tag"] = kwargs["tag"]
         else:
             parsed_kwargs["tag"] = "latest"
 
@@ -2188,6 +2206,12 @@ def create_launch_docker_cmd(
 
     if "set_root_email" in kwargs and kwargs["set_root_email"] is not None:
         envs["DEFAULT_ROOT_EMAIL"] = kwargs["set_root_email"]
+
+    if "set_s3_username" in kwargs and kwargs["set_s3_username"] is not None:
+        envs["S3_ROOT_USER"] = kwargs["set_s3_username"]
+
+    if "set_s3_password" in kwargs and kwargs["set_s3_password"] is not None:
+        envs["S3_ROOT_PWD"] = kwargs["set_s3_password"]
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -3127,7 +3151,11 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
         target = verb.get_named_term_grammar("node_name").input
         if target == "all":
             # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
-            return "docker rm `docker ps -aq` --force"
+
+            if "prune_vol" in kwargs:
+                return "docker rm `docker ps -aq` --force && docker volume prune"
+            else:
+                return "docker rm `docker ps -aq` --force"
 
         version = check_docker_version()
         if version:
@@ -3263,6 +3291,11 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     "--force",
     is_flag=True,
     help="Bypass the prompt during hagrid land",
+)
+@click.option(
+    "--prune-vol",
+    is_flag=True,
+    help="Prune docker volumes after land.",
 )
 def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
