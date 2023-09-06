@@ -110,15 +110,15 @@ class KeyValueActionStore(ActionStore):
                 # if you have permission you can have private data
                 if self.has_permission(read_permission):
                     if isinstance(obj, TwinObject):
-                        return Ok(obj.private)
-                    return Ok(obj)
+                        return Ok(obj.private.syft_point_to(node_uid))
+                    return Ok(obj.syft_point_to(node_uid))
 
                 # if its a twin with a mock anyone can have this
-                if isinstance(obj, TwinObject) and not is_action_data_empty(obj.mock):
-                    return Ok(obj.mock)
+                if isinstance(obj, TwinObject):
+                    return Ok(obj.mock.syft_point_to(node_uid))
 
                 # finally worst case you get ActionDataEmpty so you can still trace
-                return Ok(obj.as_empty())
+                return Ok(obj.as_empty().syft_point_to(node_uid))
 
             return Err("Permission denied")
         except Exception as e:
