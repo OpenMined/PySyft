@@ -560,6 +560,12 @@ class SyftClient:
         return None
 
     @property
+    def numpy(self) -> Optional[APIModule]:
+        if self.api.has_lib("numpy"):
+            return self.api.lib.numpy
+        return None
+
+    @property
     def settings(self) -> Optional[APIModule]:
         if self.api.has_service("user"):
             return self.api.services.settings
@@ -709,18 +715,6 @@ class SyftClient:
         if isinstance(response, tuple):
             response = response[0]
         return response
-
-    def __getattr__(self, name):
-        if (
-            hasattr(self, "api")
-            and hasattr(self.api, "lib")
-            and hasattr(self.api.lib, name)
-        ):
-            return getattr(self.api.lib, name)
-        else:
-            raise AttributeError(
-                f"{self.__class__.__name__} object has no attribute {name}."
-            )
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)
