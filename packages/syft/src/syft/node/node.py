@@ -65,6 +65,7 @@ from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
+from ..service.queue.code_execution_queue import CodeExecutionMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
@@ -350,7 +351,7 @@ class Node(AbstractNode):
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
 
-        MessageHandlers = [APICallMessageHandler]
+        MessageHandlers = [APICallMessageHandler, CodeExecutionMessageHandler]
 
         self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:

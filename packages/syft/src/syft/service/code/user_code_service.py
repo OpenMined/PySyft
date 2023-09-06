@@ -38,6 +38,8 @@ from .user_code import UserCode
 from .user_code import UserCodeStatus
 from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
+from ...serde.serialize import _serialize
+from ...node.worker_settings import WorkerSettings
 
 
 @instrument
@@ -216,10 +218,12 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
-        self, context: AuthedServiceContext, uid: UID, **kwargs: Any
+        self, context: AuthedServiceContext, uid: UID, is_async: bool = False, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         try:
+            import sys
+            print("UC SERVICE", is_async, file=sys.stderr)
             # Unroll variables
             kwarg2id = map_kwargs_to_id(kwargs)
 
@@ -253,7 +257,7 @@ class UserCodeService(AbstractService):
 
             output_result: Result[
                 Union[ActionObject, TwinObject], str
-            ] = action_service._user_code_execute(context, code, kwarg2id)
+            ] = action_service._user_code_execute(context, code, kwarg2id, is_async=is_async)
 
             if output_result.is_err():
                 return SyftError(message=output_result.err())
@@ -286,6 +290,20 @@ class UserCodeService(AbstractService):
             )
         return SyftSuccess(message="you have permission")
 
+
+    @service_method(path="code.call_async", name="call_async", roles=GUEST_ROLE_LEVEL)
+    def call_async(
+        self, context: AuthedServiceContext, uid: UID, **kwargs: Any
+    ) -> Union[SyftSuccess, SyftError]:
+        task_uid = UID()
+        import sys
+        worker_settings = WorkerSettings.from_node(node=context.node)
+        message_bytes = _serialize(
+            [task_uid, uid, kwargs, worker_settings], to_bytes=True
+        )
+        context.node.queue_manager.send(message=message_bytes, queue_name="code_execution")
+        # return self.call(context=context, uid=uid, is_async=True, **kwargs)
+        
 
 def resolve_outputs(
     context: AuthedServiceContext,

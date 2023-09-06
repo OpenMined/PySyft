@@ -4,6 +4,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Union
+from typing import Optional
 
 # third party
 import numpy as np
@@ -43,7 +44,22 @@ from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
+from ...serde.serialize import _serialize
 
+
+def wrapper_execute(context, code_item, filtered_kwargs, is_async: Optional[bool] = False):
+    if is_async:
+        import sys
+        print("ASYNC OP:", file=sys.stderr)
+        task_uid = UID()
+        promised_result = ActionObject.empty()
+        message_bytes = _serialize(
+            [task_uid, promised_result.id, code_item, filtered_kwargs], to_bytes=True
+        )
+        print(message_bytes, file=sys.stderr)
+        context.node.queue_manager.send(message=message_bytes, queue_name="code_execution")
+        return promised_result
+    return execute_byte_code(code_item, filtered_kwargs)
 
 @serializable()
 class ActionService(AbstractService):
@@ -165,12 +181,14 @@ class ActionService(AbstractService):
             return Ok(result.ok())
         return Err(result.err())
 
+                    
     # not a public service endpoint
     def _user_code_execute(
         self,
         context: AuthedServiceContext,
         code_item: UserCode,
         kwargs: Dict[str, Any],
+        is_async: Optional[bool] = False,
     ) -> Result[ActionObjectPointer, Err]:
         filtered_kwargs = code_item.input_policy.filter_kwargs(
             kwargs=kwargs, context=context, code_item_id=code_item.id
@@ -206,20 +224,23 @@ class ActionService(AbstractService):
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
-                exec_result = execute_byte_code(code_item, filtered_kwargs)
+                # exec_result = execute_byte_code(code_item, filtered_kwargs)
+                exec_result = wrapper_execute(context, code_item, filtered_kwargs, is_async=is_async)
                 result_action_object = wrap_result(result_id, exec_result.result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.PRIVATE
                 )
-                private_exec_result = execute_byte_code(code_item, private_kwargs)
+                # private_exec_result = execute_byte_code(code_item, private_kwargs)
+                private_exec_result = wrapper_execute(context, code_item, private_kwargs, is_async=is_async)
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result.result
                 )
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
-                mock_exec_result = execute_byte_code(code_item, mock_kwargs)
+                # mock_exec_result = execute_byte_code(code_item, mock_kwargs)
+                mock_exec_result = wrapper_execute(context, code_item, mock_kwargs, is_async=is_async)
                 result_action_object_mock = wrap_result(
                     result_id, mock_exec_result.result
                 )
