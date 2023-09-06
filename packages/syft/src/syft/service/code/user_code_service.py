@@ -222,8 +222,6 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         try:
-            import sys
-            print("UC SERVICE", is_async, file=sys.stderr)
             # Unroll variables
             kwarg2id = map_kwargs_to_id(kwargs)
 
@@ -299,11 +297,15 @@ class UserCodeService(AbstractService):
         import sys
         worker_settings = WorkerSettings.from_node(node=context.node)
         message_bytes = _serialize(
-            [task_uid, uid, kwargs, worker_settings], to_bytes=True
+            [task_uid, uid, kwargs, worker_settings, context.credentials], to_bytes=True
         )
         context.node.queue_manager.send(message=message_bytes, queue_name="code_execution")
-        # return self.call(context=context, uid=uid, is_async=True, **kwargs)
-        
+        return task_uid
+    
+    @service_method(path="code.check_task", name="check_task", roles=GUEST_ROLE_LEVEL)
+    def check_task(self, context: AuthedServiceContext, task_uid: UID):
+        queue_item = context.node.queue_stash.get_by_uid(context.credentials, task_uid)
+        return queue_item
 
 def resolve_outputs(
     context: AuthedServiceContext,
