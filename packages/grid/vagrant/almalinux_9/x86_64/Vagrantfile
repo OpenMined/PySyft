@@ -1,0 +1,15 @@
+Vagrant.configure("2") do |config|
+    config.vm.box = "almalinux/9"
+    config.vm.hostname = "almalinux-9"
+
+    config.vm.provider "virtualbox" do |vb|
+        vb.memory = "4096"
+        vb.cpus = "2"
+    end
+
+    config.vm.provider "vmware_desktop" do |vd|
+        vd.memory = "4096"
+        vd.cpus = "2"
+    end
+
+  end
