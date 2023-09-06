@@ -9,6 +9,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import Set
 
 # third party
 import itables
@@ -99,6 +100,7 @@ class Asset(SyftObject):
     name: str
     description: Optional[str]
     contributors: List[Contributor] = []
+    contributor_email_set: Set[str] = set()
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
     shape: Optional[Tuple]
@@ -243,6 +245,7 @@ class CreateAsset(SyftObject):
     name: str
     description: Optional[str]
     contributors: List[Contributor] = []
+    contributor_email_set: Set[str] = set()
     data_subjects: List[DataSubjectCreate] = []
     node_uid: Optional[UID]
     action_id: Optional[UID]
@@ -292,6 +295,9 @@ class CreateAsset(SyftObject):
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
+            if contributor.email in self.contributor_email_set:
+                raise Exception("Contributor with this email already exists.")
+            self.contributor_email_set.add(contributor.email)
             self.contributors.append(contributor)
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Asset."
@@ -374,6 +380,7 @@ class Dataset(SyftObject):
     node_uid: Optional[UID]
     asset_list: List[Asset] = []
     contributors: List[Contributor] = []
+    contributor_email_set: Set[str] = set()
     citation: Optional[str]
     url: Optional[str]
     description: Optional[str]
@@ -569,6 +576,9 @@ class CreateDataset(Dataset):
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
+            if contributor.email in self.contributor_email_set:
+                raise Exception("Contributor with this email already exists.")
+            self.contributor_email_set.add(contributor.email)
             self.contributors.append(contributor)
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Dataset."
