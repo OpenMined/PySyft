@@ -1,14 +1,19 @@
 # stdlib
 import sys
 from threading import Thread
+from typing import Set
 from typing import Tuple
 
 # third party
 from joblib import Parallel
 from joblib import delayed
+from pymongo.collection import Collection as MongoCollection
 import pytest
 
 # syft absolute
+from syft.node.credentials import SyftVerifyKey
+from syft.service.action.action_permissions import ActionObjectPermission
+from syft.service.action.action_permissions import ActionPermission
 from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKeys
 from syft.store.mongo_client import MongoStoreClientConfig
@@ -600,3 +605,74 @@ def test_mongo_store_partition_set_delete_joblib(
         ).ok()
     )
     assert stored_cnt == 0
+
+
+def test_mongo_store_partition_permissions_collection(
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
+
+    collection_permissions_status = mongo_store_partition.permissions
+    assert not collection_permissions_status.is_err()
+    collection_permissions = collection_permissions_status.ok()
+    assert isinstance(collection_permissions, MongoCollection)
+
+
+def test_mongo_store_partition_add_permission(
+    root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
+) -> None:
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
+
+    permissions_collection: MongoCollection = mongo_store_partition.permissions.ok()
+    obj = MockSyftObject(data=1)
+    obj_read_permission = ActionObjectPermission(
+        uid=obj.id, permission=ActionPermission.READ, credentials=root_verify_key
+    )
+    print(permissions_collection, obj_read_permission)
+
+
+def test_mongo_store_partition_add_permissions(
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    pass
+
+
+def test_mongo_store_partition_take_ownership(
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    pass
+
+
+def test_mongo_store_partition_remove_permission(
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    pass
+
+
+def test_mongo_store_partition_permissions_set(
+    root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
+) -> None:
+    """
+    Test the permissions functionalities when using MongoStorePartition._set function
+    """
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
+
+    # set the object to mongo_store_partition.collection
+    obj = MockSyftObject(data=1)
+    res = mongo_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
+    assert res.is_ok()
+    assert res.ok() == obj
+
+    # check if the corresponding permission has been added to the
+    # mongo_store_partition.permissions collection
+    pemissions_collection = mongo_store_partition.permissions.ok()
+    assert isinstance(pemissions_collection, MongoCollection)
+    permissions = pemissions_collection.find_one({"_id": obj.id})
+    assert permissions is not None
+    assert isinstance(permissions["permissions"], Set)
+    assert len(permissions["permissions"]) == 4
+
+    # import pdb; pdb.set_trace()

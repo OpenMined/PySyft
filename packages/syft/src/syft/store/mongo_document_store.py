@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Type
 
 # third party
@@ -450,7 +451,7 @@ class MongoStorePartition(StorePartition):
             )
         else:
             # update the permissions with the new permission string
-            permission_strings: set = permissions["permissions"]
+            permission_strings: Set = permissions["permissions"]
             permission_strings.add(permission.permission_string)
             collection_permissions.update_one(
                 {"_id": permission.uid}, {"$set": {"permissions": permission_strings}}
@@ -472,7 +473,7 @@ class MongoStorePartition(StorePartition):
         )
         if permissions is None:
             return Err(f"permission with UID {permission.uid} not found!")
-        permissions_strings: set = permissions["permissions"]
+        permissions_strings: Set = permissions["permissions"]
         permissions_strings.remove(permission.permission_string)
         collection_permissions.update_one(
             {"_id": permission.uid}, {"$set": {"permissions": permissions_strings}}
@@ -481,6 +482,7 @@ class MongoStorePartition(StorePartition):
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
+        print("taking ownership!!!")
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
             return collection_permissions_status
