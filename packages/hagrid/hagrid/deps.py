@@ -42,7 +42,7 @@ from .nb_output import NBOutput
 from .version import __version__
 
 LATEST_STABLE_SYFT = "0.8.1"
-LATEST_BETA_SYFT = "0.8.2-beta.27"
+LATEST_BETA_SYFT = "0.8.2-beta.29"
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
@@ -114,8 +114,7 @@ class DependencySyftOS(Dependency):
     def check(self) -> None:
         self.display = "✅ " + ENVIRONMENT["os"]
         if is_windows():
-            if not get_pip_package("jaxlib"):
-                self.issues.append(windows_jaxlib())
+            pass
         elif is_apple_silicon():
             pass
 
@@ -917,16 +916,4 @@ def python_version_unsupported() -> SetupIssue:
         ),
         command="",
         solution="You must install a compatible version of Python",
-    )
-
-
-WINDOWS_JAXLIB_REPO = "https://whls.blob.core.windows.net/unstable/index.html"
-
-
-def windows_jaxlib() -> SetupIssue:
-    return SetupIssue(
-        issue_name="windows_jaxlib",
-        description="Windows Python Wheels for Jax are not available on PyPI yet",
-        command=f"pip install jaxlib==0.4.10 -f {WINDOWS_JAXLIB_REPO}",
-        solution="Windows users must install jaxlib before syft",
     )

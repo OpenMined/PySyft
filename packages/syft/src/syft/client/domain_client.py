@@ -75,7 +75,13 @@ class DomainClient(SyftClient):
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
             try:
-                twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
+                twin = TwinObject(
+                    private_obj=asset.data,
+                    mock_obj=asset.mock,
+                    syft_node_location=self.id,
+                    syft_client_verify_key=self.verify_key,
+                )
+                twin._save_to_blob_storage()
             except Exception as e:
                 return SyftError(message=f"Failed to create twin. {e}")
             response = self.api.services.action.set(twin)

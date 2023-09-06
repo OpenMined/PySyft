@@ -92,7 +92,7 @@ def test_action_store() -> None:
     assert set_result.is_ok()
     test_object_result = action_store.get(uid=uid, credentials=test_signing_key)
     assert test_object_result.is_ok()
-    assert test_object == test_object_result.ok()
+    assert (test_object == test_object_result.ok()).all()
 
     test_verift_key_2 = SyftVerifyKey.from_string(test_verify_key_string_2)
     test_object_result_fail = action_store.get(uid=uid, credentials=test_verift_key_2)
@@ -203,7 +203,7 @@ def test_action_object_hooks() -> None:
     def pre_add(context: Any, *args: Any, **kwargs: Any) -> Any:
         # double it
         new_value = args[0]
-        new_value.syft_action_data = new_value.syft_action_data * 2
+        new_value.syft_action_data_cache = new_value.syft_action_data_cache * 2
         return Ok((context, (new_value,), kwargs))
 
     def post_add(context: Any, name: str, new_result: Any) -> Any:

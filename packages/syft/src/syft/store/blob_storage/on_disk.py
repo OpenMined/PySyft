@@ -1,12 +1,14 @@
 # stdlib
+from io import BytesIO
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
+from typing import Optional
 from typing import Type
 from typing import Union
 
 # third party
-from pydantic import PrivateAttr
+from typing_extensions import Self
 
 # relative
 from . import BlobDeposit
@@ -30,17 +32,16 @@ class OnDiskBlobDeposit(BlobDeposit):
     __canonical_name__ = "OnDiskBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
+    def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
         # relative
-        from ...client.api import APIRegistry
+        from ...service.service import from_api_or_context
 
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
+        write_to_disk_method = from_api_or_context(
+            func_or_path="blob_storage.write_to_disk",
+            syft_node_location=self.syft_node_location,
+            syft_client_verify_key=self.syft_client_verify_key,
         )
-        return api.services.blob_storage.write_to_disk(
-            data=data, uid=self.blob_storage_entry_id
-        )
+        return write_to_disk_method(data=data.read(), uid=self.blob_storage_entry_id)
 
 
 class OnDiskBlobStorageConnection(BlobStorageConnection):
@@ -49,18 +50,39 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def __init__(self, base_directory: Path) -> None:
         self._base_directory = base_directory
 
-    def read(self, fp: SecureFilePathLocation) -> BlobRetrieval:
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc) -> None:
+        pass
+
+    def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
+        file_path = self._base_directory / fp.path
         return SyftObjectRetrieval(
-            syft_object=(self._base_directory / fp.path).read_bytes()
+            syft_object=file_path.read_bytes(),
+            file_name=file_path.name,
+            type_=type_,
         )
 
-    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
-        return SecureFilePathLocation(
-            path=str((self._base_directory / str(obj.id)).absolute())
-        )
+    def allocate(
+        self, obj: CreateBlobStorageEntry
+    ) -> Union[SecureFilePathLocation, SyftError]:
+        try:
+            return SecureFilePathLocation(
+                path=str((self._base_directory / obj.file_name).absolute())
+            )
+        except Exception as e:
+            return SyftError(message=f"Failed to allocate: {e}")
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
         return OnDiskBlobDeposit(blob_storage_entry_id=obj.id)
+
+    def delete(self, fp: SecureFilePathLocation) -> Union[SyftSuccess, SyftError]:
+        try:
+            (self._base_directory / fp.path).unlink()
+            return SyftSuccess(message="Successfully deleted file.")
+        except FileNotFoundError as e:
+            return SyftError(message=f"Failed to delete file: {e}")
 
 
 @serializable()
@@ -71,19 +93,16 @@ class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
 @serializable()
 class OnDiskBlobStorageClient(BlobStorageClient):
     config: OnDiskBlobStorageClientConfig
-    _connection: OnDiskBlobStorageConnection = PrivateAttr()
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        self._connection = OnDiskBlobStorageConnection(self.config.base_directory)
+        self.config.base_directory.mkdir(exist_ok=True)
 
-    def __enter__(self) -> BlobStorageConnection:
-        return self._connection
-
-    def __exit__(self, *exc) -> None:
-        pass
+    def connect(self) -> BlobStorageConnection:
+        return OnDiskBlobStorageConnection(self.config.base_directory)
 
 
+@serializable()
 class OnDiskBlobStorageConfig(BlobStorageConfig):
     client_type: Type[BlobStorageClient] = OnDiskBlobStorageClient
     client_config: OnDiskBlobStorageClientConfig = OnDiskBlobStorageClientConfig()

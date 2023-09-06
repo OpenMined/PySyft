@@ -53,13 +53,13 @@ ldd (Debian GLIBC 2.31-13+deb11u3) 2.31
 ```
 $ cd jax
 $ git fetch --all --tags
-$ git checkout tags/jaxlib-v0.3.7 -b jaxlib-v0.3.7
+$ git checkout tags/jaxlib-v0.4.10 -b jaxlib-v0.4.10
 ```
 
 ## Start the build
 
 ```
-$ python3 /jax/build/build.py --target_cpu_features default
+$ python3 /jax/build/build.py --target_cpu_features native
 ```
 
 ## Check it worked
@@ -72,6 +72,6 @@ $ pip install dist/*.whl
 
 ```
 $ pip install --user magic-wormhole
-$ /root/.local/bin/wormhole send /jax/build/dist/jaxlib-0.3.7-cp310-none-manylinux2014_aarch64.whl
+$ /root/.local/bin/wormhole send /jax/build/dist/jaxlib-0.4.10-cp311-none-manylinux2014_aarch64.whl
 # run wormhole recieve on the other end
 ```

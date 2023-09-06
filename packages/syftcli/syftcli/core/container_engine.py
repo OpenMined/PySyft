@@ -1,4 +1,6 @@
 # stdlib
+from abc import ABC
+from abc import abstractmethod
 from typing import List
 from typing import Optional
 
@@ -6,75 +8,103 @@ from typing import Optional
 from rich.progress import track
 
 # relative
-from .proc import handle_error
+from .proc import CalledProcessError
+from .proc import CompletedProcess
 from .proc import run_command
 
 
-class ContainerEngine:
+class ContainerEngineError(CalledProcessError):
     pass
 
 
+class ContainerEngine(ABC):
+    @abstractmethod
+    def is_available(self) -> bool:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def pull(
+        self, images: List[str], dryrun: bool, stream_output: Optional[dict]
+    ) -> List[CompletedProcess]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def save(
+        self, images: List[str], archive_path: str, dryrun: bool
+    ) -> CompletedProcess:
+        raise NotImplementedError()
+
+    def check_returncode(self, result: CompletedProcess) -> None:
+        try:
+            result.check_returncode()
+        except CalledProcessError as e:
+            raise ContainerEngineError(e.returncode, e.cmd) from e
+
+
 class Podman(ContainerEngine):
-    def is_installed(self) -> bool:
+    def is_available(self) -> bool:
         result = run_command("podman version")
-        return result[-1] == 0
+        return result.returncode == 0
 
     def pull(
         self,
         images: List[str],
         dryrun: bool = False,
         stream_output: Optional[dict] = None,
-    ) -> None:
+    ) -> List[CompletedProcess]:
+        results = []
+
         for image in track(images, description=""):
             command = f"podman pull {image} --quiet"
+            result = run_command(command, stream_output=stream_output, dryrun=dryrun)
+            self.check_returncode(result)
+            results.append(result)
 
-            if dryrun:
-                print(command)
-                continue
+        return results
 
-            result = run_command(command, stream_output=stream_output)
-            handle_error(result)
-
-    def save(self, images: List[str], tarfile: str, dryrun: bool = False) -> None:
+    def save(
+        self,
+        images: List[str],
+        archive_path: str,
+        dryrun: bool = False,
+    ) -> CompletedProcess:
+        # -m works only with --format=docker-archive
         images_str = " ".join(images)
-        command = f"podman save -o {tarfile} {images_str}"
-
-        if dryrun:
-            print(command)
-            return
-
-        result = run_command(command)
-        handle_error(result)
+        command = f"podman save -m -o {archive_path} {images_str}"
+        result = run_command(command, dryrun=dryrun)
+        self.check_returncode(result)
+        return result
 
 
 class Docker(ContainerEngine):
-    def is_installed(self) -> bool:
+    def is_available(self) -> bool:
         result = run_command("docker version")
-        return result[-1] == 0
+        return result.returncode == 0
 
     def pull(
         self,
         images: List[str],
         dryrun: bool = False,
         stream_output: Optional[dict] = None,
-    ) -> None:
+    ) -> List[CompletedProcess]:
+        results = []
+
         for image in track(images, description=""):
             command = f"docker pull {image} --quiet"
+            result = run_command(command, stream_output=stream_output, dryrun=dryrun)
+            self.check_returncode(result)
+            results.append(result)
 
-            if dryrun:
-                print(command)
-                continue
+        return results
 
-            result = run_command(command, stream_output=stream_output)
-            handle_error(result)
-
-    def save(self, images: List[str], tarfile: str, dryrun: bool = False) -> None:
+    def save(
+        self,
+        images: List[str],
+        archive_path: str,
+        dryrun: bool = False,
+    ) -> CompletedProcess:
         images_str = " ".join(images)
-        command = f"docker save -o {tarfile} {images_str}"
-
-        if dryrun:
-            print(command)
-            return
-
-        result = run_command(command)
-        handle_error(result)
+        command = f"docker save -o {archive_path} {images_str}"
+        result = run_command(command, dryrun=dryrun)
+        self.check_returncode(result)
+        return result

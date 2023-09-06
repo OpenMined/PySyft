@@ -372,7 +372,6 @@ def debox_signed_syftapicall_response(
 
     if not signed_result.is_valid:
         return SyftError(message="The result signature is invalid")  # type: ignore
-
     return signed_result.message.data
 
 
@@ -582,6 +581,9 @@ class SyftAPI(SyftObject):
 
     def has_service(self, service_name: str) -> bool:
         return hasattr(self.services, service_name)
+
+    def has_lib(self, lib_name: str) -> bool:
+        return hasattr(self.lib, lib_name)
 
     def __repr__(self) -> str:
         modules = self.services

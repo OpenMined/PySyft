@@ -6,8 +6,8 @@ services:
   # queue:
   #   image: rabbitmq:${RABBITMQ_VERSION?Variable not Set}${RABBITMQ_MANAGEMENT:-}
 
-  # seaweedfs:
-  #   image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
+  seaweedfs:
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${SEAWEEDFS_VERSION}"
 
   # docker-host:
   #   image: qoomon/docker-host
@@ -16,7 +16,7 @@ services:
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
 
   mongo:
-    image: mongo:latest
+    image: "${MONGO_IMAGE}:${MONGO_VERSION}"
 
   jaeger:
     image: jaegertracing/all-in-one:1.37

@@ -24,7 +24,9 @@ class SyftRepo:
     @lru_cache(maxsize=None)
     def releases() -> List[dict]:
         url = REPO_API_URL + "/releases"
-        releases = requests.get(url).json()
+        response = requests.get(url)
+        response.raise_for_status()
+        releases = response.json()
         return [rel for rel in releases if rel.get("tag_name", "").startswith("v")]
 
     @staticmethod
@@ -76,4 +78,6 @@ class SyftRepo:
     @staticmethod
     def get_asset(rel_ver: str, asset_name: str, **kwargs: Any) -> requests.Response:
         url = REPO_DL_URL + f"/{rel_ver}/{asset_name}"
-        return requests.get(url, **kwargs)
+        response = requests.get(url, **kwargs)
+        response.raise_for_status()
+        return response

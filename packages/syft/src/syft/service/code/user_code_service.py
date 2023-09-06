@@ -189,7 +189,13 @@ class UserCodeService(AbstractService):
                     connection=connection,
                     credentials=context.node.signing_key,
                 )
-                return enclave_client.code.get_results(code.id)
+                outputs = enclave_client.code.get_results(code.id)
+                if isinstance(outputs, list):
+                    for output in outputs:
+                        output.syft_action_data  # noqa: B018
+                else:
+                    outputs.syft_action_data  # noqa: B018
+                return outputs
 
             # if the current node is the enclave
             else:

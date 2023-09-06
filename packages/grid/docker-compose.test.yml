@@ -27,13 +27,13 @@ services:
     ports:
       - "4000"
 
-  # seaweedfs:
-  #   profiles:
-  #     - blob-storage
-  #   ports:
-  #     - "9333" # admin
-  #     - "8888" # filer
-  #     - "8333" # S3
+  seaweedfs:
+    profiles:
+      - blob-storage
+    ports:
+      - "9333" # admin
+      - "8888" # filer
+      - "8333" # S3
 
   backend:
     environment:
