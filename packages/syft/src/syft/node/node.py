@@ -23,9 +23,6 @@ from typing import Union
 import uuid
 
 # third party
-import gevent
-import gipc
-from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -812,7 +809,12 @@ class Node(AbstractNode):
                 )
         else:
             task_uid = UID()
-            item = QueueItem(id=task_uid, node_uid=self.id)
+            item = QueueItem(
+                id=task_uid,
+                node_uid=self.id,
+                syft_client_verify_key=api_call.credentials,
+                syft_node_location=self.id,
+            )
             # 🟡 TODO 36: Needs distributed lock
             self.queue_stash.set_placeholder(self.verify_key, item)
 
@@ -871,88 +873,6 @@ class Node(AbstractNode):
                 return None
         except Exception as e:
             print("create_worker_metadata failed", e)
-
-
-def task_producer(
-    pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
-) -> Any:
-    try:
-        result = None
-        with pipe:
-            pipe.put(api_call)
-            gevent.sleep(0)
-            if blocking:
-                try:
-                    result = pipe.get()
-                except EOFError:
-                    pass
-            pipe.close()
-        if blocking:
-            return result
-    except gipc.gipc.GIPCClosed:
-        pass
-    except Exception as e:
-        print("Exception in task_producer", e)
-
-
-def task_runner(
-    pipe: _GIPCDuplexHandle,
-    worker_settings: WorkerSettings,
-    task_uid: UID,
-    blocking: bool,
-) -> None:
-    worker = Node(
-        id=worker_settings.id,
-        name=worker_settings.name,
-        signing_key=worker_settings.signing_key,
-        document_store_config=worker_settings.document_store_config,
-        action_store_config=worker_settings.action_store_config,
-        blob_storage_config=worker_settings.blob_store_config,
-        is_subprocess=True,
-    )
-    try:
-        with pipe:
-            api_call = pipe.get()
-
-            result = worker.handle_api_call(api_call)
-            if blocking:
-                pipe.put(result)
-            else:
-                item = QueueItem(
-                    node_uid=worker.id, id=task_uid, result=result, resolved=True
-                )
-                worker.queue_stash.set_result(worker.verify_key, item)
-                worker.queue_stash.partition.close()
-            pipe.close()
-    except Exception as e:
-        print("Exception in task_runner", e)
-        raise e
-
-
-def queue_task(
-    api_call: SyftAPICall,
-    worker_settings: WorkerSettings,
-    task_uid: UID,
-    blocking: bool,
-) -> Optional[Any]:
-    with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
-        cend,
-        pend,
-    ):
-        process = gipc.start_process(
-            task_runner, args=(cend, worker_settings, task_uid, blocking)
-        )
-        producer = gevent.spawn(task_producer, pend, api_call, blocking)
-        try:
-            process.join()
-        except KeyboardInterrupt:
-            producer.kill(block=True)
-            process.terminate()
-        process.join()
-
-    if blocking:
-        return producer.value
-    return None
 
 
 def create_admin_new(

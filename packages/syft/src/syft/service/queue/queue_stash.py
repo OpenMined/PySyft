@@ -75,6 +75,9 @@ class QueueItem(SyftObject):
             return self.result.message
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
+    def __repr__(self) -> str:
+        return f"<QueueItem: {self.id}>: {self.status}"
+
 
 @instrument
 @serializable()
