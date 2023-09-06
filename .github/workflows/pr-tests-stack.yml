@@ -118,11 +118,6 @@ jobs:
         with:
           args: install visualstudio2019-workload-vctools -y
 
-      - name: Install jaxlib
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        run: |
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
@@ -132,9 +127,17 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
+      - name: Fix Colima issue on MacOS Runners
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
+          brew reinstall qemu
+
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.1.0
+        uses: crazy-max/ghaction-setup-docker@v1.3.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -326,11 +329,6 @@ jobs:
         with:
           args: install visualstudio2019-workload-vctools -y
 
-      - name: Install jaxlib
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        run: |
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
@@ -340,9 +338,17 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
+      - name: Fix Colima issue on MacOS Runners
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
+          brew reinstall qemu
+
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.1.0
+        uses: crazy-max/ghaction-setup-docker@v1.3.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'

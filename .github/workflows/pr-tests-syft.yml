@@ -24,7 +24,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-13]
+        os: [ubuntu-latest, macos-13, windows-latest]
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
@@ -87,11 +87,18 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Fix Colima issue on MacOS Runners
+        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
+        shell: bash
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
+          brew reinstall qemu
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
-        uses: crazy-max/ghaction-setup-docker@v1.1.0
+        uses: crazy-max/ghaction-setup-docker@v1.3.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -102,7 +109,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-13]
+        os: [ubuntu-latest, macos-13, windows-latest]
         python-version: ["3.11"]
         deployment-type: ["python"]
         notebook-paths: ["tutorials"]
@@ -171,7 +178,6 @@ jobs:
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
         uses: nick-fields/retry@v2
@@ -241,7 +247,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker Compose on Linux
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
@@ -253,9 +258,17 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker compose version
 
+      - name: Fix Colima issue on MacOS Runners
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
+          brew reinstall qemu
+
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.1.0
+        uses: crazy-max/ghaction-setup-docker@v1.3.0
 
       - name: Docker Compose on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
@@ -340,7 +353,6 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'

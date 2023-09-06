@@ -15,13 +15,13 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.2-beta.19 -t dev-latest
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.2-beta.29 -t dev-latest
       create_deployments --all
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io/"
-  VERSION: "0.8.2-beta.19"
+  VERSION: "0.8.2-beta.29"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -198,7 +198,7 @@ deployments:
         version: "0.9.0"
       values:
         containers:
-          - image: mongo:latest
+          - image: "${MONGO_IMAGE}:${MONGO_VERSION}"
             env:
               - name: MONGO_INITDB_ROOT_USERNAME
                 value: "${MONGO_USERNAME}"
@@ -245,7 +245,7 @@ deployments:
 
 dev:
   mongo:
-    imageSelector: "mongo:latest"
+    imageSelector: "${MONGO_IMAGE}:${MONGO_VERSION}"
     ports:
       - port: "27017"
   backend:

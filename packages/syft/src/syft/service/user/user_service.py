@@ -210,7 +210,11 @@ class UserService(AbstractService):
                 SyftError(message="User not found!")
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
+    @service_method(
+        path="user.update",
+        name="update",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:

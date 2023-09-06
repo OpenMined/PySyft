@@ -93,5 +93,5 @@ def test_numpy_functions(func, func_arguments, request):
     else:
         original_result = eval(f"np.{func}({func_arguments})")
 
-        assert result == original_result
+        assert np.all(result == original_result)
         assert isinstance(result, ActionObject)
