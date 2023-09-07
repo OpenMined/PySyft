@@ -1,6 +1,7 @@
 # stdlib
 import sys
 from threading import Thread
+from typing import List
 from typing import Set
 from typing import Tuple
 
@@ -238,7 +239,7 @@ def test_mongo_store_partition_update(
         res = mongo_store_partition.update(root_verify_key, key, obj_new)
         assert res.is_ok()
 
-        # The ID should stay the same on update, unly the values are updated.
+        # The ID should stay the same on update, only the values are updated.
         assert (
             len(
                 mongo_store_partition.all(
@@ -637,7 +638,6 @@ def test_mongo_store_partition_add_remove_permission(
         uid=obj.id, permission=ActionPermission.READ, credentials=root_verify_key
     )
     mongo_store_partition.add_permission(obj_read_permission)
-    assert permissions_collection.count_documents({}) == 1
     find_res_1 = permissions_collection.find_one({"_id": obj_read_permission.uid})
     assert find_res_1 is not None
     assert len(find_res_1["permissions"]) == 1
@@ -650,9 +650,8 @@ def test_mongo_store_partition_add_remove_permission(
         uid=obj.id, permission=ActionPermission.WRITE, credentials=root_verify_key
     )
     mongo_store_partition.add_permission(obj_write_permission)
-    assert permissions_collection.count_documents({}) == 1
 
-    find_res_2 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    find_res_2 = permissions_collection.find_one({"_id": obj.id})
     assert find_res_2 is not None
     assert len(find_res_2["permissions"]) == 2
     assert find_res_2["permissions"] == {
@@ -662,14 +661,13 @@ def test_mongo_store_partition_add_remove_permission(
 
     # add duplicated permission
     mongo_store_partition.add_permission(obj_write_permission)
-    assert permissions_collection.count_documents({}) == 1
-    find_res_3 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    find_res_3 = permissions_collection.find_one({"_id": obj.id})
     assert len(find_res_3["permissions"]) == 2
     assert find_res_3["permissions"] == find_res_2["permissions"]
 
     # remove the write permission
     mongo_store_partition.remove_permission(obj_write_permission)
-    find_res_4 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    find_res_4 = permissions_collection.find_one({"_id": obj.id})
     assert len(find_res_4["permissions"]) == 1
     assert find_res_1["permissions"] == {
         obj_read_permission.permission_string,
@@ -682,29 +680,86 @@ def test_mongo_store_partition_add_remove_permission(
         )
     )
     assert isinstance(remove_res, Err)
-    find_res_5 = permissions_collection.find_one({"_id": obj_read_permission.uid})
+    find_res_5 = permissions_collection.find_one({"_id": obj.id})
     assert len(find_res_5["permissions"]) == 1
     assert find_res_1["permissions"] == {
         obj_read_permission.permission_string,
     }
 
+    # there is only one permission object
+    assert permissions_collection.count_documents({}) == 1
 
-@pytest.mark.skip(reason="To be implemented")
+    # add permissions in a loop
+    new_permissions = []
+    for idx in range(1, REPEATS + 1):
+        new_obj = MockSyftObject(data=idx)
+        new_obj_read_permission = ActionObjectPermission(
+            uid=new_obj.id,
+            permission=ActionPermission.READ,
+            credentials=root_verify_key,
+        )
+        new_permissions.append(new_obj_read_permission)
+        mongo_store_partition.add_permission(new_obj_read_permission)
+        assert permissions_collection.count_documents({}) == 1 + idx
+
+    # remove the permissions
+    for permission in new_permissions:
+        mongo_store_partition.remove_permission(permission)
+
+    assert permissions_collection.count_documents({}) == 1
+
+
 def test_mongo_store_partition_add_permissions(
+    root_verify_key: SyftVerifyKey,
+    guest_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    pass
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
+    permissions_collection: MongoCollection = mongo_store_partition.permissions.ok()
+    obj = MockSyftObject(data=1)
+
+    # add multiple permissions for the first object
+    permission_1 = ActionObjectPermission(
+        uid=obj.id, permission=ActionPermission.WRITE, credentials=root_verify_key
+    )
+    permission_2 = ActionObjectPermission(
+        uid=obj.id, permission=ActionPermission.OWNER, credentials=root_verify_key
+    )
+    permission_3 = ActionObjectPermission(
+        uid=obj.id, permission=ActionPermission.READ, credentials=guest_verify_key
+    )
+    permissions: List[ActionObjectPermission] = [
+        permission_1,
+        permission_2,
+        permission_3,
+    ]
+    mongo_store_partition.add_permissions(permissions)
+
+    # check if the permissions have been added properly
+    assert permissions_collection.count_documents({}) == 1
+    find_res = permissions_collection.find_one({"_id": obj.id})
+    assert find_res is not None
+    assert len(find_res["permissions"]) == 3
+
+    # add permissions for the second object
+    obj_2 = MockSyftObject(data=2)
+    permission_4 = ActionObjectPermission(
+        uid=obj_2.id, permission=ActionPermission.READ, credentials=root_verify_key
+    )
+    permission_5 = ActionObjectPermission(
+        uid=obj_2.id, permission=ActionPermission.WRITE, credentials=root_verify_key
+    )
+    mongo_store_partition.add_permissions([permission_4, permission_5])
+
+    assert permissions_collection.count_documents({}) == 2
+    find_res_2 = permissions_collection.find_one({"_id": obj_2.id})
+    assert find_res_2 is not None
+    assert len(find_res_2["permissions"]) == 2
 
 
 @pytest.mark.skip(reason="To be implemented")
 def test_mongo_store_partition_take_ownership(
-    mongo_store_partition: MongoStorePartition,
-) -> None:
-    pass
-
-
-@pytest.mark.skip(reason="To be implemented")
-def test_mongo_store_partition_remove_permission(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
     pass
@@ -732,8 +787,8 @@ def test_mongo_store_partition_permissions_set(
     assert res.is_ok()
     assert res.ok() == obj
 
-    # check if the corresponding permission has been added to the
-    # mongo_store_partition.permissions collection
+    # check if the corresponding permission has been added
+    # to the mongo_store_partition.permissions collection
     pemissions_collection = mongo_store_partition.permissions.ok()
     assert isinstance(pemissions_collection, MongoCollection)
     permissions = pemissions_collection.find_one({"_id": obj.id})

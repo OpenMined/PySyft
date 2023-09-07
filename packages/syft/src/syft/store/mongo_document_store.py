@@ -476,16 +476,19 @@ class MongoStorePartition(StorePartition):
         permissions_strings: Set = permissions["permissions"]
         if permission.permission_string in permissions_strings:
             permissions_strings.remove(permission.permission_string)
-            collection_permissions.update_one(
-                {"_id": permission.uid}, {"$set": {"permissions": permissions_strings}}
-            )
+            if len(permissions_strings) > 0:
+                collection_permissions.update_one(
+                    {"_id": permission.uid},
+                    {"$set": {"permissions": permissions_strings}},
+                )
+            else:
+                collection_permissions.delete_one({"_id": permission.uid})
         else:
             return Err(f"the permission {permission.permission_string} does not exist!")
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
-        print("taking ownership!!!")
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
             return collection_permissions_status
