@@ -105,4 +105,4 @@ class APICallMessageHandler(AbstractMessageHandler):
             status=status,
         )
 
-        worker.queue_stash.set_result(worker.verify_key, item)
+        worker.queue_stash.set_result(api_call.credentials, item)

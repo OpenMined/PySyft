@@ -694,7 +694,13 @@ class Node(AbstractNode):
         result = self.queue_stash.pop_on_complete(credentials, uid)
 
         if result.is_ok():
-            return result.ok()
+            queue_obj = result.ok()
+            queue_obj._set_obj_location_(
+                node_uid=self.id,
+                credentials=credentials,
+            )
+            return queue_obj
+
         return result.err()
 
     def forward_message(
@@ -812,7 +818,12 @@ class Node(AbstractNode):
                 )
         else:
             task_uid = UID()
-            item = QueueItem(id=task_uid, node_uid=self.id)
+            item = QueueItem(
+                id=task_uid,
+                node_uid=self.id,
+                syft_client_verify_key=api_call.credentials,
+                syft_node_location=self.id,
+            )
             # 🟡 TODO 36: Needs distributed lock
             self.queue_stash.set_placeholder(self.verify_key, item)
 
