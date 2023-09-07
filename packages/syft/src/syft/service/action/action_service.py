@@ -45,22 +45,6 @@ from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 from ...serde.serialize import _serialize
-
-
-def wrapper_execute(context, code_item, filtered_kwargs, is_async: Optional[bool] = False):
-    if is_async:
-        import sys
-        print("ASYNC OP:", file=sys.stderr)
-        task_uid = UID()
-        promised_result = ActionObject.empty()
-        message_bytes = _serialize(
-            [task_uid, promised_result.id, code_item, filtered_kwargs], to_bytes=True
-        )
-        print(message_bytes, file=sys.stderr)
-        context.node.queue_manager.send(message=message_bytes, queue_name="code_execution")
-        return promised_result
-    return execute_byte_code(code_item, filtered_kwargs)
-
 @serializable()
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
@@ -184,25 +168,16 @@ class ActionService(AbstractService):
                     
     # not a public service endpoint
     def _user_code_execute(
-        self,
-        context: AuthedServiceContext,
-        code_item: UserCode,
-        kwargs: Dict[str, Any],
-        is_async: Optional[bool] = False,
+        self, 
+        code_item: UserCode, 
+        filtered_kwargs: Dict[str, Any]
     ) -> Result[ActionObjectPointer, Err]:
-        filtered_kwargs = code_item.input_policy.filter_kwargs(
-            kwargs=kwargs, context=context, code_item_id=code_item.id
-        )
-
-        if filtered_kwargs.is_err():
-            return filtered_kwargs
-        filtered_kwargs = filtered_kwargs.ok()
-
         expected_input_kwargs = set()
         for _inp_kwarg in code_item.input_policy.inputs.values():
             expected_input_kwargs.update(_inp_kwarg.keys())
         permitted_input_kwargs = list(filtered_kwargs.keys())
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+        
         if len(not_approved_kwargs) > 0:
             return Err(
                 f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
@@ -224,26 +199,19 @@ class ActionService(AbstractService):
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
-                # exec_result = execute_byte_code(code_item, filtered_kwargs)
-                exec_result = wrapper_execute(context, code_item, filtered_kwargs, is_async=is_async)
-                result_action_object = wrap_result(result_id, exec_result.result)
+                exec_result = execute_byte_code(code_item, filtered_kwargs).result
+                result_action_object = wrap_result(result_id, exec_result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.PRIVATE
                 )
-                # private_exec_result = execute_byte_code(code_item, private_kwargs)
-                private_exec_result = wrapper_execute(context, code_item, private_kwargs, is_async=is_async)
-                result_action_object_private = wrap_result(
-                    result_id, private_exec_result.result
-                )
+                private_exec_result = execute_byte_code(code_item, private_kwargs).result
+                result_action_object_private = wrap_result(result_id, private_exec_result)
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
-                # mock_exec_result = execute_byte_code(code_item, mock_kwargs)
-                mock_exec_result = wrapper_execute(context, code_item, mock_kwargs, is_async=is_async)
-                result_action_object_mock = wrap_result(
-                    result_id, mock_exec_result.result
-                )
+                mock_exec_result = execute_byte_code(code_item, mock_kwargs).result
+                result_action_object_mock = wrap_result(result_id, mock_exec_result)
 
                 result_action_object = TwinObject(
                     id=result_id,
@@ -253,6 +221,14 @@ class ActionService(AbstractService):
         except Exception as e:
             return Err(f"_user_code_execute failed. {e}")
 
+        return result_action_object
+
+    def set_result_to_store(self, result_action_object, context, output_policy):
+        result_id = result_action_object.id
+        result_blob_id = result_action_object.syft_blob_storage_entry_id
+        output_readers = output_policy.output_readers
+        read_permission = ActionPermission.READ
+        
         result_action_object._set_obj_location_(
             context.node.id,
             context.credentials,
@@ -273,24 +249,16 @@ class ActionService(AbstractService):
             BlobStorageService
         )
 
-        if len(code_item.output_policy.output_readers) > 0:
-            self.store.add_permissions(
-                [
-                    ActionObjectPermission(result_id, ActionPermission.READ, x)
-                    for x in code_item.output_policy.output_readers
-                ]
-            )
-            blob_storage_service.stash.add_permissions(
-                [
-                    ActionObjectPermission(
-                        result_action_object.syft_blob_storage_entry_id,
-                        ActionPermission.READ,
-                        x,
-                    )
-                    for x in code_item.output_policy.output_readers
-                ]
-            )
-
+        store_permission = lambda x: ActionObjectPermission(result_id, read_permission, x)
+        blob_permission = lambda x: ActionObjectPermission(result_blob_id, read_permission, x)
+        
+        if len(output_readers) > 0:
+            store_permissions = [store_permission(x) for x in output_readers]
+            self.store.add_permissions(store_permissions)
+            
+            blob_permissions = [blob_permission(x) for x in output_readers]
+            blob_storage_service.stash.add_permissions(blob_permissions)
+            
         return set_result
 
     def execute_plan(

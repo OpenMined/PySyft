@@ -216,67 +216,81 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
+    def is_execution_allowed(self, code, context):
+        if not code.status.approved:
+                return code.status.get_status_message()
+
+        # Check if the user has permission to execute the code.
+        if not (has_code_permission := self.has_code_permission(code, context)):
+            return has_code_permission
+
+        if (output_policy := code.output_policy) is None:
+            return SyftError("Output policy not approved", code)
+
+        # Check if the OutputPolicy is valid
+        if not (is_valid := output_policy.valid):
+            if len(output_policy.output_history) > 0:
+                result = resolve_outputs(
+                    context=context, output_ids=output_policy.last_output_ids
+                )
+                return result.as_empty()
+            return is_valid
+        return True
+
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, is_async: bool = False, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
+        # Unroll variables
+        kwarg2id = map_kwargs_to_id(kwargs)
+
+        # get code item
+        code_result = self.stash.get_by_uid(context.credentials, uid=uid)
+        if code_result.is_err():
+            return SyftError(message=code_result.err())
+        code: UserCode = code_result.ok()
+        
+        # Check if we are allowed to run the code_item
+        check_validity = self.is_execution_allowed(code=code, context=context)
+        if check_validity != True:
+            return check_validity
+
+        # Filter args based on Input policy 
+        filtered_kwargs = code.input_policy.filter_kwargs(
+            kwargs=kwargs, context=context, code_item_id=code.id
+        )
+        if filtered_kwargs.is_err():
+            return filtered_kwargs
+        filtered_kwargs = filtered_kwargs.ok()
         try:
-            # Unroll variables
-            kwarg2id = map_kwargs_to_id(kwargs)
-
-            # get code item
-            code_result = self.stash.get_by_uid(context.credentials, uid=uid)
-            if code_result.is_err():
-                return SyftError(message=code_result.err())
-            code: UserCode = code_result.ok()
-
-            if not code.status.approved:
-                return code.status.get_status_message()
-
-            # Check if the user has permission to execute the code.
-            if not (has_code_permission := self.has_code_permission(code, context)):
-                return has_code_permission
-
-            if (output_policy := code.output_policy) is None:
-                return SyftError("Output policy not approved", code)
-
-            # Check if the OutputPolicy is valid
-            if not (is_valid := output_policy.valid):
-                if len(output_policy.output_history) > 0:
-                    result = resolve_outputs(
-                        context=context, output_ids=output_policy.last_output_ids
-                    )
-                    return result.as_empty()
-                return is_valid
-
             # Execute the code item
             action_service = context.node.get_service("actionservice")
-
+            result_action_object = action_service._user_code_execute(code, kwarg2id)
             output_result: Result[
                 Union[ActionObject, TwinObject], str
-            ] = action_service._user_code_execute(context, code, kwarg2id, is_async=is_async)
-
-            if output_result.is_err():
-                return SyftError(message=output_result.err())
-            result = output_result.ok()
-
-            # Apply Output Policy to the results and update the OutputPolicyState
-            output_policy.apply_output(context=context, outputs=result)
-            code.output_policy = output_policy
-            if not (
-                update_success := self.update_code_state(
-                    context=context, code_item=code
-                )
-            ):
-                return update_success
-
-            if isinstance(result, TwinObject):
-                return result.mock
-            else:
-                return result.as_empty()
+            ] = action_service.set_result_to_store(result_action_object, context, code.output_policy) 
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
+
+        if output_result.is_err():
+            return SyftError(message=output_result.err())
+        result = output_result.ok()
+
+        # Apply Output Policy to the results and update the OutputPolicyState
+        code.output_policy.apply_output(context=context, outputs=result)
+        # code.output_policy = output_policy
+        if not (
+            update_success := self.update_code_state(
+                context=context, code_item=code
+            )
+        ):
+            return update_success
+
+        if isinstance(result, TwinObject):
+            return result.mock
+        else:
+            return result.as_empty()
 
     def has_code_permission(self, code_item, context):
         if not (
