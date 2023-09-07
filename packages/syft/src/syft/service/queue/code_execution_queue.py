@@ -47,7 +47,7 @@ class CodeExecutionMessageHandler(AbstractMessageHandler):
             id=task_uid,
             status=Status.PROCESSING,
         )
-        worker.queue_stash.set_placeholder(user_verify_key, item)
+        worker.queue_stash.set(user_verify_key, item)
         print("Queue Stash data:", worker.queue_stash.partition.data)
 
         status = Status.COMPLETED

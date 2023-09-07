@@ -40,6 +40,7 @@ from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 from ...serde.serialize import _serialize
 from ...node.worker_settings import WorkerSettings
+from ..queue.queue_stash import QueueItem
 
 
 @instrument
@@ -308,19 +309,16 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         task_uid = UID()
-        import sys
+        item = QueueItem(id=task_uid, node_uid=context.node.id)
+        context.node.queue_stash.set_placeholder(context.node.verify_key, item)
+        
         worker_settings = WorkerSettings.from_node(node=context.node)
         message_bytes = _serialize(
             [task_uid, uid, kwargs, worker_settings, context.credentials], to_bytes=True
         )
         context.node.queue_manager.send(message=message_bytes, queue_name="code_execution")
-        return task_uid
+        return item
     
-    @service_method(path="code.check_task", name="check_task", roles=GUEST_ROLE_LEVEL)
-    def check_task(self, context: AuthedServiceContext, task_uid: UID):
-        queue_item = context.node.queue_stash.get_by_uid(context.credentials, task_uid)
-        return queue_item
-
 def resolve_outputs(
     context: AuthedServiceContext,
     output_ids: Optional[Union[List[UID], Dict[str, UID]]],
