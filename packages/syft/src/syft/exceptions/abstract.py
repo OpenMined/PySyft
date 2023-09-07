@@ -18,10 +18,10 @@ class PySyftException(ABC, Exception):
         self.context = context
         self.message = message
 
+    @abstractclassmethod
     def roles(self) -> List[Enum]:
         pass
 
-    @abstractclassmethod
     def handle(self) -> SyftError:
         if self.context.role == ServiceRole.ADMIN or self.context.role in self.roles():
             return SyftError(message=self.message)
