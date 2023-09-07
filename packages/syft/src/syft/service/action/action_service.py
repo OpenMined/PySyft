@@ -14,6 +14,7 @@ from result import Result
 # relative
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
+from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..blob_storage.service import BlobStorageService
@@ -162,8 +163,18 @@ class ActionService(AbstractService):
                 context.node.id,
                 context.credentials,
             )
-            return Ok(result.ok())
+            return Ok(obj)
         return Err(result.err())
+
+    @service_method(path="action.get_mock", name="get_mock", roles=GUEST_ROLE_LEVEL)
+    def get_mock(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Result[SyftError, SyftObject]:
+        """Get a pointer from the action store"""
+        result = self.store.get_mock(uid=uid)
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
 
     # not a public service endpoint
     def _user_code_execute(
