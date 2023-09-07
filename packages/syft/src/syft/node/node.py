@@ -41,6 +41,7 @@ from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
+from ..exceptions.abstract import PySyftException
 from ..external import OBLV
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
@@ -806,6 +807,8 @@ class Node(AbstractNode):
             method = self.get_service_method(_private_api_path)
             try:
                 result = method(context, *api_call.args, **api_call.kwargs)
+            except PySyftException as e:
+                return e.handle()
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"

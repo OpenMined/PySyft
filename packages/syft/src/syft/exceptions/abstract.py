@@ -1,13 +1,18 @@
-from abc import ABC, abstractclassmethod
+# stdlib
+from abc import ABC
+from abc import abstractclassmethod
 from enum import Enum
 from typing import List
-from ..service.response import SyftError
+
+# relative
 from ..service.context import NodeServiceContext
+from ..service.response import SyftError
 from ..service.user.user_roles import ServiceRole
 
-class PySyftException(ABC,Exception):
+
+class PySyftException(ABC, Exception):
     """Base class for all PySyft exceptions."""
-    
+
     def __init__(self, message: str, context: NodeServiceContext):
         super().__init__(message)
         self.context = context

@@ -6,6 +6,7 @@ from typing import Union
 
 # relative
 from ...abstract_node import NodeType
+from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
