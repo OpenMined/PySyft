@@ -53,8 +53,9 @@ jobs:
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v3
@@ -105,11 +106,6 @@ jobs:
         with:
           args: install visualstudio2019-workload-vctools -y
 
-      - name: Install jaxlib
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        run: |
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
@@ -119,9 +115,17 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
+      - name: Fix Colima issue on MacOS Runners
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
+          brew reinstall qemu
+
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.1.0
+        uses: crazy-max/ghaction-setup-docker@v1.3.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -179,15 +183,16 @@ jobs:
       - name: Get job name and url
         id: job_name
         if: failure()
+        shell: bash
         run: |
-          echo "::set-output name=job_name::$(echo ${{ github.job }})"
-          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          echo "job_name=$(echo ${{ github.job }})" >> $GITHUB_OUTPUT
+          echo "url=$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_OUTPUT
 
       - name: Get current date
         id: date
         if: failure()
         shell: bash
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
       - name: Upload logs to GitHub
         uses: actions/upload-artifact@master
@@ -199,8 +204,9 @@ jobs:
       - name: Get pull request url
         id: pull_request
         if: failure()
+        shell: bash
         run: |
-          echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
+          echo "url=$(echo ${{ github.event.pull_request.html_url }})" >> $GITHUB_OUTPUT
 
       - name: Job Report Status
         if: github.repository == 'OpenMined/PySyft' && failure()

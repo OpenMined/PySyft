@@ -40,6 +40,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import UserLibConfigRegistry
 from ..service.service import UserServiceConfigRegistry
+from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.identity import Identity
@@ -313,7 +314,7 @@ def generate_remote_lib_function(
             node_uid=wrapper_node_uid,
             path=path,
             args=service_args,
-            kwargs=dict(),
+            kwargs={},
             blocking=blocking,
         )
 
@@ -371,7 +372,6 @@ def debox_signed_syftapicall_response(
 
     if not signed_result.is_valid:
         return SyftError(message="The result signature is invalid")  # type: ignore
-
     return signed_result.message.data
 
 
@@ -393,6 +393,7 @@ class SyftAPI(SyftObject):
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
+    __user_role: ServiceRole = ServiceRole.NONE
 
     # def __post_init__(self) -> None:
     #     pass
@@ -477,7 +478,12 @@ class SyftAPI(SyftObject):
             node_uid=node.id,
             endpoints=endpoints,
             lib_endpoints=lib_endpoints,
+            __user_role=role,
         )
+
+    @property
+    def user_role(self) -> ServiceRole:
+        return self.__user_role
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
@@ -502,7 +508,7 @@ class SyftAPI(SyftObject):
         from ..service.request.request import UserCodeStatusChange
 
         if isinstance(api_call_result, Request) and any(
-            [isinstance(x, UserCodeStatusChange) for x in api_call_result.changes]
+            isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
         ):
             if self.refresh_api_callback is not None:
                 self.refresh_api_callback()
@@ -576,6 +582,9 @@ class SyftAPI(SyftObject):
     def has_service(self, service_name: str) -> bool:
         return hasattr(self.services, service_name)
 
+    def has_lib(self, lib_name: str) -> bool:
+        return hasattr(self.lib, lib_name)
+
     def __repr__(self) -> str:
         modules = self.services
         _repr_str = "client.api.services\n"
@@ -623,15 +632,13 @@ def _render_signature(obj_signature, obj_name) -> str:
     # add up name, parameters, braces (2), and commas
     if len(obj_name) + sum(len(r) + 2 for r in result) > 75:
         # This doesn’t fit behind “Signature: ” in an inspect window.
-        rendered = "{}(\n{})".format(
-            obj_name, "".join("    {},\n".format(r) for r in result)
-        )
+        rendered = "{}(\n{})".format(obj_name, "".join(f"    {r},\n" for r in result))
     else:
         rendered = "{}({})".format(obj_name, ", ".join(result))
 
     if obj_signature.return_annotation is not inspect._empty:
         anno = inspect.formatannotation(obj_signature.return_annotation)
-        rendered += " -> {}".format(anno)
+        rendered += f" -> {anno}"
 
     return rendered
 
@@ -729,11 +736,18 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
             try:
                 if t is not inspect.Parameter.empty:
                     if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                        success = False
                         for v in t.__args__:
                             if issubclass(v, EmailStr):
                                 v = str
-                            check_type(key, value, v)  # raises Exception
-                            break  # only need one to match
+                            try:
+                                check_type(key, value, v)  # raises Exception
+                                success = True
+                                break  # only need one to match
+                            except Exception:  # nosec
+                                pass
+                        if not success:
+                            raise TypeError()
                     else:
                         check_type(key, value, t)  # raises Exception
             except TypeError:

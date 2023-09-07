@@ -18,7 +18,7 @@ def replace_empty_export(content: str) -> str:
 
 
 def process_file(file_path: str) -> None:
-    with open(file_path, "r") as file:
+    with open(file_path) as file:
         content = file.read()
 
     new_content = replace_empty_export(content)

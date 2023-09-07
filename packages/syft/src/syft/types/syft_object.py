@@ -90,6 +90,10 @@ class SyftBaseObject(BaseModel, SyftHashableObject):
     syft_node_location: Optional[UID]
     syft_client_verify_key: Optional[SyftVerifyKey]
 
+    def _set_obj_location_(self, node_uid, credentials):
+        self.syft_node_location = node_uid
+        self.syft_client_verify_key = credentials
+
 
 class Context(SyftBaseObject):
     pass
@@ -250,6 +254,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
+            if hasattr(value, "syft_action_data_str_"):
+                value = value.syft_action_data_str_
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"  {attr}: {value_type} = {value}\n"
         return _repr_str
@@ -343,6 +349,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         warnings.warn(
             "`SyftObject.to_dict` is deprecated and will be removed in a future version",
             PendingDeprecationWarning,
+            stacklevel=2,
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none and not exclude_empty:
@@ -465,6 +472,92 @@ def short_uid(uid: UID) -> str:
         return str(uid)[:6] + "..."
 
 
+def get_repr_values_table(_self, is_homogenous, extra_fields=None):
+    if extra_fields is None:
+        extra_fields = []
+
+    cols = defaultdict(list)
+    for item in iter(_self):
+        # unpack dict
+        if isinstance(_self, dict):
+            cols["key"].append(item)
+            item = _self.__getitem__(item)
+
+        # get id
+        id_ = getattr(item, "id", None)
+        if id_ is not None:
+            cols["id"].append({"value": str(id_), "type": "clipboard"})
+
+        if type(item) == type:
+            t = full_name_with_qualname(item)
+        else:
+            try:
+                t = item.__class__.__name__
+            except Exception:
+                t = item.__repr__()
+
+        if not is_homogenous:
+            cols["type"].append(t)
+
+        # if has _coll_repr_
+        if hasattr(item, "_coll_repr_"):
+            ret_val = item._coll_repr_()
+            if "id" in ret_val:
+                del ret_val["id"]
+            for key in ret_val.keys():
+                cols[key].append(ret_val[key])
+        else:
+            for field in extra_fields:
+                value = item
+                try:
+                    attrs = field.split(".")
+                    for i, attr in enumerate(attrs):
+                        # find indexing like abc[1]
+                        res = re.search("\[[+-]?\d+\]", attr)
+                        has_index = False
+                        if res:
+                            has_index = True
+                            index_str = res.group()
+                            index = int(index_str.replace("[", "").replace("]", ""))
+                            attr = attr.replace(index_str, "")
+
+                        value = getattr(value, attr, None)
+                        if isinstance(value, list) and has_index:
+                            value = value[index]
+                        # If the object has a special representation when nested we will use that instead
+                        if (
+                            hasattr(value, "__repr_syft_nested__")
+                            and i == len(attrs) - 1
+                        ):
+                            value = value.__repr_syft_nested__()
+                        if (
+                            isinstance(value, list)
+                            and i == len(attrs) - 1
+                            and len(value) > 0
+                            and hasattr(value[0], "__repr_syft_nested__")
+                        ):
+                            value = [
+                                x.__repr_syft_nested__()
+                                if hasattr(x, "__repr_syft_nested__")
+                                else x
+                                for x in value
+                            ]
+                    if value is None:
+                        value = "n/a"
+
+                except Exception as e:
+                    print(e)
+                    value = None
+                cols[field].append(str(value))
+
+    df = pd.DataFrame(cols)
+
+    if "created_at" in df.columns:
+        df.sort_values(by="created_at", ascending=False, inplace=True)
+
+    return df.to_dict("records")
+
+
 def list_dict_repr_html(self) -> str:
     try:
         max_check = 1
@@ -479,7 +572,6 @@ def list_dict_repr_html(self) -> str:
         if len(values) == 0:
             return self.__repr__()
 
-        is_homogenous = len(set([type(x) for x in values])) == 1
         for item in iter(self):
             items_checked += 1
             if items_checked > max_check:
@@ -498,102 +590,24 @@ def list_dict_repr_html(self) -> str:
                 has_syft = True
                 extra_fields = getattr(item, "__repr_attrs__", [])
                 break
+
         if has_syft:
+            # if custom_repr:
+            table_icon = None
+            if hasattr(values[0], "icon"):
+                table_icon = values[0].icon
+            # this is a list of dicts
+            is_homogenous = len({type(x) for x in values}) == 1
             # third party
             first_value = values[0]
             if is_homogenous:
                 cls_name = first_value.__class__.__name__
             else:
                 cls_name = ""
+            vals = get_repr_values_table(self, is_homogenous, extra_fields=extra_fields)
 
-            cols = defaultdict(list)
-            for item in iter(self):
-                # unpack dict
-                if isinstance(self, dict):
-                    cols["key"].append(item)
-                    item = self.__getitem__(item)
-
-                # get id
-                id_ = getattr(item, "id", None)
-                if id_ is not None:
-                    cols["id"].append({"value": str(id_), "type": "clipboard"})
-
-                if type(item) == type:
-                    t = full_name_with_qualname(item)
-                else:
-                    try:
-                        t = item.__class__.__name__
-                    except Exception:
-                        t = item.__repr__()
-
-                if not is_homogenous:
-                    cols["type"].append(t)
-
-                # if has _coll_repr_
-                if hasattr(item, "_coll_repr_"):
-                    ret_val = item._coll_repr_()
-                    if "id" in ret_val:
-                        del ret_val["id"]
-                    for key in ret_val.keys():
-                        cols[key].append(ret_val[key])
-                else:
-                    for field in extra_fields:
-                        value = item
-                        try:
-                            attrs = field.split(".")
-                            for i, attr in enumerate(attrs):
-                                # find indexing like abc[1]
-                                res = re.search("\[[+-]?\d+\]", attr)
-                                has_index = False
-                                if res:
-                                    has_index = True
-                                    index_str = res.group()
-                                    index = int(
-                                        index_str.replace("[", "").replace("]", "")
-                                    )
-                                    attr = attr.replace(index_str, "")
-
-                                value = getattr(value, attr, None)
-                                if isinstance(value, list) and has_index:
-                                    value = value[index]
-                                # If the object has a special representation when nested we will use that instead
-                                if (
-                                    hasattr(value, "__repr_syft_nested__")
-                                    and i == len(attrs) - 1
-                                ):
-                                    value = value.__repr_syft_nested__()
-                                if (
-                                    isinstance(value, list)
-                                    and i == len(attrs) - 1
-                                    and len(value) > 0
-                                    and hasattr(value[0], "__repr_syft_nested__")
-                                ):
-                                    value = [
-                                        x.__repr_syft_nested__()
-                                        if hasattr(x, "__repr_syft_nested__")
-                                        else x
-                                        for x in value
-                                    ]
-                            if value is None:
-                                value = "n/a"
-
-                        except Exception as e:
-                            print(e)
-                            value = None
-                        cols[field].append(str(value))
-
-            df = pd.DataFrame(cols)
-
-            if "created_at" in df.columns:
-                df.sort_values(by="created_at", ascending=False, inplace=True)
-
-            # if custom_repr:
-            table_icon = None
-            if hasattr(values[0], "icon"):
-                table_icon = values[0].icon
-            # this is a list of dicts
             return create_table_template(
-                df.to_dict("records"),
+                vals,
                 f"{cls_name} {self.__class__.__name__.capitalize()}",
                 table_icon=table_icon,
             )

@@ -1,0 +1,195 @@
+name: CD - Syft-CLI
+
+on:
+  schedule:
+    - cron: "00 10 * * */7" # At 10:00 UTC on every three days
+
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "If true, skip tests"
+        required: false
+        default: "false"
+
+jobs:
+  call-pr-tests-linting:
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
+
+  # call-pr-tests-syft:
+  #   if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
+
+  # call-pr-tests-stack:
+  #   if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
+  #   secrets: inherit
+
+  deploy-syft-cli:
+    needs: [call-pr-tests-linting]
+    if: always() && (needs.call-pr-tests-linting.result == 'success' || github.event.inputs.skip_tests == 'true')
+    runs-on: ubuntu-latest
+
+    outputs:
+      deployed_version: ${{ steps.bump-version.outputs.deployed_version }}
+      current_hash: ${{ steps.get-hashes.outputs.current_hash }}
+      previous_hash: ${{ steps.get-hashes.outputs.previous_hash }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN  }}
+
+      - name: Install checksumdir
+        run: |
+          pip install --upgrade checksumdir
+
+      - name: Get the hashes
+        id: get-hashes
+        shell: bash
+        run: |
+          echo "current_hash=$(checksumdir ./packages/syftcli/syftcli -e version.py)" >> $GITHUB_OUTPUT
+          echo "previous_hash=$(cat ./scripts/syftcli_hash)" >> $GITHUB_OUTPUT
+
+      - name: Current Hash
+        run: echo ${{steps.get-hashes.outputs.current_hash}}
+
+      - name: Previous Hash
+        run: echo ${{steps.get-hashes.outputs.previous_hash}}
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade tox setuptools wheel twine bump2version PyYAML
+
+      - name: Bump the Version
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
+        id: bump-version
+        run: |
+          python3 syftcli/version.py
+          bump2version patch --allow-dirty --no-commit
+          tox -e lint || true
+          echo "deployed_version=$(python3 syftcli/version.py)" >> $GITHUB_OUTPUT
+          python3 syftcli/version.py
+        working-directory: ./packages/syftcli
+
+      - name: Write the new hash
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
+        run: echo $(checksumdir packages/syftcli/syftcli -e version.py) > ./scripts/syftcli_hash
+
+      - name: Commit changes
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "bump version"
+          add: "['./packages/syftcli/.bumpversion.cfg','./packages/syftcli/setup.py','./packages/syftcli/syftcli/version.py', './scripts/syftcli_hash']"
+          pull_strategy: NO-PULL
+
+      - name: Build and publish
+        if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.OM_SYFTCLI_PYPI_TOKEN }}
+        run: |
+          tox -e syftcli.publish
+          twine upload packages/syftcli/dist/*
+
+  create-syftcli-binaries:
+    needs: [deploy-syft-cli]
+    if: always() && (needs.deploy-syft-cli.result == 'success' && (needs.deploy-syft-cli.outputs.current_hash != needs.deploy-syft-cli.outputs.previous_hash))
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: true
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN  }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install build dependencies for syftcli
+        run: |
+          pip install --upgrade pip
+
+      - name: Install Tox
+        run: |
+          pip install -U tox
+
+      - name: Build syftcli
+        env:
+          SYFT_CLI_VERSION: ${{ needs.deploy-syft-cli.outputs.deployed_version }}
+        run: |
+          tox -e syftcli.build
+
+      - name: upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
+          path: ./packages/syftcli/dist/cli/*
+          if-no-files-found: error
+
+  create-syftcli-github-release:
+    needs: [create-syftcli-binaries, deploy-syft-cli]
+    if: always() && (needs.create-syftcli-binaries.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # For tag and release notes.
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN  }}
+
+      - name: Deployed Version
+        run: echo ${{needs.deploy-syft-cli.outputs.deployed_version}}
+
+      - name: Check if version is released on Pypi
+        id: check-pypi
+        run: |
+          VERSION=${{needs.deploy-syft-cli.outputs.deployed_version}}
+
+          RESPONSE=$(curl -s --head https://pypi.org/pypi/syftcli/$VERSION/json)
+
+          if [[ $RESPONSE == *"HTTP/2 200"* ]]; then
+            echo "released=true" >> $GITHUB_OUTPUT
+          else
+            echo "released=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Make sure directory exists
+        if: steps.check-pypi.outputs.released == 'true'
+        run: |
+          mkdir -p ./downloaded-binaries
+
+      - name: Download binary
+        if: steps.check-pypi.outputs.released == 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
+          path: ./downloaded-binaries/
+
+      - name: GitHub Release
+        if: steps.check-pypi.outputs.released == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          name: syftcli-v${{ needs.deploy-syft-cli.outputs.deployed_version }}
+          generate_release_notes: false
+          prerelease: false
+          files: |
+            ./downloaded-binaries/*
+          tag_name: syftcli-v${{ needs.deploy-syft-cli.outputs.deployed_version }}

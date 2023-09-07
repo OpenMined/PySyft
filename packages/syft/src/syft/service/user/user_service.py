@@ -210,7 +210,11 @@ class UserService(AbstractService):
                 SyftError(message="User not found!")
         return SyftError(message=str(result.err()))
 
-    @service_method(path="user.update", name="update", roles=GUEST_ROLE_LEVEL)
+    @service_method(
+        path="user.update",
+        name="update",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:
@@ -264,11 +268,9 @@ class UserService(AbstractService):
                 )
 
         edits_non_role_attrs = any(
-            [
-                getattr(user_update, attr) is not Empty
-                for attr in user_update.dict()
-                if attr != "role"
-            ]
+            getattr(user_update, attr) is not Empty
+            for attr in user_update.dict()
+            if attr != "role"
         )
 
         if (
@@ -446,13 +448,13 @@ class UserService(AbstractService):
         if request_user_role in DATA_OWNER_ROLE_LEVEL:
             success_message += " To see users, run `[your_client].users`"
         msg = SyftSuccess(message=success_message)
-        return tuple([msg, user.to(UserPrivateKey)])
+        return (msg, user.to(UserPrivateKey))
 
     def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
         result = self.stash.get_by_email(credentials=credentials, email=email)
-        if result.is_ok():
+        if result.ok() is not None:
             return result.ok().verify_key
         return SyftError(message=f"No user with email: {email}")
 

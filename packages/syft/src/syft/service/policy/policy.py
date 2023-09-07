@@ -194,14 +194,23 @@ class InputPolicy(Policy):
         user_node_view = NodeIdentity.from_change_context(context)
         inputs = self.inputs[user_node_view]
 
+        root_context = AuthedServiceContext(
+            node=context.node, credentials=context.approving_user_credentials
+        ).as_root_context()
+
         action_service = context.node.get_service("actionservice")
         for var_name, uid in inputs.items():
-            action_object = action_service.store.get(
-                uid=uid, credentials=user_node_view.verify_key
-            )
+            action_object = action_service.get(uid=uid, context=root_context)
             if action_object.is_err():
                 return SyftError(message=action_object.err())
-            inputs[var_name] = action_object.ok()
+            action_object_value = action_object.ok()
+            # resolve syft action data from blob store
+            if isinstance(action_object_value, TwinObject):
+                action_object_value.private_obj.syft_action_data  # noqa: B018
+                action_object_value.mock_obj.syft_action_data  # noqa: B018
+            elif isinstance(action_object_value, ActionObject):
+                action_object_value.syft_action_data  # noqa: B018
+            inputs[var_name] = action_object_value
         return inputs
 
 
@@ -478,7 +487,7 @@ def new_getfile(object):
         ):
             return inspect.getfile(member)
     else:
-        raise TypeError("Source for {!r} not found".format(object))
+        raise TypeError(f"Source for {object!r} not found")
 
 
 def get_code_from_class(policy):

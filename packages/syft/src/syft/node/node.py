@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import binascii
+from collections import OrderedDict
 import contextlib
 from datetime import datetime
 from functools import partial
@@ -16,6 +17,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 import uuid
@@ -45,7 +47,9 @@ from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
+from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
+from ..service.code_history.code_history_service import CodeHistoryService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
 from ..service.context import UnauthedServiceContext
@@ -79,6 +83,9 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..store.blob_storage import BlobStorageConfig
+from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
+from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
@@ -89,6 +96,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
+from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
 from ..util.util import thread_ident
@@ -175,6 +183,40 @@ default_root_email = get_default_root_email()
 default_root_password = get_default_root_password()
 
 
+class AuthNodeContextRegistry:
+    __node_context_registry__: Dict[Tuple, Node] = OrderedDict()
+
+    @classmethod
+    def set_node_context(
+        cls,
+        node_uid: Union[UID, str],
+        context: NodeServiceContext,
+        user_verify_key: Union[SyftVerifyKey, str],
+    ):
+        if isinstance(node_uid, str):
+            node_uid = UID.from_string(node_uid)
+
+        if isinstance(user_verify_key, str):
+            user_verify_key = SyftVerifyKey.from_string(user_verify_key)
+
+        key = cls._get_key(node_uid=node_uid, user_verify_key=user_verify_key)
+
+        cls.__node_context_registry__[key] = context
+
+    @staticmethod
+    def _get_key(node_uid: UID, user_verify_key: SyftVerifyKey) -> str:
+        return "-".join(str(x) for x in (node_uid, user_verify_key))
+
+    @classmethod
+    def auth_context_for_user(
+        cls,
+        node_uid: UID,
+        user_verify_key: SyftVerifyKey,
+    ) -> Optional[AuthedServiceContext]:
+        key = cls._get_key(node_uid=node_uid, user_verify_key=user_verify_key)
+        return cls.__node_context_registry__.get(key)
+
+
 @instrument
 class Node(AbstractNode):
     signing_key: Optional[SyftSigningKey]
@@ -197,7 +239,8 @@ class Node(AbstractNode):
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
-        queue_config: QueueConfig = ZMQQueueConfig,
+        blob_storage_config: Optional[BlobStorageConfig] = None,
+        queue_config: Optional[QueueConfig] = None,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
     ):
@@ -240,7 +283,9 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                CodeHistoryService,
                 MetadataService,
+                BlobStorageService,
             ]
             if services is None
             else services
@@ -287,12 +332,27 @@ class Node(AbstractNode):
         if not (self.is_subprocess or self.processes == 0):
             self.init_queue_manager(queue_config=queue_config)
 
+        self.init_blob_storage(config=blob_storage_config)
+
         NodeRegistry.set_node_for(self.id, self)
 
-    def init_queue_manager(self, queue_config: QueueConfig):
+    def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
+        if config is None:
+            root_directory = get_root_data_path()
+            base_directory = root_directory / f"{self.id}"
+            client_config = OnDiskBlobStorageClientConfig(base_directory=base_directory)
+            config_ = OnDiskBlobStorageConfig(client_config=client_config)
+        else:
+            config_ = config
+        self.blob_store_config = config_
+        self.blob_storage_client = config_.client_type(config=config_.client_config)
+
+    def init_queue_manager(self, queue_config: Optional[QueueConfig]):
+        queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
+
         MessageHandlers = [APICallMessageHandler]
 
-        self.queue_manager = QueueManager(queue_config)
+        self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
             producer = self.queue_manager.create_producer(
@@ -328,6 +388,7 @@ class Node(AbstractNode):
             raise Exception(f"Invalid UID: {name_hash_string} for name: {name}")
         uid = UID(name_hash_string)
         key = SyftSigningKey(signing_key=SigningKey(name_hash))
+        blob_storage_config = None
         if reset:
             store_config = SQLiteStoreClientConfig()
             store_config.filename = f"{uid}.sqlite"
@@ -351,6 +412,19 @@ class Node(AbstractNode):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
 
+            # Reset blob storage
+            root_directory = get_root_data_path()
+            base_directory = root_directory / f"{uid}"
+            if base_directory.exists():
+                for file in base_directory.iterdir():
+                    file.unlink()
+            blob_client_config = OnDiskBlobStorageClientConfig(
+                base_directory=base_directory
+            )
+            blob_storage_config = OnDiskBlobStorageConfig(
+                client_config=blob_client_config
+            )
+
         return cls(
             name=name,
             id=uid,
@@ -361,6 +435,7 @@ class Node(AbstractNode):
             node_type=node_type,
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
+            blob_storage_config=blob_storage_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -375,7 +450,9 @@ class Node(AbstractNode):
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
-        return client_type(connection=connection, credentials=self.signing_key)
+        root_client = client_type(connection=connection, credentials=self.signing_key)
+        root_client.api.refresh_api_callback()
+        return root_client
 
     @property
     def guest_client(self):
@@ -396,7 +473,11 @@ class Node(AbstractNode):
         if isinstance(client_type, SyftError):
             return client_type
 
-        return client_type(connection=connection, credentials=SyftSigningKey.generate())
+        guest_client = client_type(
+            connection=connection, credentials=SyftSigningKey.generate()
+        )
+        guest_client.api.refresh_api_callback()
+        return guest_client
 
     def __repr__(self) -> str:
         service_string = ""
@@ -409,7 +490,12 @@ class Node(AbstractNode):
         return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type}{service_string}"
 
     def post_init(self) -> None:
-        context = AuthedServiceContext(node=self, credentials=self.verify_key)
+        context = AuthedServiceContext(
+            node=self, credentials=self.verify_key, role=ServiceRole.ADMIN
+        )
+        AuthNodeContextRegistry.set_node_context(
+            node_uid=self.id, user_verify_key=self.verify_key, context=context
+        )
 
         if UserCodeService in self.services:
             user_code_service = self.get_service(UserCodeService)
@@ -499,7 +585,9 @@ class Node(AbstractNode):
                 DataSubjectMemberService,
                 ProjectService,
                 EnclaveService,
+                CodeHistoryService,
                 MetadataService,
+                BlobStorageService,
             ]
 
             if OBLV:
@@ -701,6 +789,7 @@ class Node(AbstractNode):
             context = AuthedServiceContext(
                 node=self, credentials=credentials, role=role
             )
+            AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 
             user_config_registry = UserServiceConfigRegistry.from_role(role)
 
@@ -823,6 +912,7 @@ def task_runner(
         signing_key=worker_settings.signing_key,
         document_store_config=worker_settings.document_store_config,
         action_store_config=worker_settings.action_store_config,
+        blob_storage_config=worker_settings.blob_store_config,
         is_subprocess=True,
     )
     try:

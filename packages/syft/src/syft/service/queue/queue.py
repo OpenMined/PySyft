@@ -20,7 +20,7 @@ class QueueManager(BaseQueueManager):
     config: QueueConfig
 
     def post_init(self):
-        self.client_config = self.config.client_config()
+        self.client_config = self.config.client_config
         self._client = self.config.client_type(self.client_config)
 
     def close(self):
@@ -77,6 +77,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             signing_key=worker_settings.signing_key,
             document_store_config=worker_settings.document_store_config,
             action_store_config=worker_settings.action_store_config,
+            blob_storage_config=worker_settings.blob_store_config,
             is_subprocess=True,
         )
 

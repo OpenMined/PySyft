@@ -53,8 +53,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v3
@@ -69,7 +70,6 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       # Temporarily disabled oblv tests
       # - name: Run Enclave tests

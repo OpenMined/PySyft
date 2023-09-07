@@ -13,6 +13,8 @@ from tqdm import tqdm
 from ..abstract_node import NodeSideType
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
+from ..service.code_history.code_history import CodeHistoriesDict
+from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
@@ -73,7 +75,13 @@ class DomainClient(SyftClient):
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
             try:
-                twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
+                twin = TwinObject(
+                    private_obj=asset.data,
+                    mock_obj=asset.mock,
+                    syft_node_location=self.id,
+                    syft_client_verify_key=self.verify_key,
+                )
+                twin._save_to_blob_storage()
             except Exception as e:
                 return SyftError(message=f"Failed to create twin. {e}")
             response = self.api.services.action.set(twin)
@@ -97,7 +105,7 @@ class DomainClient(SyftClient):
         via_client: Optional[SyftClient] = None,
         url: Optional[str] = None,
         port: Optional[int] = None,
-        handle: Optional["NodeHandle"] = None,  # noqa: F821
+        handle: Optional[NodeHandle] = None,  # noqa: F821
         **kwargs,
     ) -> None:
         if via_client is not None:
@@ -147,6 +155,20 @@ class DomainClient(SyftClient):
         if self.api.has_service("project"):
             return self.api.services.project
         return None
+
+    @property
+    def code_history_service(self) -> Optional[APIModule]:
+        if self.api is not None and self.api.has_service("code_history"):
+            return self.api.services.code_history
+        return None
+
+    @property
+    def code_history(self) -> CodeHistoriesDict:
+        return self.api.services.code_history.get_history()
+
+    @property
+    def code_histories(self) -> UsersCodeHistoriesDict:
+        return self.api.services.code_history.get_histories()
 
     def get_project(
         self,

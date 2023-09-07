@@ -55,10 +55,14 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
-        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
+        result = self._submit(context=context, code=code)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
+
+    def _submit(self, context: AuthedServiceContext, code: SubmitUserCode) -> Result:
+        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
+        return result
 
     def _request_code_execution(
         self,
@@ -68,12 +72,18 @@ class UserCodeService(AbstractService):
     ):
         user_code: UserCode = code.to(UserCode, context=context)
         if not all(
-            [x in user_code.input_owner_verify_keys for x in user_code.output_readers]
+            x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
             raise ValueError("outputs can only be distributed to input owners")
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
+
+        # Create a code history
+        code_history_service = context.node.get_service("codehistoryservice")
+        result = code_history_service.submit_version(context=context, code=user_code)
+        if isinstance(result, SyftError):
+            return result
 
         # Users that have access to the output also have access to the code item
         self.stash.add_permissions(
@@ -179,7 +189,13 @@ class UserCodeService(AbstractService):
                     connection=connection,
                     credentials=context.node.signing_key,
                 )
-                return enclave_client.code.get_results(code.id)
+                outputs = enclave_client.code.get_results(code.id)
+                if isinstance(outputs, list):
+                    for output in outputs:
+                        output.syft_action_data  # noqa: B018
+                else:
+                    outputs.syft_action_data  # noqa: B018
+                return outputs
 
             # if the current node is the enclave
             else:

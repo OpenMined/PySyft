@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:latest
 
 RUN apk update && apk upgrade --available
 RUN apk add --no-cache iptables bind-tools bash curl

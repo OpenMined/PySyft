@@ -23,7 +23,7 @@ def to_action_object(obj: Any) -> ActionObject:
         return obj
 
     if type(obj) in action_types:
-        return action_types[type(obj)](syft_action_data=obj)
+        return action_types[type(obj)](syft_action_data_cache=obj)
     raise Exception(f"{type(obj)} not in action_types")
 
 
@@ -71,3 +71,16 @@ class TwinObject(SyftObject):
         mock.syft_twin_type = TwinMode.MOCK
         mock.id = twin_id
         return mock
+
+    def _save_to_blob_storage(self):
+        # Set node location and verify key
+        self.private_obj._set_obj_location_(
+            self.syft_node_location,
+            self.syft_client_verify_key,
+        )
+        # self.mock_obj._set_obj_location_(
+        #     self.syft_node_location,
+        #     self.syft_client_verify_key,
+        # )
+        return self.private_obj._save_to_blob_storage()
+        # self.mock_obj._save_to_blob_storage()

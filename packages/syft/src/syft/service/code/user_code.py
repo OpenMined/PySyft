@@ -9,6 +9,7 @@ import inspect
 from io import StringIO
 import itertools
 import sys
+import time
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -18,6 +19,7 @@ from typing import Type
 from typing import Union
 
 # third party
+from IPython.display import display
 from typing_extensions import Self
 
 # relative
@@ -29,6 +31,7 @@ from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
+from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
@@ -56,8 +59,10 @@ from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
+from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
 
@@ -155,7 +160,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 
     @property
     def approved(self) -> bool:
-        return all([x == UserCodeStatus.APPROVED for x in self.status_dict.values()])
+        return all(x == UserCodeStatus.APPROVED for x in self.status_dict.values())
 
     @property
     def denied(self) -> bool:
@@ -232,9 +237,10 @@ class UserCode(SyftObject):
     status: UserCodeStatusCollection
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
-    __attr_unique__ = ["code_hash", "user_unique_func_name"]
+    __attr_unique__ = []
     __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -262,6 +268,7 @@ class UserCode(SyftObject):
                 "type": "clipboard",
             },
             "Status": status_badge,
+            "Submit time": str(self.submit_time),
         }
 
     @property
@@ -428,7 +435,10 @@ class UserCode(SyftObject):
 
     @property
     def unsafe_function(self) -> Optional[Callable]:
-        print("WARNING: This code was submitted by a User and could be UNSAFE.")
+        warning = SyftWarning(
+            message="This code was submitted by a User and could be UNSAFE."
+        )
+        display(warning)
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
         def wrapper(*args: Any, **kwargs: Any) -> Callable:
@@ -441,10 +451,17 @@ class UserCode(SyftObject):
                         on_private_data or arg_type == ArgumentType.PRIVATE
                     )
                     on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
+
                 if on_private_data:
-                    print("Warning: The result you see is computed on PRIVATE data.")
-                elif on_mock_data:
-                    print("Warning: The result you see is computed on MOCK data.")
+                    display(
+                        SyftInfo(
+                            message="The result you see is computed on PRIVATE data."
+                        )
+                    )
+                if on_mock_data:
+                    display(
+                        SyftInfo(message="The result you see is computed on MOCK data.")
+                    )
 
                 # remove the decorator
                 inner_function = ast.parse(self.raw_code).body[0]
@@ -525,6 +542,12 @@ class SubmitUserCode(SyftObject):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
+            tree = ast.parse(inspect.getsource(self.local_function))
+
+            # check there are no globals
+            v = GlobalsVisitor()
+            v.visit(tree)
+
             # filtered_args = []
             filtered_kwargs = {}
             # for arg in args:
@@ -595,11 +618,6 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f):
-        print(
-            f"Syft function '{f.__name__}' successfully created. "
-            f"To add a code request, please create a project using `project = syft.Project(...)`, "
-            f"then use command `project.create_code_request`."
-        )
         res = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -616,6 +634,14 @@ def syft_function(
             res.output_policy_init_kwargs[
                 "output_readers"
             ] = res.input_owner_verify_keys
+
+        success_message = SyftSuccess(
+            message=f"Syft function '{f.__name__}' successfully created. "
+            f"To add a code request, please create a project using `project = syft.Project(...)`, "
+            f"then use command `project.create_code_request`."
+        )
+        display(success_message)
+
         return res
 
     return decorator
@@ -626,7 +652,9 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
     service_func_name = context.output["func_name"]
     context.output["service_func_name"] = service_func_name
     func_name = f"user_func_{service_func_name}_{context.credentials}_{code_hash}"
-    user_unique_func_name = f"user_func_{service_func_name}_{context.credentials}"
+    user_unique_func_name = (
+        f"user_func_{service_func_name}_{context.credentials}_{time.time()}"
+    )
     context.output["unique_func_name"] = func_name
     context.output["user_unique_func_name"] = user_unique_func_name
     return context
@@ -785,6 +813,11 @@ def add_custom_status(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_submit_time(context: TransformContext) -> TransformContext:
+    context.output["submit_time"] = DateTime.now()
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
@@ -797,6 +830,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
         add_node_uid_for_key("node_uid"),
+        add_submit_time,
     ]
 
 

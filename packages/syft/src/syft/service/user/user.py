@@ -112,11 +112,11 @@ class UserUpdate(PartialSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     @pydantic.validator("email", pre=True)
-    def make_email(cls, v: EmailStr) -> Optional[EmailStr]:
-        return EmailStr(v) if isinstance(v, str) else v
+    def make_email(cls, v: Any) -> Any:
+        return EmailStr(v) if isinstance(v, str) and not isinstance(v, EmailStr) else v
 
     @pydantic.validator("role", pre=True)
-    def str_to_role(cls, v: Union[str, ServiceRole]) -> Optional[ServiceRole]:
+    def str_to_role(cls, v: Any) -> Any:
         if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
             return getattr(ServiceRole, v.upper())
         return v
@@ -198,10 +198,12 @@ class UserView(SyftObject):
         )
 
     def set_password(
-        self, new_password: str, confirm: bool = True
+        self, new_password: Optional[str] = None, confirm: bool = True
     ) -> Union[SyftError, SyftSuccess]:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
+        if not new_password:
+            new_password = getpass("New Password: ")
 
         if confirm:
             confirmed_password: str = getpass("Please confirm your password: ")
@@ -220,7 +222,7 @@ class UserView(SyftObject):
 
         try:
             user_update = UserUpdate(email=email)
-        except ValidationError as e:  # noqa: F841
+        except ValidationError:
             return SyftError(message="{email} is not a valid email address.")
 
         result = api.services.user.update(uid=self.id, user_update=user_update)

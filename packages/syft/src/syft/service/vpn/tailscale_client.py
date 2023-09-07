@@ -88,7 +88,7 @@ class TailscaleClient(BaseVPNClient):
     @staticmethod
     def _extract_host_and_peer(status_dict: Dict) -> Dict:
         def extract_peer_info(peer: Dict) -> Dict:
-            info = dict()
+            info = {}
             info["hostname"] = peer["HostName"]
             info["os"] = peer["OS"]
             info["ip"] = peer["TailscaleIPs"][0] if peer["TailscaleIPs"] else ""
