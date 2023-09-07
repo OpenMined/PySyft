@@ -48,7 +48,6 @@ class CodeExecutionMessageHandler(AbstractMessageHandler):
             status=Status.PROCESSING,
         )
         worker.queue_stash.set(user_verify_key, item)
-        print("Queue Stash data:", worker.queue_stash.partition.data)
 
         status = Status.COMPLETED
         
@@ -69,12 +68,11 @@ class CodeExecutionMessageHandler(AbstractMessageHandler):
         item = QueueItem(
             node_uid=worker.id,
             id=task_uid,
-            result=result,
+            result=deser_msg.data,
             resolved=True,
             status=status,
         )
 
         worker.queue_stash.set_result(worker.verify_key, item)
         print("Done. Sanity check:", deser_msg.data.get(), file=sys.stderr)
-        print("Queue Stash data:", worker.queue_stash.partition.data)
             
