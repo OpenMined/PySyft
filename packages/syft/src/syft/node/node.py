@@ -692,7 +692,12 @@ class Node(AbstractNode):
         result = self.queue_stash.pop_on_complete(credentials, uid)
 
         if result.is_ok():
-            return result.ok()
+            queue_obj = result.ok()
+            queue_obj._set_obj_location_(
+                node_uid=self.id,
+                credentials=credentials,
+            )
+            return queue_obj
         return result.err()
 
     def forward_message(

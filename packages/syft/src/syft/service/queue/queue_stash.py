@@ -61,9 +61,10 @@ class QueueItem(SyftObject):
             blocking=True,
         )
         result = api.make_call(call)
-        if isinstance(result, QueueItem) and result.resolved:
-            self.resolved = True
-            self.result = result.result
+        if isinstance(result, QueueItem):
+            self.resolved = result.resolved
+            if result.resolved:
+                self.result = result.result
             self.status = result.status
 
     @property
@@ -76,6 +77,9 @@ class QueueItem(SyftObject):
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
     def __repr__(self) -> str:
+        return f"<QueueItem: {self.id}>: {self.status}"
+    
+    def _repr_markdown_(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
 
 @instrument

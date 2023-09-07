@@ -48,6 +48,9 @@ class CodeExecutionMessageHandler(AbstractMessageHandler):
             status=Status.PROCESSING,
         )
         worker.queue_stash.set(user_verify_key, item)
+        print("SLEEP", file=sys.stderr)
+        import time
+        time.sleep(10)
 
         status = Status.COMPLETED
         
