@@ -170,7 +170,8 @@ class ActionService(AbstractService):
     def _user_code_execute(
         self, 
         code_item: UserCode, 
-        filtered_kwargs: Dict[str, Any]
+        filtered_kwargs: Dict[str, Any],
+        logger
     ) -> Result[ActionObjectPointer, Err]:
         expected_input_kwargs = set()
         for _inp_kwarg in code_item.input_policy.inputs.values():
@@ -199,18 +200,18 @@ class ActionService(AbstractService):
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
-                exec_result = execute_byte_code(code_item, filtered_kwargs).result
+                exec_result = execute_byte_code(logger, code_item, filtered_kwargs).result
                 result_action_object = wrap_result(result_id, exec_result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.PRIVATE
                 )
-                private_exec_result = execute_byte_code(code_item, private_kwargs).result
+                private_exec_result = execute_byte_code(logger, code_item, private_kwargs).result
                 result_action_object_private = wrap_result(result_id, private_exec_result)
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
-                mock_exec_result = execute_byte_code(code_item, mock_kwargs).result
+                mock_exec_result = execute_byte_code(logger, code_item, mock_kwargs).result
                 result_action_object_mock = wrap_result(result_id, mock_exec_result)
 
                 result_action_object = TwinObject(

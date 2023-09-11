@@ -919,6 +919,8 @@ class ActionObject(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return self.syft_action_data
         res = api.services.action.get(self.id)
 
         if not isinstance(res, ActionObject):
