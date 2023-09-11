@@ -16,7 +16,10 @@ from result import Err
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_permissions import ActionObjectPermission
 from syft.service.action.action_permissions import ActionPermission
+from syft.service.action.action_store import ActionObjectEXECUTE
+from syft.service.action.action_store import ActionObjectOWNER
 from syft.service.action.action_store import ActionObjectREAD
+from syft.service.action.action_store import ActionObjectWRITE
 from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKeys
 from syft.store.mongo_client import MongoStoreClientConfig
@@ -25,14 +28,19 @@ from syft.store.mongo_document_store import MongoStorePartition
 
 # relative
 from .store_constants_test import generate_db_name
-from .store_constants_test import test_verify_key_string_client
 from .store_constants_test import test_verify_key_string_hacker
-from .store_constants_test import test_verify_key_string_root
 from .store_fixtures_test import mongo_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
 
 REPEATS = 20
+
+PERMISSIONS = [
+    ActionObjectOWNER,
+    ActionObjectREAD,
+    ActionObjectWRITE,
+    ActionObjectEXECUTE,
+]
 
 
 @pytest.mark.skipif(
@@ -712,7 +720,7 @@ def test_mongo_store_partition_add_remove_permission(
         mongo_store_partition.add_permission(new_obj_read_permission)
         assert permissions_collection.count_documents({}) == 1 + idx
 
-    # remove the permissions
+    # remove all the permissions added in the loop
     for permission in new_permissions:
         mongo_store_partition.remove_permission(permission)
 
@@ -774,36 +782,60 @@ def test_mongo_store_partition_add_permissions(
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.parametrize("permission", PERMISSIONS)
 def test_mongo_store_partition_has_permission(
+    root_verify_key: SyftVerifyKey,
+    guest_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
+    permission: ActionObjectPermission,
 ) -> None:
-    SyftVerifyKey.from_string(test_verify_key_string_client)
-    root_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
 
     res = mongo_store_partition.init_store()
     assert res.is_ok()
-    mongo_store_partition.permissions.ok()
+
+    # root permission
     obj = MockSyftObject(data=1)
+    permission_root = permission(uid=obj.id, credentials=root_verify_key)
+    permission_client = permission(uid=obj.id, credentials=guest_verify_key)
+    permission_hacker = permission(uid=obj.id, credentials=hacker_key)
+    mongo_store_partition.add_permission(permission_root)
+    # only the root user has access to this permission
+    assert mongo_store_partition.has_permission(permission_root)
+    assert not mongo_store_partition.has_permission(permission_client)
+    assert not mongo_store_partition.has_permission(permission_hacker)
 
-    permission_1 = ActionObjectPermission(
-        uid=obj.id, permission=ActionPermission.READ, credentials=root_key
-    )
-    mongo_store_partition.add_permission(permission_1)
+    # client permission for another object
+    obj_2 = MockSyftObject(data=2)
+    permission_client_2 = permission(uid=obj_2.id, credentials=guest_verify_key)
+    permission_root_2 = permission(uid=obj_2.id, credentials=root_verify_key)
+    permisson_hacker_2 = permission(uid=obj_2.id, credentials=hacker_key)
+    mongo_store_partition.add_permission(permission_client_2)
+    # the root (admin) and guest client should have this permission
+    assert mongo_store_partition.has_permission(permission_root_2)
+    assert mongo_store_partition.has_permission(permission_client_2)
+    assert not mongo_store_partition.has_permission(permisson_hacker_2)
 
-    assert mongo_store_partition.has_permission(
-        ActionObjectREAD(uid=obj.id, credentials=root_key)
-    )
+    # remove permissions
+    mongo_store_partition.remove_permission(permission_root)
+    assert not mongo_store_partition.has_permission(permission_root)
+    assert not mongo_store_partition.has_permission(permission_client)
+    assert not mongo_store_partition.has_permission(permission_hacker)
+
+    mongo_store_partition.remove_permission(permission_client_2)
+    assert not mongo_store_partition.has_permission(permission_root_2)
+    assert not mongo_store_partition.has_permission(permission_client_2)
+    assert not mongo_store_partition.has_permission(permisson_hacker_2)
 
 
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_take_ownership(
+    root_verify_key: SyftVerifyKey,
+    guest_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    SyftVerifyKey.from_string(test_verify_key_string_client)
-    SyftVerifyKey.from_string(test_verify_key_string_root)
     SyftVerifyKey.from_string(test_verify_key_string_hacker)
 
 

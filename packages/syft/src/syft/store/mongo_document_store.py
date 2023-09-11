@@ -403,16 +403,16 @@ class MongoStorePartition(StorePartition):
             return False
         collection_permissions: MongoCollection = collection_permissions_status.ok()
 
-        # TODO: fix for other admins
-        if self.root_verify_key.verify == permission.credentials.verify:
-            return True
-
         permissions: Optional[Dict] = collection_permissions.find_one(
             {"_id": permission.uid}
         )
 
         if permissions is None:
             return False
+
+        # TODO: fix for other admins
+        if self.root_verify_key.verify == permission.credentials.verify:
+            return True
 
         if permission.permission_string in permissions["permissions"]:
             return True
