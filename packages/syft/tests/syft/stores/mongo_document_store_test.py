@@ -16,6 +16,7 @@ from result import Err
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_permissions import ActionObjectPermission
 from syft.service.action.action_permissions import ActionPermission
+from syft.service.action.action_store import ActionObjectREAD
 from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKeys
 from syft.store.mongo_client import MongoStoreClientConfig
@@ -24,6 +25,9 @@ from syft.store.mongo_document_store import MongoStorePartition
 
 # relative
 from .store_constants_test import generate_db_name
+from .store_constants_test import test_verify_key_string_client
+from .store_constants_test import test_verify_key_string_hacker
+from .store_constants_test import test_verify_key_string_root
 from .store_fixtures_test import mongo_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
@@ -609,6 +613,9 @@ def test_mongo_store_partition_set_delete_joblib(
     assert stored_cnt == 0
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_permissions_collection(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -621,6 +628,9 @@ def test_mongo_store_partition_permissions_collection(
     assert isinstance(collection_permissions, MongoCollection)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_add_remove_permission(
     root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
 ) -> None:
@@ -709,6 +719,9 @@ def test_mongo_store_partition_add_remove_permission(
     assert permissions_collection.count_documents({}) == 1
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_add_permissions(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,
@@ -758,20 +771,45 @@ def test_mongo_store_partition_add_permissions(
     assert len(find_res_2["permissions"]) == 2
 
 
-@pytest.mark.skip(reason="To be implemented")
-def test_mongo_store_partition_take_ownership(
-    mongo_store_partition: MongoStorePartition,
-) -> None:
-    pass
-
-
-@pytest.mark.skip(reason="To be implemented")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_has_permission(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
-    pass
+    SyftVerifyKey.from_string(test_verify_key_string_client)
+    root_key = SyftVerifyKey.from_string(test_verify_key_string_root)
+    SyftVerifyKey.from_string(test_verify_key_string_hacker)
+
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
+    mongo_store_partition.permissions.ok()
+    obj = MockSyftObject(data=1)
+
+    permission_1 = ActionObjectPermission(
+        uid=obj.id, permission=ActionPermission.READ, credentials=root_key
+    )
+    mongo_store_partition.add_permission(permission_1)
+
+    assert mongo_store_partition.has_permission(
+        ActionObjectREAD(uid=obj.id, credentials=root_key)
+    )
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+def test_mongo_store_partition_take_ownership(
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    SyftVerifyKey.from_string(test_verify_key_string_client)
+    SyftVerifyKey.from_string(test_verify_key_string_root)
+    SyftVerifyKey.from_string(test_verify_key_string_hacker)
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_permissions_set(
     root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
 ) -> None:
