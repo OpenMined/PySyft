@@ -6,9 +6,20 @@ from ...client.api import SyftAPICall
 from .queue_stash import Status
 from .queue_stash import QueueItem
 from ..response import SyftError
+from ...types.syft_object import SyftObject
+from ...service.action.action_object import ActionObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 
 import sys
 
+class PromiseObject(SyftObject):
+    __canonical_name__ = "PromiseObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+    action_object: ActionObject
+    
+    def wait(self):
+        return self.action_object
+        
 @serializable()
 class CodeExecutionMessageHandler(AbstractMessageHandler):
     queue_name = "code_execution"
