@@ -144,12 +144,12 @@ def get_fully_qualified_name(obj: object) -> str:
     fqn = obj.__class__.__module__
 
     try:
-        if hasattr(obj, "__canonical_name__"):
-            fqn += "." + obj.__canonical_name__
-        else:
-            fqn += "." + obj.__class__.__name__
+        fqn += "." + obj.__class__.__name__
     except Exception as e:
         error(f"Failed to get FQN: {e}")
+
+    if hasattr(obj, "__version__"):
+        fqn += "." + str(obj.__version__)
     return fqn
 
 

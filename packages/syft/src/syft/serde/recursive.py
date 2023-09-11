@@ -3,7 +3,7 @@ from enum import Enum
 from enum import EnumMeta
 import sys
 import types
-from typing import Any, Dict
+from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -23,7 +23,7 @@ from ..util.util import get_fully_qualified_name
 from ..util.util import index_syft_by_module_name
 from .capnp import get_capnp_schema
 
-TYPE_BANK: Dict = {}
+TYPE_BANK = {}
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
 
@@ -94,15 +94,10 @@ def recursive_serde_register(
 
     alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
-    canonical_name = getattr(cls, "__canonical_name__", None)
-    if canonical_name:
-        fqn = f"{cls.__module__}.{cls.__canonical_name__}"
+    if hasattr(cls, "__version__"):
+        fqn = f"{cls.__module__}.{cls.__name__}.{cls.__version__}"
     else:
         fqn = f"{cls.__module__}.{cls.__name__}"
-
-    version = None
-    if canonical_name:
-        version = str(getattr(cls, "__version__", None))
 
     nonrecursive = bool(serialize and deserialize)
     _serialize = serialize if nonrecursive else rs_object2proto
@@ -157,13 +152,7 @@ def recursive_serde_register(
         attribute_types,
     )
 
-    if version:
-        if fqn in TYPE_BANK:
-            TYPE_BANK[fqn][version] = serde_attributes
-        else:
-            TYPE_BANK[fqn] = {version: serde_attributes}
-    else:
-        TYPE_BANK[fqn] = serde_attributes
+    TYPE_BANK[fqn] = serde_attributes
 
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
@@ -202,15 +191,11 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
 
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
-    version = str(self.__version__) if hasattr(self, "__canonical_name__") else None
     if fqn not in TYPE_BANK:
         # third party
         raise Exception(f"{fqn} not in TYPE_BANK")
 
     msg.fullyQualifiedName = fqn
-    msg.version = version if version is not None else ""
-
-    print("Message version", msg.version)
     (
         nonrecursive,
         serialize,
@@ -221,9 +206,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         hash_exclude_attrs,
         cls,
         attribute_types,
-    ) = (
-        TYPE_BANK[fqn] if version is None else TYPE_BANK[fqn][version]
-    )
+    ) = TYPE_BANK[fqn]
 
     if nonrecursive or is_type:
         if serialize is None:
@@ -324,11 +307,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         hash_exclude_attrs,
         cls,
         attribute_types,
-    ) = (
-        TYPE_BANK[proto.fullyQualifiedName][proto.version]
-        if proto.version
-        else TYPE_BANK[proto.fullyQualifiedName]
-    )
+    ) = TYPE_BANK[proto.fullyQualifiedName]
 
     if class_type == type(None):
         # yes this looks stupid but it works and the opposite breaks
