@@ -101,6 +101,7 @@ from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .worker_settings import WorkerSettings
+from zmq.log.handlers import PUBHandler
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific node UID and thread
@@ -333,6 +334,8 @@ class Node(AbstractNode):
         self.init_blob_storage(config=blob_storage_config)
 
         NodeRegistry.set_node_for(self.id, self)
+        
+        self.zmq_log_handler = PUBHandler('tcp://127.0.0.1:123456')
 
     def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
         if config is None:

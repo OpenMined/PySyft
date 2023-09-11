@@ -28,6 +28,8 @@ from ..util.util import get_mb_size
 from .api import APIModule
 from .client import SyftClient
 from .client import login
+from ..service.queue.code_execution_queue import PromiseObject
+from ..service.action.action_object import ActionObject
 
 if TYPE_CHECKING:
     # relative
@@ -169,6 +171,11 @@ class DomainClient(SyftClient):
     @property
     def code_histories(self) -> UsersCodeHistoriesDict:
         return self.api.services.code_history.get_histories()
+
+    def launch_job(self, func, *args, **kwargs):
+        res = func(*args, **kwargs)
+        action_object = ActionObject.from_obj(res)
+        return PromiseObject(action_object=action_object)
 
     def get_project(
         self,
