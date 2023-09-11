@@ -847,7 +847,7 @@ class UserCodeExecutionResult(SyftObject):
     result: Any
 
 
-def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+def execute_byte_code(logger, code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
@@ -860,11 +860,15 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
 
         # statisfy lint checker
         result = None
-
-        exec(code_item.byte_code)  # nosec
-
+        # exec(code_item.byte_code, {'logger': logger})  # nosec
+        # exec(code_item.parsed_code, {'logger': logger}, locals())  # nosec
+        exec(code_item.parsed_code)  # nosec
+        print("Definition Complete", file=stderr_)
+        # import logging
+        # logger = logging.getLogger()
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         result = eval(evil_string, None, locals())  # nosec
+        print("Evaluation Complete", file=stderr_)
 
         # restore stdout and stderr
         sys.stdout = stdout_
