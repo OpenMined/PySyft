@@ -19,6 +19,7 @@ from pydantic import BaseModel
 import syft as sy
 
 # relative
+from ..types.syft_migration import SyftMigrationRegistry
 from ..util.util import get_fully_qualified_name
 from ..util.util import index_syft_by_module_name
 from .capnp import get_capnp_schema
@@ -152,6 +153,10 @@ def recursive_serde_register(
     )
 
     TYPE_BANK[fqn] = serde_attributes
+
+    # Register Version for the class object
+    if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
+        SyftMigrationRegistry.register_version(cls)
 
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
