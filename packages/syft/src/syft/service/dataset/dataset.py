@@ -213,7 +213,7 @@ class Asset(SyftObject):
         return api.services.action.get_pointer(self.action_id)
 
     @property
-    def mock(self) -> Any:
+    def mock(self) -> Union[SyftError, Any]:
         # relative
         from ...client.api import APIRegistry
 
@@ -221,7 +221,13 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.action.get_pointer(self.action_id).syft_action_data
+        result = api.services.action.get_mock(self.action_id)
+        try:
+            if isinstance(result, SyftObject):
+                return result.syft_action_data
+            return result
+        except Exception as e:
+            return SyftError(message=f"Failed to get mock. {e}")
 
     def has_data_permission(self):
         return self.data is not None
@@ -361,7 +367,7 @@ class CreateAsset(SyftObject):
         # relative
         from ..action.action_object import ActionObject
 
-        self.mock = ActionObject.empty()
+        self.set_mock(ActionObject.empty(), False)
 
     def set_shape(self, shape: Tuple) -> None:
         self.shape = shape
