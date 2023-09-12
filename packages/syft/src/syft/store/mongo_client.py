@@ -108,7 +108,7 @@ class MongoStoreClientConfig(StoreClientConfig):
     timeoutMS: int = 0
     socketTimeoutMS: int = 0
     connectTimeoutMS: int = 20000
-    serverSelectionTimeoutMS: int = 30000
+    serverSelectionTimeoutMS: int = 120000
     waitQueueTimeoutMS: Optional[int] = None
     heartbeatFrequencyMS: int = 10000
     appname: str = "pysyft"

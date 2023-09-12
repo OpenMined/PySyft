@@ -896,7 +896,7 @@ def test_mongo_store_partition_permissions_set(
     assert res.is_ok()
     assert res.ok() == obj
 
-    # check if the corresponding permission has been added
+    # check if the corresponding permissions has been added
     # to the mongo_store_partition.permissions collection
     pemissions_collection = mongo_store_partition.permissions.ok()
     assert isinstance(pemissions_collection, MongoCollection)
@@ -904,3 +904,18 @@ def test_mongo_store_partition_permissions_set(
     assert permissions is not None
     assert isinstance(permissions["permissions"], Set)
     assert len(permissions["permissions"]) == 4
+
+
+@pytest.mark.skip(reason="To be implemented")
+def test_mongo_store_partition_permissions_update() -> None:
+    return None
+
+
+@pytest.mark.skip(reason="To be implemented")
+def test_mongo_store_partition_permissions_delete() -> None:
+    return None
+
+
+@pytest.mark.skip(reason="To be implemented")
+def test_mongo_store_partition_permissions_get_all() -> None:
+    return None
