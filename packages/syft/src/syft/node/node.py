@@ -54,6 +54,7 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.log.log_service import LogService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
@@ -273,6 +274,7 @@ class Node(AbstractNode):
                 SettingsService,
                 ActionService,
                 DatasetService,
+                LogService,
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
@@ -577,6 +579,7 @@ class Node(AbstractNode):
                 UserService,
                 SettingsService,
                 DatasetService,
+                LogService,
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
@@ -818,11 +821,13 @@ class Node(AbstractNode):
                 )
         else:
             task_uid = UID()
+            log_id = UID()
             item = QueueItem(
                 id=task_uid,
                 node_uid=self.id,
                 syft_client_verify_key=api_call.credentials,
                 syft_node_location=self.id,
+                log_id=log_id
             )
             # 🟡 TODO 36: Needs distributed lock
             self.queue_stash.set_placeholder(self.verify_key, item)
