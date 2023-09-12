@@ -831,12 +831,51 @@ def test_mongo_store_partition_has_permission(
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
+@pytest.mark.parametrize("permission", PERMISSIONS)
 def test_mongo_store_partition_take_ownership(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
+    permission: ActionObjectPermission,
 ) -> None:
-    SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    obj = MockSyftObject(data=1)
+
+    # the guest client takes ownership of obj
+    mongo_store_partition.take_ownership(uid=obj.id, credentials=guest_verify_key)
+    assert mongo_store_partition.has_permission(
+        permission(uid=obj.id, credentials=guest_verify_key)
+    )
+    # the root client will also has the permission
+    assert mongo_store_partition.has_permission(
+        permission(uid=obj.id, credentials=root_verify_key)
+    )
+    assert not mongo_store_partition.has_permission(
+        permission(uid=obj.id, credentials=hacker_key)
+    )
+
+    # hacker or root try to take ownership of the obj and will fail
+    res = mongo_store_partition.take_ownership(uid=obj.id, credentials=hacker_key)
+    res_2 = mongo_store_partition.take_ownership(
+        uid=obj.id, credentials=root_verify_key
+    )
+    assert res.is_err()
+    assert res_2.is_err()
+    assert res.value == res_2.value == f"UID: {obj.id} already owned."
+
+    # another object
+    obj_2 = MockSyftObject(data=2)
+    # root client takes ownership
+    mongo_store_partition.take_ownership(uid=obj_2.id, credentials=root_verify_key)
+    assert mongo_store_partition.has_permission(
+        permission(uid=obj_2.id, credentials=root_verify_key)
+    )
+    assert not mongo_store_partition.has_permission(
+        permission(uid=obj_2.id, credentials=guest_verify_key)
+    )
+    assert not mongo_store_partition.has_permission(
+        permission(uid=obj_2.id, credentials=hacker_key)
+    )
 
 
 @pytest.mark.skipif(
