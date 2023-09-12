@@ -47,10 +47,7 @@ class QueueItem(SyftObject):
     result: Optional[Any]
     resolved: bool = False
     status: Status = Status.CREATED
-    
-    @property
-    def logs(self) -> [str]:
-        api.get_logs(self.id)
+    log_id: UID
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(

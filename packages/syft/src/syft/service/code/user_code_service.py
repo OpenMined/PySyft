@@ -267,14 +267,12 @@ class UserCodeService(AbstractService):
         filtered_kwargs = filtered_kwargs.ok()
         
         # Dynamic Modification to the user code
-        logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG)
-        logger.addHandler(context.node.zmq_log_handler)
+        # logger = SyftLogger()
         
         try:
             # Execute the code item
             action_service = context.node.get_service("actionservice")
-            result_action_object = action_service._user_code_execute(code, kwarg2id, logger)
+            result_action_object = action_service._user_code_execute(code, kwarg2id)
             output_result: Result[
                 Union[ActionObject, TwinObject], str
             ] = action_service.set_result_to_store(result_action_object, context, code.output_policy) 

@@ -847,7 +847,7 @@ class UserCodeExecutionResult(SyftObject):
     result: Any
 
 
-def execute_byte_code(logger, code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
