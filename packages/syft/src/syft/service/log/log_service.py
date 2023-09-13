@@ -30,13 +30,13 @@ class LogService(AbstractService):
         
     @service_method(path="log.add", name="add", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def add(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
-        new_log = SyftLog()
+        new_log = SyftLog(id=uid)
         result = self.stash.set(context.credentials, new_log)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return result.ok().id
+        return result
         
     @service_method(path="log.append", name="append", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def append(
@@ -59,7 +59,17 @@ class LogService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()
+    
+    @service_method(path="log.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    def get_all(
+        self, context: AuthedServiceContext
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.get_all(context.credentials)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
         
+    
     @service_method(path="log.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def delete(
         self, context: AuthedServiceContext, uid: UID

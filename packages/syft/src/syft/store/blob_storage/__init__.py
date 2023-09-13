@@ -164,6 +164,8 @@ class BlobStorageConnection:
     def delete(self, fp: SecureFilePathLocation) -> bool:
         raise NotImplementedError
 
+    # probably need to add complete_multipart_upload to match S3Client
+
 
 @serializable()
 class BlobStorageClient(SyftBaseModel):
