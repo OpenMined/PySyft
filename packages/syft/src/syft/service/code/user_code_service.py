@@ -42,6 +42,7 @@ from .user_code_stash import UserCodeStash
 from ...serde.serialize import _serialize
 from ...node.worker_settings import WorkerSettings
 from ..queue.queue_stash import QueueItem
+from ..log.log import SyftLogger
 
 
 @instrument
@@ -241,7 +242,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
-        self, context: AuthedServiceContext, uid: UID, is_async: bool = False, **kwargs: Any
+        self, context: AuthedServiceContext, uid: UID, log_id: UID = None, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         # Unroll variables
@@ -268,11 +269,21 @@ class UserCodeService(AbstractService):
         
         # Dynamic Modification to the user code
         # logger = SyftLogger()
+        logger = None
+        import sys
+        print("LOG_ID:", log_id, file=sys.stderr)
+        log_id = context.node.name.split('_')[-1]
+        if log_id is not None:
+            log_service = context.node.get_service("LogService")
+            result = log_service.add(context.credentials, log_id)
+            if result.is_err():
+                return SyftError(message=str(result.err()))
+            logger = SyftLogger(context=context, log_id=log_id)
         
         try:
             # Execute the code item
             action_service = context.node.get_service("actionservice")
-            result_action_object = action_service._user_code_execute(code, kwarg2id)
+            result_action_object = action_service._user_code_execute(code, kwarg2id, logger)
             output_result: Result[
                 Union[ActionObject, TwinObject], str
             ] = action_service.set_result_to_store(result_action_object, context, code.output_policy) 

@@ -690,7 +690,8 @@ def process_code(
     wrapper_function = ast.FunctionDef(
         name=func_name,
         args=f.args,
-        body=new_body,
+        body=tree.body, 
+        # body=new_body, 
         decorator_list=[],
         returns=None,
         lineno=0,
@@ -847,7 +848,7 @@ class UserCodeExecutionResult(SyftObject):
     result: Any
 
 
-def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any], logger) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
@@ -867,6 +868,7 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         # import logging
         # logger = logging.getLogger()
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
+        print(locals(), file=stderr_)
         result = eval(evil_string, None, locals())  # nosec
         print("Evaluation Complete", file=stderr_)
 
