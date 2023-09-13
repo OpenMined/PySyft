@@ -1,8 +1,9 @@
 name: CD - Syft - Deploy `dev` to K8s
 
 on:
-  schedule:
-    - cron: "0 */3 * * *"
+  # TODO: Re-enable once merged & tested
+  # schedule:
+  #   - cron: "0 */3 * * *"
 
   workflow_dispatch:
     inputs:
@@ -11,10 +12,16 @@ on:
         required: false
 
 jobs:
-  deploy-syft:
+  deploy-syft-dev:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Checkout Openmined/infrastructure
+        uses: actions/checkout@v4
+        with:
+          repository: OpenMined/infrastructure
+          path: infrastructure
 
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -49,9 +56,9 @@ jobs:
           platforms: linux/amd64
           target: backend
           tags: |
-            ${{ secrets.ACR_SERVER }}/grid-backend:dev
-            ${{ secrets.ACR_SERVER }}/grid-backend:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/grid-backend:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_backend.outputs.tags }}
           # cache-to: type=inline
 
@@ -63,9 +70,9 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ secrets.ACR_SERVER }}/grid-frontend:dev
-            ${{ secrets.ACR_SERVER }}/grid-frontend:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/grid-frontend:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:${{ github.sha }}
           target: grid-ui-development
           # cache-from: type=registry,ref=${{ steps.meta_grid_frontend.outputs.tags }}
           # cache-to: type=inline
@@ -79,9 +86,9 @@ jobs:
           platforms: linux/amd64
           target: worker
           tags: |
-            ${{ secrets.ACR_SERVER }}/grid-enclave:dev
-            ${{ secrets.ACR_SERVER }}/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/grid-enclave:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_enclave.outputs.tags }}
           # cache-to: type=inline
 
@@ -93,9 +100,9 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ secrets.ACR_SERVER }}/grid-headscale:dev
-            ${{ secrets.ACR_SERVER }}/grid-headscale:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/grid-headscale:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_headscale.outputs.tags }}
           # cache-to: type=inline
 
@@ -107,9 +114,9 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ secrets.ACR_SERVER }}/grid-tailscale:dev
-            ${{ secrets.ACR_SERVER }}/grid-tailscale:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/grid-tailscale:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_tailscale.outputs.tags }}
           # cache-to: type=inline
 
@@ -121,8 +128,40 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ secrets.ACR_SERVER }}/grid-vpn-iptables:dev
-            ${{ secrets.ACR_SERVER }}/grid-vpn-iptables:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/grid-vpn-iptables:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_vpn_iptables.outputs.tags }}
           # cache-to: type=inline
+
+      - name: Build Helm Chart & Copy to infra
+        shell: bash
+        run: |
+          # install k3d
+          wget https://github.com/k3d-io/k3d/releases/download/v5.5.1/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
+          export PATH=`pwd`:$PATH
+          k3d version
+          DEVSPACE_VERSION=v6.3.2
+
+          # Install devspace
+          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+          chmod +x devspace
+          devspace version
+
+          export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}/
+          tox -e syft.build.helm
+
+          rm -rf infrastructure/gitops/environments/dev/
+          mkdir -p infrastructure/gitops/environments/dev/
+          cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/dev/
+
+      - name: Commit & push changes to Infra Repo
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "[env] Update dev helm charts"
+          cwd: infrastructure
+          pull: NO-PULL
