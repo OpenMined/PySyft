@@ -47,7 +47,7 @@ class QueueItem(SyftObject):
     result: Optional[Any]
     resolved: bool = False
     status: Status = Status.CREATED
-    log_id: UID
+    log_id: Optional[UID]
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(

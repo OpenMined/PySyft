@@ -81,11 +81,16 @@ class APICallMessageHandler(AbstractMessageHandler):
             is_subprocess=True,
         )
 
-        item = QueueItem(
-            node_uid=worker.id,
-            id=task_uid,
-            status=Status.PROCESSING,
-        )
+        item = worker.queue_stash.get_by_uid(api_call.credentials, task_uid).ok()
+        
+        
+        log_id = item.log_id
+        unsigned_api_call = api_call.message
+        unsigned_api_call.args.append(log_id)
+        new_api_call = unsigned_api_call.sign(api_call.credentials)
+        item.status = Status.PROCESSING 
+        item.node_uid = worker.id 
+        
         worker.queue_stash.set_result(api_call.credentials, item)
         status = Status.COMPLETED
 
@@ -100,6 +105,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         item = QueueItem(
             node_uid=worker.id,
             id=task_uid,
+            log_id=log_id,
             result=result,
             resolved=True,
             status=status,
