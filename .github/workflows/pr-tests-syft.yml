@@ -298,7 +298,8 @@ jobs:
           DEV_MODE: "True" # force orchestra --build
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
         run: |
-          tox -e stack.test.notebook
+          rm -rf .tox/
+          tox -r -e stack.test.notebook
 
   pr-tests-syft-security:
     strategy:
