@@ -3,10 +3,15 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # relative
 from ..util.autoreload import autoreload_enabled
+from .syft_object import Context
+from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SyftBaseObject
+from .syft_object import SyftObject
 from .transforms import generate_transform_wrapper
 from .transforms import validate_klass_and_version
 
@@ -62,6 +67,34 @@ class SyftMigrationRegistry:
                 f"You're trying to add a transform from version: {version_from} to version: {version_to}"
             )
 
+    @classmethod
+    def get_migration(
+        cls, type_from: Type[SyftObject], type_to: Type[SyftObject]
+    ) -> Callable:
+        for type_from_mro in type_from.mro():
+            if issubclass(type_from_mro, SyftBaseObject):
+                klass_from = type_from_mro.__canonical_name__
+                version_from = type_from_mro.__version__
+
+                for type_to_mro in type_to.mro():
+                    if issubclass(type_to_mro, SyftBaseObject):
+                        klass_to = type_to_mro.__canonical_name__
+                        version_to = type_to_mro.__version__
+
+                    if klass_from == klass_to:
+                        mapping_string = f"{version_from}x{version_to}"
+                        if (
+                            mapping_string
+                            in cls.__migration_transform_registry__[klass_from]
+                        ):
+                            return cls.__migration_transform_registry__[klass_from][
+                                mapping_string
+                            ]
+
+        raise Exception(
+            f"No migration found for: {type_from} to {type_to} in the migration registry."
+        )
+
 
 def migrate(
     klass_from: Union[type, str],
@@ -110,3 +143,16 @@ def migrate(
         return function
 
     return decorator
+
+
+class SyftObjectTable(SyftObject, SyftMigrationRegistry):
+    """Syft Object which are stored in DocumentStore."""
+
+    __canonical_name__ = "SyftObjectTable"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def migrate_to(self, projection: type, context: Optional[Context] = None) -> Any:
+        migration_transform = SyftMigrationRegistry.get_migration(
+            type(self), projection
+        )
+        return migration_transform(self, context)
