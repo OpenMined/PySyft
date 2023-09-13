@@ -153,10 +153,6 @@ def recursive_serde_register(
 
     TYPE_BANK[fqn] = serde_attributes
 
-    # # Register Version for the class object
-    # if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
-    #     SyftMigrationRegistry.register_version(cls)
-
     if isinstance(alias_fqn, tuple):
         for alias in alias_fqn:
             TYPE_BANK[alias] = serde_attributes
