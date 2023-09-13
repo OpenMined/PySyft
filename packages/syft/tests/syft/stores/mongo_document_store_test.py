@@ -789,7 +789,7 @@ def test_mongo_store_partition_has_permission(
     mongo_store_partition: MongoStorePartition,
     permission: ActionObjectPermission,
 ) -> None:
-    hacker_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
 
     res = mongo_store_partition.init_store()
     assert res.is_ok()
@@ -798,7 +798,7 @@ def test_mongo_store_partition_has_permission(
     obj = MockSyftObject(data=1)
     permission_root = permission(uid=obj.id, credentials=root_verify_key)
     permission_client = permission(uid=obj.id, credentials=guest_verify_key)
-    permission_hacker = permission(uid=obj.id, credentials=hacker_key)
+    permission_hacker = permission(uid=obj.id, credentials=hacker_verify_key)
     mongo_store_partition.add_permission(permission_root)
     # only the root user has access to this permission
     assert mongo_store_partition.has_permission(permission_root)
@@ -809,7 +809,7 @@ def test_mongo_store_partition_has_permission(
     obj_2 = MockSyftObject(data=2)
     permission_client_2 = permission(uid=obj_2.id, credentials=guest_verify_key)
     permission_root_2 = permission(uid=obj_2.id, credentials=root_verify_key)
-    permisson_hacker_2 = permission(uid=obj_2.id, credentials=hacker_key)
+    permisson_hacker_2 = permission(uid=obj_2.id, credentials=hacker_verify_key)
     mongo_store_partition.add_permission(permission_client_2)
     # the root (admin) and guest client should have this permission
     assert mongo_store_partition.has_permission(permission_root_2)
@@ -838,7 +838,7 @@ def test_mongo_store_partition_take_ownership(
     mongo_store_partition: MongoStorePartition,
     permission: ActionObjectPermission,
 ) -> None:
-    hacker_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
     obj = MockSyftObject(data=1)
 
     # the guest client takes ownership of obj
@@ -851,11 +851,13 @@ def test_mongo_store_partition_take_ownership(
         permission(uid=obj.id, credentials=root_verify_key)
     )
     assert not mongo_store_partition.has_permission(
-        permission(uid=obj.id, credentials=hacker_key)
+        permission(uid=obj.id, credentials=hacker_verify_key)
     )
 
     # hacker or root try to take ownership of the obj and will fail
-    res = mongo_store_partition.take_ownership(uid=obj.id, credentials=hacker_key)
+    res = mongo_store_partition.take_ownership(
+        uid=obj.id, credentials=hacker_verify_key
+    )
     res_2 = mongo_store_partition.take_ownership(
         uid=obj.id, credentials=root_verify_key
     )
@@ -874,7 +876,7 @@ def test_mongo_store_partition_take_ownership(
         permission(uid=obj_2.id, credentials=guest_verify_key)
     )
     assert not mongo_store_partition.has_permission(
-        permission(uid=obj_2.id, credentials=hacker_key)
+        permission(uid=obj_2.id, credentials=hacker_verify_key)
     )
 
 
@@ -882,11 +884,14 @@ def test_mongo_store_partition_take_ownership(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_permissions_set(
-    root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
+    root_verify_key: SyftVerifyKey,
+    guest_verify_key: SyftVerifyKey,
+    mongo_store_partition: MongoStorePartition,
 ) -> None:
     """
     Test the permissions functionalities when using MongoStorePartition._set function
     """
+    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
     res = mongo_store_partition.init_store()
     assert res.is_ok()
 
@@ -903,7 +908,23 @@ def test_mongo_store_partition_permissions_set(
     permissions = pemissions_collection.find_one({"_id": obj.id})
     assert permissions is not None
     assert isinstance(permissions["permissions"], Set)
+    # check if the object has been claimed by the root client
     assert len(permissions["permissions"]) == 4
+    for permission in PERMISSIONS:
+        assert mongo_store_partition.has_permission(
+            permission(uid=obj.id, credentials=root_verify_key)
+        )
+
+    # the hacker tries to set duplicated object but should not be able to claim it
+    res_2 = mongo_store_partition.set(guest_verify_key, obj, ignore_duplicates=True)
+    assert res_2.is_ok()
+    for permission in PERMISSIONS:
+        assert not mongo_store_partition.has_permission(
+            permission(uid=obj.id, credentials=hacker_verify_key)
+        )
+        assert mongo_store_partition.has_permission(
+            permission(uid=obj.id, credentials=root_verify_key)
+        )
 
 
 @pytest.mark.skip(reason="To be implemented")

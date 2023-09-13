@@ -73,7 +73,7 @@ class MongoStoreClientConfig(StoreClientConfig):
             Controls how long (in milliseconds) the driver will wait to find an available, appropriate
             server to carry out a database operation; while it is waiting, multiple server monitoring
             operations may be carried out, each controlled by `connectTimeoutMS`.
-            Defaults to ``30000`` (30 seconds).
+            Defaults to ``120000`` (120 seconds).
         `waitQueueTimeoutMS`: (integer or None)
             How long (in milliseconds) a thread will wait for a socket from the pool if the pool
             has no free sockets. Defaults to ``None`` (no timeout).
