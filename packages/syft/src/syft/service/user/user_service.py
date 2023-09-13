@@ -234,12 +234,14 @@ class UserService(AbstractService):
         # check if the email already exists
         if user_update.email is not Empty:
             user_with_email = self.stash.get_by_email(
-                credentials=context.credentials, email=user_update.email
+                credentials=self.admin_verify_key(), email=user_update.email
             )
             if user_with_email.ok() is not None:
-                return SyftError(
-                    message=f"A user with the email {user_update.email} already exists."
-                )
+                raise UserAlreadyExistsException.raise_with_context(context=context)
+            # if user_with_email.ok() is not None:
+            #    return SyftError(
+            #        message=f"A user with the email {user_update.email} already exists."
+            #    )
 
         if result.is_err():
             error_msg = (

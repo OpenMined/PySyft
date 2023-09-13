@@ -41,7 +41,7 @@ from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
-from ..exceptions.abstract import PySyftException
+from ..exceptions.exception import PySyftException
 from ..external import OBLV
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
