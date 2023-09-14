@@ -22,6 +22,7 @@ jobs:
         with:
           repository: OpenMined/infrastructure
           path: infrastructure
+          token: ${{ secrets.SYFT_BUMP_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v3
