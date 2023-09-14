@@ -930,34 +930,6 @@ def test_mongo_store_partition_permissions_set(
 @pytest.mark.skipif(
     sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
-@pytest.mark.skip(reason="The logic in ._set is a bit confusing. Need to be verified!")
-def test_mongo_store_partition_set_permission_exists(
-    root_verify_key: SyftVerifyKey,
-    guest_verify_key: SyftVerifyKey,
-    mongo_store_partition: MongoStorePartition,
-) -> None:
-    """
-    Test the permissions functionalities when using MongoStorePartition._set function
-    when an object already exists and a guest has permission to write it
-    """
-    obj = MockSyftObject(data=1)
-    # root client sets the object and claim ownership of it
-    mongo_store_partition.set(
-        credentials=root_verify_key, obj=obj, ignore_duplicates=False
-    )
-    # the guest client was given WRITE permission to it
-    mongo_store_partition.add_permission(
-        ActionObjectWRITE(uid=obj.id, credentials=guest_verify_key)
-    )
-    # guest client sets the object with `ignore_duplicates=True`
-    mongo_store_partition.set(
-        credentials=guest_verify_key, obj=obj, ignore_duplicates=True
-    )
-
-
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_permissions_get_all(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,
@@ -986,6 +958,9 @@ def test_mongo_store_partition_permissions_get_all(
     assert len(mongo_store_partition.all(hacker_verify_key).ok()) == 0
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
 def test_mongo_store_partition_permissions_delete(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,

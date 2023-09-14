@@ -230,6 +230,8 @@ class MongoStorePartition(StorePartition):
         add_permissions: Optional[List[ActionObjectPermission]] = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
+        # TODO: Refactor this function since now it's doing both set and
+        # update at the same time
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write = self.has_permission(write_permission)
 
