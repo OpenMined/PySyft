@@ -21,6 +21,7 @@ from syft.service.action.action_store import ActionObjectOWNER
 from syft.service.action.action_store import ActionObjectREAD
 from syft.service.action.action_store import ActionObjectWRITE
 from syft.store.document_store import PartitionSettings
+from syft.store.document_store import QueryKey
 from syft.store.document_store import QueryKeys
 from syft.store.mongo_client import MongoStoreClientConfig
 from syft.store.mongo_document_store import MongoStoreConfig
@@ -985,9 +986,42 @@ def test_mongo_store_partition_permissions_get_all(
     assert len(mongo_store_partition.all(hacker_verify_key).ok()) == 0
 
 
-@pytest.mark.skip(reason="To be implemented")
-def test_mongo_store_partition_permissions_delete() -> None:
-    return None
+def test_mongo_store_partition_permissions_delete(
+    root_verify_key: SyftVerifyKey,
+    guest_verify_key: SyftVerifyKey,
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+
+    # the root client set an object
+    obj = MockSyftObject(data=1)
+    mongo_store_partition.set(
+        credentials=root_verify_key, obj=obj, ignore_duplicates=False
+    )
+    qk: QueryKey = mongo_store_partition.settings.unique_keys.with_obj(obj).all[0]
+    # only the root client can delete it
+    assert not mongo_store_partition.delete(guest_verify_key, qk).is_ok()
+    assert not mongo_store_partition.delete(hacker_verify_key, qk).is_ok()
+    assert mongo_store_partition.delete(root_verify_key, qk).is_ok()
+
+    # the guest client set an object
+    obj_2 = MockSyftObject(data=2)
+    mongo_store_partition.set(
+        credentials=guest_verify_key, obj=obj_2, ignore_duplicates=False
+    )
+    qk_2: QueryKey = mongo_store_partition.settings.unique_keys.with_obj(obj_2).all[0]
+    # the guest client can delete it
+    assert not mongo_store_partition.delete(hacker_verify_key, qk_2).is_ok()
+    assert mongo_store_partition.delete(guest_verify_key, qk_2).is_ok()
+
+    # the guest client set another object
+    obj_3 = MockSyftObject(data=3)
+    mongo_store_partition.set(
+        credentials=guest_verify_key, obj=obj_3, ignore_duplicates=False
+    )
+    qk_3: QueryKey = mongo_store_partition.settings.unique_keys.with_obj(obj_3).all[0]
+    # the root client also has the permission to delete it
+    assert mongo_store_partition.delete(root_verify_key, qk_3).is_ok()
 
 
 @pytest.mark.skip(reason="To be implemented")
