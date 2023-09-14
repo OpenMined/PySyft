@@ -352,6 +352,7 @@ class Node(AbstractNode):
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
         print(queue_config_.client_config.hostname)
+        self.queue_config = queue_config_
 
         MessageHandlers = [APICallMessageHandler]
 
@@ -724,7 +725,12 @@ class Node(AbstractNode):
         result = self.queue_stash.pop_on_complete(credentials, uid)
 
         if result.is_ok():
-            return result.ok()
+            queue_obj = result.ok()
+            queue_obj._set_obj_location_(
+                node_uid=self.id,
+                credentials=credentials,
+            )
+            return queue_obj
         return result.err()
 
     def forward_message(

@@ -13,6 +13,7 @@ from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
+from ..service.queue.base_queue import QueueConfig
 from ..store.blob_storage import BlobStorageConfig
 from ..store.document_store import StoreConfig
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
@@ -33,6 +34,7 @@ class WorkerSettings(SyftObject):
     document_store_config: StoreConfig
     action_store_config: StoreConfig
     blob_store_config: Optional[BlobStorageConfig]
+    queue_config: Optional[QueueConfig]
 
     @staticmethod
     def from_node(node: AbstractNode) -> Self:
@@ -45,4 +47,5 @@ class WorkerSettings(SyftObject):
             action_store_config=node.action_store_config,
             node_side_type=node.node_side_type.value,
             blob_store_config=node.blob_store_config,
+            queue_config=node.queue_config,
         )
