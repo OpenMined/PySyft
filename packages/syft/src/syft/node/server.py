@@ -97,7 +97,7 @@ def run_uvicorn(
 
             worker = worker_class.named(
                 name=name,
-                processes=1,
+                processes=processes,
                 reset=reset,
                 local_db=True,
                 node_type=node_type,
@@ -107,7 +107,7 @@ def run_uvicorn(
         else:
             worker = worker_class(
                 name=name,
-                processes=1,
+                processes=processes,
                 local_db=True,
                 node_type=node_type,
                 node_side_type=node_side_type,
