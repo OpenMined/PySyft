@@ -839,6 +839,9 @@ def test_mongo_store_partition_take_ownership(
     mongo_store_partition: MongoStorePartition,
     permission: ActionObjectPermission,
 ) -> None:
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
+
     hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
     obj = MockSyftObject(data=1)
 
@@ -935,6 +938,8 @@ def test_mongo_store_partition_permissions_get_all(
     guest_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
     hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
     # set several objects for the root and guest client
     num_root_objects: int = 5
@@ -966,6 +971,8 @@ def test_mongo_store_partition_permissions_delete(
     guest_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
     hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
 
     # the root client set an object
@@ -973,7 +980,7 @@ def test_mongo_store_partition_permissions_delete(
     mongo_store_partition.set(
         credentials=root_verify_key, obj=obj, ignore_duplicates=False
     )
-    qk: QueryKey = mongo_store_partition.settings.unique_keys.with_obj(obj).all[0]
+    qk: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj)
     # only the root client can delete it
     assert not mongo_store_partition.delete(guest_verify_key, qk).is_ok()
     assert not mongo_store_partition.delete(hacker_verify_key, qk).is_ok()
@@ -984,7 +991,7 @@ def test_mongo_store_partition_permissions_delete(
     mongo_store_partition.set(
         credentials=guest_verify_key, obj=obj_2, ignore_duplicates=False
     )
-    qk_2: QueryKey = mongo_store_partition.settings.unique_keys.with_obj(obj_2).all[0]
+    qk_2: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj_2)
     # the guest client can delete it
     assert not mongo_store_partition.delete(hacker_verify_key, qk_2).is_ok()
     assert mongo_store_partition.delete(guest_verify_key, qk_2).is_ok()
@@ -994,11 +1001,42 @@ def test_mongo_store_partition_permissions_delete(
     mongo_store_partition.set(
         credentials=guest_verify_key, obj=obj_3, ignore_duplicates=False
     )
-    qk_3: QueryKey = mongo_store_partition.settings.unique_keys.with_obj(obj_3).all[0]
+    qk_3: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj_3)
     # the root client also has the permission to delete it
     assert mongo_store_partition.delete(root_verify_key, qk_3).is_ok()
 
 
-@pytest.mark.skip(reason="To be implemented")
-def test_mongo_store_partition_permissions_update() -> None:
-    return None
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+)
+def test_mongo_store_partition_permissions_update(
+    root_verify_key: SyftVerifyKey,
+    guest_verify_key: SyftVerifyKey,
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    res = mongo_store_partition.init_store()
+    assert res.is_ok()
+    # the root client set an object
+    obj = MockSyftObject(data=1)
+    mongo_store_partition.set(
+        credentials=root_verify_key, obj=obj, ignore_duplicates=False
+    )
+    assert len(mongo_store_partition.all(credentials=root_verify_key).ok()) == 1
+
+    qk: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj)
+    permsissions: MongoCollection = mongo_store_partition.permissions.ok()
+
+    for v in range(REPEATS):
+        # the guest client should not have permission to update obj
+        obj_new = MockSyftObject(data=v)
+        res = mongo_store_partition.update(
+            credentials=guest_verify_key, qk=qk, obj=obj_new
+        )
+        assert res.is_err()
+        # the root client has the permission to update obj
+        res = mongo_store_partition.update(
+            credentials=root_verify_key, qk=qk, obj=obj_new
+        )
+        assert res.is_ok()
+        # the id of the object in the permission collection should not be changed
+        assert permsissions.find_one(qk.as_dict_mongo)["_id"] == obj.id
