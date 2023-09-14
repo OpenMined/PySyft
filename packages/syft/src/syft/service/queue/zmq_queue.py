@@ -39,7 +39,7 @@ class ZMQProducer(QueueProducer):
             message_list = [message]
             # TODO: Enable zero copy
             self._producer.send_multipart(message_list)
-            print("Message Queued Successfully !")
+            print("Message Queued Successfully !", flush=True)
         except zmq.Again as e:
             # TODO: Add retry mechanism if this error occurs
             raise e
@@ -81,7 +81,7 @@ class ZMQConsumer(QueueConsumer):
         try:
             message_list = self._consumer.recv_multipart()
             message = message_list[0]
-            print("Message Received Successfully !")
+            print("Message Received Successfully !", flush=True)
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
                 print("Subscriber connection Terminated")
@@ -90,12 +90,17 @@ class ZMQConsumer(QueueConsumer):
         self.message_handler.handle_message(message=message)
 
     def _run(self):
+        # stdlib
+
+        exit()
         while True:
+            print("receiving", flush=True)
             self.receive()
 
     def run(self):
         self.thread = gevent.spawn(self._run)
         self.thread.start()
+        print("spawning thread")
 
     def close(self):
         if self.thread is not None:

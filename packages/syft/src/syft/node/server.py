@@ -71,6 +71,7 @@ def run_uvicorn(
     node_type: Enum,
     host: str,
     port: int,
+    processes: int,
     reset: bool,
     dev_mode: bool,
     node_side_type: str,
@@ -96,7 +97,7 @@ def run_uvicorn(
 
             worker = worker_class.named(
                 name=name,
-                processes=0,
+                processes=processes,
                 reset=reset,
                 local_db=True,
                 node_type=node_type,
@@ -106,7 +107,7 @@ def run_uvicorn(
         else:
             worker = worker_class(
                 name=name,
-                processes=0,
+                processes=processes,
                 local_db=True,
                 node_type=node_type,
                 node_side_type=node_side_type,
@@ -160,6 +161,7 @@ def serve_node(
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
+    processes: int = 1,
     reset: bool = False,
     dev_mode: bool = False,
     tail: bool = False,
@@ -172,6 +174,7 @@ def serve_node(
             node_type,
             host,
             port,
+            processes,
             reset,
             dev_mode,
             node_side_type,

@@ -71,6 +71,14 @@ class UserCodeService(AbstractService):
         reason: Optional[str] = "",
     ):
         user_code: UserCode = code.to(UserCode, context=context)
+        return self._request_code_execution_inner(context, user_code, reason)
+
+    def _request_code_execution_inner(
+        self,
+        context: AuthedServiceContext,
+        user_code: UserCode,
+        reason: Optional[str] = "",
+    ):
         if not all(
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
@@ -228,6 +236,7 @@ class UserCodeService(AbstractService):
             if code_result.is_err():
                 return SyftError(message=code_result.err())
             code: UserCode = code_result.ok()
+            print("CALLING", code.service_func_name)
 
             if not code.status.approved:
                 return code.status.get_status_message()

@@ -24,7 +24,9 @@ from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
+from ...client.client import PythonConnection
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
@@ -44,10 +46,12 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
+from ..policy.policy import EmpyInputPolicy
 from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
@@ -63,6 +67,7 @@ from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
+from ..user.user_roles import ServiceRole
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
 
@@ -238,6 +243,7 @@ class UserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
+    uses_domain = False
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = []
@@ -600,10 +606,13 @@ def syft_function_single_use(
 
 
 def syft_function(
-    input_policy: Union[InputPolicy, UID],
+    input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
     share_results_with_owners=False,
 ) -> SubmitUserCode:
+    if input_policy is None:
+        input_policy = EmpyInputPolicy()
+
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
     else:
@@ -661,10 +670,12 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
 
 
 def process_code(
+    context,
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    input_kwargs: List[str],
+    policy_input_kwargs: List[str],
+    function_input_kwargs: List[str],
 ) -> str:
     tree = ast.parse(raw_code)
 
@@ -675,11 +686,17 @@ def process_code(
     f = tree.body[0]
     f.decorator_list = []
 
-    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
+    call_args = function_input_kwargs
+    # call_args = policy_input_kwargs
+    if "domain" in function_input_kwargs:
+        # print("adding domain")
+        # call_args = ["domain"] + call_args
+        context.output["uses_domain"] = True
+    call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
         value=ast.Call(
-            func=ast.Name(id=original_func_name), args=[], keywords=keywords
+            func=ast.Name(id=original_func_name), args=[], keywords=call_stmt_keywords
         ),
         lineno=0,
     )
@@ -715,10 +732,12 @@ def new_check_code(context: TransformContext) -> TransformContext:
             input_keys += d.keys()
 
     processed_code = process_code(
+        context,
         raw_code=context.output["raw_code"],
         func_name=context.output["unique_func_name"],
         original_func_name=context.output["service_func_name"],
-        input_kwargs=input_keys,
+        policy_input_kwargs=input_keys,
+        function_input_kwargs=context.output["input_kwargs"],
     )
     context.output["parsed_code"] = processed_code
 
@@ -745,7 +764,7 @@ def compile_code(context: TransformContext) -> TransformContext:
 
 def hash_code(context: TransformContext) -> TransformContext:
     code = context.output["code"]
-    del context.output["code"]
+    # del context.output["code"]
     context.output["raw_code"] = code
     code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
     context.output["code_hash"] = code_hash
@@ -847,24 +866,158 @@ class UserCodeExecutionResult(SyftObject):
     result: Any
 
 
-def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+def execute_byte_code(
+    code_item: UserCode, kwargs: Dict[str, Any], context: AuthedServiceContext
+) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
     try:
+        print("EXECUTING BYTE CODE")
+
+        class LocalDomainClient:
+            def __init__(self):
+                pass
+
+            def launch_job(self, func: UserCode, **kwargs):
+                print("LAUNCHING JOB")
+                # relative
+                from ...client.api import SyftAPICall
+
+                # get reference to node (TODO)
+                node = context.node
+                action_service = node.get_service("actionservice")
+                user_service = node.get_service("userservice")
+                user_code_service = node.get_service("usercodeservice")
+                request_service = node.get_service("requestservice")
+
+                # user_service.stash.partition.data.values()[0].signing_key
+                # create api call from user code object (func)
+
+                # ActionObjectivy kwargs
+                kw2id = {}
+                for k, v in kwargs.items():
+                    value = ActionObject.from_obj(v)
+                    ptr = action_service.set(context, value).ok()
+                    kw2id[k] = ptr.id
+
+                # create new usercode with permissions
+                # stdlib
+                from copy import deepcopy
+
+                # relative
+                from ... import UID
+
+                new_user_code = deepcopy(func)
+                new_user_code.id = UID()
+                # relative
+                from ..policy.policy import ExactMatch
+
+                new_user_code.input_policy_type = ExactMatch
+                # assumes all inputs are on the same node
+                node_identity = NodeIdentity(
+                    node_id=node.id, verify_key=node.verify_key, node_name=node.name
+                )
+                new_user_code.input_policy_init_kwargs = {node_identity: kw2id}
+
+                # TODO: throw exception for enclaves
+                request = user_code_service._request_code_execution_inner(
+                    context, new_user_code
+                ).ok()
+                admin_context = AuthedServiceContext(
+                    node=node,
+                    credentials=user_service.admin_verify_key(),
+                    role=ServiceRole.ADMIN,
+                )
+                res = request_service.apply(admin_context, request.id)
+                if not isinstance(res, SyftSuccess):
+                    raise ValueError(res)
+                # api.services.request.apply(request.id)
+                # client.requests[-1].approve()
+
+                try:
+                    # TODO: check permissions here
+                    api_call = SyftAPICall(
+                        node_uid=node.id,
+                        path="code.call",
+                        args=[new_user_code.id],
+                        kwargs=kw2id,
+                        blocking=False,
+                    ).sign(node.signing_key)
+                    print(type(node))
+
+                    queue_item = node.add_api_call_to_queue(api_call)
+
+                    # set api in global scope to enable using .get(), .wait())
+
+                    user_signing_key = [
+                        x.signing_key
+                        for x in user_service.stash.partition.data.values()
+                        if x.verify_key == context.credentials
+                    ][0]
+                    user_api = node.get_api(context.credentials)
+                    user_api.signing_key = user_signing_key
+                    user_api.connection = PythonConnection(node=node)
+
+                    APIRegistry.set_api_for(
+                        node_uid=node.id,
+                        user_verify_key=context.credentials,
+                        api=user_api,
+                    )
+
+                    ptr = queue_item.wait()
+                    res_val = ptr.get()
+                    return res_val
+
+                    # queue_item.wait()
+                    # queue_item = node.await_future(context.credentials, queue_item.id)
+                    # ptr = queue_item.result.message.data
+                    # res_val = action_service._get(context, ptr.id, has_permission=True).ok().syft_action_data
+                    # import ipdb
+                    # ipdb.set_trace()
+
+                    # return res_val
+                except Exception as e:
+                    print(e)
+
+                return res_val
+
+                # if not result.status == Status.COMPLETED:
+                #     print("Error", result)
+
+                # print("launching job")
+
+        if code_item.uses_domain:
+            kwargs["domain"] = LocalDomainClient()
+
         stdout = StringIO()
         stderr = StringIO()
 
-        sys.stdout = stdout
-        sys.stderr = stderr
+        # sys.stdout = stdout
+        # sys.stderr = stderr
 
         # statisfy lint checker
         result = None
 
         exec(code_item.byte_code)  # nosec
+        _locals = locals()
+
+        user_code_service = context.node.get_service("usercodeservice")
+        for user_code in user_code_service.stash.get_all(context.credentials).ok():
+            globals()[user_code.service_func_name] = user_code
+        # globals()["process_batch"] = 1
+
+        # TODO
+        # _globals = {"process_batch": lambda x: x}
+        # _locals["process_batch"] = lambda x: x
+        # global process_batch
+        # process_batch = lambda x: x
+
+        # result = exec(evil_string, _globals, _locals)  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, None, locals())  # nosec
+        result = eval(evil_string, None, _locals)  # nosec
+        print("result", result)
 
         # restore stdout and stderr
         sys.stdout = stdout_

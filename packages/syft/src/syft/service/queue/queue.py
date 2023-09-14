@@ -87,6 +87,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             status=Status.PROCESSING,
         )
         worker.queue_stash.set_result(api_call.credentials, item)
+        print(f"Proccesing api call on {worker.name}")
         status = Status.COMPLETED
 
         try:
@@ -105,4 +106,4 @@ class APICallMessageHandler(AbstractMessageHandler):
             status=status,
         )
 
-        worker.queue_stash.set_result(worker.verify_key, item)
+        worker.queue_stash.set_result(api_call.credentials, item)

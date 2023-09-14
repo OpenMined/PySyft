@@ -66,13 +66,25 @@ class QueueItem(SyftObject):
             self.result = result.result
             self.status = result.status
 
+    def wait(self):
+        # stdlib
+        from time import sleep
+
+        # todo: timeout
+        while True:
+            self.fetch()
+            sleep(0.1)
+            if self.resolved:
+                break
+        return self.resolve
+
     @property
     def resolve(self) -> Union[Any, SyftNotReady]:
         if not self.resolved:
             self.fetch()
 
         if self.resolved:
-            return self.result.message
+            return self.result.message.data
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
 

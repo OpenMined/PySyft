@@ -259,6 +259,7 @@ def deploy_to_python(
                 host=host,
                 port=port,
                 reset=reset,
+                processes=processes,
                 dev_mode=dev_mode,
                 tail=tail,
                 node_type=node_type_enum,

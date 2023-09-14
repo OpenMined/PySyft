@@ -330,6 +330,8 @@ class Node(AbstractNode):
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
         if not (self.is_subprocess or self.processes == 0):
+            # print("processes", self.is_subprocess, self.processes)
+            print("initializing queue manager", flush=True)
             self.init_queue_manager(queue_config=queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
@@ -349,6 +351,7 @@ class Node(AbstractNode):
 
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
+        print(queue_config_.client_config.hostname)
 
         MessageHandlers = [APICallMessageHandler]
 
@@ -358,10 +361,18 @@ class Node(AbstractNode):
             producer = self.queue_manager.create_producer(
                 queue_name=queue_name,
             )
+            print(producer.address)
             consumer = self.queue_manager.create_consumer(
                 message_handler, producer.address
             )
+            print(consumer.address)
             consumer.run()
+            # stdlib
+            from time import sleep
+
+            sleep(1)
+            print("alive", consumer.alive)
+            print(self.queue_manager.consumers, flush=True)
 
     @classmethod
     def named(
@@ -688,6 +699,25 @@ class Node(AbstractNode):
 
         return True
 
+    def await_future(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Union[Optional[QueueItem], SyftError]:
+        # stdlib
+        from time import sleep
+
+        # relative
+        from ..service.queue.queue import Status
+
+        while True:
+            result = self.queue_stash.pop_on_complete(credentials, uid)
+            if not result.is_ok():
+                return result.err()
+            else:
+                res = result.ok()
+                if res.status == Status.COMPLETED:
+                    return res
+            sleep(0.1)
+
     def resolve_future(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Union[Optional[QueueItem], SyftError]:
@@ -760,6 +790,9 @@ class Node(AbstractNode):
     def handle_api_call_with_unsigned_result(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[Union[QueueItem, SyftObject], Err]:
+        print(api_call.message.path, api_call.message.kwargs, flush=True)
+        # if api_call.message.path == "code.call":
+        #     return None
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
                 message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
@@ -811,21 +844,27 @@ class Node(AbstractNode):
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
                 )
         else:
-            task_uid = UID()
-            item = QueueItem(id=task_uid, node_uid=self.id)
-            # 🟡 TODO 36: Needs distributed lock
-            self.queue_stash.set_placeholder(self.verify_key, item)
-
-            # Publisher system which pushes to a Queue
-            worker_settings = WorkerSettings.from_node(node=self)
-
-            message_bytes = _serialize(
-                [task_uid, api_call, worker_settings], to_bytes=True
-            )
-            self.queue_manager.send(message=message_bytes, queue_name="api_call")
-
-            return item
+            return self.add_api_call_to_queue(api_call)
         return result
+
+    def add_api_call_to_queue(self, api_call):
+        task_uid = UID()
+        item = QueueItem(
+            id=task_uid,
+            node_uid=self.id,
+            syft_client_verify_key=api_call.credentials,
+            syft_node_location=self.id,
+        )
+        # 🟡 TODO 36: Needs distributed lock
+        self.queue_stash.set_placeholder(self.verify_key, item)
+
+        # Publisher system which pushes to a Queue
+        worker_settings = WorkerSettings.from_node(node=self)
+
+        message_bytes = _serialize([task_uid, api_call, worker_settings], to_bytes=True)
+        self.queue_manager.send(message=message_bytes, queue_name="api_call")
+
+        return item
 
     def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
         return SyftAPI.for_user(node=self, user_verify_key=for_user)

@@ -187,13 +187,20 @@ class ActionService(AbstractService):
             kwargs=kwargs, context=context, code_item_id=code_item.id
         )
 
+        expected_input_kwargs = set()
+        for _inp_kwarg in code_item.input_policy.inputs.values():
+            keys = _inp_kwarg.keys()
+            for k in keys:
+                if k not in kwargs:
+                    return Err(
+                        f"{code_item.service_func_name}() missing required keyword argument: '{k}'"
+                    )
+            expected_input_kwargs.update(keys)
+
         if filtered_kwargs.is_err():
             return filtered_kwargs
         filtered_kwargs = filtered_kwargs.ok()
 
-        expected_input_kwargs = set()
-        for _inp_kwarg in code_item.input_policy.inputs.values():
-            expected_input_kwargs.update(_inp_kwarg.keys())
         permitted_input_kwargs = list(filtered_kwargs.keys())
         not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
         if len(not_approved_kwargs) > 0:
@@ -217,20 +224,22 @@ class ActionService(AbstractService):
                 filtered_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
-                exec_result = execute_byte_code(code_item, filtered_kwargs)
+                exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 result_action_object = wrap_result(result_id, exec_result.result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(
                     real_kwargs, twin_mode=TwinMode.PRIVATE
                 )
-                private_exec_result = execute_byte_code(code_item, private_kwargs)
+                private_exec_result = execute_byte_code(
+                    code_item, private_kwargs, context
+                )
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result.result
                 )
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
-                mock_exec_result = execute_byte_code(code_item, mock_kwargs)
+                mock_exec_result = execute_byte_code(code_item, mock_kwargs, context)
                 result_action_object_mock = wrap_result(
                     result_id, mock_exec_result.result
                 )

@@ -432,6 +432,11 @@ class UserInputPolicy(InputPolicy):
     pass
 
 
+class EmpyInputPolicy(InputPolicy):
+    __canonical_name__ = "EmptyInputPolicy"
+    pass
+
+
 class CustomInputPolicy(metaclass=CustomPolicy):
     pass
 
