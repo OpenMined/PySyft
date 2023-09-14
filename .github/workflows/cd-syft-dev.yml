@@ -128,15 +128,17 @@ jobs:
       - name: Build Helm Chart & Copy to infra
         shell: bash
         run: |
+          K3D_VERSION=v5.6.0
+          DEVSPACE_VERSION=v6.3.3
+
           # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/v5.5.1/k3d-linux-amd64
+          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
 
           # Install devspace
-          DEVSPACE_VERSION=v6.3.2
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
