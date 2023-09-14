@@ -96,7 +96,7 @@ def run_uvicorn(
 
             worker = worker_class.named(
                 name=name,
-                processes=1,
+                processes=0,
                 reset=reset,
                 local_db=True,
                 node_type=node_type,
@@ -106,7 +106,7 @@ def run_uvicorn(
         else:
             worker = worker_class(
                 name=name,
-                processes=1,
+                processes=0,
                 local_db=True,
                 node_type=node_type,
                 node_side_type=node_side_type,
@@ -131,7 +131,7 @@ def run_uvicorn(
             logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
             logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
         config = uvicorn.Config(
-            app, host=host, port=port, log_level=log_level, reload=dev_mode
+            app, host=host, port=port, log_level=log_level, reload=dev_mode, workers=10
         )
         server = uvicorn.Server(config)
 
