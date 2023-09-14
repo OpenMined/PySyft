@@ -23,7 +23,6 @@ import warnings
 # third party
 import pandas as pd
 import pydantic
-from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic.fields import Undefined
 from result import OkErr
@@ -31,8 +30,8 @@ from typeguard import check_type
 
 # relative
 from ..node.credentials import SyftVerifyKey
+from ..serde import serialize
 from ..serde.recursive_primitives import recursive_serde_register_type
-from ..serde.serialize import _serialize as serialize
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.notebook_addons import create_table_template
@@ -80,7 +79,7 @@ class SyftHashableObject:
         return self.__sha256__().hex()
 
 
-class SyftBaseObject(BaseModel, SyftHashableObject):
+class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     class Config:
         arbitrary_types_allowed = True
 
@@ -179,10 +178,105 @@ class SyftObjectRegistry:
         )
 
 
+class SyftMigrationRegistry:
+    __migration_version_registry__: Dict[str, Dict[int, str]] = {}
+    __migration_transform_registry__: Dict[str, Dict[str, Callable]] = {}
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        klass = type(cls) if not isinstance(cls, type) else cls
+
+        if hasattr(klass, "__canonical_name__") and hasattr(klass, "__version__"):
+            mapping_string = klass.__canonical_name__
+            klass_version = cls.__version__
+            fqn = f"{cls.__module__}.{cls.__name__}"
+
+            if (
+                mapping_string in cls.__migration_version_registry__
+                and not autoreload_enabled()
+            ):
+                versions = cls.__migration_version_registry__[mapping_string]
+                versions[klass_version] = fqn
+            else:
+                # only if the cls has not been registered do we want to register it
+                cls.__migration_version_registry__[mapping_string] = {
+                    klass_version: fqn
+                }
+
+    @classmethod
+    def register_transform(
+        cls, klass_type_str: str, version_from: int, version_to: int, method: Callable
+    ) -> None:
+        if klass_type_str not in cls.__migration_version_registry__:
+            raise Exception(f"{klass_type_str} is not yet registered.")
+
+        available_versions = cls.__migration_version_registry__[klass_type_str]
+
+        versions_exists = (
+            version_from in available_versions and version_to in available_versions
+        )
+
+        if versions_exists:
+            mapping_string = f"{version_from}x{version_to}"
+            if klass_type_str not in cls.__migration_transform_registry__:
+                cls.__migration_transform_registry__[klass_type_str] = {}
+            cls.__migration_transform_registry__[klass_type_str][
+                mapping_string
+            ] = method
+        else:
+            raise Exception(
+                f"Available versions for {klass_type_str} are: {available_versions}."
+                f"You're trying to add a transform from version: {version_from} to version: {version_to}"
+            )
+
+    @classmethod
+    def get_migration(
+        cls, type_from: Type[SyftBaseObject], type_to: Type[SyftBaseObject]
+    ) -> Callable:
+        for type_from_mro in type_from.mro():
+            if issubclass(type_from_mro, SyftBaseObject):
+                klass_from = type_from_mro.__canonical_name__
+                version_from = type_from_mro.__version__
+
+                for type_to_mro in type_to.mro():
+                    if issubclass(type_to_mro, SyftBaseObject):
+                        klass_to = type_to_mro.__canonical_name__
+                        version_to = type_to_mro.__version__
+
+                    if klass_from == klass_to:
+                        mapping_string = f"{version_from}x{version_to}"
+                        if (
+                            mapping_string
+                            in cls.__migration_transform_registry__[klass_from]
+                        ):
+                            return cls.__migration_transform_registry__[klass_from][
+                                mapping_string
+                            ]
+
+    @classmethod
+    def get_migration_for_version(
+        cls, type_from: Type[SyftBaseObject], version_to: int
+    ) -> Callable:
+        for type_from_mro in type_from.mro():
+            if issubclass(type_from_mro, SyftBaseObject):
+                klass_from = type_from_mro.__canonical_name__
+                version_from = type_from_mro.__version__
+                mapping_string = f"{version_from}x{version_to}"
+                if mapping_string in cls.__migration_transform_registry__[klass_from]:
+                    return cls.__migration_transform_registry__[klass_from][
+                        mapping_string
+                    ]
+
+        raise Exception(
+            f"No migration found for class type: {type_from} to "
+            "version: {version_to} in the migration registry."
+        )
+
+
 print_type_cache = defaultdict(list)
 
 
-class SyftObject(SyftBaseObject, SyftObjectRegistry):
+class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -457,6 +551,12 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     @classmethod
     def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
+
+    def migrate_to(self, version: int, context: Optional[Context] = None) -> Any:
+        migration_transform = SyftMigrationRegistry.get_migration_for_version(
+            type_from=type(self), version_to=version
+        )
+        return migration_transform(self, context)
 
 
 def short_qual_name(name: str) -> str:

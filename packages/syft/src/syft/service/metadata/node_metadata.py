@@ -14,7 +14,6 @@ from pydantic import BaseModel
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...types.syft_migration import SyftObjectTable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import StorableObjectType
@@ -62,7 +61,7 @@ class NodeMetadataUpdate(SyftObject):
 
 
 @serializable()
-class NodeMetadata(SyftObjectTable):
+class NodeMetadata(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -91,7 +90,7 @@ class NodeMetadata(SyftObjectTable):
 
 
 @serializable()
-class NodeMetadataV2(SyftObjectTable):
+class NodeMetadataV2(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_2
 
