@@ -8,23 +8,23 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
 from ..service import service_method
-from .object_metadata import SyftObjectMetadata
-from .object_metadata import SyftObjectMetadataStash
+from .object_migration_state import SyftMigrationStateStash
+from .object_migration_state import SyftObjectMigrationState
 
 
 @serializable()
-class ObjectSearchService(AbstractService):
+class MigrateStateService(AbstractService):
     store: DocumentStore
-    stash: SyftObjectMetadata
+    stash: SyftObjectMigrationState
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash: SyftObjectMetadataStash = SyftObjectMetadataStash(store=store)
+        self.stash: SyftMigrationStateStash = SyftMigrationStateStash(store=store)
 
-    @service_method(path="object_metadata", name="search")
-    def search(
+    @service_method(path="migration", name="get_version")
+    def get_version(
         self, context: AuthedServiceContext, canonical_name: str
-    ) -> Union[SyftObjectMetadata, SyftError]:
+    ) -> Union[int, SyftError]:
         """Search for the metadata for an object."""
 
         result = self.stash.get_by_name(
@@ -34,11 +34,11 @@ class ObjectSearchService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
-        result = result.ok()
+        migration_state = result.ok()
 
-        if result is None:
+        if migration_state is None:
             return SyftError(
-                message=f"No metadata exists for canonical name: {canonical_name}"
+                message=f"No migration state exists for canonical name: {canonical_name}"
             )
 
-        return result
+        return migration_state.current_version
