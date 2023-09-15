@@ -973,6 +973,8 @@ def test_mongo_store_partition_permissions_delete(
 ) -> None:
     res = mongo_store_partition.init_store()
     assert res.is_ok()
+    collection: MongoCollection = mongo_store_partition.collection.ok()
+    pemissions_collection: MongoCollection = mongo_store_partition.permissions.ok()
     hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
 
     # the root client set an object
@@ -981,10 +983,14 @@ def test_mongo_store_partition_permissions_delete(
         credentials=root_verify_key, obj=obj, ignore_duplicates=False
     )
     qk: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj)
-    # only the root client can delete it
+    # guest or hacker can't delete it
     assert not mongo_store_partition.delete(guest_verify_key, qk).is_ok()
     assert not mongo_store_partition.delete(hacker_verify_key, qk).is_ok()
+    # only the root client can delete it
     assert mongo_store_partition.delete(root_verify_key, qk).is_ok()
+    # check if the object and its permission have been deleted
+    assert collection.count_documents({}) == 0
+    assert pemissions_collection.count_documents({}) == 0
 
     # the guest client set an object
     obj_2 = MockSyftObject(data=2)
@@ -992,9 +998,12 @@ def test_mongo_store_partition_permissions_delete(
         credentials=guest_verify_key, obj=obj_2, ignore_duplicates=False
     )
     qk_2: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj_2)
-    # the guest client can delete it
+    # the hacker can't delete it
     assert not mongo_store_partition.delete(hacker_verify_key, qk_2).is_ok()
+    # the guest client can delete it
     assert mongo_store_partition.delete(guest_verify_key, qk_2).is_ok()
+    assert collection.count_documents({}) == 0
+    assert pemissions_collection.count_documents({}) == 0
 
     # the guest client set another object
     obj_3 = MockSyftObject(data=3)
@@ -1004,6 +1013,8 @@ def test_mongo_store_partition_permissions_delete(
     qk_3: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj_3)
     # the root client also has the permission to delete it
     assert mongo_store_partition.delete(root_verify_key, qk_3).is_ok()
+    assert collection.count_documents({}) == 0
+    assert pemissions_collection.count_documents({}) == 0
 
 
 @pytest.mark.skipif(

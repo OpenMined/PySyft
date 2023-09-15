@@ -382,21 +382,37 @@ class MongoStorePartition(StorePartition):
     def _delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Result[SyftSuccess, Err]:
+        if not (
+            has_permission
+            or self.has_permission(
+                ActionObjectWRITE(uid=qk.value, credentials=credentials)
+            )
+        ):
+            return Err(f"You don't have permission to delete object with qk: {qk}")
+
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
         collection: MongoCollection = collection_status.ok()
 
-        if has_permission or self.has_permission(
-            ActionObjectWRITE(uid=qk.value, credentials=credentials)
-        ):
-            qks = QueryKeys(qks=qk)
-            result = collection.delete_one(filter=qks.as_dict_mongo)
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
 
-            if result.deleted_count == 1:
-                return Ok(SyftSuccess(message="Deleted"))
-
-        return Err(f"Failed to delete object with qk: {qk}")
+        qks = QueryKeys(qks=qk)
+        # delete the object
+        result = collection.delete_one(filter=qks.as_dict_mongo)
+        # delete the object's permission
+        result_permission = collection_permissions.delete_one(filter=qks.as_dict_mongo)
+        if result.deleted_count == 1 and result_permission.deleted_count == 1:
+            return Ok(SyftSuccess(message="Object and its permission are deleted"))
+        elif result.deleted_count == 0:
+            return Err(f"Failed to delete object with qk: {qk}")
+        else:
+            return Err(
+                f"Object with qk: {qk} was deleted, but failed to delete its corresponding permission"
+            )
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         """Check if the permission is inside the permission collection"""
