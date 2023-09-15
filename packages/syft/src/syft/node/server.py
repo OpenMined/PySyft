@@ -15,6 +15,7 @@ from typing import Tuple
 # third party
 from fastapi import APIRouter
 from fastapi import FastAPI
+import gipc
 import requests
 from starlette.middleware.cors import CORSMiddleware
 import uvicorn
@@ -165,7 +166,7 @@ def serve_node(
     tail: bool = False,
     enable_warnings: bool = False,
 ) -> Tuple[Callable, Callable]:
-    server_process = multiprocessing.Process(
+    server_process = gipc.start_process(
         target=run_uvicorn,
         args=(
             name,
