@@ -690,8 +690,8 @@ def process_code(
     wrapper_function = ast.FunctionDef(
         name=func_name,
         args=f.args,
-        body=tree.body, 
-        # body=new_body, 
+        # body=tree.body, 
+        body=new_body, 
         decorator_list=[],
         returns=None,
         lineno=0,
@@ -861,15 +861,13 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any], logger) -> An
 
         # statisfy lint checker
         result = None
-        # exec(code_item.byte_code, {'logger': logger})  # nosec
-        # exec(code_item.parsed_code, {'logger': logger}, locals())  # nosec
-        exec(code_item.parsed_code)  # nosec
+        exec(code_item.byte_code)  # nosec
         print("Definition Complete", file=stderr_)
         # import logging
         # logger = logging.getLogger()
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         print(locals(), file=stderr_)
-        result = eval(evil_string, None, locals())  # nosec
+        result = eval(evil_string, {'logger': logger}, locals())  # nosec
         print("Evaluation Complete", file=stderr_)
 
         # restore stdout and stderr

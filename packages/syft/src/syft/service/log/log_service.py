@@ -45,7 +45,8 @@ class LogService(AbstractService):
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        new_log = result.ok().append(new_str)
+        new_log = result.ok()
+        new_log.append(new_str)
         result = self.stash.update(context.credentials, new_log)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -70,7 +71,7 @@ class LogService(AbstractService):
         return result.ok()
         
     
-    @service_method(path="log.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    @service_method(path="log.delete", name="delete", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def delete(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:

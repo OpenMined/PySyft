@@ -350,7 +350,7 @@ class Node(AbstractNode):
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
 
-        MessageHandlers = [APICallMessageHandler, CodeExecutionMessageHandler]
+        MessageHandlers = [APICallMessageHandler]#, CodeExecutionMessageHandler]
 
         self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
@@ -754,17 +754,17 @@ class Node(AbstractNode):
         return role
 
     def handle_api_call(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+        self, api_call: Union[SyftAPICall, SignedSyftAPICall], task_uid: Optional[UID] = None
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
-        result = self.handle_api_call_with_unsigned_result(api_call)
+        result = self.handle_api_call_with_unsigned_result(api_call, task_uid)
         # Sign the result
         signed_result = SyftAPIData(data=result).sign(self.signing_key)
 
         return signed_result
 
     def handle_api_call_with_unsigned_result(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+        self, api_call: Union[SyftAPICall, SignedSyftAPICall], task_uid: Optional[UID] = None
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
@@ -793,7 +793,7 @@ class Node(AbstractNode):
 
             role = self.get_role_for_credentials(credentials=credentials)
             context = AuthedServiceContext(
-                node=self, credentials=credentials, role=role
+                node=self, credentials=credentials, role=role, task_uid=task_uid
             )
             AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 

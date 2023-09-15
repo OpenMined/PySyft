@@ -8,10 +8,10 @@ class SyftLog(SyftObject):
     __canonical_name__ = "SyftLog"
     __version__ = SYFT_OBJECT_VERSION_1
     
-    stdout: str
+    stdout: str = ""
     
     def append(self, new_str: str) -> None:
-        self.stdout.append(new_str)
+        self.stdout += new_str
 
 class SyftLogger():
     def __init__(self, context, log_id) -> None:
@@ -19,6 +19,8 @@ class SyftLogger():
         self.log_id = log_id
         
     def print(self, *args, sep=None, end=None, file=None, flush=None):
+        import sys
+        print("USED SYFT LOGGER", file=sys.stderr)
         if sep is None:
             sep=" "
         if end is None:

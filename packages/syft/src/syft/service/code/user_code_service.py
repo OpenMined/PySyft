@@ -242,10 +242,30 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
-        self, context: AuthedServiceContext, uid: UID, log_id: UID = None, **kwargs: Any
+        self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         # Unroll variables
+        import sys
+        print("CONTEXT UID:", context.task_uid, file=sys.stderr)
+        # Dynamic Modification to the user code
+        # logger = SyftLogger()
+        logger = None
+        task_uid = context.task_uid
+        if task_uid is not None:
+            result = context.node.queue_stash.get_by_uid(context.credentials, task_uid)
+            if result.is_err():
+                return SyftError(message=str(result.err()))
+            queue_item = result.ok()
+            log_id = queue_item.log_id
+            print("LOG_ID:", log_id, file=sys.stderr)
+            if log_id is not None:
+                log_service = context.node.get_service("LogService")
+                result = log_service.add(context, log_id)
+                if result.is_err():
+                    return SyftError(message=str(result.err()))
+                logger = SyftLogger(context=context, log_id=log_id)
+        print("LOOGER:", logger, file=sys.stderr)
         kwarg2id = map_kwargs_to_id(kwargs)
 
         # get code item
@@ -267,18 +287,6 @@ class UserCodeService(AbstractService):
             return filtered_kwargs
         filtered_kwargs = filtered_kwargs.ok()
         
-        # Dynamic Modification to the user code
-        # logger = SyftLogger()
-        logger = None
-        import sys
-        print("LOG_ID:", log_id, file=sys.stderr)
-        log_id = context.node.name.split('_')[-1]
-        if log_id is not None:
-            log_service = context.node.get_service("LogService")
-            result = log_service.add(context.credentials, log_id)
-            if result.is_err():
-                return SyftError(message=str(result.err()))
-            logger = SyftLogger(context=context, log_id=log_id)
         
         try:
             # Execute the code item

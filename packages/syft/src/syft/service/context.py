@@ -34,7 +34,7 @@ class AuthedServiceContext(NodeServiceContext):
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
     extra_kwargs: Dict = {}
-    task_uid: UID
+    task_uid: Optional[UID]
 
     def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])

@@ -83,11 +83,7 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         item = worker.queue_stash.get_by_uid(api_call.credentials, task_uid).ok()
         
-        
         log_id = item.log_id
-        unsigned_api_call = api_call.message
-        unsigned_api_call.args.append(log_id)
-        new_api_call = unsigned_api_call.sign(api_call.credentials)
         item.status = Status.PROCESSING 
         item.node_uid = worker.id 
         
@@ -95,7 +91,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         status = Status.COMPLETED
 
         try:
-            result = worker.handle_api_call(api_call)
+            result = worker.handle_api_call(api_call, task_uid=task_uid)
             if isinstance(result, SyftError):
                 status = Status.ERRORED
         except Exception as e:  # nosec
