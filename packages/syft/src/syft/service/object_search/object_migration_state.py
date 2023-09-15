@@ -13,6 +13,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftMigrationRegistry
 from ...types.syft_object import SyftObject
 from ..action.action_permissions import ActionObjectPermission
 from ..user.user import User
@@ -25,6 +26,20 @@ class SyftObjectMigrationState(SyftObject):
 
     canonical_name: str
     current_version: int
+
+    @property
+    def latest_version(self) -> Optional[int]:
+        available_versions = SyftMigrationRegistry.get_versions(
+            canonical_name=self.canonical_name,
+        )
+        if available_versions is None:
+            return None
+
+        return sorted(available_versions, reverse=True)[0]
+
+    @property
+    def supported_versions(self) -> List:
+        return SyftMigrationRegistry.get_versions(self.canonical_name)
 
 
 KlassNamePartitionKey = PartitionKey(key="canonical_name", type_=str)

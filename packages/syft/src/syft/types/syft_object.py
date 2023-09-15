@@ -204,6 +204,14 @@ class SyftMigrationRegistry:
                 }
 
     @classmethod
+    def get_versions(cls, canonical_name: str) -> List:
+        available_versions = cls.__migration_version_registry__.get(
+            canonical_name,
+            {},
+        )
+        return list(available_versions.keys())
+
+    @classmethod
     def register_transform(
         cls, klass_type_str: str, version_from: int, version_to: int, method: Callable
     ) -> None:
