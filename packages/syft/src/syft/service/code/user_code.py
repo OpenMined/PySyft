@@ -867,7 +867,9 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any], logger) -> An
         # logger = logging.getLogger()
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         print(locals(), file=stderr_)
-        result = eval(evil_string, {'logger': logger}, locals())  # nosec
+        globals()['logger'] = logger
+        
+        result = eval(evil_string, None, locals())  # nosec
         print("Evaluation Complete", file=stderr_)
 
         # restore stdout and stderr

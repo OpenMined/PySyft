@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import Any
 
 # relative
 from ...serde.serializable import serializable
@@ -35,6 +36,13 @@ class BlobStorageService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = BlobStorageStash(store=store)
+
+    @service_method(path="blob_storage.list_objects", name="list_objects")
+    def list_objects(
+        self, context: AuthedServiceContext
+    ) -> Any:
+        print("BLOB STORAGE CLIENT:", context.node.blob_storage_client)
+        return None
 
     @service_method(path="blob_storage.get_all", name="get_all")
     def get_all_blob_storage_entries(
