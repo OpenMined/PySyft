@@ -529,7 +529,7 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Run integration tests
+      - name: Run K8s & Helm integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         env:
