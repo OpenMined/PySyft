@@ -231,7 +231,7 @@ CSS_CODE = """
         /* Auto layout */
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         padding: 6px 4px;
 
         /* Lt On Surface/Surface */
