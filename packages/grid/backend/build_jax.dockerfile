@@ -1,4 +1,4 @@
-FROM python:3.11.3-slim as build
+FROM python:3.12.0rc1-slim as build
 RUN apt-get -y update && apt-get -y upgrade && apt-get -y dist-upgrade
 RUN apt-get -y install \
     g++ \
