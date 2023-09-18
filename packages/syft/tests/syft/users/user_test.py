@@ -8,6 +8,7 @@ from syft import SyftError
 from syft import SyftSuccess
 from syft.client.api import SyftAPICall
 from syft.client.domain_client import DomainClient
+from syft.node.node import get_default_root_email
 from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.user.user import ServiceRole
@@ -260,7 +261,6 @@ def test_user_view_set_invalid_email(
     [
         ("syft@gmail.com", "syft_ds@gmail.com"),
         ("syft@openmined.com", "syft_ds@openmined.com"),
-        ("info@openmined.org", "info_ds@openmined.org"),
     ],
 )
 def test_user_view_set_email_success(
@@ -273,6 +273,22 @@ def test_user_view_set_email_success(
     assert isinstance(result, SyftSuccess)
     result2 = ds_client.me.set_email(valid_email_ds)
     assert isinstance(result2, SyftSuccess)
+
+
+def test_user_view_set_default_admin_email_failed(
+    ds_client: DomainClient, guest_client: DomainClient
+) -> None:
+    default_root_email = get_default_root_email()
+    result = ds_client.me.set_email(default_root_email)
+    assert isinstance(result, SyftError)
+    assert (
+        result.message == f"A user with the email {default_root_email} already exists."
+    )
+    result_2 = guest_client.me.set_email(default_root_email)
+    assert isinstance(result_2, SyftError)
+    assert (
+        result.message == f"A user with the email {default_root_email} already exists."
+    )
 
 
 def test_user_view_set_duplicated_email(
