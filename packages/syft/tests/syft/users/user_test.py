@@ -33,7 +33,7 @@ def get_users(worker):
     )
 
 
-def get_mock_client(root_client, role):
+def get_mock_client(root_client, role) -> DomainClient:
     worker = root_client.api.connection.node
     client = worker.guest_client
     mail = Faker().email()
@@ -67,17 +67,17 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
 
 
 @pytest.fixture
-def guest_client(worker):
+def guest_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.GUEST)
 
 
 @pytest.fixture
-def ds_client(worker):
+def ds_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_SCIENTIST)
 
 
 @pytest.fixture
-def do_client(worker):
+def do_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
 
@@ -231,6 +231,24 @@ def test_user_update(root_client):
         # you can update yourself
         assert executing_client.api.services.user.update(
             executing_client.user_id, UserUpdate(name=Faker().name())
+        )
+
+
+def test_guest_user_update_to_root_email_failed(
+    root_client: DomainClient,
+    do_client: DomainClient,
+    guest_client: DomainClient,
+    ds_client: DomainClient,
+) -> None:
+    default_root_email: str = get_default_root_email()
+    user_update_to_root_email = UserUpdate(email=default_root_email)
+    for client in [root_client, do_client, guest_client, ds_client]:
+        res = client.api.services.user.update(
+            uid=client.me.id, user_update=user_update_to_root_email
+        )
+        assert isinstance(res, SyftError)
+        assert (
+            res.message == f"A user with the email {default_root_email} already exists."
         )
 
 
