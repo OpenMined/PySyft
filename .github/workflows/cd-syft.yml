@@ -153,7 +153,7 @@ jobs:
           fi
 
       - name: Commit changes to Infra Repo
-        uses: EndBug/add-and-commit@v7
+        uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
