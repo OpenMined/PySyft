@@ -22,7 +22,7 @@ jobs:
         with:
           repository: OpenMined/infrastructure
           path: infrastructure
-          token: ${{ secrets.SYFT_BUMP_TOKEN }}
+          token: ${{ secrets.OM_BOT_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -154,8 +154,8 @@ jobs:
       - name: Commit & push changes to Infra Repo
         uses: EndBug/add-and-commit@v9
         with:
-          author_name: Madhava Jay
-          author_email: madhava@openmined.org
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
           message: "[env] Update dev helm charts"
           cwd: infrastructure
           pull: NO-PULL
