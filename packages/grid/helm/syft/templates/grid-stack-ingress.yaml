@@ -11,8 +11,13 @@ spec:
       name: proxy
       port:
         number: 80
+  tls:
+  - hosts:
+    - {{ .Values.node.settings.hostname }}
+    # secretName: Add custom TLS secret here or default certificate is used
   rules:
-  - http:
+  - host: {{ .Values.node.settings.hostname }}
+    http:
       paths:
       - backend:
           service:

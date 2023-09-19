@@ -52,6 +52,12 @@ def replace_variables(d: Any) -> None:
     if "kubernetes.io/ingress.class" in d:
         d["kubernetes.io/ingress.class"] = "{{ .Values.ingress.ingressClass }}"
 
+    if "host" in d:
+        d["host"] = "{{ .Values.node.settings.hostname }}"
+
+    if "hosts" in d:
+        d["hosts"] = ["{{ .Values.node.settings.hostname }}"]
+
 
 # parse whole tree
 def fix_devspace_yaml(d: Any) -> None:

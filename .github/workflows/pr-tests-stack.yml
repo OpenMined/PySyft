@@ -543,7 +543,7 @@ jobs:
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
-          DEVSPACE_VERSION=v6.3.2
+          DEVSPACE_VERSION=v6.3.3
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
