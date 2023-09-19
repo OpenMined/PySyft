@@ -136,7 +136,7 @@ jobs:
       - name: Checkout Infra Repo
         uses: actions/checkout@v3
         with:
-          repository: OpenMined/infrastructure
+          repository: ${{ secrets.INFRA_REPO }}
           ref: "main"
           token: ${{ secrets.OM_BOT_TOKEN }}
           path: infrastructure
