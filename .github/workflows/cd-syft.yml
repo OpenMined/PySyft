@@ -160,6 +160,7 @@ jobs:
           message: "Update K8s Manifests from Syft Repo"
           add: "*"
           pull: NO-PULL
+          push: "origin main"
           cwd: "./infrastructure/"
 
       # - name: Create SyftCLI Config assets
