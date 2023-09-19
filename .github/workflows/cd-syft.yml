@@ -141,7 +141,7 @@ jobs:
           path: infrastructure
 
       # This step will copy the generated K8s manifest files to the correct directory in Infra repo
-      - name: Copy files to Repo B
+      - name: Copy files to Infra Repo
         run: |
           if $is_pre_release; then
             rm -rf infrastructure/gitops/environments/pre-release/.
