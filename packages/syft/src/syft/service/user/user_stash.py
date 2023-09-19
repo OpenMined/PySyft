@@ -76,7 +76,7 @@ class UserStash(BaseStash):
         qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
         return self.query_one(credentials=credentials, qks=qks)
 
-    def email_exists(self, email="") -> bool:
+    def email_exists(self, email: str) -> bool:
         res = self.get_by_email(credentials=self.admin_verify_key().ok(), email=email)
         if res.ok() is None:
             return False
