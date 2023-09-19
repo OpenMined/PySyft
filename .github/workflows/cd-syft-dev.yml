@@ -73,19 +73,20 @@ jobs:
           # cache-from: type=registry,ref=${{ steps.meta_grid_frontend.outputs.tags }}
           # cache-to: type=inline
 
-      - name: Build and push `grid-enclave` image to DockerHub
-        uses: docker/build-push-action@v4
-        with:
-          context: ./packages
-          file: ./packages/grid/worker/worker.dockerfile
-          push: true
-          target: worker
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ github.sha }}
-          # cache-from: type=registry,ref=${{ steps.meta_grid_enclave.outputs.tags }}
-          # cache-to: type=inline
+      # TODO: Re-enable once we have Enclave up and running
+      # - name: Build and push `grid-enclave` image to DockerHub
+      #   uses: docker/build-push-action@v4
+      #   with:
+      #     context: ./packages
+      #     file: ./packages/grid/worker/worker.dockerfile
+      #     push: true
+      #     target: worker
+      #     tags: |
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ github.sha }}
+      #     # cache-from: type=registry,ref=${{ steps.meta_grid_enclave.outputs.tags }}
+      #     # cache-to: type=inline
 
       - name: Build and push `grid-headscale` image to DockerHub
         uses: docker/build-push-action@v4
