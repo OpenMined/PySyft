@@ -96,6 +96,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
+from ..util.util import get_env
 from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
@@ -125,10 +126,6 @@ NODE_SIDE_TYPE = "NODE_SIDE_TYPE"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
-
-
-def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
-    return os.environ.get(key, default)
 
 
 def get_private_key_env() -> Optional[str]:

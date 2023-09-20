@@ -52,6 +52,10 @@ DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
 PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
 
 
+def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
+    return os.environ.get(key, default)
+
+
 def full_name_with_qualname(klass: type) -> str:
     """Returns the klass module name + klass qualname."""
     try:
