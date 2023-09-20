@@ -13,16 +13,18 @@ on:
 
 jobs:
   deploy-syft-dev:
-    runs-on: ubuntu-latest
+    runs-on: om-ci-16vcpu-ubuntu2204
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout Openmined/infrastructure
+      # Checkout Infra repo (nested)
+      - name: Checkout Infra Repo
         uses: actions/checkout@v4
         with:
-          repository: OpenMined/infrastructure
-          path: infrastructure
+          repository: ${{ secrets.INFRA_REPO }}
+          ref: "main"
           token: ${{ secrets.OM_BOT_TOKEN }}
+          path: infrastructure
 
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -158,5 +160,6 @@ jobs:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
           message: "[env] Update dev helm charts"
-          cwd: infrastructure
-          pull: NO-PULL
+          add: "."
+          push: "origin main"
+          cwd: "./infrastructure/"
