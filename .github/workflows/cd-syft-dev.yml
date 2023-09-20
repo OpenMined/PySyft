@@ -56,8 +56,7 @@ jobs:
           target: backend
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev-${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_backend.outputs.tags }}
           # cache-to: type=inline
 
@@ -69,8 +68,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev-${{ github.sha }}
           target: grid-ui-development
           # cache-from: type=registry,ref=${{ steps.meta_grid_frontend.outputs.tags }}
           # cache-to: type=inline
@@ -98,8 +96,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev-${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_headscale.outputs.tags }}
           # cache-to: type=inline
 
@@ -111,8 +108,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev-${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_tailscale.outputs.tags }}
           # cache-to: type=inline
 
@@ -124,8 +120,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:${{ steps.grid.outputs.GRID_VERSION }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev-${{ github.sha }}
           # cache-from: type=registry,ref=${{ steps.meta_grid_vpn_iptables.outputs.tags }}
           # cache-to: type=inline
 
@@ -148,6 +143,7 @@ jobs:
           devspace version
 
           export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}/
+          export VERSION=dev-${{github.sha}}
           tox -e syft.build.helm
 
           rm -rf infrastructure/gitops/environments/dev/
