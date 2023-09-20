@@ -142,7 +142,7 @@ jobs:
           chmod +x devspace
           devspace version
 
-          export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}/
+          export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}
           export VERSION=dev-${{github.sha}}
           tox -e syft.build.helm
 
