@@ -57,8 +57,6 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev-${{ github.sha }}
-          # cache-from: type=registry,ref=${{ steps.meta_grid_backend.outputs.tags }}
-          # cache-to: type=inline
 
       - name: Build and push `grid-frontend` image to DockerHub
         uses: docker/build-push-action@v4
