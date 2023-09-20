@@ -6,10 +6,13 @@ import os
 from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import Type
 
 # relative
+from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..util.util import get_env
+from ..util.util import index_syft_by_module_name
 from ..util.util import str_to_bool
 
 
@@ -52,13 +55,28 @@ class DataProtocol:
         self.file_path = Path(data_protocol_dir()) / filename
         self.state = self.read_state()
 
+    @staticmethod
+    def _calculate_object_hash(klass: Type[SyftBaseObject]) -> str:
+        obj_meta_info = {
+            "canonical_name": klass.__canonical_name__,
+            "version": klass.__version__,
+            "unique_keys": getattr(klass, "__attr_unique__", []),
+            "field_data": klass.__fields__,
+        }
+
+        return make_hash_sha256(obj_meta_info)
+
     def calc_latest_object_versions(self):
         object_latest_version_map = {}
-        object_versions = iter(
-            SyftMigrationRegistry.__migration_version_registry__.items()
-        )
-        for canonical_name, available_versions in object_versions:
-            object_latest_version_map[canonical_name] = list(available_versions)
+        migration_registry = SyftMigrationRegistry.__migration_version_registry__
+        for canonical_name in migration_registry:
+            available_versions = migration_registry[canonical_name]
+            version_obj_hash_map = {}
+            for object_version, fqn in available_versions.items():
+                object_klass = index_syft_by_module_name(fqn)
+                object_hash = self._calculate_object_hash(object_klass)
+                version_obj_hash_map[object_version] = object_hash
+            object_latest_version_map[canonical_name] = version_obj_hash_map
 
         return object_latest_version_map
 
@@ -70,17 +88,20 @@ class DataProtocol:
 
     def find_deleted_versions(
         self,
-        current_object_version_map: Dict,
-        new_object_version_map: Dict,
+        current_object_to_version_map: Dict,
+        new_object_to_version_map: Dict,
     ):
-        deleted_object_classes = set(current_object_version_map) - set(
-            new_object_version_map
+        deleted_object_classes = set(current_object_to_version_map) - set(
+            new_object_to_version_map
         )
 
         deleted_versions_map = {}
 
-        for canonical_name, new_versions in new_object_version_map.items():
-            current_versions = current_object_version_map.get(canonical_name)
+        for canonical_name, new_versions in new_object_to_version_map.items():
+            current_versions = current_object_to_version_map.get(
+                canonical_name,
+                None,
+            )
             if current_versions is None:
                 continue
 
@@ -89,15 +110,15 @@ class DataProtocol:
 
         return deleted_object_classes, deleted_versions_map
 
-    def compute_supported_protocol_states(
+    def recompute_supported_states(
         self,
         current_protocol_version: int,
-        new_object_version_map: Dict,
+        new_object_to_version_map: Dict,
     ):
         current_protocol_state = self.state[current_protocol_version]
         deleted_object_classes, deleted_versions_map = self.find_deleted_versions(
             current_protocol_state,
-            new_object_version_map=new_object_version_map,
+            new_object_to_version_map=new_object_to_version_map,
         )
 
         for _, protocol_state in self.state.items():
@@ -131,37 +152,43 @@ class DataProtocol:
     def state_defined(self):
         return len(self.state) > 0
 
+    def upgrade(self):
+        object_to_version_map = self.calc_latest_object_versions()
+        new_protocol_hash = make_hash_sha256(object_to_version_map)
+
+        if not self.state_defined:
+            new_protocol_version = 1
+        else:
+            # Find the current version
+            current_protocol_version = sorted(
+                self.state.keys(),
+                reverse=True,
+            )[0]
+
+            new_protocol_version = current_protocol_version + 1
+
+            current_protocol_state = self.state[current_protocol_version]
+            if current_protocol_state["hash"] == new_protocol_hash:
+                print("No change in schema. Skipping upgrade.")
+                return
+
+            self.recompute_supported_states(
+                current_protocol_version=current_protocol_version,
+                new_object_to_version_map=object_to_version_map,
+            )
+
+        self.state[new_protocol_version] = {
+            "object_versions": object_to_version_map,
+            "hash": new_protocol_hash,
+            "supported": True,
+        }
+        self.save_state()
+
 
 def upgrade_protocol():
     data_protocol = DataProtocol(filename=data_protocol_file_name())
+    data_protocol.upgrade()
 
-    object_version_map = data_protocol.calc_latest_object_versions()
-    new_protocol_hash = make_hash_sha256(object_version_map)
 
-    if not data_protocol.state_defined:
-        new_protocol_version = 1
-    else:
-        # Find the current version
-        current_protocol_version = sorted(
-            data_protocol.state.keys(),
-            reverse=True,
-        )[0]
-
-        new_protocol_version = current_protocol_version + 1
-
-        current_protocol_state = data_protocol.state[current_protocol_version]
-        if current_protocol_state["hash"] == new_protocol_hash:
-            print("No change in schema. Skipping upgrade.")
-            return
-
-        data_protocol.compute_supported_protocol_states(
-            current_protocol_version=current_protocol_version,
-            new_object_version_map=object_version_map,
-        )
-
-    data_protocol.state[new_protocol_version] = {
-        "object_versions": object_version_map,
-        "hash": new_protocol_hash,
-        "supported": True,
-    }
-    data_protocol.save_state()
+def validate_protocol():
+    pass
