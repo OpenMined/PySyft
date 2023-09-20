@@ -70,8 +70,6 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev-${{ github.sha }}
           target: grid-ui-development
-          # cache-from: type=registry,ref=${{ steps.meta_grid_frontend.outputs.tags }}
-          # cache-to: type=inline
 
       # TODO: Re-enable once we have Enclave up and running
       # - name: Build and push `grid-enclave` image to DockerHub
@@ -83,10 +81,7 @@ jobs:
       #     target: worker
       #     tags: |
       #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev
-      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
-      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ github.sha }}
-      #     # cache-from: type=registry,ref=${{ steps.meta_grid_enclave.outputs.tags }}
-      #     # cache-to: type=inline
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev-${{ github.sha }}
 
       - name: Build and push `grid-headscale` image to DockerHub
         uses: docker/build-push-action@v4
@@ -97,8 +92,6 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev-${{ github.sha }}
-          # cache-from: type=registry,ref=${{ steps.meta_grid_headscale.outputs.tags }}
-          # cache-to: type=inline
 
       - name: Build and push `grid-tailscale` image to DockerHub
         uses: docker/build-push-action@v4
@@ -109,8 +102,6 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev-${{ github.sha }}
-          # cache-from: type=registry,ref=${{ steps.meta_grid_tailscale.outputs.tags }}
-          # cache-to: type=inline
 
       - name: Build and push `grid-vpn-iptables` image to DockerHub
         uses: docker/build-push-action@v2
@@ -121,8 +112,6 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev-${{ github.sha }}
-          # cache-from: type=registry,ref=${{ steps.meta_grid_vpn_iptables.outputs.tags }}
-          # cache-to: type=inline
 
       - name: Build Helm Chart & Copy to infra
         shell: bash
