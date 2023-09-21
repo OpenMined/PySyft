@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 from typing import Dict
-from typing import Hashable
 from typing import Type
 
 # relative
@@ -31,8 +30,8 @@ def data_protocol_dir():
     return os.path.abspath(str(Path(__file__).parent))
 
 
-def make_hash_sha256(hashable: Hashable) -> str:
-    return hashlib.sha256(bytes(hash(hashable))).hexdigest()
+class InConsistentVersionException(Exception):
+    pass
 
 
 class DataProtocol:
@@ -43,7 +42,7 @@ class DataProtocol:
     @staticmethod
     def _calculate_object_hash(klass: Type[SyftBaseObject]) -> str:
         field_data = {
-            field_name: hash(model_field.annotation)
+            field_name: repr(model_field.annotation)
             for field_name, model_field in klass.__fields__.items()
         }
         obj_meta_info = {
@@ -80,8 +79,8 @@ class DataProtocol:
         current_object_to_version_map: Dict,
         new_object_to_version_map: Dict,
     ):
-        deleted_object_classes = set(current_object_to_version_map) - set(
-            new_object_to_version_map
+        deleted_object_classes = set(current_object_to_version_map).difference(
+            new_object_to_version_map.keys()
         )
 
         deleted_versions_map = {}
@@ -94,7 +93,7 @@ class DataProtocol:
             if current_versions is None:
                 continue
 
-            deleted_versions = list(set(current_versions) - set(new_versions))
+            deleted_versions = list(set(current_versions).difference(new_versions))
             deleted_versions_map[canonical_name] = deleted_versions
 
         return deleted_object_classes, deleted_versions_map
@@ -141,20 +140,23 @@ class DataProtocol:
     def state_defined(self):
         return len(self.state) > 0
 
+    @property
+    def latest_version(self):
+        return max(self.state.keys())
+
+    @staticmethod
+    def _hash_to_sha256(obj_dict: Dict) -> str:
+        return hashlib.sha256(json.dumps(obj_dict).encode()).hexdigest()
+
     def upgrade(self):
         object_to_version_map = self.calc_latest_object_versions()
-        new_protocol_hash = hashlib.sha256(
-            json.dumps(object_to_version_map).encode()
-        ).hexdigest()
+        new_protocol_hash = self._hash_to_sha256(object_to_version_map)
 
         if not self.state_defined:
             new_protocol_version = 1
         else:
             # Find the current version
-            current_protocol_version = sorted(
-                self.state.keys(),
-                reverse=True,
-            )[0]
+            current_protocol_version = self.latest_version
 
             new_protocol_version = int(current_protocol_version) + 1
 
@@ -174,6 +176,36 @@ class DataProtocol:
             "supported": True,
         }
         self.save_state()
+
+    def validate_current_state(self) -> bool:
+        current_object_version_map = self.state[self.latest_version]["object_versions"]
+        inconsistent_versions = []
+
+        migration_registry = SyftMigrationRegistry.__migration_version_registry__
+        for canonical_name in migration_registry:
+            available_versions = migration_registry[canonical_name]
+            curr_version_hash_map = current_object_version_map.get(canonical_name, {})
+            for object_version, fqn in available_versions.items():
+                object_klass = index_syft_by_module_name(fqn)
+                object_hash = self._calculate_object_hash(object_klass)
+                if curr_version_hash_map.get(str(object_version), None) != object_hash:
+                    inconsistent_versions.append((canonical_name, object_version))
+
+        if len(inconsistent_versions) > 0:
+            raise InConsistentVersionException(
+                f"Version update is required for the following objects.\n {inconsistent_versions}"
+            )
+
+        return True
+
+    @property
+    def supported_protocols(self):
+        """Returns a list of protocol numbers that are marked as supported."""
+        return [
+            int(protocol_version)
+            for protocol_version, protocol_state in self.state.items()
+            if protocol_state["supported"]
+        ]
 
 
 def upgrade_protocol():
