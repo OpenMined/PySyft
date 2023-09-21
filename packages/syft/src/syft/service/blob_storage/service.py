@@ -79,7 +79,9 @@ class BlobStorageService(AbstractService):
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
 
             with context.node.blob_storage_client.connect() as conn:
-                return conn.read(obj.location, obj.type_)
+                res = conn.read(obj.location, obj.type_)
+                res.syft_blob_storage_entry_id = uid
+                return res
         return SyftError(message=result.err())
 
     @service_method(

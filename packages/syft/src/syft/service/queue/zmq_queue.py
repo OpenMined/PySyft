@@ -7,7 +7,6 @@ from typing import Optional
 from typing import Union
 
 # third party
-import gevent
 import zmq.green as zmq
 
 # relative
@@ -39,7 +38,7 @@ class ZMQProducer(QueueProducer):
             message_list = [message]
             # TODO: Enable zero copy
             self._producer.send_multipart(message_list)
-            print("Message Queued Successfully !", flush=True)
+            # print("Message Queued Successfully !", flush=True)
         except zmq.Again as e:
             # TODO: Add retry mechanism if this error occurs
             raise e
@@ -69,17 +68,21 @@ class ZMQConsumer(QueueConsumer):
         self.message_handler = message_handler
         self.queue_name = queue_name
         self.post_init()
+        self.id = UID()
+        print("CREATING NEW UID:", self.id)
 
     def post_init(self):
         ctx = zmq.Context.instance()
         self._consumer = ctx.socket(zmq.PULL)
 
         self.thread = None
-        self._consumer.connect(self.address)
+        print(self._consumer.connect(self.address))
 
     def receive(self):
         try:
+            print(f"LISTENING ON {self.address}")
             message_list = self._consumer.recv_multipart()
+            print("RECEIVED MSG")
             message = message_list[0]
             print("Message Received Successfully !", flush=True)
         except zmq.ZMQError as e:
@@ -87,19 +90,23 @@ class ZMQConsumer(QueueConsumer):
                 print("Subscriber connection Terminated")
             else:
                 raise e
+        print("HANDLING MESSAGE ON", self.id)
         self.message_handler.handle_message(message=message)
 
     def _run(self):
         # stdlib
 
-        exit()
         while True:
-            print("receiving", flush=True)
             self.receive()
 
     def run(self):
-        self.thread = gevent.spawn(self._run)
+        # stdlib
+        import threading
+
+        self.thread = threading.Thread(target=self._run)
         self.thread.start()
+        # self.thread = gevent.spawn(self._run)
+        # self.thread.start()
         print("spawning thread")
 
     def close(self):
@@ -211,8 +218,11 @@ class ZMQClient(QueueClient):
                 message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
             )
         try:
+            print("REALLY TRYING TO SEND")
             producer.send(message=message)
+            print("done sending")
         except Exception as e:
+            print("FAILED")
             return SyftError(
                 message=f"Failed to send message to: {queue_name} with error: {e}"
             )
@@ -257,4 +267,4 @@ class ZMQClient(QueueClient):
 @serializable()
 class ZMQQueueConfig(QueueConfig):
     client_type = ZMQClient
-    client_config = ZMQClientConfig()
+    client_config: ZMQClientConfig = ZMQClientConfig()

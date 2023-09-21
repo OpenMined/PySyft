@@ -23,6 +23,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
+from ..queue.queue_stash import QueueItem
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
@@ -222,6 +223,17 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
+    def is_execution_allowed(self, code, context):
+        if not code.status.approved:
+            return code.status.get_status_message()
+        # Check if the user has permission to execute the code.
+        elif not (has_code_permission := self.has_code_permission(code, context)):
+            return has_code_permission
+        elif code.output_policy is None:
+            return SyftError("Output policy not approved", code)
+        else:
+            return True
+
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
@@ -238,31 +250,31 @@ class UserCodeService(AbstractService):
             code: UserCode = code_result.ok()
             print("CALLING", code.service_func_name)
 
-            if not code.status.approved:
-                return code.status.get_status_message()
-
-            # Check if the user has permission to execute the code.
-            if not (has_code_permission := self.has_code_permission(code, context)):
-                return has_code_permission
-
-            if (output_policy := code.output_policy) is None:
-                return SyftError("Output policy not approved", code)
-
-            # Check if the OutputPolicy is valid
-            if not (is_valid := output_policy.valid):
-                if len(output_policy.output_history) > 0:
-                    result = resolve_outputs(
-                        context=context, output_ids=output_policy.last_output_ids
-                    )
-                    return result.as_empty()
-                return is_valid
+            output_policy = code.output_policy
+            if (
+                can_execute := self.is_execution_allowed(code=code, context=context)
+                is not True
+            ):
+                if not (is_valid := output_policy.valid):
+                    if len(output_policy.output_history) > 0:
+                        result = resolve_outputs(
+                            context=context, output_ids=output_policy.last_output_ids
+                        )
+                        return result.as_empty()
+                    else:
+                        return is_valid
+                return can_execute
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
 
-            output_result: Result[
+            result_action_object: Result[
                 Union[ActionObject, TwinObject], str
             ] = action_service._user_code_execute(context, code, kwarg2id)
+
+            output_result = action_service.set_result_to_store(
+                result_action_object, context, code.output_policy
+            )
 
             if output_result.is_err():
                 return SyftError(message=output_result.err())
@@ -277,6 +289,11 @@ class UserCodeService(AbstractService):
                 )
             ):
                 return update_success
+
+            if not isinstance(result, TwinObject) and isinstance(
+                result.syft_action_data, QueueItem
+            ):
+                return result.syft_action_data
 
             if isinstance(result, TwinObject):
                 return result.mock

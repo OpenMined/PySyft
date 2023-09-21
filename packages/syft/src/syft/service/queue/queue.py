@@ -6,6 +6,8 @@ from typing import Union
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
+from ..job.job_stash import Job
+from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
@@ -69,7 +71,9 @@ class APICallMessageHandler(AbstractMessageHandler):
         # relative
         from ...node.node import Node
 
-        task_uid, api_call, worker_settings = deserialize(message, from_bytes=True)
+        print("HANDLING MESSAGE:", str(bytes)[:10])
+
+        queue_item_id, api_call, worker_settings = deserialize(message, from_bytes=True)
 
         worker = Node(
             id=worker_settings.id,
@@ -78,32 +82,60 @@ class APICallMessageHandler(AbstractMessageHandler):
             document_store_config=worker_settings.document_store_config,
             action_store_config=worker_settings.action_store_config,
             blob_storage_config=worker_settings.blob_store_config,
+            queue_config=worker_settings.queue_config,
+            n_consumers=0,
             is_subprocess=True,
         )
 
-        item = QueueItem(
-            node_uid=worker.id,
-            id=task_uid,
-            status=Status.PROCESSING,
-        )
-        worker.queue_stash.set_result(api_call.credentials, item)
+        queue_item = worker.queue_stash.get_by_uid(
+            api_call.credentials, queue_item_id
+        ).ok()
+        job_item = worker.job_stash.get_by_uid(
+            api_call.credentials, queue_item.job_id
+        ).ok()
+
+        queue_item.status = Status.PROCESSING
+        queue_item.node_uid = worker.id
+
+        job_item.status = JobStatus.PROCESSING
+        job_item.node_uid = worker.id
+
+        worker.queue_stash.set_result(api_call.credentials, queue_item)
+        worker.job_stash.set_result(api_call.credentials, job_item)
+
         print(f"Proccesing api call on {worker.name}")
         status = Status.COMPLETED
+        job_status = JobStatus.COMPLETED
 
         try:
-            result = worker.handle_api_call(api_call)
+            result = worker.handle_api_call(api_call, job_id=job_item.id)
             if isinstance(result, SyftError):
                 status = Status.ERRORED
+                job_status = JobStatus.ERRORED
         except Exception as e:  # nosec
             status = Status.ERRORED
+            job_status = JobStatus.ERRORED
             result = SyftError(message=f"Failed with exception: {e}")
 
-        item = QueueItem(
+        queue_item = QueueItem(
             node_uid=worker.id,
-            id=task_uid,
+            id=queue_item_id,
             result=result,
             resolved=True,
             status=status,
         )
 
-        worker.queue_stash.set_result(api_call.credentials, item)
+        # if result.is_ok():
+
+        job_item = Job(
+            node_uid=worker.id,
+            id=job_item.id,
+            result=result.message.data,
+            resolved=True,
+            status=job_status,
+            parent_job_id=job_item.parent_job_id,
+            log_id=job_item.log_id,
+        )
+
+        worker.queue_stash.set_result(api_call.credentials, queue_item)
+        worker.job_stash.set_result(api_call.credentials, job_item)

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import ast
+from copy import deepcopy
 from enum import Enum
 import hashlib
 import inspect
@@ -26,6 +27,7 @@ from typing_extensions import Self
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
+from ...client.api import SyftAPICall
 from ...client.client import PythonConnection
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
@@ -873,16 +875,21 @@ def execute_byte_code(
     stderr_ = sys.stderr
 
     try:
-        print("EXECUTING BYTE CODE")
+        # stdlib
+        import builtins as __builtin__
+
+        original_print = __builtin__.print
 
         class LocalDomainClient:
             def __init__(self):
                 pass
 
             def launch_job(self, func: UserCode, **kwargs):
-                print("LAUNCHING JOB")
+                original_print("LAUNCHING JOB")
+                # import ipdb
+                # ipdb.set_trace()
                 # relative
-                from ...client.api import SyftAPICall
+                from ... import UID
 
                 # get reference to node (TODO)
                 node = context.node
@@ -902,16 +909,9 @@ def execute_byte_code(
                     kw2id[k] = ptr.id
 
                 # create new usercode with permissions
-                # stdlib
-                from copy import deepcopy
-
-                # relative
-                from ... import UID
 
                 new_user_code = deepcopy(func)
                 new_user_code.id = UID()
-                # relative
-                from ..policy.policy import ExactMatch
 
                 new_user_code.input_policy_type = ExactMatch
                 # assumes all inputs are on the same node
@@ -932,8 +932,6 @@ def execute_byte_code(
                 res = request_service.apply(admin_context, request.id)
                 if not isinstance(res, SyftSuccess):
                     raise ValueError(res)
-                # api.services.request.apply(request.id)
-                # client.requests[-1].approve()
 
                 try:
                     # TODO: check permissions here
@@ -944,12 +942,12 @@ def execute_byte_code(
                         kwargs=kw2id,
                         blocking=False,
                     ).sign(node.signing_key)
-                    print(type(node))
 
-                    queue_item = node.add_api_call_to_queue(api_call)
+                    job = node.add_api_call_to_queue(
+                        api_call, parent_job_id=context.job_id
+                    )
 
                     # set api in global scope to enable using .get(), .wait())
-
                     user_signing_key = [
                         x.signing_key
                         for x in user_service.stash.partition.data.values()
@@ -957,6 +955,8 @@ def execute_byte_code(
                     ][0]
                     user_api = node.get_api(context.credentials)
                     user_api.signing_key = user_signing_key
+                    # We hardcode a python connection here since we have access to the node
+                    # TODO: this is not secure
                     user_api.connection = PythonConnection(node=node)
 
                     APIRegistry.set_api_for(
@@ -965,27 +965,28 @@ def execute_byte_code(
                         api=user_api,
                     )
 
-                    ptr = queue_item.wait()
-                    res_val = ptr.get()
-                    return res_val
-
-                    # queue_item.wait()
-                    # queue_item = node.await_future(context.credentials, queue_item.id)
-                    # ptr = queue_item.result.message.data
-                    # res_val = action_service._get(context, ptr.id, has_permission=True).ok().syft_action_data
-                    # import ipdb
-                    # ipdb.set_trace()
-
-                    # return res_val
+                    return job
                 except Exception as e:
-                    print(e)
+                    raise ValueError(f"error while launching job:\n{e}")
 
-                return res_val
+        # import ipdb
+        # ipdb.set_trace()
+        # original_print(f"EXECUTING BYTE CODE")
 
-                # if not result.status == Status.COMPLETED:
-                #     print("Error", result)
+        if context.job is not None:
 
-                # print("launching job")
+            def print(*args, sep=" ", end="\n"):
+                new_str = sep.join(args) + end
+                log_service = context.node.get_service("LogService")
+                log_service.append(
+                    context=context, uid=context.job.log_id, new_str=new_str
+                )
+                return __builtin__.print("FUNCTION LOG:", *args, end=end, sep=sep)
+
+        else:
+            print = original_print
+
+        #     return __builtin__.print(*args, **kwargs)
 
         if code_item.uses_domain:
             kwargs["domain"] = LocalDomainClient()
@@ -1005,18 +1006,14 @@ def execute_byte_code(
         user_code_service = context.node.get_service("usercodeservice")
         for user_code in user_code_service.stash.get_all(context.credentials).ok():
             globals()[user_code.service_func_name] = user_code
+        globals()["print"] = print
         # globals()["process_batch"] = 1
-
-        # TODO
-        # _globals = {"process_batch": lambda x: x}
-        # _locals["process_batch"] = lambda x: x
-        # global process_batch
-        # process_batch = lambda x: x
-
-        # result = exec(evil_string, _globals, _locals)  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         result = eval(evil_string, None, _locals)  # nosec
+
+        # reset print
+        print = original_print
         print("result", result)
 
         # restore stdout and stderr
@@ -1031,7 +1028,15 @@ def execute_byte_code(
         )
 
     except Exception as e:
+        # stdlib
+        import traceback
+
+        # import ipdb
+        # ipdb.set_trace()
+        print = original_print
         print("execute_byte_code failed", e, file=stderr_)
+        print(traceback.format_exc())
+        print("execute_byte_code failed", e)
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_

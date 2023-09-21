@@ -33,6 +33,7 @@ class AuthedServiceContext(NodeServiceContext):
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
+    job_id: Optional[UID]
     extra_kwargs: Dict = {}
 
     def capabilities(self) -> List[ServiceRoleCapability]:
@@ -45,6 +46,16 @@ class AuthedServiceContext(NodeServiceContext):
         return AuthedServiceContext(
             credentials=self.node.verify_key, role=ServiceRole.ADMIN, node=self.node
         )
+
+    @property
+    def job(self):
+        if self.job_id is None:
+            return None
+        res = self.node.job_stash.get_by_uid(self.credentials, self.job_id)
+        if res.is_err():
+            return None
+        else:
+            return res.ok()
 
 
 class UnauthedServiceContext(NodeServiceContext):

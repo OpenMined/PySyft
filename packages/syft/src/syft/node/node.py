@@ -23,9 +23,6 @@ from typing import Union
 import uuid
 
 # third party
-import gevent
-import gipc
-from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -58,6 +55,9 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
+from ..service.job.job_service import JobService
+from ..service.job.job_stash import Job
+from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
@@ -66,6 +66,7 @@ from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
+from ..service.queue.queue_service import QueueService
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
 from ..service.queue.zmq_queue import QueueConfig
@@ -235,6 +236,7 @@ class Node(AbstractNode):
         root_email: str = default_root_email,
         root_password: str = default_root_password,
         processes: int = 0,
+        n_consumers: int = 1,
         is_subprocess: bool = False,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
@@ -252,7 +254,8 @@ class Node(AbstractNode):
             if id is None:
                 id = UID()
             self.id = id
-        self.packages = get_venv_packages()
+        self.packages = ""
+        # self.packages = get_venv_packages()
 
         self.signing_key = None
         if signing_key_env is not None:
@@ -273,8 +276,11 @@ class Node(AbstractNode):
                 UserService,
                 SettingsService,
                 ActionService,
+                LogService,
                 DatasetService,
                 UserCodeService,
+                QueueService,
+                JobService,
                 RequestService,
                 DataSubjectService,
                 NetworkService,
@@ -329,10 +335,8 @@ class Node(AbstractNode):
 
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
-        if not (self.is_subprocess or self.processes == 0):
-            # print("processes", self.is_subprocess, self.processes)
-            print("initializing queue manager", flush=True)
-            self.init_queue_manager(queue_config=queue_config)
+
+        self.init_queue_manager(queue_config=queue_config, n_consumers=n_consumers)
 
         self.init_blob_storage(config=blob_storage_config)
 
@@ -349,9 +353,14 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
-    def init_queue_manager(self, queue_config: Optional[QueueConfig]):
+    def init_queue_manager(self, queue_config: Optional[QueueConfig], n_consumers):
+        # if not (self.is_subprocess or self.processes == 0):
+        # print("processes", self.is_subprocess, self.processes)
+        print(
+            f"initializing queue manager, {self.is_subprocess}, n_processes {self.processes}",
+            flush=True,
+        )
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
-        print(queue_config_.client_config.hostname)
         self.queue_config = queue_config_
 
         MessageHandlers = [APICallMessageHandler]
@@ -362,18 +371,18 @@ class Node(AbstractNode):
             producer = self.queue_manager.create_producer(
                 queue_name=queue_name,
             )
-            print(producer.address)
-            consumer = self.queue_manager.create_consumer(
-                message_handler, producer.address
-            )
-            print(consumer.address)
-            consumer.run()
-            # stdlib
-            from time import sleep
 
-            sleep(1)
-            print("alive", consumer.alive)
-            print(self.queue_manager.consumers, flush=True)
+            for _i in range(n_consumers):
+                consumer = self.queue_manager.create_consumer(
+                    message_handler, producer.address
+                )
+                consumer.run()
+
+            # consumer = self.queue_manager.create_consumer(
+            #     message_handler, producer.address
+            # )
+            # consumer.run()
+            # stdlib
 
     @classmethod
     def named(
@@ -381,6 +390,7 @@ class Node(AbstractNode):
         *,  # Trasterisk
         name: str,
         processes: int = 0,
+        n_consumers: int = 1,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
@@ -442,6 +452,7 @@ class Node(AbstractNode):
             id=uid,
             signing_key=key,
             processes=processes,
+            n_consumers=n_consumers,
             local_db=local_db,
             sqlite_path=sqlite_path,
             node_type=node_type,
@@ -577,6 +588,10 @@ class Node(AbstractNode):
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
 
+    @property
+    def job_stash(self):
+        return self.get_service("jobservice").stash
+
     def _construct_services(self):
         self.service_path_map = {}
 
@@ -589,7 +604,10 @@ class Node(AbstractNode):
                 SettingsService,
                 DatasetService,
                 UserCodeService,
+                LogService,
                 RequestService,
+                QueueService,
+                JobService,
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
@@ -784,21 +802,22 @@ class Node(AbstractNode):
         return role
 
     def handle_api_call(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+        self,
+        api_call: Union[SyftAPICall, SignedSyftAPICall],
+        job_id: Optional[UID] = None,
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
-        result = self.handle_api_call_with_unsigned_result(api_call)
+        result = self.handle_api_call_with_unsigned_result(api_call, job_id=job_id)
         # Sign the result
         signed_result = SyftAPIData(data=result).sign(self.signing_key)
 
         return signed_result
 
     def handle_api_call_with_unsigned_result(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+        self,
+        api_call: Union[SyftAPICall, SignedSyftAPICall],
+        job_id: Optional[UID] = None,
     ) -> Result[Union[QueueItem, SyftObject], Err]:
-        print(api_call.message.path, api_call.message.kwargs, flush=True)
-        # if api_call.message.path == "code.call":
-        #     return None
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
                 message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
@@ -826,7 +845,7 @@ class Node(AbstractNode):
 
             role = self.get_role_for_credentials(credentials=credentials)
             context = AuthedServiceContext(
-                node=self, credentials=credentials, role=role
+                node=self, credentials=credentials, role=role, job_id=job_id
             )
             AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 
@@ -853,24 +872,52 @@ class Node(AbstractNode):
             return self.add_api_call_to_queue(api_call)
         return result
 
-    def add_api_call_to_queue(self, api_call):
+    def add_api_call_to_queue(self, api_call, parent_job_id=None):
+        # import ipdb
+        # ipdb.set_trace()
+        print("ADDING API CALL TO QUEUE")
         task_uid = UID()
+        log_id = UID()
+
+        job = Job(
+            id=UID(),
+            node_uid=self.id,
+            syft_client_verify_key=api_call.credentials,
+            syft_node_location=self.id,
+            log_id=log_id,
+            parent_job_id=parent_job_id,
+        )
+
         item = QueueItem(
             id=task_uid,
             node_uid=self.id,
             syft_client_verify_key=api_call.credentials,
             syft_node_location=self.id,
+            job_id=job.id,
         )
+
         # 🟡 TODO 36: Needs distributed lock
         self.queue_stash.set_placeholder(self.verify_key, item)
+        self.job_stash.set(self.verify_key, job)
+
+        log_service = self.get_service("logservice")
+
+        credentials = api_call.credentials
+        role = self.get_role_for_credentials(credentials=credentials)
+        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
+        result = log_service.add(context, log_id)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
 
         # Publisher system which pushes to a Queue
         worker_settings = WorkerSettings.from_node(node=self)
 
         message_bytes = _serialize([task_uid, api_call, worker_settings], to_bytes=True)
+        print("TRYING TO SEND")
         self.queue_manager.send(message=message_bytes, queue_name="api_call")
+        print("SENT")
 
-        return item
+        return job
 
     def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
         return SyftAPI.for_user(node=self, user_verify_key=for_user)
@@ -918,86 +965,86 @@ class Node(AbstractNode):
             print("create_worker_metadata failed", e)
 
 
-def task_producer(
-    pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
-) -> Any:
-    try:
-        result = None
-        with pipe:
-            pipe.put(api_call)
-            gevent.sleep(0)
-            if blocking:
-                try:
-                    result = pipe.get()
-                except EOFError:
-                    pass
-            pipe.close()
-        if blocking:
-            return result
-    except gipc.gipc.GIPCClosed:
-        pass
-    except Exception as e:
-        print("Exception in task_producer", e)
+# def task_producer(
+#     pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
+# ) -> Any:
+#     try:
+#         result = None
+#         with pipe:
+#             pipe.put(api_call)
+#             gevent.sleep(0)
+#             if blocking:
+#                 try:
+#                     result = pipe.get()
+#                 except EOFError:
+#                     pass
+#             pipe.close()
+#         if blocking:
+#             return result
+#     except gipc.gipc.GIPCClosed:
+#         pass
+#     except Exception as e:
+#         print("Exception in task_producer", e)
 
 
-def task_runner(
-    pipe: _GIPCDuplexHandle,
-    worker_settings: WorkerSettings,
-    task_uid: UID,
-    blocking: bool,
-) -> None:
-    worker = Node(
-        id=worker_settings.id,
-        name=worker_settings.name,
-        signing_key=worker_settings.signing_key,
-        document_store_config=worker_settings.document_store_config,
-        action_store_config=worker_settings.action_store_config,
-        blob_storage_config=worker_settings.blob_store_config,
-        is_subprocess=True,
-    )
-    try:
-        with pipe:
-            api_call = pipe.get()
+# def task_runner(
+#     pipe: _GIPCDuplexHandle,
+#     worker_settings: WorkerSettings,
+#     task_uid: UID,
+#     blocking: bool,
+# ) -> None:
+#     worker = Node(
+#         id=worker_settings.id,
+#         name=worker_settings.name,
+#         signing_key=worker_settings.signing_key,
+#         document_store_config=worker_settings.document_store_config,
+#         action_store_config=worker_settings.action_store_config,
+#         blob_storage_config=worker_settings.blob_store_config,
+#         is_subprocess=True,
+#     )
+#     try:
+#         with pipe:
+#             api_call = pipe.get()
 
-            result = worker.handle_api_call(api_call)
-            if blocking:
-                pipe.put(result)
-            else:
-                item = QueueItem(
-                    node_uid=worker.id, id=task_uid, result=result, resolved=True
-                )
-                worker.queue_stash.set_result(worker.verify_key, item)
-                worker.queue_stash.partition.close()
-            pipe.close()
-    except Exception as e:
-        print("Exception in task_runner", e)
-        raise e
+#             result = worker.handle_api_call(api_call)
+#             if blocking:
+#                 pipe.put(result)
+#             else:
+#                 item = QueueItem(
+#                     node_uid=worker.id, id=task_uid, result=result, resolved=True
+#                 )
+#                 worker.queue_stash.set_result(worker.verify_key, item)
+#                 worker.queue_stash.partition.close()
+#             pipe.close()
+#     except Exception as e:
+#         print("Exception in task_runner", e)
+#         raise e
 
 
-def queue_task(
-    api_call: SyftAPICall,
-    worker_settings: WorkerSettings,
-    task_uid: UID,
-    blocking: bool,
-) -> Optional[Any]:
-    with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
-        cend,
-        pend,
-    ):
-        process = gipc.start_process(
-            task_runner, args=(cend, worker_settings, task_uid, blocking)
-        )
-        producer = gevent.spawn(task_producer, pend, api_call, blocking)
-        try:
-            process.join()
-        except KeyboardInterrupt:
-            producer.kill(block=True)
-            process.terminate()
-        process.join()
+# def queue_task(
+#     api_call: SyftAPICall,
+#     worker_settings: WorkerSettings,
+#     task_uid: UID,
+#     blocking: bool,
+# ) -> Optional[Any]:
+#     with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
+#         cend,
+#         pend,
+#     ):
+#         process = gipc.start_process(
+#             task_runner, args=(cend, worker_settings, task_uid, blocking)
+#         )
+#         producer = gevent.spawn(task_producer, pend, api_call, blocking)
+#         try:
+#             process.join()
+#         except KeyboardInterrupt:
+#             producer.kill(block=True)
+#             process.terminate()
+#         process.join()
 
-    if blocking:
-        return producer.value
-    return None
+#     if blocking:
+#         return producer.value
+#     return None
 
 
 def create_admin_new(

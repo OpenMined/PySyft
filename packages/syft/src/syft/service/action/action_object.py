@@ -33,7 +33,6 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
-from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftBaseObject
@@ -511,6 +510,9 @@ class ActionObject(SyftObject):
                 self.syft_action_data_type = type(self.syft_action_data)
 
     def _save_to_blob_storage_(self, data: Any) -> None:
+        # relative
+        from ...types.blob_storage import CreateBlobStorageEntry
+
         if not isinstance(data, ActionDataEmpty):
             if isinstance(data, ActionFileData):
                 storage_entry = CreateBlobStorageEntry.from_path(data.path)

@@ -333,6 +333,10 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
+    def to_blob_route(self, path: str) -> GridURL:
+        # TODO: FIX!
+        return GridURL(port=8333).with_path(path)
+
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:

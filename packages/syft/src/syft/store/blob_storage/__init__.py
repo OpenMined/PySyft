@@ -45,7 +45,6 @@ Read/retrieve SyftObject from blob storage
 from typing import Optional
 from typing import Type
 from typing import Union
-from urllib.request import urlretrieve
 
 # third party
 from pydantic import BaseModel
@@ -77,6 +76,7 @@ class BlobRetrieval(SyftObject):
 
     type_: Optional[Type]
     file_name: str
+    syft_blob_storage_entry_id: Optional[UID] = None
 
     def read(self) -> Union[SyftObject, SyftError]:
         pass
@@ -105,6 +105,18 @@ class BlobRetrievalByURL(BlobRetrieval):
     url: GridURL
 
     def read(self) -> Union[SyftObject, SyftError]:
+        if self.type_ is BlobFileType:
+            # urlretrieve(str(blob_url), filename=self.file_name)  # nosec
+            return BlobFile(
+                file_name=self.file_name,
+                syft_client_verify_key=self.syft_client_verify_key,
+                syft_node_location=self.syft_node_location,
+                syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
+            )
+        else:
+            return self._read_data()
+
+    def _read_data(self, stream=False):
         # relative
         from ...client.api import APIRegistry
 
@@ -117,11 +129,15 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             blob_url = self.url
         try:
-            if self.type_ is BlobFileType:
-                urlretrieve(str(blob_url), filename=self.file_name)  # nosec
-                return BlobFile(file_name=self.file_name)
-            response = requests.get(str(blob_url), timeout=DEFAULT_TIMEOUT)
+            response = requests.get(
+                str(blob_url), stream=stream, timeout=DEFAULT_TIMEOUT
+            )
             response.raise_for_status()
+            if self.type_ is BlobFileType:
+                if stream:
+                    return response.iter_lines()
+                else:
+                    return response.content
             return deserialize(response.content, from_bytes=True)
         except requests.RequestException as e:
             return SyftError(message=f"Failed to retrieve with Error: {e}")

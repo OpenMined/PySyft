@@ -229,6 +229,7 @@ def deploy_to_python(
     port: Union[int, str],
     name: str,
     host: str,
+    n_consumers: int,
     reset: bool,
     tail: bool,
     dev_mode: bool,
@@ -294,6 +295,7 @@ def deploy_to_python(
                 worker = worker_class.named(
                     name=name,
                     processes=processes,
+                    n_consumers=n_consumers,
                     reset=reset,
                     local_db=local_db,
                     node_type=node_type_enum,
@@ -460,6 +462,7 @@ class Orchestra:
         # worker related inputs
         port: Optional[Union[int, str]] = None,
         processes: int = 1,  # temporary work around for jax in subprocess
+        n_consumers: int = 1,
         local_db: bool = False,
         dev_mode: bool = False,
         cmd: bool = False,
@@ -505,6 +508,7 @@ class Orchestra:
                 port=port,
                 name=name,
                 host=host,
+                n_consumers=n_consumers,
                 reset=reset,
                 tail=tail,
                 dev_mode=dev_mode,

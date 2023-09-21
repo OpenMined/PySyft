@@ -251,6 +251,13 @@ class ActionService(AbstractService):
                 )
         except Exception as e:
             return Err(f"_user_code_execute failed. {e}")
+        return result_action_object
+
+    def set_result_to_store(self, result_action_object, context, output_policy):
+        result_id = result_action_object.id
+        result_blob_id = result_action_object.syft_blob_storage_entry_id
+        output_readers = output_policy.output_readers
+        read_permission = ActionPermission.READ
 
         result_action_object._set_obj_location_(
             context.node.id,
@@ -266,29 +273,24 @@ class ActionService(AbstractService):
         set_result = self.set(context, result_action_object)
 
         if set_result.is_err():
-            return set_result.err()
+            return set_result
 
         blob_storage_service: BlobStorageService = context.node.get_service(
             BlobStorageService
         )
 
-        if len(code_item.output_policy.output_readers) > 0:
-            self.store.add_permissions(
-                [
-                    ActionObjectPermission(result_id, ActionPermission.READ, x)
-                    for x in code_item.output_policy.output_readers
-                ]
-            )
-            blob_storage_service.stash.add_permissions(
-                [
-                    ActionObjectPermission(
-                        result_action_object.syft_blob_storage_entry_id,
-                        ActionPermission.READ,
-                        x,
-                    )
-                    for x in code_item.output_policy.output_readers
-                ]
-            )
+        def store_permission(x):
+            return ActionObjectPermission(result_id, read_permission, x)
+
+        def blob_permission(x):
+            return ActionObjectPermission(result_blob_id, read_permission, x)
+
+        if len(output_readers) > 0:
+            store_permissions = [store_permission(x) for x in output_readers]
+            self.store.add_permissions(store_permissions)
+
+            blob_permissions = [blob_permission(x) for x in output_readers]
+            blob_storage_service.stash.add_permissions(blob_permissions)
 
         return set_result
 
