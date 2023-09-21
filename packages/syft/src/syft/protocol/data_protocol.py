@@ -1,11 +1,10 @@
 # stdlib
-import base64
 import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any
 from typing import Dict
+from typing import Hashable
 from typing import Type
 
 # relative
@@ -32,22 +31,8 @@ def data_protocol_dir():
     return os.path.abspath(str(Path(__file__).parent))
 
 
-def make_hash_sha256(obj_to_hash: Any) -> str:
-    def make_hashable(obj):
-        if isinstance(obj, (tuple, list)):
-            return tuple(make_hashable(e) for e in obj)
-
-        if isinstance(obj, dict):
-            return tuple(sorted((k, make_hashable(v)) for k, v in obj.items()))
-
-        if isinstance(obj, (set, frozenset)):
-            return tuple(sorted(make_hashable(e) for e in obj))
-
-        return obj
-
-    hasher = hashlib.sha256()
-    hasher.update(repr(make_hashable(obj_to_hash)).encode())
-    return base64.b64encode(hasher.digest()).decode()
+def make_hash_sha256(hashable: Hashable) -> str:
+    return hashlib.sha256(bytes(hash(hashable))).hexdigest()
 
 
 class DataProtocol:
@@ -57,14 +42,18 @@ class DataProtocol:
 
     @staticmethod
     def _calculate_object_hash(klass: Type[SyftBaseObject]) -> str:
+        field_data = {
+            field_name: hash(model_field.annotation)
+            for field_name, model_field in klass.__fields__.items()
+        }
         obj_meta_info = {
             "canonical_name": klass.__canonical_name__,
             "version": klass.__version__,
             "unique_keys": getattr(klass, "__attr_unique__", []),
-            "field_data": klass.__fields__,
+            "field_data": field_data,
         }
 
-        return make_hash_sha256(obj_meta_info)
+        return hashlib.sha256(json.dumps(obj_meta_info).encode()).hexdigest()
 
     def calc_latest_object_versions(self):
         object_latest_version_map = {}
@@ -154,7 +143,9 @@ class DataProtocol:
 
     def upgrade(self):
         object_to_version_map = self.calc_latest_object_versions()
-        new_protocol_hash = make_hash_sha256(object_to_version_map)
+        new_protocol_hash = hashlib.sha256(
+            json.dumps(object_to_version_map).encode()
+        ).hexdigest()
 
         if not self.state_defined:
             new_protocol_version = 1
@@ -165,7 +156,7 @@ class DataProtocol:
                 reverse=True,
             )[0]
 
-            new_protocol_version = current_protocol_version + 1
+            new_protocol_version = int(current_protocol_version) + 1
 
             current_protocol_state = self.state[current_protocol_version]
             if current_protocol_state["hash"] == new_protocol_hash:
