@@ -157,7 +157,7 @@ jobs:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
           message: "Update K8s Manifests from Syft Repo"
-          add: "*"
+          add: "."
           push: "origin main"
           cwd: "./infrastructure/"
 
