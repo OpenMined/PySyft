@@ -72,16 +72,15 @@ class Notification(SyftObject):
     def _repr_html_(self) -> str:
         return f"""
             <style>
-            .syft-request {{color: {SURFACE[options.color_theme]};}}
+            .syft-request {{color: {SURFACE[options.color_theme]}; line-height: 1;}}
             </style>
             <div class='syft-request'>
                 <h3>Notification</h3>
                 <p><strong>ID: </strong>{self.id}</p>
                 <p><strong>Subject: </strong>{self.subject}</p>
-                <p><strong>Status: </strong>{self.status}</p>
+                <p><strong>Status: </strong>{self.status.name}</p>
                 <p><strong>Created at: </strong>{self.created_at}</p>
                 <p><strong>Linked object: </strong>{self.linked_obj}</p>
-                <p><string>Replies: </strong>{self.replies}</p>
                 <p>
             </div>
         """
