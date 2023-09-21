@@ -48,7 +48,7 @@ DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
 At the time of writing this, if you are on linux you need to run the following:
 
-DOCKER_COMPOSE_VERSION=v2.16.0
+DOCKER_COMPOSE_VERSION=v2.21.0
 curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 \
      -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
@@ -770,7 +770,7 @@ PACKAGE_MANAGER_COMMANDS = {
         "windows": "choco install docker-desktop -y",
         "linux": (
             "mkdir -p ~/.docker/cli-plugins\n"
-            + "DOCKER_COMPOSE_VERSION=v2.16.0\n"
+            + "DOCKER_COMPOSE_VERSION=v2.21.0\n"
             + "curl -sSL https://github.com/docker/compose/releases/download/"
             + "${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 "
             + "-o ~/.docker/cli-plugins/docker-compose\n"
