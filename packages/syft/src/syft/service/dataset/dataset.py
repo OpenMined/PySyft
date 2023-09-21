@@ -21,7 +21,6 @@ from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
-from syft.service.user.roles import Roles
 
 # relative
 from ...serde.serializable import serializable
@@ -155,7 +154,11 @@ class Asset(SyftObject):
         # relative
         from ...service.action.action_object import ActionObject
 
-        uploaded_by_line = f"<p><strong>Uploaded by: </strong>{self.uploader.name} ({self.uploader.email})</p>" if self.uploader else ""
+        uploaded_by_line = "n/a"
+        if len(self.contributors) > 0:
+            uploaded_by_line = (
+                f"<p><strong>Uploaded by: </strong>{self.uploader.name}</p>"
+            )
         if isinstance(self.data, ActionObject):
             data_table_line = itables.to_html_datatable(
                 df=self.data.syft_action_data, css=itables_css
@@ -333,8 +336,6 @@ class CreateAsset(SyftObject):
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
             self.contributors.append(contributor)
-            if _role_str == Roles.UPLOADER.value:
-                self.uploader = contributor
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Asset."
             )
@@ -450,11 +451,12 @@ class Dataset(SyftObject):
         }
 
     def _repr_html_(self) -> Any:
-        uploaded_by_line = (
+        uploaded_by_line = "n/a"
+        if len(self.contributors) > 0:
+            uploaded_by_line = (
                 "<p class='paragraph-sm'><strong>"
-                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name} ({self.uploader.email})</p>"
-            ) if self.uploader else ""
-
+                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name}</p>"
+            )
         return f"""
             <style>
             {fonts_css}
@@ -618,8 +620,6 @@ class CreateDataset(Dataset):
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
             self.contributors.append(contributor)
-            if _role_str == Roles.UPLOADER.value:
-                self.uploader = contributor
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Dataset."
             )
