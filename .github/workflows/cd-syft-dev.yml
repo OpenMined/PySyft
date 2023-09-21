@@ -23,7 +23,7 @@ jobs:
         with:
           repository: ${{ secrets.INFRA_REPO }}
           ref: "main"
-          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+          token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
           path: infrastructure
 
       - name: Set up Python
