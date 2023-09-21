@@ -15,6 +15,10 @@ jobs:
   deploy-syft-dev:
     runs-on: om-ci-16vcpu-ubuntu2204
     steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
+
       - uses: actions/checkout@v4
 
       # Checkout Infra repo (nested)
@@ -23,7 +27,7 @@ jobs:
         with:
           repository: ${{ secrets.INFRA_REPO }}
           ref: "main"
-          token: ${{ secrets.OM_BOT_TOKEN }}
+          token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
           path: infrastructure
 
       - name: Set up Python
