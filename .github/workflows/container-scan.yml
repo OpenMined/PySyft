@@ -19,6 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
       # Build the docker image for testing
       - name: Build a Docker image
         run: DOCKER_BUILDKIT=1 docker build -f packages/grid/backend/backend.dockerfile packages -t backend:${{ github.sha }} --no-cache
@@ -55,6 +62,13 @@ jobs:
         env:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       # Build the docker image for testing
       - name: Build a Docker image
@@ -524,7 +538,7 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "seaweedfs:3.55"
+          image-ref: "chrislusf/seaweedfs:3.55"
           format: "cyclonedx"
           output: "seaweedfs-trivy-results.sbom.json"
           timeout: "10m0s"
@@ -541,7 +555,7 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "seaweedfs:3.55"
+          image-ref: "chrislusf/seaweedfs:3.55"
           format: "sarif"
           output: "trivy-results.sarif"
           timeout: "10m0s"
