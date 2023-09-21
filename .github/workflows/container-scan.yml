@@ -21,7 +21,6 @@ jobs:
 
       # free 10GB of space
       - name: Remove unnecessary files
-        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
@@ -65,7 +64,6 @@ jobs:
 
       # free 10GB of space
       - name: Remove unnecessary files
-        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
