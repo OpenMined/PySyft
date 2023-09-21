@@ -183,6 +183,17 @@ class SyftMigrationRegistry:
     __migration_transform_registry__: Dict[str, Dict[str, Callable]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
+        """
+        Populate the `__migration_version_registry__` dictionary with format
+        __migration_version_registry__ = {
+            "canonical_name": {version_number: "klass_name"}
+        }
+        For example
+        __migration_version_registry__ = {
+            'APIEndpoint': {1: 'syft.client.api.APIEndpoint'},
+            'Action':      {1: 'syft.service.action.action_object.Action'},
+        }
+        """
         super().__init_subclass__(**kwargs)
         klass = type(cls) if not isinstance(cls, type) else cls
 
@@ -204,8 +215,8 @@ class SyftMigrationRegistry:
                 }
 
     @classmethod
-    def get_versions(cls, canonical_name: str) -> List:
-        available_versions = cls.__migration_version_registry__.get(
+    def get_versions(cls, canonical_name: str) -> List[int]:
+        available_versions: Dict = cls.__migration_version_registry__.get(
             canonical_name,
             {},
         )
@@ -215,6 +226,15 @@ class SyftMigrationRegistry:
     def register_transform(
         cls, klass_type_str: str, version_from: int, version_to: int, method: Callable
     ) -> None:
+        """
+        Populate the __migration_transform_registry__ dictionary with format
+        __migration_version_registry__ = {
+            "canonical_name": {"version_from x version_to": <function trasform_function>}
+        }
+        For example
+        {'NodeMetadata': {'1x2': <function trasform_function>,
+                          '2x1': <function trasform_function>}}
+        """
         if klass_type_str not in cls.__migration_version_registry__:
             raise Exception(f"{klass_type_str} is not yet registered.")
 
