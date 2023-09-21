@@ -248,7 +248,6 @@ class UserCodeService(AbstractService):
             if code_result.is_err():
                 return SyftError(message=code_result.err())
             code: UserCode = code_result.ok()
-            print("CALLING", code.service_func_name)
 
             output_policy = code.output_policy
             if (

@@ -190,7 +190,8 @@ class PatchedFileLock(FileLock):
 
         try:
             result = cbk()
-        except BaseException:
+        except BaseException as e:
+            print(e)
             result = False
 
         self._lock_py_thread._release()
@@ -217,17 +218,21 @@ class PatchedFileLock(FileLock):
                         break
                     except BaseException:
                         time.sleep(0.1)
+                    if _retry == 9:
+                        print("COULD NOT READ LOCK FILE", self._data_file)
 
                 now = self._now()
                 has_expired = self._has_expired(data, now)
                 if owner != data["owner"]:
                     if not has_expired:
+                        print("COULD NOT GET FILE LOCK FOR ", self._data_file)
                         # Someone else holds the lock.
                         return False
                     else:
                         # Lock is available for us to take.
                         data = {"owner": owner, "expiry_time": self._expiry_time()}
                 else:
+                    print("COULD NOT GET FILE LOCK FOR ", self._data_file)
                     # Same owner so do not set or modify Lease.
                     return False
             else:
@@ -376,11 +381,15 @@ class SyftLock(BaseLock):
         timeout = self.timeout
         start_time = time.time()
         elapsed = 0
+        # if self.lock_name == "QueueItem":
+        #     print("trying to acquire lock on queueitem")
         while timeout >= elapsed:
             if not self._acquire():
                 time.sleep(self.retry_interval)
                 elapsed = time.time() - start_time
             else:
+                # if self.lock_name == "QueueItem":
+                #     print("success")
                 return True
         debug(
             "Timeout elapsed after %s seconds "

@@ -356,10 +356,10 @@ class Node(AbstractNode):
     def init_queue_manager(self, queue_config: Optional[QueueConfig], n_consumers):
         # if not (self.is_subprocess or self.processes == 0):
         # print("processes", self.is_subprocess, self.processes)
-        print(
-            f"initializing queue manager, {self.is_subprocess}, n_processes {self.processes}",
-            flush=True,
-        )
+        # print(
+        #     f"initializing queue manager, {self.is_subprocess}, n_processes {self.processes}",
+        #     flush=True,
+        # )
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
         self.queue_config = queue_config_
 
@@ -368,14 +368,15 @@ class Node(AbstractNode):
         self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
-            producer = self.queue_manager.create_producer(
-                queue_name=queue_name,
-            )
-
-            for _i in range(n_consumers):
-                consumer = self.queue_manager.create_consumer(
-                    message_handler, producer.address
+            if queue_config_.client_config.create_message_queue:
+                message_queue = self.queue_manager.create_message_queue(
+                    queue_name=queue_name
                 )
+                message_queue.run()
+            self.queue_manager.create_producer(queue_name=queue_name)
+
+            for _ in range(n_consumers):
+                consumer = self.queue_manager.create_consumer(message_handler)
                 consumer.run()
 
             # consumer = self.queue_manager.create_consumer(
@@ -875,7 +876,6 @@ class Node(AbstractNode):
     def add_api_call_to_queue(self, api_call, parent_job_id=None):
         # import ipdb
         # ipdb.set_trace()
-        print("ADDING API CALL TO QUEUE")
         task_uid = UID()
         log_id = UID()
 
@@ -897,7 +897,12 @@ class Node(AbstractNode):
         )
 
         # 🟡 TODO 36: Needs distributed lock
+
+        # import ipdb
+        # ipdb.set_trace()
+        print("setting to queue stash")
         self.queue_stash.set_placeholder(self.verify_key, item)
+        print("set")
         self.job_stash.set(self.verify_key, job)
 
         log_service = self.get_service("logservice")
@@ -913,10 +918,12 @@ class Node(AbstractNode):
         worker_settings = WorkerSettings.from_node(node=self)
 
         message_bytes = _serialize([task_uid, api_call, worker_settings], to_bytes=True)
-        print("TRYING TO SEND")
+        print("Trying to send ")
+        # from threading import Thread
         self.queue_manager.send(message=message_bytes, queue_name="api_call")
-        print("SENT")
-
+        # def _send():
+        # Thread(target=_send).start()
+        print("sent")
         return job
 
     def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:

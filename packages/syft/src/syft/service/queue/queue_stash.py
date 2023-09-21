@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Any
 from typing import List
 from typing import Optional
-from typing import Union
 
 # third party
 from result import Ok
@@ -23,7 +22,6 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
-from ..response import SyftNotReady
 from ..response import SyftSuccess
 
 
@@ -92,28 +90,28 @@ class QueueItem(SyftObject):
     def _repr_markdown_(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
 
-    def wait(self):
-        # stdlib
-        from time import sleep
+    # def wait(self):
+    #     # stdlib
+    #     from time import sleep
 
-        # todo: timeout
-        if self.resolved:
-            return self.resolve
-        while True:
-            self.fetch()
-            sleep(0.1)
-            if self.resolved:
-                break
-        return self.resolve
+    #     # todo: timeout
+    #     if self.resolved:
+    #         return self.resolve
+    #     while True:
+    #         self.fetch()
+    #         sleep(0.1)
+    #         if self.resolved:
+    #             break
+    #     return self.resolve
 
-    @property
-    def resolve(self) -> Union[Any, SyftNotReady]:
-        if not self.resolved:
-            self.fetch()
+    # @property
+    # def resolve(self) -> Union[Any, SyftNotReady]:
+    #     if not self.resolved:
+    #         self.fetch()
 
-        if self.resolved:
-            return self.result.message.data
-        return SyftNotReady(message=f"{self.id} not ready yet.")
+    #     if self.resolved:
+    #         return self.result.message.data
+    #     return SyftNotReady(message=f"{self.id} not ready yet.")
 
 
 @instrument

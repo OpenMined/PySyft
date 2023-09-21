@@ -40,6 +40,9 @@ class QueueManager(BaseQueueManager):
         )
         return consumer
 
+    def create_message_queue(self, queue_name: str):
+        return self._client.add_message_queue(queue_name)
+
     def create_producer(self, queue_name: str):
         return self._client.add_producer(queue_name=queue_name)
 
@@ -71,9 +74,10 @@ class APICallMessageHandler(AbstractMessageHandler):
         # relative
         from ...node.node import Node
 
-        print("HANDLING MESSAGE:", str(bytes)[:10])
-
         queue_item_id, api_call, worker_settings = deserialize(message, from_bytes=True)
+
+        queue_config = worker_settings.queue_config
+        queue_config.client_config.create_message_queue = False
 
         worker = Node(
             id=worker_settings.id,
@@ -82,7 +86,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             document_store_config=worker_settings.document_store_config,
             action_store_config=worker_settings.action_store_config,
             blob_storage_config=worker_settings.blob_store_config,
-            queue_config=worker_settings.queue_config,
+            queue_config=queue_config,
             n_consumers=0,
             is_subprocess=True,
         )
@@ -103,7 +107,6 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.queue_stash.set_result(api_call.credentials, queue_item)
         worker.job_stash.set_result(api_call.credentials, job_item)
 
-        print(f"Proccesing api call on {worker.name}")
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
