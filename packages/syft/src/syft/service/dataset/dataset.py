@@ -154,7 +154,11 @@ class Asset(SyftObject):
         # relative
         from ...service.action.action_object import ActionObject
 
-        uploaded_by_line = f"<p><strong>Uploaded by: </strong>{self.uploader.name} ({self.uploader.email})</p>" if self.uploader else ""
+        uploaded_by_line = (
+            f"<p><strong>Uploaded by: </strong>{self.uploader.name} ({self.uploader.email})</p>"
+            if self.uploader
+            else ""
+        )
 
         if isinstance(self.data, ActionObject):
             data_table_line = itables.to_html_datatable(
@@ -449,9 +453,13 @@ class Dataset(SyftObject):
 
     def _repr_html_(self) -> Any:
         uploaded_by_line = (
+            (
                 "<p class='paragraph-sm'><strong>"
                 + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name} ({self.uploader.email})</p>"
-            ) if self.uploader else ""
+            )
+            if self.uploader
+            else ""
+        )
 
         return f"""
             <style>
