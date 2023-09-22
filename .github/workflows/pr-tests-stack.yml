@@ -27,7 +27,8 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [om-ci-16vcpu-ubuntu2204]
+        # os: [om-ci-16vcpu-ubuntu2204]
+        os: [ubuntu-latest]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -35,16 +36,17 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: Permission to home directory
-        run: |
-          sudo chown -R $USER:$USER $HOME
-      - name: "clean .git/config"
-        if: matrix.os == 'windows'
-        continue-on-error: true
-        shell: bash
-        run: |
-          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
-          rm ${GITHUB_WORKSPACE}/.git/config
+      # - name: Permission to home directory
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
+
+      # - name: "clean .git/config"
+      #   if: matrix.os == 'windows'
+      #   continue-on-error: true
+      #   shell: bash
+      #   run: |
+      #     echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+      #     rm ${GITHUB_WORKSPACE}/.git/config
 
       - uses: actions/checkout@v3
 
@@ -137,7 +139,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.3.0
+        uses: crazy-max/ghaction-setup-docker@v2.0.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -348,7 +350,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.3.0
+        uses: crazy-max/ghaction-setup-docker@v2.0.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
