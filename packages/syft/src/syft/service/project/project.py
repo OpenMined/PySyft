@@ -52,6 +52,7 @@ from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
 from ..request.request import Request
+from ..request.request import RequestStatus
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
@@ -666,6 +667,7 @@ class Project(SyftObject):
     description: Optional[str]
     members: List[NodeIdentity]
     users: List[UserIdentity] = []
+    username: Optional[str]
     created_by: str
     start_hash: Optional[str]
     # WARNING:  Do not add it to hash keys or print directly
@@ -687,9 +689,10 @@ class Project(SyftObject):
 
     def _coll_repr_(self):
         return {
-            "Name": self.name,
+            "name": self.name,
             "description": self.description,
             "created by": self.created_by,
+            "pending requests": self.pending_requests,
         }
 
     def _repr_html_(self) -> Any:
@@ -702,7 +705,7 @@ class Project(SyftObject):
             + "<div class='syft-project'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
             + self.requests._repr_html_()
             + "<p>To see a list of projects, use command `&lt;your_client&gt;.projects`</p>"
             + "</div>"
@@ -1121,6 +1124,12 @@ class Project(SyftObject):
             event.request for event in self.events if isinstance(event, ProjectRequest)
         ]
 
+    @property
+    def pending_requests(self) -> int:
+        return sum(
+            [request.status == RequestStatus.PENDING for request in self.requests]
+        )
+
 
 @serializable(without=["bootstrap_events", "clients"])
 class ProjectSubmit(SyftObject):
@@ -1150,6 +1159,7 @@ class ProjectSubmit(SyftObject):
     # These will be automatically populated
     users: List[UserIdentity] = []
     created_by: Optional[str] = None
+    username: Optional[str]
     clients: List[SyftClient] = []  # List of member clients
     start_hash: str = ""
 
@@ -1179,6 +1189,9 @@ class ProjectSubmit(SyftObject):
         # Extract information of logged in user from syft clients
         self.users = [UserIdentity.from_client(client) for client in self.clients]
 
+        # Assign logged in user name as project creator
+        self.username = self.clients[0].me.name or ""
+
         # Convert SyftClients to NodeIdentities
         self.members = list(map(self.to_node_identity, self.members))
 
@@ -1192,7 +1205,7 @@ class ProjectSubmit(SyftObject):
             + "<div class='syft-project-create'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
             + "</div>"
         )
 
@@ -1201,7 +1214,7 @@ class ProjectSubmit(SyftObject):
         # SyftClients must be logged in by the same emails
         clients = cls.get_syft_clients(val)
         if len(clients) > 0:
-            emails = set([client.logged_in_user for client in clients])
+            emails = {client.logged_in_user for client in clients}
             if len(emails) > 1:
                 raise SyftException(
                     f"All clients must be logged in from the same account. Found multiple: {emails}"
@@ -1287,7 +1300,7 @@ class ProjectSubmit(SyftObject):
         self.leader_node_route = connection_to_route(leader.connection)
 
     def _create_projects(self, clients: List[SyftClient]):
-        projects: Dict[SyftClient, Project] = dict()
+        projects: Dict[SyftClient, Project] = {}
 
         for client in clients:
             result = client.api.services.project.create_project(project=self)
@@ -1341,9 +1354,14 @@ def check_permissions(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_creator_name(context: TransformContext) -> TransformContext:
+    context.output["username"] = context.obj.username
+    return context
+
+
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
-    return [elect_leader, check_permissions]
+    return [elect_leader, check_permissions, add_creator_name]
 
 
 def hash_object(obj: Any) -> Tuple[bytes, str]:

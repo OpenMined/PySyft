@@ -11,13 +11,13 @@ from syft.service.action.numpy import NumpyArrayObject
 @pytest.fixture
 def data1() -> ActionObject:
     """Returns an Action Object with a NumPy dataset with values between -1 and 1"""
-    return NumpyArrayObject(syft_action_data=2 * np.random.rand(10, 10) - 1)
+    return NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
 
 
 @pytest.fixture
 def data2() -> ActionObject:
     """Returns an Action Object with a NumPy dataset with values between -1 and 1"""
-    return NumpyArrayObject(syft_action_data=2 * np.random.rand(10, 10) - 1)
+    return NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def empty1(data1) -> ActionObject:
 @pytest.fixture
 def empty2(data1) -> ActionObject:
     """Returns an Empty Action Object corresponding to data2"""
-    return NumpyArrayObject(syft_action_data=ActionDataEmpty(), id=data2.id)
+    return NumpyArrayObject.from_obj(ActionDataEmpty(), id=data2.id)
 
 
 def test_add_private(data1: ActionObject, data2: ActionObject) -> None:
@@ -73,9 +73,7 @@ def test_kwargs(data1: ActionObject) -> None:
 def test_trace_single_op(data1: ActionObject) -> None:
     """Test that we can recreate the correct history hash using TraceMode"""
     result1 = data1.std()
-    trace_result = NumpyArrayObject(
-        syft_action_data=ActionDataEmpty(), id=data1.id
-    ).std()
+    trace_result = NumpyArrayObject.from_obj(ActionDataEmpty(), id=data1.id).std()
 
     assert result1.syft_history_hash == trace_result.syft_history_hash
 

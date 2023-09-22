@@ -103,6 +103,6 @@ class InterceptHandler(logging.Handler):
         )
 
 
-@lru_cache()
+@lru_cache
 def get_log_handler() -> LogHandler:
     return LogHandler()

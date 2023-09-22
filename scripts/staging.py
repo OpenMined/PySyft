@@ -172,7 +172,7 @@ def check_staging() -> None:
 
 
 def load_staging_data(path: str) -> Dict[str, Dict]:
-    with open(path, "r") as f:
+    with open(path) as f:
         return json.loads(f.read())
 
 

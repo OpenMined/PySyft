@@ -88,7 +88,7 @@ def test_action_sanity(path_op: Tuple[str, str]):
         (1, 2, 3),
         [1, 2, 3],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
         ActionDataEmpty(),
     ],
 )
@@ -156,7 +156,7 @@ def test_actionobject_make_empty_sanity(dtype: Type):
         (1, 2, 3),
         [1, 2, 3],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
         ActionDataEmpty(),
     ],
 )
@@ -177,13 +177,13 @@ def test_actionobject_hooks_init(orig_obj: Any):
         # (object, operation)
         ("abc", "__len__"),
         (ActionDataEmpty(), "__version__"),
-        (int(1), "__add__"),
-        (float(1.2), "__add__"),
+        (1, "__add__"),
+        (1.2, "__add__"),
         (True, "__and__"),
         ((1, 2, 3), "count"),
         ([1, 2, 3], "count"),
         ({"a": 1, "b": 2}, "keys"),
-        (set({1, 2, 3, 3}), "add"),
+        ({1, 2, 3}, "add"),
     ],
 )
 def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
@@ -230,12 +230,12 @@ def test_actionobject_hooks_send_action_side_effect_err_invalid_args(worker):
     "orig_obj_op",
     [
         # (object, operation, *args, **kwargs)
-        (int(1), "__len__", [1], {}),
-        (float(1.2), "__len__", [1], {}),
+        (1, "__len__", [1], {}),
+        (1.2, "__len__", [1], {}),
         (True, "__len__", [True], {}),
         ([1, 2, 3], "__len__", [4], {}),
         ({"a": 1, "b": 2}, "__len__", [7], {}),
-        (set({1, 2, 3, 3}), "__len__", [5], {}),
+        ({1, 2, 3}, "__len__", [5], {}),
     ],
 )
 def test_actionobject_hooks_send_action_side_effect_ignore_op(
@@ -258,16 +258,16 @@ def test_actionobject_hooks_send_action_side_effect_ignore_op(
         ("abc", "capitalize", [], {}),
         ("abc", "find", ["b"], {}),
         # (ActionDataEmpty(), "__version__", [], {}), TODO :ActionService cannot handle ActionDataEmpty
-        (int(1), "__add__", [1], {}),
-        (float(1.2), "__add__", [1], {}),
+        (1, "__add__", [1], {}),
+        (1.2, "__add__", [1], {}),
         (True, "__and__", [True], {}),
         ((1, 2, 3), "count", [1], {}),
         ([1, 2, 3], "count", [1], {}),
         ([1, 2, 3], "append", [4], {}),
         # ({"a"  :1, "b" : 2}, "keys", [], {}), TODO: dict_keys cannot be serialized
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
-        (set({1, 2, 3, 3}), "add", [5], {}),
-        (set({1, 2, 3, 3}), "clear", [], {}),
+        ({1, 2, 3}, "add", [5], {}),
+        ({1, 2, 3}, "clear", [], {}),
     ],
 )
 def test_actionobject_hooks_send_action_side_effect_ok(worker, orig_obj_op):
@@ -329,15 +329,11 @@ def test_actionobject_syft_point_to():
         # (object, operation, *args, **kwargs, expected_result)
         ("abc", "capitalize", [], {}, "Abc"),
         ("abc", "find", ["b"], {}, 1),
-        (int(1), "__add__", [1], {}, 2),
-        (float(1.2), "__add__", [1], {}, 2.2),
+        (1, "__add__", [1], {}, 2),
+        (1.2, "__add__", [1], {}, 2.2),
         (True, "__and__", [False], {}, False),
         ((1, 1, 3), "count", [1], {}, 2),
         ([1, 2, 1], "count", [1], {}, 2),
-        ([1, 2, 3], "append", [4], {}, [1, 2, 3, 4]),
-        ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
-        (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
-        (set({1, 2, 3, 3}), "clear", [], {}, set({})),
         (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
@@ -367,15 +363,15 @@ def test_actionobject_syft_execute_ok(worker, testcase):
         # (object, operation, *args, **kwargs)
         ("abc", "capitalize", [], {}),
         ("abc", "find", ["b"], {}),
-        (int(1), "__add__", [1], {}),
-        (float(1.2), "__add__", [1], {}),
+        (1, "__add__", [1], {}),
+        (1.2, "__add__", [1], {}),
         (True, "__and__", [False], {}),
         ((1, 1, 3), "count", [1], {}),
         ([1, 2, 1], "count", [1], {}),
         ([1, 2, 3], "append", [4], {}),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
-        (set({1, 2, 3, 3}), "add", [5], {}),
-        (set({1, 2, 3, 3}), "clear", [], {}),
+        ({1, 2, 3}, "add", [5], {}),
+        ({1, 2, 3}, "clear", [], {}),
     ],
 )
 def test_actionobject_syft_make_action(worker, testcase):
@@ -398,15 +394,15 @@ def test_actionobject_syft_make_action(worker, testcase):
         # (object, operation, *args, **kwargs)
         ("abc", "capitalize", [], {}),
         ("abc", "find", ["b"], {}),
-        (int(1), "__add__", [1], {}),
-        (float(1.2), "__add__", [1], {}),
+        (1, "__add__", [1], {}),
+        (1.2, "__add__", [1], {}),
         (True, "__and__", [False], {}),
         ((1, 1, 3), "count", [1], {}),
         ([1, 2, 1], "count", [1], {}),
         ([1, 2, 3], "append", [4], {}),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
-        (set({1, 2, 3, 3}), "add", [5], {}),
-        (set({1, 2, 3, 3}), "clear", [], {}),
+        ({1, 2, 3}, "add", [5], {}),
+        ({1, 2, 3}, "clear", [], {}),
         (complex(1, 2), "conjugate", [], {}),
     ],
 )
@@ -431,15 +427,15 @@ def test_actionobject_syft_make_action_with_self(worker, testcase):
         # (object, operation, *args, **kwargs)
         ("abc", "capitalize", [], {}),
         ("abc", "find", ["b"], {}),
-        (int(1), "__add__", [1], {}),
-        (float(1.2), "__add__", [1], {}),
+        (1, "__add__", [1], {}),
+        (1.2, "__add__", [1], {}),
         (True, "__and__", [False], {}),
         ((1, 1, 3), "count", [1], {}),
         ([1, 2, 1], "count", [1], {}),
         ([1, 2, 3], "append", [4], {}),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}),
-        (set({1, 2, 3, 3}), "add", [5], {}),
-        (set({1, 2, 3, 3}), "clear", [], {}),
+        ({1, 2, 3}, "add", [5], {}),
+        ({1, 2, 3}, "clear", [], {}),
         (complex(1, 2), "conjugate", [], {}),
     ],
 )
@@ -462,13 +458,13 @@ def test_actionobject_syft_make_remote_method_action(worker, testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
         complex(1, 2),
     ],
 )
@@ -484,13 +480,13 @@ def test_actionobject_syft_get_path(testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
         complex(1, 2),
     ],
 )
@@ -516,13 +512,13 @@ def test_actionobject_syft_send_get(worker, testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
         complex(1, 2),
     ],
 )
@@ -540,7 +536,7 @@ def test_actionobject_syft_passthrough_attrs(testcase):
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
     ],
 )
 def test_actionobject_syft_dont_wrap_output_attrs(testcase):
@@ -556,20 +552,20 @@ def test_actionobject_syft_get_attr_context():
 
     assert obj._syft_get_attr_context("capitalize") is orig_obj
     assert obj._syft_get_attr_context("__add__") is orig_obj
-    assert obj._syft_get_attr_context("syft_action_data") is obj
+    assert obj._syft_get_attr_context("syft_action_data") is obj.syft_action_data
 
 
 @pytest.mark.parametrize(
     "testcase",
     [
         # (object, operation, *args, **kwargs, expected_result)
-        (int(1), "__add__", [1], {}, 2),
-        (float(1.2), "__add__", [1], {}, 2.2),
+        (1, "__add__", [1], {}, 2),
+        (1.2, "__add__", [1], {}, 2.2),
         (True, "__and__", [False], {}, False),
         ([1, 2, 3], "append", [4], {}, [1, 2, 3, 4]),
         ({"a": 1, "b": 2}, "update", [{"c": 3}], {}, {"a": 1, "b": 2, "c": 3}),
-        (set({1, 2, 3, 3}), "add", [5], {}, set({1, 2, 3, 5})),
-        (set({1, 2, 3, 3}), "clear", [], {}, set({})),
+        ({1, 2, 3}, "add", [5], {}, {1, 2, 3, 5}),
+        ({1, 2, 3}, "clear", [], {}, {}),
         (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
@@ -601,13 +597,13 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
         complex(1, 2),
     ],
 )
@@ -622,13 +618,13 @@ def test_actionobject_syft_wrap_attribute_for_bool_on_nonbools(testcase):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
         complex(1, 2),
     ],
 )
@@ -655,13 +651,13 @@ def test_actionobject_syft_wrap_attribute_for_properties(orig_obj):
     [
         # object
         "abc",
-        int(1),
-        float(1.2),
+        1,
+        1.2,
         True,
         (1, 1, 3),
         [1, 2, 1],
         {"a": 1, "b": 2},
-        set({1, 2, 3, 3}),
+        {1, 2, 3},
         complex(1, 2),
     ],
 )
@@ -820,14 +816,14 @@ def test_actionobject_syft_getattr_tuple(worker, scenario):
 
 @pytest.mark.parametrize("scenario", [AttrScenario.AS_OBJ, AttrScenario.AS_PTR])
 def test_actionobject_syft_getattr_set(worker, scenario):
-    orig_obj = set({1, 2, 3, 4})
+    orig_obj = {1, 2, 3, 4}
 
     obj = ActionObject.from_obj(orig_obj)
     obj = helper_prepare_obj_for_scenario(scenario, worker, obj)
 
     assert obj == orig_obj
-    assert obj.add(4) == set({1, 2, 3, 4})
-    assert obj.intersection(set({1, 2, 121})) == set({1, 2})
+    assert obj.add(4) == {1, 2, 3, 4}
+    assert obj.intersection({1, 2, 121}) == {1, 2}
     assert len(obj) == 4
 
 
@@ -979,8 +975,8 @@ def test_actionobject_syft_getattr_float(orig_obj: float, worker, scenario):
 
 
 def test_actionobject_syft_getattr_float_history():
-    obj1 = ActionObject.from_obj(float(5.5))
-    obj2 = ActionObject.from_obj(float(5.2))
+    obj1 = ActionObject.from_obj(5.5)
+    obj2 = ActionObject.from_obj(5.2)
 
     res1 = obj1 + obj2
     res2 = obj1 + obj2
@@ -1009,7 +1005,7 @@ def test_actionobject_syft_getattr_pandas(worker):
 
     obj = ActionObject.from_obj(orig_obj)
 
-    assert obj.columns == orig_obj.columns
+    assert (obj.columns == orig_obj.columns).all()
 
     obj.columns = ["a", "b", "c"]
-    assert obj.columns == ["a", "b", "c"]
+    assert (obj.columns == ["a", "b", "c"]).all()

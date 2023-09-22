@@ -90,6 +90,10 @@ class SyftBaseObject(BaseModel, SyftHashableObject):
     syft_node_location: Optional[UID]
     syft_client_verify_key: Optional[SyftVerifyKey]
 
+    def _set_obj_location_(self, node_uid, credentials):
+        self.syft_node_location = node_uid
+        self.syft_client_verify_key = credentials
+
 
 class Context(SyftBaseObject):
     pass
@@ -250,6 +254,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             value = getattr(self, attr, "<Missing>")
             value_type = full_name_with_qualname(type(attr))
             value_type = value_type.replace("builtins.", "")
+            if hasattr(value, "syft_action_data_str_"):
+                value = value.syft_action_data_str_
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"  {attr}: {value_type} = {value}\n"
         return _repr_str
@@ -343,6 +349,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         warnings.warn(
             "`SyftObject.to_dict` is deprecated and will be removed in a future version",
             PendingDeprecationWarning,
+            stacklevel=2,
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none and not exclude_empty:
@@ -590,7 +597,7 @@ def list_dict_repr_html(self) -> str:
             if hasattr(values[0], "icon"):
                 table_icon = values[0].icon
             # this is a list of dicts
-            is_homogenous = len(set([type(x) for x in values])) == 1
+            is_homogenous = len({type(x) for x in values}) == 1
             # third party
             first_value = values[0]
             if is_homogenous:

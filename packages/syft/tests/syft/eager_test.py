@@ -30,7 +30,7 @@ def test_eager_permissions(worker, guest_client):
     assert all(res_root == [3, 3, 3, 3, 3, 3])
 
 
-def test_plan(worker, guest_client):
+def test_plan(worker):
     root_domain_client = worker.root_client
     guest_client = worker.guest_client
 
@@ -65,9 +65,9 @@ def test_plan(worker, guest_client):
     res_ptr.request(guest_client)
 
     # root approves result
-    root_domain_client.api.services.request[0].approve_with_client(root_domain_client)
+    root_domain_client.api.services.request[-1].approve_with_client(root_domain_client)
 
-    assert res_ptr.get() == 729
+    assert res_ptr.get_from(guest_client) == 729
 
 
 def test_plan_with_function_call(worker, guest_client):
@@ -112,7 +112,7 @@ def test_plan_with_object_instantiation(worker, guest_client):
     res_ptr = plan_ptr(x=pointer)
 
     assert all(
-        root_domain_client.api.services.action.get(res_ptr.id)
+        root_domain_client.api.services.action.get(res_ptr.id).syft_action_data
         == np.array([2, 3, 4, 5, 6, 7])
     )
 

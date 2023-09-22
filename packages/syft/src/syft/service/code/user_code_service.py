@@ -72,7 +72,7 @@ class UserCodeService(AbstractService):
     ):
         user_code: UserCode = code.to(UserCode, context=context)
         if not all(
-            [x in user_code.input_owner_verify_keys for x in user_code.output_readers]
+            x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
             raise ValueError("outputs can only be distributed to input owners")
         result = self.stash.set(context.credentials, user_code)
@@ -189,7 +189,13 @@ class UserCodeService(AbstractService):
                     connection=connection,
                     credentials=context.node.signing_key,
                 )
-                return enclave_client.code.get_results(code.id)
+                outputs = enclave_client.code.get_results(code.id)
+                if isinstance(outputs, list):
+                    for output in outputs:
+                        output.syft_action_data  # noqa: B018
+                else:
+                    outputs.syft_action_data  # noqa: B018
+                return outputs
 
             # if the current node is the enclave
             else:

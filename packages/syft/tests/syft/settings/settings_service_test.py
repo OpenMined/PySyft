@@ -252,17 +252,20 @@ def test_settings_allow_guest_registration(
         email2 = faker.email()
 
         response_1 = root_domain_client.register(
-            email=email1, password="joker123", name="Joker"
+            email=email1, password="joker123", password_verify="joker123", name="Joker"
         )
         assert isinstance(response_1, SyftSuccess)
 
         # by default, the guest client can't register new user
         response_2 = guest_domain_client.register(
-            email=email2, password="harley123", name="Harley"
+            email=email2,
+            password="harley123",
+            password_verify="harley123",
+            name="Harley",
         )
         assert isinstance(response_2, SyftError)
 
-        assert any([user.email == email1 for user in root_domain_client.users])
+        assert any(user.email == email1 for user in root_domain_client.users)
 
     # only after the root client enable other users to signup, they can
     mock_node_metadata.signup_enabled = True
@@ -275,14 +278,16 @@ def test_settings_allow_guest_registration(
         guest_domain_client = worker.guest_client
         root_domain_client = worker.root_client
 
+        password = faker.email()
         response_3 = guest_domain_client.register(
             email=email2,
-            password=faker.email(),
+            password=password,
+            password_verify=password,
             name=faker.name(),
         )
         assert isinstance(response_3, SyftSuccess)
 
-        assert any([user.email == email2 for user in root_domain_client.users])
+        assert any(user.email == email2 for user in root_domain_client.users)
 
 
 def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
@@ -329,7 +334,10 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
             client = get_mock_client(faker=faker, root_client=root_client, role=role)
             email = faker.email()
             result = client.register(
-                name=faker.name(), email=email, password="password"
+                name=faker.name(),
+                email=email,
+                password="password",
+                password_verify="password",
             )
             assert isinstance(result, SyftSuccess)
             emails_added.append(email)
@@ -339,7 +347,10 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         )
 
         response = ds_client.register(
-            name=faker.name(), email=faker.email(), password="password"
+            name=faker.name(),
+            email=faker.email(),
+            password="password",
+            password_verify="password",
         )
         assert isinstance(response, SyftError)
 
