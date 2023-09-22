@@ -11,7 +11,7 @@ RUN apt-get -y install \
     python3 \
     python3-dev \
     python3-pip
-RUN pip3 install --upgrade pip setuptools numpy wheel
+RUN pip3 install --upgrade pip setuptools numpy wheel build
 RUN git clone https://github.com/google/jax.git
 
 CMD ["bash"]
