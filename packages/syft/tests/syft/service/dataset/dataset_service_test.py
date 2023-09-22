@@ -15,6 +15,7 @@ from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.types.twin_object import TwinMode
+import syft as sy
 
 
 def random_hash() -> str:
@@ -71,7 +72,6 @@ def test_mock_always_not_real_after_calling_no_mock(
 
     asset.no_mock()
     assert not asset.mock_is_real
-
 
 def test_mock_always_not_real_after_set_mock_to_empty(
     asset_with_mock: dict[str, Any]
@@ -216,3 +216,11 @@ def test_domain_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> No
         root_domain_client.upload_dataset(dataset)
 
     assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)
+
+def test_adding_contributors_with_duplicate_email():
+
+    dataset = Dataset(name = 'dummy dataset')
+    dataset.add_contributor(role = sy.roles.UPLOADER, name = 'Jim Carey', email = 'jim@69.com')
+    dataset.add_contributor(role = sy.roles.UPLOADER, name = 'Jim Car', email = 'jim@69.com')
+    
+    assert len(dataset.contributors) == 1
