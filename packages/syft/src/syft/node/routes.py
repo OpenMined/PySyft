@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Dict
 
 # third party
@@ -11,6 +10,7 @@ from fastapi import Response
 from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import ValidationError
+from typing_extensions import Annotated
 
 # relative
 from ..abstract_node import AbstractNode
@@ -18,7 +18,6 @@ from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
 from ..service.context import NodeServiceContext
 from ..service.context import UnauthedServiceContext
-from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftError
 from ..service.user.user import UserCreate
@@ -63,11 +62,9 @@ def make_routes(worker: Worker) -> APIRouter:
 
     @router.get("/metadata_capnp")
     def syft_metadata_capnp() -> Response:
-        context = NodeServiceContext(node=worker)
-        method = worker.get_method_with_context(MetadataService.get, context)
-        result = method()
+        result = worker.metadata
         return Response(
-            serialize(result.ok(), to_bytes=True),
+            serialize(result, to_bytes=True),
             media_type="application/octet-stream",
         )
 
@@ -102,7 +99,7 @@ def make_routes(worker: Worker) -> APIRouter:
     # make a request to the SyftAPI
     @router.post("/api_call")
     def syft_new_api_call(
-        request: Request, data: bytes = Depends(get_body)
+        request: Request, data: Annotated[bytes, Depends(get_body)]
     ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
@@ -114,7 +111,7 @@ def make_routes(worker: Worker) -> APIRouter:
         else:
             return handle_new_api_call(data)
 
-    def handle_login(email: str, password: str, node: AbstractNode) -> Any:
+    def handle_login(email: str, password: str, node: AbstractNode) -> Response:
         try:
             login_credentials = UserLoginCredentials(email=email, password=password)
         except ValidationError as e:
@@ -126,7 +123,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         if isinstance(result, SyftError):
             logger.bind(payload={"email": email}).error(result.message)
-            response = {"Error": result.message}
+            response = result
         else:
             user_private_key = result
             if not isinstance(user_private_key, UserPrivateKey):
@@ -138,7 +135,7 @@ def make_routes(worker: Worker) -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    def handle_register(data: bytes, node: AbstractNode) -> Any:
+    def handle_register(data: bytes, node: AbstractNode) -> Response:
         user_create = deserialize(data, from_bytes=True)
 
         if not isinstance(user_create, UserCreate):
@@ -164,9 +161,9 @@ def make_routes(worker: Worker) -> APIRouter:
     @router.post("/login", name="login", status_code=200)
     def login(
         request: Request,
-        email: str = Body(..., example="info@openmined.org"),
-        password: str = Body(..., example="changethis"),
-    ) -> Any:
+        email: Annotated[str, Body(example="info@openmined.org")],
+        password: Annotated[str, Body(example="changethis")],
+    ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(login.__module__).start_as_current_span(
                 login.__qualname__,
@@ -178,7 +175,9 @@ def make_routes(worker: Worker) -> APIRouter:
             return handle_login(email, password, worker)
 
     @router.post("/register", name="register", status_code=200)
-    def register(request: Request, data: bytes = Depends(get_body)) -> Any:
+    def register(
+        request: Request, data: Annotated[bytes, Depends(get_body)]
+    ) -> Response:
         if TRACE_MODE:
             with trace.get_tracer(register.__module__).start_as_current_span(
                 register.__qualname__,

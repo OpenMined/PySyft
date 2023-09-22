@@ -22,7 +22,7 @@ from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ..response import SyftSuccess
-from .action_object import TwinMode
+from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
 from .action_permissions import ActionObjectOWNER
 from .action_permissions import ActionObjectPermission
@@ -66,8 +66,6 @@ class KeyValueActionStore(ActionStore):
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
-        # TODO 🟣 Temporarily added skip permission argument for enclave
-        # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         if has_permission or self.has_permission(read_permission):
@@ -83,25 +81,45 @@ class KeyValueActionStore(ActionStore):
                 return Err(f"Could not find item with uid {uid}, {e}")
         return Err(f"Permission: {read_permission} denied")
 
+    def get_mock(self, uid: UID) -> Result[SyftObject, str]:
+        uid = uid.id  # We only need the UID from LineageID or UID
+
+        try:
+            syft_object = self.data[uid]
+            if isinstance(syft_object, TwinObject) and not is_action_data_empty(
+                syft_object.mock
+            ):
+                return Ok(syft_object.mock)
+            return Err("No mock")
+        except Exception as e:
+            return Err(f"Could not find item with uid {uid}, {e}")
+
     def get_pointer(
-        self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        node_uid: UID,
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         try:
-            # 🟡 TODO 34: do we want pointer read permissions?
             if uid in self.data:
                 obj = self.data[uid]
+                read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+
+                # if you have permission you can have private data
+                if self.has_permission(read_permission):
+                    if isinstance(obj, TwinObject):
+                        return Ok(obj.private.syft_point_to(node_uid))
+                    return Ok(obj.syft_point_to(node_uid))
+
+                # if its a twin with a mock anyone can have this
                 if isinstance(obj, TwinObject):
-                    obj = obj.mock
-                    obj.syft_twin_type = TwinMode.MOCK
-                    # we patch the real id on it so we can keep using the twin
-                    obj.id = uid
-                else:
-                    obj.syft_twin_type = TwinMode.NONE
-                obj.syft_point_to(node_uid)
-                return Ok(obj)
-            # third party
+                    return Ok(obj.mock.syft_point_to(node_uid))
+
+                # finally worst case you get ActionDataEmpty so you can still trace
+                return Ok(obj.as_empty().syft_point_to(node_uid))
+
             return Err("Permission denied")
         except Exception as e:
             return Err(str(e))
@@ -213,7 +231,7 @@ class KeyValueActionStore(ActionStore):
         return False
 
     def has_permissions(self, permissions: List[ActionObjectPermission]) -> bool:
-        return all([self.has_permission(p) for p in permissions])
+        return all(self.has_permission(p) for p in permissions)
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]
@@ -226,9 +244,8 @@ class KeyValueActionStore(ActionStore):
         self.permissions[permission.uid] = permissions
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
-        results = []
         for permission in permissions:
-            results.append(self.add_permission(permission))
+            self.add_permission(permission)
 
 
 @serializable()

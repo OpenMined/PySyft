@@ -1,20 +1,27 @@
 # stdlib
+from getpass import getpass
+from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
 import pydantic
+from pydantic import ValidationError
 from pydantic.networks import EmailStr
 
 # relative
+from ...client.api import APIRegistry
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -26,6 +33,8 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
+from ..response import SyftError
+from ..response import SyftSuccess
 from .user_roles import ServiceRole
 
 
@@ -56,7 +65,7 @@ class User(SyftObject):
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email"]
 
 
 def default_role(role: ServiceRole) -> Callable:
@@ -65,7 +74,8 @@ def default_role(role: ServiceRole) -> Callable:
 
 def hash_password(context: TransformContext) -> TransformContext:
     if context.output["password"] is not None and (
-        context.output["password"] == context.output["password_verify"]
+        (context.output["password_verify"] is None)
+        or context.output["password"] == context.output["password_verify"]
     ):
         salt, hashed = salt_and_hash_password(context.output["password"], 12)
         context.output["hashed_password"] = hashed
@@ -102,8 +112,14 @@ class UserUpdate(PartialSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     @pydantic.validator("email", pre=True)
-    def make_email(cls, v: EmailStr) -> Optional[EmailStr]:
-        return EmailStr(v) if isinstance(v, str) else v
+    def make_email(cls, v: Any) -> Any:
+        return EmailStr(v) if isinstance(v, str) and not isinstance(v, EmailStr) else v
+
+    @pydantic.validator("role", pre=True)
+    def str_to_role(cls, v: Any) -> Any:
+        if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
+            return getattr(ServiceRole, v.upper())
+        return v
 
     email: EmailStr
     name: str
@@ -124,12 +140,13 @@ class UserCreate(UserUpdate):
     name: str
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: str
-    password_verify: str
+    password_verify: Optional[str] = None
     verify_key: Optional[SyftVerifyKey]
     institution: Optional[str]
     website: Optional[str]
+    created_by: Optional[SyftSigningKey]
 
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email"]
 
 
 @serializable()
@@ -154,7 +171,109 @@ class UserView(SyftObject):
     institution: Optional[str]
     website: Optional[str]
 
-    __attr_repr_cols__ = ["name", "email"]
+    __repr_attrs__ = ["name", "email", "institution", "website", "role"]
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "Name": self.name,
+            "Email": self.email,
+            "Institute": self.institution,
+            "Website": self.website,
+            "Role": self.role.name.capitalize(),
+        }
+
+    def _set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        api.services.user.update(
+            uid=self.id, user_update=UserUpdate(password=new_password)
+        )
+        return SyftSuccess(
+            message=f"Successfully updated password for "
+            f"user '{self.name}' with email '{self.email}'."
+        )
+
+    def set_password(
+        self, new_password: Optional[str] = None, confirm: bool = True
+    ) -> Union[SyftError, SyftSuccess]:
+        """Set a new password interactively with confirmed password from user input"""
+        # TODO: Add password validation for special characters
+        if not new_password:
+            new_password = getpass("New Password: ")
+
+        if confirm:
+            confirmed_password: str = getpass("Please confirm your password: ")
+            if confirmed_password != new_password:
+                return SyftError(message="Passwords do not match !")
+        return self._set_password(new_password)
+
+    def set_email(self, email: str) -> Union[SyftSuccess, SyftError]:
+        # validate email address
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+
+        try:
+            user_update = UserUpdate(email=email)
+        except ValidationError:
+            return SyftError(message="{email} is not a valid email address.")
+
+        result = api.services.user.update(uid=self.id, user_update=user_update)
+
+        if isinstance(result, SyftError):
+            return result
+
+        self.email = email
+        return SyftSuccess(
+            message=f"Successfully updated email for the user "
+            f"'{self.name}' to '{self.email}'."
+        )
+
+    def update(
+        self,
+        name: Union[Empty, str] = Empty,
+        institution: Union[Empty, str] = Empty,
+        website: Union[str, Empty] = Empty,
+        role: Union[str, Empty] = Empty,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Used to update name, institution, website of a user."""
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        user_update = UserUpdate(
+            name=name,
+            institution=institution,
+            website=website,
+            role=role,
+        )
+        result = api.services.user.update(uid=self.id, user_update=user_update)
+
+        if isinstance(result, SyftError):
+            return result
+
+        for attr, val in result.to_dict(exclude_empty=True).items():
+            setattr(self, attr, val)
+
+        return SyftSuccess(message="User details successfully updated.")
+
+
+@serializable()
+class UserViewPage(SyftObject):
+    __canonical_name__ = "UserViewPage"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    users: List[UserView]
+    total: int
 
 
 @transform(UserUpdate, User)
@@ -173,8 +292,9 @@ def user_create_to_user() -> List[Callable]:
         validate_email,
         hash_password,
         generate_key,
-        default_role(ServiceRole.GUEST),
-        drop(["password", "password_verify"]),
+        drop(["password", "password_verify", "created_by"]),
+        # TODO: Fix this by passing it from client & verifying it at server
+        default_role(ServiceRole.DATA_SCIENTIST),
     ]
 
 
@@ -190,8 +310,9 @@ class UserPrivateKey(SyftObject):
 
     email: str
     signing_key: SyftSigningKey
+    role: ServiceRole
 
 
 @transform(User, UserPrivateKey)
 def user_to_user_verify() -> List[Callable]:
-    return [keep(["email", "signing_key", "id"])]
+    return [keep(["email", "signing_key", "id", "role"])]

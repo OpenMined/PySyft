@@ -1,8 +1,11 @@
 import { getUserIdFromStorage } from './keys';
 import { makeSyftUID, syftCall } from './syft-api-call';
 
-export async function getAllUsers() {
-  return await syftCall({ path: 'user.get_all', payload: {} });
+export async function getAllUsers(page_size: number = 0, page_index: number = 0) {
+  return await syftCall({
+    path: 'user.get_all',
+    payload: { page_size: page_size, page_index: page_index }
+  });
 }
 
 export async function getUser(uid: string) {
@@ -16,6 +19,42 @@ export async function getSelf() {
   });
 }
 
-export async function searchUsersByName(name: string) {
-  return await syftCall({ path: 'user.search', payload: { name } });
+export async function searchUsersByName(
+  name: string,
+  page_size: number = 0,
+  page_index: number = 0
+) {
+  return await syftCall({
+    path: 'user.search',
+    payload: {
+      user_search: { name: name, fqn: 'syft.service.user.user.UserSearch' },
+      page_size: page_size,
+      page_index: page_index
+    }
+  });
+}
+
+export async function updateCurrentUser(
+  name: string,
+  email: string,
+  password: string,
+  institution: string,
+  website: string
+) {
+  const userUpdate = {
+    name: name,
+    email: email,
+    password: password,
+    institution: institution,
+    website: website,
+    fqn: 'syft.service.user.user.UserUpdate'
+  };
+
+  return await syftCall({
+    path: 'user.update',
+    payload: {
+      uid: makeSyftUID(getUserIdFromStorage()),
+      user_update: userUpdate
+    }
+  });
 }

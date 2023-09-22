@@ -1,4 +1,4 @@
-<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml/badge.svg?branch=dev" /></a> <a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
+<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://static.pepy.tech/badge/pysyft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml/badge.svg?branch=dev" /></a> <a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
 <br /><br /></div>
 
 <picture>
@@ -6,24 +6,24 @@
   <img alt="Syft Logo" src="docs/img/title_syft_light.png" width="200px" />
 </picture>
 
-Perform `numpy`-like analysis on `data` that remains in `someone else's` server
+Perform data science on `data` that remains in `someone else's` server
 
 # Quickstart
 
-✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
+✅ `Linux` ✅ `macOS` ✅ `Windows` ✅ `Docker` ✅ `Podman` ✅ `Kubernetes`
 
-## Install syft on Python 3.9 - 3.10
+## Install Client
 
 ```bash
-$ pip install -U syft -f https://whls.blob.core.windows.net/unstable/index.html
+$ pip install -U syft
 ```
 
-## Launch a python dev Domain
+## Launch Server
 
 ```python
 # from Jupyter / Python
 import syft as sy
-sy.requires(">=0.8,<0.8.1")
+sy.requires(">=0.8.1,<0.8.2")
 node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
 ```
 
@@ -34,17 +34,46 @@ $ syft launch --name=my-domain --port=8080 --reset=True
 Starting syft-node server on 0.0.0.0:8080
 ```
 
-## Connect with our Python Client
+## Launch Client
 
 ```python
 import syft as sy
-sy.requires(">=0.8,<0.8.1")
+sy.requires(">=0.8.1,<0.8.2")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
+```
+
+## PySyft in 10 minutes
+
+📝 <a href="/notebooks/api">API Example Notebooks</a>
+
+- <a href="/notebooks/api/0.8/00-load-data.ipynb">00-load-data.ipynb</a>
+- <a href="/notebooks/api/0.8/01-submit-code.ipynb">01-submit-code.ipynb</a>
+- <a href="/notebooks/api/0.8/02-review-code-and-approve.ipynb">02-review-code-and-approve.ipynb</a>
+- <a href="/notebooks/api/0.8/03-data-scientist-download-result.ipynb">03-data-scientist-download-result.ipynb</a>
+- <a href="/notebooks/api/0.8/04-jax-example.ipynb">04-jax-example.ipynb</a>
+- <a href="/notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
+- <a href="/notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
+- <a href="/notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
+
+## Deploy Kubernetes Helm Chart
+
+```sh
+$ kubectl create namespace syft
+$ SYFT_VERSION="0.8.2-beta.26"
+$ helm pull oci://registry-1.docker.io/openmined/syft --version $SYFT_VERSION
+$ helm install my-domain "./syft-$SYFT_VERSION.tgz" --namespace syft --create-namespace
+```
+
+### Azure or GCP Ingress
+
+```
+$ helm install ... --set ingress.ingressClass="azure/application-gateway"
+$ helm install ... --set ingress.ingressClass="gce"
 ```
 
 ## Deploy to a Container Engine or Cloud
 
-1. Install our handy 🛵 cli tool which makes deploying a Domain or Gateway server a one-liner:  
+1. Install our handy 🛵 cli tool which makes deploying a Domain or Gateway server to Docker or VM a one-liner:  
    `pip install -U hagrid`
 
 2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
@@ -55,31 +84,27 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
    `PyGrid` = our 🐳 `docker` / 🐧 `vm` `Domain` & `Gateway` Servers where `private data` lives
 
-4. During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `podman` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
-
 ## Docs and Support
 
-- 📝 <a href="/notebooks/api">API Example Notebooks</a>
 - 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
 - `#support` on <a href="https://slack.openmined.org/">Slack</a>
 
 # Install Notes
 
 - HAGrid 0.3 Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
-- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
-  †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft 0.8 Requires: 🐍 `python 3.9 - 3.10` - Run: `pip install -U syft`  
-  \*`macOS` Apple Silicon users might need cmake: `brew install cmake`  
-  ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
-- PyGrid Requires: 🐳 `docker` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
+- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`
+- PySyft 0.8.1 Requires: 🐍 `python 3.9 - 3.11` - Run: `pip install -U syft`
+- PyGrid Requires: 🐳 `docker`, 🦦 `podman` or ☸️ `kubernetes` - Run: `hagrid launch ...`
 
 # Versions
 
-`0.8.1` (Beta) - `dev` branch 👈🏽 <a href="/notebooks/api/0.8">API</a>  
-`0.8.0` (Stable) - <a href="/notebooks/api/0.8">API</a>
+`0.9.0` - Coming soon...  
+`0.8.2` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
+`0.8.1` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.1/notebooks/api/0.8">API</a>
 
 Deprecated:
 
+- `0.8.0` - <a href="https://github.com/OpenMined/PySyft/tree/0.8/notebooks/api/0.8">API</a>
 - `0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>
 - `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>
 - `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix
@@ -110,6 +135,7 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
+<!--
 # Tutorials
 
 <table border="5" bordercolor="grey">
@@ -166,6 +192,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 </td>
 </tr>
 </table>
+-->
 
 # Terminology
 
@@ -322,30 +349,45 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 <a href="https://pytorch.org/"><img src="docs/img/logo_torch.png" /></a>
 </th>
 <th align="center">
+<a href="https://www.dpmc.govt.nz/">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_nz_dark.png">
+  <img src="docs/img/logo_nz_light.png" />
+</picture>
+</a>
+</th>
+<th align="center">
+<a href="https://twitter.com/"><img src="docs/img/logo_twitter.png" /></a>
+</th>
+<th align="center">
+<a href="https://google.com/"><img src="docs/img/logo_google.png" /></a>
+</th>
+<th align="center">
+<a href="https://microsoft.com/"><img src="docs/img/logo_microsoft.png" /></a>
+</th>
+<th align="center">
+<a href="https://omidyar.com/"><img src="docs/img/logo_on.png" /></a>
+</th>
+<th align="center">
 <a href="https://www.udacity.com/"><img src="docs/img/logo_udacity.png" /></a>
 </th>
 <th align="center">
-<a href="https://summerofcode.withgoogle.com/"><img src="docs/img/logo_gsoc.png" /></a>
-</th>
-<th align="center">
-<a href="https://developers.google.com/season-of-docs"><img src="docs/img/logo_gsod.png" /></a>
-</th>
-<th align="center">
+<a href="https://www.centerfordigitalhealthinnovation.org/">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_cdhi_dark.png">
+  <img src="docs/img/logo_cdhi_light.png" />
+</picture>
+
+</a>
+</th>
+<th align="center">
+<a href="https://arkhn.org/">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_arkhn.png">
   <img src="docs/img/logo_arkhn_light.png" />
 </picture>
-
-</th>
-<th align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_cape.png">
-  <img src="docs/img/logo_cape_light.png" />
-</picture>
-</th>
-<th align="center">
-<a href="https://begin.ai/"><img src="docs/img/logo_begin.png" /></a>
+</a>
 </th>
 </tr>
 </table>

@@ -1,0 +1,669 @@
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+
+---
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+---
+
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+
+---
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+------
+# Source: component-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "backend"
+  labels:
+    "app.kubernetes.io/name": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  externalIPs:
+  ports:
+    - name: "port-0"
+      port: 80
+      targetPort: 80
+      protocol: "TCP"
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "backend"
+  type: "ClusterIP"
+---
+# Source: component-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "backend"
+  labels:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  replicas: 1
+  podManagementPolicy: "OrderedReady"
+  serviceName: "backend-headless"
+  selector:
+    matchLabels:
+      "app.kubernetes.io/name": "devspace-app"
+      "app.kubernetes.io/component": "backend"
+      "app.kubernetes.io/managed-by": "Helm"
+  template:
+    metadata:
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "backend"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.8.6"
+    spec:
+      imagePullSecrets:
+      nodeSelector:
+        null
+      nodeName:
+        null
+      affinity:
+        null
+      tolerations:
+        null
+      dnsConfig:
+        null
+      hostAliases:
+        null
+      overhead:
+        null
+      readinessGates:
+        null
+      securityContext:
+        null
+      topologySpreadConstraints:
+        null
+      terminationGracePeriodSeconds: 5
+      ephemeralContainers:
+        null
+      containers:
+        - image: "docker.io/openmined/grid-backend:0.8.2-beta.1"
+          name: "container-0"
+          command:
+          args:
+          env:
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MONGO_HOST
+              value: mongo
+            - name: MONGO_USERNAME
+              value: root
+            - name: MONGO_PASSWORD
+              value: example
+            - name: SERVICE_NAME
+              value: backend
+            - name: RELEASE
+              value: production
+            - name: VERSION
+              value: 0.8.2-beta.1
+            - name: VERSION_HASH
+              value: unknown
+            - name: NODE_TYPE
+              value: domain
+            - name: NODE_NAME
+              value: default_node_name
+            - name: STACK_API_KEY
+              value: changeme
+            - name: PORT
+              value: "80"
+            - name: IGNORE_TLS_ERRORS
+              value: "False"
+            - name: HTTP_PORT
+              value: "80"
+            - name: HTTPS_PORT
+              value: "443"
+            - name: CONTAINER_HOST
+              value: k8s
+            - name: TRACE
+              value: "False"
+            - name: JAEGER_HOST
+              value: localhost
+            - name: JAEGER_PORT
+              value: "14268"
+            - name: DEV_MODE
+              value: "False"
+            - name: DOMAIN_CONNECTION_PORT
+              value: "3030"
+            - name: ENABLE_OBLV
+              value: "false"
+            - name: DEFAULT_ROOT_EMAIL
+              value: info@openmined.org
+            - name: DEFAULT_ROOT_PASSWORD
+              value: changethis
+            - name: BACKEND_STORAGE_PATH
+              value: /storage
+          envFrom:
+            null
+          securityContext:
+            null
+          lifecycle:
+            null
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          startupProbe:
+            null
+          volumeDevices:
+            null
+          volumeMounts:
+            - mountPath: "/storage"
+              name: "credentials-data"
+              subPath: "credentials-data"
+              readOnly: false
+      initContainers:
+      volumes:
+  volumeClaimTemplates:
+  - metadata:
+      name: "credentials-data"
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "backend"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.8.6"
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: "100Mi"
+---
+# Create headless service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: "backend-headless"
+  labels:
+    "app.kubernetes.io/name": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  ports:
+  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "backend"
+    "app.kubernetes.io/managed-by": "Helm"
+---
+# Source: component-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "frontend"
+  labels:
+    "app.kubernetes.io/name": "frontend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  externalIPs:
+  ports:
+    - name: "port-0"
+      port: 80
+      targetPort: 80
+      protocol: "TCP"
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "frontend"
+  type: "ClusterIP"
+---
+# Source: component-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "frontend"
+  labels:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "frontend"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      "app.kubernetes.io/name": "devspace-app"
+      "app.kubernetes.io/component": "frontend"
+      "app.kubernetes.io/managed-by": "Helm"
+  template:
+    metadata:
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "frontend"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.8.6"
+    spec:
+      imagePullSecrets:
+      nodeSelector:
+        null
+      nodeName:
+        null
+      affinity:
+        null
+      tolerations:
+        null
+      dnsConfig:
+        null
+      hostAliases:
+        null
+      overhead:
+        null
+      readinessGates:
+        null
+      securityContext:
+        null
+      topologySpreadConstraints:
+        null
+      terminationGracePeriodSeconds: 5
+      ephemeralContainers:
+        null
+      containers:
+        - image: "docker.io/openmined/grid-frontend:0.8.2-beta.1"
+          name: "container-0"
+          command:
+          args:
+          env:
+            - name: VERSION
+              value: 0.8.2-beta.1
+            - name: VERSION_HASH
+              value: unknown
+            - name: NODE_TYPE
+              value: domain
+            - name: NEXT_PUBLIC_API_URL
+              value: ${NEXT_PUBLIC_API_URL}
+          envFrom:
+            null
+          securityContext:
+            null
+          lifecycle:
+            null
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          startupProbe:
+            null
+          volumeDevices:
+            null
+          volumeMounts:
+      initContainers:
+      volumes:
+  volumeClaimTemplates:
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: ""
+  name: grid-stack-ingress
+  namespace: default
+spec:
+  defaultBackend:
+    service:
+      name: proxy
+      port:
+        number: 80
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: proxy
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+
+---
+# Source: component-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "mongo"
+  labels:
+    "app.kubernetes.io/name": "mongo"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  externalIPs:
+  ports:
+    - name: "port-0"
+      port: 27017
+      targetPort: 27017
+      protocol: "TCP"
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "mongo"
+  type: "ClusterIP"
+---
+# Source: component-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "mongo"
+  labels:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "mongo"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  replicas: 1
+  podManagementPolicy: "OrderedReady"
+  serviceName: "mongo-headless"
+  selector:
+    matchLabels:
+      "app.kubernetes.io/name": "devspace-app"
+      "app.kubernetes.io/component": "mongo"
+      "app.kubernetes.io/managed-by": "Helm"
+  template:
+    metadata:
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "mongo"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.8.6"
+    spec:
+      imagePullSecrets:
+      nodeSelector:
+        null
+      nodeName:
+        null
+      affinity:
+        null
+      tolerations:
+        null
+      dnsConfig:
+        null
+      hostAliases:
+        null
+      overhead:
+        null
+      readinessGates:
+        null
+      securityContext:
+        null
+      topologySpreadConstraints:
+        null
+      terminationGracePeriodSeconds: 5
+      ephemeralContainers:
+        null
+      containers:
+        - image: "mongo:latest"
+          name: "container-0"
+          command:
+          args:
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: root
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: example
+          envFrom:
+            null
+          securityContext:
+            null
+          lifecycle:
+            null
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          startupProbe:
+            null
+          volumeDevices:
+            null
+          volumeMounts:
+            - mountPath: "/data/db"
+              name: "mongo-data"
+              subPath: ""
+              readOnly: false
+      initContainers:
+      volumes:
+  volumeClaimTemplates:
+  - metadata:
+      name: "mongo-data"
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "mongo"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.8.6"
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: "5Gi"
+---
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: "mongo-headless"
+  labels:
+    "app.kubernetes.io/name": "mongo"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  ports:
+  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "mongo"
+    "app.kubernetes.io/managed-by": "Helm"
+---
+# Source: component-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "proxy"
+  labels:
+    "app.kubernetes.io/name": "proxy"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  externalIPs:
+  ports:
+    - name: proxy
+      port: 80
+      targetPort: 80
+      protocol: "TCP"
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "proxy"
+  type: "ClusterIP"
+---
+# Source: component-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "proxy"
+  labels:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "proxy"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.8.6"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      "app.kubernetes.io/name": "devspace-app"
+      "app.kubernetes.io/component": "proxy"
+      "app.kubernetes.io/managed-by": "Helm"
+  template:
+    metadata:
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "proxy"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.8.6"
+    spec:
+      imagePullSecrets:
+      nodeSelector:
+        null
+      nodeName:
+        null
+      affinity:
+        null
+      tolerations:
+        null
+      dnsConfig:
+        null
+      hostAliases:
+        null
+      overhead:
+        null
+      readinessGates:
+        null
+      securityContext:
+        null
+      topologySpreadConstraints:
+        null
+      terminationGracePeriodSeconds: 5
+      ephemeralContainers:
+        null
+      containers:
+        - image: "traefik:v2.8.1"
+          name: "container-0"
+          command:
+          args:
+          env:
+            - name: SERVICE_NAME
+              value: proxy
+          envFrom:
+            null
+          securityContext:
+            null
+          lifecycle:
+            null
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          startupProbe:
+            null
+          volumeDevices:
+            null
+          volumeMounts:
+            - mountPath: "/etc/traefik"
+              name: "traefik-conf"
+              readOnly: false
+      initContainers:
+      volumes:
+        - name: "traefik-conf"
+          configMap:
+            name: traefik-main-config
+  volumeClaimTemplates:
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+apiVersion: v1
+data:
+  dynamic.yml: |
+    http:
+      services:
+        frontend:
+          loadBalancer:
+            servers:
+              - url: "http://frontend"
+        backend:
+          loadBalancer:
+            servers:
+              - url: "http://backend"
+        seaweedfs:
+          loadBalancer:
+            servers:
+              - url: "http://seaweedfs:8333"
+      routers:
+        frontend:
+          rule: "PathPrefix(`/`)"
+          entryPoints:
+            - "web"
+          service: "frontend"
+        backend:
+          rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+          entryPoints:
+            - "web"
+          service: "backend"
+        blob-storage:
+          rule: "PathPrefix(`/blob`)"
+          entryPoints:
+            - "web"
+          service: "seaweedfs"
+          middlewares:
+            - "blob-storage-url"
+            - "blob-storage-host"
+      middlewares:
+        blob-storage-host:
+          headers:
+            customrequestheaders:
+              Host: seaweedfs:8333
+        blob-storage-url:
+          stripprefix:
+            prefixes: /blob
+            forceslash: true
+  traefik.yml: |
+    global:
+      checkNewVersion: false
+      sendAnonymousUsage: false
+
+    log:
+      level: INFO
+
+    entryPoints:
+      web:
+        address: :80
+      ping:
+        address: :8082
+
+    ping:
+      entryPoint: "ping"
+
+    providers:
+      file:
+        filename: /etc/traefik/dynamic.yml
+kind: ConfigMap
+metadata:
+  name: traefik-main-config
+  namespace: default
+

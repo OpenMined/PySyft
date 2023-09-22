@@ -3,8 +3,8 @@ import json
 import os
 from typing import Any
 
-STABLE_BRANCH = "0.8"
-DEFAULT_BRANCH = "0.8"
+STABLE_BRANCH = "0.8.1"
+DEFAULT_BRANCH = "0.8.1"
 DEFAULT_REPO = "OpenMined/PySyft"
 
 arg_defaults = {
@@ -48,7 +48,7 @@ class ArgCache:
 
     def __init__(self) -> None:
         try:
-            with open(ArgCache.cache_file_path(), "r") as f:
+            with open(ArgCache.cache_file_path()) as f:
                 self.__cache = json.loads(f.read())
         except Exception:  # nosec
             self.__cache = {}

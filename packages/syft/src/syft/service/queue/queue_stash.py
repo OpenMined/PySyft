@@ -49,7 +49,10 @@ class QueueItem(SyftObject):
     status: Status = Status.CREATED
 
     def fetch(self) -> None:
-        api = APIRegistry.api_for(node_uid=self.node_uid)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
         call = SyftAPICall(
             node_uid=self.node_uid,
             path="queue",
@@ -62,7 +65,6 @@ class QueueItem(SyftObject):
             self.resolved = True
             self.result = result.result
             self.status = result.status
-        return result
 
     @property
     def resolve(self) -> Union[Any, SyftNotReady]:

@@ -25,9 +25,8 @@ from ...types.grid_url import GridURL
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...util.constants import DEFAULT_TIMEOUT
 from ...util.util import verify_tls
-
-DEFAULT_TIMEOUT = 5  # in seconds
 
 
 @serializable()
@@ -87,9 +86,9 @@ class VPNClientConnection(NodeConnection):
     session_cache: Optional[Session]
     routes: Type[VPNRoutes]
 
-    def __init__(self, url: Union[GridURL, str], *args, **kwargs) -> None:
-        url = GridURL.from_url(url)
-        super().__init__(url=url, *args, **kwargs)
+    @validator("url", pre=True)
+    def __make_grid_url(cls, url: Union[GridURL, str]) -> GridURL:
+        return GridURL.from_url(url)
 
     @property
     def session(self) -> Session:
@@ -156,9 +155,11 @@ class VPNClientConnection(NodeConnection):
         self,
         path: str,
         api_key: str,
-        command_args: dict = {},
+        command_args: Optional[dict] = None,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> Result[CommandReport, str]:
+        if command_args is None:
+            command_args = {}
         command_args.update({"timeout": timeout, "force_unique_key": True})
         headers = {"X-STACK-API-KEY": api_key}
         result = self._make_post(

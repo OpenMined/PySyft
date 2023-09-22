@@ -101,10 +101,10 @@ class MongoStoreClientConfig(StoreClientConfig):
     hostname: Optional[str] = "127.0.0.1"
     port: Optional[int] = None
     directConnection: bool = False
-    maxPoolSize: int = 100
+    maxPoolSize: int = 200
     minPoolSize: int = 0
     maxIdleTimeMS: Optional[int] = None
-    maxConnecting: int = 2
+    maxConnecting: int = 3
     timeoutMS: int = 0
     socketTimeoutMS: int = 0
     connectTimeoutMS: int = 20000
@@ -203,3 +203,25 @@ class MongoClient:
             return Err(str(e))
 
         return Ok(collection)
+
+    def with_collection_permissions(
+        self, collection_settings: PartitionSettings, store_config: StoreConfig
+    ) -> Result[MongoCollection, Err]:
+        """
+        For each collection, create a corresponding collection
+        that store the permissions to the data in that collection
+        """
+        res = self.with_db(db_name=store_config.db_name)
+        if res.is_err():
+            return res
+        db = res.ok()
+
+        try:
+            collection_permissions_name: str = collection_settings.name + "_permissions"
+            collection_permissions = db.get_collection(
+                name=collection_permissions_name, codec_options=SYFT_CODEC_OPTIONS
+            )
+        except BaseException as e:
+            return Err(str(e))
+
+        return Ok(collection_permissions)

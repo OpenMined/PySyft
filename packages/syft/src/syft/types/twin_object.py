@@ -3,7 +3,11 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import Optional
+
+# third party
+import pydantic
 
 # relative
 from ..serde.serializable import serializable
@@ -19,7 +23,7 @@ def to_action_object(obj: Any) -> ActionObject:
         return obj
 
     if type(obj) in action_types:
-        return action_types[type(obj)](syft_action_data=obj)
+        return action_types[type(obj)](syft_action_data_cache=obj)
     raise Exception(f"{type(obj)} not in action_types")
 
 
@@ -30,35 +34,27 @@ class TwinObject(SyftObject):
 
     __attr_searchable__ = []
 
+    id: UID
     private_obj: ActionObject
-    private_obj_id: UID
+    private_obj_id: UID = None  # type: ignore
     mock_obj: ActionObject
-    mock_obj_id: UID
+    mock_obj_id: UID = None  # type: ignore
 
-    def __init__(
-        self,
-        private_obj: ActionObject,
-        mock_obj: ActionObject,
-        private_obj_id: Optional[UID] = None,
-        mock_obj_id: Optional[UID] = None,
-        id: Optional[UID] = None,
-    ) -> None:
-        private_obj = to_action_object(private_obj)
-        mock_obj = to_action_object(mock_obj)
+    @pydantic.validator("private_obj", pre=True, always=True)
+    def make_private_obj(cls, v: ActionObject) -> ActionObject:
+        return to_action_object(v)
 
-        if private_obj_id is None:
-            private_obj_id = private_obj.id
-        if mock_obj_id is None:
-            mock_obj_id = mock_obj.id
-        if id is None:
-            id = UID()
-        super().__init__(
-            private_obj=private_obj,
-            private_obj_id=private_obj_id,
-            mock_obj=mock_obj,
-            mock_obj_id=mock_obj_id,
-            id=id,
-        )
+    @pydantic.validator("private_obj_id", pre=True, always=True)
+    def make_private_obj_id(cls, v: Optional[UID], values: Dict) -> UID:
+        return values["private_obj"].id if v is None else v
+
+    @pydantic.validator("mock_obj", pre=True, always=True)
+    def make_mock_obj(cls, v: ActionObject):
+        return to_action_object(v)
+
+    @pydantic.validator("mock_obj_id", pre=True, always=True)
+    def make_mock_obj_id(cls, v: Optional[UID], values: Dict) -> UID:
+        return values["mock_obj"].id if v is None else v
 
     @property
     def private(self) -> ActionObject:
@@ -75,3 +71,16 @@ class TwinObject(SyftObject):
         mock.syft_twin_type = TwinMode.MOCK
         mock.id = twin_id
         return mock
+
+    def _save_to_blob_storage(self):
+        # Set node location and verify key
+        self.private_obj._set_obj_location_(
+            self.syft_node_location,
+            self.syft_client_verify_key,
+        )
+        # self.mock_obj._set_obj_location_(
+        #     self.syft_node_location,
+        #     self.syft_client_verify_key,
+        # )
+        return self.private_obj._save_to_blob_storage()
+        # self.mock_obj._save_to_blob_storage()

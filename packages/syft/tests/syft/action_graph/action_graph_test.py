@@ -138,8 +138,9 @@ def test_node_action_data_update() -> None:
     # only updated_at is not empty
     assert isinstance(node_action_data_update.updated_at, DateTime)
     assert len(node_action_data_update.to_dict(exclude_empty=True)) == 1
-    assert node_action_data_update.to_dict(exclude_empty=False) == vars(
-        node_action_data_update
+    assert (
+        node_action_data_update.to_dict(exclude_empty=False)
+        == node_action_data_update.dict()
     )
 
 
@@ -464,7 +465,7 @@ def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -
 
     def _cbk(tid: int) -> None:
         nonlocal execution_err
-        for idx in range(repeats):
+        for _idx in range(repeats):
             action_obj_a = ActionObject.from_obj([2, 4, 6])
             node_data_a = NodeActionData.from_action_obj(
                 action_obj_a, credentials=verify_key
@@ -516,7 +517,7 @@ def test_multithreaded_graph_store_delete_node(verify_key: SyftVerifyKey) -> Non
     thread_id_node_map = {}
     for tid in range(thread_cnt):
         thread_id_node_map[tid] = []
-        for rp in range(repeats):
+        for _rp in range(repeats):
             action_obj = ActionObject.from_obj([2, 4, 6])
             node_data = NodeActionData.from_action_obj(
                 action_obj, credentials=verify_key

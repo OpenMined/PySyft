@@ -88,7 +88,7 @@ class TailscaleClient(BaseVPNClient):
     @staticmethod
     def _extract_host_and_peer(status_dict: Dict) -> Dict:
         def extract_peer_info(peer: Dict) -> Dict:
-            info = dict()
+            info = {}
             info["hostname"] = peer["HostName"]
             info["os"] = peer["OS"]
             info["ip"] = peer["TailscaleIPs"][0] if peer["TailscaleIPs"] else ""
@@ -157,10 +157,9 @@ class TailscaleClient(BaseVPNClient):
         self, headscale_host: str, headscale_auth_token: str
     ) -> Union[SyftSuccess, SyftError]:
         CONNECT_TIMEOUT = 60
-
         command_args = {
             "args": [
-                "-login-server",
+                "--login-server",
                 f"{headscale_host}",
                 "--reset",
                 "--force-reauth",
@@ -220,7 +219,7 @@ class TailscaleClient(BaseVPNClient):
         command_result = result.ok()
 
         if command_result.error:
-            return SyftError(message=result.error)
+            return SyftError(message=command_result.error)
 
         return SyftSuccess(message="Disconnected Successfully !")
 
@@ -246,4 +245,4 @@ def get_vpn_client(
         )
         return Ok(client)
 
-    return Err(f"Failed to create client for: {client_type.__name__}")
+    return Err(f"Cannot create client for: {client_type.__name__}")

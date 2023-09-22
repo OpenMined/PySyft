@@ -1,4 +1,4 @@
-FROM python:3.10.10-slim as build
+FROM python:3.11.3-slim as build
 RUN apt-get -y update --allow-insecure-repositories
 RUN apt-get -y upgrade
 RUN apt-get -y dist-upgrade
@@ -9,7 +9,7 @@ RUN git checkout tags/v2.10.0 -b v2.10.0
 RUN apt-get -y install wget
 RUN wget https://raw.githubusercontent.com/OpenMined/PySyft/dev/packages/grid/backend/wheels/dm-tree-0.1.7.tar.gz
 RUN tar -xf dm-tree-0.1.7.tar.gz --strip-components=6
-RUN mv site-packages/* /usr/local/lib/python3.10/site-packages
+RUN mv site-packages/* /usr/local/lib/python3.11/site-packages
 RUN python -m pip install -U pip setuptools wheel
 RUN python -m pip install scipy --only-binary=:all:
 RUN python -m pip install tensorflow-probability~=0.15

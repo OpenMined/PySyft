@@ -9,6 +9,10 @@ on:
       - main
       - "0.8"
 
+concurrency:
+  group: hagrid-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     working-directory: ./packages/hagrid
@@ -16,10 +20,15 @@ defaults:
 jobs:
   pr-tests-hagrid:
     strategy:
-      max-parallel: 3
+      max-parallel: 99
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.11"]
+        include:
+          - python-version: "3.9"
+            os: "ubuntu-latest"
+          - python-version: "3.10"
+            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -47,8 +56,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.hagrid == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v3

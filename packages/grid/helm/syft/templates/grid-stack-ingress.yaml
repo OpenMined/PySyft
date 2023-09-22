@@ -1,0 +1,28 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.ingressClass }}
+  name: grid-stack-ingress
+spec:
+  defaultBackend:
+    service:
+      name: proxy
+      port:
+        number: 80
+  tls:
+  - hosts:
+    - {{ .Values.node.settings.hostname }}
+    # secretName: Add custom TLS secret here or default certificate is used
+  rules:
+  - host: {{ .Values.node.settings.hostname }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: proxy
+            port:
+              number: 80
+        path: /
+        pathType: Prefix

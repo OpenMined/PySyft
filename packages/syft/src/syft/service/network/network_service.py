@@ -1,4 +1,5 @@
 # stdlib
+import secrets
 from typing import Any
 from typing import Callable
 from typing import List
@@ -7,15 +8,12 @@ from typing import Union
 
 # third party
 from result import Result
-from typing_extensions import Self
 
 # relative
-from ...abstract_node import AbstractNode
+from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
-from ...client.client import NodeConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
-from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -25,17 +23,12 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...types.grid_url import GridURL
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.transforms import transform_method
-from ...types.uid import UID
 from ...util.telemetry import instrument
-from ...util.util import recursive_hash
 from ..context import AuthedServiceContext
-from ..context import NodeServiceContext
 from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadata
 from ..response import SyftError
@@ -51,209 +44,15 @@ from ..vpn.tailscale_client import TailscaleClient
 from ..vpn.tailscale_client import TailscaleState
 from ..vpn.tailscale_client import TailscaleStatus
 from ..vpn.tailscale_client import get_vpn_client
+from ..warnings import CRUDWarning
+from .node_peer import NodePeer
+from .routes import HTTPNodeRoute
+from .routes import NodeRoute
+from .routes import PythonNodeRoute
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
-
-
-class NodeRoute:
-    def client_with_context(self, context: NodeServiceContext) -> SyftClient:
-        connection = route_to_connection(route=self, context=context)
-        return SyftClient(connection=connection, credentials=context.node.signing_key)
-
-
-@serializable()
-class HTTPNodeRoute(SyftObject, NodeRoute):
-    __canonical_name__ = "HTTPNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    host_or_ip: str
-    private: bool = False
-    protocol: str = "http"
-    port: int = 80
-
-    def __hash__(self) -> int:
-        return (
-            hash(self.host_or_ip)
-            + hash(self.private)
-            + hash(self.protocol)
-            + hash(self.port)
-        )
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, HTTPNodeRoute):
-            return hash(self) == hash(other)
-        return self == other
-
-
-@serializable()
-class PythonNodeRoute(SyftObject, NodeRoute):
-    __canonical_name__ = "PythonNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    worker_settings: WorkerSettings
-
-    @property
-    def node(self) -> Optional[AbstractNode]:
-        # relative
-        from ...node.worker import Worker
-
-        node = Worker(
-            id=self.worker_settings.id,
-            name=self.worker_settings.name,
-            signing_key=self.worker_settings.signing_key,
-            document_store_config=self.worker_settings.document_store_config,
-            action_store_config=self.worker_settings.action_store_config,
-            processes=1,
-        )
-        return node
-
-    @staticmethod
-    def with_node(self, node: AbstractNode) -> Self:
-        worker_settings = WorkerSettings.from_node(node)
-        return PythonNodeRoute(id=worker_settings.id, worker_settings=worker_settings)
-
-    def __hash__(self) -> int:
-        return (
-            hash(self.worker_settings.id)
-            + hash(self.worker_settings.name)
-            + hash(self.worker_settings.signing_key)
-        )
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, PythonNodeRoute):
-            return hash(self) == hash(other)
-        return self == other
-
-
-def route_to_connection(
-    route: NodeRoute, context: Optional[TransformContext] = None
-) -> NodeConnection:
-    if isinstance(route, HTTPNodeRoute):
-        return route.to(HTTPConnection, context=context)
-    else:
-        return route.to(PythonConnection, context=context)
-
-
-def connection_to_route(connection: NodeConnection) -> NodeRoute:
-    if isinstance(connection, HTTPConnection):
-        return connection.to(HTTPNodeRoute)
-    else:
-        return connection.to(PythonNodeRoute)
-
-
-@serializable()
-class NodePeer(SyftObject):
-    # version
-    __canonical_name__ = "NodePeer"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: Optional[UID]
-    name: str
-    verify_key: SyftVerifyKey
-    is_vpn: bool = False
-    vpn_auth_key: Optional[str] = None
-    node_routes: List[NodeRoute] = []
-
-    __attr_searchable__ = ["name"]
-    __attr_unique__ = ["verify_key"]
-    __attr_repr_cols__ = ["name"]
-
-    def __hash__(self) -> int:
-        hashes = 0
-        hashes += recursive_hash(self.id)
-        hashes += recursive_hash(self.name)
-        hashes += recursive_hash(self.verify_key)
-        hashes += recursive_hash(self.node_routes)
-        return hashes
-
-    def update_routes(self, new_routes: List[NodeRoute]) -> None:
-        add_routes = []
-        existing_routes = set(self.node_routes)
-        for new_route in new_routes:
-            if new_route not in existing_routes:
-                add_routes.append(new_route)
-        self.node_routes += add_routes
-
-    @staticmethod
-    def from_client(client: SyftClient) -> Self:
-        if not client.metadata:
-            raise Exception("Client has have metadata first")
-
-        peer = client.metadata.to(NodeMetadata).to(NodePeer)
-        route = connection_to_route(client.connection)
-        peer.node_routes.append(route)
-        return peer
-
-    def client_with_context(self, context: NodeServiceContext) -> SyftClient:
-        if len(self.node_routes) < 1:
-            raise Exception(f"No routes to peer: {self}")
-        route = self.node_routes[0]
-        connection = route_to_connection(route=route)
-        return SyftClient(connection=connection, credentials=context.node.signing_key)
-
-    def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
-        if len(self.node_routes) < 1:
-            raise Exception(f"No routes to peer: {self}")
-        route = self.node_routes[0]
-        connection = route_to_connection(route=route)
-        return SyftClient(connection=connection, credentials=credentials)
-
-    @property
-    def guest_client(self) -> SyftClient:
-        guest_key = SyftSigningKey.generate()
-        return self.client_with_key(credentials=guest_key)
-
-    def proxy_from(self, client: SyftClient) -> SyftClient:
-        return client.proxy_to(self)
-
-
-def from_grid_url(context: TransformContext) -> TransformContext:
-    url = context.obj.url.as_container_host()
-    context.output["host_or_ip"] = url.host_or_ip
-    context.output["protocol"] = url.protocol
-    context.output["port"] = url.port
-    context.output["private"] = False
-    return context
-
-
-@transform(HTTPConnection, HTTPNodeRoute)
-def http_connection_to_node_route() -> List[Callable]:
-    return [from_grid_url]
-
-
-def get_python_node_route(context: TransformContext) -> TransformContext:
-    context.output["id"] = context.obj.node.id
-    context.output["worker_settings"] = WorkerSettings.from_node(context.obj.node)
-    return context
-
-
-@transform(PythonConnection, PythonNodeRoute)
-def python_connection_to_node_route() -> List[Callable]:
-    return [get_python_node_route]
-
-
-@transform_method(PythonNodeRoute, PythonConnection)
-def node_route_to_python_connection(
-    obj: Any, context: Optional[TransformContext] = None
-) -> List[Callable]:
-    return PythonConnection(node=obj.node)
-
-
-@transform_method(HTTPNodeRoute, HTTPConnection)
-def node_route_to_http_connection(
-    obj: Any, context: Optional[TransformContext] = None
-) -> List[Callable]:
-    url = GridURL(
-        protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
-    ).as_container_host()
-    return HTTPConnection(url=url)
-
-
-@transform(NodeMetadata, NodePeer)
-def metadata_to_peer() -> List[Callable]:
-    return [
-        keep(["id", "name", "verify_key"]),
-    ]
+NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
+OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @instrument
@@ -303,6 +102,14 @@ class NetworkStash(BaseUIDStoreStash):
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_one(credentials, qks)
 
+    def get_by_node_type(
+        self, credentials: SyftVerifyKey, node_type: NodeType
+    ) -> Result[List[NodePeer], SyftError]:
+        qks = QueryKeys(qks=[NodeTypePartitionKey.with_obj(node_type)])
+        return self.query_all(
+            credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
+        )
+
 
 @instrument
 @serializable()
@@ -314,57 +121,70 @@ class NetworkService(AbstractService):
         self.store = store
         self.stash = NetworkStash(store=store)
 
+    # TODO: Check with MADHAVA, can we even allow guest user to introduce routes to
+    # domain nodes?
     @service_method(
-        path="network.exchange_credentials_with", name="exchange_credentials_with"
+        path="network.exchange_credentials_with",
+        name="exchange_credentials_with",
+        roles=GUEST_ROLE_LEVEL,
+        warning=CRUDWarning(confirmation=True),
     )
     def exchange_credentials_with(
         self,
         context: AuthedServiceContext,
-        peer: Optional[NodePeer] = None,
-        client: Optional[SyftClient] = None,
+        self_node_route: NodeRoute,
+        remote_node_route: NodeRoute,
+        remote_node_verify_key: SyftVerifyKey,
     ) -> Union[SyftSuccess, SyftError]:
-        """Exchange Credentials With Another Node"""
-        # check root user is asking for the exchange
-        if isinstance(client, SyftClient):
-            remote_peer = NodePeer.from_client(client)
-        else:
-            remote_peer = peer
-        if remote_peer is None:
-            return SyftError("exchange_credentials_with requires peer or client")
+        """Exchange Route With Another Node"""
 
-        # tell the remote peer our details
-        if not context.node:
-            return SyftError(f"{type(context)} has no node")
-        self_metadata = context.node.metadata
-        self_node_peer = self_metadata.to(NodePeer)
+        # Step 1: Validate the Route
+        self_node_peer = self_node_route.validate_with_context(context=context)
 
-        # switch to the nodes signing key
-        client = remote_peer.client_with_context(context=context)
-        remote_peer_metadata = client.api.services.network.add_peer(self_node_peer)
+        if isinstance(self_node_peer, SyftError):
+            return self_node_peer
 
-        if remote_peer_metadata.verify_key != remote_peer.verify_key:
-            return SyftError(
-                (
-                    f"Response from remote peer {remote_peer_metadata} "
-                    f"does not match initial peer {remote_peer}"
-                )
-            )
+        # Step 2: Send the Node Peer to the remote node
+        # Also give them their own to validate that it belongs to them
+        # random challenge prevents replay attacks
+        remote_client = remote_node_route.client_with_context(context=context)
+        random_challenge = secrets.token_bytes(16)
+
+        remote_res = remote_client.api.services.network.add_peer(
+            peer=self_node_peer,
+            challenge=random_challenge,
+            self_node_route=remote_node_route,
+            verify_key=remote_node_verify_key,
+        )
+
+        if isinstance(remote_res, SyftError):
+            return remote_res
+
+        challenge_signature, remote_node_peer = remote_res
+
+        # Verifying if the challenge is valid
+        remote_node_verify_key.verify_key.verify(random_challenge, challenge_signature)
 
         # save the remote peer for later
-        result = self.stash.update_peer(context.node.verify_key, remote_peer)
+        result = self.stash.update_peer(context.node.verify_key, remote_node_peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Credentials Exchanged")
+        return SyftSuccess(message="Routes Exchanged")
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
     def add_peer(
-        self, context: AuthedServiceContext, peer: NodePeer
-    ) -> Union[NodeMetadata, SyftError]:
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+        challenge: bytes,
+        self_node_route: NodeRoute,
+        verify_key: SyftVerifyKey,
+    ) -> Union[bytes, SyftError]:
         """Add a Network Node Peer"""
-        # save the peer and verify the key matches the message signer
+
+        # Using the verify_key of the peer to verify the signature
+        # It is also our single source of truth for the peer
         if peer.verify_key != context.credentials:
             return SyftError(
                 message=(
@@ -373,31 +193,59 @@ class NetworkService(AbstractService):
                 )
             )
 
-        result = self.stash.update_peer(context.credentials, peer)
+        if verify_key != context.node.verify_key:
+            return SyftError(
+                message="verify_key does not match the remote node's verify_key for add_peer"
+            )
+
+        result = self.stash.update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
+
         # this way they can match up who we are with who they think we are
-        metadata = context.node.metadata
-        return metadata
+        # Sending a signed messages for the peer to verify
+        self_node_peer = self_node_route.validate_with_context(context=context)
+
+        if isinstance(self_node_peer, SyftError):
+            return self_node_peer
+
+        # Q,TODO: Should the returned node peer also be signed
+        # as the challenge is already signed
+
+        challenge_signature = context.node.signing_key.signing_key.sign(
+            challenge
+        ).signature
+
+        return [challenge_signature, self_node_peer]
+
+    @service_method(path="network.ping", name="ping")
+    def ping(
+        self, context: AuthedServiceContext, challenge: bytes
+    ) -> Union[bytes, SyftError]:
+        """To check alivesness/authenticity of a peer"""
+
+        # Only the root user can ping the node to check its state
+        if context.node.verify_key != context.credentials:
+            return SyftError(message=("Only the root user can access ping endpoint"))
+
+        # this way they can match up who we are with who they think we are
+        # Sending a signed messages for the peer to verify
+        challenge_signature = context.node.signing_key.signing_key.sign(
+            challenge
+        ).signature
+
+        return challenge_signature
 
     @service_method(path="network.add_route_for", name="add_route_for")
     def add_route_for(
         self,
         context: AuthedServiceContext,
         route: NodeRoute,
-        peer: Optional[NodePeer] = None,
-        client: Optional[SyftClient] = None,
+        peer: NodePeer,
     ) -> Union[SyftSuccess, SyftError]:
         """Add Route for this Node to another Node"""
         # check root user is asking for the exchange
-        if isinstance(client, SyftClient):
-            remote_peer = NodePeer.from_client(client)
-        else:
-            remote_peer = peer
-        if remote_peer is None:
-            return SyftError("exchange_credentials_with requires peer or client")
-
-        client = remote_peer.client_with_context(context=context)
+        client = peer.client_with_context(context=context)
         result = client.api.services.network.verify_route(route)
 
         if not isinstance(result, SyftSuccess):
@@ -419,12 +267,10 @@ class NetworkService(AbstractService):
             return SyftError(message=peer.err())
         peer = peer.ok()
 
-        client = route.client_with_context(context=context)
-        metadata = client.metadata.to(NodeMetadata)
-        if peer.verify_key != metadata.verify_key:
+        if peer.verify_key != context.credentials:
             return SyftError(
                 message=(
-                    f"verify_key: {metadata.verify_key} at route {route} "
+                    f"verify_key: {context.credentials} at route {route} "
                     f"does not match listed peer: {peer}"
                 )
             )
@@ -434,16 +280,55 @@ class NetworkService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Network Route Verified")
 
-    @service_method(path="network.get_all_peers", name="get_all_peers")
+    @service_method(
+        path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
+    )
     def get_all_peers(
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
-        result = self.stash.get_all(context.credentials)
+        result = self.stash.get_all(
+            credentials=context.node.verify_key,
+            order_by=OrderByNamePartitionKey,
+        )
         if result.is_ok():
             peers = result.ok()
             return peers
         return SyftError(message=result.err())
+
+    @service_method(
+        path="network.get_peer_by_name", name="get_peer_by_name", roles=GUEST_ROLE_LEVEL
+    )
+    def get_peer_by_name(
+        self, context: AuthedServiceContext, name: str
+    ) -> Union[Optional[NodePeer], SyftError]:
+        """Get Peer by Name"""
+        result = self.stash.get_by_name(
+            credentials=context.node.verify_key,
+            name=name,
+        )
+        if result.is_ok():
+            peer = result.ok()
+            return peer
+        return SyftError(message=str(result.err()))
+
+    @service_method(
+        path="network.get_peers_by_type",
+        name="get_peers_by_type",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get_peers_by_type(
+        self, context: AuthedServiceContext, node_type: NodeType
+    ) -> Union[List[NodePeer], SyftError]:
+        result = self.stash.get_by_node_type(
+            credentials=context.node.verify_key, node_type=node_type
+        )
+
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        # Return peers or an empty list when result is None
+        return result.ok() or []
 
     @service_method(path="network.join_vpn", name="join_vpn")
     def join_vpn(
@@ -467,11 +352,6 @@ class NetworkService(AbstractService):
 
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-
-        if result.ok() is not None:
-            return SyftError(
-                message=f"Already connected to VPN Peer: {remote_peer.name}"
-            )
 
         # tell the remote peer our details
         if not context.node:
@@ -604,3 +484,55 @@ class NetworkService(AbstractService):
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService
 SERVICE_TO_TYPES[NetworkService].update({NodePeer})
+
+
+def from_grid_url(context: TransformContext) -> TransformContext:
+    url = context.obj.url.as_container_host()
+    context.output["host_or_ip"] = url.host_or_ip
+    context.output["protocol"] = url.protocol
+    context.output["port"] = url.port
+    context.output["private"] = False
+    context.output["proxy_target_uid"] = context.obj.proxy_target_uid
+    return context
+
+
+@transform(HTTPConnection, HTTPNodeRoute)
+def http_connection_to_node_route() -> List[Callable]:
+    return [from_grid_url]
+
+
+def get_python_node_route(context: TransformContext) -> TransformContext:
+    context.output["id"] = context.obj.node.id
+    print("Store config....", context.obj.node.blob_store_config)
+    context.output["worker_settings"] = WorkerSettings.from_node(context.obj.node)
+    context.output["proxy_target_uid"] = context.obj.proxy_target_uid
+    return context
+
+
+@transform(PythonConnection, PythonNodeRoute)
+def python_connection_to_node_route() -> List[Callable]:
+    return [get_python_node_route]
+
+
+@transform_method(PythonNodeRoute, PythonConnection)
+def node_route_to_python_connection(
+    obj: Any, context: Optional[TransformContext] = None
+) -> List[Callable]:
+    return PythonConnection(node=obj.node, proxy_target_uid=obj.proxy_target_uid)
+
+
+@transform_method(HTTPNodeRoute, HTTPConnection)
+def node_route_to_http_connection(
+    obj: Any, context: Optional[TransformContext] = None
+) -> List[Callable]:
+    url = GridURL(
+        protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
+    ).as_container_host()
+    return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
+
+
+@transform(NodeMetadata, NodePeer)
+def metadata_to_peer() -> List[Callable]:
+    return [
+        keep(["id", "name", "verify_key", "node_type", "admin_email"]),
+    ]

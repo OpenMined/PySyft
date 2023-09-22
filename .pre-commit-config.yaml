@@ -19,7 +19,7 @@ repos:
         exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
       - id: check-yaml
         always_run: true
-        exclude: ^(packages/grid/k8s/rendered/)
+        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/)
       - id: check-merge-conflict
         always_run: true
         args: ["--assume-in-merge"]
@@ -55,6 +55,18 @@ repos:
               packages/syft/src/syft/federated/model_serialization/protos.py
           )$
 
+  - repo: https://github.com/MarcoGorelli/absolufy-imports
+    rev: v0.3.1
+    hooks:
+      - id: absolufy-imports
+        name: "absolufy-imports: syft-cli"
+        always_run: true
+        files: ^packages/syftcli
+        # This will ignore all syftcli/**/*.py where relative imports are okay
+        # but absolufy only top-level syftcli/<file>.py. where relative imports are not okay for pyinstaller
+        exclude: ^packages/syftcli/syftcli/(.*)/
+        args: ["--application-directories=packages/syftcli/"]
+
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
@@ -69,15 +81,13 @@ repos:
       - id: black
         args: ["."]
         always_run: true
-        # exclude: ^(packages/syft/src/syft/proto)
-        files: "^packages/syft(?!(.*_pb2\\.py$)).*\\.py"
 
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.0.246"
+    rev: "v0.0.283"
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
 
   # - repo: https://github.com/PyCQA/flake8
   #   rev: 6.0.0
@@ -93,7 +103,7 @@ repos:
     rev: v1.0.0
     hooks:
       - id: mypy
-        name: mypy-hagrid
+        name: "mypy: hagrid"
         always_run: true
         files: ^packages/hagrid
         args: [
@@ -118,9 +128,34 @@ repos:
     rev: v1.0.0
     hooks:
       - id: mypy
-        name: mypy-grid
+        name: "mypy: syft-cli"
         always_run: true
+        files: ^packages/syftcli
+        args: [
+            "--ignore-missing-imports",
+            "--scripts-are-modules",
+            "--disallow-incomplete-defs",
+            "--no-implicit-optional",
+            "--warn-unused-ignores",
+            "--warn-redundant-casts",
+            "--strict-equality",
+            "--warn-unreachable",
+            # "--disallow-untyped-decorators",
+            "--disallow-untyped-defs",
+            "--disallow-untyped-calls",
+            "--namespace-packages",
+            "--install-types",
+            "--non-interactive",
+            "--config-file=tox.ini",
+          ]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.0.0
+    hooks:
+      - id: mypy
+        name: "mypy: grid"
         files: ^packages/grid
+        always_run: true
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -143,10 +178,10 @@ repos:
     rev: v1.0.0
     hooks:
       - id: mypy
-        name: mypy-syft
+        name: "mypy: syft"
         always_run: true
-        # files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util"
-        files: "^packages/syft/src/syft/serde"
+        files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util/env.py|^packages/syft/src/syft/util/logger.py|^packages/syft/src/syft/util/markdown.py|^packages/syft/src/syft/util/notebook_ui/notebook_addons.py"
+        #files: "^packages/syft/src/syft/serde"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
@@ -176,6 +211,7 @@ repos:
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier
+        exclude: ^(packages/grid/helm|packages/hagrid/hagrid/manifest_template.yml)
 
   # - repo: meta
   #   hooks:

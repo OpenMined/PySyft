@@ -9,6 +9,7 @@
 .vscode/
 .tox/*
 .creds
+build
 
 # python stuff
 *__pycache__*

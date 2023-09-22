@@ -7,10 +7,8 @@ import threading
 from typing import Any
 from typing import Dict
 from typing import Generator
-from typing import T
 from typing import Tuple
 from typing import Type
-from typing import Union
 
 # third party
 from pydantic.fields import UndefinedType
@@ -30,14 +28,11 @@ class Empty:
     pass
 
 
-EmptyType = Union[T, Empty]
-
-
 class PartialModelMetaclass(ModelMetaclass):
     def __new__(
         meta: Type["PartialModelMetaclass"], *args: Any, **kwargs: Any
     ) -> "PartialModelMetaclass":
-        cls = super(PartialModelMetaclass, meta).__new__(meta, *args, *kwargs)
+        cls = super().__new__(meta, *args, *kwargs)
         cls_init = cls.__init__
         # Because the class will be modified temporarily, need to lock __init__
         init_lock = threading.Lock()
@@ -103,7 +98,7 @@ class PartialModelMetaclass(ModelMetaclass):
                 # Restore requiredness
                 optionalize(fields, restore=True)
 
-        setattr(cls, "__init__", __init__)
+        cls.__init__ = __init__
 
         def iter_exclude_empty(self) -> TupleGenerator:
             for key, value in self.__dict__.items():

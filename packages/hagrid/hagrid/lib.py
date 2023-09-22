@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import random
 import shutil
 import socket
 import subprocess  # nosec
@@ -116,7 +117,7 @@ def docker_desktop_memory() -> int:
     path = str(Path.home()) + "/Library/Group Containers/group.com.docker/settings.json"
 
     try:
-        f = open(path, "r")
+        f = open(path)
         out = f.read()
         f.close()
         return json.loads(out)["memoryMiB"]
@@ -261,7 +262,11 @@ def name_tag(name: str) -> str:
     return hashlib.sha256(name.encode("utf8")).hexdigest()
 
 
-def find_available_port(host: str, port: int, search: bool = False) -> int:
+def find_available_port(
+    host: str, port: Optional[int] = None, search: bool = False
+) -> int:
+    if port is None:
+        port = random.randint(1500, 65000)  # nosec
     port_available = False
     while not port_available:
         try:
@@ -336,7 +341,7 @@ def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
 # Check api metadata
 def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
-        url = f"http://{ip}/api/v1/new/metadata"
+        url = f"http://{ip}/api/v2/metadata"
         response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True

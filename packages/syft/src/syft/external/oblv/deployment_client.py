@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING
 
 # third party
 from oblv_ctl import OblvClient
-from pydantic import BaseModel
 from pydantic import validator
 import requests
 
@@ -25,8 +24,8 @@ import requests
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...client.client import login
+from ...enclave.metadata import EnclaveMetadata
 from ...serde.serializable import serializable
-from ...service.metadata.node_metadata import EnclaveMetadata
 from ...types.uid import UID
 from ...util.util import bcolors
 from .constants import LOCAL_MODE
@@ -40,11 +39,8 @@ if TYPE_CHECKING:
 
 
 @serializable()
-class OblvMetadata(EnclaveMetadata, BaseModel):
+class OblvMetadata(EnclaveMetadata):
     """Contains Metadata to connect to Oblivious Enclave"""
-
-    class Config:
-        arbitrary_types_allowed = True
 
     deployment_id: Optional[str]
     oblv_client: Optional[OblvClient]
@@ -73,7 +69,7 @@ class OblvMetadata(EnclaveMetadata, BaseModel):
 class DeploymentClient:
     deployment_id: str
     key_name: str
-    domain_clients: List[SyftClient] = []  # List of domain client objects
+    domain_clients: List[SyftClient]  # List of domain client objects
     oblv_client: OblvClient = None
     __conn_string: str
     __logs: Any
@@ -82,7 +78,7 @@ class DeploymentClient:
 
     def __init__(
         self,
-        domain_clients: List[Any],
+        domain_clients: List[SyftClient],
         deployment_id: str,
         oblv_client: Optional[OblvClient] = None,
         key_name: Optional[str] = None,
@@ -216,20 +212,20 @@ class DeploymentClient:
                     stdout=log_file,
                     stderr=log_file,
                 )
-            log_file_read = open(log_file_name, "r")
-            while True:
-                log_line = log_file_read.readline()
-                if "Error:  Invalid PCR Values" in log_line:
-                    raise Exception("PCR Validation Failed")
-                if "Only one usage of each socket address" in log_line:
-                    raise Exception(
-                        "Another oblv proxy instance running. Either close that connection"
-                        + "or change the *connection_port*"
-                    )
-                elif "error" in log_line.lower():
-                    raise Exception(log_line)
-                elif "listening on" in log_line:
-                    break
+            with open(log_file_name) as log_file_read:
+                while True:
+                    log_line = log_file_read.readline()
+                    if "Error:  Invalid PCR Values" in log_line:
+                        raise Exception("PCR Validation Failed")
+                    if "Only one usage of each socket address" in log_line:
+                        raise Exception(
+                            "Another oblv proxy instance running. Either close that connection"
+                            + "or change the *connection_port*"
+                        )
+                    elif "error" in log_line.lower():
+                        raise Exception(log_line)
+                    elif "listening on" in log_line:
+                        break
         except Exception as e:
             raise e
         else:
@@ -308,9 +304,11 @@ class DeploymentClient:
         code.enclave_metadata = enclave_metadata
 
         for domain_client in self.domain_clients:
-            domain_client.api.services.code.request_code_execution(code=code)
+            domain_client.code.request_code_execution(code=code)
+            print(f"Sent code execution request to {domain_client.name}")
 
         res = self.api.services.code.request_code_execution(code=code)
+        print(f"Execution will be done on {self.__enclave_client.name}")
 
         return res
 
@@ -356,7 +354,7 @@ class DeploymentClient:
                 + ": Logs not initiated",
                 file=sys.stderr,
             )
-        log_file = open(self.__logs, "r")
+        log_file = open(self.__logs)
         if not follow:
             print(log_file.read())
         else:

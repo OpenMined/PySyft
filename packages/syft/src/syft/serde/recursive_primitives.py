@@ -4,6 +4,8 @@ from collections import defaultdict
 from enum import Enum
 from enum import EnumMeta
 import functools
+import pathlib
+from pathlib import PurePath
 import sys
 from types import MappingProxyType
 from typing import Any
@@ -12,6 +14,7 @@ from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Type
 from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
@@ -166,6 +169,24 @@ def deserialize_type(type_blob: bytes) -> type:
     return exception_type
 
 
+TPath = TypeVar("TPath", bound=PurePath)
+
+
+def serialize_path(path: PurePath) -> bytes:
+    # relative
+    from .serialize import _serialize
+
+    return cast(bytes, _serialize(str(path), to_bytes=True))
+
+
+def deserialize_path(path_type: Type[TPath], buf: bytes) -> TPath:
+    # relative
+    from .deserialize import _deserialize
+
+    path: str = _deserialize(buf, from_bytes=True)
+    return path_type(path)
+
+
 # bit_length + 1 for signed
 recursive_serde_register(
     int,
@@ -274,6 +295,21 @@ recursive_serde_register(
 )
 
 
+for __path_type in (
+    PurePath,
+    pathlib.PurePosixPath,
+    pathlib.PureWindowsPath,
+    pathlib.Path,
+    pathlib.PosixPath,
+    pathlib.WindowsPath,
+):
+    recursive_serde_register(
+        __path_type,
+        serialize=serialize_path,
+        deserialize=functools.partial(deserialize_path, __path_type),
+    )
+
+
 def serialize_generic_alias(serialized_type: _GenericAlias) -> bytes:
     # relative
     from ..util.util import full_name_with_name
@@ -361,4 +397,5 @@ if sys.version_info >= (3, 9):
     )
     recursive_serde_register_type(_SpecialGenericAlias)
 
+recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)

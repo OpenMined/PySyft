@@ -9,7 +9,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 from typing import cast
 
 # third party
@@ -20,7 +19,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...client.api import NodeView
 from ...client.api import SyftAPI
 from ...client.client import HTTPConnection
 from ...client.client import Routes
@@ -28,17 +26,14 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
-from ...service.code.user_code import UserCode
+from ...service.action.action_object import ActionObject
 from ...service.code.user_code import UserCodeStatus
 from ...service.context import AuthedServiceContext
-from ...service.context import ChangeContext
 from ...service.response import SyftError
 from ...service.service import AbstractService
 from ...service.service import service_method
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.util import find_available_port
 from .constants import DOMAIN_CONNECTION_PORT
@@ -51,24 +46,6 @@ from .oblv_keys_stash import OblvKeysStash
 
 # caches the connection to Enclave using the deployment ID
 OBLV_PROCESS_CACHE: Dict[str, List] = {}
-
-
-# TODO: 🟡 Duplication of PyPrimitive Dict
-# This is emulated since the action store curently accepts  only SyftObject types
-@serializable()
-class DictObject(SyftObject):
-    # version
-    __canonical_name__ = "Dict"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    base_dict: Dict[Any, Any] = {}
-
-    # serde / storage rules
-    __attr_searchable__ = []
-    __attr_unique__ = ["id"]
-
-    def __repr__(self) -> str:
-        return self.base_dict.__repr__()
 
 
 def connect_to_enclave(
@@ -307,7 +284,9 @@ class OblvService(AbstractService):
         "Retrieves the public key present on the Domain Node."
 
         if len(self.oblv_keys_stash):
-            oblv_keys = self.oblv_keys_stash.get_all(context.credentials)
+            # retrieve the public key from the stash using the node's verify key
+            # as the public should be accessible to all the users
+            oblv_keys = self.oblv_keys_stash.get_all(context.node.verify_key)
             if oblv_keys.is_ok():
                 oblv_keys = oblv_keys.ok()[0]
             else:
@@ -369,7 +348,7 @@ class OblvService(AbstractService):
         obj = deserialize(req.content, from_bytes=True)
         # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
         obj.signing_key = signing_key
-        obj.connection = HTTPConnection(connection_string)
+        obj.connection = HTTPConnection(url=connection_string)
         return cast(SyftAPI, obj)
 
     @service_method(
@@ -399,7 +378,7 @@ class OblvService(AbstractService):
         user_code = user_code.ok()
 
         res = user_code.status.mutate(
-            value=UserCodeStatus.EXECUTE,
+            value=UserCodeStatus.APPROVED,
             node_name=node_name,
             verify_key=context.credentials,
         )
@@ -408,69 +387,22 @@ class OblvService(AbstractService):
         user_code.status = res.ok()
         user_code_service.update_code_state(context=context, code_item=user_code)
 
+        root_context = context.as_root_context()
+
         if not action_service.exists(context=context, obj_id=user_code_id):
-            dict_object = DictObject(id=user_code_id)
-            dict_object.base_dict[str(context.credentials)] = inputs
-            action_service.store.set(
-                uid=user_code_id,
-                credentials=user_code.user_verify_key,
-                syft_object=dict_object,
-                has_result_read_permission=True,
-            )
+            dict_object = ActionObject.from_obj({})
+            dict_object.id = user_code_id
+            dict_object[str(context.credentials)] = inputs
+            root_context.extra_kwargs = {"has_result_read_permission": True}
+            action_service.set(root_context, dict_object)
 
         else:
-            res = action_service.store.get(
-                uid=user_code_id, credentials=user_code.user_verify_key
-            )
+            res = action_service.get(uid=user_code_id, context=context)
             if res.is_ok():
                 dict_object = res.ok()
-                dict_object.base_dict[str(context.credentials)] = inputs
-                action_service.store.set(
-                    uid=user_code_id,
-                    credentials=user_code.user_verify_key,
-                    syft_object=dict_object,
-                )
+                dict_object[str(context.credentials)] = inputs
+                action_service.set(root_context, dict_object)
             else:
                 return res
 
         return Ok(Ok(True))
-
-
-# Checks if the given user code would  propogate value to enclave on acceptance
-def check_enclave_transfer(
-    user_code: UserCode, value: UserCodeStatus, context: ChangeContext
-) -> Union[Any, Ok]:
-    if not context.node or not context.node.signing_key:
-        return Err(f"{type(context)} has no node")
-    signing_key = context.node.signing_key
-    if (
-        isinstance(user_code.enclave_metadata, OblvMetadata)
-        and value == UserCodeStatus.EXECUTE
-    ):
-        method = context.node.get_service_method(OblvService.get_api_for)
-
-        api = method(
-            user_code.enclave_metadata,
-            context.node.signing_key,
-            worker_name=context.node.name,
-        )
-        # send data of the current node to enclave
-        node_view = NodeView(
-            node_name=context.node.name, verify_key=signing_key.verify_key
-        )
-        inputs = user_code.input_policy.inputs[node_view]
-        action_service = context.node.get_service("actionservice")
-        for var_name, uid in inputs.items():
-            action_object = action_service.store.get(
-                uid=uid, credentials=signing_key.verify_key
-            )
-            if action_object.is_err():
-                return action_object
-            inputs[var_name] = action_object.ok()
-
-        res = api.services.oblv.send_user_code_inputs_to_enclave(
-            user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
-        )
-        return res
-    else:
-        return Ok()

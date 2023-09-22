@@ -1,6 +1,6 @@
-ARG PYTHON_VERSION='3.10.10'
+ARG PYTHON_VERSION='3.11'
 
-FROM python:3.10.10-slim as build
+FROM python:3.11-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
@@ -8,37 +8,39 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN mkdir -p /root/.local
 
+RUN apt-get update && apt-get upgrade -y
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
-  DEBIAN_FRONTEND=noninteractive \
-  apt-get update && \
-  apt-get install -y --no-install-recommends \
-  curl python3-dev gcc make build-essential cmake git
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl python3-dev gcc make build-essential cmake git
 
 RUN --mount=type=cache,target=/root/.cache \
-  pip install -U pip
+    pip install -U pip
+
+#install jupyterlab
+RUN --mount=type=cache,target=/root/.cache \
+    pip install --user jupyterlab
 
 # copy precompiled arm64 packages
 COPY grid/backend/wheels /wheels
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-  pip install --user /wheels/jaxlib-0.3.14-cp310-none-manylinux2014_aarch64.whl; \
-  pip install --user /wheels/tensorstore-0.1.25-cp310-cp310-linux_aarch64.whl; \
-  fi
+    pip install --user /wheels/jaxlib-0.4.16-cp311-cp311-manylinux2014_aarch64.whl; \
+    pip install --user jax==0.4.16; \
+    fi
 
 WORKDIR /app
-COPY grid/backend/requirements.txt /app
-
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user -r requirements.txt
 
 # Backend
 FROM python:$PYTHON_VERSION-slim as backend
+RUN apt-get update && apt-get upgrade -y
 COPY --from=build /root/.local /root/.local
 
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
 RUN --mount=type=cache,target=/root/.cache \
-  pip install -U pip
+    pip install -U pip
 
 WORKDIR /app
 
@@ -55,7 +57,13 @@ COPY syft/src/syft/capnp /app/syft/src/syft/capnp
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
-  pip install --user -e /app/syft
+    pip install --user -e /app/syft && \
+    pip uninstall ansible ansible-core -y && \
+    rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
+
+# security patches
+RUN apt purge --auto-remove linux-libc-dev -y || true
+RUN apt purge --auto-remove libldap-2.5-0 -y || true
 
 # copy any changed source
 COPY syft/src /app/syft/src

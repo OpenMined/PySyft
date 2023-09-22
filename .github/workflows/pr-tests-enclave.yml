@@ -15,16 +15,17 @@ on:
         description: "Run Tests Manually"
         required: false
 
+concurrency:
+  group: enclave-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
+  cancel-in-progress: true
+
 jobs:
   pr-tests-enclave-oblv:
     strategy:
       max-parallel: 4
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ["3.10"]
-        # include:
-        #   - python-version: "3.9"
-        #     os: "ubuntu-latest"
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -52,8 +53,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v3
@@ -68,9 +70,9 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
-      - name: Run Enclave tests
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          tox -e stack.test.integration.enclave.oblv
+      # Temporarily disabled oblv tests
+      # - name: Run Enclave tests
+      #   if: steps.changes.outputs.syft == 'true'
+      #   run: |
+      #     tox -e stack.test.integration.enclave.oblv

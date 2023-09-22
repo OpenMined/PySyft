@@ -14,7 +14,7 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import Template
 import requests
-from tqdm import tqdm
+from rich.progress import track
 import yaml
 
 # relative
@@ -65,7 +65,8 @@ def read_yml_url(yml_url: str) -> Tuple[Optional[Dict], str]:
 
 
 def git_url_for_file(file_path: str, base_url: str, hash: str) -> str:
-    return os.path.join(base_url, hash, file_path)
+    # url must have unix style slashes
+    return os.path.join(base_url, hash, file_path).replace(os.sep, "/")
 
 
 def get_local_abs_path(target_dir: str, file_path: str) -> str:
@@ -126,6 +127,7 @@ def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], 
             raise Exception(f"{template_location} is not valid")
     else:
         template_location = HAGRID_TEMPLATE_PATH
+
         template, template_hash = read_yml_file(template_location)
 
     if EDITABLE_MODE and is_path(template_location):
@@ -135,7 +137,11 @@ def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], 
 
 
 def setup_from_manifest_template(
-    host_type: str, template_location: Optional[str] = None, overwrite: bool = False
+    host_type: str,
+    deployment_type: str,
+    template_location: Optional[str] = None,
+    overwrite: bool = False,
+    verbose: bool = False,
 ) -> Dict:
     template, template_hash = get_template_yml(template_location)
 
@@ -157,16 +163,22 @@ def setup_from_manifest_template(
         # Get all files w.r.t that package e.g. grid, syft, hagrid
         template_files = all_template_files[package_name]
         package_path = template_files["path"]
-        to_absolute_file_path = lambda x: os.path.join(package_path, x)  # noqa: E731
 
         # common files
-        files_to_download += list(map(to_absolute_file_path, template_files["common"]))
+        files_to_download += [
+            os.path.join(package_path, f) for f in template_files["common"]
+        ]
 
+        # worker
+        if deployment_type == "single_container" and host_type in ["docker"]:
+            files_to_download += [
+                os.path.join(package_path, f) for f in template_files["worker"]
+            ]
         # docker related files
-        if host_type in ["docker"]:
-            files_to_download += list(
-                map(to_absolute_file_path, template_files["docker"])
-            )
+        elif host_type in ["docker"]:
+            files_to_download += [
+                os.path.join(package_path, f) for f in template_files["docker"]
+            ]
 
         # add k8s related files
         # elif host_type in ["k8s"]:
@@ -178,7 +190,7 @@ def setup_from_manifest_template(
     if EDITABLE_MODE and is_path(template_location):
         # to test things in editable mode we can pass in a .yml file path and it will
         # copy the files instead of download them
-        for src_file_path in tqdm(files_to_download, desc="Copying files... "):
+        for src_file_path in track(files_to_download, description="Copying files"):
             full_src_dir = f"{repo_src_path()}/{src_file_path}"
             full_target_path = f"{target_dir}/{src_file_path}"
             full_target_dir = os.path.dirname(full_target_path)
@@ -195,6 +207,7 @@ def setup_from_manifest_template(
             git_base_url=git_base_url,
             target_dir=target_dir,
             overwrite=overwrite,
+            verbose=verbose,
         )
 
     kwargs_to_parse["tag"] = docker_tag
@@ -211,8 +224,9 @@ def download_files(
     git_base_url: str,
     target_dir: str,
     overwrite: bool = False,
+    verbose: bool = False,
 ) -> None:
-    for src_file_path in tqdm(files_to_download, desc="Downloading files... "):
+    for src_file_path in track(files_to_download, description="Downloading files"):
         # For now target file path is same as source file path
         trg_file_path = src_file_path
         local_destination = get_local_abs_path(target_dir, trg_file_path)
@@ -221,11 +235,16 @@ def download_files(
             link_to_file=link_to_file,
             local_destination=local_destination,
             overwrite=overwrite,
+            verbose=verbose,
         )
 
 
 def render_templates(
-    node_name: str, template_location: Optional[str], env_vars: dict, host_type: str
+    node_name: str,
+    deployment_type: str,
+    template_location: Optional[str],
+    env_vars: dict,
+    host_type: str,
 ) -> None:
     template, template_hash = get_template_yml(template_location)
 
@@ -247,8 +266,14 @@ def render_templates(
         # common files
         files_to_render += template_files["common"]
 
-        # docker related files
-        if host_type in ["docker"]:
+        # worker
+        if deployment_type == "single_container" and host_type in ["docker"]:
+            for template_file in template_files["worker"]:
+                if "default.env" not in template_file:
+                    files_to_render.append(template_file)
+
+        elif host_type in ["docker"]:
+            # docker related files
             for template_file in template_files["docker"]:
                 if "default.env" not in template_file:
                     files_to_render.append(template_file)
@@ -256,7 +281,6 @@ def render_templates(
         # Render the files
         for file_path in files_to_render:
             folder_path = template_files["path"]
-
             # relative to src_dir
             src_file_path = f"{folder_path}{file_path}"
             target_file_path = f"{target_dir}/{file_path}"
@@ -264,7 +288,7 @@ def render_templates(
             jinja_template.substitute_vars(src_file_path, env_vars, target_file_path)
 
 
-class JinjaTemplate(object):
+class JinjaTemplate:
     def __init__(self, template_dir: Union[str, os.PathLike]) -> None:
         self.directory = os.path.expanduser(template_dir)
         self.environ = Environment(
@@ -294,7 +318,10 @@ class JinjaTemplate(object):
 
 
 def download_file(
-    link_to_file: str, local_destination: str, overwrite: bool = False
+    link_to_file: str,
+    local_destination: str,
+    overwrite: bool = False,
+    verbose: bool = False,
 ) -> None:
     file_dir = os.path.dirname(local_destination)
     os.makedirs(file_dir, exist_ok=True)
@@ -312,4 +339,5 @@ def download_file(
         except Exception as e:
             raise e
     else:
-        print(f"Skipping download: {link_to_file} exists.")
+        if verbose:
+            print(f"Skipping download: {link_to_file} exists.")

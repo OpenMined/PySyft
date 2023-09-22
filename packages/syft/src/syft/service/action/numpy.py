@@ -58,9 +58,6 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     #         )
     #     return self == other
 
-    def __bool__(self) -> bool:
-        return bool(self.all())
-
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         inputs = tuple(
             np.array(x.syft_action_data, dtype=x.dtype)
@@ -72,12 +69,12 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         result = getattr(ufunc, method)(*inputs, **kwargs)
         if type(result) is tuple:
             return tuple(
-                NumpyArrayObject(syft_action_data=x, dtype=x.dtype, shape=x.shape)
+                NumpyArrayObject(syft_action_data_cache=x, dtype=x.dtype, shape=x.shape)
                 for x in result
             )
         else:
             return NumpyArrayObject(
-                syft_action_data=result, dtype=result.dtype, shape=result.shape
+                syft_action_data_cache=result, dtype=result.dtype, shape=result.shape
             )
 
 

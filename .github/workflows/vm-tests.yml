@@ -21,8 +21,8 @@ jobs:
       max-parallel: 99
       matrix:
         os: [macos-12]
-        python-version: ["3.10"]
-        node-type: ["vm"]
+        python-version: ["3.11"]
+        deployment-type: ["vm"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -47,8 +47,9 @@ jobs:
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v3
@@ -72,6 +73,6 @@ jobs:
       - name: Run notebook tests
         if: steps.changes.outputs.stack == 'true'
         env:
-          ORCHESTRA_NODE_TYPE: "${{ matrix.node-type }}"
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
         run: |
           tox -e stack.test.vm

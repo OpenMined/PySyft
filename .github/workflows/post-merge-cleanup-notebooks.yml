@@ -15,16 +15,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.SYFT_BUMP_TOKEN }}
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Commit changes
+
+      - name: Commit changes to remove notebooks
         uses: EndBug/add-and-commit@v9
         with:
-          author_name: Madhava Jay
-          author_email: madhava@openmined.org
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
           message: "cleanup notebooks"
           remove: "-r notebooks/Experimental/"
           commit: "-a"

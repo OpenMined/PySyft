@@ -20,6 +20,7 @@ import re
 from secrets import randbelow
 import socket
 import sys
+import threading
 import time
 from types import ModuleType
 from typing import Any
@@ -34,13 +35,14 @@ from typing import Type
 from typing import Union
 
 # third party
+from IPython.display import display
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import requests
+from rich.prompt import Confirm
 
 # relative
-from ..serde.serialize import _serialize
 from .logger import critical
 from .logger import debug
 from .logger import error
@@ -85,6 +87,10 @@ def get_name_for(klass: type):
     if klass_name is None:
         klass_name = extract_name(klass)
     return klass_name
+
+
+def get_mb_size(data: Any) -> float:
+    return sys.getsizeof(data) / (1024 * 1024)
 
 
 def extract_name(klass: type):
@@ -186,22 +192,21 @@ def get_root_data_path() -> Path:
     # on Windows the directory is: C:/Users/$USER/.syft/data
 
     data_dir = Path.home() / ".syft" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
 
-    os.makedirs(data_dir, exist_ok=True)
     return data_dir
 
 
 def download_file(url: str, full_path: Union[str, Path]) -> Optional[Path]:
-    if not os.path.exists(full_path):
+    full_path = Path(full_path)
+    if not full_path.exists():
         r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
-        if r.status_code < 199 or 299 < r.status_code:
+        if not r.ok:
             print(f"Got {r.status_code} trying to download {url}")
             return None
-        path = os.path.dirname(full_path)
-        os.makedirs(path, exist_ok=True)
-        with open(full_path, "wb") as f:
-            f.write(r.content)
-    return Path(full_path)
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_bytes(r.content)
+    return full_path
 
 
 def verify_tls() -> bool:
@@ -354,7 +359,7 @@ def get_subclasses(obj_type: type) -> List[type]:
 
     """
 
-    classes = list()
+    classes = []
     for sc in obj_type.__subclasses__():
         classes.append(sc)
         classes += get_subclasses(obj_type=sc)
@@ -437,6 +442,22 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
         raise Exception(log)
 
     return ref.pointer_type  # type: ignore
+
+
+def prompt_warning_message(message: str, confirm: bool = False) -> bool:
+    # relative
+    from ..service.response import SyftWarning
+
+    warning = SyftWarning(message=message)
+    display(warning)
+
+    if confirm:
+        allowed = Confirm.ask("Would you like to proceed?")
+        if not allowed:
+            display("Aborted !!")
+            return False
+
+    return True
 
 
 left_name = [
@@ -833,23 +854,11 @@ def get_interpreter_module() -> str:
         return "StandardInterpreter"  # not sure
 
 
-def recursive_hash(obj: Any) -> int:
-    hashes = 0
-    if isinstance(obj, (list, dict, set)):
-        if isinstance(obj, (list, set)):
-            for item in obj:
-                hashes += recursive_hash(item)
-        elif isinstance(obj, dict):
-            for item_key, item in obj:
-                hashes += recursive_hash(item_key)
-                hashes += recursive_hash(item)
-    else:
-        # TODO: remove the generic python hash from other checks and use a more secure one
-        # As the python hash does not produce unique hashes for different runs
-        # and also for different python versions
-        # to be modified in the hashing PR
-        # Adding a temp fix for now
-        serde_bytes = _serialize(obj, to_bytes=True)
-        hash_bytes = hashlib.sha256(serde_bytes).digest()
-        hashes += int.from_bytes(hash_bytes, byteorder="big")
-    return hashes
+if os_name() == "macOS":
+    # needed on MacOS to prevent [__NSCFConstantString initialize] may have been in
+    # progress in another thread when fork() was called.
+    multiprocessing.set_start_method("spawn", True)
+
+
+def thread_ident() -> int:
+    return threading.current_thread().ident

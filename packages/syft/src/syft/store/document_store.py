@@ -391,13 +391,18 @@ class StorePartition:
         )
 
     def find_index_or_search_keys(
-        self, credentials: SyftVerifyKey, index_qks: QueryKeys, search_qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        index_qks: QueryKeys,
+        search_qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
         return self._thread_safe_cbk(
             self._find_index_or_search_keys,
             credentials,
             index_qks=index_qks,
             search_qks=search_qks,
+            order_by=order_by,
         )
 
     def remove_keys(
@@ -427,9 +432,14 @@ class StorePartition:
         )
 
     def get_all_from_store(
-        self, credentials: SyftVerifyKey, qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
-        return self._thread_safe_cbk(self._get_all_from_store, credentials, qks)
+        return self._thread_safe_cbk(
+            self._get_all_from_store, credentials, qks, order_by
+        )
 
     def delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
@@ -439,9 +449,12 @@ class StorePartition:
         )
 
     def all(
-        self, credentials: SyftVerifyKey
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: Optional[bool] = False,
     ) -> Result[List[BaseStash.object_type], str]:
-        return self._thread_safe_cbk(self._all, credentials)
+        return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
 
     # Potentially thread-unsafe methods.
     # CAUTION:
@@ -459,7 +472,10 @@ class StorePartition:
         raise NotImplementedError
 
     def _get_all_from_store(
-        self, credentials: SyftVerifyKey, qks: QueryKeys
+        self,
+        credentials: SyftVerifyKey,
+        qks: QueryKeys,
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[SyftObject], str]:
         raise NotImplementedError
 
@@ -467,6 +483,18 @@ class StorePartition:
         raise NotImplementedError
 
     def _all(self) -> Result[List[BaseStash.object_type], str]:
+        raise NotImplementedError
+
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        raise NotImplementedError
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        raise NotImplementedError
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        raise NotImplementedError
+
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
 
@@ -520,9 +548,24 @@ class BaseStash:
         )
 
     def get_all(
-        self, credentials: SyftVerifyKey
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: bool = False,
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.partition.all(credentials)
+        return self.partition.all(credentials, order_by, has_permission)
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        self.partition.add_permissions(permissions)
+
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        self.partition.add_permission(permission)
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        self.partition.remove_permission(permission)
+
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
+        return self.partition.has_permission(permission=permission)
 
     def __len__(self) -> int:
         return len(self.partition)
@@ -542,7 +585,10 @@ class BaseStash:
         )
 
     def query_all(
-        self, credentials: SyftVerifyKey, qks: Union[QueryKey, QueryKeys]
+        self,
+        credentials: SyftVerifyKey,
+        qks: Union[QueryKey, QueryKeys],
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[List[BaseStash.object_type], str]:
         if isinstance(qks, QueryKey):
             qks = QueryKeys(qks=qks)
@@ -565,19 +611,30 @@ class BaseStash:
         search_qks = QueryKeys(qks=searchable_keys)
 
         return self.partition.find_index_or_search_keys(
-            credentials=credentials, index_qks=index_qks, search_qks=search_qks
+            credentials=credentials,
+            index_qks=index_qks,
+            search_qks=search_qks,
+            order_by=order_by,
         )
 
     def query_all_kwargs(
-        self, credentials: SyftVerifyKey, **kwargs: Dict[str, Any]
+        self,
+        credentials: SyftVerifyKey,
+        **kwargs: Dict[str, Any],
     ) -> Result[List[BaseStash.object_type], str]:
+        order_by = kwargs.pop("order_by", None)
         qks = QueryKeys.from_dict(kwargs)
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks, order_by=order_by)
 
     def query_one(
-        self, credentials: SyftVerifyKey, qks: Union[QueryKey, QueryKeys]
+        self,
+        credentials: SyftVerifyKey,
+        qks: Union[QueryKey, QueryKeys],
+        order_by: Optional[PartitionKey] = None,
     ) -> Result[Optional[BaseStash.object_type], str]:
-        return self.query_all(credentials=credentials, qks=qks).and_then(first_or_none)
+        return self.query_all(
+            credentials=credentials, qks=qks, order_by=order_by
+        ).and_then(first_or_none)
 
     def query_one_kwargs(
         self,
