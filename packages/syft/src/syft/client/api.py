@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import OrderedDict
 import inspect
+from inspect import Parameter
 from inspect import signature
 import types
 from typing import Any
@@ -14,6 +15,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 from typing import _GenericAlias
+from typing import get_args
 
 # third party
 from nacl.exceptions import BadSignatureError
@@ -26,6 +28,7 @@ from typeguard import check_type
 from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
+from ..protocol.data_protocol import get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.recursive import index_syft_by_module_name
 from ..serde.serializable import serializable
@@ -46,6 +49,7 @@ from ..service.warnings import WarningContext
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
+from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
 from ..types.uid import LineageID
 from ..types.uid import UID
@@ -375,6 +379,52 @@ def debox_signed_syftapicall_response(
     return signed_result.message.data
 
 
+def downgrade_signature(signature: Signature, object_versions: List):
+    def migrate_annotation(annotation):
+        annotation_args = get_args(annotation)
+        annotation_to_migrate = annotation_args if annotation_args else [annotation]
+
+        new_args = []
+        for arg in annotation_to_migrate:
+            if isinstance(arg, SyftBaseObject):
+                versions = SyftMigrationRegistry.get_versions(arg.__canonical_name__)
+                downgrade_version = versions[
+                    str(max(object_versions[arg.__canonical_name__]))
+                ]
+                new_args.append(arg.migrate_to(downgrade_version))
+            else:
+                new_args.append(arg)
+
+        new_annotation = (
+            annotation.copy_with(tuple(new_args)) if annotation_args else new_args[0]
+        )
+
+        return new_annotation
+
+    migrated_parameters = []
+    for _, parameter in signature.parameters.items():
+        annotation = migrate_annotation(parameter.annotation)
+        migrated_parameter = Parameter(
+            name=parameter.name,
+            default=parameter.default,
+            annotation=annotation,
+            kind=parameter.kind,
+        )
+        migrated_parameters.append(migrated_parameter)
+
+    migrated_return_annotation = migrate_annotation(signature.return_annotation)
+
+    try:
+        new_signature = Signature(
+            parameters=migrated_parameters,
+            return_annotation=migrated_return_annotation,
+        )
+    except Exception as e:
+        raise e
+
+    return new_signature
+
+
 @instrument
 @serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
 class SyftAPI(SyftObject):
@@ -400,7 +450,9 @@ class SyftAPI(SyftObject):
 
     @staticmethod
     def for_user(
-        node: AbstractNode, user_verify_key: Optional[SyftVerifyKey] = None
+        node: AbstractNode,
+        user_verify_key: Optional[SyftVerifyKey] = None,
+        communication_protocol: Optional[int] = None,
     ) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
@@ -417,6 +469,18 @@ class SyftAPI(SyftObject):
             node=node, role=role, credentials=user_verify_key
         )
 
+        # If server uses a higher protocol version than client, then
+        # signatures needs to be downgraded.
+        signature_needs_downgrade = int(node.current_protocol) >= int(
+            communication_protocol
+        )
+        data_protocol = get_data_protocol()
+
+        if signature_needs_downgrade:
+            object_version_for_protocol = data_protocol.get_object_versions(
+                communication_protocol
+            )
+
         for (
             path,
             service_config,
@@ -426,13 +490,23 @@ class SyftAPI(SyftObject):
                 if service_warning:
                     service_warning = service_warning.message_from(warning_context)
                     service_warning.enabled = node.enable_warnings
+
+                signature = (
+                    downgrade_signature(
+                        signature=service_config.signature,
+                        object_versions=object_version_for_protocol,
+                    )
+                    if signature_needs_downgrade
+                    else service_config.signature
+                )
+
                 endpoint = APIEndpoint(
                     service_path=path,
                     module_path=path,
                     name=service_config.public_name,
                     description="",
                     doc_string=service_config.doc_string,
-                    signature=service_config.signature,
+                    signature=signature,  # TODO: Migrate signature based on communication protocol
                     has_self=False,
                     warning=service_warning,
                 )

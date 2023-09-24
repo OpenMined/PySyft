@@ -42,6 +42,7 @@ from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..external import OBLV
+from ..protocol.data_protocol import get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
@@ -455,6 +456,11 @@ class Node(AbstractNode):
     def guest_client(self):
         return self.get_guest_client()
 
+    @property
+    def current_protocol(self) -> List:
+        data_protocol = get_data_protocol()
+        return data_protocol.latest_version
+
     def get_guest_client(self, verbose: bool = True):
         # relative
         from ..client.client import PythonConnection
@@ -824,8 +830,16 @@ class Node(AbstractNode):
             return item
         return result
 
-    def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
-        return SyftAPI.for_user(node=self, user_verify_key=for_user)
+    def get_api(
+        self,
+        for_user: Optional[SyftVerifyKey] = None,
+        communication_protocol: Optional[int] = None,
+    ) -> SyftAPI:
+        return SyftAPI.for_user(
+            node=self,
+            user_verify_key=for_user,
+            communication_protocol=communication_protocol,
+        )
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext

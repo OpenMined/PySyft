@@ -3,16 +3,19 @@ from __future__ import annotations
 
 # stdlib
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 
 # third party
 from packaging import version
 from pydantic import BaseModel
+from pydantic import root_validator
 
 # relative
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
+from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -136,6 +139,14 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     admin_email: str
     node_side_type: str
     show_warnings: bool
+    supported_protocols: List
+
+    @root_validator(pre=True)
+    def add_protocol_versions(cls, values: Dict) -> Dict:
+        if "supported_protocols" not in values:
+            data_protocol = get_data_protocol()
+            values["supported_protocols"] = data_protocol.supported_protocols
+        return values
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -157,7 +168,7 @@ def metadata_to_json() -> List[Callable]:
 @transform(NodeMetadataJSON, NodeMetadata)
 def json_to_metadata() -> List[Callable]:
     return [
-        drop(["metadata_version"]),
+        drop(["metadata_version", "supported_protocols"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),
         convert_types(["node_type"], NodeType),
     ]

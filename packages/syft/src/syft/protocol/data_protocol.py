@@ -4,7 +4,9 @@ import json
 import os
 from pathlib import Path
 from typing import Dict
+from typing import List
 from typing import Type
+from typing import Union
 
 # relative
 from ..types.syft_object import SyftBaseObject
@@ -199,19 +201,22 @@ class DataProtocol:
         return True
 
     @property
-    def supported_protocols(self):
+    def supported_protocols(self) -> List[int]:
         """Returns a list of protocol numbers that are marked as supported."""
         return [
             int(protocol_version)
             for protocol_version, protocol_state in self.state.items()
-            if protocol_state["supported"]
+            if str_to_bool(protocol_state["supported"])
         ]
+
+    def get_object_versions(self, protocol: Union[int, str]) -> List:
+        return self.state[str(protocol)]["object_versions"]
+
+
+def get_data_protocol():
+    return DataProtocol(filename=data_protocol_file_name())
 
 
 def upgrade_protocol():
-    data_protocol = DataProtocol(filename=data_protocol_file_name())
+    data_protocol = get_data_protocol()
     data_protocol.upgrade()
-
-
-def validate_protocol():
-    pass
