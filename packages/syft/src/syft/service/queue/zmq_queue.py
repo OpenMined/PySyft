@@ -86,8 +86,6 @@ class ZMQConsumer(QueueConsumer):
             print(f"Starting receival ({self.id})")
             message_list = self._consumer.recv_multipart()
             print(f"Received stuff ({self.id})")
-            self._consumer.send(b"")
-            print(f"sent back confirmation ({self.id})")
             message = message_list[0]
             print("Message Received Successfully !", flush=True)
         except zmq.ZMQError as e:
@@ -96,6 +94,8 @@ class ZMQConsumer(QueueConsumer):
             else:
                 raise e
         self.message_handler.handle_message(message=message)
+        self._consumer.send(b"")
+        print(f"sent back confirmation ({self.id})")
 
     def _run(self):
         while True:

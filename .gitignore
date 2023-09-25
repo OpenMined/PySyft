@@ -70,3 +70,6 @@ js/node_modules/*
 
 #nohup
 nohup.out
+
+# notebook data
+notebooks/helm/scenario_data.jsonl
