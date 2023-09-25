@@ -3153,7 +3153,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
             # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
 
             if "prune_vol" in kwargs:
-                return "docker rm `docker ps -aq` --force && docker volume prune"
+                return "docker rm `docker ps -aq` --force && docker volume prune -f"
             else:
                 return "docker rm `docker ps -aq` --force"
 

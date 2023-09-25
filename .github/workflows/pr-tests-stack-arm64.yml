@@ -21,12 +21,12 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.11"]
 
-    runs-on: [self-hosted, linux]
+    runs-on: ${{matrix.os}}
 
     steps:
-      - name: set permissions on work folder for self-runners
-        run: |
-          sudo chown -R $USER:$USER ~/actions-runner/_work/
+      # - name: set permissions on work folder for self-runners
+      #   run: |
+      #     sudo chown -R $USER:$USER ~/actions-runner/_work/
 
       - uses: actions/checkout@v3
 
