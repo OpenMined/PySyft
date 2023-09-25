@@ -4,7 +4,11 @@ Create a high CPU linux x86 machine. I used 32 CPUs on Azure and compilation too
 
 Once the latest docker is setup run the following steps.
 
+It is recommended to build on an ARM machine to conserve on time.
+
 ## Create a buildx builder for arm64
+
+Perform this step if you are building on an `x86` machine or else skip it
 
 ```
 $ docker buildx create --platform linux/arm64 --name arm64builder
@@ -12,6 +16,8 @@ $ docker buildx use arm64builder
 ```
 
 ## Install the QEMU arm64 emulator layers so you can run the container
+
+Perform this step if you are building on an `x86` machine or else skip it
 
 ```
 $ docker run --privileged --rm tonistiigi/binfmt --install arm64
@@ -59,6 +65,7 @@ $ git checkout tags/jaxlib-v0.4.10 -b jaxlib-v0.4.10
 ## Start the build
 
 ```
+$ export JAXLIB_RELEASE=True # needed to prevent dev tagging in version
 $ python3 /jax/build/build.py --target_cpu_features native
 ```
 
