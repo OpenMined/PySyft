@@ -24,8 +24,12 @@ PROTOCOL_STATE_FILENAME = "protocol_state.json"
 PROTOCOL_STATE_FILENAME_DEV = "protocol_state_dev.json"
 
 
-def data_protocol_file_name():
-    return PROTOCOL_STATE_FILENAME_DEV if get_dev_mode() else PROTOCOL_STATE_FILENAME
+def data_protocol_file_name(dev_mode: bool = False):
+    return (
+        PROTOCOL_STATE_FILENAME_DEV
+        if (get_dev_mode() or dev_mode)
+        else PROTOCOL_STATE_FILENAME
+    )
 
 
 def data_protocol_dir():
@@ -213,10 +217,10 @@ class DataProtocol:
         return self.state[str(protocol)]["object_versions"]
 
 
-def get_data_protocol():
-    return DataProtocol(filename=data_protocol_file_name())
+def get_data_protocol(dev_mode: bool = False):
+    return DataProtocol(filename=data_protocol_file_name(dev_mode=dev_mode))
 
 
-def upgrade_protocol():
-    data_protocol = get_data_protocol()
+def upgrade_protocol(dev_mode: bool = True):
+    data_protocol = get_data_protocol(dev_mode=dev_mode)
     data_protocol.upgrade()
