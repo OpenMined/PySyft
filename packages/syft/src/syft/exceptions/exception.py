@@ -1,6 +1,6 @@
 # stdlib
 from typing import List
-from typing import Type
+from typing import Optional
 
 # relative
 from ..service.context import NodeServiceContext
@@ -11,12 +11,12 @@ from ..service.user.user_roles import ServiceRole
 class PySyftException(Exception):
     """Base class for all PySyft exceptions."""
 
-    def __init__(self, message: str, roles: List[ServiceRole] = [ServiceRole.ADMIN]):
+    def __init__(self, message: str, roles: Optional[List[ServiceRole]] = None):
         super().__init__(message)
         self.message = message
-        self.roles = roles
+        self.roles = roles if roles else [ServiceRole.ADMIN]
 
-    def raise_with_context(self, context: NodeServiceContext) -> Type[Exception]:
+    def raise_with_context(self, context: NodeServiceContext):
         self.context = context
         return self
 
