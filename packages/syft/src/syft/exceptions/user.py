@@ -19,3 +19,10 @@ def InvalidSearchParamsException(valid_search_params: str) -> PySyftException:
     Allowed params: {valid_search_params}",
         roles=[ServiceRole.ADMIN],
     )
+
+
+def GenericSearchException(message: str) -> PySyftException:
+    return PySyftException(
+        message=message,
+        roles=[ServiceRole.ADMIN],
+    )

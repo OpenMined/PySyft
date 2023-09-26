@@ -6,6 +6,7 @@ from typing import Union
 
 # relative
 from ...abstract_node import NodeType
+from ...exceptions.user import GenericSearchException
 from ...exceptions.user import InvalidSearchParamsException
 from ...exceptions.user import UserAlreadyExistsException
 from ...exceptions.user import UserDoesNotExistException
@@ -168,7 +169,9 @@ class UserService(AbstractService):
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
 
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            raise GenericSearchException(str(result.err())).raise_with_context(
+                context=context
+            )
         users = result.ok()
         results = [user.to(UserView) for user in users] if users is not None else []
 
