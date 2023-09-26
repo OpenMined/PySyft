@@ -35,10 +35,12 @@ from typing import Type
 from typing import Union
 
 # third party
+from IPython.display import display
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import requests
+from rich.prompt import Confirm
 
 # relative
 from .logger import critical
@@ -190,22 +192,21 @@ def get_root_data_path() -> Path:
     # on Windows the directory is: C:/Users/$USER/.syft/data
 
     data_dir = Path.home() / ".syft" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
 
-    os.makedirs(data_dir, exist_ok=True)
     return data_dir
 
 
 def download_file(url: str, full_path: Union[str, Path]) -> Optional[Path]:
-    if not os.path.exists(full_path):
+    full_path = Path(full_path)
+    if not full_path.exists():
         r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
-        if r.status_code < 199 or 299 < r.status_code:
+        if not r.ok:
             print(f"Got {r.status_code} trying to download {url}")
             return None
-        path = os.path.dirname(full_path)
-        os.makedirs(path, exist_ok=True)
-        with open(full_path, "wb") as f:
-            f.write(r.content)
-    return Path(full_path)
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_bytes(r.content)
+    return full_path
 
 
 def verify_tls() -> bool:
@@ -358,7 +359,7 @@ def get_subclasses(obj_type: type) -> List[type]:
 
     """
 
-    classes = list()
+    classes = []
     for sc in obj_type.__subclasses__():
         classes.append(sc)
         classes += get_subclasses(obj_type=sc)
@@ -441,6 +442,22 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
         raise Exception(log)
 
     return ref.pointer_type  # type: ignore
+
+
+def prompt_warning_message(message: str, confirm: bool = False) -> bool:
+    # relative
+    from ..service.response import SyftWarning
+
+    warning = SyftWarning(message=message)
+    display(warning)
+
+    if confirm:
+        allowed = Confirm.ask("Would you like to proceed?")
+        if not allowed:
+            display("Aborted !!")
+            return False
+
+    return True
 
 
 left_name = [

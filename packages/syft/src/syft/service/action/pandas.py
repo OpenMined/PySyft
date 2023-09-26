@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import ClassVar
-from typing import Optional
 from typing import Type
 
 # third party
@@ -50,7 +49,7 @@ class PandasSeriesObject(ActionObject):
     syft_internal_type = Series
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
 
-    name: Optional[str] = None
+    # name: Optional[str] = None
     # syft_dont_wrap_attrs = ["shape"]
 
     def __getattribute__(self, name: str) -> Any:

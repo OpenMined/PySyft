@@ -129,6 +129,8 @@ services:
     network_mode: service:proxy
     volumes:
       - ${BACKEND_STORAGE_PATH}:/storage
+    stdin_open: true
+    tty: true
 
   # backend_stream:
   #   restart: always
@@ -212,23 +214,27 @@ services:
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
 
-  # seaweedfs:
-  #   profiles:
-  #     - blob-storage
-  #   depends_on:
-  #     - proxy
-  #     - redis
-  #   image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
-  #   environment:
-  #     - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
-  #   command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
-  #   volumes:
-  #     - seaweedfs-data:/data
-  #     - ./seaweedfs/s3config.json:/etc/s3config.json
-  #     - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
+  seaweedfs:
+    profiles:
+      - blob-storage
+    depends_on:
+      - proxy
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${SEAWEEDFS_VERSION}"
+    environment:
+      - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
+      - S3_ROOT_USER=${S3_ROOT_USER:-admin}
+      - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
+      - S3_PORT=${S3_PORT:-8888}
+    entrypoint: ["/bin/sh"]
+    command:
+      - "/etc/seaweedfs/start.sh"
+    volumes:
+      - seaweedfs-data:/data/blob
+      - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
+      - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
 
   mongo:
-    image: mongo:latest
+    image: "${MONGO_IMAGE}:${MONGO_VERSION}"
     restart: always
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
@@ -262,7 +268,7 @@ volumes:
   tailscale-data:
   headscale-data:
   # app-redis-data:
-  # seaweedfs-data:
+  seaweedfs-data:
   mongo-data:
 
 networks:

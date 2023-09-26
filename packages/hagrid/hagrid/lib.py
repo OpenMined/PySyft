@@ -117,7 +117,7 @@ def docker_desktop_memory() -> int:
     path = str(Path.home()) + "/Library/Group Containers/group.com.docker/settings.json"
 
     try:
-        f = open(path, "r")
+        f = open(path)
         out = f.read()
         f.close()
         return json.loads(out)["memoryMiB"]

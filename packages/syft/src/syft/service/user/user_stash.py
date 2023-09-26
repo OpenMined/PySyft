@@ -59,6 +59,11 @@ class UserStash(BaseStash):
     def admin_verify_key(self):
         return Ok(self.partition.root_verify_key)
 
+    def admin_user(self):
+        return self.get_by_role(
+            credentials=self.admin_verify_key().ok(), role=ServiceRole.ADMIN
+        )
+
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Optional[User], str]:
@@ -70,6 +75,13 @@ class UserStash(BaseStash):
     ) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
         return self.query_one(credentials=credentials, qks=qks)
+
+    def email_exists(self, email: str) -> bool:
+        res = self.get_by_email(credentials=self.admin_verify_key().ok(), email=email)
+        if res.ok() is None:
+            return False
+        else:
+            return True
 
     def get_by_role(
         self, credentials: SyftVerifyKey, role: ServiceRole

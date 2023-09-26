@@ -449,9 +449,12 @@ class StorePartition:
         )
 
     def all(
-        self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: Optional[bool] = False,
     ) -> Result[List[BaseStash.object_type], str]:
-        return self._thread_safe_cbk(self._all, credentials, order_by)
+        return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
 
     # Potentially thread-unsafe methods.
     # CAUTION:
@@ -480,6 +483,18 @@ class StorePartition:
         raise NotImplementedError
 
     def _all(self) -> Result[List[BaseStash.object_type], str]:
+        raise NotImplementedError
+
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        raise NotImplementedError
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        raise NotImplementedError
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        raise NotImplementedError
+
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
 
@@ -533,9 +548,24 @@ class BaseStash:
         )
 
     def get_all(
-        self, credentials: SyftVerifyKey, order_by: Optional[PartitionKey] = None
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: bool = False,
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.partition.all(credentials, order_by)
+        return self.partition.all(credentials, order_by, has_permission)
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        self.partition.add_permissions(permissions)
+
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        self.partition.add_permission(permission)
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        self.partition.remove_permission(permission)
+
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
+        return self.partition.has_permission(permission=permission)
 
     def __len__(self) -> int:
         return len(self.partition)

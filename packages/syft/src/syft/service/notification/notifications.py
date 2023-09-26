@@ -25,6 +25,11 @@ class NotificationStatus(Enum):
     READ = 1
 
 
+@serializable()
+class NotificationRequestStatus(Enum):
+    NO_ACTION = 0
+
+
 class NotificationExpiryStatus(Enum):
     AUTO = 0
     NEVER = 1
@@ -71,7 +76,7 @@ class Notification(SyftObject):
     def _coll_repr_(self):
         return {
             "Subject": self.subject,
-            "Status": self.status.name.capitalize(),
+            "Status": self.determine_status().name.capitalize(),
             "Created At": str(self.created_at),
             "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
         }
@@ -87,6 +92,15 @@ class Notification(SyftObject):
             self.node_uid, user_verify_key=self.syft_client_verify_key
         )
         return api.services.notifications.mark_as_unread(uid=self.id)
+
+    def determine_status(self) -> Enum:
+        # relative
+        from ..request.request import Request
+
+        if isinstance(self.linked_obj.resolve, Request):
+            return self.linked_obj.resolve.status
+
+        return NotificationRequestStatus.NO_ACTION
 
 
 @serializable()

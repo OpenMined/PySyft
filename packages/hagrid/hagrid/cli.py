@@ -1,5 +1,6 @@
 # stdlib
 from collections import namedtuple
+from enum import Enum
 import json
 import os
 from pathlib import Path
@@ -101,6 +102,11 @@ from .util import shell
 fix_windows_virtualenv_api(VirtualEnvironment)
 
 
+class NodeSideType(Enum):
+    LOW_SIDE = "low"
+    HIGH_SIDE = "high"
+
+
 def get_azure_image(short_name: str) -> str:
     prebuild_070 = (
         "madhavajay1632269232059:openmined_mj_grid_domain_ubuntu_1:domain_070:latest"
@@ -131,9 +137,10 @@ def get_compose_src_path(
         path = deployment_dir(node_name)
 
     if kwargs["deployment_type"] == "single_container":  # type: ignore
-        return path + "/worker"
-    else:
-        return path
+        path = path + "/worker"
+
+    os.makedirs(path, exist_ok=True)
+    return path
 
 
 @click.command(
@@ -257,7 +264,7 @@ def clean(location: str) -> None:
     "--release",
     default="production",
     required=False,
-    type=click.Choice(["production", "development"], case_sensitive=False),
+    type=click.Choice(["production", "staging", "development"], case_sensitive=False),
     help="Choose between production and development release",
 )
 @click.option(
@@ -322,7 +329,7 @@ def clean(location: str) -> None:
     help="Run docker with a different platform like linux/arm64",
 )
 @click.option(
-    "--no-vpn",
+    "--vpn",
     is_flag=True,
     help="Disable tailscale vpn container",
 )
@@ -425,6 +432,30 @@ def clean(location: str) -> None:
     "--render",
     is_flag=True,
     help="Render Docker Files",
+)
+@click.option(
+    "--no-warnings",
+    is_flag=True,
+    help="Enable API warnings on the node.",
+)
+@click.option(
+    "--low-side",
+    is_flag=True,
+    help="Launch a low side node type else a high side node type",
+)
+@click.option(
+    "--set-s3-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Set root username for s3 blob storage",
+)
+@click.option(
+    "--set-s3-password",
+    default=None,
+    required=False,
+    type=str,
+    help="Set root password for s3 blob storage",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
@@ -1219,6 +1250,10 @@ def create_launch_cmd(
 
     parsed_kwargs["use_blob_storage"] = not bool(kwargs["no_blob_storage"])
 
+    if parsed_kwargs["use_blob_storage"]:
+        parsed_kwargs["set_s3_username"] = kwargs["set_s3_username"]
+        parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
+
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
     )
@@ -1255,6 +1290,14 @@ def create_launch_cmd(
     if parsed_kwargs["dev"] is True:
         parsed_kwargs["release"] = "development"
 
+    # derive node type
+    if kwargs["low_side"]:
+        parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
+    else:
+        parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
+
+    parsed_kwargs["enable_warnings"] = not kwargs["no_warnings"]
+
     # choosing deployment type
     parsed_kwargs["deployment_type"] = "container_stack"
     if "deployment_type" in kwargs and kwargs["deployment_type"] is not None:
@@ -1274,17 +1317,20 @@ def create_launch_cmd(
     else:
         parsed_kwargs["image_name"] = "default"
 
-    if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
-        parsed_kwargs["tag"] = kwargs["tag"]
+    if parsed_kwargs["dev"] is True:
+        parsed_kwargs["tag"] = "local"
     else:
-        parsed_kwargs["tag"] = "latest"
+        if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
+            parsed_kwargs["tag"] = kwargs["tag"]
+        else:
+            parsed_kwargs["tag"] = "latest"
 
     if "jupyter" in kwargs and kwargs["jupyter"] is not None:
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
 
-    parsed_kwargs["vpn"] = not bool(kwargs["no_vpn"])
+    parsed_kwargs["vpn"] = bool(kwargs["vpn"])
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
@@ -2063,7 +2109,7 @@ def create_launch_docker_cmd(
     print("  - TEMPLATE DIR: " + template_grid_dir)
     if compose_src_path:
         print("  - COMPOSE SOURCE: " + compose_src_path)
-    print("  - RELEASE: " + kwargs["release"])
+    print("  - RELEASE: " + f'{kwargs["node_side_type"]}-{kwargs["release"]}')
     print("  - DEPLOYMENT:", kwargs["deployment_type"])
     print("  - ARCH: " + docker_platform)
     print("  - TYPE: " + str(node_type.input))
@@ -2116,6 +2162,7 @@ def create_launch_docker_cmd(
         ),
         "ENABLE_OBLV": str(enable_oblv).lower(),
         "BACKEND_STORAGE_PATH": backend_storage,
+        "NODE_SIDE_TYPE": kwargs["node_side_type"],
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -2124,6 +2171,9 @@ def create_launch_docker_cmd(
         envs["JAEGER_PORT"] = int(
             find_available_port(host="localhost", port=14268, search=True)
         )
+
+    if "enable_warnings" in kwargs:
+        envs["ENABLE_WARNINGS"] = kwargs["enable_warnings"]
 
     if "platform" in kwargs and kwargs["platform"] is not None:
         envs["DOCKER_DEFAULT_PLATFORM"] = docker_platform
@@ -2157,6 +2207,12 @@ def create_launch_docker_cmd(
     if "set_root_email" in kwargs and kwargs["set_root_email"] is not None:
         envs["DEFAULT_ROOT_EMAIL"] = kwargs["set_root_email"]
 
+    if "set_s3_username" in kwargs and kwargs["set_s3_username"] is not None:
+        envs["S3_ROOT_USER"] = kwargs["set_s3_username"]
+
+    if "set_s3_password" in kwargs and kwargs["set_s3_password"] is not None:
+        envs["S3_ROOT_PWD"] = kwargs["set_s3_password"]
+
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
 
@@ -2188,7 +2244,7 @@ def create_launch_docker_cmd(
         # old path
         default_env = f"{template_grid_dir}/.env"
     default_envs = {}
-    with open(default_env, "r") as f:
+    with open(default_env) as f:
         for line in f.readlines():
             if "=" in line:
                 parts = line.strip().split("=")
@@ -3025,11 +3081,20 @@ def create_launch_custom_cmd(
         if host_term.host == "localhost":
             ANSIBLE_ARGS["local"] = "true"
 
+        if "node_side_type" in kwargs:
+            ANSIBLE_ARGS["node_side_type"] = kwargs["node_side_type"]
+
         if kwargs["tls"] is True:
             ANSIBLE_ARGS["tls"] = "true"
 
         if "release" in kwargs:
             ANSIBLE_ARGS["release"] = kwargs["release"]
+
+        if "set_root_email" in kwargs and kwargs["set_root_email"] is not None:
+            ANSIBLE_ARGS["root_user_email"] = kwargs["set_root_email"]
+
+        if "set_root_password" in kwargs and kwargs["set_root_password"] is not None:
+            ANSIBLE_ARGS["root_user_password"] = kwargs["set_root_password"]
 
         if (
             kwargs["tls"] is True
@@ -3086,7 +3151,11 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
         target = verb.get_named_term_grammar("node_name").input
         if target == "all":
             # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
-            return "docker rm `docker ps -aq` --force"
+
+            if "prune_vol" in kwargs:
+                return "docker rm `docker ps -aq` --force && docker volume prune -f"
+            else:
+                return "docker rm `docker ps -aq` --force"
 
         version = check_docker_version()
         if version:
@@ -3222,6 +3291,11 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     "--force",
     is_flag=True,
     help="Bypass the prompt during hagrid land",
+)
+@click.option(
+    "--prune-vol",
+    is_flag=True,
+    help="Prune docker volumes after land.",
 )
 def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()

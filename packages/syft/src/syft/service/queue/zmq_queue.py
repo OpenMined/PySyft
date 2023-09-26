@@ -8,7 +8,6 @@ from typing import Union
 
 # third party
 import gevent
-from pydantic import validator
 import zmq.green as zmq
 
 # relative
@@ -114,11 +113,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
-    hostname: Optional[str]
-
-    @validator("hostname", pre=True, always=True)
-    def get_hostname(cls, v: Optional[str]) -> str:
-        return "127.0.0.1" if v is None else v
+    hostname: str = "127.0.0.1"
 
 
 @serializable(attrs=["host"])
@@ -130,7 +125,7 @@ class ZMQClient(QueueClient):
 
     def __init__(self, config: ZMQClientConfig) -> None:
         self.host = config.hostname
-        self.producers = dict()
+        self.producers = {}
         self.consumers = defaultdict(list)
 
     @staticmethod
@@ -256,5 +251,5 @@ class ZMQClient(QueueClient):
 
 @serializable()
 class ZMQQueueConfig(QueueConfig):
-    client_config = ZMQClientConfig
     client_type = ZMQClient
+    client_config = ZMQClientConfig()

@@ -11,6 +11,8 @@ from typing import Tuple
 from typing import Union
 
 # third party
+from IPython.display import HTML
+from IPython.display import display
 import itables
 import pandas as pd
 from pydantic import ValidationError
@@ -55,7 +57,7 @@ class TupleDict(OrderedDict):
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int):
             return list(self.values())[key]
-        return super(TupleDict, self).__getitem__(key)
+        return super().__getitem__(key)
 
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -89,6 +91,31 @@ class Contributor(SyftObject):
 
 
 @serializable()
+class MarkdownDescription(SyftObject):
+    # version
+    __canonical_name__ = "MarkdownDescription"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    text: str
+
+    def _repr_markdown_(self):
+        style = """
+        <style>
+            .jp-RenderedHTMLCommon pre {
+                background-color: #282c34 !important;
+                padding: 10px 10px 10px;
+            }
+            .jp-RenderedHTMLCommon pre code {
+                background-color: #282c34 !important;  /* Set the background color for the text in the code block */
+                color: #abb2bf !important;  /* Set text color */
+            }
+        </style>
+        """
+        display(HTML(style))
+        return self.text
+
+
+@serializable()
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
@@ -97,7 +124,7 @@ class Asset(SyftObject):
     action_id: UID
     node_uid: UID
     name: str
-    description: Optional[str]
+    description: Optional[MarkdownDescription] = None
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
@@ -106,6 +133,13 @@ class Asset(SyftObject):
     uploader: Contributor
 
     __repr_attrs__ = ["name", "shape"]
+
+    def __init__(
+        self, description: Optional[Union[MarkdownDescription, str]] = "", **data
+    ):
+        if isinstance(description, str):
+            description = MarkdownDescription(text=description)
+        super().__init__(**data, description=description)
 
     def _repr_html_(self) -> Any:
         itables_css = f"""
@@ -179,7 +213,7 @@ class Asset(SyftObject):
         return api.services.action.get_pointer(self.action_id)
 
     @property
-    def mock(self) -> Any:
+    def mock(self) -> Union[SyftError, Any]:
         # relative
         from ...client.api import APIRegistry
 
@@ -187,7 +221,13 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.action.get_pointer(self.action_id).syft_action_data
+        result = api.services.action.get_mock(self.action_id)
+        try:
+            if isinstance(result, SyftObject):
+                return result.syft_action_data
+            return result
+        except Exception as e:
+            return SyftError(message=f"Failed to get mock. {e}")
 
     def has_data_permission(self):
         return self.data is not None
@@ -241,7 +281,7 @@ class CreateAsset(SyftObject):
 
     id: Optional[UID] = None
     name: str
-    description: Optional[str]
+    description: Optional[MarkdownDescription] = None
     contributors: List[Contributor] = []
     data_subjects: List[DataSubjectCreate] = []
     node_uid: Optional[UID]
@@ -257,6 +297,9 @@ class CreateAsset(SyftObject):
 
     class Config:
         validate_assignment = True
+
+    def __init__(self, description: Optional[str] = "", **data):
+        super().__init__(**data, description=MarkdownDescription(text=str(description)))
 
     @root_validator()
     def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
@@ -300,7 +343,7 @@ class CreateAsset(SyftObject):
             return SyftError(message=f"Failed to add contributor. Error: {e}")
 
     def set_description(self, description: str) -> None:
-        self.description = description
+        self.description = MarkdownDescription(text=description)
 
     def set_obj(self, data: Any) -> None:
         if isinstance(data, SyftError):
@@ -324,7 +367,7 @@ class CreateAsset(SyftObject):
         # relative
         from ..action.action_object import ActionObject
 
-        self.mock = ActionObject.empty()
+        self.set_mock(ActionObject.empty(), False)
 
     def set_shape(self, shape: Tuple) -> None:
         self.shape = shape
@@ -376,7 +419,7 @@ class Dataset(SyftObject):
     contributors: List[Contributor] = []
     citation: Optional[str]
     url: Optional[str]
-    description: Optional[str]
+    description: Optional[MarkdownDescription] = None
     updated_at: Optional[str]
     requests: Optional[int] = 0
     mb_size: Optional[int]
@@ -386,6 +429,13 @@ class Dataset(SyftObject):
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
+
+    def __init__(
+        self, description: Optional[Union[str, MarkdownDescription]] = "", **data
+    ):
+        if isinstance(description, str):
+            description = MarkdownDescription(text=description)
+        super().__init__(**data, description=description)
 
     @property
     def icon(self):
@@ -418,7 +468,7 @@ class Dataset(SyftObject):
             </style>
             <div class='syft-dataset'>
             <h3>{self.name}</h3>
-            <p>{self.description}</p>
+            <p>{self.description.text}</p>
             {uploaded_by_line}
             <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
             <p class='paragraph-sm'><strong><span class='pr-8'>URL:
@@ -446,13 +496,13 @@ class Dataset(SyftObject):
         _repr_str = f"Syft Dataset: {self.name}\n"
         _repr_str += "Assets:\n"
         for asset in self.asset_list:
-            _repr_str += f"\t{asset.name}: {asset.description}\n"
+            _repr_str += f"\t{asset.name}: {asset.description.text}\n"
         if self.citation:
             _repr_str += f"Citation: {self.citation}\n"
         if self.url:
             _repr_str += f"URL: {self.url}\n"
         if self.description:
-            _repr_str += f"Description: {self.description}\n"
+            _repr_str += f"Description: {self.description.text}\n"
         return as_markdown_python_code(_repr_str)
 
     def _repr_markdown_(self) -> str:
@@ -463,13 +513,13 @@ class Dataset(SyftObject):
         _repr_str = f"Syft Dataset: {self.name}\n\n"
         _repr_str += "Assets:\n\n"
         for asset in self.asset_list:
-            _repr_str += f"\t{asset.name}: {asset.description}\n\n"
+            _repr_str += f"\t{asset.name}: {asset.description.text}\n\n"
         if self.citation:
             _repr_str += f"Citation: {self.citation}\n\n"
         if self.url:
             _repr_str += f"URL: {self.url}\n\n"
         if self.description:
-            _repr_str += f"Description: \n\n{self.description}\n\n"
+            _repr_str += f"Description: \n\n{self.description.text}\n\n"
         return _repr_str
 
     @property
@@ -548,7 +598,7 @@ class CreateDataset(Dataset):
         return asset_list
 
     def set_description(self, description: str) -> None:
-        self.description = description
+        self.description = MarkdownDescription(text=description)
 
     def add_citation(self, citation: str) -> None:
         self.citation = citation

@@ -24,7 +24,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-13]
+        os: [ubuntu-latest, macos-13, windows-latest]
         python-version: ["3.11"]
         include:
           - python-version: "3.9"
@@ -70,8 +70,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: buildjet/cache@v3
@@ -86,11 +87,18 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Fix Colima issue on MacOS Runners
+        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
+        shell: bash
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
+          brew reinstall qemu
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
-        uses: crazy-max/ghaction-setup-docker@v1.1.0
+        uses: crazy-max/ghaction-setup-docker@v2.0.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -101,7 +109,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-13]
+        os: [ubuntu-latest, macos-13, windows-latest]
         python-version: ["3.11"]
         deployment-type: ["python"]
         notebook-paths: ["tutorials"]
@@ -153,8 +161,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: buildjet/cache@v3
@@ -169,7 +178,6 @@ jobs:
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Run notebook tests
         uses: nick-fields/retry@v2
@@ -200,6 +208,14 @@ jobs:
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -222,8 +238,9 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: buildjet/cache@v3
@@ -238,21 +255,28 @@ jobs:
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Docker Compose on Linux
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.16.0
+          DOCKER_COMPOSE_VERSION=v2.21.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker compose version
 
+      - name: Fix Colima issue on MacOS Runners
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
+          brew reinstall qemu
+
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.1.0
+        uses: crazy-max/ghaction-setup-docker@v2.0.0
 
       - name: Docker Compose on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
@@ -320,8 +344,9 @@ jobs:
       - name: Get pip cache dir
         if: steps.changes.outputs.syft == 'true'
         id: pip-cache
+        shell: bash
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: buildjet/cache@v3
@@ -336,7 +361,6 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
-          python -c "import platform; import os; os.system('pip install jaxlib==0.4.10 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'
