@@ -7,6 +7,7 @@ from typing import Union
 # relative
 from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
+from ...exceptions.user import UserDoesNotExistException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -126,8 +127,7 @@ class UserService(AbstractService):
                 results = UserViewPage(users=results, total=total)
             return results
 
-        # 🟡 TODO: No user exists will happen when result.ok() is empty list
-        return SyftError(message="No users exists")
+        raise UserDoesNotExistException.raise_with_context(context=context)
 
     def get_role_for_credentials(
         self, credentials: Union[SyftVerifyKey, SyftSigningKey]
