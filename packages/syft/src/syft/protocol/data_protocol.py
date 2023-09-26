@@ -5,10 +5,13 @@ import os
 from pathlib import Path
 from typing import Dict
 from typing import List
+from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 
 # relative
+from ..service.response import SyftException
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..util.util import get_env
@@ -224,3 +227,42 @@ def get_data_protocol(dev_mode: bool = False):
 def upgrade_protocol(dev_mode: bool = True):
     data_protocol = get_data_protocol(dev_mode=dev_mode)
     data_protocol.upgrade()
+
+
+def migrate_args_and_kwargs(
+    args: Tuple,
+    kwargs: Dict,
+    to_protocol: Optional[int] = None,
+    to_latest_protocol: bool = False,
+) -> Tuple[Tuple, Dict]:
+    """Migrate args and kwargs to latest version for given protocol.
+
+    If `to_protocol` is None, then migrate to latest protocol version.
+
+    """
+    data_protocol = get_data_protocol()
+
+    if to_protocol is None:
+        to_protocol = data_protocol.latest_version if to_latest_protocol else None
+
+    if to_protocol is None:
+        raise SyftException(message="Protocol version missing.")
+
+    object_versions = data_protocol.get_object_versions(protocol=to_protocol)
+
+    migrated_kwargs, migrated_args = {}, []
+
+    for param_name, param_val in kwargs.items():
+        if isinstance(param_val, SyftBaseObject):
+            migrate_to_version = max(object_versions[param_val.__canonical_name__])
+            param_val = param_val.migrate_to(migrate_to_version)
+        migrated_kwargs[param_name] = param_val
+
+    for arg in args:
+        if isinstance(arg, SyftBaseObject):
+            migrate_to_version = max(object_versions[arg.__canonical_name__])
+            arg = param_val.migrate_to(migrate_to_version)
+
+        migrated_args.append(arg)
+
+    return tuple(migrated_args), migrated_kwargs

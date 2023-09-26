@@ -21,6 +21,7 @@ from result import OkErr
 # relative
 from ..abstract_node import AbstractNode
 from ..node.credentials import SyftVerifyKey
+from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.lib_permissions import CMPCRUDPermission
 from ..serde.lib_permissions import CMPPermission
 from ..serde.lib_service_registry import CMPBase
@@ -329,6 +330,11 @@ def service_method(
         input_signature = deepcopy(signature)
 
         def _decorator(self, *args, **kwargs):
+            communication_protocol = kwargs.pop("communication_protocol", None)
+            if communication_protocol:
+                args, kwargs = migrate_args_and_kwargs(
+                    *args, **kwargs, to_protocol=communication_protocol
+                )
             if autosplat is not None and len(autosplat) > 0:
                 args, kwargs = reconstruct_args_kwargs(
                     signature=input_signature,
@@ -337,6 +343,11 @@ def service_method(
                     kwargs=kwargs,
                 )
             result = func(self, *args, **kwargs)
+            if communication_protocol:
+                result, _ = migrate_args_and_kwargs(
+                    [result], kwargs={}, to_latest_protocol=True
+                )
+                result = result[0]
             context = kwargs.get("context", None)
             context = args[0] if context is None else context
             attrs_to_attach = {

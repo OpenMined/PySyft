@@ -29,6 +29,7 @@ from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..protocol.data_protocol import get_data_protocol
+from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.deserialize import _deserialize
 from ..serde.recursive import index_syft_by_module_name
 from ..serde.serializable import serializable
@@ -210,6 +211,7 @@ def generate_remote_function(
     path: str,
     make_call: Callable,
     pre_kwargs: Dict[str, Any],
+    communication_protocol: int,
     warning: Optional[APIEndpointWarning],
 ):
     if "blocking" in signature.parameters:
@@ -222,6 +224,11 @@ def generate_remote_function(
         if "blocking" in kwargs:
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
+
+        # Migrate args and kwargs to communication protocol
+        args, kwargs = migrate_args_and_kwargs(
+            to_protocol=communication_protocol, args=args, kwargs=kwargs
+        )
 
         res = validate_callable_args_and_kwargs(args, kwargs, signature)
 
@@ -244,6 +251,11 @@ def generate_remote_function(
         if not allowed:
             return
         result = make_call(api_call=api_call)
+
+        result, _ = migrate_args_and_kwargs(
+            [result], kwargs={}, to_latest_protocol=True
+        )
+        result = result[0]
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature
@@ -257,6 +269,7 @@ def generate_remote_lib_function(
     path: str,
     module_path: str,
     make_call: Callable,
+    communication_protocol: int,
     pre_kwargs: Dict[str, Any],
 ):
     if "blocking" in signature.parameters:
@@ -444,6 +457,7 @@ class SyftAPI(SyftObject):
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
     __user_role: ServiceRole = ServiceRole.NONE
+    communication_protocol: int
 
     # def __post_init__(self) -> None:
     #     pass
@@ -451,8 +465,8 @@ class SyftAPI(SyftObject):
     @staticmethod
     def for_user(
         node: AbstractNode,
+        communication_protocol: int,
         user_verify_key: Optional[SyftVerifyKey] = None,
-        communication_protocol: Optional[int] = None,
     ) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
@@ -553,6 +567,7 @@ class SyftAPI(SyftObject):
             endpoints=endpoints,
             lib_endpoints=lib_endpoints,
             __user_role=role,
+            communication_protocol=communication_protocol,
         )
 
     @property
@@ -606,7 +621,7 @@ class SyftAPI(SyftObject):
         _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
-        def build_endpoint_tree(endpoints):
+        def build_endpoint_tree(endpoints, communication_protocol):
             api_module = APIModule(path="")
             for _, v in endpoints.items():
                 signature = v.signature
@@ -621,6 +636,7 @@ class SyftAPI(SyftObject):
                         self.make_call,
                         pre_kwargs=v.pre_kwargs,
                         warning=v.warning,
+                        communication_protocol=communication_protocol,
                     )
                 elif isinstance(v, LibEndpoint):
                     endpoint_function = generate_remote_lib_function(
@@ -631,6 +647,7 @@ class SyftAPI(SyftObject):
                         v.module_path,
                         self.make_call,
                         pre_kwargs=v.pre_kwargs,
+                        communication_protocol=communication_protocol,
                     )
 
                 endpoint_function.__doc__ = v.doc_string
@@ -638,8 +655,12 @@ class SyftAPI(SyftObject):
             return api_module
 
         if self.lib_endpoints is not None:
-            self.libs = build_endpoint_tree(self.lib_endpoints)
-        self.api_module = build_endpoint_tree(self.endpoints)
+            self.libs = build_endpoint_tree(
+                self.lib_endpoints, self.communication_protocol
+            )
+        self.api_module = build_endpoint_tree(
+            self.endpoints, self.communication_protocol
+        )
 
     @property
     def services(self) -> APIModule:
@@ -815,14 +836,6 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
                             if issubclass(v, EmailStr):
                                 v = str
                             try:
-                                annotation_version = v.__version__
-                                value = (
-                                    value.migrate_to(annotation_version)
-                                    if isinstance(value, SyftBaseObject)
-                                    and annotation_version
-                                    else value
-                                )
-
                                 check_type(key, value, v)  # raises Exception
                                 success = True
                                 break  # only need one to match
@@ -831,12 +844,6 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
                         if not success:
                             raise TypeError()
                     else:
-                        annotation_version = t.__version__
-                        value = (
-                            value.migrate_to(annotation_version)
-                            if isinstance(value, SyftBaseObject) and annotation_version
-                            else value
-                        )
                         check_type(key, value, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
@@ -865,23 +872,9 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
                         for v in t.__args__:
                             if issubclass(v, EmailStr):
                                 v = str
-                            annotation_version = v.__version__
-                            arg = (
-                                arg.migrate_to(annotation_version)
-                                if isinstance(arg, SyftBaseObject)
-                                and annotation_version
-                                else arg
-                            )
                             check_type(param_key, arg, v)  # raises Exception
                             break  # only need one to match
                     else:
-                        annotation_version = t.__version__
-
-                        arg = (
-                            arg.migrate_to(annotation_version)
-                            if isinstance(value, SyftBaseObject) and annotation_version
-                            else arg
-                        )
                         check_type(param_key, arg, t)  # raises Exception
             except TypeError:
                 t_arg = type(arg)

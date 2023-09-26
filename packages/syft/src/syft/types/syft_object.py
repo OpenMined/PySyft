@@ -584,7 +584,14 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         migration_transform = SyftMigrationRegistry.get_migration_for_version(
             type_from=type(self), version_to=version
         )
-        return migration_transform(self, context)
+        return (
+            migration_transform(
+                self,
+                context,
+            )
+            if self.__version__ != version
+            else self
+        )
 
 
 def short_qual_name(name: str) -> str:
