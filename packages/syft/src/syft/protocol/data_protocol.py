@@ -248,6 +248,11 @@ def migrate_args_and_kwargs(
     if to_protocol is None:
         raise SyftException(message="Protocol version missing.")
 
+    # If latest protocol being used is equal to the protocol to be migrate
+    # then skip migration of the object
+    if to_protocol == data_protocol.latest_version:
+        return args, kwargs
+
     object_versions = data_protocol.get_object_versions(protocol=to_protocol)
 
     migrated_kwargs, migrated_args = {}, []
