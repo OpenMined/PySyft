@@ -6,6 +6,7 @@ from typing import Union
 
 # relative
 from ...abstract_node import NodeType
+from ...exceptions.user import InvalidSearchParamsException
 from ...exceptions.user import UserAlreadyExistsException
 from ...exceptions.user import UserDoesNotExistException
 from ...node.credentials import SyftSigningKey
@@ -161,9 +162,8 @@ class UserService(AbstractService):
 
         if len(kwargs) == 0:
             valid_search_params = list(UserSearch.__fields__.keys())
-            return SyftError(
-                message=f"Invalid Search parameters. \
-                Allowed params: {valid_search_params}"
+            raise InvalidSearchParamsException(valid_search_params).raise_with_context(
+                context=context
             )
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
 

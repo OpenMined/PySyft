@@ -11,3 +11,11 @@ UserAlreadyExistsException = PySyftException(
 UserDoesNotExistException = PySyftException(
     message="User does not exist", roles=[ServiceRole.ADMIN]
 )
+
+
+def InvalidSearchParamsException(valid_search_params: str) -> PySyftException:
+    return PySyftException(
+        message=f"Invalid Search parameters. \
+    Allowed params: {valid_search_params}",
+        roles=[ServiceRole.ADMIN],
+    )
