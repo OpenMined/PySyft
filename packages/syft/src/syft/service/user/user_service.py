@@ -164,13 +164,13 @@ class UserService(AbstractService):
 
         if len(kwargs) == 0:
             valid_search_params = list(UserSearch.__fields__.keys())
-            raise InvalidSearchParamsException(valid_search_params).raise_with_context(
-                context=context
-            )
+            raise InvalidSearchParamsException(
+                valid_search_params=valid_search_params
+            ).raise_with_context(context=context)
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
 
         if result.is_err():
-            raise GenericSearchException(str(result.err())).raise_with_context(
+            raise GenericSearchException(message=str(result.err())).raise_with_context(
                 context=context
             )
         users = result.ok()
@@ -323,7 +323,7 @@ class UserService(AbstractService):
             return SyftError(message=str(user_result.err()))
         user = user_result.ok()
         if user is None:
-            raise UserDoesNotExistException(uid)
+            raise UserDoesNotExistException(uid=uid)
         else:
             return user
 
@@ -379,15 +379,13 @@ class UserService(AbstractService):
                     raise AdminEnclaveLoginException.raise_with_context(context=context)
                 return user.to(UserPrivateKey)
 
-            return SyftError(
-                message="No user exists with "
-                f"{context.login_credentials.email} and supplied password."
-            )
+            raise UserDoesNotExistException(
+                email=context.login_credentials.email
+            ).raise_with_context(context=context)
 
-        return SyftError(
-            message="Failed to retrieve user with "
-            f"{context.login_credentials.email} with error: {result.err()}"
-        )
+        raise UserDoesNotExistException(
+            email=context.login_credentials.email, err=result.err()
+        ).raise_with_context(context=context)
 
     def admin_verify_key(self) -> Union[SyftVerifyKey, SyftError]:
         try:
