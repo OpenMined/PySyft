@@ -10,6 +10,7 @@ from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
+from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
 from ..code.user_code_service import UserCode
@@ -57,7 +58,7 @@ class EnclaveService(AbstractService):
             return user_code
 
         status_update = user_code.status.mutate(
-            value=UserCodeStatus.EXECUTE,
+            value=UserCodeStatus.APPROVED,
             node_name=node_name,
             node_id=node_id,
             verify_key=context.credentials,
@@ -73,31 +74,22 @@ class EnclaveService(AbstractService):
         if isinstance(user_code_update, SyftError):
             return user_code_update
 
+        root_context = context.as_root_context()
         if not action_service.exists(context=context, obj_id=user_code_id):
             dict_object = ActionObject.from_obj({})
             dict_object.id = user_code_id
             dict_object[str(context.credentials)] = inputs
+            root_context.extra_kwargs = {"has_result_read_permission": True}
             # TODO: Instead of using the action store, modify to
             # use the action service directly to store objects
-            action_service.store.set(
-                uid=user_code_id,
-                credentials=context.node.verify_key,
-                syft_object=dict_object,
-                has_result_read_permission=True,
-            )
+            action_service.set(root_context, dict_object)
 
         else:
-            res = action_service.store.get(
-                uid=user_code_id, credentials=context.node.verify_key
-            )
+            res = action_service.get(uid=user_code_id, context=root_context)
             if res.is_ok():
                 dict_object = res.ok()
                 dict_object[str(context.credentials)] = inputs
-                action_service.store.set(
-                    uid=user_code_id,
-                    credentials=context.node.verify_key,
-                    syft_object=dict_object,
-                )
+                action_service.set(root_context, dict_object)
             else:
                 return SyftError(
                     message=f"Error while fetching the object on Enclave: {res.err()}"
@@ -162,6 +154,18 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     inputs = user_code.input_policy._inputs_for_context(context)
     if isinstance(inputs, SyftError):
         return inputs
+
+    # Save inputs to blob store
+    for var_name, var_value in inputs.items():
+        if isinstance(var_value, (ActionObject, TwinObject)):
+            # Set the obj location to enclave
+            var_value._set_obj_location_(
+                enclave_client.api.node_uid,
+                enclave_client.verify_key,
+            )
+            var_value._save_to_blob_storage()
+
+            inputs[var_name] = var_value
 
     # send data of the current node to enclave
     res = send_method(

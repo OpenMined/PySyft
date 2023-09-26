@@ -1,6 +1,7 @@
 # stdlib
 from collections import defaultdict
 from copy import deepcopy
+from functools import partial
 import inspect
 from inspect import Parameter
 from typing import Any
@@ -40,6 +41,7 @@ from .context import ChangeContext
 from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
+from .warnings import APIEndpointWarning
 
 TYPE_TO_SERVICE = {}
 SERVICE_TO_TYPES = defaultdict(set)
@@ -78,6 +80,7 @@ class BaseConfig(SyftBaseObject):
     doc_string: Optional[str]
     signature: Optional[Signature]
     is_from_lib: bool = False
+    warning: Optional[APIEndpointWarning]
 
 
 @serializable()
@@ -203,7 +206,7 @@ def register_lib_obj(lib_obj: CMPBase):
                 method_name=str(func_name),
                 doc_string=str(lib_obj.__doc__),
                 signature=signature,
-                permissions=set([lib_obj.permissions]),
+                permissions={lib_obj.permissions},
                 is_from_lib=True,
             )
 
@@ -309,6 +312,7 @@ def service_method(
     path: Optional[str] = None,
     roles: Optional[List[ServiceRole]] = None,
     autosplat: Optional[List[str]] = None,
+    warning: Optional[APIEndpointWarning] = None,
 ):
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
@@ -355,6 +359,7 @@ def service_method(
             signature=signature,
             roles=roles,
             permissions=["Guest"],
+            warning=warning,
         )
         ServiceConfigRegistry.register(config)
 
@@ -403,3 +408,53 @@ class SyftServiceRegistry:
         version_to = type_to.__version__
         mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
         return cls.__object_transform_registry__[mapping_string]
+
+
+def from_api_or_context(
+    func_or_path: str,
+    syft_node_location: Optional[UID] = None,
+    syft_client_verify_key: Optional[SyftVerifyKey] = None,
+):
+    # relative
+    from ..client.api import APIRegistry
+    from ..node.node import AuthNodeContextRegistry
+
+    if callable(func_or_path):
+        func_or_path = func_or_path.__qualname__
+
+    if not (syft_node_location and syft_client_verify_key):
+        return None
+
+    api = APIRegistry.api_for(
+        node_uid=syft_node_location,
+        user_verify_key=syft_client_verify_key,
+    )
+    if api is not None:
+        service_method = api.services
+        for path in func_or_path.split("."):
+            service_method = getattr(service_method, path)
+        return service_method
+
+    node_context = AuthNodeContextRegistry.auth_context_for_user(
+        node_uid=syft_node_location,
+        user_verify_key=syft_client_verify_key,
+    )
+    if node_context is not None:
+        user_config_registry = UserServiceConfigRegistry.from_role(
+            node_context.role,
+        )
+        if func_or_path not in user_config_registry:
+            if ServiceConfigRegistry.path_exists(func_or_path):
+                return SyftError(
+                    message=f"As a `{node_context.role}` you have has no access to: {func_or_path}"
+                )
+            else:
+                return SyftError(
+                    message=f"API call not in registered services: {func_or_path}"
+                )
+
+        _private_api_path = user_config_registry.private_path_for(func_or_path)
+        service_method = node_context.node.get_service_method(
+            _private_api_path,
+        )
+        return partial(service_method, node_context)

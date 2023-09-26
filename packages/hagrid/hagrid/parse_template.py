@@ -288,7 +288,7 @@ def render_templates(
             jinja_template.substitute_vars(src_file_path, env_vars, target_file_path)
 
 
-class JinjaTemplate(object):
+class JinjaTemplate:
     def __init__(self, template_dir: Union[str, os.PathLike]) -> None:
         self.directory = os.path.expanduser(template_dir)
         self.environ = Environment(

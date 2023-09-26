@@ -17,6 +17,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -29,16 +30,19 @@ from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
+from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.notebook_addons import REQUEST_ICON
+from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
 from ..action.action_store import ActionPermission
+from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
@@ -95,12 +99,23 @@ class ActionStoreChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            action_service = context.node.get_service(ActionService)
+            action_service: ActionService = context.node.get_service(ActionService)
+            blob_storage_service = context.node.get_service(BlobStorageService)
             action_store = action_service.store
 
             # can we ever have a lineage ID in the store?
             obj_uid = self.linked_obj.object_uid
             obj_uid = obj_uid.id if isinstance(obj_uid, LineageID) else obj_uid
+
+            action_obj = action_store.get(
+                uid=obj_uid,
+                credentials=context.approving_user_credentials,
+            )
+
+            if action_obj.is_err():
+                return Err(SyftError(message=f"{action_obj.err()}"))
+
+            action_obj = action_obj.ok()
 
             owner_permission = ActionObjectPermission(
                 uid=obj_uid,
@@ -108,16 +123,39 @@ class ActionStoreChange(Change):
                 permission=self.apply_permission_type,
             )
             if action_store.has_permission(permission=owner_permission):
-                requesting_permission = ActionObjectPermission(
-                    uid=obj_uid,
+                id_action = (
+                    action_obj.id
+                    if not isinstance(action_obj.id, LineageID)
+                    else action_obj.id.id
+                )
+                requesting_permission_action_obj = ActionObjectPermission(
+                    uid=id_action,
+                    credentials=context.requesting_user_credentials,
+                    permission=self.apply_permission_type,
+                )
+                if isinstance(action_obj, TwinObject):
+                    uid_blob = action_obj.private.syft_blob_storage_entry_id
+                else:
+                    uid_blob = action_obj.syft_blob_storage_entry_id
+                requesting_permission_blob_obj = ActionObjectPermission(
+                    uid=uid_blob,
                     credentials=context.requesting_user_credentials,
                     permission=self.apply_permission_type,
                 )
                 if apply:
-                    action_store.add_permission(requesting_permission)
+                    action_store.add_permission(requesting_permission_action_obj)
+                    blob_storage_service.stash.add_permission(
+                        requesting_permission_blob_obj
+                    )
                 else:
-                    if action_store.has_permission(requesting_permission):
-                        action_store.remove_permission(requesting_permission)
+                    if action_store.has_permission(requesting_permission_action_obj):
+                        action_store.remove_permission(requesting_permission_action_obj)
+                    if blob_storage_service.stash.has_permission(
+                        requesting_permission_blob_obj
+                    ):
+                        blob_storage_service.stash.remove_permission(
+                            requesting_permission_blob_obj
+                        )
             else:
                 return Err(
                     SyftError(
@@ -126,7 +164,7 @@ class ActionStoreChange(Change):
                 )
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
-            print(f"failed to apply {type(self)}")
+            print(f"failed to apply {type(self)}", e)
             return Err(SyftError(message=str(e)))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -147,6 +185,8 @@ class Request(SyftObject):
 
     requesting_user_verify_key: SyftVerifyKey
     requesting_user_name: str = ""
+    requesting_user_email: Optional[str] = ""
+    requesting_user_institution: Optional[str] = ""
     approving_user_verify_key: Optional[SyftVerifyKey]
     request_time: DateTime
     updated_at: Optional[DateTime]
@@ -189,6 +229,29 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        shared_with_line = ""
+        if self.code and len(self.code.output_readers) > 0:
+            # owner_names = ["canada", "US"]
+            owners_string = " and ".join(
+                [f"<strong>{x}</strong>" for x in self.code.output_reader_names]
+            )
+            shared_with_line += (
+                f"<p><strong>Custom Policy: </strong> "
+                f"outputs are <strong>shared</strong> with the owners of {owners_string} once computed"
+            )
+
+        metadata = api.services.metadata.get_metadata()
+        admin_email = metadata.admin_email
+        node_name = api.node_name.capitalize() if api.node_name is not None else ""
+
+        email_str = (
+            f"({self.requesting_user_email})" if self.requesting_user_email else ""
+        )
+        institution_str = (
+            f"<strong>Institution:</strong> {self.requesting_user_institution}"
+            if self.requesting_user_institution
+            else ""
+        )
 
         return f"""
             <style>
@@ -199,10 +262,14 @@ class Request(SyftObject):
                 <p><strong>Id: </strong>{self.id}</p>
                 <p><strong>Request time: </strong>{self.request_time}</p>
                 {updated_at_line}
+                {shared_with_line}
                 <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
-                <p><strong>Sent to Domain </strong>{api.node_name}</p>
+                <p><strong>Requested on: </strong> {node_name} of type <strong> \
+                    {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
+                <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
             </div>
+
             """
 
     def _coll_repr_(self):
@@ -214,15 +281,17 @@ class Request(SyftObject):
             badge_color = "badge-red"
 
         status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+
+        user_data = [
+            self.requesting_user_name,
+            self.requesting_user_email,
+            self.requesting_user_institution,
+        ]
+
         return {
-            "changes": " ".join([x.__repr_syft_nested__() for x in self.changes]),
-            "request time": str(self.request_time),
-            "status": status_badge,
-            "requesting user": {
-                "value": str(self.requesting_user_verify_key),
-                "type": "clipboard",
-            },
-            "reviewed_at": str(self.updated_at),
+            "Description": " ".join([x.__repr_syft_nested__() for x in self.changes]),
+            "Requested By": "\n".join(user_data),
+            "Status": status_badge,
         }
 
     @property
@@ -234,6 +303,9 @@ class Request(SyftObject):
         return SyftError(
             message="This type of request does not have code associated with it."
         )
+
+    def get_results(self) -> Any:
+        return self.code.get_results()
 
     @property
     def current_change_state(self) -> Dict[UID, bool]:
@@ -268,6 +340,25 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        # TODO: Refactor so that object can also be passed to generate warnings
+        metadata = api.connection.get_node_metadata(api.signing_key)
+        code = self.code
+        message, is_enclave = None, False
+
+        if code and not isinstance(code, SyftError):
+            is_enclave = getattr(code, "enclave_metadata", None) is not None
+
+        if is_enclave:
+            message = "On approval, the result will be released to the enclave."
+        elif metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+            message = (
+                "You're approving a request on "
+                f"{metadata.node_side_type} side {metadata.node_type} "
+                "which may host datasets with private information."
+            )
+        if message and metadata.show_warnings:
+            prompt_warning_message(message=message, confirm=True)
+
         print(f"Request approved for domain {api.node_name}")
         return api.services.request.apply(self.id)
 
@@ -387,19 +478,34 @@ class Request(SyftObject):
                     message="Already approved, if you want to force updating the result use force=True"
                 )
             action_obj_id = state.output_history[0].outputs[0]
-            action_object = ActionObject.from_obj(result, id=action_obj_id)
-            result = api.services.action.save(action_object)
-            if not result:
+            action_object = ActionObject.from_obj(
+                result,
+                id=action_obj_id,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
+            )
+            blob_store_result = action_object._save_to_blob_storage()
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
+            result = api.services.action.set(action_object)
+            if isinstance(result, SyftError):
                 return result
             return SyftSuccess(message="Request submitted for updating result.")
         else:
-            action_object = ActionObject.from_obj(result)
-            result = api.services.action.save(action_object)
-            if not result:
+            action_object = ActionObject.from_obj(
+                result,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
+            )
+            blob_store_result = action_object._save_to_blob_storage()
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
+            result = api.services.action.set(action_object)
+            if isinstance(result, SyftError):
                 return result
             ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
-            state.apply_output(context=ctx, outputs=action_object)
+            state.apply_output(context=ctx, outputs=result)
             policy_state_mutation = ObjectMutation(
                 linked_obj=change.linked_obj,
                 attr_name="output_policy",
@@ -407,9 +513,7 @@ class Request(SyftObject):
                 value=state,
             )
 
-            action_object_link = LinkedObject.from_obj(
-                action_object, node_uid=self.node_uid
-            )
+            action_object_link = LinkedObject.from_obj(result, node_uid=self.node_uid)
             permission_change = ActionStoreChange(
                 linked_obj=action_object_link,
                 apply_permission_type=ActionPermission.READ,
@@ -463,7 +567,7 @@ def hash_changes(context: TransformContext) -> TransformContext:
     ).digest()
     key_hash = hashlib.sha256(bytes(key.verify_key)).digest()
     changes_hash = hashlib.sha256(_serialize(changes, to_bytes=True)).digest()
-    final_hash = hashlib.sha256((time_hash + key_hash + changes_hash)).hexdigest()
+    final_hash = hashlib.sha256(time_hash + key_hash + changes_hash).hexdigest()
 
     context.output["request_hash"] = final_hash
     return context
@@ -486,12 +590,16 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
     return context
 
 
-def add_requesting_user_name(context: TransformContext) -> TransformContext:
+def add_requesting_user_info(context: TransformContext) -> TransformContext:
     try:
         user_key = context.output["requesting_user_verify_key"]
         user_service = context.node.get_service("UserService")
         user = user_service.get_by_verify_key(user_key)
         context.output["requesting_user_name"] = user.name
+        context.output["requesting_user_email"] = user.email
+        context.output["requesting_user_institution"] = (
+            user.institution if user.institution else ""
+        )
     except Exception:
         context.output["requesting_user_name"] = "guest_user"
     return context
@@ -504,7 +612,7 @@ def submit_request_to_request() -> List[Callable]:
         add_node_uid_for_key("node_uid"),
         add_request_time,
         check_requesting_user_verify_key,
-        add_requesting_user_name,
+        add_requesting_user_info,
         hash_changes,
     ]
 
@@ -544,7 +652,7 @@ class ObjectMutation(Change):
         try:
             obj = self.linked_obj.resolve_with_context(context)
             if obj.is_err():
-                return SyftError(message=obj.err())
+                return Err(SyftError(message=obj.err()))
             obj = obj.ok()
             if apply:
                 obj = self.mutate(obj, value=self.value)
@@ -718,8 +826,11 @@ class UserCodeStatusChange(Change):
             return obj
         return res
 
-    def is_enclave_request(self, req_enclave_metadata):
-        return req_enclave_metadata is not None and self.value == UserCodeStatus.EXECUTE
+    def is_enclave_request(self, user_code: UserCode):
+        return (
+            user_code.is_enclave_code is not None
+            and self.value == UserCodeStatus.APPROVED
+        )
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -730,7 +841,7 @@ class UserCodeStatusChange(Change):
                 return Err(valid)
             obj = self.linked_obj.resolve_with_context(context)
             if obj.is_err():
-                return SyftError(message=obj.err())
+                return Err(SyftError(message=obj.err()))
             obj = obj.ok()
             if apply:
                 res = self.mutate(obj, context, undo=False)
@@ -742,7 +853,7 @@ class UserCodeStatusChange(Change):
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
                 user_code = res
-                if self.is_enclave_request(user_code.enclave_metadata):
+                if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=res, context=context
                     )

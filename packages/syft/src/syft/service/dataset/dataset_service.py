@@ -20,6 +20,8 @@ from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..warnings import CRUDReminder
+from ..warnings import HighSideCRUDWarning
 from .dataset import Asset
 from .dataset import CreateDataset
 from .dataset import Dataset
@@ -59,7 +61,12 @@ class DatasetService(AbstractService):
             f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
         )
 
-    @service_method(path="dataset.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
+    @service_method(
+        path="dataset.get_all",
+        name="get_all",
+        roles=GUEST_ROLE_LEVEL,
+        warning=CRUDReminder(),
+    )
     def get_all(
         self,
         context: AuthedServiceContext,
@@ -89,7 +96,9 @@ class DatasetService(AbstractService):
             return results
         return SyftError(message=result.err())
 
-    @service_method(path="dataset.search", name="search")
+    @service_method(
+        path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def search(
         self,
         context: AuthedServiceContext,
@@ -163,7 +172,11 @@ class DatasetService(AbstractService):
             return datasets
         return []
 
-    @service_method(path="dataset.delete_by_id", name="dataset_delete_by_id")
+    @service_method(
+        path="dataset.delete_by_id",
+        name="dataset_delete_by_id",
+        warning=HighSideCRUDWarning(confirmation=True),
+    )
     def delete_dataset(self, context: AuthedServiceContext, uid: UID):
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():

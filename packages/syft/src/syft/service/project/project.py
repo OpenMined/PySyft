@@ -24,6 +24,7 @@ from rich.progress import Progress
 from typing_extensions import Self
 
 # relative
+from ...client.api import NodeIdentity
 from ...client.client import SyftClient
 from ...client.client import SyftClientSessionCache
 from ...node.credentials import SyftSigningKey
@@ -33,11 +34,13 @@ from ...serde.serialize import _serialize
 from ...service.metadata.node_metadata import NodeMetadata
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.identity import Identity
+from ...types.identity import UserIdentity
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_qual_name
 from ...types.transforms import TransformContext
-from ...types.transforms import keep
+from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -49,6 +52,7 @@ from ..network.network_service import NodePeer
 from ..network.routes import NodeRoute
 from ..network.routes import connection_to_route
 from ..request.request import Request
+from ..request.request import RequestStatus
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftNotReady
@@ -60,44 +64,9 @@ class EventAlreadyAddedException(SyftException):
     pass
 
 
-class Identity(SyftObject):
-    __canonical_name__ = "Identity"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    verify_key: SyftVerifyKey
-
-    __repr_attrs__ = ["id", "verify_key"]
-
-    def __repr__(self) -> str:
-        verify_key_str = f"{self.verify_key}"
-        return f"<🔑 {verify_key_str[0:8]} @ 🟢 {self.id.short()}>"
-
-    @classmethod
-    def from_client(cls, client: SyftClient) -> Identity:
-        return cls(id=client.id, verify_key=client.credentials.verify_key)
-
-
-@serializable()
-class NodeIdentity(Identity):
-    """This class is used to identify the node owner"""
-
-    __canonical_name__ = "NodeIdentity"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-
-# Used to Identity data scientist users of the node
-@serializable()
-class UserIdentity(Identity):
-    """This class is used to identify the data scientist users of the node"""
-
-    __canonical_name__ = "UserIdentity"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-
 @transform(NodeMetadata, NodeIdentity)
 def metadata_to_node_identity() -> List[Callable]:
-    return [keep(["id", "verify_key"])]
+    return [rename("id", "node_id"), rename("name", "node_name")]
 
 
 class ProjectEvent(SyftObject):
@@ -698,6 +667,7 @@ class Project(SyftObject):
     description: Optional[str]
     members: List[NodeIdentity]
     users: List[UserIdentity] = []
+    username: Optional[str]
     created_by: str
     start_hash: Optional[str]
     # WARNING:  Do not add it to hash keys or print directly
@@ -719,9 +689,10 @@ class Project(SyftObject):
 
     def _coll_repr_(self):
         return {
-            "Name": self.name,
+            "name": self.name,
             "description": self.description,
             "created by": self.created_by,
+            "pending requests": self.pending_requests,
         }
 
     def _repr_html_(self) -> Any:
@@ -734,7 +705,7 @@ class Project(SyftObject):
             + "<div class='syft-project'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
             + self.requests._repr_html_()
             + "<p>To see a list of projects, use command `&lt;your_client&gt;.projects`</p>"
             + "</div>"
@@ -1153,6 +1124,12 @@ class Project(SyftObject):
             event.request for event in self.events if isinstance(event, ProjectRequest)
         ]
 
+    @property
+    def pending_requests(self) -> int:
+        return sum(
+            [request.status == RequestStatus.PENDING for request in self.requests]
+        )
+
 
 @serializable(without=["bootstrap_events", "clients"])
 class ProjectSubmit(SyftObject):
@@ -1182,6 +1159,7 @@ class ProjectSubmit(SyftObject):
     # These will be automatically populated
     users: List[UserIdentity] = []
     created_by: Optional[str] = None
+    username: Optional[str]
     clients: List[SyftClient] = []  # List of member clients
     start_hash: str = ""
 
@@ -1211,6 +1189,9 @@ class ProjectSubmit(SyftObject):
         # Extract information of logged in user from syft clients
         self.users = [UserIdentity.from_client(client) for client in self.clients]
 
+        # Assign logged in user name as project creator
+        self.username = self.clients[0].me.name or ""
+
         # Convert SyftClients to NodeIdentities
         self.members = list(map(self.to_node_identity, self.members))
 
@@ -1224,7 +1205,7 @@ class ProjectSubmit(SyftObject):
             + "<div class='syft-project-create'>"
             + f"<h3>{self.name}</h3>"
             + f"<p>{self.description}</p>"
-            + f"<p><strong>Created by: </strong>{self.created_by}</p>"
+            + f"<p><strong>Created by: </strong>{self.username} ({self.created_by})</p>"
             + "</div>"
         )
 
@@ -1233,7 +1214,7 @@ class ProjectSubmit(SyftObject):
         # SyftClients must be logged in by the same emails
         clients = cls.get_syft_clients(val)
         if len(clients) > 0:
-            emails = set([client.logged_in_user for client in clients])
+            emails = {client.logged_in_user for client in clients}
             if len(emails) > 1:
                 raise SyftException(
                     f"All clients must be logged in from the same account. Found multiple: {emails}"
@@ -1319,7 +1300,7 @@ class ProjectSubmit(SyftObject):
         self.leader_node_route = connection_to_route(leader.connection)
 
     def _create_projects(self, clients: List[SyftClient]):
-        projects: Dict[SyftClient, Project] = dict()
+        projects: Dict[SyftClient, Project] = {}
 
         for client in clients:
             result = client.api.services.project.create_project(project=self)
@@ -1373,9 +1354,14 @@ def check_permissions(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_creator_name(context: TransformContext) -> TransformContext:
+    context.output["username"] = context.obj.username
+    return context
+
+
 @transform(ProjectSubmit, Project)
 def new_projectsubmit_to_project() -> List[Callable]:
-    return [elect_leader, check_permissions]
+    return [elect_leader, check_permissions, add_creator_name]
 
 
 def hash_object(obj: Any) -> Tuple[bytes, str]:
