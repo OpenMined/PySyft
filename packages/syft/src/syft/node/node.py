@@ -368,12 +368,15 @@ class Node(AbstractNode):
         self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
-            if queue_config_.client_config.create_message_queue:
-                message_queue = self.queue_manager.create_message_queue(
-                    queue_name=queue_name
+            #     message_queue = self.queue_manager.create_message_queue(
+            #         queue_name=queue_name
+            #     )
+            #     message_queue.run()
+            if queue_config_.client_config.create_producer:
+                producer = self.queue_manager.create_producer(
+                    queue_name=queue_name, queue_stash=self.queue_stash
                 )
-                message_queue.run()
-            self.queue_manager.create_producer(queue_name=queue_name)
+                producer.run()
 
             for _ in range(n_consumers):
                 consumer = self.queue_manager.create_consumer(message_handler)
@@ -874,8 +877,6 @@ class Node(AbstractNode):
         return result
 
     def add_api_call_to_queue(self, api_call, parent_job_id=None):
-        # import ipdb
-        # ipdb.set_trace()
         task_uid = UID()
         log_id = UID()
 
@@ -888,26 +889,28 @@ class Node(AbstractNode):
             parent_job_id=parent_job_id,
         )
 
+        worker_settings = WorkerSettings.from_node(node=self)
+
         item = QueueItem(
             id=task_uid,
             node_uid=self.id,
             syft_client_verify_key=api_call.credentials,
             syft_node_location=self.id,
             job_id=job.id,
+            api_call=api_call,
+            worker_settings=worker_settings,
         )
 
         # 🟡 TODO 36: Needs distributed lock
 
-        # import ipdb
-        # ipdb.set_trace()
-        print("setting to queue stash")
-        self.queue_stash.set_placeholder(self.verify_key, item)
-        print("set")
-        self.job_stash.set(self.verify_key, job)
+        # print("setting to queue stash")
+        credentials = api_call.credentials
+        self.queue_stash.set_placeholder(credentials, item)
+        # print("set")
+        self.job_stash.set(credentials, job)
 
         log_service = self.get_service("logservice")
 
-        credentials = api_call.credentials
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
         result = log_service.add(context, log_id)
@@ -915,15 +918,16 @@ class Node(AbstractNode):
             return SyftError(message=str(result.err()))
 
         # Publisher system which pushes to a Queue
-        worker_settings = WorkerSettings.from_node(node=self)
 
-        message_bytes = _serialize([task_uid, api_call, worker_settings], to_bytes=True)
-        print("Trying to send ")
+        # message_bytes = _serialize([task_uid, api_call, worker_settings], to_bytes=True)
+        # print("Trying to send ")
         # from threading import Thread
-        self.queue_manager.send(message=message_bytes, queue_name="api_call")
+        # self.queue_manager.send(message=message_bytes, queue_name="api_call")
         # def _send():
         # Thread(target=_send).start()
-        print("sent")
+        # print("sent")
+        # print("ADDED ITEM TO QUEUE")
+
         return job
 
     def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:

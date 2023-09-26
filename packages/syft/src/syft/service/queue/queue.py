@@ -43,8 +43,8 @@ class QueueManager(BaseQueueManager):
     def create_message_queue(self, queue_name: str):
         return self._client.add_message_queue(queue_name)
 
-    def create_producer(self, queue_name: str):
-        return self._client.add_producer(queue_name=queue_name)
+    def create_producer(self, queue_name: str, queue_stash):
+        return self._client.add_producer(queue_name=queue_name, queue_stash=queue_stash)
 
     def send(
         self,
@@ -74,10 +74,13 @@ class APICallMessageHandler(AbstractMessageHandler):
         # relative
         from ...node.node import Node
 
-        queue_item_id, api_call, worker_settings = deserialize(message, from_bytes=True)
+        # queue_item_id, api_call, worker_settings = deserialize(message, from_bytes=True)
+        queue_item = deserialize(message, from_bytes=True)
+        worker_settings = queue_item.worker_settings
+        api_call = queue_item.api_call
 
         queue_config = worker_settings.queue_config
-        queue_config.client_config.create_message_queue = False
+        queue_config.client_config.create_producer = False
 
         worker = Node(
             id=worker_settings.id,
@@ -91,9 +94,9 @@ class APICallMessageHandler(AbstractMessageHandler):
             is_subprocess=True,
         )
 
-        queue_item = worker.queue_stash.get_by_uid(
-            api_call.credentials, queue_item_id
-        ).ok()
+        # queue_item = worker.queue_stash.get_by_uid(
+        #     api_call.credentials, queue_item_id
+        # ).ok()
         job_item = worker.job_stash.get_by_uid(
             api_call.credentials, queue_item.job_id
         ).ok()
@@ -119,13 +122,15 @@ class APICallMessageHandler(AbstractMessageHandler):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
             result = SyftError(message=f"Failed with exception: {e}")
-
+            print("HAD AN ERROR WHILE HANDLING MESSAGE")
         queue_item = QueueItem(
             node_uid=worker.id,
-            id=queue_item_id,
+            id=queue_item.id,
             result=result,
             resolved=True,
             status=status,
+            api_call=queue_item.api_call,
+            worker_settings=queue_item.worker_settings,
         )
 
         # if result.is_ok():

@@ -153,7 +153,7 @@ class Job(SyftObject):
             return self.resolve
         while True:
             self.fetch()
-            sleep(0.1)
+            sleep(0.5)
             if self.resolved:
                 break
         return self.resolve

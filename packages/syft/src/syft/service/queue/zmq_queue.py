@@ -1,6 +1,9 @@
 # stdlib
+from collections import OrderedDict
 from collections import defaultdict
+from random import randint
 import socketserver
+import time
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -23,34 +26,172 @@ from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
+from .queue_stash import Status
+
+HEARTBEAT_LIVENESS = 3
+HEARTBEAT_INTERVAL = 1
+INTERVAL_INIT = 1
+INTERVAL_MAX = 32
+
+#  Paranoid Pirate Protocol constants
+PPP_READY = b"\x01"  # Signals worker is ready
+PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
+
+
+class Worker:
+    def __init__(self, address):
+        self.address = address
+        self.expiry = time.time() + HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
+
+
+class WorkerQueue:
+    def __init__(self):
+        self.queue = OrderedDict()
+
+    def ready(self, worker):
+        self.queue.pop(worker.address, None)
+        self.queue[worker.address] = worker
+
+    def purge(self):
+        """Look for & kill expired workers."""
+        t = time.time()
+        expired = []
+        for address, worker in self.queue.items():
+            if t > worker.expiry:  # Worker expired
+                expired.append(address)
+        for address in expired:
+            print("Idle worker expired: %s" % address)
+            self.queue.pop(address, None)
+
+    def next(self):
+        address, worker = self.queue.popitem(False)
+        return address
+
+    def is_empty(self):
+        return len(self.queue) == 0
 
 
 @serializable()
 class ZMQProducer(QueueProducer):
-    def __init__(self, address: str, queue_name: str) -> None:
-        ctx = zmq.Context.instance()
+    def __init__(self, address: str, queue_name: str, queue_stash) -> None:
+        # ctx = zmq.Context.instance()
         self.address = address
-        self._producer = ctx.socket(zmq.REQ)
-        self._producer.connect(address)
+        # self._producer = ctx.socket(zmq.REQ)
+        # self._producer.connect(address)
         self.queue_name = queue_name
+        self.queue_stash = queue_stash
+        self.post_init()
 
-    def send(self, message: bytes) -> None:
-        try:
-            message_list = [message]
-            # import ipdb
-            # ipdb.set_trace()
-            # TODO: Enable zero copy
-            self._producer.send_multipart(message_list)
-            _ = self._producer.recv()
-            # print("Message Queued Successfully !", flush=True)
-        except zmq.Again as e:
-            # TODO: Add retry mechanism if this error occurs
-            raise e
-        except zmq.ZMQError as e:
-            if e.errno == zmq.ETERM:
-                print("Connection Interrupted....")
-            else:
-                raise e
+    def post_init(self):
+        self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))
+        self.context = zmq.Context(1)
+        self.backend = self.context.socket(zmq.ROUTER)  # ROUTER
+        self.backend.bind("tcp://*:5556")  # For workers
+        self.poll_workers = zmq.Poller()
+        self.poll_workers.register(self.backend, zmq.POLLIN)
+        self.workers = WorkerQueue()
+        self.message_queue = []
+
+    def read_items(self):
+        while True:
+            # stdlib
+            from time import sleep
+
+            sleep(1)
+            items = self.queue_stash.get_all(
+                self.queue_stash.partition.root_verify_key
+            ).ok()
+            # syft absolute
+            import syft as sy
+
+            for item in items:
+                if item.status == Status.CREATED:
+                    msg_bytes = sy.serialize(item, to_bytes=True)
+                    frames = [self.identity, b"", msg_bytes]
+                    # adds to queue for main loop
+                    self.message_queue = [frames] + self.message_queue
+                    item.status = Status.PROCESSING
+                    res = self.queue_stash.update(item.api_call.credentials, item)
+                    if not res.is_ok():
+                        print("Failed to update queue item")
+
+    def run(self):
+        # stdlib
+        import threading
+
+        self.thread = threading.Thread(target=self._run)
+        self.thread.start()
+
+        self.producer_thread = threading.Thread(target=self.read_items)
+        self.producer_thread.start()
+
+    def _run(self):
+        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+        connecting_workers = set()
+        while True:
+            try:
+                socks = dict(self.poll_workers.poll(HEARTBEAT_INTERVAL * 1000))
+
+                if len(self.message_queue) != 0:
+                    if not self.workers.is_empty():
+                        # print(self.workers.queue.keys())
+                        frames = self.message_queue.pop()
+                        worker_address = self.workers.next()
+                        connecting_workers.add(worker_address)
+                        # print("SENDING FROM PRODUCER")
+                        # print(self.workers.queue.keys())
+                        # print(worker_address)
+                        frames.insert(0, worker_address)
+                        self.backend.send_multipart(frames)
+
+                # Handle worker message
+                if socks.get(self.backend) == zmq.POLLIN:
+                    frames = self.backend.recv_multipart()
+                    if not frames:
+                        print("error in producer")
+                        break
+
+                    # Validate control message, or return reply to client
+                    msg = frames[1:]
+                    address = frames[0]
+                    if len(msg) == 1:
+                        if address not in connecting_workers:
+                            self.workers.ready(Worker(address))
+                            if msg[0] not in (PPP_READY, PPP_HEARTBEAT):
+                                print("E: Invalid message from worker: %s" % msg)
+                    else:
+                        # print("GOT JOB CONFIRMATION MESSAGE FROM WORKER", address)
+                        if address in connecting_workers:
+                            connecting_workers.remove(address)
+                        # got response message from worker
+                        pass
+
+                    # Send heartbeats to idle workers if it's time
+                    if time.time() >= heartbeat_at:
+                        for worker in self.workers.queue:
+                            msg = [worker, PPP_HEARTBEAT]
+                            self.backend.send_multipart(msg)
+                        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+
+                self.workers.purge()
+            except Exception as e:
+                print(f"Error in producer {e}")
+
+    # def send(self, message: bytes) -> None:
+    #     try:
+    #         message_list = [message]
+    #         # TODO: Enable zero copy
+    #         self._producer.send_multipart(message_list)
+    #         _ = self._producer.recv()
+    #         # print("Message Queued Successfully !", flush=True)
+    #     except zmq.Again as e:
+    #         # TODO: Add retry mechanism if this error occurs
+    #         raise e
+    #     except zmq.ZMQError as e:
+    #         if e.errno == zmq.ETERM:
+    #             print("Connection Interrupted....")
+    #         else:
+    #             raise e
 
     def close(self):
         self._producer.close()
@@ -74,32 +215,102 @@ class ZMQConsumer(QueueConsumer):
         self.post_init()
         self.id = UID()
 
+    def create_socket(self):
+        self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
+        self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))
+        self.worker.setsockopt(zmq.IDENTITY, self.identity)
+        self.poller.register(self.worker, zmq.POLLIN)
+        self.worker.connect("tcp://localhost:5556")
+        self.worker.send(PPP_READY)
+
     def post_init(self):
-        ctx = zmq.Context.instance()
-        self._consumer = ctx.socket(zmq.REP)
-
+        self.ctx = zmq.Context.instance()
+        self.poller = zmq.Poller()
+        self.create_socket()
+        # self._consumer = ctx.socket(zmq.REP)
         self.thread = None
-        self._consumer.connect(self.address)
 
-    def receive(self):
-        try:
-            print(f"Starting receival ({self.id})")
-            message_list = self._consumer.recv_multipart()
-            print(f"Received stuff ({self.id})")
-            message = message_list[0]
-            print("Message Received Successfully !", flush=True)
-        except zmq.ZMQError as e:
-            if e.errno == zmq.ETERM:
-                print("Subscriber connection Terminated")
-            else:
-                raise e
-        self.message_handler.handle_message(message=message)
-        self._consumer.send(b"")
-        print(f"sent back confirmation ({self.id})")
+        """Helper function that returns a new configured socket
+        connected to the Paranoid Pirate queue"""
+
+    # def receive(self):
+    #     try:
+    #         liveness = HEARTBEAT_LIVENESS
+    #         interval = INTERVAL_INIT
+
+    #         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+
+    #         worker = worker_socket(context, poller)
+
+    #         print(f"Starting receival ({self.id})")
+    #         message_list = self._consumer.recv_multipart()
+    #         print(f"Received stuff ({self.id})")
+    #         message = message_list[0]
+    #         print("Message Received Successfully !", flush=True)
+    #     except zmq.ZMQError as e:
+    #         if e.errno == zmq.ETERM:
+    #             print("Subscriber connection Terminated")
+    #         else:
+    #             raise e
+    #     self.message_handler.handle_message(message=message)
+    #     self._consumer.send(b"")
+    #     print(f"sent back confirmation ({self.id})")
 
     def _run(self):
+        liveness = HEARTBEAT_LIVENESS
+        interval = INTERVAL_INIT
+        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         while True:
-            self.receive()
+            try:
+                socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))
+                if socks.get(self.worker) == zmq.POLLIN:
+                    frames = self.worker.recv_multipart()
+                    if not frames or len(frames) not in [1, 3]:
+                        print(f"Worker error: Invalid message: {frames}")
+                        break  # Interrupted
+
+                    # get normal message
+                    if len(frames) == 3:
+                        self.worker.send_multipart(frames)
+                        liveness = HEARTBEAT_LIVENESS
+                        message = frames[2]
+                        try:
+                            # print("HANDLING MESSAGE IN CONSUMEr")
+                            self.message_handler.handle_message(message=message)
+                            # print("DONE DOING THE WORK")
+                        except Exception as e:
+                            print(f"ERROR HANDLING MESSAGE {e}")
+                    # process heartbeat
+                    elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
+                        liveness = HEARTBEAT_LIVENESS
+                    # process wrong message
+                    interval = INTERVAL_INIT
+                # process silence
+                else:
+                    liveness -= 1
+                    if liveness == 0:
+                        print(
+                            f"Heartbeat failure, worker can't reach queue, reconnecting in {interval}s"
+                        )
+                        time.sleep(interval)
+
+                        if interval < INTERVAL_MAX:
+                            interval *= 2
+                        self.poller.unregister(self.worker)
+                        self.worker.setsockopt(zmq.LINGER, 0)
+                        self.worker.close()
+                        self.create_socket()
+                        liveness = HEARTBEAT_LIVENESS
+                # send heartbeat
+                if time.time() > heartbeat_at:
+                    heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+                    # print("SENDING HEARTBEAT FROM ", self.identity)
+                    self.worker.send(PPP_HEARTBEAT)
+            except zmq.ZMQError as e:
+                if e.errno == zmq.ETERM:
+                    print("Subscriber connection Terminated")
+                else:
+                    raise e
 
     def run(self):
         # stdlib
@@ -130,7 +341,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     hostname: str = "127.0.0.1"
     consumer_port: Optional[int] = None
     producer_port: Optional[int] = None
-    create_message_queue: bool = True
+    create_producer: bool = True
 
 
 # class MessageQueueConfig():
@@ -213,7 +424,7 @@ class ZMQClient(QueueClient):
         return self.message_queue
 
     def add_producer(
-        self, queue_name: str, address: Optional[str] = None
+        self, queue_name: str, address: Optional[str] = None, queue_stash=None
     ) -> ZMQProducer:
         """Add a producer of a queue.
 
@@ -235,7 +446,9 @@ class ZMQClient(QueueClient):
         #     address = f"tcp://{self.host}:{self.config.producer_port}"
 
         print(f"CREATING A PRODUCER ON {address}")
-        producer = ZMQProducer(address=address, queue_name=queue_name)
+        producer = ZMQProducer(
+            address=address, queue_name=queue_name, queue_stash=queue_stash
+        )
         self.producers[queue_name] = producer
         return producer
 

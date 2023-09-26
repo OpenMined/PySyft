@@ -17,7 +17,6 @@ from sherlock.lock import RedisLock
 
 # relative
 from ..serde.serializable import serializable
-from ..util.logger import debug
 
 
 @serializable()
@@ -219,20 +218,21 @@ class PatchedFileLock(FileLock):
                     except BaseException:
                         time.sleep(0.1)
                     if _retry == 9:
-                        print("COULD NOT READ LOCK FILE", self._data_file)
+                        pass
+                        # print("(1) COULD NOT READ LOCK FILE", self._data_file)
 
                 now = self._now()
                 has_expired = self._has_expired(data, now)
                 if owner != data["owner"]:
                     if not has_expired:
-                        print("COULD NOT GET FILE LOCK FOR ", self._data_file)
+                        # print("(2) COULD NOT GET FILE LOCK FOR ", self._data_file)
                         # Someone else holds the lock.
                         return False
                     else:
                         # Lock is available for us to take.
                         data = {"owner": owner, "expiry_time": self._expiry_time()}
                 else:
-                    print("COULD NOT GET FILE LOCK FOR ", self._data_file)
+                    # print("(3) COULD NOT GET FILE LOCK FOR ", self._data_file)
                     # Same owner so do not set or modify Lease.
                     return False
             else:
@@ -391,11 +391,10 @@ class SyftLock(BaseLock):
                 # if self.lock_name == "QueueItem":
                 #     print("success")
                 return True
-        debug(
-            "Timeout elapsed after %s seconds "
-            "while trying to acquiring "
-            "lock." % self.timeout
+        print(
+            f"Timeout elapsed after {self.timeout} seconds while trying to acquiring lock."
         )
+        # third party
         return False
 
     def _acquire(self) -> bool:

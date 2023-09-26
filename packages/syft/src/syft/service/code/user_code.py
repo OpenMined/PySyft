@@ -885,8 +885,7 @@ def execute_byte_code(
                 pass
 
             def launch_job(self, func: UserCode, **kwargs):
-                # import ipdb
-                # ipdb.set_trace()
+                # original_print("launching job for ", func.service_func_name)
                 # relative
                 from ... import UID
 
@@ -942,12 +941,13 @@ def execute_byte_code(
                         blocking=False,
                     ).sign(node.signing_key)
 
-                    original_print("ID", context.job.log_id)
-                    original_print(f"LAUNCHING JOB {func.service_func_name}")
+                    # original_print("ID", context.job.log_id)
+                    # original_print(f"LAUNCHING JOB {func.service_func_name}")
                     job = node.add_api_call_to_queue(
                         api_call, parent_job_id=context.job_id
                     )
-                    original_print("ID", context.job.log_id)
+                    # original_print(f"ADDED TO QUEUE {func.service_func_name}")
+                    # original_print("ID", context.job.log_id)
 
                     # set api in global scope to enable using .get(), .wait())
                     user_signing_key = [
@@ -966,23 +966,22 @@ def execute_byte_code(
                         user_verify_key=context.credentials,
                         api=user_api,
                     )
-                    original_print("ID", context.job.log_id)
+                    # original_print("ID", context.job.log_id)
 
                     return job
                 except Exception as e:
+                    print(f"ERROR {e}")
                     raise ValueError(f"error while launching job:\n{e}")
 
-        # import ipdb
-        # ipdb.set_trace()
         # original_print(f"EXECUTING BYTE CODE")
 
         if context.job is not None:
 
             def print(*args, sep=" ", end="\n"):
                 new_str = sep.join(args) + end
-                original_print(
-                    f"appending to {context.job.log_id}, {id(context)}", *args
-                )
+                # original_print(
+                #     f"appending to {context.job.log_id}, {id(context)}", *args
+                # )
                 log_service = context.node.get_service("LogService")
                 log_service.append(
                     context=context, uid=context.job.log_id, new_str=new_str
@@ -1037,8 +1036,6 @@ def execute_byte_code(
         # stdlib
         import traceback
 
-        # import ipdb
-        # ipdb.set_trace()
         print = original_print
         print("execute_byte_code failed", e, file=stderr_)
         print(traceback.format_exc())

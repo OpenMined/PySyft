@@ -3,13 +3,17 @@ from enum import Enum
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from result import Ok
 from result import Result
 
 # relative
+from ...client.api import SignedSyftAPICall
+from ...client.api import SyftAPICall
 from ...node.credentials import SyftVerifyKey
+from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
@@ -44,6 +48,8 @@ class QueueItem(SyftObject):
     resolved: bool = False
     status: Status = Status.CREATED
     job_id: Optional[UID]
+    api_call: Union[SyftAPICall, SignedSyftAPICall]
+    worker_settings: WorkerSettings
 
     # def fetch(self) -> None:
     #     api = APIRegistry.api_for(

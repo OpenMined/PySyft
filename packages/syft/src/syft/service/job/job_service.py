@@ -38,7 +38,8 @@ class JobService(AbstractService):
         if res.is_err():
             return SyftError(message=res.err())
         else:
-            return res.ok()
+            res = res.ok()
+            return res
 
     @service_method(
         path="job.get_subjobs",
