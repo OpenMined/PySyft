@@ -8,9 +8,9 @@ UserAlreadyExistsException = PySyftException(
     message="User already exists", roles=[ServiceRole.ADMIN]
 )
 
-UserDoesNotExistException = PySyftException(
-    message="User does not exist", roles=[ServiceRole.ADMIN]
-)
+# UserDoesNotExistException = PySyftException(
+#     message="User does not exist", roles=[ServiceRole.ADMIN]
+# )
 
 
 def InvalidSearchParamsException(valid_search_params: str) -> PySyftException:
@@ -25,4 +25,12 @@ def GenericSearchException(message: str) -> PySyftException:
     return PySyftException(
         message=message,
         roles=[ServiceRole.ADMIN],
+    )
+
+
+def UserDoesNotExistException(uid: str) -> PySyftException:
+    if uid is None:
+        return PySyftException(message="User does not exist", roles=[ServiceRole.ADMIN])
+    return PySyftException(
+        message=f"No user exists for given id: {uid}", roles=[ServiceRole.ADMIN]
     )

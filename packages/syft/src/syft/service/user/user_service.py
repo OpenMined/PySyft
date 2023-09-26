@@ -129,7 +129,7 @@ class UserService(AbstractService):
                 results = UserViewPage(users=results, total=total)
             return results
 
-        raise UserDoesNotExistException.raise_with_context(context=context)
+        raise UserDoesNotExistException().raise_with_context(context=context)
 
     def get_role_for_credentials(
         self, credentials: Union[SyftVerifyKey, SyftSigningKey]
@@ -322,7 +322,7 @@ class UserService(AbstractService):
             return SyftError(message=str(user_result.err()))
         user = user_result.ok()
         if user is None:
-            return SyftError(message=f"No user exists for given id: {uid}")
+            raise UserDoesNotExistException(uid)
         else:
             return user
 
