@@ -20,11 +20,6 @@ class PySyftException(Exception):
         self.context = context
         return self
 
-    def raise_with_context_f(self, context: NodeServiceContext, message: str):
-        self.context = context
-        self.message = message
-        return self
-
     def handle(self) -> SyftError:
         if self.context and self.context.role in self.roles:
             return SyftError(message=self.message)

@@ -8,9 +8,11 @@ UserAlreadyExistsException = PySyftException(
     message="User already exists", roles=[ServiceRole.ADMIN]
 )
 
-# UserDoesNotExistException = PySyftException(
-#     message="User does not exist", roles=[ServiceRole.ADMIN]
-# )
+AdminEnclaveLoginException = PySyftException(
+    message="Admins are not allowed to login to Enclaves. \
+    Kindly register a new data scientist account by your_client.register.",
+    roles=[ServiceRole.ADMIN],
+)
 
 
 def InvalidSearchParamsException(valid_search_params: str) -> PySyftException:
@@ -28,9 +30,19 @@ def GenericSearchException(message: str) -> PySyftException:
     )
 
 
-def UserDoesNotExistException(uid: str) -> PySyftException:
-    if uid is None:
-        return PySyftException(message="User does not exist", roles=[ServiceRole.ADMIN])
-    return PySyftException(
-        message=f"No user exists for given id: {uid}", roles=[ServiceRole.ADMIN]
-    )
+def UserDoesNotExistException(uid: str, email: str, err: any) -> PySyftException:
+    if uid is not None:
+        return PySyftException(
+            message=f"No user exists for given id: {uid}", roles=[ServiceRole.ADMIN]
+        )
+    elif email is not None and err is not None:
+        return PySyftException(
+            message=f"No user exists with {email} and supplied password.",
+            roles=[ServiceRole.ADMIN],
+        )
+    elif email is not None and err is None:
+        return PySyftException(
+            message=f"Failed to retrieve user with {email} with error: {err}",
+            roles=[ServiceRole.ADMIN],
+        )
+    return PySyftException(message="User does not exist", roles=[ServiceRole.ADMIN])

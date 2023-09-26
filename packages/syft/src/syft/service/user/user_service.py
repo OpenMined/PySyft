@@ -6,6 +6,7 @@ from typing import Union
 
 # relative
 from ...abstract_node import NodeType
+from ...exceptions.user import AdminEnclaveLoginException
 from ...exceptions.user import GenericSearchException
 from ...exceptions.user import InvalidSearchParamsException
 from ...exceptions.user import UserAlreadyExistsException
@@ -375,10 +376,7 @@ class UserService(AbstractService):
                     context.node.node_type == NodeType.ENCLAVE
                     and user.role == ServiceRole.ADMIN
                 ):
-                    return SyftError(
-                        message="Admins are not allowed to login to Enclaves."
-                        "\n Kindly register a new data scientist account by your_client.register."
-                    )
+                    raise AdminEnclaveLoginException.raise_with_context(context=context)
                 return user.to(UserPrivateKey)
 
             return SyftError(
