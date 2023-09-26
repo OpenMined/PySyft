@@ -815,6 +815,14 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
                             if issubclass(v, EmailStr):
                                 v = str
                             try:
+                                annotation_version = v.__version__
+                                value = (
+                                    value.migrate_to(annotation_version)
+                                    if isinstance(value, SyftBaseObject)
+                                    and annotation_version
+                                    else value
+                                )
+
                                 check_type(key, value, v)  # raises Exception
                                 success = True
                                 break  # only need one to match
@@ -823,6 +831,12 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
                         if not success:
                             raise TypeError()
                     else:
+                        annotation_version = t.__version__
+                        value = (
+                            value.migrate_to(annotation_version)
+                            if isinstance(value, SyftBaseObject) and annotation_version
+                            else value
+                        )
                         check_type(key, value, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
@@ -851,9 +865,23 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
                         for v in t.__args__:
                             if issubclass(v, EmailStr):
                                 v = str
+                            annotation_version = v.__version__
+                            arg = (
+                                arg.migrate_to(annotation_version)
+                                if isinstance(arg, SyftBaseObject)
+                                and annotation_version
+                                else arg
+                            )
                             check_type(param_key, arg, v)  # raises Exception
                             break  # only need one to match
                     else:
+                        annotation_version = t.__version__
+
+                        arg = (
+                            arg.migrate_to(annotation_version)
+                            if isinstance(value, SyftBaseObject) and annotation_version
+                            else arg
+                        )
                         check_type(param_key, arg, t)  # raises Exception
             except TypeError:
                 t_arg = type(arg)
