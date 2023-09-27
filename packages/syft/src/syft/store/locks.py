@@ -13,7 +13,12 @@ from pydantic import BaseModel
 import redis
 from sherlock.lock import BaseLock
 from sherlock.lock import FileLock
+from typing import Dict
 from sherlock.lock import RedisLock
+from collections import defaultdict
+
+
+THREAD_FILE_LOCKS: Dict[int, Dict[str, int]] = defaultdict(dict)
 
 # relative
 from ..serde.serializable import serializable
@@ -189,6 +194,25 @@ class PatchedFileLock(FileLock):
 
         try:
             result = cbk()
+
+            print("lock file for lock", self._lock_file, self._lock_file.lock_file)
+
+            # increment lock count
+            thread_id = threading.current_thread().ident
+            current_dict = THREAD_FILE_LOCKS[thread_id]
+            path = str(self._lock_file.lock_file)
+            if path not in current_dict:
+                current_dict[path] = 0
+            current_dict[path] += 1
+            THREAD_FILE_LOCKS[thread_id] = current_dict
+
+            total_files = 0
+            for k,v in THREAD_FILE_LOCKS.items():
+                for j, i in v.items():
+                    total_files += i
+
+            print(f"Acquiring. Open Files: {total_files} Thread Lock State:", json.dumps(THREAD_FILE_LOCKS, indent=2))
+
         except BaseException as e:
             print(e)
             result = False
@@ -203,7 +227,9 @@ class PatchedFileLock(FileLock):
         return self._thread_safe_cbk(self._release_file_lock)
 
     def _acquire_file_lock(self) -> bool:
+        print("> PatchedFileLock _acquire_file_lock threadsafe")
         if not self._lock_file_enabled:
+            print("> Returning because lock file not enabled")
             return True
 
         owner = str(uuid.uuid4())
@@ -213,6 +239,7 @@ class PatchedFileLock(FileLock):
             if self._data_file.exists():
                 for _retry in range(10):
                     try:
+                        print("> PatchedFileLock read_text")
                         data = json.loads(self._data_file.read_text())
                         break
                     except BaseException:
@@ -239,12 +266,14 @@ class PatchedFileLock(FileLock):
                 data = {"owner": owner, "expiry_time": self._expiry_time()}
 
             # Write new data back to file.
+            print("> PatchedFileLock touch")
             self._data_file.touch()
+            print("> PatchedFileLock write_text")
             self._data_file.write_text(json.dumps(data))
 
             # We succeeded in writing to the file so we now hold the lock.
             self._owner = owner
-
+            print("> PatchedFileLock returning")
             return True
 
     @property
@@ -280,6 +309,7 @@ class PatchedFileLock(FileLock):
 
     def _release_file_lock(self) -> None:
         if not self._lock_file_enabled:
+            print("> PatchedFileLock _release_file_lock do nothing not self._lock_file_enabled")
             return
 
         if self._owner is None:
@@ -292,6 +322,7 @@ class PatchedFileLock(FileLock):
             data = None
             for _retry in range(10):
                 try:
+                    print("> PatchedFileLock read_text")
                     data = json.loads(self._data_file.read_text())
                     break
                 except BaseException:
@@ -301,7 +332,22 @@ class PatchedFileLock(FileLock):
                 return
 
             if self._owner == data["owner"]:
+                print("> PatchedFileLock unlink")
                 self._data_file.unlink()
+                # decrement lock count
+                thread_id = threading.current_thread().ident
+                current_dict = THREAD_FILE_LOCKS[thread_id]
+                path = str(self._lock_file.lock_file)
+                if path not in current_dict:
+                    current_dict[path] = 0
+                current_dict[path] -= 1
+                THREAD_FILE_LOCKS[thread_id] = current_dict
+                total_files = 0
+                for k,v in THREAD_FILE_LOCKS.items():
+                    for j, i in v.items():
+                        total_files += i
+                
+                print(f"Releasing. Open Files: {total_files} Thread Lock State:", json.dumps(THREAD_FILE_LOCKS, indent=2))
                 self._owner = None
 
 
