@@ -372,7 +372,10 @@ class Node(AbstractNode):
             #         queue_name=queue_name
             #     )
             #     message_queue.run()
-            if queue_config_.client_config.create_producer:
+
+            # TODO: Remove this once create_producer property is consistently in
+            # client config
+            if getattr(queue_config_.client_config, 'create_producer', True):
                 producer = self.queue_manager.create_producer(
                     queue_name=queue_name, queue_stash=self.queue_stash
                 )

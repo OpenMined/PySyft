@@ -580,7 +580,7 @@ class Orchestra:
     def reset(name: str, deployment_type_enum: DeploymentType) -> None:
         if deployment_type_enum == DeploymentType.PYTHON:
             sy = get_syft_client()
-            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+            _ = sy.Worker.named(name=name, processes=1, reset=True)  # type: ignore
         elif (
             deployment_type_enum == DeploymentType.CONTAINER_STACK
             or deployment_type_enum == DeploymentType.SINGLE_CONTAINER
