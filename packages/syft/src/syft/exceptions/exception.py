@@ -50,9 +50,7 @@ class PySyftException(Exception):
     def handle(self) -> str:
         output_message = (
             self.message
-            if any(
-                [role in [ServiceRole.NONE, ServiceRole.GUEST] for role in self.roles]
-            )
+            if any(role in [ServiceRole.NONE, ServiceRole.GUEST] for role in self.roles)
             or (
                 isinstance(self.context, AuthedServiceContext)
                 and self.context.role in self.roles

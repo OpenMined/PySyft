@@ -1,9 +1,14 @@
+# stdlib
 from typing import List
 from typing import Optional
-import pytest
 import uuid
 
-from syft.exceptions.exception import PySyftException, DEFAULT_PRIVATE_ERROR_MESSAGE
+# third party
+import pytest
+
+# syft absolute
+from syft.exceptions.exception import DEFAULT_PRIVATE_ERROR_MESSAGE
+from syft.exceptions.exception import PySyftException
 from syft.service.context import AuthedServiceContext
 from syft.service.user.user_roles import ServiceRole
 
@@ -30,7 +35,7 @@ def test_PySyftException_has_UUID():
     try:
         uuid_obj = uuid.UUID(error_uuid, version=4)
     except ValueError:
-        assert False, "Invalid UUID."
+        raise AssertionError("Invalid UUID.")
 
     # Check uuid hex
     assert uuid_obj.hex == error_uuid.replace("-", "")
