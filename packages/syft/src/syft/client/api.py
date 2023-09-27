@@ -394,31 +394,12 @@ def debox_signed_syftapicall_response(
     return signed_result.message.data
 
 
-def downgrade_signature(signature: Signature, object_versions: List):
-    def migrate_annotation(annotation):
-        annotation_args = get_args(annotation)
-        annotation_to_migrate = annotation_args if annotation_args else [annotation]
-
-        new_args = []
-        for arg in annotation_to_migrate:
-            if isinstance(arg, SyftBaseObject):
-                versions = SyftMigrationRegistry.get_versions(arg.__canonical_name__)
-                downgrade_version = versions[
-                    str(max(object_versions[arg.__canonical_name__]))
-                ]
-                new_args.append(arg.migrate_to(downgrade_version))
-            else:
-                new_args.append(arg)
-
-        new_annotation = (
-            annotation.copy_with(tuple(new_args)) if annotation_args else new_args[0]
-        )
-
-        return new_annotation
-
+def downgrade_signature(signature: Signature, object_versions: Dict):
     migrated_parameters = []
     for _, parameter in signature.parameters.items():
-        annotation = migrate_annotation(parameter.annotation)
+        annotation = unwrap_and_migrate_annotation(
+            parameter.annotation, object_versions
+        )
         migrated_parameter = Parameter(
             name=parameter.name,
             default=parameter.default,
@@ -427,7 +408,9 @@ def downgrade_signature(signature: Signature, object_versions: List):
         )
         migrated_parameters.append(migrated_parameter)
 
-    migrated_return_annotation = migrate_annotation(signature.return_annotation)
+    migrated_return_annotation = unwrap_and_migrate_annotation(
+        signature.return_annotation, object_versions
+    )
 
     try:
         new_signature = Signature(
@@ -438,6 +421,30 @@ def downgrade_signature(signature: Signature, object_versions: List):
         raise e
 
     return new_signature
+
+
+def unwrap_and_migrate_annotation(annotation, object_versions):
+    args = get_args(annotation)
+    if len(args) == 0:
+        print(annotation)
+        if isinstance(annotation, type) and issubclass(annotation, SyftBaseObject):
+            downgrade_to_version = int(
+                max(object_versions[annotation.__canonical_name__])
+            )
+            downgrade_klass_name = SyftMigrationRegistry.__migration_version_registry__[
+                annotation.__canonical_name__
+            ][downgrade_to_version]
+            new_arg = index_syft_by_module_name(downgrade_klass_name)
+            return new_arg
+        else:
+            return annotation
+
+    migrated_annotations = []
+    for arg in args:
+        migrated_annotation = unwrap_and_migrate_annotation(arg, object_versions)
+        migrated_annotations.append(migrated_annotation)
+
+    return annotation.copy_with(tuple(migrated_annotations))
 
 
 @instrument

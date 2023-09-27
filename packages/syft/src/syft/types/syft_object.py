@@ -229,11 +229,11 @@ class SyftMigrationRegistry:
         """
         Populate the __migration_transform_registry__ dictionary with format
         __migration_version_registry__ = {
-            "canonical_name": {"version_from x version_to": <function trasform_function>}
+            "canonical_name": {"version_from x version_to": <function transform_function>}
         }
         For example
-        {'NodeMetadata': {'1x2': <function trasform_function>,
-                          '2x1': <function trasform_function>}}
+        {'NodeMetadata': {'1x2': <function transform_function>,
+                          '2x1': <function transform_function>}}
         """
         if klass_type_str not in cls.__migration_version_registry__:
             raise Exception(f"{klass_type_str} is not yet registered.")
