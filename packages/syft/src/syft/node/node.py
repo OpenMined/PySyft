@@ -236,7 +236,7 @@ class Node(AbstractNode):
         root_email: str = default_root_email,
         root_password: str = default_root_password,
         processes: int = 0,
-        n_consumers: int = 0,
+        n_consumers: int = 1,
         is_subprocess: bool = False,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,

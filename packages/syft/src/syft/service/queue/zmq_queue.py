@@ -231,21 +231,21 @@ class ZMQConsumer(QueueConsumer):
         self.thread = None
 
 
-    def receive(self):
-        try:
-            print(f"Starting receival ({self.id})")
-            message_list = self._consumer.recv_multipart()
-            print(f"Received stuff ({self.id})")
-            self._consumer.send(b"")
-            print(f"sent back confirmation ({self.id})")
-            message = message_list[0]
-            print("Message Received Successfully !", flush=True)
-        except zmq.ZMQError as e:
-            if e.errno == zmq.ETERM:
-                print("Subscriber connection Terminated")
-            else:
-                raise e
-        self.message_handler.handle_message(message=message)
+    # def receive(self):
+    #     try:
+    #         print(f"Starting receival ({self.id})")
+    #         message_list = self._consumer.recv_multipart()
+    #         print(f"Received stuff ({self.id})")
+    #         self._consumer.send(b"")
+    #         print(f"sent back confirmation ({self.id})")
+    #         message = message_list[0]
+    #         print("Message Received Successfully !", flush=True)
+    #     except zmq.ZMQError as e:
+    #         if e.errno == zmq.ETERM:
+    #             print("Subscriber connection Terminated")
+    #         else:
+    #             raise e
+    #     self.message_handler.handle_message(message=message)
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
@@ -334,7 +334,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     producer_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ 
     # port issue causing tests to randomly fail
-    create_message_queue: bool = False
+    create_producer: bool = True
 
 
 # class MessageQueueConfig():
