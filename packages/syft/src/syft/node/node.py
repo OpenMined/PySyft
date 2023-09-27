@@ -808,7 +808,7 @@ class Node(AbstractNode):
             try:
                 result = method(context, *api_call.args, **api_call.kwargs)
             except PySyftException as e:
-                return e.handle()
+                result = SyftError(message=e.handle())
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
