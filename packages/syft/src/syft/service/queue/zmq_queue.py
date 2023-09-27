@@ -341,7 +341,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     hostname: str = "127.0.0.1"
     consumer_port: Optional[int] = None
     producer_port: Optional[int] = None
-    create_producer: bool = True
+    create_message_queue: bool = False
 
 
 # class MessageQueueConfig():
