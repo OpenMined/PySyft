@@ -230,31 +230,22 @@ class ZMQConsumer(QueueConsumer):
         # self._consumer = ctx.socket(zmq.REP)
         self.thread = None
 
-        """Helper function that returns a new configured socket
-        connected to the Paranoid Pirate queue"""
 
-    # def receive(self):
-    #     try:
-    #         liveness = HEARTBEAT_LIVENESS
-    #         interval = INTERVAL_INIT
-
-    #         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-
-    #         worker = worker_socket(context, poller)
-
-    #         print(f"Starting receival ({self.id})")
-    #         message_list = self._consumer.recv_multipart()
-    #         print(f"Received stuff ({self.id})")
-    #         message = message_list[0]
-    #         print("Message Received Successfully !", flush=True)
-    #     except zmq.ZMQError as e:
-    #         if e.errno == zmq.ETERM:
-    #             print("Subscriber connection Terminated")
-    #         else:
-    #             raise e
-    #     self.message_handler.handle_message(message=message)
-    #     self._consumer.send(b"")
-    #     print(f"sent back confirmation ({self.id})")
+    def receive(self):
+        try:
+            print(f"Starting receival ({self.id})")
+            message_list = self._consumer.recv_multipart()
+            print(f"Received stuff ({self.id})")
+            self._consumer.send(b"")
+            print(f"sent back confirmation ({self.id})")
+            message = message_list[0]
+            print("Message Received Successfully !", flush=True)
+        except zmq.ZMQError as e:
+            if e.errno == zmq.ETERM:
+                print("Subscriber connection Terminated")
+            else:
+                raise e
+        self.message_handler.handle_message(message=message)
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
@@ -341,6 +332,8 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     hostname: str = "127.0.0.1"
     consumer_port: Optional[int] = None
     producer_port: Optional[int] = None
+    # TODO: setting this to false until we can fix the ZMQ 
+    # port issue causing tests to randomly fail
     create_message_queue: bool = False
 
 
@@ -432,6 +425,13 @@ class ZMQClient(QueueClient):
         """
 
         if address is None:
+
+            if self.config.producer_port is None:
+                self.config.producer_port = self._get_free_tcp_port(self.host)
+
+            if self.config.consumer_port is None:
+                self.config.consumer_port = self._get_free_tcp_port(self.host)
+
             address = f"tcp://{self.host}:{self.config.producer_port}"
 
         #     if queue_name in self.producers:
