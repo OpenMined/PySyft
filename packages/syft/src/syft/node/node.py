@@ -401,6 +401,7 @@ class Node(AbstractNode):
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
+        queue_config=None,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -463,6 +464,7 @@ class Node(AbstractNode):
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
             blob_storage_config=blob_storage_config,
+            queue_config=queue_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:

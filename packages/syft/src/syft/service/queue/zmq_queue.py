@@ -547,5 +547,6 @@ class ZMQClient(QueueClient):
 
 @serializable()
 class ZMQQueueConfig(QueueConfig):
-    client_type = ZMQClient
-    client_config: ZMQClientConfig = ZMQClientConfig()
+    def __init__(self, client_type=None, client_config=None):
+        self.client_type = client_type or ZMQClient
+        self.client_config: ZMQClientConfig = client_config or ZMQClientConfig()

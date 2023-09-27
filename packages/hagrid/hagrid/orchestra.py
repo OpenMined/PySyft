@@ -237,6 +237,7 @@ def deploy_to_python(
     local_db: bool,
     node_side_type: NodeSideType,
     enable_warnings: bool,
+    queue_config=None,  # type: ignore
 ) -> Optional[NodeHandle]:
     sy = get_syft_client()
     if sy is None:
@@ -301,6 +302,7 @@ def deploy_to_python(
                     node_type=node_type_enum,
                     node_side_type=node_side_type,
                     enable_warnings=enable_warnings,
+                    queue_config=queue_config,
                 )
             else:
                 # syft <= 0.8.1
@@ -473,6 +475,7 @@ class Orchestra:
         verbose: bool = False,
         render: bool = False,
         enable_warnings: bool = False,
+        queue_config=None,  # type: ignore
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
@@ -516,6 +519,7 @@ class Orchestra:
                 local_db=local_db,
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
+                queue_config=queue_config,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
