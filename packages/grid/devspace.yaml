@@ -65,6 +65,11 @@ deployments:
       manifests:
         - "k8s/manifests/traefik-domain.yaml"
 
+  seaweedfs-conf:
+    kubectl:
+      manifests:
+        - "k8s/manifests/seaweedfs-conf.yaml"
+
   proxy:
     helm:
       upgradeArgs:
@@ -188,6 +193,7 @@ deployments:
           name: "backend"
           ports:
             - port: "${HTTP_PORT}"
+
   mongo:
     helm:
       upgradeArgs:
@@ -217,6 +223,58 @@ deployments:
           name: mongo
           ports:
             - port: "27017"
+
+  seaweedfs:
+    helm:
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
+      values:
+        containers:
+          - image: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
+            command:
+              - "/bin/sh"
+              - "-c"
+              - "/etc/seaweedfs/start.sh"
+            env:
+              - name: S3_VOLUME_SIZE_MB
+                value: "${S3_VOLUME_SIZE_MB}"
+              - name: S3_ROOT_USER
+                value: "${S3_ROOT_USER}"
+              - name: S3_ROOT_PWD
+                value: "${S3_ROOT_PWD}"
+              - name: S3_PORT
+                value: "${S3_PORT}"
+            volumeMounts:
+              - containerPath: /etc/seaweedfs/filer.toml
+                volume:
+                  name: seaweedfs-conf
+                  subPath: /filer.toml
+                  readOnly: false
+              - containerPath: /etc/seaweedfs/start.sh
+                volume:
+                  name: seaweedfs-conf
+                  subPath: /start.sh
+                  readOnly: false
+              - containerPath: /data/blob
+                volume:
+                  name: seaweedfs-data
+                  subPath: /
+                  readOnly: false
+        volumes:
+          - name: seaweedfs-data
+            size: "5Gi"
+          - name: seaweedfs-conf
+            configMap:
+              name: seaweedfs-conf
+        service:
+          name: seaweedfs
+          ports:
+            - port: "8888" # filer
+            - port: "8333" # S3
 
   frontend:
     helm:
@@ -248,6 +306,10 @@ dev:
     imageSelector: "${MONGO_IMAGE}:${MONGO_VERSION}"
     ports:
       - port: "27017"
+  seaweedfs:
+    imageSelector: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
+    ports:
+      - port: "9333" # admin
   backend:
     imageSelector: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
     env:
