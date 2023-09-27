@@ -3149,17 +3149,18 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 
     if host in ["docker"]:
         target = verb.get_named_term_grammar("node_name").input
+        prune_volumes: bool = kwargs.get("prune_vol", False)
         if target == "all":
             # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
 
-            if "prune_vol" in kwargs:
-                return "docker rm `docker ps -aq` --force && docker volume prune -f"
+            if prune_volumes:
+                return "docker rm `docker ps -aq` --force && docker volume prune"
             else:
                 return "docker rm `docker ps -aq` --force"
 
         version = check_docker_version()
         if version:
-            return create_land_docker_cmd(verb=verb)
+            return create_land_docker_cmd(verb=verb, prune_volumes=prune_volumes)
     elif host == "localhost" or is_valid_ip(host):
         parsed_kwargs = {}
         if DEPENDENCIES["ansible-playbook"]:
@@ -3236,7 +3237,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     )
 
 
-def create_land_docker_cmd(verb: GrammarVerb) -> str:
+def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> str:
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
     containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
@@ -3255,6 +3256,11 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
     cmd += " down --remove-orphans"
+
+    if prune_volumes:
+        cmd += (
+            f' && docker volume rm $(docker volume ls --filter name="{snake_name}" -q)'
+        )
 
     cmd = "cd " + path + env_var + cmd
     return cmd
