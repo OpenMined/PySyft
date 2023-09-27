@@ -21,8 +21,8 @@ RUN --mount=type=cache,target=/root/.cache \
 # copy precompiled arm64 packages
 COPY grid/backend/wheels /wheels
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-    pip install --user /wheels/jaxlib-0.4.10-cp311-cp311-manylinux2014_aarch64.whl; \
-    pip install --user jax==0.4.10; \
+    pip install --user /wheels/jaxlib-0.4.16-cp311-cp311-manylinux2014_aarch64.whl; \
+    pip install --user jax==0.4.16; \
     fi
 
 WORKDIR /app

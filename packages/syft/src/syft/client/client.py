@@ -604,6 +604,8 @@ class SyftClient:
             self.register(
                 email=email, password=password, password_verify=password, **kwargs
             )
+        if password is None:
+            password = getpass("Password: ")
         user_private_key = self.connection.login(email=email, password=password)
         if isinstance(user_private_key, SyftError):
             return user_private_key
@@ -819,7 +821,10 @@ def login(
     connection = _client.connection
 
     login_credentials = None
-    if email and password:
+
+    if email:
+        if not password:
+            password = getpass("Password: ")
         login_credentials = UserLoginCredentials(email=email, password=password)
 
     if login_credentials is None:

@@ -98,7 +98,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
-        uses: crazy-max/ghaction-setup-docker@v1.3.0
+        uses: crazy-max/ghaction-setup-docker@v2.0.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -208,6 +208,14 @@ jobs:
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -253,7 +261,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.16.0
+          DOCKER_COMPOSE_VERSION=v2.21.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker compose version
@@ -268,7 +276,7 @@ jobs:
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.3.0
+        uses: crazy-max/ghaction-setup-docker@v2.0.0
 
       - name: Docker Compose on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
