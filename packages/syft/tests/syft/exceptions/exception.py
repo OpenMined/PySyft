@@ -20,14 +20,12 @@ def test_PySyftException_raises():
     with pytest.raises(PySyftException) as exc_info:
         raise PySyftException(message=TEST_MSG, roles=[ServiceRole.NONE])
 
-    error_message = exc_info.value.handle()
-
-    assert TEST_MSG in str(error_message)
+    assert TEST_MSG in str(exc_info)
 
 
 def test_PySyftException_has_UUID():
     error = PySyftException(message=TEST_MSG)
-    error_uuid = error.get_uuid()
+    error_uuid = error.uuid
 
     try:
         uuid_obj = uuid.UUID(error_uuid, version=4)
@@ -35,11 +33,10 @@ def test_PySyftException_has_UUID():
         assert False, "Invalid UUID."
 
     # Check uuid hex
-    assert uuid_obj.hex == error.get_uuid().replace("-", "")
+    assert uuid_obj.hex == error_uuid.replace("-", "")
 
     ## Check if reference is dispatched by the handler function
-    error_message = error.handle()
-    assert error.get_uuid() in str(error_message)
+    assert error.uuid in str(error)
 
 
 @pytest.mark.parametrize(
@@ -62,11 +59,11 @@ def test_PySyftException_user_reads_error_message_if_allowed(
     user_role: ServiceRole,
     roles: Optional[List[ServiceRole]],
 ):
-    authed_context.role = user_role
-    error = PySyftException(message=TEST_MSG, roles=roles, context=authed_context)
-    error_message = error.handle()
+    with pytest.raises(PySyftException) as exc_info:
+        authed_context.role = user_role
+        raise PySyftException(message=TEST_MSG, roles=roles, context=authed_context)
 
-    assert TEST_MSG in str(error_message)
+    assert TEST_MSG in str(exc_info)
 
 
 @pytest.mark.parametrize(
@@ -82,10 +79,9 @@ def test_PySyftException_user_reads_error_message_if_allowed(
 def test_PySyftException_user_cannot_read_error_message_if_not_allowed(
     authed_context: AuthedServiceContext, user_role, roles: Optional[List[ServiceRole]]
 ):
-    authed_context.role = user_role
+    with pytest.raises(PySyftException) as exc_info:
+        authed_context.role = user_role
+        raise PySyftException(message=TEST_MSG, roles=roles, context=authed_context)
 
-    error = PySyftException(message=TEST_MSG, roles=roles, context=authed_context)
-    error_message = error.handle()
-
-    assert TEST_MSG not in str(error_message)
-    assert DEFAULT_PRIVATE_ERROR_MESSAGE in str(error_message)
+    assert TEST_MSG not in str(exc_info)
+    assert DEFAULT_PRIVATE_ERROR_MESSAGE in str(exc_info)
