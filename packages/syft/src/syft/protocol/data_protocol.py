@@ -261,7 +261,11 @@ def migrate_args_and_kwargs(
         if isinstance(param_val, SyftBaseObject):
             current_version = int(param_val.__version__)
             migrate_to_version = int(max(object_versions[param_val.__canonical_name__]))
-            for version in range(current_version + 1, migrate_to_version + 1):
+            if current_version > migrate_to_version:  # downgrade
+                versions = range(current_version - 1, migrate_to_version - 1, -1)
+            else:  # upgrade
+                versions = range(current_version + 1, migrate_to_version + 1)
+            for version in versions:
                 param_val = param_val.migrate_to(version)
         migrated_kwargs[param_name] = param_val
 
@@ -269,9 +273,12 @@ def migrate_args_and_kwargs(
         if isinstance(arg, SyftBaseObject):
             current_version = int(arg.__version__)
             migrate_to_version = int(max(object_versions[arg.__canonical_name__]))
-            for version in range(current_version + 1, migrate_to_version + 1):
-                param_val = param_val.migrate_to(version)
-            arg = arg.migrate_to(migrate_to_version)
+            if current_version > migrate_to_version:  # downgrade
+                versions = range(current_version - 1, migrate_to_version - 1, -1)
+            else:  # upgrade
+                versions = range(current_version + 1, migrate_to_version + 1)
+            for version in versions:
+                arg = arg.migrate_to(version)
 
         migrated_args.append(arg)
 
