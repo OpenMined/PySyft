@@ -60,7 +60,7 @@ from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadataV2
+from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -92,8 +92,6 @@ from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
-from ..types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
@@ -647,7 +645,7 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def metadata(self) -> NodeMetadataV2:
+    def metadata(self) -> NodeMetadataV3:
         name = ""
         deployed_on = ""
         organization = ""
@@ -670,12 +668,10 @@ class Node(AbstractNode):
             admin_email = settings_data.admin_email
             show_warnings = settings_data.show_warnings
 
-        return NodeMetadataV2(
+        return NodeMetadataV3(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
-            highest_version=HIGHEST_SYFT_OBJECT_VERSION,
-            lowest_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
             deployed_on=deployed_on,
             description=description,

@@ -8,6 +8,7 @@ from ..context import AuthedServiceContext
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .node_metadata import NodeMetadataV3
 
 
 @instrument
@@ -19,7 +20,7 @@ class MetadataService(AbstractService):
     @service_method(
         path="metadata.get_metadata", name="get_metadata", roles=GUEST_ROLE_LEVEL
     )
-    def get_metadata(self, context: AuthedServiceContext):
+    def get_metadata(self, context: AuthedServiceContext) -> NodeMetadataV3:
         return context.node.metadata
 
     # @service_method(path="metadata.get_admin", name="get_admin", roles=GUEST_ROLE_LEVEL)

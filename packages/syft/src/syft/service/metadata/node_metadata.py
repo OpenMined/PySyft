@@ -23,6 +23,7 @@ from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
 from ...types.transforms import drop
+from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
 
@@ -121,6 +122,33 @@ class NodeMetadataV2(SyftObject):
 
 
 @serializable()
+class NodeMetadataV3(SyftObject):
+    __canonical_name__ = "NodeMetadata"
+    __version__ = 3
+
+    name: str
+    id: UID
+    verify_key: SyftVerifyKey
+    syft_version: str
+    node_type: NodeType = NodeType.DOMAIN
+    deployed_on: str = "Date"
+    organization: str = "OpenMined"
+    on_board: bool = False
+    description: str = "Text"
+    signup_enabled: bool
+    admin_email: str
+    node_side_type: str
+    show_warnings: bool
+
+    def check_version(self, client_version: str) -> bool:
+        return check_version(
+            client_version=client_version,
+            server_version=self.syft_version,
+            server_name=self.name,
+        )
+
+
+@serializable()
 class NodeMetadataJSON(BaseModel, StorableObjectType):
     metadata_version: int
     name: str
@@ -155,7 +183,16 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
         )
 
 
-@transform(NodeMetadataJSON, NodeMetadataV2)
+@transform(NodeMetadataV3, NodeMetadataJSON)
+def metadata_to_json() -> List[Callable]:
+    return [
+        drop(["__canonical_name__"]),
+        rename("__version__", "metadata_version"),
+        convert_types(["id", "verify_key", "node_type"], str),
+    ]
+
+
+@transform(NodeMetadataJSON, NodeMetadataV3)
 def json_to_metadata() -> List[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
