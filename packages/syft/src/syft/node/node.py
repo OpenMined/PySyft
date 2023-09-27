@@ -236,7 +236,7 @@ class Node(AbstractNode):
         root_email: str = default_root_email,
         root_password: str = default_root_password,
         processes: int = 0,
-        n_consumers: int = 1,
+        n_consumers: int = 0,
         is_subprocess: bool = False,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
@@ -372,7 +372,10 @@ class Node(AbstractNode):
             #         queue_name=queue_name
             #     )
             #     message_queue.run()
-            if queue_config_.client_config.create_producer:
+
+            # TODO: Remove this once create_producer property is consistently in
+            # client config
+            if getattr(queue_config_.client_config, 'create_producer', True):
                 producer = self.queue_manager.create_producer(
                     queue_name=queue_name, queue_stash=self.queue_stash
                 )
