@@ -6,13 +6,13 @@ from typing import Optional
 from typing import Type
 
 # third party
+from bson import CodecOptions
 from pymongo.collection import Collection as MongoCollection
 from pymongo.database import Database as MongoDatabase
 from pymongo.errors import ConnectionFailure
 from pymongo.mongo_client import MongoClient as PyMongoClient
-from result import Err
 from result import Ok
-from result import Result
+from result import as_result
 
 # relative
 from ..serde.serializable import serializable
@@ -136,7 +136,7 @@ class MongoClientCache:
 
 
 class MongoClient:
-    client: PyMongoClient = None
+    client: Optional[PyMongoClient] = None
 
     def __init__(self, config: MongoStoreClientConfig, cache: bool = True) -> None:
         if config.client is not None:
@@ -147,7 +147,8 @@ class MongoClient:
         if not cache or self.client is None:
             self.connect(config=config)
 
-    def connect(self, config: MongoStoreClientConfig) -> Result[Ok, Err]:
+    @as_result(ConnectionFailure)
+    def connect(self, config: MongoStoreClientConfig) -> Ok:
         self.client = PyMongoClient(
             # Connection
             host=config.hostname,
@@ -173,55 +174,43 @@ class MongoClient:
         )
         MongoClientCache.set_cache(config=config, client=self.client)
         try:
-            # Check if mongo connection is still up
             self.client.admin.command("ping")
-        except ConnectionFailure as e:
+        except ConnectionFailure:
             self.client = None
-            return Err(str(e))
-
+            raise
         return Ok()
 
-    def with_db(self, db_name: str) -> Result[MongoDatabase, Err]:
-        try:
-            return Ok(self.client[db_name])
-        except BaseException as e:
-            return Err(str(e))
+    def with_db(self, db_name: str) -> MongoDatabase:
+        if self.client is None:
+            raise ConnectionFailure("No client connected")
+        return self.client[db_name]
 
+    def _get_collection_from_db(
+        self, db_name: str, collection_name: str, codec_options: CodecOptions
+    ) -> MongoCollection:
+        db = self.with_db(db_name)
+        return db.get_collection(name=collection_name, codec_options=codec_options)
+
+    @as_result(BaseException)
     def with_collection(
         self, collection_settings: PartitionSettings, store_config: StoreConfig
-    ) -> Result[MongoCollection, Err]:
-        res = self.with_db(db_name=store_config.db_name)
-        if res.is_err():
-            return res
-        db = res.ok()
+    ) -> MongoCollection:
+        return self._get_collection_from_db(
+            db_name=store_config.db_name,
+            collection_name=collection_settings.name,
+            codec_options=SYFT_CODEC_OPTIONS,
+        )
 
-        try:
-            collection = db.get_collection(
-                name=collection_settings.name, codec_options=SYFT_CODEC_OPTIONS
-            )
-        except BaseException as e:
-            return Err(str(e))
-
-        return Ok(collection)
-
+    @as_result(BaseException)
     def with_collection_permissions(
         self, collection_settings: PartitionSettings, store_config: StoreConfig
-    ) -> Result[MongoCollection, Err]:
+    ) -> MongoCollection:
         """
         For each collection, create a corresponding collection
         that store the permissions to the data in that collection
         """
-        res = self.with_db(db_name=store_config.db_name)
-        if res.is_err():
-            return res
-        db = res.ok()
-
-        try:
-            collection_permissions_name: str = collection_settings.name + "_permissions"
-            collection_permissions = db.get_collection(
-                name=collection_permissions_name, codec_options=SYFT_CODEC_OPTIONS
-            )
-        except BaseException as e:
-            return Err(str(e))
-
-        return Ok(collection_permissions)
+        return self._get_collection_from_db(
+            db_name=store_config.db_name,
+            collection_name=f"{collection_settings.name}_permissions",
+            codec_options=SYFT_CODEC_OPTIONS,
+        )
