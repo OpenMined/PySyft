@@ -112,7 +112,7 @@ class DataProtocol:
         current_protocol_version: int,
         new_object_to_version_map: Dict,
     ):
-        current_protocol_state = self.state[current_protocol_version]
+        current_protocol_state = self.state[str(current_protocol_version)]
         deleted_object_classes, deleted_versions_map = self.find_deleted_versions(
             current_protocol_state,
             new_object_to_version_map=new_object_to_version_map,
@@ -151,7 +151,7 @@ class DataProtocol:
 
     @property
     def latest_version(self):
-        return max(self.state.keys())
+        return int(max(self.state.keys()))
 
     @staticmethod
     def _hash_to_sha256(obj_dict: Dict) -> str:
@@ -169,7 +169,7 @@ class DataProtocol:
 
             new_protocol_version = int(current_protocol_version) + 1
 
-            current_protocol_state = self.state[current_protocol_version]
+            current_protocol_state = self.state[str(current_protocol_version)]
             if current_protocol_state["hash"] == new_protocol_hash:
                 print("No change in schema. Skipping upgrade.")
                 return
@@ -259,14 +259,19 @@ def migrate_args_and_kwargs(
 
     for param_name, param_val in kwargs.items():
         if isinstance(param_val, SyftBaseObject):
-            migrate_to_version = max(object_versions[param_val.__canonical_name__])
-            param_val = param_val.migrate_to(migrate_to_version)
+            current_version = int(param_val.__version__)
+            migrate_to_version = int(max(object_versions[param_val.__canonical_name__]))
+            for version in range(current_version + 1, migrate_to_version + 1):
+                param_val = param_val.migrate_to(version)
         migrated_kwargs[param_name] = param_val
 
     for arg in args:
         if isinstance(arg, SyftBaseObject):
-            migrate_to_version = max(object_versions[arg.__canonical_name__])
-            arg = param_val.migrate_to(migrate_to_version)
+            current_version = int(arg.__version__)
+            migrate_to_version = int(max(object_versions[arg.__canonical_name__]))
+            for version in range(current_version + 1, migrate_to_version + 1):
+                param_val = param_val.migrate_to(version)
+            arg = arg.migrate_to(migrate_to_version)
 
         migrated_args.append(arg)
 

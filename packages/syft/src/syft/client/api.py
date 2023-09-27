@@ -239,6 +239,8 @@ def generate_remote_function(
         if pre_kwargs:
             _valid_kwargs.update(pre_kwargs)
 
+        _valid_kwargs["communication_protocol"] = communication_protocol
+
         api_call = SyftAPICall(
             node_uid=node_uid,
             path=path,
@@ -439,7 +441,15 @@ def downgrade_signature(signature: Signature, object_versions: List):
 
 
 @instrument
-@serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
+@serializable(
+    attrs=[
+        "endpoints",
+        "node_uid",
+        "node_name",
+        "lib_endpoints",
+        "communication_protocol",
+    ]
+)
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"

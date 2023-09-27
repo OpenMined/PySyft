@@ -39,7 +39,7 @@
         "1": "fa9520d29d9df56fb9d5d2080aecfc3be14c49e7267a3e5b9fd05ad1b0828e11"
       },
       "SyftAPI": {
-        "1": "3f96e5d7a189258f66b6c119f835a0ae301843b0c016c634211f124ae83cd179"
+        "1": "142a9bb5a4a63d5d072fbfbdbb48ec9535f1ae51e40f9d4f59760fb807c9a189"
       },
       "User": {
         "1": "21cb3659dc4ddd0b4d58c677f46feecac9f682ea36660f42845067b29b5ad8e7"
@@ -351,7 +351,7 @@
         "1": "41713fc89a2cab7db592df6cd1c45e1309f86a50a8f531ddaf4052947186b0e0"
       }
     },
-    "hash": "63a765d7f47ae7cb3bac4045a9528d3e87c7330a987480bea18a117b9d6b6df8",
+    "hash": "845f621ac334abbecb6ed7adcefa03faccaa9ee9dd722a1780e3bde9535093da",
     "supported": true
   }
 }

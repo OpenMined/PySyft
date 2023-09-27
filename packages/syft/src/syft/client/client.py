@@ -366,6 +366,7 @@ class PythonConnection(NodeConnection):
             )
         obj.connection = self
         obj.signing_key = credentials
+        obj.communication_protocol = communication_protocol
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return obj

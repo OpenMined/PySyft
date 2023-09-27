@@ -331,9 +331,10 @@ def service_method(
 
         def _decorator(self, *args, **kwargs):
             communication_protocol = kwargs.pop("communication_protocol", None)
+
             if communication_protocol:
                 args, kwargs = migrate_args_and_kwargs(
-                    *args, **kwargs, to_protocol=communication_protocol
+                    args=args, kwargs=kwargs, to_latest_protocol=True
                 )
             if autosplat is not None and len(autosplat) > 0:
                 args, kwargs = reconstruct_args_kwargs(
@@ -345,7 +346,9 @@ def service_method(
             result = func(self, *args, **kwargs)
             if communication_protocol:
                 result, _ = migrate_args_and_kwargs(
-                    [result], kwargs={}, to_latest_protocol=True
+                    args=(result,),
+                    kwargs={},
+                    to_protocol=communication_protocol,
                 )
                 result = result[0]
             context = kwargs.get("context", None)

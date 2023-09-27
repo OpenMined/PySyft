@@ -60,7 +60,7 @@ from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadata
+from ..service.metadata.node_metadata import NodeMetadataV2
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.policy.policy_service import PolicyService
@@ -630,7 +630,7 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def metadata(self) -> NodeMetadata:
+    def metadata(self) -> NodeMetadataV2:
         name = ""
         deployed_on = ""
         organization = ""
@@ -653,12 +653,12 @@ class Node(AbstractNode):
             admin_email = settings_data.admin_email
             show_warnings = settings_data.show_warnings
 
-        return NodeMetadata(
+        return NodeMetadataV2(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
-            highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
-            lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
+            highest_version=HIGHEST_SYFT_OBJECT_VERSION,
+            lowest_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
             deployed_on=deployed_on,
             description=description,

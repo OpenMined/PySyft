@@ -23,7 +23,6 @@ from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
 from ...types.transforms import drop
-from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
 
@@ -127,8 +126,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     name: str
     id: str
     verify_key: str
-    highest_object_version: int
-    lowest_object_version: int
+    highest_object_version: Optional[int]
+    lowest_object_version: Optional[int]
     syft_version: str
     node_type: str = NodeType.DOMAIN.value
     deployed_on: str = "Date"
@@ -156,16 +155,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
         )
 
 
-@transform(NodeMetadata, NodeMetadataJSON)
-def metadata_to_json() -> List[Callable]:
-    return [
-        drop(["__canonical_name__"]),
-        rename("__version__", "metadata_version"),
-        convert_types(["id", "verify_key", "node_type"], str),
-    ]
-
-
-@transform(NodeMetadataJSON, NodeMetadata)
+@transform(NodeMetadataJSON, NodeMetadataV2)
 def json_to_metadata() -> List[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
