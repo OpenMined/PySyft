@@ -12,6 +12,7 @@ from typing import Union
 
 # relative
 from ..service.response import SyftException
+from ..service.response import SyftSuccess
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..util.util import get_env
@@ -185,6 +186,7 @@ class DataProtocol:
             "supported": True,
         }
         self.save_state()
+        return SyftSuccess(message="Protocol successfully updated !!")
 
     def validate_current_state(self) -> bool:
         current_object_version_map = self.state[self.latest_version]["object_versions"]

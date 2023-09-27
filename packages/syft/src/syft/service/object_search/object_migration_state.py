@@ -24,6 +24,8 @@ class SyftObjectMigrationState(SyftObject):
     __canonical_name__ = "SyftObjectMigrationState"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __attr_unique__ = ["canonical_name"]
+
     canonical_name: str
     current_version: int
 
@@ -58,10 +60,10 @@ class SyftMigrationStateStash(BaseStash):
     def set(
         self,
         credentials: SyftVerifyKey,
-        syft_object_metadata: SyftObjectMigrationState,
+        migration_state: SyftObjectMigrationState,
         add_permissions: Optional[List[ActionObjectPermission]] = None,
     ) -> Result[SyftObjectMigrationState, str]:
-        res = self.check_type(syft_object_metadata, self.object_type)
+        res = self.check_type(migration_state, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res

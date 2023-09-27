@@ -63,6 +63,7 @@ from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV2
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
+from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
@@ -451,6 +452,22 @@ class Node(AbstractNode):
         root_client = client_type(connection=connection, credentials=self.signing_key)
         root_client.api.refresh_api_callback()
         return root_client
+
+    def __validate_data_migration_state(self):
+        partition_to_be_migrated = []
+        migration_state_service = self.get_service(MigrateStateService)
+        for partition_settings in self.document_store.partitions.values():
+            object_type = partition_settings.object_type
+            canonical_name = object_type.__canonical_name__
+            migration_state = migration_state_service.get_state(canonical_name)
+            if migration_state is not None:
+                if migration_state.current_version != migration_state.latest_version:
+                    partition_to_be_migrated.append(canonical_name)
+            else:
+                migration_state.register_migration_state(
+                    current_version=object_type.__version__,
+                    canonical_name=canonical_name,
+                )
 
     @property
     def guest_client(self):

@@ -42,3 +42,33 @@ class MigrateStateService(AbstractService):
             )
 
         return migration_state.current_version
+
+    @service_method(path="migration", name="get_state")
+    def get_state(
+        self, context: AuthedServiceContext, canonical_name: str
+    ) -> Union[bool, SyftError]:
+        result = self.stash.get_by_name(
+            canonical_name=canonical_name, credentials=context.credentials
+        )
+
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        return result.ok()
+
+    @service_method(path="migration", name="register_migration_state")
+    def register_migration_state(
+        self,
+        context: AuthedServiceContext,
+        current_version: int,
+        canonical_name: str,
+    ) -> Union[SyftObjectMigrationState, SyftError]:
+        obj = SyftObjectMigrationState(
+            current_version=current_version, canonical_name=canonical_name
+        )
+        result = self.stash.set(migration_state=obj, credentials=context.credentials)
+
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        return result.ok()
