@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Type
 
 # third party
@@ -229,6 +230,8 @@ class MongoStorePartition(StorePartition):
         add_permissions: Optional[List[ActionObjectPermission]] = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
+        # TODO: Refactor this function since now it's doing both set and
+        # update at the same time
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write = self.has_permission(write_permission)
 
@@ -379,21 +382,37 @@ class MongoStorePartition(StorePartition):
     def _delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Result[SyftSuccess, Err]:
+        if not (
+            has_permission
+            or self.has_permission(
+                ActionObjectWRITE(uid=qk.value, credentials=credentials)
+            )
+        ):
+            return Err(f"You don't have permission to delete object with qk: {qk}")
+
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
         collection: MongoCollection = collection_status.ok()
 
-        if has_permission or self.has_permission(
-            ActionObjectWRITE(uid=qk.value, credentials=credentials)
-        ):
-            qks = QueryKeys(qks=qk)
-            result = collection.delete_one(filter=qks.as_dict_mongo)
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
 
-            if result.deleted_count == 1:
-                return Ok(SyftSuccess(message="Deleted"))
-
-        return Err(f"Failed to delete object with qk: {qk}")
+        qks = QueryKeys(qks=qk)
+        # delete the object
+        result = collection.delete_one(filter=qks.as_dict_mongo)
+        # delete the object's permission
+        result_permission = collection_permissions.delete_one(filter=qks.as_dict_mongo)
+        if result.deleted_count == 1 and result_permission.deleted_count == 1:
+            return Ok(SyftSuccess(message="Object and its permission are deleted"))
+        elif result.deleted_count == 0:
+            return Err(f"Failed to delete object with qk: {qk}")
+        else:
+            return Err(
+                f"Object with qk: {qk} was deleted, but failed to delete its corresponding permission"
+            )
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         """Check if the permission is inside the permission collection"""
@@ -402,16 +421,16 @@ class MongoStorePartition(StorePartition):
             return False
         collection_permissions: MongoCollection = collection_permissions_status.ok()
 
-        # TODO: fix for other admins
-        if self.root_verify_key.verify == permission.credentials.verify:
-            return True
-
         permissions: Optional[Dict] = collection_permissions.find_one(
             {"_id": permission.uid}
         )
 
         if permissions is None:
             return False
+
+        # TODO: fix for other admins
+        if self.root_verify_key.verify == permission.credentials.verify:
+            return True
 
         if permission.permission_string in permissions["permissions"]:
             return True
@@ -441,7 +460,7 @@ class MongoStorePartition(StorePartition):
             {"_id": permission.uid}
         )
         if permissions is None:
-            # Permission doesn't exits, add a new one
+            # Permission doesn't exist, add a new one
             collection_permissions.insert_one(
                 {
                     "_id": permission.uid,
@@ -450,7 +469,7 @@ class MongoStorePartition(StorePartition):
             )
         else:
             # update the permissions with the new permission string
-            permission_strings: set = permissions["permissions"]
+            permission_strings: Set = permissions["permissions"]
             permission_strings.add(permission.permission_string)
             collection_permissions.update_one(
                 {"_id": permission.uid}, {"$set": {"permissions": permission_strings}}
@@ -472,11 +491,18 @@ class MongoStorePartition(StorePartition):
         )
         if permissions is None:
             return Err(f"permission with UID {permission.uid} not found!")
-        permissions_strings: set = permissions["permissions"]
-        permissions_strings.remove(permission.permission_string)
-        collection_permissions.update_one(
-            {"_id": permission.uid}, {"$set": {"permissions": permissions_strings}}
-        )
+        permissions_strings: Set = permissions["permissions"]
+        if permission.permission_string in permissions_strings:
+            permissions_strings.remove(permission.permission_string)
+            if len(permissions_strings) > 0:
+                collection_permissions.update_one(
+                    {"_id": permission.uid},
+                    {"$set": {"permissions": permissions_strings}},
+                )
+            else:
+                collection_permissions.delete_one({"_id": permission.uid})
+        else:
+            return Err(f"the permission {permission.permission_string} does not exist!")
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
