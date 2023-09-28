@@ -48,7 +48,8 @@ jobs:
 
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.SYFT_BUMP_TOKEN }}
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
@@ -77,21 +78,20 @@ jobs:
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
-          DEVSPACE_VERSION=v6.3.2
+          DEVSPACE_VERSION=v6.3.3
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
           tox -e syft.build.helm
           tox -e syft.package.helm
 
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v7
+      - name: Commit changes to Syft
+        uses: EndBug/add-and-commit@v9
         with:
-          author_name: Madhava Jay
-          author_email: madhava@openmined.org
-          message: "bump version"
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "[syft]bump version"
           add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml', 'packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' , 'packages/syftcli/manifest.yml']"
-          pull: NO-PULL
 
       - name: Scheduled Build and Publish
         if: github.event_name == 'schedule'
@@ -130,6 +130,36 @@ jobs:
             echo "is_pre_release=false" >> $GITHUB_OUTPUT
             echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           fi
+
+      # Checkout Infra repo (nested)
+      - name: Checkout Infra Repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ secrets.INFRA_REPO }}
+          ref: "main"
+          token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
+          path: infrastructure
+
+      # This step will copy the generated K8s manifest files to the correct directory in Infra repo
+      - name: Copy files to Infra Repo
+        run: |
+          if $is_pre_release; then
+            rm -rf infrastructure/gitops/environments/pre-release/.
+            cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/pre_release/
+          else
+            rm -rf infrastructure/gitops/environments/stable/.
+            cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/stable/
+          fi
+
+      - name: Commit changes to Infra Repo
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "Update K8s Manifests from Syft Repo"
+          add: "."
+          push: "origin main"
+          cwd: "./infrastructure/"
 
       - name: Create SyftCLI Config assets
         run: |

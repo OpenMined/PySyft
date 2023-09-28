@@ -15,19 +15,19 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.2-beta.29 -t dev-latest
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.2-beta.32 -t dev-latest
       create_deployments --all
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
-  CONTAINER_REGISTRY: "docker.io/"
-  VERSION: "0.8.2-beta.29"
+  CONTAINER_REGISTRY: "docker.io"
+  VERSION: "0.8.2-beta.32"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
 images:
   backend:
-    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}"
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
     buildKit: {}
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -35,7 +35,7 @@ images:
       - dev-latest
       - "${VERSION}"
   tailscale:
-    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_TAILSCALE}"
     buildKit: {}
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -43,7 +43,7 @@ images:
       - dev-latest
       - "${VERSION}"
   frontend:
-    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}"
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
       args: ["--target", "grid-ui-production"]
     dockerfile: ./frontend/frontend.dockerfile
@@ -83,7 +83,7 @@ deployments:
             env:
               - name: SERVICE_NAME
                 value: "proxy"
-          # - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
+          # - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
           #   securityContext:
           #     capabilities:
           #       add: ["NET_ADMIN", "SYS_MODULE"]
@@ -123,7 +123,7 @@ deployments:
         version: "0.9.0"
       values:
         containers:
-          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}"
+          - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}:${VERSION}"
             volumeMounts:
               - containerPath: /storage
                 volume:
@@ -228,7 +228,7 @@ deployments:
         version: "0.9.0"
       values:
         containers:
-          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}:${VERSION}"
+          - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}:${VERSION}"
             env:
               - name: VERSION
                 value: "${VERSION}"
@@ -249,7 +249,7 @@ dev:
     ports:
       - port: "27017"
   backend:
-    imageSelector: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}"
+    imageSelector: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
     env:
       - name: DEV_MODE
         value: "True"
@@ -261,4 +261,4 @@ dev:
 commands:
   dev:
     command: |-
-      devspace --var CONTAINER_REGISTRY=k3d-registry.localhost:12345/ dev --config=devspace.yaml
+      devspace --var CONTAINER_REGISTRY=k3d-registry.localhost:12345 dev --config=devspace.yaml
