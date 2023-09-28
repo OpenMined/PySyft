@@ -65,10 +65,10 @@ deployments:
       manifests:
         - "k8s/manifests/traefik-domain.yaml"
 
-  seaweedfs-conf:
+  seaweedfs-config:
     kubectl:
       manifests:
-        - "k8s/manifests/seaweedfs-conf.yaml"
+        - "k8s/manifests/seaweedfs.yaml"
 
   proxy:
     helm:
@@ -236,9 +236,8 @@ deployments:
         containers:
           - image: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
             command:
-              - "/bin/sh"
-              - "-c"
-              - "/etc/seaweedfs/start.sh"
+              - sh
+              - /etc/seaweedfs/start.sh
             env:
               - name: S3_VOLUME_SIZE_MB
                 value: "${S3_VOLUME_SIZE_MB}"
@@ -251,12 +250,12 @@ deployments:
             volumeMounts:
               - containerPath: /etc/seaweedfs/filer.toml
                 volume:
-                  name: seaweedfs-conf
+                  name: seaweedfs-config
                   subPath: /filer.toml
                   readOnly: false
               - containerPath: /etc/seaweedfs/start.sh
                 volume:
-                  name: seaweedfs-conf
+                  name: seaweedfs-config
                   subPath: /start.sh
                   readOnly: false
               - containerPath: /data/blob
@@ -267,9 +266,9 @@ deployments:
         volumes:
           - name: seaweedfs-data
             size: "5Gi"
-          - name: seaweedfs-conf
+          - name: seaweedfs-config
             configMap:
-              name: seaweedfs-conf
+              name: seaweedfs-config
         service:
           name: seaweedfs
           ports:
