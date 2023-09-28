@@ -350,40 +350,40 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
 #         self.consumer_port = consumer_port
 
 
-class MessageQueue:
-    def __init__(self, consumer_port, producer_port):
-        self.consumer_port = consumer_port
-        self.producer_port = producer_port
-        self.post_init()
+# class MessageQueue:
+#     def __init__(self, consumer_port, producer_port):
+#         self.consumer_port = consumer_port
+#         self.producer_port = producer_port
+#         self.post_init()
 
-    def post_init(self):
-        self.thread = None
-        self.ctx = zmq.Context.instance()
+#     def post_init(self):
+#         self.thread = None
+#         self.ctx = zmq.Context.instance()
 
-        # Socket facing clients
-        self._frontend = self.ctx.socket(zmq.ROUTER)
-        self._frontend.bind(f"tcp://*:{self.producer_port}")
+#         # Socket facing clients
+#         self._frontend = self.ctx.socket(zmq.ROUTER)
+#         self._frontend.bind(f"tcp://*:{self.producer_port}")
 
-        # Socket facing services
-        self._backend = self.ctx.socket(zmq.DEALER)
-        self._backend.bind(f"tcp://*:{self.consumer_port}")
-        # poller = zmq.Poller()
-        # poller.register(frontend, zmq.POLLIN)
-        # poller.register(backend, zmq.POLLIN)
+#         # Socket facing services
+#         self._backend = self.ctx.socket(zmq.DEALER)
+#         self._backend.bind(f"tcp://*:{self.consumer_port}")
+#         # poller = zmq.Poller()
+#         # poller.register(frontend, zmq.POLLIN)
+#         # poller.register(backend, zmq.POLLIN)
 
-    def _run(self):
-        zmq.proxy(self._frontend, self._backend)
-        # we never get here
-        self._frontend.close()
-        self._backend.close()
-        self.ctx.term()
+#     def _run(self):
+#         zmq.proxy(self._frontend, self._backend)
+#         # we never get here
+#         self._frontend.close()
+#         self._backend.close()
+#         self.ctx.term()
 
-    def run(self):
-        # stdlib
-        import threading
+#     def run(self):
+#         # stdlib
+#         import threading
 
-        self.thread = threading.Thread(target=self._run)
-        self.thread.start()
+#         self.thread = threading.Thread(target=self._run)
+#         self.thread.start()
 
 
 @serializable(attrs=["host"])
@@ -397,7 +397,7 @@ class ZMQClient(QueueClient):
         self.host = config.hostname
         self.producers = {}
         self.consumers = defaultdict(list)
-        self.message_queue: List[MessageQueue] = None
+        # self.message_queue: List[MessageQueue] = None
         self.config = config
 
     @staticmethod
@@ -406,15 +406,15 @@ class ZMQClient(QueueClient):
             free_port = s.server_address[1]
         return free_port
 
-    def add_message_queue(self, queue_name: str):
-        if self.config.consumer_port is None:
-            self.config.consumer_port = self._get_free_tcp_port(self.host)
-        if self.config.producer_port is None:
-            self.config.producer_port = self._get_free_tcp_port(self.host)
-        self.message_queue = MessageQueue(
-            self.config.consumer_port, self.config.producer_port
-        )
-        return self.message_queue
+    # def add_message_queue(self, queue_name: str):
+    #     if self.config.consumer_port is None:
+    #         self.config.consumer_port = self._get_free_tcp_port(self.host)
+    #     if self.config.producer_port is None:
+    #         self.config.producer_port = self._get_free_tcp_port(self.host)
+    #     self.message_queue = MessageQueue(
+    #         self.config.consumer_port, self.config.producer_port
+    #     )
+    #     return self.message_queue
 
     def add_producer(
         self, queue_name: str, address: Optional[str] = None, queue_stash=None

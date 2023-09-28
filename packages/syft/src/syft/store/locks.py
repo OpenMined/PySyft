@@ -18,6 +18,32 @@ from sherlock.lock import RedisLock
 # relative
 from ..serde.serializable import serializable
 
+from typing import Dict
+
+from collections import defaultdict
+
+
+THREAD_FILE_LOCKS: Dict[int, Dict[str, int]] = defaultdict(dict)
+
+import os
+import shutil
+import subprocess
+
+
+def get_open_fds() -> int:
+    """Get the number of open file descriptors for the current process."""
+    lsof_path = shutil.which("lsof")
+    if lsof_path is None:
+        raise NotImplementedError("Didn't handle unavailable lsof.")
+    raw_procs = subprocess.check_output(
+        [lsof_path, "-w", "-Ff", "-p", str(os.getpid())]
+    )
+
+    def filter_fds(lsof_entry: str) -> bool:
+        return lsof_entry.startswith("f") and lsof_entry[1:].isdigit()
+
+    fds = list(filter(filter_fds, raw_procs.decode().split(os.linesep)))
+    return len(fds)
 
 @serializable()
 class LockingConfig(BaseModel):
@@ -189,6 +215,9 @@ class PatchedFileLock(FileLock):
 
         try:
             result = cbk()
+            # import ipdb
+            # ipdb.set_trace()
+
         except BaseException as e:
             print(e)
             result = False
@@ -200,7 +229,9 @@ class PatchedFileLock(FileLock):
         return self._thread_safe_cbk(self._acquire_file_lock)
 
     def _release(self) -> None:
-        return self._thread_safe_cbk(self._release_file_lock)
+        res = self._thread_safe_cbk(self._release_file_lock)
+        # print(get_open_fds())
+        return res
 
     def _acquire_file_lock(self) -> bool:
         if not self._lock_file_enabled:
@@ -245,6 +276,23 @@ class PatchedFileLock(FileLock):
             # We succeeded in writing to the file so we now hold the lock.
             self._owner = owner
 
+            # # increment lock count
+            # thread_id = threading.current_thread().ident
+            # current_dict = THREAD_FILE_LOCKS[thread_id]
+            # path = str(self._lock_file.lock_file)
+            # if path not in current_dict:
+            #     current_dict[path] = 0
+
+            # total_files = 0
+            # for k,v in THREAD_FILE_LOCKS.items():
+            #     for j, i in v.items():
+            #         total_files += i
+
+
+            # current_dict[path] += 1
+            # THREAD_FILE_LOCKS[thread_id] = current_dict
+            # print(f"Acquiring. Open Files: {total_files} Thread Lock State:", json.dumps(THREAD_FILE_LOCKS, indent=2))
+
             return True
 
     @property
@@ -279,6 +327,7 @@ class PatchedFileLock(FileLock):
         return True
 
     def _release_file_lock(self) -> None:
+        # print(f"CALLING RELEASE FOR {self._lock_file.lock_file}")
         if not self._lock_file_enabled:
             return
 
@@ -301,7 +350,22 @@ class PatchedFileLock(FileLock):
                 return
 
             if self._owner == data["owner"]:
+                # print("> PatchedFileLock unlink")
                 self._data_file.unlink()
+                # # decrement lock count
+                # thread_id = threading.current_thread().ident
+                # current_dict = THREAD_FILE_LOCKS[thread_id]
+                # path = str(self._lock_file.lock_file)
+                # if path not in current_dict:
+                #     current_dict[path] = 0
+                # current_dict[path] -= 1
+                # THREAD_FILE_LOCKS[thread_id] = current_dict
+                # total_files = 0
+                # for k,v in THREAD_FILE_LOCKS.items():
+                #     for j, i in v.items():
+                #         total_files += i
+
+                # print(f"Releasing {self._lock_file.lock_file}  \nOpen Files: {total_files} \nThread Lock State:", json.dumps(THREAD_FILE_LOCKS, indent=2))
                 self._owner = None
 
 

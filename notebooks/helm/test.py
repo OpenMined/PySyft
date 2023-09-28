@@ -93,3 +93,4 @@ job = client.code.process_all(x=x_ptr, blocking=False)
 sleep(1)
 
 job.wait().get()
+print("done")
