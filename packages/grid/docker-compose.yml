@@ -230,6 +230,7 @@ services:
       - "/etc/seaweedfs/start.sh"
     volumes:
       - seaweedfs-data:/data/blob
+      - seaweedfs-data-2:/data
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
       - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
 
@@ -241,6 +242,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     volumes:
       - mongo-data:/data/db
+      - mongo-config-data:/data/configdb
 
   jaeger:
     profiles:
@@ -262,6 +264,8 @@ services:
       # - "14250:14250"
       # - "14269:14269"
       # - "9411:9411"
+    volumes:
+      - jaeger-data:/tmp
 
 volumes:
   credentials-data:
@@ -269,7 +273,20 @@ volumes:
   headscale-data:
   # app-redis-data:
   seaweedfs-data:
+    labels:
+      orgs.openmined.syft: "this is a syft seaweedfs volume"
+  seaweedfs-data-2:
+    labels:
+      orgs.openmined.syft: "this is a syft seaweedfs volume"
   mongo-data:
+    labels:
+      orgs.openmined.syft: "this is a syft mongo volume"
+  mongo-config-data:
+    labels:
+      orgs.openmined.syft: "this is a syft mongo volume"
+  jaeger-data:
+    labels:
+      orgs.openmined.syft: "this is a syft jaeger volume"
 
 networks:
   traefik-public:
