@@ -1,30 +1,8 @@
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.8.6
-  labels:
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: mongo
-  name: mongo
-spec:
-  externalIPs: null
-  ports:
-  - name: port-0
-    port: 27017
-    protocol: TCP
-    targetPort: 27017
-  selector:
-    app.kubernetes.io/component: mongo
-    app.kubernetes.io/name: devspace-app
-  type: ClusterIP
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   annotations:
-    helm.sh/chart: component-chart-0.8.6
+    helm.sh/chart: component-chart-0.9.1
   labels:
     app.kubernetes.io/component: mongo
     app.kubernetes.io/managed-by: Helm
@@ -42,7 +20,7 @@ spec:
   template:
     metadata:
       annotations:
-        helm.sh/chart: component-chart-0.8.6
+        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: mongo
         app.kubernetes.io/managed-by: Helm
@@ -58,7 +36,7 @@ spec:
         - name: MONGO_INITDB_ROOT_PASSWORD
           value: {{ .Values.secrets.db.mongo.mongoInitdbRootPassword }}
         envFrom: null
-        image: mongo:latest
+        image: mongo:7.0.0
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -88,7 +66,7 @@ spec:
   volumeClaimTemplates:
   - metadata:
       annotations:
-        helm.sh/chart: component-chart-0.8.6
+        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: mongo
         app.kubernetes.io/managed-by: Helm

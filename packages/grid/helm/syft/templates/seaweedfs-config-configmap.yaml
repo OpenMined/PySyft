@@ -1,11 +1,9 @@
 apiVersion: v1
-kind: ConfigMap
 data:
   filer.toml: |
     [leveldb2]
     enabled = true
     dir = "./filerldb2"
-
   start.sh: |
     #! /usr/bin/env bash
 
@@ -13,5 +11,6 @@ data:
     echo "s3.configure -access_key ${S3_ROOT_USER} -secret_key ${S3_ROOT_PWD} -user iam -actions Read,Write,List,Tagging,Admin -apply" \
     | weed shell > /dev/null 2>&1 \
     & weed server -s3 -s3.port=${S3_PORT} -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}
+kind: ConfigMap
 metadata:
-  name: seaweed-config-filer
+  name: seaweedfs-config

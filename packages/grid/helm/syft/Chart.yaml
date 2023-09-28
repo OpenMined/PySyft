@@ -8,5 +8,5 @@ icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft
 
 dependencies:
   - name: component-chart
-    version: "0.8.6"
+    version: "0.9.1"
     repository: "https://charts.devspace.sh"

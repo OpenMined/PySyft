@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    helm.sh/chart: component-chart-0.9.1
+  labels:
+    app.kubernetes.io/component: seaweedfs
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: devspace-app
+  name: seaweedfs
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: seaweedfs
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: devspace-app
+  serviceName: seaweedfs-headless
+  template:
+    metadata:
+      annotations:
+        helm.sh/chart: component-chart-0.9.1
+      labels:
+        app.kubernetes.io/component: seaweedfs
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devspace-app
+    spec:
+      affinity: null
+      containers:
+      - args: null
+        command:
+        - sh
+        - /etc/seaweedfs/start.sh
+        env:
+        - name: S3_VOLUME_SIZE_MB
+          value: '1024'
+        - name: S3_ROOT_USER
+          value: admin
+        - name: S3_ROOT_PWD
+          value: admin
+        - name: S3_PORT
+          value: '8333'
+        envFrom: null
+        image: chrislusf/seaweedfs:3.55
+        lifecycle: null
+        livenessProbe: null
+        name: container-0
+        readinessProbe: null
+        securityContext: null
+        startupProbe: null
+        volumeDevices: null
+        volumeMounts:
+        - mountPath: /etc/seaweedfs/filer.toml
+          name: seaweedfs-config
+          readOnly: false
+          subPath: filer.toml
+        - mountPath: /etc/seaweedfs/start.sh
+          name: seaweedfs-config
+          readOnly: false
+          subPath: start.sh
+        - mountPath: /data/blob
+          name: seaweedfs-data
+          readOnly: false
+          subPath: ''
+      dnsConfig: null
+      ephemeralContainers: null
+      hostAliases: null
+      imagePullSecrets: null
+      initContainers: null
+      nodeName: null
+      nodeSelector: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      terminationGracePeriodSeconds: 5
+      tolerations: null
+      topologySpreadConstraints: null
+      volumes:
+      - configMap:
+          name: seaweedfs-config
+        name: seaweedfs-config
+  volumeClaimTemplates:
+  - metadata:
+      annotations:
+        helm.sh/chart: component-chart-0.9.1
+      labels:
+        app.kubernetes.io/component: seaweedfs
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devspace-app
+      name: seaweedfs-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi

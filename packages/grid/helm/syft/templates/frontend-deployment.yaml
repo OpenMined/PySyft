@@ -1,30 +1,8 @@
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.8.6
-  labels:
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: frontend
-  name: frontend
-spec:
-  externalIPs: null
-  ports:
-  - name: port-0
-    port: 80
-    protocol: TCP
-    targetPort: 80
-  selector:
-    app.kubernetes.io/component: frontend
-    app.kubernetes.io/name: devspace-app
-  type: ClusterIP
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    helm.sh/chart: component-chart-0.8.6
+    helm.sh/chart: component-chart-0.9.1
   labels:
     app.kubernetes.io/component: frontend
     app.kubernetes.io/managed-by: Helm
@@ -42,7 +20,7 @@ spec:
   template:
     metadata:
       annotations:
-        helm.sh/chart: component-chart-0.8.6
+        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: frontend
         app.kubernetes.io/managed-by: Helm
@@ -54,7 +32,7 @@ spec:
         command: null
         env:
         - name: VERSION
-          value: 0.8.2-beta.1
+          value: 0.8.2-beta.32
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
@@ -62,7 +40,7 @@ spec:
         - name: NEXT_PUBLIC_API_URL
           value: ${NEXT_PUBLIC_API_URL}
         envFrom: null
-        image: docker.io/openmined/grid-frontend:0.8.2-beta.1
+        image: docker.io/openmined/grid-frontend:0.8.2-beta.32
         lifecycle: null
         livenessProbe: null
         name: container-0
