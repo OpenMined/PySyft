@@ -101,7 +101,7 @@ def test_kv_store_partition_delete(
 
     assert len(kv_store_partition.all(root_verify_key).ok()) == len(objs)
 
-    # random object
+    # can't delete a random object since it was not added
     obj = MockSyftObject(data="bogus")
     key = kv_store_partition.settings.store_key.with_obj(obj)
     res = kv_store_partition.delete(root_verify_key, key)
@@ -114,10 +114,13 @@ def test_kv_store_partition_delete(
         res = kv_store_partition.delete(root_verify_key, key)
         assert res.is_ok()
         assert len(kv_store_partition.all(root_verify_key).ok()) == len(objs) - idx - 1
+        # check that the corresponding permissions were also deleted
+        assert len(kv_store_partition.data) == len(kv_store_partition.permissions)
 
         res = kv_store_partition.delete(root_verify_key, key)
         assert res.is_err()
         assert len(kv_store_partition.all(root_verify_key).ok()) == len(objs) - idx - 1
+        assert len(kv_store_partition.data) == len(kv_store_partition.permissions)
 
     assert len(kv_store_partition.all(root_verify_key).ok()) == 0
 
