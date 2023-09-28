@@ -867,6 +867,10 @@ class UserCodeExecutionResult(SyftObject):
     stderr: str
     result: Any
 
+@serializable()
+class hashabledict(dict):
+        def __hash__(self):
+            return hash(tuple(sorted(self.items())))
 
 def execute_byte_code(
     code_item: UserCode, kwargs: Dict[str, Any], context: AuthedServiceContext
@@ -978,7 +982,12 @@ def execute_byte_code(
         if context.job is not None:
 
             def print(*args, sep=" ", end="\n"):
-                new_str = sep.join(args) + end
+                def to_str(arg: Any) -> str:
+                    if isinstance(arg, bytes):
+                        return arg.decode('utf-8')
+                    return arg
+                
+                new_str = sep.join([to_str(arg) for arg in args]) + end
                 # original_print(
                 #     f"appending to {context.job.log_id}, {id(context)}", *args
                 # )
