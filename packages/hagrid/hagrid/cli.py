@@ -3154,7 +3154,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
         if target == "all":
             # land all syft nodes
             if prune_volumes:
-                land_cmd = "docker rm `docker ps -aq` --force "
+                land_cmd = "docker rm `docker ps --filter label=orgs.openmined.syft -q` --force "
                 land_cmd += "&& docker volume rm "
                 land_cmd += "$(docker volume ls --filter label=orgs.openmined.syft -q)"
                 return land_cmd

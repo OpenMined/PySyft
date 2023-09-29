@@ -26,6 +26,8 @@ services:
       - "${HTTP_PORT}:81"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    labels:
+      - "orgs.openmined.syft=this is a syft proxy container"
 
     # depends_on:
     #   - "docker-host"
@@ -51,6 +53,8 @@ services:
     depends_on:
       - proxy
     network_mode: service:proxy
+    labels:
+      - "orgs.openmined.syft=this is a syft tailscale container"
 
   frontend:
     restart: always
@@ -72,6 +76,8 @@ services:
       - VITE_PUBLIC_API_BASE_URL=${VITE_PUBLIC_API_BASE_URL}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    labels:
+      - "orgs.openmined.syft=this is a syft frontend container"
 
   # redis:
   #   restart: always
@@ -131,6 +137,8 @@ services:
       - ${BACKEND_STORAGE_PATH}:/storage
     stdin_open: true
     tty: true
+    labels:
+      - "orgs.openmined.syft=this is a syft backend container"
 
   # backend_stream:
   #   restart: always
@@ -213,6 +221,8 @@ services:
       - RELEASE=${RELEASE:-production}
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
+    labels:
+      - "orgs.openmined.syft=this is a syft headscale container"
 
   seaweedfs:
     profiles:
@@ -233,6 +243,8 @@ services:
       - seaweedfs-data-2:/data
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
       - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
+    labels:
+      - "orgs.openmined.syft=this is a syft seaweedfs container"
 
   mongo:
     image: "${MONGO_IMAGE}:${MONGO_VERSION}"
@@ -243,6 +255,8 @@ services:
     volumes:
       - mongo-data:/data/db
       - mongo-config-data:/data/configdb
+    labels:
+      - "orgs.openmined.syft=this is a syft mongo container"
 
   jaeger:
     profiles:
@@ -266,6 +280,8 @@ services:
       # - "9411:9411"
     volumes:
       - jaeger-data:/tmp
+    labels:
+      - "orgs.openmined.syft=this is a syft jaeger container"
 
 volumes:
   credentials-data:
