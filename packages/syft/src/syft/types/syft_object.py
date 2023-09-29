@@ -50,11 +50,6 @@ MappingIntStrAny = Mapping[IntStr, Any]
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
 
-supported_object_versions = [SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2]
-
-HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
-LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
-
 
 # These attributes are dynamically added based on node/client
 # that is interaction with the SyftObject
@@ -95,6 +90,9 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
 
 
 class Context(SyftBaseObject):
+    __canonical_name__ = "Context"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     pass
 
 

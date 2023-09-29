@@ -23,6 +23,7 @@ from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
 from ...types.transforms import drop
+from ...types.transforms import rename
 from ...types.transforms import transform
 from ...types.uid import UID
 
@@ -153,6 +154,15 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
             server_version=self.syft_version,
             server_name=self.name,
         )
+
+
+@transform(NodeMetadataV2, NodeMetadataJSON)
+def metadata_to_json() -> List[Callable]:
+    return [
+        drop(["__canonical_name__"]),
+        rename("__version__", "metadata_version"),
+        convert_types(["id", "verify_key", "node_type"], str),
+    ]
 
 
 @transform(NodeMetadataJSON, NodeMetadataV2)

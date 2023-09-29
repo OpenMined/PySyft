@@ -92,8 +92,7 @@ from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
-from ..types.syft_object import LOWEST_SYFT_OBJECT_VERSION
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
@@ -674,8 +673,8 @@ class Node(AbstractNode):
             name=name,
             id=self.id,
             verify_key=self.verify_key,
-            highest_version=HIGHEST_SYFT_OBJECT_VERSION,
-            lowest_version=LOWEST_SYFT_OBJECT_VERSION,
+            highest_version=SYFT_OBJECT_VERSION_1,
+            lowest_version=SYFT_OBJECT_VERSION_1,
             syft_version=__version__,
             deployed_on=deployed_on,
             description=description,

@@ -115,6 +115,9 @@ class APIEndpoint(SyftObject):
 
 @serializable()
 class LibEndpoint(SyftBaseObject):
+    __canonical_name__ = "LibEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     # TODO: bad name, change
     service_path: str
     module_path: str

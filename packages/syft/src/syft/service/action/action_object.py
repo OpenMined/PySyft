@@ -222,6 +222,9 @@ action_data_empty_must_run = [
 
 
 class PreHookContext(SyftBaseObject):
+    __canonical_name__ = "PreHookContext"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     """Hook context
 
     Parameters:

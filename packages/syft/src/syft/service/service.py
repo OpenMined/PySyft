@@ -33,6 +33,7 @@ from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
@@ -74,6 +75,9 @@ class AbstractService:
 
 @serializable()
 class BaseConfig(SyftBaseObject):
+    __canonical_name__ = "BaseConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     public_path: str
     private_path: str
     public_name: str
@@ -86,6 +90,7 @@ class BaseConfig(SyftBaseObject):
 
 @serializable()
 class ServiceConfig(BaseConfig):
+    __canonical_name__ = "ServiceConfig"
     permissions: List
     roles: List[ServiceRole]
 
@@ -95,6 +100,7 @@ class ServiceConfig(BaseConfig):
 
 @serializable()
 class LibConfig(BaseConfig):
+    __canonical_name__ = "LibConfig"
     permissions: Set[CMPPermission]
 
     def has_permission(self, credentials: SyftVerifyKey):
