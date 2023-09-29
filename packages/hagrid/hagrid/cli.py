@@ -3159,7 +3159,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 land_cmd += "$(docker volume ls --filter label=orgs.openmined.syft -q)"
                 return land_cmd
             else:
-                return "docker rm `docker ps -aq` --force"
+                return "docker rm `docker ps --filter label=orgs.openmined.syft -q` --force"
 
         version = check_docker_version()
         if version:
