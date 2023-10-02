@@ -3149,17 +3149,22 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 
     if host in ["docker"]:
         target = verb.get_named_term_grammar("node_name").input
-        if target == "all":
-            # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
+        prune_volumes: bool = kwargs.get("prune_vol", False)
 
-            if "prune_vol" in kwargs:
-                return "docker rm `docker ps -aq` --force && docker volume prune"
+        if target == "all":
+            # land all syft nodes
+            if prune_volumes:
+                land_cmd = "docker rm `docker ps --filter label=orgs.openmined.syft -q` --force "
+                land_cmd += "&& docker volume rm "
+                land_cmd += "$(docker volume ls --filter label=orgs.openmined.syft -q)"
+                return land_cmd
             else:
-                return "docker rm `docker ps -aq` --force"
+                return "docker rm `docker ps --filter label=orgs.openmined.syft -q` --force"
 
         version = check_docker_version()
         if version:
-            return create_land_docker_cmd(verb=verb)
+            return create_land_docker_cmd(verb=verb, prune_volumes=prune_volumes)
+
     elif host == "localhost" or is_valid_ip(host):
         parsed_kwargs = {}
         if DEPENDENCIES["ansible-playbook"]:
@@ -3236,7 +3241,10 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     )
 
 
-def create_land_docker_cmd(verb: GrammarVerb) -> str:
+def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> str:
+    """
+    Create docker `land` command to remove containers when a node's name is specified
+    """
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
     containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
@@ -3255,6 +3263,11 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
     cmd += " down --remove-orphans"
+
+    if prune_volumes:
+        cmd += (
+            f' && docker volume rm $(docker volume ls --filter name="{snake_name}" -q)'
+        )
 
     cmd = "cd " + path + env_var + cmd
     return cmd

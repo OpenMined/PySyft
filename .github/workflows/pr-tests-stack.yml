@@ -27,7 +27,8 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [om-ci-16vcpu-ubuntu2204]
+        # os: [om-ci-16vcpu-ubuntu2204]
+        os: [ubuntu-latest]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -35,18 +36,26 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: Permission to home directory
-        run: |
-          sudo chown -R $USER:$USER $HOME
-      - name: "clean .git/config"
-        if: matrix.os == 'windows'
-        continue-on-error: true
-        shell: bash
-        run: |
-          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
-          rm ${GITHUB_WORKSPACE}/.git/config
+      # - name: Permission to home directory
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
+
+      # - name: "clean .git/config"
+      #   if: matrix.os == 'windows'
+      #   continue-on-error: true
+      #   shell: bash
+      #   run: |
+      #     echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+      #     rm ${GITHUB_WORKSPACE}/.git/config
 
       - uses: actions/checkout@v3
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -123,7 +132,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.16.0
+          DOCKER_COMPOSE_VERSION=v2.21.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -137,7 +146,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.3.0
+        uses: crazy-max/ghaction-setup-docker@v2.0.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -334,7 +343,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.16.0
+          DOCKER_COMPOSE_VERSION=v2.21.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -348,7 +357,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v1.3.0
+        uses: crazy-max/ghaction-setup-docker@v2.0.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -543,7 +552,7 @@ jobs:
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
-          DEVSPACE_VERSION=v6.3.2
+          DEVSPACE_VERSION=v6.3.3
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
