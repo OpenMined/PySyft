@@ -236,7 +236,7 @@ class Node(AbstractNode):
         root_email: str = default_root_email,
         root_password: str = default_root_password,
         processes: int = 0,
-        n_consumers: int = 1,
+        n_consumers: int = 0,
         is_subprocess: bool = False,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
@@ -374,15 +374,27 @@ class Node(AbstractNode):
             #     message_queue.run()
 
             # TODO: Remove this once create_producer property is consistently in
+
             # client config
             if getattr(queue_config_.client_config, "create_producer", True):
                 producer = self.queue_manager.create_producer(
                     queue_name=queue_name, queue_stash=self.queue_stash
                 )
                 producer.run()
+                address = producer.address
+            else:
+                port = queue_config_.client_config.producer_port
+                if port is not None:
+                    address = f"tcp://localhost:{port}"
+                else:
+                    address = None
 
             for _ in range(n_consumers):
-                consumer = self.queue_manager.create_consumer(message_handler)
+                if address is None:
+                    raise ValueError("address unknown for consumers")
+                consumer = self.queue_manager.create_consumer(
+                    message_handler, address=address
+                )
                 consumer.run()
 
             # consumer = self.queue_manager.create_consumer(
@@ -397,7 +409,7 @@ class Node(AbstractNode):
         *,  # Trasterisk
         name: str,
         processes: int = 0,
-        n_consumers: int = 1,
+        n_consumers: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,

@@ -231,7 +231,6 @@ class NetworkXBackingStore(BaseGraphStore):
 
     def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
         # TODO copied method from document_store, have it in one place and reuse?
-        print(f"CALLING LOCK ON ACTION STORE LEVEL FOR {self.lock._lock._lock_file}")
 
         locked = self.lock.acquire(blocking=True)
         if not locked:
@@ -240,7 +239,6 @@ class NetworkXBackingStore(BaseGraphStore):
             result = cbk(*args, **kwargs)
         except BaseException as e:
             result = Err(str(e))
-        print("CALLING RELEASE ON ACTION STORE LEVEL FOR", self.lock._lock._lock_file)
         self.lock.release()
 
         return result

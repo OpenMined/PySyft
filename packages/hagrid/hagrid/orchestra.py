@@ -464,7 +464,7 @@ class Orchestra:
         # worker related inputs
         port: Optional[Union[int, str]] = None,
         processes: int = 1,  # temporary work around for jax in subprocess
-        n_consumers: int = 1,
+        n_consumers: int = 0,
         local_db: bool = False,
         dev_mode: bool = False,
         cmd: bool = False,

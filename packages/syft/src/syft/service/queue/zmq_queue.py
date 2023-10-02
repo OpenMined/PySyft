@@ -72,20 +72,24 @@ class WorkerQueue:
 
 @serializable()
 class ZMQProducer(QueueProducer):
-    def __init__(self, address: str, queue_name: str, queue_stash) -> None:
+    def __init__(self, queue_name: str, queue_stash, port: int) -> None:
         # ctx = zmq.Context.instance()
-        self.address = address
+        self.port = port
         # self._producer = ctx.socket(zmq.REQ)
         # self._producer.connect(address)
         self.queue_name = queue_name
         self.queue_stash = queue_stash
         self.post_init()
 
+    @property
+    def address(self):
+        return f"tcp://localhost:{self.port}"
+
     def post_init(self):
         self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))
         self.context = zmq.Context(1)
         self.backend = self.context.socket(zmq.ROUTER)  # ROUTER
-        self.backend.bind("tcp://*:5556")  # For workers
+        self.backend.bind(f"tcp://*:{self.port}")
         self.poll_workers = zmq.Poller()
         self.poll_workers.register(self.backend, zmq.POLLIN)
         self.workers = WorkerQueue()
@@ -219,7 +223,7 @@ class ZMQConsumer(QueueConsumer):
         self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))
         self.worker.setsockopt(zmq.IDENTITY, self.identity)
         self.poller.register(self.worker, zmq.POLLIN)
-        self.worker.connect("tcp://localhost:5556")
+        self.worker.connect(self.address)
         self.worker.send(PPP_READY)
 
     def post_init(self):
@@ -332,7 +336,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     producer_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ
     # port issue causing tests to randomly fail
-    create_producer: bool = True
+    create_producer: bool = False
 
 
 # class MessageQueueConfig():
@@ -415,21 +419,25 @@ class ZMQClient(QueueClient):
     #     return self.message_queue
 
     def add_producer(
-        self, queue_name: str, address: Optional[str] = None, queue_stash=None
+        self, queue_name: str, port: Optional[int] = None, queue_stash=None
     ) -> ZMQProducer:
         """Add a producer of a queue.
 
         A queue can have at most one producer attached to it.
         """
 
-        if address is None:
+        if port is None:
             if self.config.producer_port is None:
                 self.config.producer_port = self._get_free_tcp_port(self.host)
+                port = self.config.producer_port
+            else:
+                port = self.config.producer_port
 
-            if self.config.consumer_port is None:
-                self.config.consumer_port = self._get_free_tcp_port(self.host)
+            # if self.config.consumer_port is None:
+            #     self.config.consumer_port = self._get_free_tcp_port(self.host)
 
-            address = f"tcp://{self.host}:{self.config.producer_port}"
+            # self.backend.bind("tcp://*:5556")  # For workers
+            # address = f"tcp://:{self.config.producer_port}"
 
         #     if queue_name in self.producers:
         #         producer = self.producers[queue_name]
@@ -442,9 +450,9 @@ class ZMQClient(QueueClient):
         #         self.config.producer_port = port
         #     address = f"tcp://{self.host}:{self.config.producer_port}"
 
-        print(f"CREATING A PRODUCER ON {address}")
+        print(f"CREATING A PRODUCER ON {port}")
         producer = ZMQProducer(
-            address=address, queue_name=queue_name, queue_stash=queue_stash
+            queue_name=queue_name, queue_stash=queue_stash, port=port
         )
         self.producers[queue_name] = producer
         return producer
@@ -462,7 +470,8 @@ class ZMQClient(QueueClient):
         """
 
         if address is None:
-            address = f"tcp://{self.host}:{self.config.consumer_port}"
+            # address = f"tcp://{self.host}:{self.config.consumer_port}"
+            address = f"tcp://*:{self.config.consumer_port}"
         #     if queue_name in self.producers:
         #         address = self.producers[queue_name].address
         #     elif queue_name in self.consumers:
