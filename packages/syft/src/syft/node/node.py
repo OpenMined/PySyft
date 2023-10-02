@@ -919,8 +919,8 @@ class Node(AbstractNode):
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
         result = log_service.add(context, log_id)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+        if isinstance(result, SyftError):
+            return result
 
         # Publisher system which pushes to a Queue
 

@@ -868,11 +868,6 @@ class UserCodeExecutionResult(SyftObject):
     stderr: str
     result: Any
 
-@serializable()
-class hashabledict(dict):
-    def __hash__(self):
-        return hash(tuple(sorted(self.items())))
-
 def execute_byte_code(
     code_item: UserCode, kwargs: Dict[str, Any], context: AuthedServiceContext
 ) -> Any:
@@ -911,11 +906,6 @@ def execute_byte_code(
                     ptr = action_service.set(context, value)
                     original_print("PTR OK:", ptr.is_ok())
                     ptr = ptr.ok()
-                    if not isinstance(v, str):
-                        # original_print("Value:", value)
-                        original_print("PTR:", ptr.id)
-                        ptr = action_service.get(context, ptr.id)
-                        original_print("PTR OK:", ptr)
                     kw2id[k] = ptr.id
 
                 # create new usercode with permissions
@@ -998,10 +988,12 @@ def execute_byte_code(
                     if isinstance(arg, Job):
                         return f"JOB: {arg.id}" 
                     if isinstance(arg, SyftError):
-                        return f"JOB: {arg.message}" 
+                        return f"JOB: {arg.message}"
+                    if isinstance(arg, ActionObject):
+                        return str(arg.syft_action_data)
                     return arg
-                
-                new_str = sep.join([to_str(arg) for arg in args]) + end
+                new_args = [to_str(arg) for arg in args]
+                new_str = sep.join(new_args) + end
                 # original_print(
                 #     f"appending to {context.job.log_id}, {id(context)}", *args
                 # )
@@ -1009,7 +1001,7 @@ def execute_byte_code(
                 log_service.append(
                     context=context, uid=context.job.log_id, new_str=new_str
                 )
-                return __builtin__.print("FUNCTION LOG:", *args, end=end, sep=sep, file=sys.stderr)
+                return __builtin__.print("FUNCTION LOG:", *new_args, end=end, sep=sep, file=sys.stderr)
 
         else:
             print = original_print
@@ -1042,7 +1034,7 @@ def execute_byte_code(
 
         # reset print
         print = original_print
-        print("result", result)
+        # print("result", result)
 
         # restore stdout and stderr
         sys.stdout = stdout_
