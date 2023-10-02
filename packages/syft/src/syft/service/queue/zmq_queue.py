@@ -6,7 +6,6 @@ import socketserver
 import time
 from typing import DefaultDict
 from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -230,7 +229,6 @@ class ZMQConsumer(QueueConsumer):
         # self._consumer = ctx.socket(zmq.REP)
         self.thread = None
 
-
     # def receive(self):
     #     try:
     #         print(f"Starting receival ({self.id})")
@@ -332,7 +330,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     hostname: str = "127.0.0.1"
     consumer_port: Optional[int] = None
     producer_port: Optional[int] = None
-    # TODO: setting this to false until we can fix the ZMQ 
+    # TODO: setting this to false until we can fix the ZMQ
     # port issue causing tests to randomly fail
     create_producer: bool = True
 
@@ -425,7 +423,6 @@ class ZMQClient(QueueClient):
         """
 
         if address is None:
-
             if self.config.producer_port is None:
                 self.config.producer_port = self._get_free_tcp_port(self.host)
 

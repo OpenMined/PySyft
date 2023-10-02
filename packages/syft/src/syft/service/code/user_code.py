@@ -51,6 +51,7 @@ from ...util.markdown import as_markdown_code
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
+from ..job.job_stash import Job
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import EmpyInputPolicy
@@ -72,7 +73,6 @@ from ..response import SyftWarning
 from ..user.user_roles import ServiceRole
 from .code_parse import GlobalsVisitor
 from .unparse import unparse
-from ..job.job_stash import Job
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
@@ -868,6 +868,7 @@ class UserCodeExecutionResult(SyftObject):
     stderr: str
     result: Any
 
+
 def execute_byte_code(
     code_item: UserCode, kwargs: Dict[str, Any], context: AuthedServiceContext
 ) -> Any:
@@ -904,7 +905,6 @@ def execute_byte_code(
                 for k, v in kwargs.items():
                     value = ActionObject.from_obj(v)
                     ptr = action_service.set(context, value)
-                    original_print("PTR OK:", ptr.is_ok())
                     ptr = ptr.ok()
                     kw2id[k] = ptr.id
 
@@ -929,8 +929,6 @@ def execute_byte_code(
                     credentials=user_service.admin_verify_key(),
                     role=ServiceRole.ADMIN,
                 )
-                original_print("What:", request)
-                original_print("Args:", kw2id)
                 res = request_service.apply(admin_context, request.id)
                 if not isinstance(res, SyftSuccess):
                     raise ValueError(res)
@@ -984,14 +982,15 @@ def execute_byte_code(
             def print(*args, sep=" ", end="\n"):
                 def to_str(arg: Any) -> str:
                     if isinstance(arg, bytes):
-                        return arg.decode('utf-8')
+                        return arg.decode("utf-8")
                     if isinstance(arg, Job):
-                        return f"JOB: {arg.id}" 
+                        return f"JOB: {arg.id}"
                     if isinstance(arg, SyftError):
                         return f"JOB: {arg.message}"
                     if isinstance(arg, ActionObject):
                         return str(arg.syft_action_data)
                     return arg
+
                 new_args = [to_str(arg) for arg in args]
                 new_str = sep.join(new_args) + end
                 # original_print(
@@ -1001,7 +1000,13 @@ def execute_byte_code(
                 log_service.append(
                     context=context, uid=context.job.log_id, new_str=new_str
                 )
-                return __builtin__.print("FUNCTION LOG:", *new_args, end=end, sep=sep, file=sys.stderr)
+                return __builtin__.print(
+                    f"FUNCTION LOG ({context.job.log_id}):",
+                    *new_args,
+                    end=end,
+                    sep=sep,
+                    file=sys.stderr,
+                )
 
         else:
             print = original_print

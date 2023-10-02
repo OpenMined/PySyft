@@ -223,7 +223,7 @@ class NodeHandle:
             Orchestra.land(self.name, deployment_type=self.deployment_type)
 
 
-def deploy_to_python(
+def deploy_to_python(  # type: ignore
     node_type_enum: NodeType,
     deployment_type_enum: DeploymentType,
     port: Union[int, str],
@@ -237,7 +237,7 @@ def deploy_to_python(
     local_db: bool,
     node_side_type: NodeSideType,
     enable_warnings: bool,
-    queue_config=None,  # type: ignore
+    queue_config=None,
 ) -> Optional[NodeHandle]:
     sy = get_syft_client()
     if sy is None:
@@ -455,7 +455,7 @@ def deploy_to_container(
 
 class Orchestra:
     @staticmethod
-    def launch(
+    def launch(  # type: ignore
         # node information and deployment
         name: Optional[str] = None,
         node_type: Optional[Union[str, NodeType]] = None,
@@ -475,7 +475,7 @@ class Orchestra:
         verbose: bool = False,
         render: bool = False,
         enable_warnings: bool = False,
-        queue_config=None,  # type: ignore
+        queue_config=None,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"

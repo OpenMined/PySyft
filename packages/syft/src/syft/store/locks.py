@@ -1,10 +1,15 @@
 # stdlib
+from collections import defaultdict
 import datetime
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import threading
 import time
 from typing import Callable
+from typing import Dict
 from typing import Optional
 import uuid
 
@@ -18,16 +23,7 @@ from sherlock.lock import RedisLock
 # relative
 from ..serde.serializable import serializable
 
-from typing import Dict
-
-from collections import defaultdict
-
-
 THREAD_FILE_LOCKS: Dict[int, Dict[str, int]] = defaultdict(dict)
-
-import os
-import shutil
-import subprocess
 
 
 def get_open_fds() -> int:
@@ -44,6 +40,7 @@ def get_open_fds() -> int:
 
     fds = list(filter(filter_fds, raw_procs.decode().split(os.linesep)))
     return len(fds)
+
 
 @serializable()
 class LockingConfig(BaseModel):
@@ -288,7 +285,6 @@ class PatchedFileLock(FileLock):
             #     for j, i in v.items():
             #         total_files += i
 
-
             # current_dict[path] += 1
             # THREAD_FILE_LOCKS[thread_id] = current_dict
             # print(f"Acquiring. Open Files: {total_files} Thread Lock State:", json.dumps(THREAD_FILE_LOCKS, indent=2))
@@ -365,7 +361,6 @@ class PatchedFileLock(FileLock):
                 #     for j, i in v.items():
                 #         total_files += i
 
-                # print(f"Releasing {self._lock_file.lock_file}  \nOpen Files: {total_files} \nThread Lock State:", json.dumps(THREAD_FILE_LOCKS, indent=2))
                 self._owner = None
 
 
