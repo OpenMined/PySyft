@@ -574,6 +574,7 @@ class MongoDocumentStore(DocumentStore):
 
 @serializable()
 class MongoStoreConfig(StoreConfig):
+    __canonical_name__ = "MongoStoreConfig"
     """Mongo Store configuration
 
     Parameters:

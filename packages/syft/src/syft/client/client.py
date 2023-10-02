@@ -35,6 +35,7 @@ from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
 from ..protocol.data_protocol import DataProtocol
+from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
@@ -482,7 +483,10 @@ class SyftClient:
 
     def _get_communication_protocol(self, protocols_supported_by_server: List) -> int:
         data_protocol: DataProtocol = get_data_protocol()
-        protocols_supported_by_client: List[int] = data_protocol.supported_protocols
+        protocols_supported_by_client: List[
+            PROTOCOL_TYPE
+        ] = data_protocol.supported_protocols
+
         self.current_protocol = data_protocol.latest_version
         common_protocols = set(protocols_supported_by_client).intersection(
             protocols_supported_by_server

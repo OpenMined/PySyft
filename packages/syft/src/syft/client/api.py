@@ -28,6 +28,7 @@ from typeguard import check_type
 from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
+from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.deserialize import _deserialize
@@ -214,7 +215,7 @@ def generate_remote_function(
     path: str,
     make_call: Callable,
     pre_kwargs: Dict[str, Any],
-    communication_protocol: int,
+    communication_protocol: PROTOCOL_TYPE,
     warning: Optional[APIEndpointWarning],
 ):
     if "blocking" in signature.parameters:
@@ -274,7 +275,7 @@ def generate_remote_lib_function(
     path: str,
     module_path: str,
     make_call: Callable,
-    communication_protocol: int,
+    communication_protocol: PROTOCOL_TYPE,
     pre_kwargs: Dict[str, Any],
 ):
     if "blocking" in signature.parameters:
@@ -477,7 +478,7 @@ class SyftAPI(SyftObject):
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
     __user_role: ServiceRole = ServiceRole.NONE
-    communication_protocol: int
+    communication_protocol: PROTOCOL_TYPE
 
     # def __post_init__(self) -> None:
     #     pass
@@ -505,9 +506,9 @@ class SyftAPI(SyftObject):
 
         # If server uses a higher protocol version than client, then
         # signatures needs to be downgraded.
-        signature_needs_downgrade = int(node.current_protocol) > int(
-            communication_protocol
-        )
+        signature_needs_downgrade = node.current_protocol != "dev" and int(
+            node.current_protocol
+        ) > int(communication_protocol)
         data_protocol = get_data_protocol()
 
         if signature_needs_downgrade:

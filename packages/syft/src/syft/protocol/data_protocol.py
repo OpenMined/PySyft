@@ -22,9 +22,10 @@ from ..service.response import SyftSuccess
 from ..types.syft_object import SyftBaseObject
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
+PROTOCOL_TYPE = str | int
 
 
-def natural_key(key: int | str) -> list[int]:
+def natural_key(key: PROTOCOL_TYPE) -> list[int]:
     """Define key for natural ordering of strings."""
     if isinstance(key, int):
         key = str(key)
@@ -79,8 +80,8 @@ class DataProtocol:
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
 
     @property
-    def latest_version(self) -> str:
-        sorted_versions = natural_key(self.state.keys())
+    def latest_version(self) -> PROTOCOL_TYPE:
+        sorted_versions = sorted(self.protocol_history.keys(), key=natural_key)
         if len(sorted_versions) > 0:
             return sorted_versions[-1]
         return "dev"
@@ -163,9 +164,11 @@ class DataProtocol:
                     continue
                 elif str(version) in versions.keys():
                     raise Exception(
-                        f"{canonical_name} {cls} version {version} hash has changed. "
+                        f"{canonical_name} for class {cls.__name__} fqn {cls} "
+                        + f"version {version} hash has changed. "
                         + f"{hash_str} not in {versions.values()}. "
-                        + "You probably need to bump the version number."
+                        + "Is a unique __canonical_name__ for this subclass missing? "
+                        + "If the class has changed you will need to bump the version number."
                     )
                 else:
                     # new object so its an add
@@ -276,6 +279,12 @@ class DataProtocol:
 
     def get_object_versions(self, protocol: Union[int, str]) -> list:
         return self.protocol_history[str(protocol)]["object_versions"]
+
+    @property
+    def has_dev(self) -> bool:
+        if "dev" in self.protocol_history.keys():
+            return True
+        return False
 
 
 def get_data_protocol():
