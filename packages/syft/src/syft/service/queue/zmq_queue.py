@@ -180,22 +180,6 @@ class ZMQProducer(QueueProducer):
             except Exception as e:
                 print(f"Error in producer {e}")
 
-    # def send(self, message: bytes) -> None:
-    #     try:
-    #         message_list = [message]
-    #         # TODO: Enable zero copy
-    #         self._producer.send_multipart(message_list)
-    #         _ = self._producer.recv()
-    #         # print("Message Queued Successfully !", flush=True)
-    #     except zmq.Again as e:
-    #         # TODO: Add retry mechanism if this error occurs
-    #         raise e
-    #     except zmq.ZMQError as e:
-    #         if e.errno == zmq.ETERM:
-    #             print("Connection Interrupted....")
-    #         else:
-    #             raise e
-
     def close(self):
         self._producer.close()
 
@@ -232,22 +216,6 @@ class ZMQConsumer(QueueConsumer):
         self.create_socket()
         # self._consumer = ctx.socket(zmq.REP)
         self.thread = None
-
-    # def receive(self):
-    #     try:
-    #         print(f"Starting receival ({self.id})")
-    #         message_list = self._consumer.recv_multipart()
-    #         print(f"Received stuff ({self.id})")
-    #         self._consumer.send(b"")
-    #         print(f"sent back confirmation ({self.id})")
-    #         message = message_list[0]
-    #         print("Message Received Successfully !", flush=True)
-    #     except zmq.ZMQError as e:
-    #         if e.errno == zmq.ETERM:
-    #             print("Subscriber connection Terminated")
-    #         else:
-    #             raise e
-    #     self.message_handler.handle_message(message=message)
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
@@ -339,55 +307,6 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     create_producer: bool = False
 
 
-# class MessageQueueConfig():
-
-#     @staticmethod
-#     def _get_free_tcp_port(host: str):
-#         with socketserver.TCPServer((host, 0), None) as s:
-#             free_port = s.server_address[1]
-#         return free_port
-
-#     def __init__(self, producer_port: Optional[int]=None,  consumer_port: Optional[int] = None):
-#         self.producer_port = producer_port if producer_port is not None else self._get_free_tcp_port(self.host)
-#         self.consumer_port = consumer_port
-
-
-# class MessageQueue:
-#     def __init__(self, consumer_port, producer_port):
-#         self.consumer_port = consumer_port
-#         self.producer_port = producer_port
-#         self.post_init()
-
-#     def post_init(self):
-#         self.thread = None
-#         self.ctx = zmq.Context.instance()
-
-#         # Socket facing clients
-#         self._frontend = self.ctx.socket(zmq.ROUTER)
-#         self._frontend.bind(f"tcp://*:{self.producer_port}")
-
-#         # Socket facing services
-#         self._backend = self.ctx.socket(zmq.DEALER)
-#         self._backend.bind(f"tcp://*:{self.consumer_port}")
-#         # poller = zmq.Poller()
-#         # poller.register(frontend, zmq.POLLIN)
-#         # poller.register(backend, zmq.POLLIN)
-
-#     def _run(self):
-#         zmq.proxy(self._frontend, self._backend)
-#         # we never get here
-#         self._frontend.close()
-#         self._backend.close()
-#         self.ctx.term()
-
-#     def run(self):
-#         # stdlib
-#         import threading
-
-#         self.thread = threading.Thread(target=self._run)
-#         self.thread.start()
-
-
 @serializable(attrs=["host"])
 class ZMQClient(QueueClient):
     """ZMQ Client for creating producers and consumers."""
@@ -408,16 +327,6 @@ class ZMQClient(QueueClient):
             free_port = s.server_address[1]
         return free_port
 
-    # def add_message_queue(self, queue_name: str):
-    #     if self.config.consumer_port is None:
-    #         self.config.consumer_port = self._get_free_tcp_port(self.host)
-    #     if self.config.producer_port is None:
-    #         self.config.producer_port = self._get_free_tcp_port(self.host)
-    #     self.message_queue = MessageQueue(
-    #         self.config.consumer_port, self.config.producer_port
-    #     )
-    #     return self.message_queue
-
     def add_producer(
         self, queue_name: str, port: Optional[int] = None, queue_stash=None
     ) -> ZMQProducer:
@@ -433,24 +342,6 @@ class ZMQClient(QueueClient):
             else:
                 port = self.config.producer_port
 
-            # if self.config.consumer_port is None:
-            #     self.config.consumer_port = self._get_free_tcp_port(self.host)
-
-            # self.backend.bind("tcp://*:5556")  # For workers
-            # address = f"tcp://:{self.config.producer_port}"
-
-        #     if queue_name in self.producers:
-        #         producer = self.producers[queue_name]
-        #         if producer.alive:
-        #             return producer
-        #         address = producer.address
-
-        # if not address:
-        #     if self.config.producer_port is None:
-        #         self.config.producer_port = port
-        #     address = f"tcp://{self.host}:{self.config.producer_port}"
-
-        print(f"CREATING A PRODUCER ON {port}")
         producer = ZMQProducer(
             queue_name=queue_name, queue_stash=queue_stash, port=port
         )
@@ -472,27 +363,12 @@ class ZMQClient(QueueClient):
         if address is None:
             # address = f"tcp://{self.host}:{self.config.consumer_port}"
             address = f"tcp://*:{self.config.consumer_port}"
-        #     if queue_name in self.producers:
-        #         address = self.producers[queue_name].address
-        #     elif queue_name in self.consumers:
-        #         consumers = self.consumers[queue_name]
-        #         consumer = consumers[0] if len(consumers) > 0 else None
-        #         address = consumer.address if consumer else None
-
-        # address = (
-        #     self._get_free_tcp_addr(
-        #         self.host,
-        #     )
-        #     if address is None
-        #     else address
-        # )
 
         consumer = ZMQConsumer(
             queue_name=queue_name,
             message_handler=message_handler,
             address=address,
         )
-        print(f"CREATING A CONSUMER ON {address}")
         self.consumers[queue_name].append(consumer)
 
         return consumer

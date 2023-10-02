@@ -247,20 +247,17 @@ class PatchedFileLock(FileLock):
                         time.sleep(0.1)
                     if _retry == 9:
                         pass
-                        # print("(1) COULD NOT READ LOCK FILE", self._data_file)
 
                 now = self._now()
                 has_expired = self._has_expired(data, now)
                 if owner != data["owner"]:
                     if not has_expired:
-                        # print("(2) COULD NOT GET FILE LOCK FOR ", self._data_file)
                         # Someone else holds the lock.
                         return False
                     else:
                         # Lock is available for us to take.
                         data = {"owner": owner, "expiry_time": self._expiry_time()}
                 else:
-                    # print("(3) COULD NOT GET FILE LOCK FOR ", self._data_file)
                     # Same owner so do not set or modify Lease.
                     return False
             else:
@@ -272,22 +269,6 @@ class PatchedFileLock(FileLock):
 
             # We succeeded in writing to the file so we now hold the lock.
             self._owner = owner
-
-            # # increment lock count
-            # thread_id = threading.current_thread().ident
-            # current_dict = THREAD_FILE_LOCKS[thread_id]
-            # path = str(self._lock_file.lock_file)
-            # if path not in current_dict:
-            #     current_dict[path] = 0
-
-            # total_files = 0
-            # for k,v in THREAD_FILE_LOCKS.items():
-            #     for j, i in v.items():
-            #         total_files += i
-
-            # current_dict[path] += 1
-            # THREAD_FILE_LOCKS[thread_id] = current_dict
-            # print(f"Acquiring. Open Files: {total_files} Thread Lock State:", json.dumps(THREAD_FILE_LOCKS, indent=2))
 
             return True
 
@@ -323,7 +304,6 @@ class PatchedFileLock(FileLock):
         return True
 
     def _release_file_lock(self) -> None:
-        # print(f"CALLING RELEASE FOR {self._lock_file.lock_file}")
         if not self._lock_file_enabled:
             return
 
@@ -346,21 +326,7 @@ class PatchedFileLock(FileLock):
                 return
 
             if self._owner == data["owner"]:
-                # print("> PatchedFileLock unlink")
                 self._data_file.unlink()
-                # # decrement lock count
-                # thread_id = threading.current_thread().ident
-                # current_dict = THREAD_FILE_LOCKS[thread_id]
-                # path = str(self._lock_file.lock_file)
-                # if path not in current_dict:
-                #     current_dict[path] = 0
-                # current_dict[path] -= 1
-                # THREAD_FILE_LOCKS[thread_id] = current_dict
-                # total_files = 0
-                # for k,v in THREAD_FILE_LOCKS.items():
-                #     for j, i in v.items():
-                #         total_files += i
-
                 self._owner = None
 
 

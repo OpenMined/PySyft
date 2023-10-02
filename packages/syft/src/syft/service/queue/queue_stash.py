@@ -51,73 +51,11 @@ class QueueItem(SyftObject):
     api_call: Union[SyftAPICall, SignedSyftAPICall]
     worker_settings: WorkerSettings
 
-    # def fetch(self) -> None:
-    #     api = APIRegistry.api_for(
-    #         node_uid=self.node_uid,
-    #         user_verify_key=self.syft_client_verify_key,
-    #     )
-    #     call = SyftAPICall(
-    #         node_uid=self.node_uid,
-    #         path="queue",
-    #         args=[],
-    #         kwargs={"uid": self.id},
-    #         blocking=True,
-    #     )
-    #     result = api.make_call(call)
-    #     if isinstance(result, QueueItem):
-    #         self.resolved = result.resolved
-    #         if result.resolved:
-    #             self.result = result.result
-    #         self.status = result.status
-
-    # @property
-    # def subjobs(self):
-    #     api = APIRegistry.api_for(
-    #         node_uid=self.node_uid,
-    #         user_verify_key=self.syft_client_verify_key,
-    #     )
-    #     return api.services.queue.get_subjobs(self.id)
-
-    # def logs(self, _print=True):
-    #     api = APIRegistry.api_for(
-    #         node_uid=self.node_uid,
-    #         user_verify_key=self.syft_client_verify_key,
-    #     )
-    #     log_item = api.services.log.get(self.log_id)
-    #     res = log_item.stdout
-    #     if _print:
-    #         print(res)
-    #     else:
-    #         return res
-
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
 
     def _repr_markdown_(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
-
-    # def wait(self):
-    #     # stdlib
-    #     from time import sleep
-
-    #     # todo: timeout
-    #     if self.resolved:
-    #         return self.resolve
-    #     while True:
-    #         self.fetch()
-    #         sleep(0.1)
-    #         if self.resolved:
-    #             break
-    #     return self.resolve
-
-    # @property
-    # def resolve(self) -> Union[Any, SyftNotReady]:
-    #     if not self.resolved:
-    #         self.fetch()
-
-    #     if self.resolved:
-    #         return self.result.message.data
-    #     return SyftNotReady(message=f"{self.id} not ready yet.")
 
 
 @instrument
@@ -166,13 +104,6 @@ class QueueStash(BaseStash):
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         item = self.query_one(credentials=credentials, qks=qks)
         return item
-
-    # def get_by_parent_id(
-    #     self, credentials: SyftVerifyKey, uid: UID
-    # ) -> Result[Optional[QueueItem], str]:
-    #     qks = QueryKeys(qks=[PartitionKey(key="parent_queue_item_id", type_=UID).with_obj(uid)])
-    #     item = self.query_all(credentials=credentials, qks=qks)
-    #     return item
 
     def pop(
         self, credentials: SyftVerifyKey, uid: UID
