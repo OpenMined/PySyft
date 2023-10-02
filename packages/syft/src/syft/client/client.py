@@ -476,11 +476,11 @@ class SyftClient:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
 
-        self.communication_protocol = self.__get_communication_protocol(
+        self.communication_protocol = self._get_communication_protocol(
             self.metadata.supported_protocols
         )
 
-    def __get_communication_protocol(self, protocols_supported_by_server: List) -> int:
+    def _get_communication_protocol(self, protocols_supported_by_server: List) -> int:
         data_protocol: DataProtocol = get_data_protocol()
         protocols_supported_by_client: List[int] = data_protocol.supported_protocols
         self.current_protocol = data_protocol.latest_version

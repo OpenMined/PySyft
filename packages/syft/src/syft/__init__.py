@@ -32,7 +32,9 @@ from .node.gateway import Gateway  # noqa: F401
 from .node.server import serve_node  # noqa: F401
 from .node.server import serve_node as bind_worker  # noqa: F401
 from .node.worker import Worker  # noqa: F401
-from .protocol.data_protocol import upgrade_protocol  # noqa: F401
+from .protocol.data_protocol import bump_protocol_version  # noqa: F401
+from .protocol.data_protocol import get_data_protocol  # noqa: F401
+from .protocol.data_protocol import stage_protocol_changes  # noqa: F401
 from .serde import NOTHING  # noqa: F401
 from .serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .serde.serializable import serializable  # noqa: F401

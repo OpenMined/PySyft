@@ -60,7 +60,7 @@ from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadataV2
+from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -452,7 +452,7 @@ class Node(AbstractNode):
         root_client.api.refresh_api_callback()
         return root_client
 
-    def __validate_data_migration_state(self):
+    def _validate_data_migration_state(self):
         partition_to_be_migrated = []
         migration_state_service = self.get_service(MigrateStateService)
         for partition_settings in self.document_store.partitions.values():
@@ -646,7 +646,7 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def metadata(self) -> NodeMetadataV2:
+    def metadata(self) -> NodeMetadata:
         name = ""
         deployed_on = ""
         organization = ""
@@ -669,7 +669,7 @@ class Node(AbstractNode):
             admin_email = settings_data.admin_email
             show_warnings = settings_data.show_warnings
 
-        return NodeMetadataV2(
+        return NodeMetadata(
             name=name,
             id=self.id,
             verify_key=self.verify_key,

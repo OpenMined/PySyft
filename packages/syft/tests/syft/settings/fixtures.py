@@ -7,6 +7,7 @@ import pytest
 # syft absolute
 from syft.__init__ import __version__
 from syft.abstract_node import NodeSideType
+from syft.abstract_node import NodeType
 from syft.service.metadata.node_metadata import NodeMetadataJSON
 from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
@@ -51,13 +52,14 @@ def metadata_json(faker) -> NodeMetadataJSON:
         name=faker.name(),
         id=faker.text(),
         verify_key=faker.text(),
-        highest_object_version=SYFT_OBJECT_VERSION_1,
-        lowest_object_version=SYFT_OBJECT_VERSION_1,
+        highest_version=SYFT_OBJECT_VERSION_1,
+        lowest_version=SYFT_OBJECT_VERSION_1,
         syft_version=__version__,
         signup_enabled=False,
         admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE.value,
         show_warnings=False,
+        node_type=NodeType.DOMAIN.value,
     )
 
 

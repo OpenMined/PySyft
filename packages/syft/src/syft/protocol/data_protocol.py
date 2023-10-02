@@ -9,6 +9,7 @@ from typing import Dict
 from typing import Optional
 from typing import Tuple
 from typing import Type
+from typing import Union
 
 # third party
 from result import Result
@@ -19,6 +20,8 @@ from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
 from ..types.syft_object import SyftBaseObject
+
+PROTOCOL_STATE_FILENAME = "protocol_version.json"
 
 
 def natural_key(key: int | str) -> list[int]:
@@ -33,44 +36,6 @@ def sort_dict_naturally(d: dict) -> dict:
     return {k: d[k] for k in sorted(d.keys(), key=natural_key)}
 
 
-def protocol_state_builder(protocol_dict: dict, stop_key: Optional[str] = None) -> dict:
-    sorted_dict = sort_dict_naturally(protocol_dict)
-    state_dict = defaultdict(dict)
-    for k, _v in sorted_dict.items():
-        # stop early
-        if stop_key == k:
-            return state_dict
-        object_versions = sorted_dict[k]["object_versions"]
-        for canonical_name, versions in object_versions.items():
-            for version, object_metadata in versions.items():
-                action = object_metadata["action"]
-                version = object_metadata["version"]
-                hash_str = object_metadata["hash"]
-                state_versions = state_dict[canonical_name]
-                if action == "add" and (
-                    str(version) in state_versions.keys()
-                    or hash_str in state_versions.values()
-                ):
-                    raise Exception(
-                        f"Can't add {object_metadata} already in state {versions}"
-                    )
-                elif action == "remove" and (
-                    str(version) not in state_versions.keys()
-                    or hash_str not in state_versions.values()
-                ):
-                    raise Exception(
-                        f"Can't remove {object_metadata} missing from state {versions}"
-                    )
-                if action == "add":
-                    state_dict[canonical_name][str(version)] = hash_str
-                elif action == "remove":
-                    del state_dict[canonical_name][str(version)]
-    return state_dict
-
-
-PROTOCOL_STATE_FILENAME = "protocol_version.json"
-
-
 def data_protocol_file_name():
     return PROTOCOL_STATE_FILENAME
 
@@ -79,92 +44,24 @@ def data_protocol_dir():
     return os.path.abspath(str(Path(__file__).parent))
 
 
-class InConsistentVersionException(Exception):
-    pass
-
-
-def diff_state(state: dict) -> dict:
-    object_diff = defaultdict(dict)
-    compare_dict = defaultdict(dict)
-    for k in TYPE_BANK:
-        (
-            nonrecursive,
-            serialize,
-            deserialize,
-            attribute_list,
-            exclude_attrs_list,
-            serde_overrides,
-            hash_exclude_attrs,
-            cls,
-            attribute_types,
-            version,
-        ) = TYPE_BANK[k]
-        if issubclass(cls, SyftBaseObject):
-            canonical_name = cls.__canonical_name__
-            hash_str = DataProtocol._calculate_object_hash(cls)
-
-            # build this up for later
-            compare_dict[canonical_name][version] = hash_str
-
-            if canonical_name not in state:
-                # new object so its an add
-                object_diff[canonical_name][str(version)] = {}
-                object_diff[canonical_name][str(version)]["version"] = version
-                object_diff[canonical_name][str(version)]["hash"] = hash_str
-                object_diff[canonical_name][str(version)]["action"] = "add"
-                continue
-
-            versions = state[canonical_name]
-            if str(version) in versions.keys() and versions[str(version)] == hash_str:
-                # already there so do nothing
-                continue
-            elif str(version) in versions.keys():
-                raise Exception(
-                    f"{canonical_name} {cls} version {version} hash has changed. "
-                    + f"{hash_str} not in {versions.values()}. "
-                    + "You probably need to bump the version number."
-                )
-            else:
-                # new object so its an add
-                object_diff[canonical_name][str(version)] = {}
-                object_diff[canonical_name][str(version)]["version"] = version
-                object_diff[canonical_name][str(version)]["hash"] = hash_str
-                object_diff[canonical_name][str(version)]["action"] = "add"
-                continue
-
-    # now check for remove actions
-    for canonical_name in state:
-        for version, hash_str in state[canonical_name].items():
-            if canonical_name not in compare_dict:
-                # missing so its a remove
-                object_diff[canonical_name][str(version)] = {}
-                object_diff[canonical_name][str(version)]["version"] = version
-                object_diff[canonical_name][str(version)]["hash"] = hash_str
-                object_diff[canonical_name][str(version)]["action"] = "remove"
-                continue
-            versions = compare_dict[canonical_name]
-            if str(version) in versions.keys():
-                # missing so its a remove
-                object_diff[canonical_name][str(version)] = {}
-                object_diff[canonical_name][str(version)]["version"] = version
-                object_diff[canonical_name][str(version)]["hash"] = hash_str
-                object_diff[canonical_name][str(version)]["action"] = "remove"
-                continue
-    return object_diff
-
-
 class DataProtocol:
     def __init__(self, filename: str) -> None:
         self.file_path = Path(data_protocol_dir()) / filename
+        self.load_state()
+
+    def load_state(self) -> None:
         self.protocol_history = self.read_history()
         self.state = self.build_state()
+        self.diff, self.current = self.diff_state(self.state)
+        self.protocol_support = self.calculate_supported_protocols()
 
     @staticmethod
     def _calculate_object_hash(klass: Type[SyftBaseObject]) -> str:
         # TODO: this depends on what is marked as serde
+        field_name_keys = sorted(klass.__fields__.keys())
         field_data = {
-            field_name: repr(model_field.annotation)
-            for field_name, model_field in klass.__fields__.items()
+            field_name: repr(klass.__fields__[field_name].annotation)
+            for field_name in field_name_keys
         }
         obj_meta_info = {
             "canonical_name": klass.__canonical_name__,
@@ -175,215 +72,224 @@ class DataProtocol:
 
         return hashlib.sha256(json.dumps(obj_meta_info).encode()).hexdigest()
 
-    # def calc_latest_object_versions(self):
-    #     object_latest_version_map = {}
-    #     migration_registry = SyftMigrationRegistry.__migration_version_registry__
-    #     for canonical_name in migration_registry:
-    #         available_versions = migration_registry[canonical_name]
-    #         version_obj_hash_map = {}
-    #         for object_version, fqn in available_versions.items():
-    #             object_klass = index_syft_by_module_name(fqn)
-    #             object_hash = self._calculate_object_hash(object_klass)
-    #             version_obj_hash_map[object_version] = object_hash
-    #         object_latest_version_map[canonical_name] = version_obj_hash_map
-
-    #     return object_latest_version_map
-
     def read_history(self) -> Dict:
         return json.loads(self.file_path.read_text())
 
     def save_history(self, history: dict) -> None:
-        self.file_path.write_text(json.dumps(history, indent=2))
+        self.file_path.write_text(json.dumps(history, indent=2) + "\n")
 
-    # def find_deleted_versions(
-    #     self,
-    #     current_object_to_version_map: Dict,
-    #     new_object_to_version_map: Dict,
-    # ):
-    #     deleted_object_classes = set(current_object_to_version_map).difference(
-    #         new_object_to_version_map.keys()
-    #     )
-
-    #     deleted_versions_map = {}
-
-    #     for canonical_name, new_versions in new_object_to_version_map.items():
-    #         current_versions = current_object_to_version_map.get(
-    #             canonical_name,
-    #             None,
-    #         )
-    #         if current_versions is None:
-    #             continue
-
-    #         deleted_versions = list(set(current_versions).difference(new_versions))
-    #         deleted_versions_map[canonical_name] = deleted_versions
-
-    #     return deleted_object_classes, deleted_versions_map
-
-    # def recompute_supported_states(
-    #     self,
-    #     current_protocol_version: int,
-    #     new_object_to_version_map: Dict,
-    # ):
-    #     current_protocol_state = self.state[str(current_protocol_version)]
-    #     deleted_object_classes, deleted_versions_map = self.find_deleted_versions(
-    #         current_protocol_state,
-    #         new_object_to_version_map=new_object_to_version_map,
-    #     )
-
-    #     for _, protocol_state in self.state.items():
-    #         object_versions = protocol_state["object_versions"]
-    #         if protocol_state["supported"]:
-    #             continue
-
-    #         # Check if any object class is deleted,
-    #         # then mark the protocol as not supported.
-    #         is_unsupported = any(
-    #             object_class in object_versions
-    #             for object_class in deleted_object_classes
-    #         )
-    #         if is_unsupported:
-    #             protocol_state["supported"] = False
-    #             continue
-
-    #         for object_class, supported_versions in deleted_versions_map.items():
-    #             available_versions = object_versions.get(object_class, [])
-    #             unsupported_versions_present = set(available_versions).intersection(
-    #                 supported_versions
-    #             )
-    #             if unsupported_versions_present:
-    #                 is_unsupported = True
-    #                 break
-
-    #         if is_unsupported:
-    #             protocol_state["supported"] = False
-
-    # @property
-    # def state_defined(self):
-    #     return len(self.state) > 0
-
-    # @property
-    # def latest_version(self):
-    #     return int(max(self.state.keys()))
+    @property
+    def latest_version(self) -> str:
+        sorted_versions = natural_key(self.state.keys())
+        if len(sorted_versions) > 0:
+            return sorted_versions[-1]
+        return "dev"
 
     @staticmethod
     def _hash_to_sha256(obj_dict: Dict) -> str:
         return hashlib.sha256(json.dumps(obj_dict).encode()).hexdigest()
 
-    def build_state(self) -> dict:
-        return protocol_state_builder(self.protocol_history)
+    def build_state(self, stop_key: Optional[str] = None) -> dict:
+        sorted_dict = sort_dict_naturally(self.protocol_history)
+        state_dict = defaultdict(dict)
+        for k, _v in sorted_dict.items():
+            # stop early
+            if stop_key == k:
+                return state_dict
+            object_versions = sorted_dict[k]["object_versions"]
+            for canonical_name, versions in object_versions.items():
+                for version, object_metadata in versions.items():
+                    action = object_metadata["action"]
+                    version = object_metadata["version"]
+                    hash_str = object_metadata["hash"]
+                    state_versions = state_dict[canonical_name]
+                    if action == "add" and (
+                        str(version) in state_versions.keys()
+                        or hash_str in state_versions.values()
+                    ):
+                        raise Exception(
+                            f"Can't add {object_metadata} already in state {versions}"
+                        )
+                    elif action == "remove" and (
+                        str(version) not in state_versions.keys()
+                        or hash_str not in state_versions.values()
+                    ):
+                        raise Exception(
+                            f"Can't remove {object_metadata} missing from state {versions}"
+                        )
+                    if action == "add":
+                        state_dict[canonical_name][str(version)] = hash_str
+                    elif action == "remove":
+                        del state_dict[canonical_name][str(version)]
+        return state_dict
 
-    def diff(self, state: dict) -> dict:
-        return diff_state(state)
+    def diff_state(self, state: dict) -> tuple[dict, dict]:
+        compare_dict = defaultdict(dict)  # what versions are in the latest code
+        object_diff = defaultdict(dict)  # diff in latest code with saved json
+        for k in TYPE_BANK:
+            (
+                nonrecursive,
+                serialize,
+                deserialize,
+                attribute_list,
+                exclude_attrs_list,
+                serde_overrides,
+                hash_exclude_attrs,
+                cls,
+                attribute_types,
+                version,
+            ) = TYPE_BANK[k]
+            if issubclass(cls, SyftBaseObject):
+                canonical_name = cls.__canonical_name__
+                hash_str = DataProtocol._calculate_object_hash(cls)
 
-    def upgrade(self) -> Result[SyftSuccess, SyftError]:
-        state = self.build_state()
-        print(">>> got state", state)
-        diff = self.diff(state)
-        print(">>> got diff", diff)
+                # build this up for later
+                compare_dict[canonical_name][str(version)] = hash_str
+
+                if canonical_name not in state:
+                    # new object so its an add
+                    object_diff[canonical_name][str(version)] = {}
+                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["hash"] = hash_str
+                    object_diff[canonical_name][str(version)]["action"] = "add"
+                    continue
+
+                versions = state[canonical_name]
+                if (
+                    str(version) in versions.keys()
+                    and versions[str(version)] == hash_str
+                ):
+                    # already there so do nothing
+                    continue
+                elif str(version) in versions.keys():
+                    raise Exception(
+                        f"{canonical_name} {cls} version {version} hash has changed. "
+                        + f"{hash_str} not in {versions.values()}. "
+                        + "You probably need to bump the version number."
+                    )
+                else:
+                    # new object so its an add
+                    object_diff[canonical_name][str(version)] = {}
+                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["hash"] = hash_str
+                    object_diff[canonical_name][str(version)]["action"] = "add"
+                    continue
+
+        # now check for remove actions
+        for canonical_name in state:
+            for version, hash_str in state[canonical_name].items():
+                if canonical_name not in compare_dict:
+                    # missing so its a remove
+                    object_diff[canonical_name][str(version)] = {}
+                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["hash"] = hash_str
+                    object_diff[canonical_name][str(version)]["action"] = "remove"
+                    continue
+                versions = compare_dict[canonical_name]
+                if str(version) not in versions.keys():
+                    # missing so its a remove
+                    object_diff[canonical_name][str(version)] = {}
+                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["hash"] = hash_str
+                    object_diff[canonical_name][str(version)]["action"] = "remove"
+                    continue
+        return object_diff, compare_dict
+
+    def stage_protocol_changes(self) -> Result[SyftSuccess, SyftError]:
+        change_count = 0
         current_history = self.protocol_history
         if "dev" not in current_history:
             current_history["dev"] = {}
             current_history["dev"]["object_versions"] = {}
         object_versions = current_history["dev"]["object_versions"]
-        for canonical_name, versions in diff.items():
+        for canonical_name, versions in self.diff.items():
             for version, version_metadata in versions.items():
                 if canonical_name not in object_versions:
                     object_versions[canonical_name] = {}
+                change_count += 1
                 object_versions[canonical_name][version] = version_metadata
 
         current_history["dev"]["object_versions"] = object_versions
+
+        # trim empty dev
+        if len(current_history["dev"]["object_versions"]) == 0:
+            del current_history["dev"]
+
         self.save_history(current_history)
+        self.load_state()
+        return SyftSuccess(message=f"{change_count} Protocol Updates Staged to dev")
 
-    # def bump_version(self) -> Result[SyftSuccess, SyftError]:
-    #     state = self.build_state()
-    #     print(">>> got state", state)
-    #     diff = self.diff(state)
-    #     print(">>> got diff", diff)
-    #     current_history = self.protocol_history
-    #     if "dev" not in current_history:
-    #         current_history["dev"] = {}
-    #         current_history["dev"]["object_versions"] = {}
-    #     object_versions = current_history["dev"]["object_versions"]
-    #     for canonical_name, versions in diff.items():
-    #         for version, version_metadata in versions.items():
-    #             if canonical_name not in object_versions:
-    #                 object_versions[canonical_name] = {}
-    #             object_versions[canonical_name][version] = version_metadata
+    def bump_protocol_version(self) -> Result[SyftSuccess, SyftError]:
+        if len(self.diff):
+            raise Exception(
+                "You can't bump the protocol version with unstaged changes."
+            )
 
-    #     current_history["dev"]["object_versions"] = object_versions
-    #     self.save_history(current_history)
+        keys = self.protocol_history.keys()
+        if "dev" not in keys:
+            raise Exception(
+                "You can't bump the protocol if there are no staged changes."
+            )
 
-    # def upgrade(self):
-    #     object_to_version_map = self.calc_latest_object_versions()
-    #     new_protocol_hash = self._hash_to_sha256(object_to_version_map)
+        highest_protocol = 0
+        for k in self.protocol_history.keys():
+            if k == "dev":
+                continue
+            highest_protocol = max(highest_protocol, int(k))
 
-    #     if not self.state_defined:
-    #         new_protocol_version = 1
-    #     else:
-    #         # Find the current version
-    #         current_protocol_version = self.latest_version
+        next_highest_protocol = highest_protocol + 1
+        self.protocol_history[str(next_highest_protocol)] = self.protocol_history["dev"]
+        del self.protocol_history["dev"]
+        self.save_history(self.protocol_history)
+        self.load_state()
+        return SyftSuccess(message=f"Protocol Updated to {next_highest_protocol}")
 
-    #         new_protocol_version = int(current_protocol_version) + 1
+    @property
+    def supported_protocols(self) -> list[Union[int, str]]:
+        """Returns a list of protocol numbers that are marked as supported."""
+        supported = []
+        for version, is_supported in self.protocol_support.items():
+            if is_supported:
+                if version != "dev":
+                    version = int(version)
+                supported.append(version)
+        return supported
 
-    #         current_protocol_state = self.state[str(current_protocol_version)]
-    #         if current_protocol_state["hash"] == new_protocol_hash:
-    #             print("No change in schema. Skipping upgrade.")
-    #             return
+    def calculate_supported_protocols(self) -> None:
+        protocol_supported = {}
+        # go through each historical protocol version
+        for v, version_data in self.protocol_history.items():
+            # we assume its supported until we prove otherwise
+            protocol_supported[v] = True
+            # iterate through each object
+            for canonical_name, versions in version_data["object_versions"].items():
+                if canonical_name not in self.state:
+                    protocol_supported[v] = False
+                    break
+                # does the current source code state support this object
+                protocol_history_highest = int(max(versions))
+                state_highest = int(max(self.state[canonical_name]))
+                if protocol_history_highest != state_highest:
+                    protocol_supported[v] = False
+                    break
+        return protocol_supported
 
-    #         self.recompute_supported_states(
-    #             current_protocol_version=current_protocol_version,
-    #             new_object_to_version_map=object_to_version_map,
-    #         )
-
-    #     self.state[new_protocol_version] = {
-    #         "object_versions": object_to_version_map,
-    #         "hash": new_protocol_hash,
-    #         "supported": True,
-    #     }
-    #     self.save_state()
-    #     return SyftSuccess(message="Protocol Updated")
-
-    # def validate_current_state(self) -> bool:
-    #     current_object_version_map = self.state[self.latest_version]["object_versions"]
-    #     inconsistent_versions = []
-
-    #     migration_registry = SyftMigrationRegistry.__migration_version_registry__
-    #     for canonical_name in migration_registry:
-    #         available_versions = migration_registry[canonical_name]
-    #         curr_version_hash_map = current_object_version_map.get(canonical_name, {})
-    #         for object_version, fqn in available_versions.items():
-    #             object_klass = index_syft_by_module_name(fqn)
-    #             object_hash = self._calculate_object_hash(object_klass)
-    #             if curr_version_hash_map.get(str(object_version), None) != object_hash:
-    #                 inconsistent_versions.append((canonical_name, object_version))
-
-    #     if len(inconsistent_versions) > 0:
-    #         raise InConsistentVersionException(
-    #             f"Version update is required for the following objects.\n {inconsistent_versions}"
-    #         )
-
-    #     return True
-
-    # @property
-    # def supported_protocols(self) -> List[int]:
-    #     """Returns a list of protocol numbers that are marked as supported."""
-    #     return [
-    #         int(protocol_version)
-    #         for protocol_version, protocol_state in self.state.items()
-    #         if str_to_bool(protocol_state["supported"])
-    #     ]
-
-    # def get_object_versions(self, protocol: Union[int, str]) -> List:
-    #     return self.state[str(protocol)]["object_versions"]
+    def get_object_versions(self, protocol: Union[int, str]) -> list:
+        return self.protocol_history[str(protocol)]["object_versions"]
 
 
 def get_data_protocol():
     return DataProtocol(filename=data_protocol_file_name())
 
 
-def upgrade_protocol():
+def stage_protocol_changes() -> Result[SyftSuccess, SyftError]:
     data_protocol = get_data_protocol()
-    data_protocol.upgrade()
+    return data_protocol.stage_protocol_changes()
+
+
+def bump_protocol_version() -> Result[SyftSuccess, SyftError]:
+    data_protocol = get_data_protocol()
+    return data_protocol.bump_protocol_version()
 
 
 def migrate_args_and_kwargs(

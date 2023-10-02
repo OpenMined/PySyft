@@ -3,19 +3,16 @@ from __future__ import annotations
 
 # stdlib
 from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
 
 # third party
 from packaging import version
 from pydantic import BaseModel
-from pydantic import root_validator
 
 # relative
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
-from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -64,7 +61,7 @@ class NodeMetadataUpdate(SyftObject):
 
 
 @serializable()
-class NodeMetadata(SyftObject):
+class NodeMetadataV1(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -93,7 +90,7 @@ class NodeMetadata(SyftObject):
 
 
 @serializable()
-class NodeMetadataV2(SyftObject):
+class NodeMetadata(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -139,24 +136,26 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     admin_email: str
     node_side_type: str
     show_warnings: bool
-    supported_protocols: List
+    supported_protocols: List = []
 
-    @root_validator(pre=True)
-    def add_protocol_versions(cls, values: Dict) -> Dict:
-        if "supported_protocols" not in values:
-            data_protocol = get_data_protocol()
-            values["supported_protocols"] = data_protocol.supported_protocols
-        return values
+    # breaks Object of type UID is not JSON serializable
+    # @root_validator(pre=True)
+    # def add_protocol_versions(cls, values: Dict) -> Dict:
+    #     if "supported_protocols" not in values:
+    #         data_protocol = get_data_protocol()
+    #         values["supported_protocols"] = data_protocol.supported_protocols
+    #     return values
 
     def check_version(self, client_version: str) -> bool:
-        return check_version(
-            client_version=client_version,
-            server_version=self.syft_version,
-            server_name=self.name,
-        )
+        return True
+        # return check_version(
+        #     client_version=client_version,
+        #     server_version=self.syft_version,
+        #     server_name=self.name,
+        # )
 
 
-@transform(NodeMetadataV2, NodeMetadataJSON)
+@transform(NodeMetadata, NodeMetadataJSON)
 def metadata_to_json() -> List[Callable]:
     return [
         drop(["__canonical_name__"]),
@@ -165,7 +164,7 @@ def metadata_to_json() -> List[Callable]:
     ]
 
 
-@transform(NodeMetadataJSON, NodeMetadataV2)
+@transform(NodeMetadataJSON, NodeMetadata)
 def json_to_metadata() -> List[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
