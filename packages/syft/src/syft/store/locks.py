@@ -249,8 +249,7 @@ class PatchedFileLock(FileLock):
                     except BaseException:
                         time.sleep(0.1)
                     if _retry == 9:
-                        pass
-                        # print("(1) COULD NOT READ LOCK FILE", self._data_file)
+                        return False
 
                 now = self._now()
                 has_expired = self._has_expired(data, now)
