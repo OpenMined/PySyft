@@ -357,10 +357,7 @@ class APIModule:
     def _repr_html_(self) -> Any:
         if not hasattr(self, "get_all"):
             return NotImplementedError
-        if hasattr(self, "get_all_unread"):
-            results = self.get_all_unread()
-        else:
-            results = self.get_all()
+        results = self.get_all()
         return results._repr_html_()
 
 
