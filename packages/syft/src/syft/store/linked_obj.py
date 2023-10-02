@@ -30,7 +30,10 @@ class LinkedObject(SyftObject):
     object_uid: UID
 
     def __str__(self) -> str:
-        return f"<{self.object_type}: {self.object_uid}@<Node: {self.node_uid}>"
+        resolved_obj_type = (
+            type(self.resolve) if self.object_type is None else self.object_type
+        )
+        return f"{resolved_obj_type.__name__}: {self.object_uid} @ Node {self.node_uid}"
 
     @property
     def resolve(self) -> SyftObject:
