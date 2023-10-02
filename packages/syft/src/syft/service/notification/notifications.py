@@ -17,6 +17,8 @@ from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 
 
 @serializable()
@@ -66,6 +68,22 @@ class Notification(SyftObject):
         "status",
     ]
     __repr_attrs__ = ["subject", "status", "created_at", "linked_obj"]
+
+    def _repr_html_(self) -> str:
+        return f"""
+            <style>
+            .syft-request {{color: {SURFACE[options.color_theme]}; line-height: 1;}}
+            </style>
+            <div class='syft-request'>
+                <h3>Notification</h3>
+                <p><strong>ID: </strong>{self.id}</p>
+                <p><strong>Subject: </strong>{self.subject}</p>
+                <p><strong>Status: </strong>{self.status.name}</p>
+                <p><strong>Created at: </strong>{self.created_at}</p>
+                <p><strong>Linked object: </strong>{self.linked_obj}</p>
+                <p>
+            </div>
+        """
 
     @property
     def link(self) -> Optional[SyftObject]:
