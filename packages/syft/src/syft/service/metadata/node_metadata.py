@@ -161,6 +161,8 @@ def metadata_to_json() -> List[Callable]:
         drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
         convert_types(["id", "verify_key", "node_type"], str),
+        rename("highest_version", "highest_object_version"),
+        rename("lowest_version", "lowest_object_version"),
     ]
 
 
@@ -170,4 +172,6 @@ def json_to_metadata() -> List[Callable]:
         drop(["metadata_version", "supported_protocols"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),
         convert_types(["node_type"], NodeType),
+        rename("highest_object_version", "highest_version"),
+        rename("lowest_object_version", "lowest_version"),
     ]

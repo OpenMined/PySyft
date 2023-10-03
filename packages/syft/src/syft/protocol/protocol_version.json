@@ -1,5 +1,5 @@
 {
-  "1": {
+  "dev": {
     "object_versions": {
       "PartialSyftObject": {
         "1": {
@@ -374,6 +374,13 @@
         "1": {
           "version": 1,
           "hash": "5cf71ee35097f17fbb1dd05096f875211d71cf07161205d7f6a9c11fd49d5272",
+          "action": "add"
+        }
+      },
+      "ActionObject": {
+        "1": {
+          "version": 1,
+          "hash": "632446f1415102490c93fafb56dd9eb29d79623bcc5e9f2e6e37c4f63c2c51c3",
           "action": "add"
         }
       },
