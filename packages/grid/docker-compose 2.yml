@@ -1,0 +1,271 @@
+version: "3.8"
+services:
+  # docker-host:
+  #   image: qoomon/docker-host
+  #   cap_add:
+  #     - net_admin
+  #     - net_raw
+
+  proxy:
+    restart: always
+    hostname: ${NODE_NAME?Variable not set}
+    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
+    networks:
+      - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
+      - default
+    volumes:
+      - "./traefik/docker/traefik.yml:/etc/traefik/traefik.yml"
+      - "./traefik/docker/dynamic.yml:/etc/traefik/conf/dynamic.yml"
+    environment:
+      - SERVICE_NAME=proxy
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${NODE_NAME?Variable not set}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+    ports:
+      - "${HTTP_PORT}:81"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # depends_on:
+    #   - "docker-host"
+
+  tailscale:
+    profiles:
+      - vpn
+    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
+    environment:
+      - SERVICE_NAME=tailscale
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${NODE_NAME?Variable not set}
+      - STACK_API_KEY=$STACK_API_KEY
+    volumes:
+      - tailscale-data:/var/lib/tailscale
+      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
+    cap_add: # Required for tailscale to work
+      - net_admin
+      - sys_module
+    # ports:
+    #   - "41641/udp"
+    #   - "4000"
+    depends_on:
+      - proxy
+    network_mode: service:proxy
+
+  frontend:
+    restart: always
+    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
+    profiles:
+      - frontend
+    depends_on:
+      - proxy
+    environment:
+      - SERVICE_NAME=frontend
+      - RELEASE=${RELEASE:-production}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - FRONTEND_TARGET=${FRONTEND_TARGET}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - PORT=80
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - VITE_PUBLIC_API_BASE_URL=${VITE_PUBLIC_API_BASE_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # redis:
+  #   restart: always
+  #   image: redis:${REDIS_VERSION?Variable not set}
+  #   volumes:
+  #     - app-redis-data:/data
+  #     - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+  #   environment:
+  #     - SERVICE_NAME=redis
+  #     - RELEASE=${RELEASE:-production}
+  #   env_file:
+  #     - .env
+
+  # queue:
+  #   restart: always
+  #   image: rabbitmq:3
+  #   environment:
+  #     - SERVICE_NAME=queue
+  #     - RELEASE=${RELEASE:-production}
+  #   volumes:
+  #     - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+
+  backend:
+    restart: always
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    depends_on:
+      - proxy
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=backend
+      - RELEASE=${RELEASE:-production}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - NODE_NAME=${NODE_NAME?Variable not set}
+      - STACK_API_KEY=${STACK_API_KEY}
+      - PORT=8001
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - TRACE=${TRACE}
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
+      - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
+      - ENABLE_OBLV=${ENABLE_OBLV}
+      - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
+      - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
+      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
+    command: "/app/grid/start.sh"
+    network_mode: service:proxy
+    volumes:
+      - ${BACKEND_STORAGE_PATH}:/storage
+
+  # backend_stream:
+  #   restart: always
+  #   image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+  #   depends_on:
+  #     - proxy
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - SERVICE_NAME=backend_stream
+  #     - RELEASE=${RELEASE:-production}
+  #     - VERSION=${VERSION}
+  #     - VERSION_HASH=${VERSION_HASH}
+  #     - NODE_TYPE=${NODE_TYPE?Variable not set}
+  #     - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+  #     - STACK_API_KEY=${STACK_API_KEY}
+  #     - PORT=8011
+  #     - STREAM_QUEUE=1
+  #     - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+  #     - HTTP_PORT=${HTTP_PORT}
+  #     - HTTPS_PORT=${HTTPS_PORT}
+  #     - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+  #     - CONTAINER_HOST=${CONTAINER_HOST}
+  #     - TRACE=${TRACE}
+  #     - JAEGER_HOST=${JAEGER_HOST}
+  #     - JAEGER_PORT=${JAEGER_PORT}
+  #     - DEV_MODE=${DEV_MODE}
+  #     - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
+  #     - ENABLE_OBLV=${ENABLE_OBLV}
+  #   command: "/app/grid/start.sh"
+  #   network_mode: service:proxy
+  #   volumes:
+  #     - credentials-data:/storage
+
+  # celeryworker:
+  #   restart: always
+  #   image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+  #   depends_on:
+  #     - proxy
+  #     - queue
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - SERVICE_NAME=celeryworker
+  #     - RELEASE=${RELEASE:-production}
+  #     - VERSION=${VERSION}
+  #     - VERSION_HASH=${VERSION_HASH}
+  #     - NODE_TYPE=${NODE_TYPE?Variable not set}
+  #     - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+  #     - C_FORCE_ROOT=1
+  #     - STACK_API_KEY=${STACK_API_KEY}
+  #     - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+  #     - HTTP_PORT=${HTTP_PORT}
+  #     - HTTPS_PORT=${HTTPS_PORT}
+  #     - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+  #     - CONTAINER_HOST=${CONTAINER_HOST}
+  #     - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
+  #     - DOMAIN_CHECK_INTERVAL=${DOMAIN_CHECK_INTERVAL}
+  #     - TRACE=${TRACE}
+  #     - JAEGER_HOST=${JAEGER_HOST}
+  #     - JAEGER_PORT=${JAEGER_PORT}
+  #     - DEV_MODE=${DEV_MODE}
+  #     - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
+  #     - ENABLE_OBLV=${ENABLE_OBLV}
+  #   command: "/app/grid/worker-start.sh"
+  #   network_mode: service:proxy
+  #   volumes:
+  #     - credentials-data:/storage
+
+  headscale:
+    profiles:
+      - network
+    depends_on:
+      - proxy
+    hostname: headscale
+    image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
+    volumes:
+      - headscale-data:/headscale/data
+    environment:
+      - RELEASE=${RELEASE:-production}
+      - NETWORK_NAME=omnet
+      - STACK_API_KEY=$STACK_API_KEY
+
+  # seaweedfs:
+  #   profiles:
+  #     - blob-storage
+  #   depends_on:
+  #     - proxy
+  #     - redis
+  #   image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
+  #   environment:
+  #     - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
+  #   command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
+  #   volumes:
+  #     - seaweedfs-data:/data
+  #     - ./seaweedfs/s3config.json:/etc/s3config.json
+  #     - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
+
+  mongo:
+    image: mongo:latest
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+
+  jaeger:
+    profiles:
+      - telemetry
+    image: jaegertracing/all-in-one:1.37
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=9411
+      - COLLECTOR_OTLP_ENABLED=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${JAEGER_PORT}:14268" # http collector
+      - "16686" # ui
+      # - "6831:6831/udp"
+      # - "6832:6832/udp"
+      # - "5778:5778"
+      # - "4317:4317"
+      # - "4318:4318"
+      # - "14250:14250"
+      # - "14269:14269"
+      # - "9411:9411"
+
+volumes:
+  credentials-data:
+  tailscale-data:
+  headscale-data:
+  # app-redis-data:
+  # seaweedfs-data:
+  mongo-data:
+
+networks:
+  traefik-public:
+    # Allow setting it to false for testing
+    external: ${TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL-true}

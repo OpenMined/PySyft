@@ -1,0 +1,264 @@
+version: v2beta1
+name: syft
+
+# This is a list of `pipelines` that DevSpace can execute (you can define your own)
+pipelines:
+  # This is the pipeline for the main command: `devspace dev` (or `devspace run-pipeline dev`)
+  dev:
+    run: |-
+      run_dependencies --all       # 1. Deploy any projects this project needs (see "dependencies")
+      ensure_pull_secrets --all    # 2. Ensure pull secrets
+      create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
+      start_dev --all              # 4. Start dev mode "app" (see "dev" section)
+  # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
+  deploy:
+    run: |-
+      run_dependencies --all
+      ensure_pull_secrets --all
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.1-beta.12 -t dev-latest
+      create_deployments --all
+
+vars:
+  DEVSPACE_ENV_FILE: "default.env"
+  CONTAINER_REGISTRY: "docker.io/"
+  VERSION: "0.8.1-beta.12"
+
+# This is a list of `images` that DevSpace can build for this project
+# We recommend to skip image building during development (devspace dev) as much as possible
+images:
+  backend:
+    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}"
+    buildKit: {}
+    dockerfile: ./backend/backend.dockerfile
+    context: ../
+    tags:
+      - dev-latest
+      - "${VERSION}"
+  tailscale:
+    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}"
+    buildKit: {}
+    dockerfile: ./vpn/tailscale.dockerfile
+    context: ./vpn
+    tags:
+      - dev-latest
+      - "${VERSION}"
+  frontend:
+    image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}"
+    buildKit:
+      args: ["--target", "grid-ui-production"]
+    dockerfile: ./frontend/frontend.dockerfile
+    target: "grid-ui-production"
+    context: ./frontend
+    tags:
+      - dev-latest
+      - "${VERSION}"
+
+# This is a list of `deployments` that DevSpace can create for this project
+deployments:
+  grid-stack-ingress:
+    kubectl:
+      manifests:
+        - k8s/manifests/ingress.yaml
+
+  traefik-main-config:
+    kubectl:
+      manifests:
+        - "k8s/manifests/traefik-domain.yaml"
+
+  proxy:
+    helm:
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
+      values:
+        containers:
+          - image: "${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}"
+            volumeMounts:
+              - containerPath: /etc/traefik
+                volume:
+                  name: traefik-conf
+            env:
+              - name: SERVICE_NAME
+                value: "proxy"
+          # - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
+          #   securityContext:
+          #     capabilities:
+          #       add: ["NET_ADMIN", "SYS_MODULE"]
+          #     privileged: true
+          #   env:
+          #     - name: HOSTNAME
+          #       value: "${NODE_NAME}"
+          #     - name: STACK_API_KEY
+          #       value: "changeme"
+          #   volumeMounts:
+          #     - containerPath: /var/lib/tailscale
+          #       volume:
+          #         name: tailscale-data
+          #         subPath: /tailscale-data
+          #         readOnly: false
+        volumes:
+          # - name: tailscale-data
+          #   size: "100Mi"
+          - name: traefik-conf
+            configMap:
+              name: traefik-main-config
+        service:
+          name: "proxy"
+          ports:
+            - name: proxy
+              port: 80
+            # - name: api
+            #   port: 4000
+
+  backend:
+    helm:
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
+      values:
+        containers:
+          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}"
+            volumeMounts:
+              - containerPath: /storage
+                volume:
+                  name: credentials-data
+                  subPath: /credentials-data
+                  readOnly: false
+            env:
+              - name: MONGO_PORT
+                value: "${MONGO_PORT}"
+              - name: MONGO_HOST
+                value: "${MONGO_HOST}"
+              - name: MONGO_USERNAME
+                value: "${MONGO_USERNAME}"
+              - name: MONGO_PASSWORD
+                value: "${MONGO_PASSWORD}"
+              - name: SERVICE_NAME
+                value: "backend"
+              - name: RELEASE
+                value: "${RELEASE}"
+              - name: VERSION
+                value: "${VERSION}"
+              - name: VERSION_HASH
+                value: "${VERSION_HASH}"
+              - name: NODE_TYPE
+                value: "${NODE_TYPE}"
+              - name: NODE_NAME
+                value: "${NODE_NAME}"
+              - name: STACK_API_KEY
+                value: "changeme"
+              - name: PORT
+                value: "${HTTP_PORT}"
+              - name: IGNORE_TLS_ERRORS
+                value: "${IGNORE_TLS_ERRORS}"
+              - name: HTTP_PORT
+                value: "${HTTP_PORT}"
+              - name: HTTPS_PORT
+                value: "${HTTPS_PORT}"
+              - name: CONTAINER_HOST
+                value: "k8s"
+              - name: TRACE
+                value: "${TRACE}"
+              - name: JAEGER_HOST
+                value: "${JAEGER_HOST}"
+              - name: JAEGER_PORT
+                value: "${JAEGER_PORT}"
+              - name: DEV_MODE
+                value: "${DEV_MODE}"
+              - name: DOMAIN_CONNECTION_PORT
+                value: "${DOMAIN_CONNECTION_PORT}"
+              - name: ENABLE_OBLV
+                value: "${ENABLE_OBLV}"
+              - name: DEFAULT_ROOT_EMAIL
+                value: "${DEFAULT_ROOT_EMAIL}"
+              - name: DEFAULT_ROOT_PASSWORD
+                value: "${DEFAULT_ROOT_PASSWORD}"
+              - name: BACKEND_STORAGE_PATH
+                value: "/storage"
+        volumes:
+          - name: credentials-data
+            size: "100Mi"
+        service:
+          name: "backend"
+          ports:
+            - port: "${HTTP_PORT}"
+  mongo:
+    helm:
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
+      values:
+        containers:
+          - image: mongo:latest
+            env:
+              - name: MONGO_INITDB_ROOT_USERNAME
+                value: "${MONGO_USERNAME}"
+              - name: MONGO_INITDB_ROOT_PASSWORD
+                value: "${MONGO_PASSWORD}"
+            volumeMounts:
+              - containerPath: /data/db
+                volume:
+                  name: mongo-data
+                  subPath: /
+                  readOnly: false
+        volumes:
+          - name: mongo-data
+            size: "5Gi"
+        service:
+          name: mongo
+          ports:
+            - port: "27017"
+
+  frontend:
+    helm:
+      upgradeArgs:
+        - --dependency-update
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: "0.9.0"
+      values:
+        containers:
+          - image: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}:${VERSION}"
+            env:
+              - name: VERSION
+                value: "${VERSION}"
+              - name: VERSION_HASH
+                value: "${VERSION_HASH}"
+              - name: NODE_TYPE
+                value: "${NODE_TYPE}"
+              - name: NEXT_PUBLIC_API_URL
+                value: "${NEXT_PUBLIC_API_URL}"
+        service:
+          name: "frontend"
+          ports:
+            - port: "80"
+
+dev:
+  mongo:
+    imageSelector: "mongo:latest"
+    ports:
+      - port: "27017"
+  backend:
+    imageSelector: "${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}"
+    env:
+      - name: DEV_MODE
+        value: "True"
+    logs: {}
+    sync:
+      - path: ./backend/grid:/app/grid
+      - path: ../syft:/app/syft
+
+commands:
+  dev:
+    command: |-
+      devspace --var CONTAINER_REGISTRY=k3d-registry.localhost:12345/ dev --config=devspace.yaml

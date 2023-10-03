@@ -49,3 +49,5 @@ docker compose --env-file ./.env -p "$NODE_NAME" --profile blob-storage --profil
 # Clean up the downloaded file
 rm -f file.tgz
 
+# Start Jupyter Notebook
+docker run --rm -it --network=host "openmined/grid-node-jupyter:$VERSION" "jupyter" "notebook" "--port=8888" "--ip=0.0.0.0" "--allow-root"

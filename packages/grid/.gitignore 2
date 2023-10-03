@@ -1,0 +1,22 @@
+.vscode
+.mypy_cache
+docker-stack.yml
+data/*
+packer.log
+.docker/*
+output-*
+packer/output/*
+packer/packer_cache/*
+packer/base-manifest.json
+packer/azure_vars.json
+tls/
+
+# devspace
+.devspace/
+profile/
+
+credentials.json
+.env
+
+# Ignore DevSpace cache and log folder
+.devspace/
