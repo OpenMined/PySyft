@@ -1,4 +1,14 @@
 ---
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+
+---
+
+---
 # Source: component-chart/templates/ingress.yaml
 #
 
@@ -11,12 +21,7 @@
 ---
 # Source: component-chart/templates/ingress.yaml
 #
-
-
 ---
-# Source: component-chart/templates/deployment.yaml
-# Create headless service for StatefulSet
-------
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -26,7 +31,7 @@ metadata:
     "app.kubernetes.io/name": "backend"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   externalIPs:
   ports:
@@ -49,7 +54,7 @@ metadata:
     "app.kubernetes.io/component": "backend"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   replicas: 1
   podManagementPolicy: "OrderedReady"
@@ -66,7 +71,7 @@ spec:
         "app.kubernetes.io/component": "backend"
         "app.kubernetes.io/managed-by": "Helm"
       annotations:
-        "helm.sh/chart": "component-chart-0.8.6"
+        "helm.sh/chart": "component-chart-0.9.1"
     spec:
       imagePullSecrets:
       nodeSelector:
@@ -93,7 +98,7 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-backend:0.8.2-beta.1"
+        - image: "docker.io/openmined/grid-backend:0.8.2-beta.33"
           name: "container-0"
           command:
           args:
@@ -111,7 +116,7 @@ spec:
             - name: RELEASE
               value: production
             - name: VERSION
-              value: 0.8.2-beta.1
+              value: 0.8.2-beta.33
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE
@@ -177,7 +182,7 @@ spec:
         "app.kubernetes.io/component": "backend"
         "app.kubernetes.io/managed-by": "Helm"
       annotations:
-        "helm.sh/chart": "component-chart-0.8.6"
+        "helm.sh/chart": "component-chart-0.9.1"
     spec:
       accessModes:
       - ReadWriteOnce
@@ -185,6 +190,7 @@ spec:
         requests:
           storage: "100Mi"
 ---
+# Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
 apiVersion: v1
 kind: Service
@@ -194,7 +200,7 @@ metadata:
     "app.kubernetes.io/name": "backend"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   ports:
   # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
@@ -215,7 +221,7 @@ metadata:
     "app.kubernetes.io/name": "frontend"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   externalIPs:
   ports:
@@ -238,7 +244,7 @@ metadata:
     "app.kubernetes.io/component": "frontend"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   replicas: 1
   strategy:
@@ -255,7 +261,7 @@ spec:
         "app.kubernetes.io/component": "frontend"
         "app.kubernetes.io/managed-by": "Helm"
       annotations:
-        "helm.sh/chart": "component-chart-0.8.6"
+        "helm.sh/chart": "component-chart-0.9.1"
     spec:
       imagePullSecrets:
       nodeSelector:
@@ -282,13 +288,13 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-frontend:0.8.2-beta.1"
+        - image: "docker.io/openmined/grid-frontend:0.8.2-beta.33"
           name: "container-0"
           command:
           args:
           env:
             - name: VERSION
-              value: 0.8.2-beta.1
+              value: 0.8.2-beta.33
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE
@@ -331,7 +337,8 @@ spec:
       port:
         number: 80
   rules:
-  - http:
+  - host: ""
+    http:
       paths:
       - backend:
           service:
@@ -340,6 +347,9 @@ spec:
               number: 80
         path: /
         pathType: Prefix
+  tls:
+  - hosts:
+    - ""
 
 ---
 # Source: component-chart/templates/service.yaml
@@ -351,7 +361,7 @@ metadata:
     "app.kubernetes.io/name": "mongo"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   externalIPs:
   ports:
@@ -374,7 +384,7 @@ metadata:
     "app.kubernetes.io/component": "mongo"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   replicas: 1
   podManagementPolicy: "OrderedReady"
@@ -391,7 +401,7 @@ spec:
         "app.kubernetes.io/component": "mongo"
         "app.kubernetes.io/managed-by": "Helm"
       annotations:
-        "helm.sh/chart": "component-chart-0.8.6"
+        "helm.sh/chart": "component-chart-0.9.1"
     spec:
       imagePullSecrets:
       nodeSelector:
@@ -418,7 +428,7 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "mongo:latest"
+        - image: "mongo:7.0.0"
           name: "container-0"
           command:
           args:
@@ -456,7 +466,7 @@ spec:
         "app.kubernetes.io/component": "mongo"
         "app.kubernetes.io/managed-by": "Helm"
       annotations:
-        "helm.sh/chart": "component-chart-0.8.6"
+        "helm.sh/chart": "component-chart-0.9.1"
     spec:
       accessModes:
       - ReadWriteOnce
@@ -474,7 +484,7 @@ metadata:
     "app.kubernetes.io/name": "mongo"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   ports:
   # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
@@ -495,7 +505,7 @@ metadata:
     "app.kubernetes.io/name": "proxy"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   externalIPs:
   ports:
@@ -518,7 +528,7 @@ metadata:
     "app.kubernetes.io/component": "proxy"
     "app.kubernetes.io/managed-by": "Helm"
   annotations:
-    "helm.sh/chart": "component-chart-0.8.6"
+    "helm.sh/chart": "component-chart-0.9.1"
 spec:
   replicas: 1
   strategy:
@@ -535,7 +545,7 @@ spec:
         "app.kubernetes.io/component": "proxy"
         "app.kubernetes.io/managed-by": "Helm"
       annotations:
-        "helm.sh/chart": "component-chart-0.8.6"
+        "helm.sh/chart": "component-chart-0.9.1"
     spec:
       imagePullSecrets:
       nodeSelector:
@@ -562,7 +572,7 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "traefik:v2.8.1"
+        - image: "traefik:v2.10"
           name: "container-0"
           command:
           args:
@@ -594,9 +604,193 @@ spec:
             name: traefik-main-config
   volumeClaimTemplates:
 ---
+# Source: component-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "seaweedfs"
+  labels:
+    "app.kubernetes.io/name": "seaweedfs"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.9.1"
+spec:
+  externalIPs:
+  ports:
+    - name: "port-0"
+      port: 8888
+      targetPort: 8888
+      protocol: "TCP"
+    - name: "port-1"
+      port: 8333
+      targetPort: 8333
+      protocol: "TCP"
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "seaweedfs"
+  type: "ClusterIP"
+---
+# Source: component-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "seaweedfs"
+  labels:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "seaweedfs"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.9.1"
+spec:
+  replicas: 1
+  podManagementPolicy: "OrderedReady"
+  serviceName: "seaweedfs-headless"
+  selector:
+    matchLabels:
+      "app.kubernetes.io/name": "devspace-app"
+      "app.kubernetes.io/component": "seaweedfs"
+      "app.kubernetes.io/managed-by": "Helm"
+  template:
+    metadata:
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "seaweedfs"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.9.1"
+    spec:
+      imagePullSecrets:
+      nodeSelector:
+        null
+      nodeName:
+        null
+      affinity:
+        null
+      tolerations:
+        null
+      dnsConfig:
+        null
+      hostAliases:
+        null
+      overhead:
+        null
+      readinessGates:
+        null
+      securityContext:
+        null
+      topologySpreadConstraints:
+        null
+      terminationGracePeriodSeconds: 5
+      ephemeralContainers:
+        null
+      containers:
+        - image: "chrislusf/seaweedfs:3.55"
+          name: "container-0"
+          command:
+            - "sh"
+            - "/etc/seaweedfs/start.sh"
+          args:
+          env:
+            - name: S3_VOLUME_SIZE_MB
+              value: "1024"
+            - name: S3_ROOT_USER
+              value: admin
+            - name: S3_ROOT_PWD
+              value: admin
+            - name: S3_PORT
+              value: "8333"
+          envFrom:
+            null
+          securityContext:
+            null
+          lifecycle:
+            null
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          startupProbe:
+            null
+          volumeDevices:
+            null
+          volumeMounts:
+            - mountPath: "/etc/seaweedfs/filer.toml"
+              name: "seaweedfs-config"
+              subPath: "filer.toml"
+              readOnly: false
+            - mountPath: "/etc/seaweedfs/start.sh"
+              name: "seaweedfs-config"
+              subPath: "start.sh"
+              readOnly: false
+            - mountPath: "/data/blob"
+              name: "seaweedfs-data"
+              subPath: ""
+              readOnly: false
+      initContainers:
+      volumes:
+        - name: "seaweedfs-config"
+          configMap:
+            name: seaweedfs-config
+  volumeClaimTemplates:
+  - metadata:
+      name: "seaweedfs-data"
+      labels:
+        "app.kubernetes.io/name": "devspace-app"
+        "app.kubernetes.io/component": "seaweedfs"
+        "app.kubernetes.io/managed-by": "Helm"
+      annotations:
+        "helm.sh/chart": "component-chart-0.9.1"
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: "5Gi"
+---
 # Source: component-chart/templates/ingress.yaml
 #
 
+apiVersion: v1
+data:
+  filer.toml: |
+    [leveldb2]
+    enabled = true
+    dir = "./filerldb2"
+  start.sh: |
+    #! /usr/bin/env bash
+
+    sleep 30 &&
+    echo "s3.configure -access_key ${S3_ROOT_USER} -secret_key ${S3_ROOT_PWD} -user iam -actions Read,Write,List,Tagging,Admin -apply" \
+    | weed shell > /dev/null 2>&1 \
+    & weed server -s3 -s3.port=${S3_PORT} -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}
+kind: ConfigMap
+metadata:
+  name: seaweedfs-config
+  namespace: default
+
+---
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: "seaweedfs-headless"
+  labels:
+    "app.kubernetes.io/name": "seaweedfs"
+    "app.kubernetes.io/managed-by": "Helm"
+  annotations:
+    "helm.sh/chart": "component-chart-0.9.1"
+spec:
+  ports:
+  # At least one port is required to have Kubernetes define an endpoint which is required for DNS to work
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    "app.kubernetes.io/name": "devspace-app"
+    "app.kubernetes.io/component": "seaweedfs"
+    "app.kubernetes.io/managed-by": "Helm"
+---
 apiVersion: v1
 data:
   dynamic.yml: |

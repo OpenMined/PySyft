@@ -1,50 +1,28 @@
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.8.6
-  labels:
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: proxy
-  name: proxy
-spec:
-  externalIPs: null
-  ports:
-  - name: proxy
-    port: 80
-    protocol: TCP
-    targetPort: 80
-  selector:
-    app.kubernetes.io/component: proxy
-    app.kubernetes.io/name: devspace-app
-  type: ClusterIP
----
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   annotations:
-    helm.sh/chart: component-chart-0.8.6
+    helm.sh/chart: component-chart-0.9.1
   labels:
-    app.kubernetes.io/component: proxy
+    app.kubernetes.io/component: mongo
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: devspace-app
-  name: proxy
+  name: mongo
 spec:
+  podManagementPolicy: OrderedReady
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/component: proxy
+      app.kubernetes.io/component: mongo
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/name: devspace-app
-  strategy:
-    type: Recreate
+  serviceName: mongo-headless
   template:
     metadata:
       annotations:
-        helm.sh/chart: component-chart-0.8.6
+        helm.sh/chart: component-chart-0.9.1
       labels:
-        app.kubernetes.io/component: proxy
+        app.kubernetes.io/component: mongo
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: devspace-app
     spec:
@@ -53,10 +31,12 @@ spec:
       - args: null
         command: null
         env:
-        - name: SERVICE_NAME
-          value: proxy
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: {{ .Values.secrets.db.mongo.mongoInitdbRootUsername }}
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: {{ .Values.secrets.db.mongo.mongoInitdbRootPassword }}
         envFrom: null
-        image: traefik:v2.8.1
+        image: mongo:7.0.0
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -65,9 +45,10 @@ spec:
         startupProbe: null
         volumeDevices: null
         volumeMounts:
-        - mountPath: /etc/traefik
-          name: traefik-conf
+        - mountPath: /data/db
+          name: mongo-data
           readOnly: false
+          subPath: ''
       dnsConfig: null
       ephemeralContainers: null
       hostAliases: null
@@ -81,7 +62,19 @@ spec:
       terminationGracePeriodSeconds: 5
       tolerations: null
       topologySpreadConstraints: null
-      volumes:
-      - configMap:
-          name: traefik-main-config
-        name: traefik-conf
+      volumes: null
+  volumeClaimTemplates:
+  - metadata:
+      annotations:
+        helm.sh/chart: component-chart-0.9.1
+      labels:
+        app.kubernetes.io/component: mongo
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devspace-app
+      name: mongo-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi
