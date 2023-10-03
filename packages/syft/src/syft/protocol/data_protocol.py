@@ -22,7 +22,7 @@ from ..service.response import SyftSuccess
 from ..types.syft_object import SyftBaseObject
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
-PROTOCOL_TYPE = str | int
+PROTOCOL_TYPE = Union[str, int]
 
 
 def natural_key(key: PROTOCOL_TYPE) -> list[int]:
@@ -325,14 +325,14 @@ def migrate_args_and_kwargs(
     if to_protocol == data_protocol.latest_version:
         return args, kwargs
 
-    object_versions = data_protocol.get_object_versions(protocol=to_protocol)
+    protocol_state = data_protocol.state
 
     migrated_kwargs, migrated_args = {}, []
 
     for param_name, param_val in kwargs.items():
         if isinstance(param_val, SyftBaseObject):
             current_version = int(param_val.__version__)
-            migrate_to_version = int(max(object_versions[param_val.__canonical_name__]))
+            migrate_to_version = int(max(protocol_state[param_val.__canonical_name__]))
             if current_version > migrate_to_version:  # downgrade
                 versions = range(current_version - 1, migrate_to_version - 1, -1)
             else:  # upgrade
@@ -344,7 +344,7 @@ def migrate_args_and_kwargs(
     for arg in args:
         if isinstance(arg, SyftBaseObject):
             current_version = int(arg.__version__)
-            migrate_to_version = int(max(object_versions[arg.__canonical_name__]))
+            migrate_to_version = int(max(protocol_state[arg.__canonical_name__]))
             if current_version > migrate_to_version:  # downgrade
                 versions = range(current_version - 1, migrate_to_version - 1, -1)
             else:  # upgrade
