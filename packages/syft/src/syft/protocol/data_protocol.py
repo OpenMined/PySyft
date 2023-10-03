@@ -319,7 +319,7 @@ def migrate_args_and_kwargs(
     if to_protocol == data_protocol.latest_version:
         return args, kwargs
 
-    protocol_state = data_protocol.build_state(stop_key=to_protocol)
+    protocol_state = data_protocol.build_state(stop_key=str(to_protocol))
 
     migrated_kwargs, migrated_args = {}, []
 
