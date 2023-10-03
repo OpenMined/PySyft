@@ -247,9 +247,7 @@ def test_guest_user_update_to_root_email_failed(
             uid=client.me.id, user_update=user_update_to_root_email
         )
         assert isinstance(res, SyftError)
-        assert (
-            res.message == f"User already exists"
-        )
+        assert res.message == "User already exists"
 
 
 def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> None:
@@ -299,8 +297,8 @@ def test_user_view_set_default_admin_email_failed(
     default_root_email = get_default_root_email()
     result = ds_client.me.set_email(default_root_email)
     assert isinstance(result, SyftError)
-    assert result.message = "User already exists"
-    
+    assert result.message == "User already exists"
+
     result_2 = guest_client.me.set_email(default_root_email)
     assert isinstance(result_2, SyftError)
     assert result_2.message == "User already exists"
