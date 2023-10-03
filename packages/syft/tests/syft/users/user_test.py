@@ -248,7 +248,7 @@ def test_guest_user_update_to_root_email_failed(
         )
         assert isinstance(res, SyftError)
         assert (
-            res.message == f"A user with the email {default_root_email} already exists."
+            res.message == f"User already exists"
         )
 
 
@@ -299,14 +299,11 @@ def test_user_view_set_default_admin_email_failed(
     default_root_email = get_default_root_email()
     result = ds_client.me.set_email(default_root_email)
     assert isinstance(result, SyftError)
-    assert (
-        result.message == f"A user with the email {default_root_email} already exists."
-    )
+    assert result.message = "User already exists"
+    
     result_2 = guest_client.me.set_email(default_root_email)
     assert isinstance(result_2, SyftError)
-    assert (
-        result.message == f"A user with the email {default_root_email} already exists."
-    )
+    assert result_2.message == "User already exists"
 
 
 def test_user_view_set_duplicated_email(
@@ -314,21 +311,15 @@ def test_user_view_set_duplicated_email(
 ) -> None:
     result = ds_client.me.set_email(root_client.me.email)
     result2 = guest_client.me.set_email(root_client.me.email)
+
     assert isinstance(result, SyftError)
-    assert (
-        result.message
-        == f"A user with the email {root_client.me.email} already exists."
-    )
+    assert result.message == "User already exists"
     assert isinstance(result2, SyftError)
-    assert (
-        result2.message
-        == f"A user with the email {root_client.me.email} already exists."
-    )
+    assert result2.message == "User already exists"
+
     result3 = guest_client.me.set_email(ds_client.me.email)
     assert isinstance(result3, SyftError)
-    assert (
-        result3.message == f"A user with the email {ds_client.me.email} already exists."
-    )
+    assert result3.message == "User already exists"
 
 
 def test_user_view_update_name_institution_website(
