@@ -431,7 +431,11 @@ def unwrap_and_migrate_annotation(annotation, object_versions):
     args = get_args(annotation)
     if len(args) == 0:
         print(annotation)
-        if isinstance(annotation, type) and issubclass(annotation, SyftBaseObject):
+        if (
+            isinstance(annotation, type)
+            and issubclass(annotation, SyftBaseObject)
+            and annotation.__canonical_name__ in object_versions
+        ):
             downgrade_to_version = int(
                 max(object_versions[annotation.__canonical_name__])
             )

@@ -449,6 +449,7 @@ BASE_PASSTHROUGH_ATTRS = [
 ]
 
 
+@serializable()
 class ActionObject(SyftObject):
     """Action object for remote execution."""
 

@@ -83,7 +83,7 @@ class DataProtocol:
     def latest_version(self) -> PROTOCOL_TYPE:
         sorted_versions = sorted(self.protocol_history.keys(), key=natural_key)
         if len(sorted_versions) > 0:
-            return sorted_versions[-1]
+            return int(sorted_versions[-1])
         return "dev"
 
     @staticmethod
@@ -94,9 +94,6 @@ class DataProtocol:
         sorted_dict = sort_dict_naturally(self.protocol_history)
         state_dict = defaultdict(dict)
         for k, _v in sorted_dict.items():
-            # stop early
-            if stop_key == k:
-                return state_dict
             object_versions = sorted_dict[k]["object_versions"]
             for canonical_name, versions in object_versions.items():
                 for version, object_metadata in versions.items():
@@ -122,6 +119,9 @@ class DataProtocol:
                         state_dict[canonical_name][str(version)] = hash_str
                     elif action == "remove":
                         del state_dict[canonical_name][str(version)]
+            # stop early
+            if stop_key == k:
+                return state_dict
         return state_dict
 
     def diff_state(self, state: dict) -> tuple[dict, dict]:
@@ -258,21 +258,15 @@ class DataProtocol:
                 supported.append(version)
         return supported
 
-    def calculate_supported_protocols(self) -> None:
+    def calculate_supported_protocols(self) -> dict:
         protocol_supported = {}
         # go through each historical protocol version
         for v, version_data in self.protocol_history.items():
             # we assume its supported until we prove otherwise
             protocol_supported[v] = True
             # iterate through each object
-            for canonical_name, versions in version_data["object_versions"].items():
+            for canonical_name, _ in version_data["object_versions"].items():
                 if canonical_name not in self.state:
-                    protocol_supported[v] = False
-                    break
-                # does the current source code state support this object
-                protocol_history_highest = int(max(versions))
-                state_highest = int(max(self.state[canonical_name]))
-                if protocol_history_highest != state_highest:
                     protocol_supported[v] = False
                     break
         return protocol_supported
@@ -304,7 +298,7 @@ def bump_protocol_version() -> Result[SyftSuccess, SyftError]:
 def migrate_args_and_kwargs(
     args: Tuple,
     kwargs: Dict,
-    to_protocol: Optional[int] = None,
+    to_protocol: Optional[PROTOCOL_TYPE] = None,
     to_latest_protocol: bool = False,
 ) -> Tuple[Tuple, Dict]:
     """Migrate args and kwargs to latest version for given protocol.
@@ -325,7 +319,7 @@ def migrate_args_and_kwargs(
     if to_protocol == data_protocol.latest_version:
         return args, kwargs
 
-    protocol_state = data_protocol.state
+    protocol_state = data_protocol.build_state(stop_key=to_protocol)
 
     migrated_kwargs, migrated_args = {}, []
 
