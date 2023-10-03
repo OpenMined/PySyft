@@ -1,64 +1,48 @@
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.8.6
-  labels:
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: mongo
-  name: mongo
-spec:
-  externalIPs: null
-  ports:
-  - name: port-0
-    port: 27017
-    protocol: TCP
-    targetPort: 27017
-  selector:
-    app.kubernetes.io/component: mongo
-    app.kubernetes.io/name: devspace-app
-  type: ClusterIP
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   annotations:
-    helm.sh/chart: component-chart-0.8.6
+    helm.sh/chart: component-chart-0.9.1
   labels:
-    app.kubernetes.io/component: mongo
+    app.kubernetes.io/component: seaweedfs
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: devspace-app
-  name: mongo
+  name: seaweedfs
 spec:
   podManagementPolicy: OrderedReady
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/component: mongo
+      app.kubernetes.io/component: seaweedfs
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/name: devspace-app
-  serviceName: mongo-headless
+  serviceName: seaweedfs-headless
   template:
     metadata:
       annotations:
-        helm.sh/chart: component-chart-0.8.6
+        helm.sh/chart: component-chart-0.9.1
       labels:
-        app.kubernetes.io/component: mongo
+        app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: devspace-app
     spec:
       affinity: null
       containers:
       - args: null
-        command: null
+        command:
+        - sh
+        - /etc/seaweedfs/start.sh
         env:
-        - name: MONGO_INITDB_ROOT_USERNAME
-          value: {{ .Values.secrets.db.mongo.mongoInitdbRootUsername }}
-        - name: MONGO_INITDB_ROOT_PASSWORD
-          value: {{ .Values.secrets.db.mongo.mongoInitdbRootPassword }}
+        - name: S3_VOLUME_SIZE_MB
+          value: '1024'
+        - name: S3_ROOT_USER
+          value: admin
+        - name: S3_ROOT_PWD
+          value: admin
+        - name: S3_PORT
+          value: '8333'
         envFrom: null
-        image: mongo:latest
+        image: chrislusf/seaweedfs:3.55
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -67,8 +51,16 @@ spec:
         startupProbe: null
         volumeDevices: null
         volumeMounts:
-        - mountPath: /data/db
-          name: mongo-data
+        - mountPath: /etc/seaweedfs/filer.toml
+          name: seaweedfs-config
+          readOnly: false
+          subPath: filer.toml
+        - mountPath: /etc/seaweedfs/start.sh
+          name: seaweedfs-config
+          readOnly: false
+          subPath: start.sh
+        - mountPath: /data/blob
+          name: seaweedfs-data
           readOnly: false
           subPath: ''
       dnsConfig: null
@@ -84,16 +76,19 @@ spec:
       terminationGracePeriodSeconds: 5
       tolerations: null
       topologySpreadConstraints: null
-      volumes: null
+      volumes:
+      - configMap:
+          name: seaweedfs-config
+        name: seaweedfs-config
   volumeClaimTemplates:
   - metadata:
       annotations:
-        helm.sh/chart: component-chart-0.8.6
+        helm.sh/chart: component-chart-0.9.1
       labels:
-        app.kubernetes.io/component: mongo
+        app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: devspace-app
-      name: mongo-data
+      name: seaweedfs-data
     spec:
       accessModes:
       - ReadWriteOnce
