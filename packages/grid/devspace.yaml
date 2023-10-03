@@ -77,7 +77,6 @@ deployments:
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
-        version: "0.9.0"
       values:
         containers:
           - image: "${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}"
@@ -125,7 +124,6 @@ deployments:
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
-        version: "0.9.0"
       values:
         containers:
           - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}:${VERSION}"
@@ -201,7 +199,6 @@ deployments:
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
-        version: "0.9.0"
       values:
         containers:
           - image: "${MONGO_IMAGE}:${MONGO_VERSION}"
@@ -231,7 +228,6 @@ deployments:
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
-        version: "0.9.0"
       values:
         containers:
           - image: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
@@ -282,7 +278,6 @@ deployments:
       chart:
         name: component-chart
         repo: https://charts.devspace.sh
-        version: "0.9.0"
       values:
         containers:
           - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}:${VERSION}"

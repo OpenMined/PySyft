@@ -1,6 +1,4 @@
 ---
-
----
 # Source: component-chart/templates/ingress.yaml
 #
 
@@ -21,7 +19,9 @@
 ---
 # Source: component-chart/templates/ingress.yaml
 #
----
+
+
+------
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -190,7 +190,6 @@ spec:
         requests:
           storage: "100Mi"
 ---
-# Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
 apiVersion: v1
 kind: Service
@@ -769,6 +768,7 @@ metadata:
   namespace: default
 
 ---
+# Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
 apiVersion: v1
 kind: Service
