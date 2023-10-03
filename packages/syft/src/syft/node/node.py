@@ -42,6 +42,7 @@ from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..external import OBLV
+from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
@@ -849,7 +850,7 @@ class Node(AbstractNode):
     def get_api(
         self,
         for_user: Optional[SyftVerifyKey] = None,
-        communication_protocol: Optional[int] = None,
+        communication_protocol: Optional[PROTOCOL_TYPE] = None,
     ) -> SyftAPI:
         return SyftAPI.for_user(
             node=self,

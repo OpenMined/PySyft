@@ -481,7 +481,9 @@ class SyftClient:
             self.metadata.supported_protocols
         )
 
-    def _get_communication_protocol(self, protocols_supported_by_server: List) -> int:
+    def _get_communication_protocol(
+        self, protocols_supported_by_server: List
+    ) -> Union[int, str]:
         data_protocol: DataProtocol = get_data_protocol()
         protocols_supported_by_client: List[
             PROTOCOL_TYPE
@@ -497,6 +499,8 @@ class SyftClient:
                 "No common communication protocol found between the client and the server."
             )
 
+        if "dev" in common_protocols:
+            return "dev"
         return max(common_protocols)
 
     def create_project(

@@ -14,6 +14,7 @@ from typing_extensions import Annotated
 
 # relative
 from ..abstract_node import AbstractNode
+from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
 from ..service.context import NodeServiceContext
@@ -69,7 +70,7 @@ def make_routes(worker: Worker) -> APIRouter:
         )
 
     def handle_syft_new_api(
-        user_verify_key: SyftVerifyKey, communication_protocol: int
+        user_verify_key: SyftVerifyKey, communication_protocol: PROTOCOL_TYPE
     ) -> Response:
         return Response(
             serialize(
@@ -81,7 +82,7 @@ def make_routes(worker: Worker) -> APIRouter:
     # get the SyftAPI object
     @router.get("/api")
     def syft_new_api(
-        request: Request, verify_key: str, communication_protocol: int
+        request: Request, verify_key: str, communication_protocol: PROTOCOL_TYPE
     ) -> Response:
         user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
         if TRACE_MODE:

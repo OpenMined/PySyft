@@ -490,7 +490,7 @@ class SyftAPI(SyftObject):
     @staticmethod
     def for_user(
         node: AbstractNode,
-        communication_protocol: int,
+        communication_protocol: PROTOCOL_TYPE,
         user_verify_key: Optional[SyftVerifyKey] = None,
     ) -> SyftAPI:
         # relative

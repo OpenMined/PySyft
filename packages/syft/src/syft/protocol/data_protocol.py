@@ -83,7 +83,7 @@ class DataProtocol:
     def latest_version(self) -> PROTOCOL_TYPE:
         sorted_versions = sorted(self.protocol_history.keys(), key=natural_key)
         if len(sorted_versions) > 0:
-            return int(sorted_versions[-1])
+            return sorted_versions[-1] if self.has_dev else int(sorted_versions[-1])
         return "dev"
 
     @staticmethod
