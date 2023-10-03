@@ -12,10 +12,10 @@ spec:
         number: 80
   tls:
     - hosts:
-        - ""
+        - "example.com"
       # secretName: Add custom TLS secret here or default certificate is used
   rules:
-    - host: ""
+    - host: "example.com"
       http:
         paths:
           - backend:
