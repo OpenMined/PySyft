@@ -30,8 +30,8 @@ from typeguard import check_type
 
 # relative
 from ..node.credentials import SyftVerifyKey
-from ..serde import serialize
 from ..serde.recursive_primitives import recursive_serde_register_type
+from ..serde.serialize import _serialize as serialize
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.notebook_addons import create_table_template
