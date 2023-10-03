@@ -510,9 +510,13 @@ class SyftAPI(SyftObject):
 
         # If server uses a higher protocol version than client, then
         # signatures needs to be downgraded.
-        signature_needs_downgrade = node.current_protocol != "dev" and int(
-            node.current_protocol
-        ) > int(communication_protocol)
+        if node.current_protocol == "dev" and communication_protocol != "dev":
+            # We assume dev is the highest staged protocol
+            signature_needs_downgrade = True
+        else:
+            signature_needs_downgrade = node.current_protocol != "dev" and int(
+                node.current_protocol
+            ) > int(communication_protocol)
         data_protocol = get_data_protocol()
 
         if signature_needs_downgrade:
