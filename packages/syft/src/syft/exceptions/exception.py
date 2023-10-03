@@ -21,7 +21,7 @@ class PySyftException(Exception):
         return self
 
     def handle(self) -> SyftError:
-        #if self.context and self.context.role in self.roles:
+        # if self.context and self.context.role in self.roles:
         return SyftError(message=self.message)
         # else:
         #     return SyftError(message="Access denied to exception message.")
