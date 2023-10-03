@@ -1,4 +1,14 @@
 ---
+# Source: component-chart/templates/deployment.yaml
+# Create headless service for StatefulSet
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+
+---
+
+---
 # Source: component-chart/templates/ingress.yaml
 #
 
@@ -11,17 +21,7 @@
 ---
 # Source: component-chart/templates/ingress.yaml
 #
-
-
 ---
-# Source: component-chart/templates/deployment.yaml
-# Create headless service for StatefulSet
----
-# Source: component-chart/templates/ingress.yaml
-#
-
-
-------
 # Source: component-chart/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -98,7 +98,7 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-backend:0.8.2-beta.32"
+        - image: "docker.io/openmined/grid-backend:0.8.2-beta.33"
           name: "container-0"
           command:
           args:
@@ -116,7 +116,7 @@ spec:
             - name: RELEASE
               value: production
             - name: VERSION
-              value: 0.8.2-beta.32
+              value: 0.8.2-beta.33
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE
@@ -190,6 +190,7 @@ spec:
         requests:
           storage: "100Mi"
 ---
+# Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
 apiVersion: v1
 kind: Service
@@ -287,13 +288,13 @@ spec:
       ephemeralContainers:
         null
       containers:
-        - image: "docker.io/openmined/grid-frontend:0.8.2-beta.32"
+        - image: "docker.io/openmined/grid-frontend:0.8.2-beta.33"
           name: "container-0"
           command:
           args:
           env:
             - name: VERSION
-              value: 0.8.2-beta.32
+              value: 0.8.2-beta.33
             - name: VERSION_HASH
               value: unknown
             - name: NODE_TYPE

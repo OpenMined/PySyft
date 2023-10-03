@@ -561,11 +561,16 @@ class Orchestra:
             Orchestra.reset(name, deployment_type_enum=deployment_type_enum)
 
     @staticmethod
-    def shutdown(name: str, deployment_type_enum: DeploymentType) -> None:
+    def shutdown(
+        name: str, deployment_type_enum: DeploymentType, reset: bool = False
+    ) -> None:
         if deployment_type_enum != DeploymentType.PYTHON:
             snake_name = to_snake_case(name)
 
-            land_output = shell(f"hagrid land {snake_name} --force")
+            if reset:
+                land_output = shell(f"hagrid land {snake_name} --force --prune-vol")
+            else:
+                land_output = shell(f"hagrid land {snake_name} --force")
             if "Removed" in land_output:
                 print(f" ✅ {snake_name} Container Removed")
             else:
@@ -580,24 +585,9 @@ class Orchestra:
             deployment_type_enum == DeploymentType.CONTAINER_STACK
             or deployment_type_enum == DeploymentType.SINGLE_CONTAINER
         ):
-            if container_exists(name=name):
-                Orchestra.shutdown(name=name, deployment_type_enum=deployment_type_enum)
-
-            snake_name = to_snake_case(name)
-
-            volumes = ["mongo-data", "credentials-data"]
-
-            for volume in volumes:
-                volume_output = shell(
-                    f"docker volume rm {snake_name}_{volume} --force || true"
-                )
-
-                if "Error" not in volume_output:
-                    print(f" ✅ {snake_name}_{volume} Volume Removed")
-                else:
-                    print(
-                        f"❌ Unable to remove container volume: {snake_name} :{volume_output}"
-                    )
+            Orchestra.shutdown(
+                name=name, deployment_type_enum=deployment_type_enum, reset=True
+            )
         else:
             raise NotImplementedError(
                 f"Reset not implemented for the deployment type:{deployment_type_enum}"
