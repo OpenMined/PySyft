@@ -1,4 +1,3 @@
----
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -11,10 +10,6 @@ spec:
       name: proxy
       port:
         number: 80
-  tls:
-  - hosts:
-    - {{ .Values.node.settings.hostname }}
-    # secretName: Add custom TLS secret here or default certificate is used
   rules:
   - host: {{ .Values.node.settings.hostname }}
     http:
@@ -26,3 +21,6 @@ spec:
               number: 80
         path: /
         pathType: Prefix
+  tls:
+  - hosts:
+    - {{ .Values.node.settings.hostname }}
