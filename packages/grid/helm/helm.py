@@ -98,8 +98,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     helm_dir = "helm"
-
     text = args.file.read()
+    file_count = 0
 
     # input_file = f"{helm_dir}/raw_manifests.yaml"
     # with open(input_file, "w") as f:
@@ -115,12 +115,12 @@ def main() -> None:
         )
         input_data = "---\n" + "\n".join(lines[first_index - 1 :])
     except StopIteration:
-        print("helm.py error: No line starting with 'apiVersion' found in the input.")
+        print("❌ Error: No line starting with 'apiVersion' found in the input.")
         print("------------------------------")
         print("Got input text:")
         print(text)
         print("------------------------------")
-        return
+        exit(1)
 
     helm_chart_template_dir = f"{helm_dir}/syft/templates"
 
@@ -166,6 +166,13 @@ def main() -> None:
 
             with open(new_file, "w") as f:
                 f.write(yaml_dump)  # add document separator
+                file_count += 1
+
+    if file_count > 0:
+        print(f"✅ Done: Generated {file_count} template files")
+    else:
+        print("❌ Failed: Generated zero files. Check input file for errors.")
+        exit(1)
 
 
 if __name__ == "__main__":
