@@ -6,9 +6,9 @@ on:
 
   workflow_dispatch:
     inputs:
-      test-cache:
+      check-cache:
         type: boolean
-        description: "Test workflow caching"
+        description: "Check workflow cache"
         default: false
       deploy-helm:
         type: boolean
@@ -16,22 +16,29 @@ on:
         default: false
 
 jobs:
-  deploy-syft-dev:
+  check-last-run:
     runs-on: om-ci-16vcpu-ubuntu2204
+
+    outputs:
+      same-commit: ${{ steps.cache.outputs.cache-hit }}
+
     steps:
       - name: Check for new changes
+        if: github.event_name == 'schedule' || github.event.inputs.check-cache == 'true'
         id: cache
-        if: github.event_name == 'schedule' || github.event.inputs.test-cache == 'true'
         uses: actions/cache@v3
         with:
           path: scripts/commit_hash # we don't care about the file, just the key
           key: dev-commit-${{ github.sha }}
           lookup-only: true
 
-      - name: Quit if no new changes
-        if: (github.event_name == 'schedule' || github.event.inputs.test-cache == 'true') && steps.cache.outputs.cache-hit == 'true'
-        run: exit 0
+  deploy-syft-dev:
+    needs: check-last-run
+    if: needs.check-last-run.outputs.same-commit != 'true'
 
+    runs-on: om-ci-16vcpu-ubuntu2204
+
+    steps:
       - name: Permission to home directory
         run: |
           sudo chown -R $USER:$USER $HOME
@@ -79,7 +86,7 @@ jobs:
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
       - name: Build and push `grid-backend` image to registry
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
@@ -91,7 +98,7 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-frontend` image to registry
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
@@ -104,7 +111,7 @@ jobs:
 
       # TODO: Re-enable once we have Enclave up and running
       # - name: Build and push `grid-enclave` image to registry
-      #   uses: docker/build-push-action@v4
+      #   uses: docker/build-push-action@v5
       #   with:
       #     context: ./packages
       #     file: ./packages/grid/worker/worker.dockerfile
@@ -116,7 +123,7 @@ jobs:
       #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-headscale` image to registry
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/headscale.dockerfile
@@ -127,7 +134,7 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-tailscale` image to registry
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/tailscale.dockerfile
@@ -138,7 +145,7 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-vpn-iptables` image to registry
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/iptables.dockerfile
@@ -211,7 +218,3 @@ jobs:
           az logout
           az cache purge
           az account clear
-
-      - name: Save Commit SHA
-        # only for cache to hit
-        run: echo "${{ github.sha }}" > scripts/commit_hash
