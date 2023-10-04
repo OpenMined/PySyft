@@ -201,6 +201,9 @@ jobs:
                 | xargs -r -I% az acr repository untag --name $ACR_REGISTRY_NAME --image $repo:%
           done
 
+      - name: Logout and cleanup Azure account
+        if: always()
+        run: |
           az logout
           az cache purge
           az account clear
