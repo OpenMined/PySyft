@@ -100,7 +100,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     node_type: str = NodeType.DOMAIN.value
     organization: str = "OpenMined"
     description: str = "My cool domain"
-    # node_side_type: str
+    node_side_type: str
     show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
