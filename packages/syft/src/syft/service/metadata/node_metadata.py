@@ -77,7 +77,7 @@ class NodeMetadata(SyftObject):
     description: str = "Text"
     signup_enabled: Optional[bool]
     admin_email: Optional[str]
-    node_side_type: Optional[str]
+    node_side_type: str
     show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
