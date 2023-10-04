@@ -1,4 +1,4 @@
-name: CD - Syft - Deploy `dev` to K8s
+name: CD - Kubernetes - Dev
 
 on:
   schedule:
@@ -6,9 +6,10 @@ on:
 
   workflow_dispatch:
     inputs:
-      none:
-        description: "Run Tests Manually"
-        required: false
+      deploy-helm:
+        type: boolean
+        description: "Deploy Helm Charts"
+        default: true
 
 jobs:
   deploy-syft-dev:
@@ -51,10 +52,15 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az version
+
       - name: Login to Azure CLI
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS_GITHUB_CI }}}
+          creds: ${{ secrets.AZURE_CREDENTIALS_GITHUB_CI }}
 
       - name: Login to Azure Container Registry
         uses: azure/docker-login@v1
@@ -78,6 +84,7 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-frontend` image to registry
         uses: docker/build-push-action@v4
@@ -88,6 +95,7 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:${{ steps.grid.outputs.GRID_VERSION }}
           target: grid-ui-development
 
       # TODO: Re-enable once we have Enclave up and running
@@ -101,6 +109,7 @@ jobs:
       #     tags: |
       #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev
       #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev-${{ github.sha }}
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-headscale` image to registry
         uses: docker/build-push-action@v4
@@ -111,6 +120,7 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-tailscale` image to registry
         uses: docker/build-push-action@v4
@@ -121,6 +131,7 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-vpn-iptables` image to registry
         uses: docker/build-push-action@v2
@@ -131,8 +142,10 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build Helm Chart & Copy to infra
+        if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
         shell: bash
         run: |
           K3D_VERSION=v5.6.0
@@ -159,6 +172,7 @@ jobs:
           cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/dev/
 
       - name: Commit & push changes to Infra Repo
+        if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
         uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
@@ -169,21 +183,27 @@ jobs:
           cwd: "./infrastructure/"
 
       - name: Cleanup Azure Container Registry
-        uses: azure/CLI@v1
-        with:
-          # SKIP_LINES = latest version dev & dev-<sha> (2 lines) + keep "n" previous version (n lines) + 1
-          inlineScript: |
-            ACR_REGISTRY_NAME=${{ secrets.ACR_REGISTRY_NAME }}
-            REPO_LIST=$(az acr repository list -n $ACR_REGISTRY_NAME -o tsv)
+        run: |
+          ACR_REGISTRY_NAME=${{ secrets.ACR_REGISTRY_NAME }}
 
-            KEEP_PREV_VERSIONS=1
-            TAIL_FROM_LINE=$((2 + $KEEP_PREV_VERSIONS + 1))
+          echo ">> Fetching repo list.."
+          REPO_LIST=$(az acr repository list -n $ACR_REGISTRY_NAME -o tsv)
 
-            for repo in $REPO_LIST
-            do
-                echo "Cleaning up '$repo'"
-                az acr repository show-tags --name $ACR_REGISTRY_NAME --repository $repo --orderby time_desc --output tsv | tail -n +$TAIL_FROM_LINE | xargs -r -I% az acr repository delete --name $ACR_REGISTRY_NAME --image $repo:% --yes
-            done
+          KEEP_PREV_VERSIONS=5
+          TAIL_FROM_LINE=$(($KEEP_PREV_VERSIONS + 1))
+
+          for repo in $REPO_LIST
+          do
+              echo "Cleaning up '$repo'"
+              az acr repository show-tags --name $ACR_REGISTRY_NAME --repository $repo --orderby time_desc --output tsv \
+                | grep dev- \
+                | tail -n +$TAIL_FROM_LINE \
+                | xargs -r -I% az acr repository untag --name $ACR_REGISTRY_NAME --image $repo:%
+          done
+
+          az logout
+          az cache purge
+          az account clear
 
       - name: Save Commit SHA
         # only for cache to hit
