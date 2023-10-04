@@ -70,3 +70,6 @@ js/node_modules/*
 
 #nohup
 nohup.out
+
+# tox syft.build.helm generated file
+out.txt

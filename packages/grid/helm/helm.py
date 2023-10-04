@@ -7,6 +7,18 @@ from typing import Any
 # third party
 import yaml
 
+
+# Preserve those beautiful multi-line strings with |
+# https://stackoverflow.com/a/33300001
+def str_presenter(dumper: Any, data: Any) -> Any:
+    if len(data.splitlines()) > 1:  # check for multiline string
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
+
+yaml.add_representer(str, str_presenter)
+yaml.representer.SafeRepresenter.add_representer(str, str_presenter)
+
 template_variables = {
     "STACK_API_KEY": "secrets.syft",
     "DEFAULT_ROOT_EMAIL": "secrets.syft",
@@ -52,11 +64,9 @@ def replace_variables(d: Any) -> None:
     if "kubernetes.io/ingress.class" in d:
         d["kubernetes.io/ingress.class"] = "{{ .Values.ingress.ingressClass }}"
 
-    if "host" in d:
-        d["host"] = "{{ .Values.node.settings.hostname }}"
-
-    if "hosts" in d:
-        d["hosts"] = ["{{ .Values.node.settings.hostname }}"]
+    if "kind" in d and d["kind"] == "Ingress" and "spec" in d:
+        d["spec"]["tls"] = [{"hosts": ["{{ .Values.node.settings.hostname }}"]}]
+        d["spec"]["rules"][0]["host"] = "{{ .Values.node.settings.hostname }}"
 
 
 # parse whole tree
@@ -88,8 +98,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     helm_dir = "helm"
-
     text = args.file.read()
+    file_count = 0
 
     # input_file = f"{helm_dir}/raw_manifests.yaml"
     # with open(input_file, "w") as f:
@@ -105,8 +115,12 @@ def main() -> None:
         )
         input_data = "---\n" + "\n".join(lines[first_index - 1 :])
     except StopIteration:
-        print("No line starting with 'apiVersion' found in the input.")
-        return
+        print("❌ Error: No line starting with 'apiVersion' found in the input.")
+        print("------------------------------")
+        print("Got input text:")
+        print(text)
+        print("------------------------------")
+        exit(1)
 
     helm_chart_template_dir = f"{helm_dir}/syft/templates"
 
@@ -135,17 +149,13 @@ def main() -> None:
         os.makedirs(output_dir, exist_ok=True)
 
         # Parse yaml to find metadata.name
-        yaml_content = yaml.safe_load("\n".join(lines[1:]))  # exclude source_line
+        yaml_content = yaml.safe_load("\n".join(lines))  # exclude source_line
         fix_devspace_yaml(yaml_content)
         name = yaml_content.get("metadata", {}).get("name")
+        kind = yaml_content.get("kind", "").lower()
         if name:
             # Create new file with name or append if it already exists
-            new_file = os.path.join(output_dir, f"{name}.yaml")
-            if os.path.exists(new_file):
-                mode = "a"  # append if file exists
-            else:
-                mode = "w"  # write if new file
-
+            new_file = os.path.join(output_dir, f"{name}-{kind}.yaml")
             yaml_dump = yaml.dump(yaml_content)
             yaml_dump = (
                 yaml_dump.replace("'{{", "{{")
@@ -154,8 +164,15 @@ def main() -> None:
                 .replace("}}''", "}}")
             )
 
-            with open(new_file, mode) as f:
-                f.write("---\n" + yaml_dump)  # add document separator
+            with open(new_file, "w") as f:
+                f.write(yaml_dump)  # add document separator
+                file_count += 1
+
+    if file_count > 0:
+        print(f"✅ Done: Generated {file_count} template files")
+    else:
+        print("❌ Failed: Generated zero files. Check input file for errors.")
+        exit(1)
 
 
 if __name__ == "__main__":

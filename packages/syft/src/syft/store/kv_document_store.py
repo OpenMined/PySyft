@@ -450,6 +450,7 @@ class KeyValueStorePartition(StorePartition):
                 ActionObjectWRITE(uid=qk.value, credentials=credentials)
             ):
                 _obj = self.data.pop(qk.value)
+                self.permissions.pop(qk.value)
                 self._delete_unique_keys_for(_obj)
                 self._delete_search_keys_for(_obj)
                 return Ok(SyftSuccess(message="Deleted"))
