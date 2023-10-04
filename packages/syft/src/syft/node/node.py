@@ -285,6 +285,7 @@ class Node(AbstractNode):
                 CodeHistoryService,
                 MetadataService,
                 BlobStorageService,
+                MigrateStateService,
             ]
             if services is None
             else services
@@ -453,21 +454,34 @@ class Node(AbstractNode):
         root_client.api.refresh_api_callback()
         return root_client
 
-    def _validate_data_migration_state(self):
+    def _find_pending_migrations(self):
         partition_to_be_migrated = []
+
+        context = AuthedServiceContext(
+            node=self,
+            credentials=self.verify_key,
+            role=ServiceRole.ADMIN,
+        )
         migration_state_service = self.get_service(MigrateStateService)
-        for partition_settings in self.document_store.partitions.values():
-            object_type = partition_settings.object_type
+
+        for partition in self.document_store.partitions.values():
+            object_type = partition.settings.object_type
             canonical_name = object_type.__canonical_name__
-            migration_state = migration_state_service.get_state(canonical_name)
-            if migration_state is not None:
-                if migration_state.current_version != migration_state.latest_version:
-                    partition_to_be_migrated.append(canonical_name)
+
+            migration_state = migration_state_service.get_state(context, canonical_name)
+            if (
+                migration_state is not None
+                and migration_state.current_version != migration_state.latest_version
+            ):
+                partition_to_be_migrated.append(canonical_name)
             else:
-                migration_state.register_migration_state(
+                migration_state_service.register_migration_state(
+                    context,
                     current_version=object_type.__version__,
                     canonical_name=canonical_name,
                 )
+
+        return partition_to_be_migrated
 
     @property
     def guest_client(self):
@@ -608,6 +622,7 @@ class Node(AbstractNode):
                 CodeHistoryService,
                 MetadataService,
                 BlobStorageService,
+                MigrateStateService,
             ]
 
             if OBLV:
@@ -617,6 +632,7 @@ class Node(AbstractNode):
                 store_services += [OblvService]
 
             if service_klass in store_services:
+                print("Service class", service_klass)
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs

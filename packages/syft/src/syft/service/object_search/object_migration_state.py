@@ -16,7 +16,6 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftMigrationRegistry
 from ...types.syft_object import SyftObject
 from ..action.action_permissions import ActionObjectPermission
-from ..user.user import User
 
 
 @serializable()
@@ -50,7 +49,7 @@ KlassNamePartitionKey = PartitionKey(key="canonical_name", type_=str)
 class SyftMigrationStateStash(BaseStash):
     object_type = SyftObjectMigrationState
     settings: PartitionSettings = PartitionSettings(
-        name=User.__canonical_name__,
+        name=SyftObjectMigrationState.__canonical_name__,
         object_type=SyftObjectMigrationState,
     )
 

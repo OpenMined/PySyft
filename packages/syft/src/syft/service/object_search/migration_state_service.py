@@ -19,7 +19,7 @@ class MigrateStateService(AbstractService):
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash: SyftMigrationStateStash = SyftMigrationStateStash(store=store)
+        self.stash = SyftMigrationStateStash(store=store)
 
     @service_method(path="migration", name="get_version")
     def get_version(
