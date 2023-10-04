@@ -75,9 +75,9 @@ class NodeMetadata(SyftObject):
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "Text"
-    signup_enabled: bool
-    admin_email: str
-    node_side_type: str
+    signup_enabled: Optional[bool]
+    admin_email: Optional[str]
+    node_side_type: Optional[str]
     show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
@@ -98,13 +98,9 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     lowest_object_version: int
     syft_version: str
     node_type: str = NodeType.DOMAIN.value
-    deployed_on: str = "Date"
     organization: str = "OpenMined"
-    on_board: bool = False
     description: str = "My cool domain"
-    signup_enabled: bool
-    admin_email: str
-    node_side_type: str
+    # node_side_type: str
     show_warnings: bool
 
     def check_version(self, client_version: str) -> bool:
