@@ -1,9 +1,8 @@
 name: CD - Syft - Deploy `dev` to K8s
 
 on:
-  # TODO: Re-enable once merged & tested
-  # schedule:
-  #   - cron: "0 */3 * * *"
+  schedule:
+    - cron: "0 */3 * * *"
 
   workflow_dispatch:
     inputs:
@@ -15,6 +14,19 @@ jobs:
   deploy-syft-dev:
     runs-on: om-ci-16vcpu-ubuntu2204
     steps:
+      - name: Check for new changes
+        id: cache
+        if: github.event_name == 'schedule'
+        uses: actions/cache@v3
+        with:
+          path: scripts/commit_hash # we don't care about the file, just the key
+          key: dev-commit-${{ github.sha }}
+          lookup-only: true
+
+      - name: Quit if no new changes
+        if: github.event_name == 'schedule' && steps.cache.outputs.cache-hit == 'true'
+        run: exit 0
+
       - name: Permission to home directory
         run: |
           sudo chown -R $USER:$USER $HOME
@@ -150,3 +162,24 @@ jobs:
           add: "."
           push: "origin main"
           cwd: "./infrastructure/"
+
+      - name: Cleanup Azure Container Registry
+        uses: azure/CLI@v1
+        with:
+          # SKIP_LINES = latest version dev & dev-<sha> (2 lines) + keep "n" previous version (n lines) + 1
+          inlineScript: |
+            ACR_REGISTRY_NAME=${{ secrets.ACR_REGISTRY_NAME }}
+            REPO_LIST=$(az acr repository list -n $ACR_REGISTRY_NAME -o tsv)
+
+            KEEP_PREV_VERSIONS=1
+            TAIL_FROM_LINE=$((2 + $KEEP_PREV_VERSIONS + 1))
+
+            for repo in $REPO_LIST
+            do
+                echo "Cleaning up '$repo'"
+                az acr repository show-tags --name $ACR_REGISTRY_NAME --repository $repo --orderby time_desc --output tsv | tail -n +$TAIL_FROM_LINE | xargs -r -I% az acr repository delete --name $ACR_REGISTRY_NAME --image $repo:% --yes
+            done
+
+      - name: Save Commit SHA
+        # only for cache to hit
+        run: echo "${{ github.sha }}" > scripts/commit_hash

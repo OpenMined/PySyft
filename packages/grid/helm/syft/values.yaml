@@ -22,7 +22,7 @@ db:
 
 node:
   settings:
-    hostname: "localhost"
+    hostname: ""
     nodeName: "mynode"
     nodeType: "domain"
     versionHash: "abc"

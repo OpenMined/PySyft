@@ -6,6 +6,7 @@ from typing import Union
 
 # relative
 from ...abstract_node import NodeType
+from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -235,9 +236,7 @@ class UserService(AbstractService):
                 email=user_update.email
             )
             if user_with_email_exists:
-                return SyftError(
-                    message=f"A user with the email {user_update.email} already exists."
-                )
+                raise UserAlreadyExistsException.raise_with_context(context=context)
 
         if result.is_err():
             error_msg = (
