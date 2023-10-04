@@ -6,6 +6,10 @@ on:
 
   workflow_dispatch:
     inputs:
+      test-cache:
+        type: boolean
+        description: "Test workflow caching"
+        default: false
       deploy-helm:
         type: boolean
         description: "Deploy Helm Charts"
@@ -17,7 +21,7 @@ jobs:
     steps:
       - name: Check for new changes
         id: cache
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' || github.event.inputs.test-cache == 'true'
         uses: actions/cache@v3
         with:
           path: scripts/commit_hash # we don't care about the file, just the key
@@ -25,7 +29,7 @@ jobs:
           lookup-only: true
 
       - name: Quit if no new changes
-        if: github.event_name == 'schedule' && steps.cache.outputs.cache-hit == 'true'
+        if: (github.event_name == 'schedule' || github.event.inputs.test-cache == 'true') && steps.cache.outputs.cache-hit == 'true'
         run: exit 0
 
       - name: Permission to home directory
