@@ -168,6 +168,18 @@ class Asset(SyftObject):
             data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
         else:
             data_table_line = self.data
+
+        if isinstance(self.mock, ActionObject):
+            mock_table_line = itables.to_html_datatable(
+                df=self.mock.syft_action_data, css=itables_css
+            )
+        elif isinstance(self.data, pd.DataFrame):
+            mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
+        else:
+            mock_table_line = self.mock
+            if isinstance(mock_table_line, SyftError):
+                mock_table_line = mock_table_line.message
+
         return f"""
             <style>
             {fonts_css}
@@ -188,7 +200,7 @@ class Asset(SyftObject):
             <p><strong>Data:</strong></p>
             {data_table_line}
             <p><strong>Mock Data:</strong></p>
-            {itables.to_html_datatable(df=self.mock, css=itables_css)}
+            {mock_table_line}
             </div>"""
 
     def _repr_markdown_(self) -> str:
