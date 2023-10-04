@@ -101,8 +101,8 @@ class Job(SyftObject):
         logs = self.logs(_print=False)
         log_lines = logs.split("\n")
         subjobs = self.subjobs
-        if len(log_lines) > 3:
-            logs = "...\n" + "\n".join(log_lines[-3:])
+        if len(log_lines) > 4:
+            logs = "...\n" + "\n".join(log_lines[-4:])
         else:
             logs = logs
 

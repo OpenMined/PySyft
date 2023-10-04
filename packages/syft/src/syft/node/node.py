@@ -28,6 +28,8 @@ from result import Err
 from result import Result
 from typing_extensions import Self
 
+# first party
+
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
@@ -383,7 +385,7 @@ class Node(AbstractNode):
                 producer.run()
                 address = producer.address
             else:
-                port = queue_config_.client_config.producer_port
+                port = queue_config_.client_config.consumer_port
                 if port is not None:
                     address = f"tcp://localhost:{port}"
                 else:
