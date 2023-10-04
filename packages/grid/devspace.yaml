@@ -34,14 +34,14 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
-  tailscale:
-    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_TAILSCALE}"
-    buildKit: {}
-    dockerfile: ./vpn/tailscale.dockerfile
-    context: ./vpn
-    tags:
-      - dev-latest
-      - "${VERSION}"
+  # tailscale:
+  #   image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_TAILSCALE}"
+  #   buildKit: {}
+  #   dockerfile: ./vpn/tailscale.dockerfile
+  #   context: ./vpn
+  #   tags:
+  #     - dev-latest
+  #     - "${VERSION}"
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
