@@ -194,11 +194,14 @@ class SyftMigrationRegistry:
         """
         super().__init_subclass__(**kwargs)
         klass = type(cls) if not isinstance(cls, type) else cls
+        cls.register_version(klass=klass)
 
+    @classmethod
+    def register_version(cls, klass: type):
         if hasattr(klass, "__canonical_name__") and hasattr(klass, "__version__"):
             mapping_string = klass.__canonical_name__
-            klass_version = cls.__version__
-            fqn = f"{cls.__module__}.{cls.__name__}"
+            klass_version = klass.__version__
+            fqn = f"{klass.__module__}.{klass.__name__}"
 
             if (
                 mapping_string in cls.__migration_version_registry__
