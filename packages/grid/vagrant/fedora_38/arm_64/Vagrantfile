@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
         vd.memory = "4096"
         vd.cpus = "2"
     end
-    config.vm.synced_folder "../../podman-kube", "/home/vagrant/podman-kube" ,type: "rsync"
+    config.vm.synced_folder "../../../podman/podman-kube", "/home/vagrant/podman-kube" ,type: "rsync"
     config.vm.box_check_update = false
     config.vm.network "forwarded_port", guest: 8080, host: 8080, host_ip: "127.0.0.1"
 
