@@ -10,13 +10,8 @@ spec:
       name: proxy
       port:
         number: 80
-  tls:
-    - hosts:
-        - "localhost"
-      # secretName: Add custom TLS secret here or default certificate is used
   rules:
-    - host: "localhost"
-      http:
+    - http:
         paths:
           - backend:
               service:
