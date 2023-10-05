@@ -632,7 +632,6 @@ class Node(AbstractNode):
                 store_services += [OblvService]
 
             if service_klass in store_services:
-                print("Service class", service_klass)
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs

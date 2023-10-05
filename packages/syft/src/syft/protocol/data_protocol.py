@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Tuple
@@ -12,6 +13,7 @@ from typing import Type
 from typing import Union
 
 # third party
+from result import OkErr
 from result import Result
 
 # relative
@@ -295,6 +297,48 @@ def bump_protocol_version() -> Result[SyftSuccess, SyftError]:
     return data_protocol.bump_protocol_version()
 
 
+def debox_arg_and_migrate(arg: Any, protocol_state: dict):
+    """Debox the argument based on whether it is iterable or single entity."""
+    box_to_result_type = None
+
+    if type(arg) in OkErr:
+        box_to_result_type = type(arg)
+        arg = arg.value
+
+    single_entity = False
+    is_tuple = isinstance(arg, tuple)
+
+    if isinstance(arg, (list, tuple)):
+        iterable_keys = range(len(arg))
+        arg = list(arg)
+    elif isinstance(arg, dict):
+        iterable_keys = arg.keys()
+    else:
+        iterable_keys = range(1)
+        arg = [arg]
+        single_entity = True
+
+    for key in iterable_keys:
+        _object = arg[key]
+        if isinstance(_object, SyftBaseObject):
+            current_version = int(_object.__version__)
+            migrate_to_version = int(max(protocol_state[_object.__canonical_name__]))
+            if current_version > migrate_to_version:  # downgrade
+                versions = range(current_version - 1, migrate_to_version - 1, -1)
+            else:  # upgrade
+                versions = range(current_version + 1, migrate_to_version + 1)
+            for version in versions:
+                _object = _object.migrate_to(version)
+        arg[key] = _object
+
+    wrapped_arg = arg[0] if single_entity else arg
+    wrapped_arg = tuple(wrapped_arg) if is_tuple else wrapped_arg
+    if box_to_result_type is not None:
+        wrapped_arg = box_to_result_type(wrapped_arg)
+
+    return wrapped_arg
+
+
 def migrate_args_and_kwargs(
     args: Tuple,
     kwargs: Dict,
@@ -324,28 +368,17 @@ def migrate_args_and_kwargs(
     migrated_kwargs, migrated_args = {}, []
 
     for param_name, param_val in kwargs.items():
-        if isinstance(param_val, SyftBaseObject):
-            current_version = int(param_val.__version__)
-            migrate_to_version = int(max(protocol_state[param_val.__canonical_name__]))
-            if current_version > migrate_to_version:  # downgrade
-                versions = range(current_version - 1, migrate_to_version - 1, -1)
-            else:  # upgrade
-                versions = range(current_version + 1, migrate_to_version + 1)
-            for version in versions:
-                param_val = param_val.migrate_to(version)
-        migrated_kwargs[param_name] = param_val
+        migrated_val = debox_arg_and_migrate(
+            arg=param_val,
+            protocol_state=protocol_state,
+        )
+        migrated_kwargs[param_name] = migrated_val
 
     for arg in args:
-        if isinstance(arg, SyftBaseObject):
-            current_version = int(arg.__version__)
-            migrate_to_version = int(max(protocol_state[arg.__canonical_name__]))
-            if current_version > migrate_to_version:  # downgrade
-                versions = range(current_version - 1, migrate_to_version - 1, -1)
-            else:  # upgrade
-                versions = range(current_version + 1, migrate_to_version + 1)
-            for version in versions:
-                arg = arg.migrate_to(version)
-
-        migrated_args.append(arg)
+        migrated_val = debox_arg_and_migrate(
+            arg=arg,
+            protocol_state=protocol_state,
+        )
+        migrated_args.append(migrated_val)
 
     return tuple(migrated_args), migrated_kwargs

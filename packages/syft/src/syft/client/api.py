@@ -427,7 +427,6 @@ def downgrade_signature(signature: Signature, object_versions: Dict):
 def unwrap_and_migrate_annotation(annotation, object_versions):
     args = get_args(annotation)
     if len(args) == 0:
-        print(annotation)
         if (
             isinstance(annotation, type)
             and issubclass(annotation, SyftBaseObject)
