@@ -702,6 +702,8 @@ def list_dict_repr_html(self) -> str:
         extra_fields = []
         if isinstance(self, dict):
             values = list(self.values())
+        elif isinstance(self, set):
+            values = list(self)
         else:
             values = self
 
@@ -761,6 +763,7 @@ def list_dict_repr_html(self) -> str:
 # give lists and dicts a _repr_html_ if they contain SyftObject's
 aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(type(set()), "_repr_html_", list_dict_repr_html)
 
 
 class StorableObjectType:
