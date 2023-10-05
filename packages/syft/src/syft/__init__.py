@@ -54,6 +54,7 @@ from .service.policy.policy import ExactMatch  # noqa: F401
 from .service.policy.policy import SingleExecutionExactOutput  # noqa: F401
 from .service.policy.policy import UserInputPolicy  # noqa: F401
 from .service.policy.policy import UserOutputPolicy  # noqa: F401
+from .service.policy.policy import ExecuteOncePerCombination  # noqa: F401
 from .service.project.project import ProjectSubmit as Project  # noqa: F401
 from .service.request.request import SubmitRequest as Request  # noqa: F401
 from .service.response import SyftError  # noqa: F401

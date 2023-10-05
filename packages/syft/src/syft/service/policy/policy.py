@@ -17,7 +17,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
+from typing import Union, Set, Tuple
 
 # third party
 from RestrictedPython import compile_restricted
@@ -146,7 +146,6 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
             uid = v.id
         if isinstance(v, Asset):
             uid = v.action_id
-
         if not isinstance(uid, UID):
             raise Exception(f"Input {k} must have a UID not {type(v)}")
 
@@ -290,6 +289,42 @@ def allowed_ids_only(
             filtered_kwargs[key] = value
     return filtered_kwargs
 
+def allowed_ids_from_list(
+    allowed_inputs: Dict[str, List[UID]],
+    kwargs: Dict[str, Any],
+    context: AuthedServiceContext,
+) -> Dict[str, UID]:
+    if context.node.node_type == NodeType.DOMAIN:
+        node_identity = NodeIdentity(
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
+        )
+        allowed_inputs = allowed_inputs[node_identity]
+    elif context.node.node_type == NodeType.ENCLAVE:
+        base_dict = {}
+        for key in allowed_inputs.values():
+            base_dict.update(key)
+        allowed_inputs = base_dict
+    else:
+        raise Exception(
+            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+        )
+    filtered_kwargs = {}
+    for key in allowed_inputs.keys():
+        if key in kwargs:
+            value = kwargs[key]
+            uid = value
+            if not isinstance(uid, UID):
+                uid = getattr(value, "id", None)
+
+            if uid not in allowed_inputs[key]:
+                raise Exception(
+                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
+                )
+            filtered_kwargs[key] = value
+    return filtered_kwargs
+
 
 @serializable()
 class ExactMatch(InputPolicy):
@@ -308,6 +343,81 @@ class ExactMatch(InputPolicy):
         )
         return results
 
+def multi_partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, List[UID]]:
+    # relative
+    from ...client.api import APIRegistry
+    from ...client.api import NodeIdentity
+    from ...types.twin_object import TwinObject
+    from ..action.action_object import ActionObject
+
+    # fetches the all the current api's connected
+    api_list = APIRegistry.get_all_api()
+    output_kwargs = {}
+    for k, l in kwargs.items():
+        for v in l:
+            if isinstance(v, ActionObject):
+                uid = v.id
+            if isinstance(v, TwinObject):
+                uid = v.id
+            if isinstance(v, Asset):
+                uid = v.action_id
+            if not isinstance(uid, UID):
+                raise Exception(f"Input {k} must have a UID not {type(v)}")
+
+            _obj_exists = False
+            for api in api_list:
+                if api.services.action.exists(uid):
+                    node_identity = NodeIdentity.from_api(api)
+                    if node_identity not in output_kwargs:
+                        output_kwargs[node_identity] = {k: [uid]}
+                    else:
+                        if k in output_kwargs[node_identity]:
+                            output_kwargs[node_identity][k].append(uid)
+                        else:
+                            output_kwargs[node_identity].update({k: [uid]})
+
+                    _obj_exists = True
+                    break
+
+            if not _obj_exists:
+                raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
+
+    return output_kwargs
+
+
+@serializable()
+class ExecuteOncePerCombination(InputPolicy):
+    # version
+    __canonical_name__ = "ExecuteOncePerCombination"
+    __version__ = SYFT_OBJECT_VERSION_1
+    
+    used_combinations: Optional[List[Dict[str, UID]]] = []
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        if "init_kwargs" in kwargs:
+            init_kwargs = kwargs["init_kwargs"]
+            del kwargs["init_kwargs"]
+        else:
+            # TODO: remove this tech debt, dont remove the id mapping functionality
+            init_kwargs = multi_partition_by_node(kwargs)
+        super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
+    
+    def filter_kwargs(
+        self, kwargs: Dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
+    ) -> Dict[Any, Any]:
+        allowed_inputs = allowed_ids_from_list(
+            allowed_inputs=self.inputs, kwargs=kwargs, context=context
+        )
+
+        if allowed_inputs in self.used_combinations:
+            raise Exception("Combination of input UIDs already used!")
+
+        self.used_combinations.append(allowed_inputs)
+        
+        results = retrieve_from_db(
+            code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
+        )
+        return results
 
 @serializable()
 class OutputHistory(SyftObject):
