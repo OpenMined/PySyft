@@ -224,6 +224,21 @@ class Asset(SyftObject):
             _repr_str += f"\t{contributor.name}: {contributor.email}\n"
         return as_markdown_python_code(_repr_str)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Asset):
+            return False
+        return (
+            self.action_id == other.action_id
+            and self.name == other.name
+            and self.contributors == other.contributors
+            and self.shape == other.shape
+            and self.description == other.description
+            and self.data_subjects == other.data_subjects
+            and self.mock_is_real == other.mock_is_real
+            and self.uploader == other.uploader
+            and self.created_at == other.created_at
+        )
+
     @property
     def pointer(self) -> Any:
         # relative
