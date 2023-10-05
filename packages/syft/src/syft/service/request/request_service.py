@@ -254,8 +254,8 @@ class RequestService(AbstractService):
             linked_obj=link,
         )
         send_notification = context.node.get_service_method(NotificationService.send)
+        send_notification(context=context, notification=notification)
 
-        result = send_notification(context=context, notification=notification)
         return SyftSuccess(message=f"Request {uid} successfully denied !")
 
     def save(

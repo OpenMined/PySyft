@@ -145,14 +145,16 @@ class UserCodeStatusCollection(SyftHashableObject):
             string += f"{node_identity.node_name}: {status}<br>"
         return string
 
-    def get_status_message(self):
+    def get_status_message(self, reason: str = ""):
         if self.approved:
             return SyftSuccess(message=f"{type(self)} approved")
         string = ""
         for node_identity, status in self.status_dict.items():
             string += f"Code status on node '{node_identity.node_name}' is '{status}'. "
         if self.denied:
-            return SyftError(message=f"{type(self)} Your code cannot be run: {string}")
+            return SyftError(
+                message=f"{type(self)} Your code cannot be run: {string} Reason: {reason}"
+            )
         else:
             return SyftNotReady(
                 message=f"{type(self)} Your code is waiting for approval. {string}"
