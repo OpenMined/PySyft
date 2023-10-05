@@ -8,6 +8,7 @@ from typing import DefaultDict
 from typing import Dict
 from typing import Optional
 from typing import Union
+import gevent
 
 # third party
 import zmq.green as zmq
@@ -122,11 +123,17 @@ class ZMQProducer(QueueProducer):
         # stdlib
         import threading
 
-        self.thread = threading.Thread(target=self._run)
+        self.thread = gevent.spawn(self._run)
         self.thread.start()
 
-        self.producer_thread = threading.Thread(target=self.read_items)
+        self.producer_thread = gevent.spawn(self.read_items)
         self.producer_thread.start()
+
+        # self.thread = threading.Thread(target=self._run)
+        # self.thread.start()
+
+        # self.producer_thread = threading.Thread(target=self.read_items)
+        # self.producer_thread.start()
 
     def _run(self):
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
@@ -236,7 +243,6 @@ class ZMQConsumer(QueueConsumer):
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
-                            # print("HANDLING MESSAGE IN CONSUMEr")
                             self.message_handler.handle_message(message=message)
                             # print("DONE DOING THE WORK")
                         except Exception as e:
@@ -277,11 +283,10 @@ class ZMQConsumer(QueueConsumer):
         # stdlib
         import threading
 
-        self.thread = threading.Thread(target=self._run)
-        self.thread.start()
-        # self.thread = gevent.spawn(self._run)
+        # self.thread = threading.Thread(target=self._run)
         # self.thread.start()
-        print("spawning thread")
+        self.thread = gevent.spawn(self._run)
+        self.thread.start()
 
     def close(self):
         if self.thread is not None:
@@ -300,11 +305,11 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
 
     id: Optional[UID]
     hostname: str = "127.0.0.1"
-    consumer_port: Optional[int] = None
-    producer_port: Optional[int] = None
+    queue_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ
     # port issue causing tests to randomly fail
     create_producer: bool = False
+    n_consumers: int = 0
 
 
 @serializable(attrs=["host"])
@@ -336,11 +341,11 @@ class ZMQClient(QueueClient):
         """
 
         if port is None:
-            if self.config.producer_port is None:
-                self.config.producer_port = self._get_free_tcp_port(self.host)
-                port = self.config.producer_port
+            if self.config.queue_port is None:
+                self.config.queue_port = self._get_free_tcp_port(self.host)
+                port = self.config.queue_port
             else:
-                port = self.config.producer_port
+                port = self.config.queue_port
 
         producer = ZMQProducer(
             queue_name=queue_name, queue_stash=queue_stash, port=port
@@ -362,7 +367,7 @@ class ZMQClient(QueueClient):
 
         if address is None:
             # address = f"tcp://{self.host}:{self.config.consumer_port}"
-            address = f"tcp://*:{self.config.consumer_port}"
+            address = f"tcp://*:{self.config.queue_port}"
 
         consumer = ZMQConsumer(
             queue_name=queue_name,

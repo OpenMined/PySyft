@@ -6,6 +6,7 @@ from syft.node.node import get_node_name
 from syft.node.node import get_node_side_type
 from syft.node.node import get_node_type
 from syft.node.node import get_node_uid_env
+from syft.service.queue.zmq_queue import ZMQClientConfig, ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
 from syft.store.mongo_client import MongoStoreClientConfig
@@ -46,6 +47,14 @@ seaweed_client_config = SeaweedFSClientConfig(
 
 blob_storage_config = SeaweedFSConfig(client_config=seaweed_client_config)
 
+queue_config = ZMQQueueConfig(
+    client_config=ZMQClientConfig(
+        create_producer=settings.CREATE_PRODUCER,
+        queue_port=settings.QUEUE_PORT,
+        n_consumers=settings.N_CONSUMERS,
+    )
+)
+
 
 if node_type == "gateway" or node_type == "network":
     worker = Gateway(
@@ -60,6 +69,7 @@ else:
     worker = Domain(
         name=node_name,
         node_side_type=node_side_type,
+        queue_config=queue_config,
         action_store_config=sql_store_config,
         document_store_config=mongo_store_config,
         enable_warnings=enable_warnings,

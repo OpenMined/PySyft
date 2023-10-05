@@ -81,6 +81,7 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         queue_config = worker_settings.queue_config
         queue_config.client_config.create_producer = False
+        queue_config.client_config.n_consumers = 0
 
         worker = Node(
             id=worker_settings.id,
@@ -90,7 +91,6 @@ class APICallMessageHandler(AbstractMessageHandler):
             action_store_config=worker_settings.action_store_config,
             blob_storage_config=worker_settings.blob_store_config,
             queue_config=queue_config,
-            n_consumers=0,
             is_subprocess=True,
         )
 

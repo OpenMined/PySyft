@@ -229,7 +229,6 @@ def deploy_to_python(  # type: ignore
     port: Union[int, str],
     name: str,
     host: str,
-    n_consumers: int,
     reset: bool,
     tail: bool,
     dev_mode: bool,
@@ -237,7 +236,9 @@ def deploy_to_python(  # type: ignore
     local_db: bool,
     node_side_type: NodeSideType,
     enable_warnings: bool,
-    queue_config=None,
+    n_consumers: int,
+    create_producer: bool = False,
+    queue_port: Optional[int] = None, 
 ) -> Optional[NodeHandle]:
     sy = get_syft_client()
     if sy is None:
@@ -296,13 +297,14 @@ def deploy_to_python(  # type: ignore
                 worker = worker_class.named(
                     name=name,
                     processes=processes,
-                    n_consumers=n_consumers,
                     reset=reset,
                     local_db=local_db,
                     node_type=node_type_enum,
                     node_side_type=node_side_type,
                     enable_warnings=enable_warnings,
-                    queue_config=queue_config,
+                    n_consumers=n_consumers,
+                    create_producer=create_producer,
+                    queue_port=queue_port
                 )
             else:
                 # syft <= 0.8.1
@@ -464,7 +466,6 @@ class Orchestra:
         # worker related inputs
         port: Optional[Union[int, str]] = None,
         processes: int = 1,  # temporary work around for jax in subprocess
-        n_consumers: int = 0,
         local_db: bool = False,
         dev_mode: bool = False,
         cmd: bool = False,
@@ -475,7 +476,9 @@ class Orchestra:
         verbose: bool = False,
         render: bool = False,
         enable_warnings: bool = False,
-        queue_config=None,
+        n_consumers: int = 0,
+        create_producer: bool = False,
+        queue_port: Optional[int] = None,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
@@ -511,7 +514,6 @@ class Orchestra:
                 port=port,
                 name=name,
                 host=host,
-                n_consumers=n_consumers,
                 reset=reset,
                 tail=tail,
                 dev_mode=dev_mode,
@@ -519,7 +521,9 @@ class Orchestra:
                 local_db=local_db,
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
-                queue_config=queue_config,
+                n_consumers=n_consumers,
+                create_producer=create_producer,
+                queue_port=queue_port
             )
 
         elif deployment_type_enum == DeploymentType.K8S:

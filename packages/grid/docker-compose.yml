@@ -131,10 +131,58 @@ services:
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
       - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
+      - QUEUE_PORT=${QUEUE_PORT}
+      - CREATE_PRODUCER=true
+      - N_CONSUMERS=0
     command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
       - ${BACKEND_STORAGE_PATH}:/storage
+    stdin_open: true
+    tty: true
+    labels:
+      - "orgs.openmined.syft=this is a syft backend container"
+
+  backendworker:
+    restart: always
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    depends_on:
+      - proxy
+      - backend
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=backend
+      - RELEASE=${RELEASE:-production}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - NODE_NAME=${NODE_NAME?Variable not set}
+      - STACK_API_KEY=${STACK_API_KEY}
+      - PORT=8002
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=87
+      - HTTPS_PORT=445
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - TRACE=${TRACE}
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
+      - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
+      - ENABLE_OBLV=${ENABLE_OBLV}
+      - DEFAULT_ROOT_EMAIL=info2@openmined.org
+      - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
+      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
+      - QUEUE_PORT=${QUEUE_PORT}
+      - CREATE_PRODUCER=false
+      - N_CONSUMERS=1
+
+    command: "/app/grid/start.sh"
+    network_mode: service:proxy
+    volumes:
+      - credentials-data-worker:/storage
     stdin_open: true
     tty: true
     labels:
@@ -285,6 +333,7 @@ services:
 
 volumes:
   credentials-data:
+  credentials-data-worker:
   tailscale-data:
   headscale-data:
   # app-redis-data:
