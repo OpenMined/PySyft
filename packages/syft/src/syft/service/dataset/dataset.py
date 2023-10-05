@@ -90,6 +90,16 @@ class Contributor(SyftObject):
             </div>
             """
 
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Contributor):
+            return False
+
+        # We assoctiate two contributors as equal if they have the same email
+        return self.email == value.email
+
+    def __hash__(self) -> int:
+        return hash(self.email)
+
 
 @serializable()
 class MarkdownDescription(SyftObject):
@@ -126,8 +136,7 @@ class Asset(SyftObject):
     node_uid: UID
     name: str
     description: Optional[MarkdownDescription] = None
-    contributors: List[Contributor] = []
-    contributor_email_set: Set[str] = set()
+    contributors: Set[Contributor] = set()
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
     shape: Optional[Tuple]
@@ -296,8 +305,7 @@ class CreateAsset(SyftObject):
     id: Optional[UID] = None
     name: str
     description: Optional[MarkdownDescription] = None
-    contributors: List[Contributor] = []
-    contributor_email_set: Set[str] = set()
+    contributors: Set[Contributor] = set()
     data_subjects: List[DataSubjectCreate] = []
     node_uid: Optional[UID]
     action_id: Optional[UID]
@@ -350,10 +358,12 @@ class CreateAsset(SyftObject):
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
-            if contributor.email in self.contributor_email_set:
-                raise Exception("Contributor with this email already exists.")
-            self.contributor_email_set.add(contributor.email)
-            self.contributors.append(contributor)
+            if contributor in self.contributors:
+                return SyftError(
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
+                )
+            self.contributors.add(contributor)
+
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Asset."
             )
@@ -434,8 +444,7 @@ class Dataset(SyftObject):
     name: str
     node_uid: Optional[UID]
     asset_list: List[Asset] = []
-    contributors: List[Contributor] = []
-    contributor_email_set: Set[str] = set()
+    contributors: Set[Contributor] = set()
     citation: Optional[str]
     url: Optional[str]
     description: Optional[MarkdownDescription] = None
@@ -638,10 +647,11 @@ class CreateDataset(Dataset):
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
-            if contributor.email in self.contributor_email_set:
-                raise Exception("Contributor with this email already exists.")
-            self.contributor_email_set.add(contributor.email)
-            self.contributors.append(contributor)
+            if contributor in self.contributors:
+                return SyftError(
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
+                )
+            self.contributors.add(contributor)
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Dataset."
             )

@@ -15,6 +15,8 @@ from syft.service.action.action_object import ActionObject
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 from syft.types.twin_object import TwinMode
 
 
@@ -220,10 +222,32 @@ def test_domain_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> No
 
 
 def test_adding_contributors_with_duplicate_email():
-    dataset = Dataset(name="dummy dataset")
-    dataset.add_contributor(
-        role=sy.roles.UPLOADER, name="Jim Carey", email="jim@69.com"
-    )
-    dataset.add_contributor(role=sy.roles.UPLOADER, name="Jim Car", email="jim@69.com")
+    # Datasets
 
+    dataset = Dataset(name="Sample  dataset")
+    res1 = dataset.add_contributor(
+        role=sy.roles.UPLOADER, name="Alice", email="alice@naboo.net"
+    )
+    res2 = dataset.add_contributor(
+        role=sy.roles.UPLOADER, name="Alice Smith", email="alice@naboo.net"
+    )
+
+    assert isinstance(res1, SyftSuccess)
+    assert isinstance(res2, SyftError)
     assert len(dataset.contributors) == 1
+
+    # Assets
+    asset = Asset(**make_asset_without_mock(), mock=ActionObject.empty())
+
+    res3 = asset.add_contributor(
+        role=sy.roles.UPLOADER, name="Bob", email="bob@naboo.net"
+    )
+
+    res4 = asset.add_contributor(
+        role=sy.roles.UPLOADER, name="Bob Abraham", email="bob@naboo.net"
+    )
+    dataset.add_asset(asset)
+
+    assert isinstance(res3, SyftSuccess)
+    assert isinstance(res4, SyftError)
+    assert len(asset.contributors) == 1
