@@ -43,7 +43,6 @@ class DatasetService(AbstractService):
         path="dataset.add",
         name="add",
         roles=DATA_OWNER_ROLE_LEVEL,
-        warning=HighSideCRUDWarning(confirmation=True),
     )
     def add(
         self, context: AuthedServiceContext, dataset: CreateDataset
