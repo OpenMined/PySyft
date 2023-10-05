@@ -50,7 +50,7 @@ def add_default_uploader(
             name=user.name,
             email=user.email,
         )
-        obj.contributors.append(uploader)
+        obj.contributors.add(uploader)
     obj.uploader = uploader
     return obj
 
