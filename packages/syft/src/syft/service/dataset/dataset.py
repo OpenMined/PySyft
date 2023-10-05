@@ -7,6 +7,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Union
 
@@ -89,6 +90,16 @@ class Contributor(SyftObject):
             </div>
             """
 
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Contributor):
+            return False
+
+        # We assoctiate two contributors as equal if they have the same email
+        return self.email == value.email
+
+    def __hash__(self) -> int:
+        return hash(self.email)
+
 
 @serializable()
 class MarkdownDescription(SyftObject):
@@ -125,7 +136,7 @@ class Asset(SyftObject):
     node_uid: UID
     name: str
     description: Optional[MarkdownDescription] = None
-    contributors: List[Contributor] = []
+    contributors: Set[Contributor] = set()
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
     shape: Optional[Tuple]
@@ -213,6 +224,21 @@ class Asset(SyftObject):
             _repr_str += f"\t{contributor.name}: {contributor.email}\n"
         return as_markdown_python_code(_repr_str)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Asset):
+            return False
+        return (
+            self.action_id == other.action_id
+            and self.name == other.name
+            and self.contributors == other.contributors
+            and self.shape == other.shape
+            and self.description == other.description
+            and self.data_subjects == other.data_subjects
+            and self.mock_is_real == other.mock_is_real
+            and self.uploader == other.uploader
+            and self.created_at == other.created_at
+        )
+
     @property
     def pointer(self) -> Any:
         # relative
@@ -294,7 +320,7 @@ class CreateAsset(SyftObject):
     id: Optional[UID] = None
     name: str
     description: Optional[MarkdownDescription] = None
-    contributors: List[Contributor] = []
+    contributors: Set[Contributor] = set()
     data_subjects: List[DataSubjectCreate] = []
     node_uid: Optional[UID]
     action_id: Optional[UID]
@@ -347,7 +373,12 @@ class CreateAsset(SyftObject):
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
-            self.contributors.append(contributor)
+            if contributor in self.contributors:
+                return SyftError(
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
+                )
+            self.contributors.add(contributor)
+
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Asset."
             )
@@ -428,7 +459,7 @@ class Dataset(SyftObject):
     name: str
     node_uid: Optional[UID]
     asset_list: List[Asset] = []
-    contributors: List[Contributor] = []
+    contributors: Set[Contributor] = set()
     citation: Optional[str]
     url: Optional[str]
     description: Optional[MarkdownDescription] = None
@@ -631,7 +662,11 @@ class CreateDataset(Dataset):
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
-            self.contributors.append(contributor)
+            if contributor in self.contributors:
+                return SyftError(
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
+                )
+            self.contributors.add(contributor)
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Dataset."
             )
