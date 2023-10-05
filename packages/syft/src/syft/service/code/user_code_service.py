@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -24,8 +23,6 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
-from ..notification.notification_service import NotificationService
-from ..notification.notifications import Notification
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
@@ -233,23 +230,7 @@ class UserCodeService(AbstractService):
             code: UserCode = code_result.ok()
 
             if not code.status.approved:
-                get_notifications: Callable = context.node.get_service_method(
-                    NotificationService.get_all
-                )
-                notis: Union[List[Notification], SyftError] = get_notifications(
-                    context=context
-                )
-                reason: str = " "
-                if isinstance(notis, SyftError):
-                    return notis
-                if len(notis) > 0:
-                    notis0 = notis[0]
-                    print(f"{notis0.subject = }")
-                    print(f"{notis0.from_user_verify_key = }")
-                    print(f"{notis0.to_user_verify_key = }")
-                    reason: str = notis0.subject
-                print(f"{code.status.get_status_message(reason=reason) = }")
-                return code.status.get_status_message(reason=reason)
+                return code.status.get_status_message()
 
             # Check if the user has permission to execute the code.
             if not (has_code_permission := self.has_code_permission(code, context)):

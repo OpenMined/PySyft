@@ -235,6 +235,7 @@ class RequestService(AbstractService):
         if request is None:
             return SyftError(message=f"Request with uid: {uid} does not exists.")
 
+        context.extra_kwargs["reason"] = reason
         result = request.undo(context=context)
 
         if result.is_err():

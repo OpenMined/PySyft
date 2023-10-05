@@ -15,6 +15,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -109,7 +110,7 @@ class UserCodeStatus(Enum):
 # as status is in attr_searchable
 @serializable(attrs=["status_dict"])
 class UserCodeStatusCollection(SyftHashableObject):
-    status_dict: Dict[NodeIdentity, UserCodeStatus] = {}
+    status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
 
     def __init__(self, status_dict: Dict):
         self.status_dict = status_dict
@@ -126,14 +127,15 @@ class UserCodeStatusCollection(SyftHashableObject):
                     <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
                     <p style="margin-left: 3px;">
             """
-        for node_identity, status in self.status_dict.items():
+        for node_identity, (status, reason) in self.status_dict.items():
             node_name_str = f"{node_identity.node_name}"
             uid_str = f"{node_identity.node_id}"
             status_str = f"{status.value}"
             string += f"""
                     &#x2022; <strong>UID: </strong>{uid_str}&nbsp;
                     <strong>Node name: </strong>{node_name_str}&nbsp;
-                    <strong>Status: </strong>{status_str}
+                    <strong>Status: </strong>{status_str};
+                    <strong>Reason: </strong>{reason}
                     <br>
                 """
         string += "</p></div>"
@@ -141,19 +143,21 @@ class UserCodeStatusCollection(SyftHashableObject):
 
     def __repr_syft_nested__(self):
         string = ""
-        for node_identity, status in self.status_dict.items():
-            string += f"{node_identity.node_name}: {status}<br>"
+        for node_identity, (status, reason) in self.status_dict.items():
+            string += f"{node_identity.node_name}: {status}, {reason}<br>"
         return string
 
-    def get_status_message(self, reason: str = ""):
+    def get_status_message(self):
         if self.approved:
             return SyftSuccess(message=f"{type(self)} approved")
+        denial_string = ""
         string = ""
-        for node_identity, status in self.status_dict.items():
-            string += f"Code status on node '{node_identity.node_name}' is '{status}'. "
+        for node_identity, (status, reason) in self.status_dict.items():
+            denial_string += f"Code status on node '{node_identity.node_name}' is '{status}'. Reason: {reason}"
+            string += f"Code status on node '{node_identity.node_name}' is '{status}'."
         if self.denied:
             return SyftError(
-                message=f"{type(self)} Your code cannot be run: {string} Reason: {reason}"
+                message=f"{type(self)} Your code cannot be run: {denial_string}"
             )
         else:
             return SyftNotReady(
@@ -162,15 +166,18 @@ class UserCodeStatusCollection(SyftHashableObject):
 
     @property
     def approved(self) -> bool:
-        return all(x == UserCodeStatus.APPROVED for x in self.status_dict.values())
+        return all(x == UserCodeStatus.APPROVED for x, _ in self.status_dict.values())
 
     @property
     def denied(self) -> bool:
-        return UserCodeStatus.DENIED in self.status_dict.values()
+        for status, _ in self.status_dict.values():
+            if status == UserCodeStatus.DENIED:
+                return True
+        return False
 
     def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
         if context.node.node_type == NodeType.ENCLAVE:
-            keys = set(self.status_dict.values())
+            keys = {status for status, _ in self.status_dict.values()}
             if len(keys) == 1 and UserCodeStatus.APPROVED in keys:
                 return UserCodeStatus.APPROVED
             elif UserCodeStatus.PENDING in keys and UserCodeStatus.DENIED not in keys:
@@ -187,7 +194,7 @@ class UserCodeStatusCollection(SyftHashableObject):
                 verify_key=context.node.signing_key.verify_key,
             )
             if node_identity in self.status_dict:
-                return self.status_dict[node_identity]
+                return self.status_dict[node_identity][0]
             else:
                 raise Exception(
                     f"Code Object does not contain {context.node.name} Domain's data"
@@ -198,7 +205,11 @@ class UserCodeStatusCollection(SyftHashableObject):
             )
 
     def mutate(
-        self, value: UserCodeStatus, node_name: str, node_id, verify_key: SyftVerifyKey
+        self,
+        value: Tuple[UserCodeStatus, str],
+        node_name: str,
+        node_id,
+        verify_key: SyftVerifyKey,
     ) -> Union[SyftError, Self]:
         node_identity = NodeIdentity(
             node_name=node_name, node_id=node_id, verify_key=verify_key
@@ -253,7 +264,7 @@ class UserCode(SyftObject):
             return super().__setattr__(key, value)
 
     def _coll_repr_(self) -> Dict[str, Any]:
-        status = list(self.status.status_dict.values())[0].value
+        status = [status for status, _ in self.status.status_dict.values()][0].value
         if status == UserCodeStatus.PENDING.value:
             badge_color = "badge-purple"
         elif status == UserCodeStatus.APPROVED.value:
@@ -298,7 +309,7 @@ class UserCode(SyftObject):
     @property
     def code_status(self) -> list:
         status_list = []
-        for node_view, status in self.status.status_dict.items():
+        for node_view, (status, _) in self.status.status_dict.items():
             status_list.append(
                 f"Node: {node_view.node_name}, Status: {status.value}",
             )
@@ -797,7 +808,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
             verify_key=context.node.signing_key.verify_key,
         )
         context.output["status"] = UserCodeStatusCollection(
-            status_dict={node_identity: UserCodeStatus.PENDING}
+            status_dict={node_identity: (UserCodeStatus.PENDING, "No reason")}
         )
         # if node_identity in input_keys or len(input_keys) == 0:
         #     context.output["status"] = UserCodeStatusContext(
@@ -806,7 +817,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         # else:
         #     raise ValueError(f"Invalid input keys: {input_keys} for {node_identity}")
     elif context.node.node_type == NodeType.ENCLAVE:
-        status_dict = {key: UserCodeStatus.PENDING for key in input_keys}
+        status_dict = {key: (UserCodeStatus.PENDING, "No reason") for key in input_keys}
         context.output["status"] = UserCodeStatusCollection(status_dict=status_dict)
     else:
         raise NotImplementedError(
