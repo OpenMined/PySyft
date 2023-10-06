@@ -77,7 +77,7 @@ class DatasetService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[DatasetPageView, TupleDict, SyftError]:
+    ) -> Union[DatasetPageView, TupleDict[str, Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():

@@ -31,6 +31,7 @@ from .recursive import recursive_serde_register
 # import types unsupported on python 3.8
 if sys.version_info >= (3, 9):
     # stdlib
+    from typing import GenericAlias
     from typing import _SpecialGenericAlias
     from typing import _UnionGenericAlias
 
@@ -396,6 +397,7 @@ if sys.version_info >= (3, 9):
         ],
     )
     recursive_serde_register_type(_SpecialGenericAlias)
+    recursive_serde_register_type(GenericAlias)
 
 recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)

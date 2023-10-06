@@ -525,7 +525,7 @@ class Dataset(SyftObject):
         return data
 
     @property
-    def assets(self) -> TupleDict:
+    def assets(self) -> TupleDict[str, Asset]:
         data = TupleDict()
         for asset in self.asset_list:
             data[asset.name] = asset
