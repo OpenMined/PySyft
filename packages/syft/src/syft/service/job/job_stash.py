@@ -113,9 +113,9 @@ class Job(SyftObject):
 
         return {
             "status": self.status,
-            "has_parent": self.has_parent,
-            "result": result,
             "logs": logs,
+            "result": result,
+            "has_parent": self.has_parent,
             "subjobs": len(subjobs),
         }
 

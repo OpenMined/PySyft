@@ -71,7 +71,7 @@ from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig
+from ..service.queue.zmq_queue import QueueConfig, ZMQClientConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.request.request_service import RequestService
 from ..service.response import SyftError
@@ -238,7 +238,6 @@ class Node(AbstractNode):
         root_email: str = default_root_email,
         root_password: str = default_root_password,
         processes: int = 0,
-        n_consumers: int = 0,
         is_subprocess: bool = False,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         local_db: bool = False,
@@ -338,7 +337,7 @@ class Node(AbstractNode):
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
 
-        self.init_queue_manager(queue_config=queue_config, n_consumers=n_consumers)
+        self.init_queue_manager(queue_config=queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
 
@@ -355,7 +354,7 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
-    def init_queue_manager(self, queue_config: Optional[QueueConfig], n_consumers):
+    def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         # if not (self.is_subprocess or self.processes == 0):
         # print("processes", self.is_subprocess, self.processes)
         # print(
@@ -385,13 +384,13 @@ class Node(AbstractNode):
                 producer.run()
                 address = producer.address
             else:
-                port = queue_config_.client_config.consumer_port
+                port = queue_config_.client_config.queue_port
                 if port is not None:
                     address = f"tcp://localhost:{port}"
                 else:
                     address = None
 
-            for _ in range(n_consumers):
+            for _ in range(queue_config.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
                 consumer = self.queue_manager.create_consumer(
@@ -411,14 +410,15 @@ class Node(AbstractNode):
         *,  # Trasterisk
         name: str,
         processes: int = 0,
-        n_consumers: int = 0,
         reset: bool = False,
         local_db: bool = False,
         sqlite_path: Optional[str] = None,
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
-        queue_config=None,
+        n_consumers: int = 0,
+        create_producer: bool = False,
+        queue_port: Optional[int] = None,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -469,12 +469,20 @@ class Node(AbstractNode):
                 client_config=blob_client_config
             )
 
+        if queue_port is not None or n_consumers > 0 or create_producer:
+            queue_config = ZMQQueueConfig(
+                client_config=ZMQClientConfig(
+                    create_producer=create_producer,
+                    queue_port=queue_port,
+                    n_consumers=n_consumers,
+                )
+            )
+
         return cls(
             name=name,
             id=uid,
             signing_key=key,
             processes=processes,
-            n_consumers=n_consumers,
             local_db=local_db,
             sqlite_path=sqlite_path,
             node_type=node_type,
