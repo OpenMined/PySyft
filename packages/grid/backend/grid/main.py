@@ -31,6 +31,15 @@ if settings.BACKEND_CORS_ORIGINS:
 app.include_router(api_router, prefix=settings.API_V2_STR)
 
 
+if settings.DEV_MODE:
+    # syft absolute
+    from syft.protocol.data_protocol import stage_protocol_changes
+
+    print("Staging protocol changes...")
+    status = stage_protocol_changes()
+    print(status)
+
+
 # needed for Google Kubernetes Engine LoadBalancer Healthcheck
 @app.get(
     "/",
