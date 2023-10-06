@@ -335,7 +335,7 @@ class Request(SyftObject):
 
         return request_status
 
-    def approve(self):
+    def approve(self, disable_warnings: bool = False):
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
@@ -356,7 +356,7 @@ class Request(SyftObject):
                 f"{metadata.node_side_type} side {metadata.node_type} "
                 "which may host datasets with private information."
             )
-        if message and metadata.show_warnings:
+        if message and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
 
         print(f"Request approved for domain {api.node_name}")
@@ -525,7 +525,7 @@ class Request(SyftObject):
                 return result
             self = result
 
-            return self.approve()
+            return self.approve(disable_warnings=True)
 
 
 @serializable()

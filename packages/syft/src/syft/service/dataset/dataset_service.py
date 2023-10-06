@@ -39,7 +39,11 @@ class DatasetService(AbstractService):
         self.store = store
         self.stash = DatasetStash(store=store)
 
-    @service_method(path="dataset.add", name="add", roles=DATA_OWNER_ROLE_LEVEL)
+    @service_method(
+        path="dataset.add",
+        name="add",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
     def add(
         self, context: AuthedServiceContext, dataset: CreateDataset
     ) -> Union[SyftSuccess, SyftError]:
