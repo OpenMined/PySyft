@@ -1,4 +1,5 @@
 # stdlib
+from itertools import islice
 from typing import List
 from typing import Optional
 from typing import Union
@@ -80,28 +81,35 @@ class DatasetService(AbstractService):
     ) -> Union[DatasetPageView, TupleDict[str, Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            datasets = result.ok()
-            results = []
-            for dataset in datasets:
-                dataset.node_uid = context.node.id
-                results.append(dataset)
+        if not result.is_ok():
+            return SyftError(message=result.err())
 
-            # If chunk size is defined, then split list into evenly sized chunks
-            if page_size:
-                total = len(results)
-                results = [
-                    results[i : i + page_size]
-                    for i in range(0, len(results), page_size)
-                ]
-                # Return the proper slice using chunk_index
-                results = results[page_index]
-                results = DatasetPageView(datasets=results, total=total)
-            else:
-                return TupleDict((dataset.name, dataset) for dataset in results)
+        datasets = result.ok()
 
+        results = TupleDict()
+        for dataset in datasets:
+            dataset.node_uid = context.node.id
+            results[dataset.name] = dataset
+
+        if page_size <= 0 or page_size is None:
             return results
-        return SyftError(message=result.err())
+
+        # If chunk size is defined, then split list into evenly sized chunks
+        total = len(results)
+        page_index = 0 if page_index is None else page_index
+
+        if page_size > total or page_index >= total // page_size or page_index < 0:
+            pass
+        else:
+            results = TupleDict(
+                islice(
+                    results.items(),
+                    page_size * page_index,
+                    min(page_size * (page_index + 1), total),
+                )
+            )
+
+        return DatasetPageView(datasets=results, total=total)
 
     @service_method(
         path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL

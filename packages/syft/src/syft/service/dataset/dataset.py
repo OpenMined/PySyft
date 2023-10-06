@@ -606,7 +606,7 @@ class DatasetPageView(SyftObject):
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    datasets: List[Dataset]
+    datasets: TupleDict[str, Dataset]
     total: int
 
 
