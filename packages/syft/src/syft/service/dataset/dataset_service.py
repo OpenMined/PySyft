@@ -36,7 +36,7 @@ def _paginate_dataset_collection(
     page_size: Optional[int] = 0,
     page_index: Optional[int] = 0,
 ) -> DatasetPageView:
-    if page_size <= 0 or page_size is None:
+    if page_size is None or page_size <= 0:
         return results
 
     # If chunk size is defined, then split list into evenly sized chunks
