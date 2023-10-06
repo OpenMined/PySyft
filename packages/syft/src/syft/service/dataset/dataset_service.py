@@ -31,7 +31,7 @@ from .dataset import DatasetPageView
 from .dataset_stash import DatasetStash
 
 
-def _create_dataset_page_view(
+def _paginate_dataset_collection(
     results: TupleDict[str, Dataset],
     page_size: Optional[int] = 0,
     page_index: Optional[int] = 0,
@@ -120,7 +120,7 @@ class DatasetService(AbstractService):
         return (
             results
             if page_size <= 0 or page_size is None
-            else _create_dataset_page_view(
+            else _paginate_dataset_collection(
                 results, page_size=page_size, page_index=page_index
             )
         )
@@ -147,7 +147,7 @@ class DatasetService(AbstractService):
             if name in dataset_name
         )
 
-        return _create_dataset_page_view(
+        return _paginate_dataset_collection(
             filtered_results, page_size=page_size, page_index=page_index
         )
 
