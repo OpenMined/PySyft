@@ -1,5 +1,6 @@
 # stdlib
 from collections import OrderedDict
+from typing import Iterator
 from typing import TypeVar
 from typing import Union
 
@@ -15,3 +16,6 @@ class TupleDict(OrderedDict[_KT, _VT]):
 
     def __len__(self) -> int:
         return len(self.keys())
+
+    def __iter__(self) -> Iterator[_VT]:
+        yield from self.values()
