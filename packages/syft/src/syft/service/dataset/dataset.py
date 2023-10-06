@@ -1,5 +1,4 @@
 # stdlib
-from collections import OrderedDict
 from datetime import datetime
 from enum import Enum
 from typing import Any
@@ -33,6 +32,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
+from ...types.tupledict import TupleDict
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST
@@ -51,14 +51,6 @@ from ..response import SyftException
 from ..response import SyftSuccess
 
 DATA_SIZE_WARNING_LIMIT = 512
-
-
-@serializable()
-class TupleDict(OrderedDict):
-    def __getitem__(self, key: Union[str, int]) -> Any:
-        if isinstance(key, int):
-            return list(self.values())[key]
-        return super().__getitem__(key)
 
 
 NamePartitionKey = PartitionKey(key="name", type_=str)

@@ -6,6 +6,7 @@ from typing import Union
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.tupledict import TupleDict
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -76,7 +77,7 @@ class DatasetService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[DatasetPageView, List[Dataset], SyftError]:
+    ) -> Union[DatasetPageView, TupleDict, SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -96,6 +97,8 @@ class DatasetService(AbstractService):
                 # Return the proper slice using chunk_index
                 results = results[page_index]
                 results = DatasetPageView(datasets=results, total=total)
+            else:
+                return TupleDict((dataset.name, dataset) for dataset in results)
 
             return results
         return SyftError(message=result.err())

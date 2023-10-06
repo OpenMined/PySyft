@@ -700,7 +700,7 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> A
     if isinstance(result, (list, tuple)):
         iterable_keys = range(len(result))
         result = list(result)
-    elif isinstance(result, dict):
+    elif isinstance(result, Mapping):
         iterable_keys = result.keys()
     else:
         iterable_keys = range(1)
