@@ -154,6 +154,8 @@ class UserCodeStatusCollection(SyftHashableObject):
         string = ""
         for node_identity, (status, reason) in self.status_dict.items():
             denial_string += f"Code status on node '{node_identity.node_name}' is '{status}'. Reason: {reason}"
+            if not reason.endswith("."):
+                denial_string += "."
             string += f"Code status on node '{node_identity.node_name}' is '{status}'."
         if self.denied:
             return SyftError(
