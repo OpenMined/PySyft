@@ -141,7 +141,7 @@ class Asset(SyftObject):
     mock_is_real: bool = False
     shape: Optional[Tuple]
     created_at: DateTime = DateTime.now()
-    uploader: Contributor
+    uploader: Optional[Contributor]
 
     __repr_attrs__ = ["name", "shape"]
 
@@ -165,11 +165,12 @@ class Asset(SyftObject):
         # relative
         from ...service.action.action_object import ActionObject
 
-        uploaded_by_line = "n/a"
-        if len(self.contributors) > 0:
-            uploaded_by_line = (
-                f"<p><strong>Uploaded by: </strong>{self.uploader.name}</p>"
-            )
+        uploaded_by_line = (
+            f"<p><strong>Uploaded by: </strong>{self.uploader.name} ({self.uploader.email})</p>"
+            if self.uploader
+            else ""
+        )
+
         if isinstance(self.data, ActionObject):
             data_table_line = itables.to_html_datatable(
                 df=self.data.syft_action_data, css=itables_css
@@ -494,12 +495,15 @@ class Dataset(SyftObject):
         }
 
     def _repr_html_(self) -> Any:
-        uploaded_by_line = "n/a"
-        if len(self.contributors) > 0:
-            uploaded_by_line = (
+        uploaded_by_line = (
+            (
                 "<p class='paragraph-sm'><strong>"
-                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name}</p>"
+                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name} ({self.uploader.email})</p>"
             )
+            if self.uploader
+            else ""
+        )
+
         return f"""
             <style>
             {fonts_css}
