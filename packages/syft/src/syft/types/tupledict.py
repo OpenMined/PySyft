@@ -12,3 +12,6 @@ class TupleDict(OrderedDict[_KT, _VT]):
         if isinstance(key, int):
             return list(self.values())[key]
         return super().__getitem__(key)
+
+    def __len__(self) -> int:
+        return len(self.keys())
