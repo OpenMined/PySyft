@@ -2,11 +2,6 @@
 # Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
 ---
-# Source: component-chart/templates/ingress.yaml
-#
-
-
----
 
 ---
 # Source: component-chart/templates/ingress.yaml
@@ -16,6 +11,11 @@
 ---
 # Source: component-chart/templates/deployment.yaml
 # Create headless service for StatefulSet
+---
+# Source: component-chart/templates/ingress.yaml
+#
+
+
 ---
 
 ---
@@ -337,8 +337,7 @@ spec:
       port:
         number: 80
   rules:
-  - host: ""
-    http:
+  - http:
       paths:
       - backend:
           service:
@@ -347,9 +346,6 @@ spec:
               number: 80
         path: /
         pathType: Prefix
-  tls:
-  - hosts:
-    - ""
 
 ---
 # Source: component-chart/templates/service.yaml

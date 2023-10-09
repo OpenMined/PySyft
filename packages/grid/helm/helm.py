@@ -1,6 +1,7 @@
 # stdlib
 import argparse
 import os
+import shutil
 import sys
 from typing import Any
 
@@ -83,9 +84,9 @@ def fix_devspace_yaml(d: Any) -> None:
             fix_devspace_yaml(item)
 
 
-def get_yaml_name(doc: Any) -> Any:
+def get_yaml_name(doc: dict) -> Any:
     try:
-        return yaml.safe_load(doc).get("metadata", {}).get("name", "")
+        return doc.get("metadata", {}).get("name", "")
     except Exception:  # nosec
         return ""
 
@@ -97,13 +98,12 @@ def main() -> None:
         "file", nargs="?", type=argparse.FileType("r"), default=sys.stdin
     )
     args = parser.parse_args()
-    helm_dir = "helm"
-
     text = args.file.read()
 
-    # input_file = f"{helm_dir}/raw_manifests.yaml"
-    # with open(input_file, "w") as f:
-    #     f.write(text)
+    file_count = 0
+    helm_dir = "helm"
+    manifest_file = f"{helm_dir}/manifests.yaml"
+    helm_chart_template_dir = f"{helm_dir}/syft/templates"
 
     # Read input from file or stdin
     lines = text.splitlines()
@@ -113,50 +113,42 @@ def main() -> None:
         first_index = next(
             i for i, line in enumerate(lines) if line.strip().startswith("apiVersion")
         )
-        input_data = "---\n" + "\n".join(lines[first_index - 1 :])
+        input_data = "\n".join(lines[first_index:])
     except StopIteration:
-        print("helm.py error: No line starting with 'apiVersion' found in the input.")
-        print("------------------------------")
-        print("Got input text:")
-        print(text)
-        print("------------------------------")
-        return
+        print("❌ Error: No line starting with 'apiVersion' found in the input.")
+        exit(1)
 
-    helm_chart_template_dir = f"{helm_dir}/syft/templates"
+    # Load the multi-doc yaml file
+    try:
+        yaml_docs = list(yaml.safe_load_all(input_data))
+    except Exception as e:
+        print(f"❌ Error while parsing yaml file: {e}")
+        exit(1)
 
-    # Split input_data into separate documents
-    yaml_docs = input_data.split("---")
+    # clear templates dir
+    shutil.rmtree(helm_chart_template_dir, ignore_errors=True)
+
+    # Create directories if they don't exist
+    os.makedirs(helm_chart_template_dir, exist_ok=True)
+
+    # Cleanup YAML docs
+    yaml_docs = [doc for doc in yaml_docs if doc]
 
     # Sort YAML docs based on metadata name
     yaml_docs.sort(key=get_yaml_name)
 
-    # Join sorted YAML docs
-    sorted_input_data = "---".join(yaml_docs)
-
     # Save sorted YAML docs to file
-    input_file = f"{helm_dir}/manifests.yaml"
-    with open(input_file, "w") as f:
-        f.write(sorted_input_data)
+    with open(manifest_file, "w") as f:
+        yaml.dump_all(yaml_docs, f)
 
     for doc in yaml_docs:
-        lines = doc.strip().split("\n")
-        if len(lines) <= 2:
-            continue  # skip empty sections
-
-        output_dir = os.path.join(helm_chart_template_dir)
-
-        # Create directories if they don't exist
-        os.makedirs(output_dir, exist_ok=True)
-
-        # Parse yaml to find metadata.name
-        yaml_content = yaml.safe_load("\n".join(lines))  # exclude source_line
-        fix_devspace_yaml(yaml_content)
-        name = yaml_content.get("metadata", {}).get("name")
-        kind = yaml_content.get("kind", "").lower()
+        fix_devspace_yaml(doc)
+        name = doc.get("metadata", {}).get("name")
+        kind = doc.get("kind", "").lower()
         if name:
             # Create new file with name or append if it already exists
-            new_file = os.path.join(output_dir, f"{name}-{kind}.yaml")
-            yaml_dump = yaml.dump(yaml_content)
+            new_file = os.path.join(helm_chart_template_dir, f"{name}-{kind}.yaml")
+            yaml_dump = yaml.dump(doc)
             yaml_dump = (
                 yaml_dump.replace("'{{", "{{")
                 .replace("}}'", "}}")
@@ -166,6 +158,13 @@ def main() -> None:
 
             with open(new_file, "w") as f:
                 f.write(yaml_dump)  # add document separator
+                file_count += 1
+
+    if file_count > 0:
+        print(f"✅ Done: Generated {file_count} template files")
+    else:
+        print("❌ Failed: No files were generated. Check input for errors.")
+        exit(1)
 
 
 if __name__ == "__main__":
