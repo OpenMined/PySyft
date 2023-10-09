@@ -810,7 +810,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
             verify_key=context.node.signing_key.verify_key,
         )
         context.output["status"] = UserCodeStatusCollection(
-            status_dict={node_identity: (UserCodeStatus.PENDING, "No reason")}
+            status_dict={node_identity: (UserCodeStatus.PENDING, "")}
         )
         # if node_identity in input_keys or len(input_keys) == 0:
         #     context.output["status"] = UserCodeStatusContext(
@@ -819,7 +819,7 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         # else:
         #     raise ValueError(f"Invalid input keys: {input_keys} for {node_identity}")
     elif context.node.node_type == NodeType.ENCLAVE:
-        status_dict = {key: (UserCodeStatus.PENDING, "No reason") for key in input_keys}
+        status_dict = {key: (UserCodeStatus.PENDING, "") for key in input_keys}
         context.output["status"] = UserCodeStatusCollection(status_dict=status_dict)
     else:
         raise NotImplementedError(
