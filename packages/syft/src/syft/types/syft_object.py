@@ -477,11 +477,11 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
         extra_fields = []
 
     cols = defaultdict(list)
-    for item in iter(_self):
+    for item in iter(_self.items() if isinstance(_self, Mapping) else _self):
         # unpack dict
-        if isinstance(_self, dict):
-            cols["key"].append(item)
-            item = _self.__getitem__(item)
+        if isinstance(_self, Mapping):
+            key, item = item
+            cols["key"].append(key)
 
         # get id
         id_ = getattr(item, "id", None)
@@ -564,9 +564,9 @@ def list_dict_repr_html(self) -> str:
         items_checked = 0
         has_syft = False
         extra_fields = []
-        if isinstance(self, dict):
+        if isinstance(self, Mapping):
             values = list(self.values())
-        elif isinstance(self, set):
+        elif isinstance(self, Set):
             values = list(self)
         else:
             values = self
@@ -574,11 +574,11 @@ def list_dict_repr_html(self) -> str:
         if len(values) == 0:
             return self.__repr__()
 
-        for item in iter(self):
+        for item in iter(self.keys()):
             items_checked += 1
             if items_checked > max_check:
                 break
-            if isinstance(self, dict):
+            if isinstance(self, Mapping):
                 item = self.__getitem__(item)
 
             if hasattr(type(item), "mro") and type(item) != type:
