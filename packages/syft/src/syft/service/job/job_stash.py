@@ -30,7 +30,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
-
+from datetime import datetime
 
 @serializable()
 class JobStatus(str, Enum):
@@ -52,9 +52,18 @@ class Job(SyftObject):
     status: JobStatus = JobStatus.CREATED
     log_id: Optional[UID]
     parent_job_id: Optional[UID]
+    max_checkpoints: Optional[int]
+    current_checkpoint: Optional[int] = 0
+    start_time: Optional[str] = str(datetime.now())
 
     __attr_searchable__ = ["parent_job_id"]
-    __repr_attrs__ = ["id", "result", "resolved"]
+    __repr_attrs__ = ["id", "result", "resolved", "progress", start_time]
+
+    @property
+    def progress(self) -> str:
+        if self.status == JobStatus.PROCESSING:
+            return f'{self.status}: {self.max_checkpoints}/{self.current_checkpoint}'
+        return self.status
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
@@ -112,7 +121,8 @@ class Job(SyftObject):
             result = str(self.result.syft_action_data)
 
         return {
-            "status": self.status,
+            "progress": self.progress,
+            "start date": self.start_time,
             "logs": logs,
             "result": result,
             "has_parent": self.has_parent,

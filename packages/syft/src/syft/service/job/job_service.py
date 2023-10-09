@@ -8,7 +8,7 @@ from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
+from ..response import SyftError, SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -40,6 +40,36 @@ class JobService(AbstractService):
         else:
             res = res.ok()
             return res
+
+
+    @service_method(
+        path="job.get_all",
+        name="get_all",
+    )
+    def get_all(
+        self, context: AuthedServiceContext
+    ) -> Union[List[Job], SyftError]:
+        res = self.stash.get_all(context.credentials)
+        if res.is_err():
+            return SyftError(message=res.err())
+        else:
+            res = res.ok()
+            return res
+                
+
+    @service_method(
+        path="job.udpate",
+        name="update",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def update(
+        self, context: AuthedServiceContext, job: Job
+    ) -> Union[SyftSuccess, SyftError]:
+        res = self.stash.update(context.credentials, obj=job)
+        if res.is_err():
+            return SyftError(message=res.err())
+        res = res.ok()
+        return SyftSuccess(message="Great Success!")
 
     @service_method(
         path="job.get_subjobs",
