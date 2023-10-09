@@ -1,6 +1,7 @@
 # stdlib
 from collections import OrderedDict
 from collections import defaultdict
+from collections.abc import Mapping
 from enum import Enum
 from enum import EnumMeta
 import functools
@@ -12,7 +13,6 @@ from typing import Any
 from typing import Collection
 from typing import Dict
 from typing import List
-from typing import Mapping
 from typing import Optional
 from typing import Type
 from typing import TypeVar

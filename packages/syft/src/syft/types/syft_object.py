@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Mapping
 from collections.abc import Set
 from hashlib import sha256
 import inspect
@@ -12,7 +13,6 @@ from typing import ClassVar
 from typing import Dict
 from typing import KeysView
 from typing import List
-from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
