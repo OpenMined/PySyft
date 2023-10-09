@@ -176,6 +176,7 @@ jobs:
           files: |
             ./packages/syftcli/manifest.yml
             ./build/syftcli-config/*
+            ./packages/hagrid/hagrid/manifest_template.yml
           tag_name: v${{ steps.release_checks.outputs.github_release_version }}
 
       - name: Set up QEMU
