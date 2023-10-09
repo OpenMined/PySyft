@@ -1358,23 +1358,30 @@ def create_launch_cmd(
         and parsed_kwargs["template"] is None
         and parsed_kwargs["tag"] not in ["local", "0.7.0"]
     ):
+        # third party
+        from packaging import version
+
         # TODO: we need to redo this so that pypi and docker mappings are in a single
         # file inside dev
         if parsed_kwargs["tag"] == "latest":
             parsed_kwargs["template"] = LATEST_STABLE_SYFT
             parsed_kwargs["tag"] = LATEST_STABLE_SYFT
         elif parsed_kwargs["tag"] == "beta":
-            parsed_kwargs["template"] = "dev"
+            beta_version = version.parse(LATEST_BETA_SYFT)
+            parsed_kwargs[
+                "template"
+            ] = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest.yml"
             parsed_kwargs["tag"] = LATEST_BETA_SYFT
         else:
-            template = parsed_kwargs["tag"]
-            # 🟡 TODO: Revert to use tags once, we have tag branches with beta
-            # versions also.
-            if "b" in template:
-                template = "dev"
-            # if template == "beta":
-            #     template = "dev"
-            parsed_kwargs["template"] = template
+            tag = parsed_kwargs["tag"]
+
+            if "b" in tag:
+                beta_version = version.parse(tag)
+                parsed_kwargs[
+                    "template"
+                ] = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest.yml"
+            else:
+                raise Exception(f"Not a valid beta version: {tag}")
 
     if host in ["docker"] and parsed_kwargs["template"] and host is not None:
         # Setup the files from the manifest_template.yml
