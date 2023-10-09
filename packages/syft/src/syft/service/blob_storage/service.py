@@ -149,7 +149,7 @@ class BlobStorageService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         etags: List,
-        no_lines: Optional[int] = 0
+        no_lines: Optional[int] = 0,
     ) -> Union[SyftError, SyftSuccess]:
         result = self.stash.get_by_uid(
             credentials=context.credentials,
@@ -170,7 +170,6 @@ class BlobStorageService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-        
 
         with context.node.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)

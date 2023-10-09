@@ -8,9 +8,9 @@ from typing import DefaultDict
 from typing import Dict
 from typing import Optional
 from typing import Union
-import gevent
 
 # third party
+import gevent
 import zmq.green as zmq
 
 # relative
@@ -121,7 +121,6 @@ class ZMQProducer(QueueProducer):
 
     def run(self):
         # stdlib
-        import threading
 
         self.thread = gevent.spawn(self._run)
         self.thread.start()
@@ -281,7 +280,6 @@ class ZMQConsumer(QueueConsumer):
 
     def run(self):
         # stdlib
-        import threading
 
         # self.thread = threading.Thread(target=self._run)
         # self.thread.start()

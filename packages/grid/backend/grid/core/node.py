@@ -6,7 +6,8 @@ from syft.node.node import get_node_name
 from syft.node.node import get_node_side_type
 from syft.node.node import get_node_type
 from syft.node.node import get_node_uid_env
-from syft.service.queue.zmq_queue import ZMQClientConfig, ZMQQueueConfig
+from syft.service.queue.zmq_queue import ZMQClientConfig
+from syft.service.queue.zmq_queue import ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
 from syft.store.mongo_client import MongoStoreClientConfig

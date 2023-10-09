@@ -74,7 +74,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                 zip(_byte_chunks(data, DEFAULT_CHUNK_SIZE), self.urls),
                 start=1,
             ):
-                no_lines += byte_chunk.count(b'\n')
+                no_lines += byte_chunk.count(b"\n")
                 if api is not None:
                     blob_url = api.connection.to_blob_route(url.url_path)
                 else:
@@ -94,9 +94,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             syft_client_verify_key=self.syft_client_verify_key,
         )
         return mark_write_complete_method(
-            etags=etags,
-            uid=self.blob_storage_entry_id,
-            no_lines=no_lines
+            etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
         )
 
 

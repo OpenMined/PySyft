@@ -116,7 +116,6 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             return self._read_data()
 
-
     def _read_data(self, stream=False, chunk_size=512):
         # relative
         from ...client.api import APIRegistry

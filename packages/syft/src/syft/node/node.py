@@ -28,8 +28,6 @@ from result import Err
 from result import Result
 from typing_extensions import Self
 
-# first party
-
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
@@ -71,7 +69,8 @@ from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig, ZMQClientConfig
+from ..service.queue.zmq_queue import QueueConfig
+from ..service.queue.zmq_queue import ZMQClientConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.request.request_service import RequestService
 from ..service.response import SyftError

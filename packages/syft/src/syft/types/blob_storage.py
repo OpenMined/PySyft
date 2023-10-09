@@ -1,14 +1,16 @@
 # stdlib
 import mimetypes
 from pathlib import Path
+from queue import Queue
 import sys
+import threading
 from typing import Any
 from typing import ClassVar
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
-import gevent
+
 # third party
 from typing_extensions import Self
 
@@ -27,9 +29,6 @@ from .datetime import DateTime
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
-import threading
-from queue import Queue
-from time import sleep
 
 # create custom object
 # item_queue: Queue = Queue()
@@ -43,7 +42,7 @@ class BlobFile(SyftObject):
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
     data: Optional[Any] = None
-    
+
     def read(self, stream=False, chunk_size=512, force=False):
         # get blob retrieval object from api + syft_blob_storage_entry_id
         # if self.data_cached and not force:
@@ -65,11 +64,19 @@ class BlobFile(SyftObject):
             queue.put(line)
         # Put anything not a string at the end
         queue.put(0)
+
     def iter_lines(self, chunk_size=512, init_chunk_size=128):
         item_queue: Queue = Queue()
         self.data = []
         # change to green threads
-        threading.Thread(target=self.read_queue, args=(item_queue, init_chunk_size,), daemon=True).start()
+        threading.Thread(
+            target=self.read_queue,
+            args=(
+                item_queue,
+                init_chunk_size,
+            ),
+            daemon=True,
+        ).start()
         item = None
         while True:
             item = item_queue.get()
@@ -77,6 +84,7 @@ class BlobFile(SyftObject):
                 yield item
             else:
                 break
+
 
 class BlobFileType(type):
     pass

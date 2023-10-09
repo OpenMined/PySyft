@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 from enum import Enum
 from typing import Any
 from typing import Dict
@@ -30,7 +31,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
-from datetime import datetime
+
 
 @serializable()
 class JobStatus(str, Enum):
@@ -62,7 +63,7 @@ class Job(SyftObject):
     @property
     def progress(self) -> str:
         if self.status == JobStatus.PROCESSING:
-            return f'{self.status}: {self.max_checkpoints}/{self.current_checkpoint}'
+            return f"{self.status}: {self.max_checkpoints}/{self.current_checkpoint}"
         return self.status
 
     def fetch(self) -> None:

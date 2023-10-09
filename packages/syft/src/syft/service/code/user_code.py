@@ -882,8 +882,6 @@ def execute_byte_code(
         original_print = __builtin__.print
 
         class LocalDomainClient:
-            
-            
             def __init__(self):
                 pass
 
@@ -900,18 +898,18 @@ def execute_byte_code(
                     job = context.job
                     job.current_checkpoint = 0
                     job.max_checkpoints = max_checkpoints
-                    res = job_service.update(context, job)
+                    job_service.update(context, job)
                     # return res
-                    
+
             def checkpoint(self):
                 if context.job is not None:
                     node = context.node
                     job_service = node.get_service("jobservice")
                     job = context.job
                     job.current_checkpoint += 1
-                    res = job_service.update(context, job)
+                    job_service.update(context, job)
                     # return res
-                
+
             def launch_job(self, func: UserCode, **kwargs):
                 # original_print("launching job for ", func.service_func_name)
                 # relative
