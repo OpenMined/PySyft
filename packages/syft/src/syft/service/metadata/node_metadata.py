@@ -98,8 +98,6 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     node_side_type: str
     show_warnings: bool
 
-    # admin_email: str
-
     def check_version(self, client_version: str) -> bool:
         return check_version(
             client_version=client_version,

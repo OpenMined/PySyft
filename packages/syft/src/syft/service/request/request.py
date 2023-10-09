@@ -241,7 +241,6 @@ class Request(SyftObject):
             )
 
         metadata = api.services.metadata.get_metadata()
-        # admin_email = metadata.admin_email
         node_name = api.node_name.capitalize() if api.node_name is not None else ""
 
         email_str = (
