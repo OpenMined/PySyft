@@ -1,4 +1,5 @@
 # stdlib
+from itertools import islice
 from typing import List
 from typing import Optional
 from typing import Union
@@ -6,6 +7,7 @@ from typing import Union
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.tupledict import TupleDict
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -27,6 +29,32 @@ from .dataset import CreateDataset
 from .dataset import Dataset
 from .dataset import DatasetPageView
 from .dataset_stash import DatasetStash
+
+
+def _paginate_dataset_collection(
+    results: TupleDict[str, Dataset],
+    page_size: Optional[int] = 0,
+    page_index: Optional[int] = 0,
+) -> DatasetPageView:
+    if page_size is None or page_size <= 0:
+        return results
+
+    # If chunk size is defined, then split list into evenly sized chunks
+    total = len(results)
+    page_index = 0 if page_index is None else page_index
+
+    if page_size > total or page_index >= total // page_size or page_index < 0:
+        pass
+    else:
+        results = TupleDict(
+            islice(
+                results.items(),
+                page_size * page_index,
+                min(page_size * (page_index + 1), total),
+            )
+        )
+
+    return DatasetPageView(datasets=results, total=total)
 
 
 @instrument
@@ -76,29 +104,26 @@ class DatasetService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[DatasetPageView, List[Dataset], SyftError]:
+    ) -> Union[DatasetPageView, TupleDict[str, Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            datasets = result.ok()
-            results = []
-            for dataset in datasets:
-                dataset.node_uid = context.node.id
-                results.append(dataset)
+        if not result.is_ok():
+            return SyftError(message=result.err())
 
-            # If chunk size is defined, then split list into evenly sized chunks
-            if page_size:
-                total = len(results)
-                results = [
-                    results[i : i + page_size]
-                    for i in range(0, len(results), page_size)
-                ]
-                # Return the proper slice using chunk_index
-                results = results[page_index]
-                results = DatasetPageView(datasets=results, total=total)
+        datasets = result.ok()
 
-            return results
-        return SyftError(message=result.err())
+        results = TupleDict()
+        for dataset in datasets:
+            dataset.node_uid = context.node.id
+            results[dataset.name] = dataset
+
+        return (
+            results
+            if page_size <= 0 or page_size is None
+            else _paginate_dataset_collection(
+                results, page_size=page_size, page_index=page_index
+            )
+        )
 
     @service_method(
         path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL
@@ -109,26 +134,22 @@ class DatasetService(AbstractService):
         name: str,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[List[Dataset], SyftError]:
+    ) -> Union[DatasetPageView, SyftError]:
         """Search a Dataset by name"""
         results = self.get_all(context)
 
-        if not isinstance(results, SyftError):
-            results = [dataset for dataset in results if name in dataset.name]
+        if isinstance(results, SyftError):
+            return results
 
-            # If chunk size is defined, then split list into evenly sized chunks
+        filtered_results = TupleDict(
+            (dataset_name, dataset)
+            for dataset_name, dataset in results.items()
+            if name in dataset_name
+        )
 
-            if page_size:
-                total = len(results)
-                results = [
-                    results[i : i + page_size]
-                    for i in range(0, len(results), page_size)
-                ]
-                # Return the proper slice using chunk_index
-                results = results[page_index]
-                results = DatasetPageView(datasets=results, total=total)
-
-        return results
+        return _paginate_dataset_collection(
+            filtered_results, page_size=page_size, page_index=page_index
+        )
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(
