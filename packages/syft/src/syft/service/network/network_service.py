@@ -17,6 +17,7 @@ from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...service.settings.settings import NodeSettings
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -533,6 +534,13 @@ def node_route_to_http_connection(
 
 @transform(NodeMetadata, NodePeer)
 def metadata_to_peer() -> List[Callable]:
+    return [
+        keep(["id", "name", "verify_key", "node_type", "admin_email"]),
+    ]
+
+
+@transform(NodeSettings, NodePeer)
+def settings_to_peer() -> List[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),
     ]

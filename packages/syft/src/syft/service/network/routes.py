@@ -64,7 +64,7 @@ class NodeRoute:
             return SyftError(message="Signature Verification Failed in ping")
 
         # Step 2: Create a Node Peer with the given route
-        self_node_peer = context.node.metadata.to(NodePeer)
+        self_node_peer = context.node.settings.to(NodePeer)
         self_node_peer.node_routes.append(self)
 
         return self_node_peer

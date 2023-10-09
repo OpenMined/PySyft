@@ -627,28 +627,27 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def metadata(self) -> NodeMetadata:
-        name = ""
-        deployed_on = ""
-        organization = ""
-        on_board = False
-        description = ""
-        signup_enabled = False
-        admin_email = ""
-        show_warnings = self.enable_warnings
-
+    def settings(self) -> NodeSettings:
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key)
         if settings.is_ok() and len(settings.ok()) > 0:
             settings_data = settings.ok()[0]
-            name = settings_data.name
-            deployed_on = settings_data.deployed_on
-            organization = settings_data.organization
-            on_board = settings_data.on_board
-            description = settings_data.description
-            signup_enabled = settings_data.signup_enabled
-            admin_email = settings_data.admin_email
-            show_warnings = settings_data.show_warnings
+            settings_data.verify_key = self.verify_key
+        return settings_data
+
+    @property
+    def metadata(self) -> NodeMetadata:
+        name = ""
+        organization = ""
+        description = ""
+        signup_enabled = False
+        show_warnings = self.enable_warnings
+        settings_data = self.settings
+        name = settings_data.name
+        organization = settings_data.organization
+        description = settings_data.description
+        signup_enabled = settings_data.signup_enabled
+        show_warnings = settings_data.show_warnings
 
         return NodeMetadata(
             name=name,
@@ -657,13 +656,10 @@ class Node(AbstractNode):
             highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
             lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
             syft_version=__version__,
-            deployed_on=deployed_on,
             description=description,
             organization=organization,
-            on_board=on_board,
             node_type=self.node_type.value,
             signup_enabled=signup_enabled,
-            admin_email=admin_email,
             node_side_type=self.node_side_type.value,
             show_warnings=show_warnings,
         )
