@@ -640,13 +640,11 @@ class Node(AbstractNode):
         name = ""
         organization = ""
         description = ""
-        signup_enabled = False
         show_warnings = self.enable_warnings
         settings_data = self.settings
         name = settings_data.name
         organization = settings_data.organization
         description = settings_data.description
-        signup_enabled = settings_data.signup_enabled
         show_warnings = settings_data.show_warnings
 
         return NodeMetadata(
@@ -659,7 +657,6 @@ class Node(AbstractNode):
             description=description,
             organization=organization,
             node_type=self.node_type.value,
-            signup_enabled=signup_enabled,
             node_side_type=self.node_side_type.value,
             show_warnings=show_warnings,
         )
