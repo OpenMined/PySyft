@@ -574,12 +574,10 @@ def list_dict_repr_html(self) -> str:
         if len(values) == 0:
             return self.__repr__()
 
-        for item in iter(self.keys()):
+        for item in iter(self.values() if isinstance(self, Mapping) else self):
             items_checked += 1
             if items_checked > max_check:
                 break
-            if isinstance(self, Mapping):
-                item = self.__getitem__(item)
 
             if hasattr(type(item), "mro") and type(item) != type:
                 mro = type(item).mro()
