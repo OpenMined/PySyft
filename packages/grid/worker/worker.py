@@ -10,11 +10,13 @@ from syft.client.client import API_PATH
 from syft.node.domain import Domain
 from syft.node.enclave import Enclave
 from syft.node.gateway import Gateway
+from syft.node.node import get_dev_mode
 from syft.node.node import get_enable_warnings
 from syft.node.node import get_node_name
 from syft.node.node import get_node_side_type
 from syft.node.node import get_node_type
 from syft.node.routes import make_routes
+from syft.protocol.data_protocol import stage_protocol_changes
 
 worker_classes = {
     NodeType.DOMAIN: Domain,
@@ -40,6 +42,11 @@ worker = worker_class(
 router = make_routes(worker=worker)
 
 app = FastAPI(title="Worker")
+
+if get_dev_mode():
+    print("Staging protocol changes...")
+    status = stage_protocol_changes()
+    print(status)
 
 
 @app.get("/")
