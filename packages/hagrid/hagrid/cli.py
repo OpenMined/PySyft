@@ -1370,7 +1370,7 @@ def create_launch_cmd(
             beta_version = version.parse(LATEST_BETA_SYFT)
             parsed_kwargs[
                 "template"
-            ] = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest.yml"
+            ] = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest_template.yml"
             parsed_kwargs["tag"] = LATEST_BETA_SYFT
         else:
             tag = parsed_kwargs["tag"]
@@ -1379,7 +1379,7 @@ def create_launch_cmd(
                 beta_version = version.parse(tag)
                 parsed_kwargs[
                     "template"
-                ] = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest.yml"
+                ] = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest_template.yml"
             else:
                 raise Exception(f"Not a valid beta version: {tag}")
 
