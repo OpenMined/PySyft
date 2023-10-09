@@ -57,8 +57,9 @@ class EnclaveService(AbstractService):
         if isinstance(user_code, SyftError):
             return user_code
 
+        reason: str = context.extra_kwargs.get("reason", "")
         status_update = user_code.status.mutate(
-            value=UserCodeStatus.APPROVED,
+            value=(UserCodeStatus.APPROVED, reason),
             node_name=node_name,
             node_id=node_id,
             verify_key=context.credentials,
