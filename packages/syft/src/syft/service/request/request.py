@@ -807,7 +807,7 @@ class UserCodeStatusChange(Change):
         return SyftSuccess(message=f"{type(self)} valid")
 
     def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
-        reason = context.extra_kwargs["reason", ""]
+        reason: str = context.extra_kwargs.get("reason", "")
         if not undo:
             res = obj.status.mutate(
                 value=(self.value, reason),
