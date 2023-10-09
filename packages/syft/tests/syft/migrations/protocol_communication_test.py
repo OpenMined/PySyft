@@ -4,9 +4,6 @@ from typing import Type
 from typing import Union
 from unittest import mock
 
-# third party
-import pytest
-
 # syft absolute
 import syft as sy
 from syft.node.worker import Worker
@@ -154,14 +151,7 @@ def setup_version_second(node_name: str, klass_version_one: type):
     return node, syft_klass_version_second
 
 
-@pytest.fixture
-def dp_fixture():
-    dp = get_data_protocol()
-    yield
-    dp.save_history(dp.protocol_history)
-
-
-def test_client_server_running_different_protocols(dp_fixture):
+def test_client_server_running_different_protocols():
     node_name = UID().to_string()
 
     # Setup mock object version one
