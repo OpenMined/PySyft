@@ -557,6 +557,13 @@ class SyftClient:
 
         return result
 
+
+    @property
+    def jobs(self) -> Optional[APIModule]:
+        if self.api.has_service("job"):
+            return self.api.services.job
+        return None
+
     @property
     def users(self) -> Optional[APIModule]:
         if self.api.has_service("user"):
