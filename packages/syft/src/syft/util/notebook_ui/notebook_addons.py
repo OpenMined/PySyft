@@ -556,6 +556,7 @@ custom_code = """
                         resetById${uid}('table${uid}');
                         resetById${uid}('pag${uid}');
                         result = paginate${uid}(result, page_size${uid})
+                        paginatedElements${uid} = result
                         buildGrid${uid}(result,pageIndex${uid});
                         buildPaginationContainer${uid}(result);
                     }
