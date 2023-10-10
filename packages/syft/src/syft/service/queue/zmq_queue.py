@@ -8,9 +8,9 @@ from typing import DefaultDict
 from typing import Dict
 from typing import Optional
 from typing import Union
-import gevent
 
 # third party
+import gevent
 import zmq.green as zmq
 
 # relative
@@ -121,19 +121,18 @@ class ZMQProducer(QueueProducer):
 
     def run(self):
         # stdlib
-        import threading
 
-        # self.thread = gevent.spawn(self._run)
-        # self.thread.start()
-
-        # self.producer_thread = gevent.spawn(self.read_items)
-        # self.producer_thread.start()
-
-        self.thread = threading.Thread(target=self._run)
+        self.thread = gevent.spawn(self._run)
         self.thread.start()
 
-        self.producer_thread = threading.Thread(target=self.read_items)
+        self.producer_thread = gevent.spawn(self.read_items)
         self.producer_thread.start()
+
+        # self.thread = threading.Thread(target=self._run)
+        # self.thread.start()
+
+        # self.producer_thread = threading.Thread(target=self.read_items)
+        # self.producer_thread.start()
 
     def _run(self):
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
@@ -284,12 +283,12 @@ class ZMQConsumer(QueueConsumer):
 
     def run(self):
         # stdlib
-        import threading
+        # import threading
 
-        self.thread = threading.Thread(target=self._run)
-        self.thread.start()
-        # self.thread = gevent.spawn(self._run)
+        # self.thread = threading.Thread(target=self._run)
         # self.thread.start()
+        self.thread = gevent.spawn(self._run)
+        self.thread.start()
 
     def close(self):
         if self.thread is not None:

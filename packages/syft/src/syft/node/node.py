@@ -28,10 +28,6 @@ from result import Err
 from result import Result
 from typing_extensions import Self
 
-from syft.store.mongo_document_store import MongoStoreConfig
-
-# first party
-
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
@@ -47,6 +43,7 @@ from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
+from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
@@ -73,7 +70,8 @@ from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig, ZMQClientConfig
+from ..service.queue.zmq_queue import QueueConfig
+from ..service.queue.zmq_queue import ZMQClientConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.request.request_service import RequestService
 from ..service.response import SyftError
@@ -93,6 +91,7 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
@@ -159,6 +158,7 @@ def get_node_uid_env() -> Optional[str]:
 
 def get_default_root_email() -> Optional[str]:
     return get_env(DEFAULT_ROOT_EMAIL, "info@openmined.org")
+
 
 def get_default_root_username() -> Optional[str]:
     return get_env(DEFAULT_ROOT_USERNAME, "Jane Doe")
@@ -406,7 +406,9 @@ class Node(AbstractNode):
                     message_handler, address=address
                 )
                 consumer.run()
+                # third party
                 import gevent
+
                 gevent.sleep(0.0)
 
             # consumer = self.queue_manager.create_consumer(
@@ -625,9 +627,10 @@ class Node(AbstractNode):
                 root_verify_key=self.verify_key,
             )
         elif isinstance(action_store_config, MongoStoreConfig):
-            action_store_type = action_store_config.store_type
-            self.action_store = action_store_type(root_verify_key=self.verify_key,
-                                                  store_config=action_store_config)
+            action_store_type = MongoActionStore
+            self.action_store = action_store_type(
+                root_verify_key=self.verify_key, store_config=action_store_config
+            )
 
         else:
             self.action_store = DictActionStore(root_verify_key=self.verify_key)
@@ -855,8 +858,9 @@ class Node(AbstractNode):
         check_call_location=True,
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
-        result = self.handle_api_call_with_unsigned_result(api_call, job_id=job_id,
-                                                           check_call_location=check_call_location)
+        result = self.handle_api_call_with_unsigned_result(
+            api_call, job_id=job_id, check_call_location=check_call_location
+        )
         # Sign the result
         signed_result = SyftAPIData(data=result).sign(self.signing_key)
 

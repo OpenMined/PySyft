@@ -354,7 +354,7 @@ class MongoStorePartition(StorePartition):
 
     @property
     def data(self):
-        values: List =  self._all(credentials=None, has_permission=True).ok()
+        values: List = self._all(credentials=None, has_permission=True).ok()
         return {v.id: v for v in values}
 
     def _get_all_from_store(
@@ -383,7 +383,9 @@ class MongoStorePartition(StorePartition):
         # TODO: maybe do this in loop before this
         res = []
         for s in syft_objs:
-            if has_permission or self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials)):
+            if has_permission or self.has_permission(
+                ActionObjectREAD(uid=s.id, credentials=credentials)
+            ):
                 res.append(s)
         return Ok(res)
 

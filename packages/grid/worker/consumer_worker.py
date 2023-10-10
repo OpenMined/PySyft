@@ -15,7 +15,8 @@ from syft.node.node import get_node_name
 from syft.node.node import get_node_side_type
 from syft.node.node import get_node_type
 from syft.node.routes import make_routes
-from syft.service.queue.zmq_queue import ZMQClientConfig, ZMQQueueConfig
+from syft.service.queue.zmq_queue import ZMQClientConfig
+from syft.service.queue.zmq_queue import ZMQQueueConfig
 
 worker_classes = {
     NodeType.DOMAIN: Domain,
@@ -48,7 +49,7 @@ worker = worker_class(
     node_type=node_type,
     enable_warnings=enable_warnings,
     node_side_type=node_side_type,
-    queue_config=queue_config
+    queue_config=queue_config,
 )
 router = make_routes(worker=worker)
 

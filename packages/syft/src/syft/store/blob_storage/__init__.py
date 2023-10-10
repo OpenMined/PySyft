@@ -125,7 +125,9 @@ class BlobRetrievalByURL(BlobRetrieval):
             user_verify_key=self.syft_client_verify_key,
         )
         if api is not None:
-            blob_url = api.connection.to_blob_route(self.url.url_path, host=self.url.host_or_ip)
+            blob_url = api.connection.to_blob_route(
+                self.url.url_path, host=self.url.host_or_ip
+            )
         else:
             blob_url = self.url
         try:
