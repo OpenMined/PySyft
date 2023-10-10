@@ -77,13 +77,11 @@ class UserService(AbstractService):
             credentials=context.credentials, email=user.email
         )
         if result.is_err():
-            # return SyftError(message=str(result.err()))
             raise NoUserWithEmailException(
                 email=user.email, err=result.err()
             ).raise_with_context(context=context)
         user_exists = result.ok() is not None
         if user_exists:
-            # return SyftError(message=f"User already exists with email: {user.email}")
             raise UserWithEmailAlreadyExistsException(
                 email=user.email
             ).raise_with_context(context=context)
@@ -98,7 +96,6 @@ class UserService(AbstractService):
             ],
         )
         if result.is_err():
-            # return SyftError(message=str(result.err()))
             raise GenericException(message=str(result.err())).raise_with_context(
                 context=context
             )
@@ -114,7 +111,6 @@ class UserService(AbstractService):
         if result.is_ok():
             user = result.ok()
             if user is None:
-                # return SyftError(message=f"No user exists for given: {uid}")
                 raise NoUserWithUIDException(uid=uid).raise_with_context(
                     context=context
                 )
@@ -236,7 +232,6 @@ class UserService(AbstractService):
             if user:
                 return user.to(UserView)
             else:
-                # SyftError(message="User not found!")
                 raise NoUserFoundException.raise_with_context(context=context)
         raise GenericException(message=str(result.err())).raise_with_context(
             context=context
@@ -256,7 +251,6 @@ class UserService(AbstractService):
             updates_role
             and ServiceRoleCapability.CAN_EDIT_ROLES not in context.capabilities()
         ):
-            # return SyftError(message=f"{context.role} is not allowed to edit roles")
             raise RoleNotAllowedToEditRolesException(
                 role=context.role
             ).raise_with_context(context=context)
@@ -275,10 +269,6 @@ class UserService(AbstractService):
                 ).raise_with_context(context=context)
 
         if result.is_err():
-            # error_msg = (
-            #     f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
-            # )
-            # return SyftError(message=error_msg)
             raise NoUserWithUIDException(uid=uid).raise_with_context(context=context)
 
         user = result.ok()
@@ -298,9 +288,6 @@ class UserService(AbstractService):
                 # as a data owner, only update lower roles to < data owner
                 pass
             else:
-                # return SyftError(
-                #     message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}"
-                # )
                 raise RoleNotAllowedToEditSpecificRolesException(
                     ctx_role=context.role,
                     user_role=user.role,
@@ -318,9 +305,6 @@ class UserService(AbstractService):
             and user.verify_key != context.credentials
             and ServiceRoleCapability.CAN_MANAGE_USERS not in context.capabilities()
         ):
-            # return SyftError(
-            #     message=f"As a {context.role}, you are not allowed to edit users"
-            # )
             raise RoleNotAllowedToEditSpecificRolesException(
                 ctx_role=context.role, user_role="users"
             ).raise_with_context(context=context)
@@ -340,10 +324,6 @@ class UserService(AbstractService):
         )
 
         if result.is_err():
-            # error_msg = (
-            #     f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
-            # )
-            # return SyftError(message=error_msg)
             raise FailedToUpdateUserWithUIDException(
                 uid=uid, err=str(result.err())
             ).raise_with_context(context=context)
@@ -378,11 +358,6 @@ class UserService(AbstractService):
         if isinstance(user, SyftError):
             return user
 
-        # permission_error = SyftError(
-        #     message=str(
-        #         f"As a {context.role} you have no permission to delete user with {user.role} permission"
-        #     )
-        # )
         if context.role == ServiceRole.DATA_OWNER and user.role in [
             ServiceRole.GUEST,
             ServiceRole.DATA_SCIENTIST,
@@ -391,7 +366,6 @@ class UserService(AbstractService):
         elif context.role == ServiceRole.ADMIN:
             pass
         else:
-            # return permission_error
             raise DeleteUserPermissionsException(
                 user_role=context.role, target_role=user.role
             ).raise_with_context(context=context)
@@ -400,7 +374,6 @@ class UserService(AbstractService):
             credentials=context.credentials, uid=uid, has_permission=True
         )
         if result.is_err():
-            # return SyftError(message=str(result.err()))
             raise GenericException(message=str(result.err())).raise_with_context(
                 context=context
             )
@@ -453,10 +426,6 @@ class UserService(AbstractService):
         )
 
         if not can_user_register:
-            # return SyftError(
-            #     message=f"You don't have permission to create an account "
-            #     f"on the domain: {context.node.name}. Please contact the Domain Owner."
-            # )
             raise RegisterUserPermissionsException(
                 domain=context.node.name
             ).raise_with_context(context=context)
@@ -467,7 +436,6 @@ class UserService(AbstractService):
             return SyftError(message=str(result.err()))
         user_exists = result.ok() is not None
         if user_exists:
-            # return SyftError(message=f"User already exists with email: {user.email}")
             raise UserWithEmailAlreadyExistsException(
                 email=user.email
             ).raise_with_context(context=context)
@@ -482,7 +450,6 @@ class UserService(AbstractService):
             ],
         )
         if result.is_err():
-            # return SyftError(message=str(result.err()))
             raise GenericException(message=str(result.err())).raise_with_context(
                 context=context
             )

@@ -113,21 +113,3 @@ def UserWithEmailAlreadyExistsException(email: str) -> PySyftException:
     return PySyftException(
         message=f"User already exists with email: {email}", roles=[ServiceRole.ADMIN]
     )
-
-
-# def UserDoesNotExistException(uid: str, email: str, err: any) -> PySyftException:
-#     # if uid is not None:
-#     #     return PySyftException(
-#     #         message=f"No user exists for given id: {uid}", roles=[ServiceRole.ADMIN]
-#     #     )
-#     elif email is not None and err is not None:
-#         return PySyftException(
-#             message=f"No user exists with {email} and supplied password.",
-#             roles=[ServiceRole.ADMIN],
-#         )
-#     elif email is not None and err is None:
-#         return PySyftException(
-#             message=f"Failed to retrieve user with {email} with error: {err}",
-#             roles=[ServiceRole.ADMIN],
-#         )
-#     return PySyftException(message="User does not exist", roles=[ServiceRole.ADMIN])
