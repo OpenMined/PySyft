@@ -806,6 +806,27 @@ def register(
 
 
 @instrument
+def login_as_guest(
+    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
+    node: Optional[AbstractNode] = None,
+    port: Optional[int] = None,
+    verbose: bool = True,
+):
+    _client = connect(url=url, node=node, port=port)
+
+    if isinstance(_client, SyftError):
+        return _client
+
+    if verbose:
+        print(
+            f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
+            f"side {_client.metadata.node_type.capitalize()}> as GUEST"
+        )
+
+    return _client.guest()
+
+
+@instrument
 def login(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
@@ -828,12 +849,9 @@ def login(
         login_credentials = UserLoginCredentials(email=email, password=password)
 
     if login_credentials is None:
-        if verbose:
-            print(
-                f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
-                f"side {_client.metadata.node_type.capitalize()}> as GUEST"
-            )
-        return _client.guest()
+        return SyftError(
+            message="If you want to login as guest, use <client>.login_as_guest() instead"
+        )
 
     if cache and login_credentials:
         _client_cache = SyftClientSessionCache.get_client(
