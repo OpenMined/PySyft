@@ -7,8 +7,12 @@ from typing import Union
 # relative
 from ...abstract_node import NodeType
 from ...exceptions.user import AdminEnclaveLoginException
+from ...exceptions.user import AdminVerifyKeyException
 from ...exceptions.user import GenericSearchException
 from ...exceptions.user import InvalidSearchParamsException
+from ...exceptions.user import NoUserWithEmailException
+from ...exceptions.user import NoUserWithVerifyKeyException
+from ...exceptions.user import StashRetrievalException
 from ...exceptions.user import UserAlreadyExistsException
 from ...exceptions.user import UserDoesNotExistException
 from ...node.credentials import SyftSigningKey
@@ -387,17 +391,6 @@ class UserService(AbstractService):
             email=context.login_credentials.email, err=result.err()
         ).raise_with_context(context=context)
 
-    def admin_verify_key(self) -> Union[SyftVerifyKey, SyftError]:
-        try:
-            result = self.stash.admin_verify_key()
-            if result.is_ok():
-                return result.ok()
-            else:
-                return SyftError(message="failed to get admin verify_key")
-
-        except Exception as e:
-            return SyftError(message=str(e))
-
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
     ) -> Union[Tuple[SyftSuccess, UserPrivateKey], SyftError]:
@@ -447,25 +440,44 @@ class UserService(AbstractService):
         msg = SyftSuccess(message=success_message)
         return (msg, user.to(UserPrivateKey))
 
-    def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:
-        # we are bypassing permissions here, so dont use to return a result directly to the user
-        credentials = self.admin_verify_key()
-        result = self.stash.get_by_email(credentials=credentials, email=email)
-        if result.ok() is not None:
-            return result.ok().verify_key
-        return SyftError(message=f"No user with email: {email}")
+    def admin_verify_key(self) -> SyftVerifyKey:
+        try:
+            result = self.stash.admin_verify_key()
+        except Exception as e:
+            raise StashRetrievalException(message=repr(e)) from e
 
-    def get_by_verify_key(
-        self, verify_key: SyftVerifyKey
-    ) -> Union[UserView, SyftError]:
+        if result.is_ok() and result.ok() is not None:
+            return result.ok()
+        else:
+            raise AdminVerifyKeyException
+
+    def user_verify_key(self, email: str) -> SyftVerifyKey:
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
-        result = self.stash.get_by_verify_key(
-            credentials=credentials, verify_key=verify_key
-        )
-        if result.is_ok():
+        try:
+            result = self.stash.get_by_email(credentials=credentials, email=email)
+        except Exception as e:
+            raise StashRetrievalException(message=repr(e)) from e
+
+        if result.is_ok() and result.ok() is not None:
+            return result.ok().verify_key
+        else:
+            raise NoUserWithEmailException(email)
+
+    def get_by_verify_key(self, verify_key: SyftVerifyKey) -> User:
+        # we are bypassing permissions here, so dont use to return a result directly to the user
+        credentials = self.admin_verify_key()
+        try:
+            result = self.stash.get_by_verify_key(
+                credentials=credentials, verify_key=verify_key
+            )
+        except Exception as e:
+            raise StashRetrievalException(message=repr(e)) from e
+
+        if result.is_ok() and result.ok() is not None:
             return result.ok()
-        return SyftError(message=f"No User with verify_key: {verify_key}")
+        else:
+            raise NoUserWithVerifyKeyException(verify_key.verify)
 
 
 TYPE_TO_SERVICE[User] = UserService
