@@ -1366,22 +1366,38 @@ def create_launch_cmd(
         if parsed_kwargs["tag"] == "latest":
             parsed_kwargs["template"] = LATEST_STABLE_SYFT
             parsed_kwargs["tag"] = LATEST_STABLE_SYFT
-        elif parsed_kwargs["tag"] == "beta":
-            beta_version = version.parse(LATEST_BETA_SYFT)
-            parsed_kwargs[
-                "template"
-            ] = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest_template.yml"
-            parsed_kwargs["tag"] = LATEST_BETA_SYFT
-        else:
-            tag = parsed_kwargs["tag"]
+        elif parsed_kwargs["tag"] == "beta" or "b" in parsed_kwargs["tag"]:
+            tag = (
+                LATEST_BETA_SYFT
+                if parsed_kwargs["tag"] == "beta"
+                else parsed_kwargs["tag"]
+            )
 
-            if "b" in tag:
-                beta_version = version.parse(tag)
-                parsed_kwargs[
-                    "template"
-                ] = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest_template.yml"
-            else:
-                raise Exception(f"Not a valid beta version: {tag}")
+            # Currently, manifest_template.yml is only supported for beta versions >= 0.8.2b34
+            beta_version = version.parse(tag)
+            MINIMUM_BETA_VERSION = "0.8.2b34"
+            if beta_version < version.parse(MINIMUM_BETA_VERSION):
+                raise Exception(
+                    f"Minimum beta version tag supported is {MINIMUM_BETA_VERSION}"
+                )
+
+            # Check if the beta version is available
+            template_url = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest_template.yml"
+            response = requests.get(template_url)  # nosec
+            if response.status_code != 200:
+                raise Exception(
+                    f"Tag {parsed_kwargs['tag']} is not available"
+                    + " \n for download. Please check the available tags at: "
+                    + "\n https://github.com/OpenMined/PySyft/releases"
+                )
+
+            parsed_kwargs["template"] = template_url
+            parsed_kwargs["tag"] = tag
+        else:
+            raise Exception(
+                f"Not a valid tag: {parsed_kwargs['tag']}"
+                + "\nValid tags: latest, beta, beta version(ex: 0.8.2b35)"
+            )
 
     if host in ["docker"] and parsed_kwargs["template"] and host is not None:
         # Setup the files from the manifest_template.yml
