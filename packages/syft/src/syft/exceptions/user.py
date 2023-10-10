@@ -15,6 +15,13 @@ AdminVerifyKeyException = PySyftException(
 )
 
 
+def DeleteUserPermissionsException(user_role: str, target_role: str) -> PySyftException:
+    return PySyftException(
+        message=f"As a {user_role} you have no permission to delete user with {target_role} permission",
+        roles=[ServiceRole.ADMIN],
+    )
+
+
 def FailedToUpdateUserWithUIDException(uid: str, err: any) -> PySyftException:
     return PySyftException(
         message=f"Failed to update user with UID: {uid}. Error: {err}",
@@ -62,6 +69,14 @@ def NoUserWithUIDException(uid: str) -> PySyftException:
 def NoUserWithVerifyKeyException(verify_key: str) -> PySyftException:
     return PySyftException(
         message=f"No User with verify_key: {verify_key}", roles=[ServiceRole.ADMIN]
+    )
+
+
+def RegisterUserPermissionsException(domain: str) -> PySyftException:
+    return PySyftException(
+        message=f"You don't have permission to create an account "
+        f"on the domain: {domain}. Please contact the Domain Owner.",
+        roles=[ServiceRole.ADMIN],
     )
 
 

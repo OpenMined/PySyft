@@ -8,6 +8,7 @@ from typing import Union
 from ...abstract_node import NodeType
 from ...exceptions.user import AdminEnclaveLoginException
 from ...exceptions.user import AdminVerifyKeyException
+from ...exceptions.user import DeleteUserPermissionsException
 from ...exceptions.user import FailedToUpdateUserWithUIDException
 from ...exceptions.user import GenericException
 from ...exceptions.user import InvalidSearchParamsException
@@ -15,6 +16,7 @@ from ...exceptions.user import NoUserFoundException
 from ...exceptions.user import NoUserWithEmailException
 from ...exceptions.user import NoUserWithUIDException
 from ...exceptions.user import NoUserWithVerifyKeyException
+from ...exceptions.user import RegisterUserPermissionsException
 from ...exceptions.user import RoleNotAllowedToEditRolesException
 from ...exceptions.user import RoleNotAllowedToEditSpecificRolesException
 from ...exceptions.user import StashRetrievalException
@@ -376,11 +378,11 @@ class UserService(AbstractService):
         if isinstance(user, SyftError):
             return user
 
-        permission_error = SyftError(
-            message=str(
-                f"As a {context.role} you have no permission to delete user with {user.role} permission"
-            )
-        )
+        # permission_error = SyftError(
+        #     message=str(
+        #         f"As a {context.role} you have no permission to delete user with {user.role} permission"
+        #     )
+        # )
         if context.role == ServiceRole.DATA_OWNER and user.role in [
             ServiceRole.GUEST,
             ServiceRole.DATA_SCIENTIST,
@@ -389,13 +391,19 @@ class UserService(AbstractService):
         elif context.role == ServiceRole.ADMIN:
             pass
         else:
-            return permission_error
+            # return permission_error
+            raise DeleteUserPermissionsException(
+                user_role=context.role, target_role=user.role
+            ).raise_with_context(context=context)
 
         result = self.stash.delete_by_uid(
             credentials=context.credentials, uid=uid, has_permission=True
         )
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            # return SyftError(message=str(result.err()))
+            raise GenericException(message=str(result.err())).raise_with_context(
+                context=context
+            )
 
         return result.ok()
 
@@ -445,10 +453,13 @@ class UserService(AbstractService):
         )
 
         if not can_user_register:
-            return SyftError(
-                message=f"You don't have permission to create an account "
-                f"on the domain: {context.node.name}. Please contact the Domain Owner."
-            )
+            # return SyftError(
+            #     message=f"You don't have permission to create an account "
+            #     f"on the domain: {context.node.name}. Please contact the Domain Owner."
+            # )
+            raise RegisterUserPermissionsException(
+                domain=context.node.name
+            ).raise_with_context(context=context)
 
         user = new_user.to(User)
         result = self.stash.get_by_email(credentials=user.verify_key, email=user.email)
@@ -456,7 +467,10 @@ class UserService(AbstractService):
             return SyftError(message=str(result.err()))
         user_exists = result.ok() is not None
         if user_exists:
-            return SyftError(message=f"User already exists with email: {user.email}")
+            # return SyftError(message=f"User already exists with email: {user.email}")
+            raise UserWithEmailAlreadyExistsException(
+                email=user.email
+            ).raise_with_context(context=context)
 
         result = self.stash.set(
             credentials=user.verify_key,
@@ -468,7 +482,10 @@ class UserService(AbstractService):
             ],
         )
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            # return SyftError(message=str(result.err()))
+            raise GenericException(message=str(result.err())).raise_with_context(
+                context=context
+            )
 
         user = result.ok()
 
