@@ -335,7 +335,7 @@ class Request(SyftObject):
 
         return request_status
 
-    def approve(self):
+    def approve(self, disable_warnings: bool = False):
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
@@ -356,7 +356,7 @@ class Request(SyftObject):
                 f"{metadata.node_side_type} side {metadata.node_type} "
                 "which may host datasets with private information."
             )
-        if message and metadata.show_warnings:
+        if message and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
 
         print(f"Request approved for domain {api.node_name}")
@@ -525,7 +525,7 @@ class Request(SyftObject):
                 return result
             self = result
 
-            return self.approve()
+            return self.approve(disable_warnings=True)
 
 
 @serializable()
@@ -807,16 +807,17 @@ class UserCodeStatusChange(Change):
         return SyftSuccess(message=f"{type(self)} valid")
 
     def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
+        reason: str = context.extra_kwargs.get("reason", "")
         if not undo:
             res = obj.status.mutate(
-                value=self.value,
+                value=(self.value, reason),
                 node_name=context.node.name,
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
         else:
             res = obj.status.mutate(
-                value=UserCodeStatus.DENIED,
+                value=(UserCodeStatus.DENIED, reason),
                 node_name=context.node.name,
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,

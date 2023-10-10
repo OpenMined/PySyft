@@ -350,7 +350,7 @@ class APIModule:
             )
 
     def __getitem__(self, key: Union[str, int]) -> Any:
-        if isinstance(key, int) and hasattr(self, "get_all"):
+        if hasattr(self, "get_all"):
             return self.get_all()[key]
         raise NotImplementedError
 

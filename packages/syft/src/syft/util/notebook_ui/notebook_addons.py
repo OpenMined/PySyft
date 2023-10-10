@@ -231,7 +231,7 @@ CSS_CODE = """
         /* Auto layout */
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         padding: 6px 4px;
 
         /* Lt On Surface/Surface */
@@ -556,6 +556,7 @@ custom_code = """
                         resetById${uid}('table${uid}');
                         resetById${uid}('pag${uid}');
                         result = paginate${uid}(result, page_size${uid})
+                        paginatedElements${uid} = result
                         buildGrid${uid}(result,pageIndex${uid});
                         buildPaginationContainer${uid}(result);
                     }
