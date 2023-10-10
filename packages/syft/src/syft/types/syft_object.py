@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Mapping
 from collections.abc import Set
 from hashlib import sha256
 import inspect
@@ -12,7 +13,6 @@ from typing import ClassVar
 from typing import Dict
 from typing import KeysView
 from typing import List
-from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
@@ -613,11 +613,11 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
         extra_fields = []
 
     cols = defaultdict(list)
-    for item in iter(_self):
+    for item in iter(_self.items() if isinstance(_self, Mapping) else _self):
         # unpack dict
-        if isinstance(_self, dict):
-            cols["key"].append(item)
-            item = _self.__getitem__(item)
+        if isinstance(_self, Mapping):
+            key, item = item
+            cols["key"].append(key)
 
         # get id
         id_ = getattr(item, "id", None)
@@ -700,9 +700,9 @@ def list_dict_repr_html(self) -> str:
         items_checked = 0
         has_syft = False
         extra_fields = []
-        if isinstance(self, dict):
+        if isinstance(self, Mapping):
             values = list(self.values())
-        elif isinstance(self, set):
+        elif isinstance(self, Set):
             values = list(self)
         else:
             values = self
@@ -710,12 +710,10 @@ def list_dict_repr_html(self) -> str:
         if len(values) == 0:
             return self.__repr__()
 
-        for item in iter(self):
+        for item in iter(self.values() if isinstance(self, Mapping) else self):
             items_checked += 1
             if items_checked > max_check:
                 break
-            if isinstance(self, dict):
-                item = self.__getitem__(item)
 
             if hasattr(type(item), "mro") and type(item) != type:
                 mro = type(item).mro()
@@ -836,7 +834,7 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> A
     if isinstance(result, (list, tuple)):
         iterable_keys = range(len(result))
         result = list(result)
-    elif isinstance(result, dict):
+    elif isinstance(result, Mapping):
         iterable_keys = result.keys()
     else:
         iterable_keys = range(1)
