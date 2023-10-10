@@ -221,8 +221,6 @@ CSS_CODE = """
         overflow-x: auto;
     }
 
-    .grid-table${uid}
-
     .grid-std-cells {
         grid-column: span 4;
 
