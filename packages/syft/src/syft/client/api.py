@@ -16,6 +16,7 @@ from typing import Tuple
 from typing import Union
 from typing import _GenericAlias
 from typing import get_args
+from typing import get_origin
 
 # third party
 from nacl.exceptions import BadSignatureError
@@ -426,6 +427,7 @@ def downgrade_signature(signature: Signature, object_versions: Dict):
 
 def unwrap_and_migrate_annotation(annotation, object_versions):
     args = get_args(annotation)
+    origin = get_origin(annotation)
     if len(args) == 0:
         if (
             isinstance(annotation, type)
@@ -448,7 +450,14 @@ def unwrap_and_migrate_annotation(annotation, object_versions):
         migrated_annotation = unwrap_and_migrate_annotation(arg, object_versions)
         migrated_annotations.append(migrated_annotation)
 
-    return annotation.copy_with(tuple(migrated_annotations))
+    migrated_annotations = tuple(migrated_annotations)
+
+    if hasattr(annotation, "copy_with"):
+        return annotation.copy_with(migrated_annotations)
+    elif origin is not None:
+        return origin[migrated_annotations]
+    else:
+        return migrated_annotation[0]
 
 
 @instrument
