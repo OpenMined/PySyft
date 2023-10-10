@@ -10,11 +10,12 @@ from ...exceptions.user import AdminEnclaveLoginException
 from ...exceptions.user import AdminVerifyKeyException
 from ...exceptions.user import GenericSearchException
 from ...exceptions.user import InvalidSearchParamsException
+from ...exceptions.user import NoUserFoundException
 from ...exceptions.user import NoUserWithEmailException
+from ...exceptions.user import NoUserWithUIDException
 from ...exceptions.user import NoUserWithVerifyKeyException
 from ...exceptions.user import StashRetrievalException
 from ...exceptions.user import UserAlreadyExistsException
-from ...exceptions.user import UserDoesNotExistException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -134,7 +135,7 @@ class UserService(AbstractService):
                 results = UserViewPage(users=results, total=total)
             return results
 
-        raise UserDoesNotExistException().raise_with_context(context=context)
+        raise NoUserFoundException.raise_with_context(context=context)
 
     def get_role_for_credentials(
         self, credentials: Union[SyftVerifyKey, SyftSigningKey]
@@ -327,7 +328,7 @@ class UserService(AbstractService):
             return SyftError(message=str(user_result.err()))
         user = user_result.ok()
         if user is None:
-            raise UserDoesNotExistException(uid=uid)
+            raise NoUserWithUIDException(uid=uid)
         else:
             return user
 
@@ -383,11 +384,11 @@ class UserService(AbstractService):
                     raise AdminEnclaveLoginException.raise_with_context(context=context)
                 return user.to(UserPrivateKey)
 
-            raise UserDoesNotExistException(
+            raise NoUserWithEmailException(
                 email=context.login_credentials.email
             ).raise_with_context(context=context)
 
-        raise UserDoesNotExistException(
+        raise NoUserWithEmailException(
             email=context.login_credentials.email, err=result.err()
         ).raise_with_context(context=context)
 
