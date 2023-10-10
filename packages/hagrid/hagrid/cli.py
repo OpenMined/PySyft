@@ -132,8 +132,8 @@ def get_compose_src_path(
     grid_path = GRID_SRC_PATH()
     tag = kwargs["tag"]
     # Use local compose files if in editable mode and
-    # template_location is None and (tag is None or tag is local)
-    if EDITABLE_MODE and template_location is None and (tag is None or tag == "local"):  # type: ignore
+    # template_location is None and (kwargs["dev"] is True or tag is local)
+    if EDITABLE_MODE and template_location is None and (kwargs["dev"] is True or tag == "local"):  # type: ignore
         path = grid_path
     else:
         path = deployment_dir(node_name)
