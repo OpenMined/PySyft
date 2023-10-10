@@ -159,10 +159,6 @@ CSS_CODE = """
         color: var(--tertiary-color);
     }
 
-    .dark-theme .search-input { 
-        color: pink;
-    }
-
     .search-input{
         display: flex;
         flex-direction: row;
