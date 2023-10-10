@@ -8,12 +8,15 @@ from typing import Union
 from ...abstract_node import NodeType
 from ...exceptions.user import AdminEnclaveLoginException
 from ...exceptions.user import AdminVerifyKeyException
+from ...exceptions.user import FailedToUpdateUserWithUIDException
 from ...exceptions.user import GenericException
 from ...exceptions.user import InvalidSearchParamsException
 from ...exceptions.user import NoUserFoundException
 from ...exceptions.user import NoUserWithEmailException
 from ...exceptions.user import NoUserWithUIDException
 from ...exceptions.user import NoUserWithVerifyKeyException
+from ...exceptions.user import RoleNotAllowedToEditRolesException
+from ...exceptions.user import RoleNotAllowedToEditSpecificRolesException
 from ...exceptions.user import StashRetrievalException
 from ...exceptions.user import UserWithEmailAlreadyExistsException
 from ...node.credentials import SyftSigningKey
@@ -109,10 +112,15 @@ class UserService(AbstractService):
         if result.is_ok():
             user = result.ok()
             if user is None:
-                return SyftError(message=f"No user exists for given: {uid}")
+                # return SyftError(message=f"No user exists for given: {uid}")
+                raise NoUserWithUIDException(uid=uid).raise_with_context(
+                    context=context
+                )
             return user.to(UserView)
 
-        return SyftError(message=str(result.err()))
+        raise GenericException(message=str(result.err())).raise_with_context(
+            context=context
+        )
 
     @service_method(
         path="user.get_all",
@@ -226,8 +234,11 @@ class UserService(AbstractService):
             if user:
                 return user.to(UserView)
             else:
-                SyftError(message="User not found!")
-        return SyftError(message=str(result.err()))
+                # SyftError(message="User not found!")
+                raise NoUserFoundException.raise_with_context(context=context)
+        raise GenericException(message=str(result.err())).raise_with_context(
+            context=context
+        )
 
     @service_method(
         path="user.update",
@@ -243,7 +254,10 @@ class UserService(AbstractService):
             updates_role
             and ServiceRoleCapability.CAN_EDIT_ROLES not in context.capabilities()
         ):
-            return SyftError(message=f"{context.role} is not allowed to edit roles")
+            # return SyftError(message=f"{context.role} is not allowed to edit roles")
+            raise RoleNotAllowedToEditRolesException(
+                role=context.role
+            ).raise_with_context(context=context)
 
         # Get user to be updated by its UID
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
@@ -259,15 +273,16 @@ class UserService(AbstractService):
                 ).raise_with_context(context=context)
 
         if result.is_err():
-            error_msg = (
-                f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
-            )
-            return SyftError(message=error_msg)
+            # error_msg = (
+            #     f"Failed to find user with UID: {uid}. Error: {str(result.err())}"
+            # )
+            # return SyftError(message=error_msg)
+            raise NoUserWithUIDException(uid=uid).raise_with_context(context=context)
 
         user = result.ok()
 
         if user is None:
-            return SyftError(message=f"No user exists for given UID: {uid}")
+            raise NoUserWithUIDException(uid=uid).raise_with_context(context=context)
 
         if updates_role:
             if context.role == ServiceRole.ADMIN:
@@ -281,9 +296,14 @@ class UserService(AbstractService):
                 # as a data owner, only update lower roles to < data owner
                 pass
             else:
-                return SyftError(
-                    message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}"
-                )
+                # return SyftError(
+                #     message=f"As a {context.role}, you are not allowed to edit {user.role} to {user_update.role}"
+                # )
+                raise RoleNotAllowedToEditSpecificRolesException(
+                    ctx_role=context.role,
+                    user_role=user.role,
+                    user_update_role=user_update.role,
+                ).raise_with_context(context=context)
 
         edits_non_role_attrs = any(
             getattr(user_update, attr) is not Empty
@@ -296,9 +316,12 @@ class UserService(AbstractService):
             and user.verify_key != context.credentials
             and ServiceRoleCapability.CAN_MANAGE_USERS not in context.capabilities()
         ):
-            return SyftError(
-                message=f"As a {context.role}, you are not allowed to edit users"
-            )
+            # return SyftError(
+            #     message=f"As a {context.role}, you are not allowed to edit users"
+            # )
+            raise RoleNotAllowedToEditSpecificRolesException(
+                ctx_role=context.role, user_role="users"
+            ).raise_with_context(context=context)
 
         # Fill User Update fields that will not be changed by replacing it
         # for the current values found in user obj.
@@ -315,10 +338,13 @@ class UserService(AbstractService):
         )
 
         if result.is_err():
-            error_msg = (
-                f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
-            )
-            return SyftError(message=error_msg)
+            # error_msg = (
+            #     f"Failed to update user with UID: {uid}. Error: {str(result.err())}"
+            # )
+            # return SyftError(message=error_msg)
+            raise FailedToUpdateUserWithUIDException(
+                uid=uid, err=str(result.err())
+            ).raise_with_context(context=context)
 
         user = result.ok()
         if user.role == ServiceRole.ADMIN:

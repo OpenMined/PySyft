@@ -15,6 +15,13 @@ AdminVerifyKeyException = PySyftException(
 )
 
 
+def FailedToUpdateUserWithUIDException(uid: str, err: any) -> PySyftException:
+    return PySyftException(
+        message=f"Failed to update user with UID: {uid}. Error: {err}",
+        roles=[ServiceRole.ADMIN],
+    )
+
+
 def GenericException(message: str) -> PySyftException:
     return PySyftException(
         message=message,
@@ -55,6 +62,26 @@ def NoUserWithUIDException(uid: str) -> PySyftException:
 def NoUserWithVerifyKeyException(verify_key: str) -> PySyftException:
     return PySyftException(
         message=f"No User with verify_key: {verify_key}", roles=[ServiceRole.ADMIN]
+    )
+
+
+def RoleNotAllowedToEditRolesException(role: str) -> PySyftException:
+    return PySyftException(
+        message=f"{role} is not allowed to edit roles", roles=[ServiceRole.ADMIN]
+    )
+
+
+def RoleNotAllowedToEditSpecificRolesException(
+    ctx_role: str, user_role: str, user_update_role: str
+) -> PySyftException:
+    if user_update_role is not None:
+        return PySyftException(
+            message=f"As a {ctx_role}, you are not allowed to edit {user_role} to {user_update_role}",
+            roles=[ServiceRole.ADMIN],
+        )
+    return PySyftException(
+        message=f"As a {ctx_role}, you are not allowed to edit {user_role}",
+        roles=[ServiceRole.ADMIN],
     )
 
 
