@@ -15,7 +15,7 @@ AdminVerifyKeyException = PySyftException(
 )
 
 
-def GenericSearchException(message: str) -> PySyftException:
+def GenericException(message: str) -> PySyftException:
     return PySyftException(
         message=message,
         roles=[ServiceRole.ADMIN],
@@ -67,9 +67,11 @@ def StashRetrievalException(message: str) -> PySyftException:
     return PySyftException(message=message, roles=[ServiceRole.ADMIN])
 
 
-UserAlreadyExistsException = PySyftException(
-    message="User already exists", roles=[ServiceRole.ADMIN]
-)
+def UserWithEmailAlreadyExistsException(email: str) -> PySyftException:
+    return PySyftException(
+        message=f"User already exists with email: {email}", roles=[ServiceRole.ADMIN]
+    )
+
 
 # def UserDoesNotExistException(uid: str, email: str, err: any) -> PySyftException:
 #     # if uid is not None:

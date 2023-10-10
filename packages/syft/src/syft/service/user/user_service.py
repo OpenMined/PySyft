@@ -8,14 +8,14 @@ from typing import Union
 from ...abstract_node import NodeType
 from ...exceptions.user import AdminEnclaveLoginException
 from ...exceptions.user import AdminVerifyKeyException
-from ...exceptions.user import GenericSearchException
+from ...exceptions.user import GenericException
 from ...exceptions.user import InvalidSearchParamsException
 from ...exceptions.user import NoUserFoundException
 from ...exceptions.user import NoUserWithEmailException
 from ...exceptions.user import NoUserWithUIDException
 from ...exceptions.user import NoUserWithVerifyKeyException
 from ...exceptions.user import StashRetrievalException
-from ...exceptions.user import UserAlreadyExistsException
+from ...exceptions.user import UserWithEmailAlreadyExistsException
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
@@ -72,10 +72,16 @@ class UserService(AbstractService):
             credentials=context.credentials, email=user.email
         )
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            # return SyftError(message=str(result.err()))
+            raise NoUserWithEmailException(
+                email=user.email, err=result.err()
+            ).raise_with_context(context=context)
         user_exists = result.ok() is not None
         if user_exists:
-            return SyftError(message=f"User already exists with email: {user.email}")
+            # return SyftError(message=f"User already exists with email: {user.email}")
+            raise UserWithEmailAlreadyExistsException(
+                email=user.email
+            ).raise_with_context(context=context)
 
         result = self.stash.set(
             credentials=context.credentials,
@@ -87,7 +93,10 @@ class UserService(AbstractService):
             ],
         )
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            # return SyftError(message=str(result.err()))
+            raise GenericException(message=str(result.err())).raise_with_context(
+                context=context
+            )
         user = result.ok()
         return user.to(UserView)
 
@@ -175,7 +184,7 @@ class UserService(AbstractService):
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
 
         if result.is_err():
-            raise GenericSearchException(message=str(result.err())).raise_with_context(
+            raise GenericException(message=str(result.err())).raise_with_context(
                 context=context
             )
         users = result.ok()
@@ -245,7 +254,9 @@ class UserService(AbstractService):
                 email=user_update.email
             )
             if user_with_email_exists:
-                raise UserAlreadyExistsException.raise_with_context(context=context)
+                raise UserWithEmailAlreadyExistsException(
+                    email=user_update.email
+                ).raise_with_context(context=context)
 
         if result.is_err():
             error_msg = (
