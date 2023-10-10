@@ -9,18 +9,20 @@ from ...types.uid import UID
 
 CSS_CODE = """
 <style>
-    :root {
-        --primary-color: #ffffff;
-        --secondary-color: #f5f5f5;
-        --tertiary-color: #000000de;
-        --button-color: #d1d5db;
-    }
-    .dark-theme {
+  body[data-jp-theme-light='false'] {
         --primary-color: #111111;
         --secondary-color: #212121;
         --tertiary-color: #CFCDD6;
         --button-color: #111111;
-    }
+  }
+
+  body {
+        --primary-color: #ffffff;
+        --secondary-color: #f5f5f5;
+        --tertiary-color: #000000de;
+        --button-color: #d1d5db;
+  }
+
   .header-1 {
         font-style: normal;
         font-weight: 600;
@@ -157,6 +159,10 @@ CSS_CODE = """
         color: var(--tertiary-color);
     }
 
+    .dark-theme .search-input { 
+        color: pink;
+    }
+
     .search-input{
         display: flex;
         flex-direction: row;
@@ -214,6 +220,8 @@ CSS_CODE = """
         grid-template-rows: repeat(2, 1fr);
         overflow-x: auto;
     }
+
+    .grid-table${uid}
 
     .grid-std-cells {
         grid-column: span 4;
@@ -560,14 +568,6 @@ custom_code = """
                         buildPaginationContainer${uid}(result);
                     }
 
-                    function setTheme${uid}(){
-                        const theme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'light' : 'dark';
-
-                        if (theme === 'dark') document.body.classList.add('dark-theme');
-                        else document.body.classList.remove('dark-theme');
-
-                    }
-
                     function resetById${uid}(id){
                         let element = document.getElementById(id);
                         while (element.firstChild) {
@@ -582,7 +582,6 @@ custom_code = """
                                 let div = document.createElement("div");
                                 div.classList.add('grid-header', 'grid-index-cells');
                                 grid.appendChild(div);
-                                setTheme${uid}();
                                 headers.forEach((title) =>{
                                     let div = document.createElement("div");
                                     div.classList.add('grid-header', 'grid-std-cells');
