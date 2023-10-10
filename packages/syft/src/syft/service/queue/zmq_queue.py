@@ -123,17 +123,17 @@ class ZMQProducer(QueueProducer):
         # stdlib
         import threading
 
-        self.thread = gevent.spawn(self._run)
-        self.thread.start()
-
-        self.producer_thread = gevent.spawn(self.read_items)
-        self.producer_thread.start()
-
-        # self.thread = threading.Thread(target=self._run)
+        # self.thread = gevent.spawn(self._run)
         # self.thread.start()
 
-        # self.producer_thread = threading.Thread(target=self.read_items)
+        # self.producer_thread = gevent.spawn(self.read_items)
         # self.producer_thread.start()
+
+        self.thread = threading.Thread(target=self._run)
+        self.thread.start()
+
+        self.producer_thread = threading.Thread(target=self.read_items)
+        self.producer_thread.start()
 
     def _run(self):
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
@@ -148,7 +148,7 @@ class ZMQProducer(QueueProducer):
                         frames = self.message_queue.pop()
                         worker_address = self.workers.next()
                         connecting_workers.add(worker_address)
-                        # print("SENDING FROM PRODUCER")
+                        print("SENDING JOB FROM PRODUCER")
                         # print(self.workers.queue.keys())
                         # print(worker_address)
                         frames.insert(0, worker_address)
@@ -225,6 +225,7 @@ class ZMQConsumer(QueueConsumer):
         self.thread = None
 
     def _run(self):
+        print("ABCDEF", flush=True)
         liveness = HEARTBEAT_LIVENESS
         interval = INTERVAL_INIT
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
@@ -243,7 +244,9 @@ class ZMQConsumer(QueueConsumer):
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
+                            print("HANDLING MESSAGE IN CONSUMER")
                             self.message_handler.handle_message(message=message)
+                            print("done handling message")
                             # print("DONE DOING THE WORK")
                         except Exception as e:
                             print(f"ERROR HANDLING MESSAGE {e}")
@@ -283,10 +286,10 @@ class ZMQConsumer(QueueConsumer):
         # stdlib
         import threading
 
-        # self.thread = threading.Thread(target=self._run)
-        # self.thread.start()
-        self.thread = gevent.spawn(self._run)
+        self.thread = threading.Thread(target=self._run)
         self.thread.start()
+        # self.thread = gevent.spawn(self._run)
+        # self.thread.start()
 
     def close(self):
         if self.thread is not None:

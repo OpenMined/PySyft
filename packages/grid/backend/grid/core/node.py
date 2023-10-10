@@ -70,7 +70,7 @@ else:
         name=node_name,
         node_side_type=node_side_type,
         queue_config=queue_config,
-        action_store_config=sql_store_config,
+        action_store_config=mongo_store_config,
         document_store_config=mongo_store_config,
         enable_warnings=enable_warnings,
         blob_storage_config=blob_storage_config,

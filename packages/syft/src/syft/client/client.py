@@ -150,7 +150,7 @@ class HTTPConnection(NodeConnection):
     def api_url(self) -> GridURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
 
-    def to_blob_route(self, path: str) -> GridURL:
+    def to_blob_route(self, path: str, **kwargs) -> GridURL:
         _path = self.routes.ROUTE_BLOB_STORE.value + path
         return self.url.with_path(_path)
 
@@ -333,9 +333,12 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
-    def to_blob_route(self, path: str) -> GridURL:
+    def to_blob_route(self, path: str, host=None) -> GridURL:
         # TODO: FIX!
-        return GridURL(port=8333).with_path(path)
+        if host is not None:
+            return GridURL(host_or_ip=host, port=8333).with_path(path)
+        else:
+            return GridURL(port=8333).with_path(path)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?

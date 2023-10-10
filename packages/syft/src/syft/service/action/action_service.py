@@ -197,7 +197,7 @@ class ActionService(AbstractService):
                     )
             expected_input_kwargs.update(keys)
 
-        if filtered_kwargs.is_err():
+        if isinstance(filtered_kwargs, SyftError) or filtered_kwargs.is_err():
             return filtered_kwargs
         filtered_kwargs = filtered_kwargs.ok()
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from typing import List
 from typing import Optional
+from pymongo import MongoClient
 
 # third party
 from result import Err
@@ -280,3 +281,5 @@ class SQLiteActionStore(KeyValueActionStore):
     """
 
     pass
+
+
