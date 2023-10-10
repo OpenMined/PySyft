@@ -280,3 +280,137 @@ class SQLiteActionStore(KeyValueActionStore):
     """
 
     pass
+
+
+@serializable()
+class MongoActionStore(ActionStore):
+    """MongoDB Action Store.
+
+    Parameters:
+        store_config: StoreConfig
+            Backend specific configuration, including connection configuration, database
+            name, or client class type.
+        root_verify_key: Optional[SyftVerifyKey]
+            Signature verification key, used for checking access permissions.
+    """
+
+    def __init__(
+        self, store_config: StoreConfig, root_verify_key: Optional[SyftVerifyKey] = None
+    ) -> None:
+        """
+        To be implemented
+        """
+        pass
+
+    def get(
+        self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
+    ) -> Result[SyftObject, str]:
+        """
+        To be implemented
+        Parameters:
+            uid: UID
+            credentials: SyftVerifyKey
+            has_permission: bool
+        """
+        pass
+
+    def set(
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        syft_object: SyftObject,
+        has_result_read_permission: bool = False,
+    ) -> Result[SyftSuccess, Err]:
+        """
+        To be implemented
+        Parameters:
+            uid: UID
+            credentials: SyftVerifyKey
+            syft_object: SyftObject
+            has_result_read_permission: bool = False
+        """
+        pass
+
+    def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+        """
+        To be implemented
+        Parameters:
+            uid: UID
+            credentials: SyftVerifyKey
+        """
+        pass
+
+    def get_mock(self, uid: UID) -> Result[SyftObject, str]:
+        """
+        To be implemented
+        Parameters:
+            uid: UID
+        """
+        pass
+
+    def get_pointer(
+        self,
+        uid: UID,
+        credentials: SyftVerifyKey,
+        node_uid: UID,
+    ) -> Result[SyftObject, str]:
+        """
+        To be implemented
+        Parameters:
+            uid: UID
+            credentials: SyftVerifyKey
+            node_uid: UID
+        """
+        pass
+
+    def exists(self, uid: UID) -> bool:
+        """
+        To be implemented
+        Parameters:
+            uid: UID
+        """
+        pass
+
+    def take_ownership(
+        self, uid: UID, credentials: SyftVerifyKey
+    ) -> Result[SyftSuccess, str]:
+        """
+        To be implemented
+        Parameters:
+            uid: UID
+            credentials: SyftVerifyKey
+        """
+        pass
+
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
+        """
+        To be implemented
+        Parameters:
+            uid: UID
+            credentials: SyftVerifyKey
+        """
+        pass
+
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        """
+        To be implemented
+        Parameters:
+            permission: ActionObjectPermission
+        """
+        pass
+
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+        """
+        To be implemented
+        Parameters:
+            permission: ActionObjectPermission
+        """
+        pass
+
+    def remove_permission(self, permission: ActionObjectPermission):
+        """
+        To be implemented
+        Parameters:
+            permission: ActionObjectPermission
+        """
+        pass
