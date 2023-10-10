@@ -645,8 +645,6 @@ class Node(AbstractNode):
         organization = settings_data.organization
         description = settings_data.description
         show_warnings = settings_data.show_warnings
-        # signup_enabled = settings_data.signup_enabled
-        # admin_email = settings_data.admin_email
 
         return NodeMetadata(
             name=name,
@@ -660,8 +658,6 @@ class Node(AbstractNode):
             node_type=self.node_type.value,
             node_side_type=self.node_side_type.value,
             show_warnings=show_warnings,
-            # signup_enabled=signup_enabled,
-            # admin_email=admin_email,
         )
 
     @property
