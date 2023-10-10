@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  s3config.json: |
+    {
+      "identities": [
+        {
+          "name": "admin",
+          "credentials": [
+            {
+              "accessKey": "admin",
+              "secretKey": "admin"
+            }
+          ],
+          "actions": ["Admin", "Read", "List", "Tagging", "Write"]
+        }
+      ]
+    }
+metadata:
+  name: seaweed-config-s3

@@ -1,0 +1,60 @@
+<script lang="ts">
+  import { page } from '$app/stores';
+  import { getUser } from '$lib/api/users';
+  import Avatar from '$lib/components/Avatar.svelte';
+  import Badge from '$lib/components/Badge.svelte';
+  import CaretLeft from '$lib/components/icons/CaretLeft.svelte';
+  import { syftRoles } from '$lib/constants';
+  import { getInitials, getUserRole } from '$lib/utils';
+  import { onMount } from 'svelte';
+  import type { UserView } from '../../../../types/domain/users';
+
+  const uid = $page.params.slug;
+
+  let user: UserView | null = null;
+
+  onMount(async () => {
+    user = await getUser(uid);
+  });
+
+  $: initials = getInitials(user?.name);
+</script>
+
+<div class="p-6 flex flex-col gap-8">
+  {#if user === null}
+    <h2>Loading...</h2>
+  {:else if user}
+    <section>
+      <a href="/users" class="inline-flex gap-2 text-primary-500 items-center">
+        <CaretLeft class="w-4 h-4" /> Back
+      </a>
+      <div class="divide-y divide-gray-100">
+        <div class="p-4 pb-6">
+          <div class="w-full flex flex-col justify-center items-center gap-2">
+            <span class="w-[120px] h-[120px] p-2">
+              <Avatar {initials} bigText />
+            </span>
+            <h2>{user.name}</h2>
+            {#if user.institution}
+              <p class="text-lg text-gray-600">{user.institution}</p>
+            {/if}
+            {#if user.role}
+              <div class="py-2">
+                <Badge variant="gray">{getUserRole(user.role.value)}</Badge>
+              </div>
+            {/if}
+          </div>
+        </div>
+        <div class="flex flex-col items-center justify-center gap-2 pt-4">
+          <h3 class="all-caps">Contact</h3>
+          <div class="space-y-1">
+            <p>{user.email}</p>
+            {#if user.website}
+              <p>{user.website}</p>
+            {/if}
+          </div>
+        </div>
+      </div>
+    </section>
+  {/if}
+</div>
