@@ -151,7 +151,7 @@ services:
       - backend
     env_file:
       - .env
-    environment: &backendworkerenv
+    environment:
       - SERVICE_NAME=backend
       - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
@@ -191,7 +191,6 @@ services:
     labels:
       - "orgs.openmined.syft=this is a syft backend container"
 
-
   backendworker2:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
@@ -200,7 +199,7 @@ services:
       - backend
     env_file:
       - .env
-    environment: &backendworkerenv
+    environment:
       - SERVICE_NAME=backend
       - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
@@ -271,7 +270,7 @@ services:
       - CREATE_PRODUCER=false
       - N_CONSUMERS=1
       - DEV_MODE=True
-      - DEFAULT_ROOT_USERNAME=worker1
+      - DEFAULT_ROOT_USERNAME=worker3
       - PORT=8004
       - HTTP_PORT=89
       - HTTPS_PORT=447

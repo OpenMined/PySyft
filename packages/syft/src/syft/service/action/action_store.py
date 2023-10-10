@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import threading
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -36,6 +37,8 @@ from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import ActionPermission
+
+lock = threading.RLock()
 
 
 class ActionStore:
@@ -336,16 +339,17 @@ class MongoActionStore(ActionStore):
         self._permissions = collection_permissions_status.ok()
 
     def get_data(self, uid: UID):
-        collection_status = self.collection
-        if collection_status.is_err():
-            print(collection_status)
-            return None
-        collection: MongoCollection = collection_status.ok()
-        res = collection.find_one({"_id": uid})
-        if res is None:
-            return None
-        else:
-            return res["data"]
+        with lock:
+            collection_status = self.collection
+            if collection_status.is_err():
+                print(collection_status)
+                return None
+            collection: MongoCollection = collection_status.ok()
+            res = collection.find_one({"_id": uid})
+            if res is None:
+                return None
+            else:
+                return res["data"]
 
     # def get_permission(self, id):
     #     pass
@@ -441,10 +445,11 @@ class MongoActionStore(ActionStore):
         # store_query_key: QueryKey = self.settings.store_key.with_obj(uid)
         # qks={"_id": uid}
 
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+        with lock:
+            collection_status = self.collection
+            if collection_status.is_err():
+                return collection_status
+            collection: MongoCollection = collection_status.ok()
 
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -469,7 +474,8 @@ class MongoActionStore(ActionStore):
             # self.data[uid] = syft_object
             data = {"data": syft_object, "_id": uid}
             # storage_obj = syft_object.to(self.storage_type)
-            collection.insert_one(data)
+            with lock:
+                collection.insert_one(data)
 
             if has_result_read_permission:
                 # if not self.permission_exists(uid):
@@ -493,14 +499,16 @@ class MongoActionStore(ActionStore):
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
+        with lock:
+            collection_permissions_status = self.permissions
+            if collection_permissions_status.is_err():
+                return collection_permissions_status
+            collection_permissions: MongoCollection = collection_permissions_status.ok()
 
         data: List[ActionObject] = self.get_data(uid)
         # data: List[UID] = collection.find_one({"_id": uid})
-        permissions: List[UID] = collection_permissions.find_one({"_id": uid})
+        with lock:
+            permissions: List[UID] = collection_permissions.find_one({"_id": uid})
 
         # first person using this UID can claim ownership
         if permissions is None and data is None:
@@ -517,34 +525,37 @@ class MongoActionStore(ActionStore):
         return Err(f"UID: {uid} already owned.")
 
     def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+        with lock:
+            collection_status = self.collection
+            if collection_status.is_err():
+                return collection_status
+            collection: MongoCollection = collection_status.ok()
 
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
+            collection_permissions_status = self.permissions
+            if collection_permissions_status.is_err():
+                return collection_permissions_status
+            collection_permissions: MongoCollection = collection_permissions_status.ok()
 
-        qks = {"_id": uid}
+            qks = {"_id": uid}
 
-        owner_permission = ActionObjectOWNER(uid=uid, credentials=credentials)
-        if self.has_permission(owner_permission):
-            result = collection.delete_one(filter=qks)
-            # delete the object's permission
-            result_permission = collection_permissions.delete_one(
-                filter=qks.as_dict_mongo
-            )
-            if result.deleted_count == 1 and result_permission.deleted_count == 1:
-                return Ok(SyftSuccess(message="Object and its permission are deleted"))
-            elif result.deleted_count == 0:
-                return Err(f"Failed to delete object with qk: {uid}")
-            else:
-                return Err(
-                    f"Object with qk: {uid} was deleted, but failed to delete its corresponding permission"
+            owner_permission = ActionObjectOWNER(uid=uid, credentials=credentials)
+            if self.has_permission(owner_permission):
+                result = collection.delete_one(filter=qks)
+                # delete the object's permission
+                result_permission = collection_permissions.delete_one(
+                    filter=qks.as_dict_mongo
                 )
-        return Err(f"Permission: {owner_permission} denied")
+                if result.deleted_count == 1 and result_permission.deleted_count == 1:
+                    return Ok(
+                        SyftSuccess(message="Object and its permission are deleted")
+                    )
+                elif result.deleted_count == 0:
+                    return Err(f"Failed to delete object with qk: {uid}")
+                else:
+                    return Err(
+                        f"Object with qk: {uid} was deleted, but failed to delete its corresponding permission"
+                    )
+            return Err(f"Permission: {owner_permission} denied")
 
     @property
     def permissions(self) -> Result[MongoCollection, Err]:
@@ -565,90 +576,96 @@ class MongoActionStore(ActionStore):
         return Ok(self._collection)
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
+        with lock:
+            collection_permissions_status = self.permissions
+            if collection_permissions_status.is_err():
+                return False
+            collection_permissions: MongoCollection = collection_permissions_status.ok()
+
+            permissions: Optional[Dict] = collection_permissions.find_one(
+                {"_id": permission.uid}
+            )
+
+            if permissions is None:
+                return False
+
+            # TODO: fix for other admins
+            if self.root_verify_key.verify == permission.credentials.verify:
+                return True
+
+            if permission.permission_string in permissions["permissions"]:
+                return True
+
+            # check ALL_READ permission
+            if (
+                permission.permission == ActionPermission.READ
+                and ActionObjectPermission(
+                    permission.uid, ActionPermission.ALL_READ
+                ).permission_string
+                in permissions["permissions"]
+            ):
+                return True
+
             return False
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
-
-        permissions: Optional[Dict] = collection_permissions.find_one(
-            {"_id": permission.uid}
-        )
-
-        if permissions is None:
-            return False
-
-        # TODO: fix for other admins
-        if self.root_verify_key.verify == permission.credentials.verify:
-            return True
-
-        if permission.permission_string in permissions["permissions"]:
-            return True
-
-        # check ALL_READ permission
-        if (
-            permission.permission == ActionPermission.READ
-            and ActionObjectPermission(
-                permission.uid, ActionPermission.ALL_READ
-            ).permission_string
-            in permissions["permissions"]
-        ):
-            return True
-
-        return False
 
     def has_permissions(self, permissions: List[ActionObjectPermission]) -> bool:
         return all(self.has_permission(p) for p in permissions)
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
+        with lock:
+            collection_permissions_status = self.permissions
+            if collection_permissions_status.is_err():
+                return collection_permissions_status
+            collection_permissions: MongoCollection = collection_permissions_status.ok()
 
-        # find the permissions for the given permission.uid
-        # e.g. permissions = {"_id": "7b88fdef6bff42a8991d294c3d66f757",
-        #                      "permissions": set(["permission_str_1", "permission_str_2"]}}
-        permissions: Optional[Dict] = collection_permissions.find_one(
-            {"_id": permission.uid}
-        )
-        if permissions is None:
-            # Permission doesn't exist, add a new one
-            collection_permissions.insert_one(
-                {
-                    "_id": permission.uid,
-                    "permissions": {permission.permission_string},
-                }
+            # find the permissions for the given permission.uid
+            # e.g. permissions = {"_id": "7b88fdef6bff42a8991d294c3d66f757",
+            #                      "permissions": set(["permission_str_1", "permission_str_2"]}}
+            permissions: Optional[Dict] = collection_permissions.find_one(
+                {"_id": permission.uid}
             )
-        else:
-            # update the permissions with the new permission string
-            permission_strings: Set = permissions["permissions"]
-            permission_strings.add(permission.permission_string)
-            collection_permissions.update_one(
-                {"_id": permission.uid}, {"$set": {"permissions": permission_strings}}
-            )
-
-    def remove_permission(self, permission: ActionObjectPermission):
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
-        permissions: Optional[Dict] = collection_permissions.find_one(
-            {"_id": permission.uid}
-        )
-        if permissions is None:
-            return Err(f"permission with UID {permission.uid} not found!")
-        permissions_strings: Set = permissions["permissions"]
-        if permission.permission_string in permissions_strings:
-            permissions_strings.remove(permission.permission_string)
-            if len(permissions_strings) > 0:
-                collection_permissions.update_one(
-                    {"_id": permission.uid},
-                    {"$set": {"permissions": permissions_strings}},
+            if permissions is None:
+                # Permission doesn't exist, add a new one
+                collection_permissions.insert_one(
+                    {
+                        "_id": permission.uid,
+                        "permissions": {permission.permission_string},
+                    }
                 )
             else:
-                collection_permissions.delete_one({"_id": permission.uid})
-        else:
-            return Err(f"the permission {permission.permission_string} does not exist!")
+                # update the permissions with the new permission string
+                permission_strings: Set = permissions["permissions"]
+                permission_strings.add(permission.permission_string)
+                collection_permissions.update_one(
+                    {"_id": permission.uid},
+                    {"$set": {"permissions": permission_strings}},
+                )
+
+    def remove_permission(self, permission: ActionObjectPermission):
+        with lock:
+            collection_permissions_status = self.permissions
+            if collection_permissions_status.is_err():
+                return collection_permissions_status
+            collection_permissions: MongoCollection = collection_permissions_status.ok()
+            permissions: Optional[Dict] = collection_permissions.find_one(
+                {"_id": permission.uid}
+            )
+            if permissions is None:
+                return Err(f"permission with UID {permission.uid} not found!")
+            permissions_strings: Set = permissions["permissions"]
+            if permission.permission_string in permissions_strings:
+                permissions_strings.remove(permission.permission_string)
+                if len(permissions_strings) > 0:
+                    collection_permissions.update_one(
+                        {"_id": permission.uid},
+                        {"$set": {"permissions": permissions_strings}},
+                    )
+                else:
+                    collection_permissions.delete_one({"_id": permission.uid})
+            else:
+                return Err(
+                    f"the permission {permission.permission_string} does not exist!"
+                )
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
         for permission in permissions:

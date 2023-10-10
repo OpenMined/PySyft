@@ -299,9 +299,12 @@ class UserCodeService(AbstractService):
             else:
                 return result.as_empty()
         except Exception as e:
+            # stdlib
+            import traceback
+
             # import ipdb
             # ipdb.set_trace()
-            return SyftError(message=f"Failed to run. {e}")
+            return SyftError(message=f"Failed to run. {e}, {traceback.format_exc()}")
 
     def has_code_permission(self, code_item, context):
         if not (
