@@ -53,7 +53,7 @@ class NodePeer(SyftObject):
     @staticmethod
     def from_client(client: SyftClient) -> Self:
         if not client.metadata:
-            raise Exception("Client has have metadata first")
+            raise Exception("Client has to have metadata first")
 
         peer = client.metadata.to(NodeMetadata).to(NodePeer)
         route = connection_to_route(client.connection)

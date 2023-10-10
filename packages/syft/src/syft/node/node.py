@@ -632,7 +632,6 @@ class Node(AbstractNode):
         settings = settings_stash.get_all(self.signing_key.verify_key)
         if settings.is_ok() and len(settings.ok()) > 0:
             settings_data = settings.ok()[0]
-            settings_data.verify_key = self.verify_key
         return settings_data
 
     @property
@@ -646,6 +645,8 @@ class Node(AbstractNode):
         organization = settings_data.organization
         description = settings_data.description
         show_warnings = settings_data.show_warnings
+        # signup_enabled = settings_data.signup_enabled
+        # admin_email = settings_data.admin_email
 
         return NodeMetadata(
             name=name,
@@ -659,6 +660,8 @@ class Node(AbstractNode):
             node_type=self.node_type.value,
             node_side_type=self.node_side_type.value,
             show_warnings=show_warnings,
+            # signup_enabled=signup_enabled,
+            # admin_email=admin_email,
         )
 
     @property
@@ -850,6 +853,8 @@ class Node(AbstractNode):
                     flags.CAN_REGISTER = True
                 new_settings = NodeSettings(
                     name=self.name,
+                    verify_key=self.verify_key,
+                    node_type=self.node_type,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,
