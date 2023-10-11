@@ -603,7 +603,6 @@ class SyftClient:
 
         return _guest_client
 
-
     def login(
         self, email: str, password: str, cache: bool = True, register=False, **kwargs
     ) -> Self:
