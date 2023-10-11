@@ -376,9 +376,9 @@ class OblvService(AbstractService):
                 message=f"Unable to find {user_code_id} in {type(user_code_service)}"
             )
         user_code = user_code.ok()
-
+        reason: str = context.extra_kwargs.get("reason", "")
         res = user_code.status.mutate(
-            value=UserCodeStatus.APPROVED,
+            value=(UserCodeStatus.APPROVED, reason),
             node_name=node_name,
             verify_key=context.credentials,
         )
