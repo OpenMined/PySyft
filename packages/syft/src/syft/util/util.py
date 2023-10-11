@@ -22,6 +22,7 @@ import socket
 import sys
 import threading
 import time
+import types
 from types import ModuleType
 from typing import Any
 from typing import Callable
@@ -866,3 +867,12 @@ if os_name() == "macOS":
 
 def thread_ident() -> int:
     return threading.current_thread().ident
+
+
+def set_klass_module_to_syft(klass, module_name):
+    if module_name not in sys.modules["syft"].__dict__:
+        new_module = types.ModuleType(module_name)
+    else:
+        new_module = sys.modules["syft"].__dict__[module_name]
+    setattr(new_module, klass.__name__, klass)
+    sys.modules["syft"].__dict__[module_name] = new_module

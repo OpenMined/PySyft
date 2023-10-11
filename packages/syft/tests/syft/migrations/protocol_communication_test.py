@@ -2,7 +2,6 @@
 from typing import List
 from typing import Type
 from typing import Union
-from unittest import mock
 
 # syft absolute
 import syft as sy
@@ -25,7 +24,7 @@ from syft.types.syft_object import SyftObject
 from syft.types.transforms import convert_types
 from syft.types.transforms import rename
 from syft.types.uid import UID
-from syft.util.util import index_syft_by_module_name
+from syft.util.util import set_klass_module_to_syft
 
 
 def get_klass_version_1():
@@ -37,7 +36,9 @@ def get_klass_version_1():
         id: UID
         name: str
         version: int
+        __module__: str = "syft.test"
 
+    set_klass_module_to_syft(SyftMockObjectTestV1, module_name="test")
     return SyftMockObjectTestV1
 
 
@@ -50,7 +51,9 @@ def get_klass_version_2():
         id: UID
         full_name: str
         version: str
+        __module__: str = "syft.test"
 
+    set_klass_module_to_syft(SyftMockObjectTestV2, module_name="test")
     return SyftMockObjectTestV2
 
 
@@ -73,10 +76,12 @@ def get_stash_klass(syft_object: Type[SyftBaseObject]):
             name=object_type.__canonical_name__,
             object_type=syft_object,
         )
+        __module__: str = "syft.test"
 
         def __init__(self, store: DocumentStore) -> None:
             super().__init__(store=store)
 
+    set_klass_module_to_syft(SyftMockObjectStash, module_name="test")
     return SyftMockObjectStash
 
 
@@ -87,6 +92,7 @@ def setup_service_method(syft_object):
     class SyftMockObjectService(AbstractService):
         store: DocumentStore
         stash: stash_klass
+        __module__: str = "syft.test"
 
         def __init__(self, store: DocumentStore) -> None:
             self.store = store
@@ -105,6 +111,7 @@ def setup_service_method(syft_object):
                 return result.ok()
             return SyftError(message=f"{result.err()}")
 
+    set_klass_module_to_syft(SyftMockObjectService, module_name="test")
     return SyftMockObjectService
 
 
@@ -177,7 +184,9 @@ def test_client_server_running_different_protocols():
     assert isinstance(sample_data, klass_v2)
 
     # Validate migrations
-    sample_data_v1 = sample_data.migrate_to(version=protocol_version_with_mock_obj_v1)
+    sample_data_v1 = sample_data.migrate_to(
+        version=protocol_version_with_mock_obj_v1,
+    )
     assert sample_data_v1.name == sample_data.full_name
     assert sample_data_v1.version == int(sample_data.version)
 
@@ -188,32 +197,19 @@ def test_client_server_running_different_protocols():
         sample_data,
     )
 
-    # patch the index syft module function
-    def patched_index_syft_by_module_name(fully_qualified_name: str) -> object:
-        if klass_v1.__name__ in fully_qualified_name:
-            return klass_v1
-        elif klass_v2.__name__ in fully_qualified_name:
-            return klass_v2
+    nh2_client = nh2.client
+    assert nh2_client is not None
+    # Force communication protocol to when version object is defined
+    nh2_client.communication_protocol = protocol_version_with_mock_obj_v1
+    # Reset api
+    nh2_client._api = None
 
-        return index_syft_by_module_name(fully_qualified_name)
+    # Call the API with an older communication protocol version
+    result2 = nh2_client.api.services.dummy.get()
+    assert isinstance(result2, list)
 
-    with mock.patch(
-        "syft.client.api.index_syft_by_module_name",
-        patched_index_syft_by_module_name,
-    ):
-        nh2_client = nh2.client
-        assert nh2_client is not None
-        # Force communication protocol to when version object is defined
-        nh2_client.communication_protocol = protocol_version_with_mock_obj_v1
-        # Reset api
-        nh2_client._api = None
-
-        # Call the API with an older communication protocol version
-        result2 = nh2_client.api.services.dummy.get()
-        assert isinstance(result2, list)
-
-        # Validate the data received
-        for data in result2:
-            assert isinstance(data, klass_v1)
-            assert data.name == sample_data.full_name
-            assert data.version == int(sample_data.version)
+    # Validate the data received
+    for data in result2:
+        assert isinstance(data, klass_v1)
+        assert data.name == sample_data.full_name
+        assert data.version == int(sample_data.version)

@@ -503,7 +503,6 @@ def http_connection_to_node_route() -> List[Callable]:
 
 def get_python_node_route(context: TransformContext) -> TransformContext:
     context.output["id"] = context.obj.node.id
-    print("Store config....", context.obj.node.blob_store_config)
     context.output["worker_settings"] = WorkerSettings.from_node(context.obj.node)
     context.output["proxy_target_uid"] = context.obj.proxy_target_uid
     return context
