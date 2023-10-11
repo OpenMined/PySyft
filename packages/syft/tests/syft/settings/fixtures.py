@@ -9,7 +9,6 @@ from syft.__init__ import __version__
 from syft.abstract_node import NodeSideType
 from syft.abstract_node import NodeType
 from syft.node.credentials import SyftSigningKey
-from syft.node.credentials import SyftVerifyKey
 from syft.service.metadata.node_metadata import NodeMetadataJSON
 from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
