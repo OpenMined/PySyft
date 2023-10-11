@@ -106,7 +106,6 @@ class BlobRetrievalByURL(BlobRetrieval):
 
     def read(self) -> Union[SyftObject, SyftError]:
         if self.type_ is BlobFileType:
-            # urlretrieve(str(blob_url), filename=self.file_name)  # nosec
             return BlobFile(
                 file_name=self.file_name,
                 syft_client_verify_key=self.syft_client_verify_key,

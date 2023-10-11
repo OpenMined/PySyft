@@ -34,7 +34,6 @@ HEARTBEAT_INTERVAL = 1
 INTERVAL_INIT = 1
 INTERVAL_MAX = 32
 
-#  Paranoid Pirate Protocol constants
 PPP_READY = b"\x01"  # Signals worker is ready
 PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
 
@@ -77,10 +76,7 @@ class WorkerQueue:
 @serializable()
 class ZMQProducer(QueueProducer):
     def __init__(self, queue_name: str, queue_stash, port: int) -> None:
-        # ctx = zmq.Context.instance()
         self.port = port
-        # self._producer = ctx.socket(zmq.REQ)
-        # self._producer.connect(address)
         self.queue_name = queue_name
         self.queue_stash = queue_stash
         self.post_init()
@@ -146,13 +142,9 @@ class ZMQProducer(QueueProducer):
 
                 if len(self.message_queue) != 0:
                     if not self.workers.is_empty():
-                        # print(self.workers.queue.keys())
                         frames = self.message_queue.pop()
                         worker_address = self.workers.next()
                         connecting_workers.add(worker_address)
-                        print("SENDING JOB FROM PRODUCER")
-                        # print(self.workers.queue.keys())
-                        # print(worker_address)
                         frames.insert(0, worker_address)
                         with lock:
                             self.backend.send_multipart(frames)
@@ -174,7 +166,6 @@ class ZMQProducer(QueueProducer):
                             if msg[0] not in (PPP_READY, PPP_HEARTBEAT):
                                 print("E: Invalid message from worker: %s" % msg)
                     else:
-                        # print("GOT JOB CONFIRMATION MESSAGE FROM WORKER", address)
                         if address in connecting_workers:
                             connecting_workers.remove(address)
                         # got response message from worker
@@ -226,7 +217,6 @@ class ZMQConsumer(QueueConsumer):
         self.ctx = zmq.Context.instance()
         self.poller = zmq.Poller()
         self.create_socket()
-        # self._consumer = ctx.socket(zmq.REP)
         self.thread = None
 
     def _run(self):
@@ -252,10 +242,7 @@ class ZMQConsumer(QueueConsumer):
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
-                            print("HANDLING MESSAGE IN CONSUMER")
                             self.message_handler.handle_message(message=message)
-                            print("done handling message")
-                            # print("DONE DOING THE WORK")
                         except Exception as e:
                             print(f"ERROR HANDLING MESSAGE {e}")
                     # process heartbeat
@@ -282,7 +269,6 @@ class ZMQConsumer(QueueConsumer):
                 # send heartbeat
                 if time.time() > heartbeat_at:
                     heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-                    # print("SENDING HEARTBEAT FROM ", self.identity)
                     self.worker.send(PPP_HEARTBEAT)
             except zmq.ZMQError as e:
                 if e.errno == zmq.ETERM:
@@ -333,7 +319,6 @@ class ZMQClient(QueueClient):
         self.host = config.hostname
         self.producers = {}
         self.consumers = defaultdict(list)
-        # self.message_queue: List[MessageQueue] = None
         self.config = config
 
     @staticmethod
@@ -376,7 +361,6 @@ class ZMQClient(QueueClient):
         """
 
         if address is None:
-            # address = f"tcp://{self.host}:{self.config.consumer_port}"
             address = f"tcp://*:{self.config.queue_port}"
 
         consumer = ZMQConsumer(

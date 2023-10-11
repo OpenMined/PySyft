@@ -246,7 +246,7 @@ class UserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
-    uses_domain = False
+    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = []
@@ -690,10 +690,7 @@ def process_code(
     f.decorator_list = []
 
     call_args = function_input_kwargs
-    # call_args = policy_input_kwargs
     if "domain" in function_input_kwargs:
-        # print("adding domain")
-        # call_args = ["domain"] + call_args
         context.output["uses_domain"] = True
     call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
@@ -767,7 +764,6 @@ def compile_code(context: TransformContext) -> TransformContext:
 
 def hash_code(context: TransformContext) -> TransformContext:
     code = context.output["code"]
-    # del context.output["code"]
     context.output["raw_code"] = code
     code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
     context.output["code_hash"] = code_hash
@@ -911,7 +907,6 @@ def execute_byte_code(
                     # return res
 
             def launch_job(self, func: UserCode, **kwargs):
-                # original_print("launching job for ", func.service_func_name)
                 # relative
                 from ... import UID
 
@@ -922,7 +917,6 @@ def execute_byte_code(
                 user_code_service = node.get_service("usercodeservice")
                 request_service = node.get_service("requestservice")
 
-                # user_service.stash.partition.data.values()[0].signing_key
                 # create api call from user code object (func)
 
                 # ActionObjectivy kwargs
@@ -968,13 +962,10 @@ def execute_byte_code(
                         blocking=False,
                     ).sign(node.signing_key)
 
-                    # original_print("ID", context.job.log_id)
                     original_print(f"LAUNCHING JOB {func.service_func_name}")
                     job = node.add_api_call_to_queue(
                         api_call, parent_job_id=context.job_id
                     )
-                    # original_print(f"ADDED TO QUEUE {func.service_func_name}")
-                    # original_print("ID", context.job.log_id)
 
                     # set api in global scope to enable using .get(), .wait())
                     user_signing_key = [
@@ -993,14 +984,11 @@ def execute_byte_code(
                         user_verify_key=context.credentials,
                         api=user_api,
                     )
-                    # original_print("ID", context.job.log_id)
 
                     return job
                 except Exception as e:
                     print(f"ERROR {e}")
                     raise ValueError(f"error while launching job:\n{e}")
-
-        # original_print(f"EXECUTING BYTE CODE")
 
         if context.job is not None:
 
@@ -1018,9 +1006,6 @@ def execute_byte_code(
 
                 new_args = [to_str(arg) for arg in args]
                 new_str = sep.join(new_args) + end
-                # original_print(
-                #     f"appending to {context.job.log_id}, {id(context)}", *args
-                # )
                 log_service = context.node.get_service("LogService")
                 log_service.append(
                     context=context, uid=context.job.log_id, new_str=new_str
@@ -1036,16 +1021,11 @@ def execute_byte_code(
         else:
             print = original_print
 
-        #     return __builtin__.print(*args, **kwargs)
-
         if code_item.uses_domain:
             kwargs["domain"] = LocalDomainClient()
 
         stdout = StringIO()
         stderr = StringIO()
-
-        # sys.stdout = stdout
-        # sys.stderr = stderr
 
         # statisfy lint checker
         result = None
@@ -1057,14 +1037,12 @@ def execute_byte_code(
         for user_code in user_code_service.stash.get_all(context.credentials).ok():
             globals()[user_code.service_func_name] = user_code
         globals()["print"] = print
-        # globals()["process_batch"] = 1
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         result = eval(evil_string, None, _locals)  # nosec
 
         # reset print
         print = original_print
-        # print("result", result)
 
         # restore stdout and stderr
         sys.stdout = stdout_
@@ -1082,7 +1060,7 @@ def execute_byte_code(
         import traceback
 
         print = original_print
-        print("execute_byte_code failed", e, file=stderr_)
+        # print("execute_byte_code failed", e, file=stderr_)
         print(traceback.format_exc())
         print("execute_byte_code failed", e)
     finally:

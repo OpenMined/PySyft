@@ -74,7 +74,6 @@ class APICallMessageHandler(AbstractMessageHandler):
         # relative
         from ...node.node import Node
 
-        # queue_item_id, api_call, worker_settings = deserialize(message, from_bytes=True)
         queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
         api_call = queue_item.api_call
@@ -93,13 +92,10 @@ class APICallMessageHandler(AbstractMessageHandler):
             queue_config=queue_config,
             is_subprocess=True,
         )
-        # otherwise it reads it from env
+        # otherwise it reads it from env, resulting in the wrong credentials
         worker.id = worker_settings.id
         worker.signing_key = worker_settings.signing_key
 
-        # queue_item = worker.queue_stash.get_by_uid(
-        #     api_call.credentials, queue_item_id
-        # ).ok()
         job_item = worker.job_stash.get_by_uid(
             api_call.credentials, queue_item.job_id
         ).ok()
@@ -128,8 +124,6 @@ class APICallMessageHandler(AbstractMessageHandler):
             job_status = JobStatus.ERRORED
             result = SyftError(message=f"Failed with exception: {e}")
             print("HAD AN ERROR WHILE HANDLING MESSAGE")
-        # print("result", type(result.message.data))
-        # print("result of job", result.message.data)
         queue_item = QueueItem(
             node_uid=worker.id,
             id=queue_item.id,

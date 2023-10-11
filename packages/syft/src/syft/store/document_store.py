@@ -352,7 +352,6 @@ class StorePartition:
 
     # Thread-safe methods
     def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
-        # print(f"CALLING LOCK ON DOCUMENT LEVEL FOR {self.lock._lock._lock_file._context.lock_file}")
         locked = self.lock.acquire(blocking=True)
         if not locked:
             print("FAILED TO LOCK")
@@ -362,7 +361,6 @@ class StorePartition:
             result = cbk(*args, **kwargs)
         except BaseException as e:
             result = Err(str(e))
-        # print("CALLING RELEASE ON DOCUMENT STORE LEVEL FOR", self.lock._lock._lock_file)
         self.lock.release()
 
         return result

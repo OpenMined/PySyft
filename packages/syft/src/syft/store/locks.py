@@ -2,10 +2,7 @@
 from collections import defaultdict
 import datetime
 import json
-import os
 from pathlib import Path
-import shutil
-import subprocess
 import threading
 import time
 from typing import Callable
@@ -24,22 +21,6 @@ from sherlock.lock import RedisLock
 from ..serde.serializable import serializable
 
 THREAD_FILE_LOCKS: Dict[int, Dict[str, int]] = defaultdict(dict)
-
-
-def get_open_fds() -> int:
-    """Get the number of open file descriptors for the current process."""
-    lsof_path = shutil.which("lsof")
-    if lsof_path is None:
-        raise NotImplementedError("Didn't handle unavailable lsof.")
-    raw_procs = subprocess.check_output(
-        [lsof_path, "-w", "-Ff", "-p", str(os.getpid())]
-    )
-
-    def filter_fds(lsof_entry: str) -> bool:
-        return lsof_entry.startswith("f") and lsof_entry[1:].isdigit()
-
-    fds = list(filter(filter_fds, raw_procs.decode().split(os.linesep)))
-    return len(fds)
 
 
 @serializable()
@@ -212,9 +193,6 @@ class PatchedFileLock(FileLock):
 
         try:
             result = cbk()
-            # import ipdb
-            # ipdb.set_trace()
-
         except BaseException as e:
             print(e)
             result = False
@@ -227,7 +205,6 @@ class PatchedFileLock(FileLock):
 
     def _release(self) -> None:
         res = self._thread_safe_cbk(self._release_file_lock)
-        # print(get_open_fds())
         return res
 
     def _acquire_file_lock(self) -> bool:
@@ -406,15 +383,11 @@ class SyftLock(BaseLock):
         timeout = self.timeout
         start_time = time.time()
         elapsed = 0
-        # if self.lock_name == "QueueItem":
-        #     print("trying to acquire lock on queueitem")
         while timeout >= elapsed:
             if not self._acquire():
                 time.sleep(self.retry_interval)
                 elapsed = time.time() - start_time
             else:
-                # if self.lock_name == "QueueItem":
-                #     print("success")
                 return True
         print(
             f"Timeout elapsed after {self.timeout} seconds while trying to acquiring lock."

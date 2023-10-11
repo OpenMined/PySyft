@@ -231,7 +231,6 @@ class NetworkXBackingStore(BaseGraphStore):
 
     def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
         # TODO copied method from document_store, have it in one place and reuse?
-
         locked = self.lock.acquire(blocking=True)
         if not locked:
             return Err("Failed to acquire lock for the operation")
