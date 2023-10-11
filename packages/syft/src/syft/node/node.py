@@ -848,6 +848,7 @@ class Node(AbstractNode):
                 if self.node_type == NodeType.ENCLAVE:
                     flags.CAN_REGISTER = True
                 new_settings = NodeSettings(
+                    id=self.id,
                     name=self.name,
                     verify_key=self.verify_key,
                     node_type=self.node_type,

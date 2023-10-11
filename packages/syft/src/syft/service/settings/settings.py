@@ -38,10 +38,11 @@ class NodeSettings(SyftObject):
         "admin_email",
     ]
 
+    id: UID
     name: str = "Node"
     deployed_on: str
     organization: str = "OpenMined"
-    verify_key: Optional[SyftVerifyKey]
+    verify_key: SyftVerifyKey
     on_board: bool = True
     description: str = "Text"
     node_type: NodeType = NodeType.DOMAIN
