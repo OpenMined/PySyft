@@ -1,5 +1,4 @@
 # stdlib
-from typing import Optional
 
 # relative
 from ...abstract_node import NodeSideType
