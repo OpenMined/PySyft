@@ -623,7 +623,7 @@ def test_mongo_store_partition_set_delete_joblib(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_permissions_collection(
     mongo_store_partition: MongoStorePartition,
@@ -638,7 +638,7 @@ def test_mongo_store_partition_permissions_collection(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_add_remove_permission(
     root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
@@ -729,7 +729,7 @@ def test_mongo_store_partition_add_remove_permission(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_add_permissions(
     root_verify_key: SyftVerifyKey,
@@ -781,7 +781,7 @@ def test_mongo_store_partition_add_permissions(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.parametrize("permission", PERMISSIONS)
 def test_mongo_store_partition_has_permission(
@@ -830,7 +830,7 @@ def test_mongo_store_partition_has_permission(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.parametrize("permission", PERMISSIONS)
 def test_mongo_store_partition_take_ownership(
@@ -885,7 +885,7 @@ def test_mongo_store_partition_take_ownership(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_permissions_set(
     root_verify_key: SyftVerifyKey,
@@ -931,7 +931,7 @@ def test_mongo_store_partition_permissions_set(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_permissions_get_all(
     root_verify_key: SyftVerifyKey,
@@ -964,7 +964,7 @@ def test_mongo_store_partition_permissions_get_all(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_permissions_delete(
     root_verify_key: SyftVerifyKey,
@@ -1018,7 +1018,7 @@ def test_mongo_store_partition_permissions_delete(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
+    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_mongo_store_partition_permissions_update(
     root_verify_key: SyftVerifyKey,
