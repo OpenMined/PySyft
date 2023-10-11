@@ -9,18 +9,20 @@ from ...types.uid import UID
 
 CSS_CODE = """
 <style>
-    :root {
-        --primary-color: #ffffff;
-        --secondary-color: #f5f5f5;
-        --tertiary-color: #000000de;
-        --button-color: #d1d5db;
-    }
-    .dark-theme {
+  body[data-jp-theme-light='false'] {
         --primary-color: #111111;
         --secondary-color: #212121;
         --tertiary-color: #CFCDD6;
         --button-color: #111111;
-    }
+  }
+
+  body {
+        --primary-color: #ffffff;
+        --secondary-color: #f5f5f5;
+        --tertiary-color: #000000de;
+        --button-color: #d1d5db;
+  }
+
   .header-1 {
         font-style: normal;
         font-weight: 600;
@@ -556,16 +558,9 @@ custom_code = """
                         resetById${uid}('table${uid}');
                         resetById${uid}('pag${uid}');
                         result = paginate${uid}(result, page_size${uid})
+                        paginatedElements${uid} = result
                         buildGrid${uid}(result,pageIndex${uid});
                         buildPaginationContainer${uid}(result);
-                    }
-
-                    function setTheme${uid}(){
-                        const theme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'light' : 'dark';
-
-                        if (theme === 'dark') document.body.classList.add('dark-theme');
-                        else document.body.classList.remove('dark-theme');
-
                     }
 
                     function resetById${uid}(id){
@@ -582,7 +577,6 @@ custom_code = """
                                 let div = document.createElement("div");
                                 div.classList.add('grid-header', 'grid-index-cells');
                                 grid.appendChild(div);
-                                setTheme${uid}();
                                 headers.forEach((title) =>{
                                     let div = document.createElement("div");
                                     div.classList.add('grid-header', 'grid-std-cells');
