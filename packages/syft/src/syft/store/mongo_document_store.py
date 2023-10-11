@@ -5,6 +5,7 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Type
+from typing import Union
 
 # third party
 from pymongo import ASCENDING
@@ -35,10 +36,12 @@ from ..types.transforms import transform_method
 from ..types.uid import UID
 from .document_store import DocumentStore
 from .document_store import PartitionKey
+from .document_store import PartitionSettings
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StoreConfig
 from .document_store import StorePartition
+from .kv_document_store import KeyValueBackingStore
 from .locks import LockingConfig
 from .locks import NoLockingConfig
 from .mongo_client import MongoClient
@@ -568,6 +571,118 @@ class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
 
 
+@serializable(attrs=["index_name", "settings", "store_config"])
+class MongoBackingStore(KeyValueBackingStore):
+    """ """
+
+    def __init__(
+        self,
+        index_name: str,  # 'data' or 'permission'
+        settings: PartitionSettings,
+        store_config: StoreConfig,
+    ) -> None:
+        self.index_name = index_name
+        self.settings = settings
+        self.store_config = store_config
+
+    def init_client(self) -> Union[None, Err]:
+        client = MongoClient(config=self.store_config.client_config)
+
+        collection_status = client.with_collection(
+            collection_settings=self.settings,
+            store_config=self.store_config,
+            collection_name=f"{self.settings.name}_{self.index_name}",
+        )
+        if collection_status.is_err():
+            return collection_status
+        self._collection: MongoCollection = collection_status.ok()
+
+    @property
+    def collection(self) -> Result[MongoCollection, Err]:
+        if not hasattr(self, "_collection"):
+            res = self.init_client()
+            if res.is_err():
+                return res
+
+        return Ok(self._collection)
+
+    def _exist(self, key: UID) -> bool:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+
+        result: Optional[Dict] = collection.find_one({"_id": key})
+        if result is not None:
+            return True
+
+        return False
+
+    def _set(self, key: UID, value: Any) -> None:
+        if self._exist(key):
+            self._update(key, value)
+        else:
+            collection_status = self.collection
+            if collection_status.is_err():
+                return collection_status
+            collection: MongoCollection = collection_status.ok()
+            try:
+                bson_data = {
+                    "_id": key,
+                    f"{key}": value,
+                    "_repr_debug_": _repr_debug_(value),
+                }
+                collection.insert_one(bson_data)
+            except Exception as e:
+                raise ValueError(f"Cannot insert data. Error message: {e}")
+
+    def _update(self, key: UID, value: Any) -> None:
+        print("TODO: to be implemented")
+        pass
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        self._set(key, value)
+
+    def __getitem__(self, key: Any) -> Self:
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        raise NotImplementedError
+
+    def __len__(self) -> int:
+        raise NotImplementedError
+
+    def __delitem__(self, key: str):
+        raise NotImplementedError
+
+    def clear(self) -> Self:
+        raise NotImplementedError
+
+    def copy(self) -> Self:
+        raise NotImplementedError
+
+    def update(self, *args: Any, **kwargs: Any) -> Self:
+        raise NotImplementedError
+
+    def keys(self) -> Any:
+        raise NotImplementedError
+
+    def values(self) -> Any:
+        raise NotImplementedError
+
+    def items(self) -> Any:
+        raise NotImplementedError
+
+    def pop(self, *args: Any) -> Self:
+        raise NotImplementedError
+
+    def __contains__(self, item: Any) -> bool:
+        raise NotImplementedError
+
+    def __iter__(self) -> Any:
+        raise NotImplementedError
+
+
 @serializable()
 class MongoStoreConfig(StoreConfig):
     """Mongo Store configuration
@@ -591,5 +706,6 @@ class MongoStoreConfig(StoreConfig):
     client_config: MongoStoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"
+    backing_store = MongoBackingStore
     # TODO: should use a distributed lock, with RedisLockingConfig
     locking_config: LockingConfig = NoLockingConfig()

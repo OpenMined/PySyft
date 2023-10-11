@@ -188,7 +188,10 @@ class MongoClient:
             return Err(str(e))
 
     def with_collection(
-        self, collection_settings: PartitionSettings, store_config: StoreConfig
+        self,
+        collection_settings: PartitionSettings,
+        store_config: StoreConfig,
+        collection_name: Optional[str] = None,
     ) -> Result[MongoCollection, Err]:
         res = self.with_db(db_name=store_config.db_name)
         if res.is_err():
@@ -196,8 +199,13 @@ class MongoClient:
         db = res.ok()
 
         try:
+            collection_name = (
+                collection_name
+                if collection_name is not None
+                else collection_settings.name
+            )
             collection = db.get_collection(
-                name=collection_settings.name, codec_options=SYFT_CODEC_OPTIONS
+                name=collection_name, codec_options=SYFT_CODEC_OPTIONS
             )
         except BaseException as e:
             return Err(str(e))
