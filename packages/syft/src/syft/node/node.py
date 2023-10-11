@@ -47,6 +47,8 @@ from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
+from ..service.action.action_object import Action
+from ..service.action.action_object import ActionObject
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import SQLiteActionStore
@@ -456,7 +458,7 @@ class Node(AbstractNode):
         return root_client
 
     def _find_pending_migrations(self):
-        partition_to_be_migrated = []
+        klasses_to_be_migrated = []
 
         context = AuthedServiceContext(
             node=self,
@@ -465,24 +467,38 @@ class Node(AbstractNode):
         )
         migration_state_service = self.get_service(MigrateStateService)
 
+        canonical_name_version_map = []
+
+        # Track all object types from document store
         for partition in self.document_store.partitions.values():
             object_type = partition.settings.object_type
             canonical_name = object_type.__canonical_name__
+            object_version = object_type.__version__
+            canonical_name_version_map.append((canonical_name, object_version))
 
+        # Track all object types from action store
+        action_object_types = [Action, ActionObject]
+        action_object_types.extend(ActionObject.__subclasses__())
+        for object_type in action_object_types:
+            canonical_name = object_type.__canonical_name__
+            object_version = object_type.__version__
+            canonical_name_version_map.append((canonical_name, object_version))
+
+        for canonical_name, current_version in canonical_name_version_map:
             migration_state = migration_state_service.get_state(context, canonical_name)
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version
             ):
-                partition_to_be_migrated.append(canonical_name)
+                klasses_to_be_migrated.append(canonical_name)
             else:
                 migration_state_service.register_migration_state(
                     context,
-                    current_version=object_type.__version__,
+                    current_version=current_version,
                     canonical_name=canonical_name,
                 )
 
-        return partition_to_be_migrated
+        return klasses_to_be_migrated
 
     @property
     def guest_client(self):

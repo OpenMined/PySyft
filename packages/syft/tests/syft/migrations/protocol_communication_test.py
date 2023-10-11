@@ -1,12 +1,15 @@
 # stdlib
+from copy import deepcopy
 from typing import List
 from typing import Type
 from typing import Union
+from unittest import mock
 
 # syft absolute
 import syft as sy
 from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
+from syft.serde.recursive import TYPE_BANK
 from syft.serde.serializable import serializable
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
@@ -25,6 +28,8 @@ from syft.types.transforms import convert_types
 from syft.types.transforms import rename
 from syft.types.uid import UID
 from syft.util.util import set_klass_module_to_syft
+
+MY_TEST_TYPE_BANK = deepcopy(TYPE_BANK)
 
 
 def get_klass_version_1():
@@ -70,6 +75,7 @@ def setup_migration_transforms(mock_klass_v1, mock_klass_v2):
 
 
 def get_stash_klass(syft_object: Type[SyftBaseObject]):
+    @serializable()
     class SyftMockObjectStash(BaseStash):
         object_type = syft_object
         settings: PartitionSettings = PartitionSettings(
@@ -117,7 +123,6 @@ def setup_service_method(syft_object):
 
 def setup_version_one(node_name: str):
     syft_klass_version_one = get_klass_version_1()
-
     sy.stage_protocol_changes()
     sy.bump_protocol_version()
 
@@ -161,55 +166,60 @@ def setup_version_second(node_name: str, klass_version_one: type):
 def test_client_server_running_different_protocols():
     node_name = UID().to_string()
 
-    # Setup mock object version one
-    nh1, klass_v1 = setup_version_one(node_name)
-    assert klass_v1.__canonical_name__ == "SyftMockObjectTest"
-    assert klass_v1.__name__ == "SyftMockObjectTestV1"
+    with mock.patch("syft.serde.recursive.TYPE_BANK", MY_TEST_TYPE_BANK):
+        with mock.patch(
+            "syft.protocol.data_protocol.TYPE_BANK",
+            MY_TEST_TYPE_BANK,
+        ):
+            # Setup mock object version one
+            nh1, klass_v1 = setup_version_one(node_name)
+            assert klass_v1.__canonical_name__ == "SyftMockObjectTest"
+            assert klass_v1.__name__ == "SyftMockObjectTestV1"
 
-    nh1_client = nh1.client
-    assert nh1_client is not None
-    result_from_client_1 = nh1_client.api.services.dummy.get()
+            nh1_client = nh1.client
+            assert nh1_client is not None
+            result_from_client_1 = nh1_client.api.services.dummy.get()
 
-    protocol_version_with_mock_obj_v1 = get_data_protocol().latest_version
+            protocol_version_with_mock_obj_v1 = get_data_protocol().latest_version
 
-    # No data saved
-    assert len(result_from_client_1) == 0
+            # No data saved
+            assert len(result_from_client_1) == 0
 
-    # Setup mock object version second
-    nh2, klass_v2 = setup_version_second(node_name, klass_version_one=klass_v1)
+            # Setup mock object version second
+            nh2, klass_v2 = setup_version_second(node_name, klass_version_one=klass_v1)
 
-    # Create a sample data in version second
-    sample_data = klass_v2(full_name="John", version=str(1), id=UID())
+            # Create a sample data in version second
+            sample_data = klass_v2(full_name="John", version=str(1), id=UID())
 
-    assert isinstance(sample_data, klass_v2)
+            assert isinstance(sample_data, klass_v2)
 
-    # Validate migrations
-    sample_data_v1 = sample_data.migrate_to(
-        version=protocol_version_with_mock_obj_v1,
-    )
-    assert sample_data_v1.name == sample_data.full_name
-    assert sample_data_v1.version == int(sample_data.version)
+            # Validate migrations
+            sample_data_v1 = sample_data.migrate_to(
+                version=protocol_version_with_mock_obj_v1,
+            )
+            assert sample_data_v1.name == sample_data.full_name
+            assert sample_data_v1.version == int(sample_data.version)
 
-    # Set the sample data in version second
-    service_klass = nh1.python_node.get_service("SyftMockObjectService")
-    service_klass.stash.set(
-        nh1.python_node.root_client.verify_key,
-        sample_data,
-    )
+            # Set the sample data in version second
+            service_klass = nh1.python_node.get_service("SyftMockObjectService")
+            service_klass.stash.set(
+                nh1.python_node.root_client.verify_key,
+                sample_data,
+            )
 
-    nh2_client = nh2.client
-    assert nh2_client is not None
-    # Force communication protocol to when version object is defined
-    nh2_client.communication_protocol = protocol_version_with_mock_obj_v1
-    # Reset api
-    nh2_client._api = None
+            nh2_client = nh2.client
+            assert nh2_client is not None
+            # Force communication protocol to when version object is defined
+            nh2_client.communication_protocol = protocol_version_with_mock_obj_v1
+            # Reset api
+            nh2_client._api = None
 
-    # Call the API with an older communication protocol version
-    result2 = nh2_client.api.services.dummy.get()
-    assert isinstance(result2, list)
+            # Call the API with an older communication protocol version
+            result2 = nh2_client.api.services.dummy.get()
+            assert isinstance(result2, list)
 
-    # Validate the data received
-    for data in result2:
-        assert isinstance(data, klass_v1)
-        assert data.name == sample_data.full_name
-        assert data.version == int(sample_data.version)
+            # Validate the data received
+            for data in result2:
+                assert isinstance(data, klass_v1)
+                assert data.name == sample_data.full_name
+                assert data.version == int(sample_data.version)
