@@ -593,6 +593,17 @@ class SyftClient:
             return self.api.services.user.get_current_user()
         return None
 
+    def login_as_guest(self) -> Self:
+        _guest_client = self.guest()
+
+        print(
+            f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+            f"{self.metadata.node_type.capitalize()}> as GUEST"
+        )
+
+        return _guest_client
+
+
     def login(
         self, email: str, password: str, cache: bool = True, register=False, **kwargs
     ) -> Self:
@@ -833,12 +844,13 @@ def login(
     port: Optional[int] = None,
     email: Optional[str] = None,
     password: Optional[str] = None,
-    cache: bool = True,
-    verbose: bool = True,
+    cache: bool = True
 ) -> SyftClient:
     _client = connect(url=url, node=node, port=port)
+
     if isinstance(_client, SyftError):
         return _client
+
     connection = _client.connection
 
     login_credentials = None
@@ -847,11 +859,6 @@ def login(
         if not password:
             password = getpass("Password: ")
         login_credentials = UserLoginCredentials(email=email, password=password)
-
-    if login_credentials is None:
-        return SyftError(
-            message="If you want to login as guest, use <client>.login_as_guest() instead"
-        )
 
     if cache and login_credentials:
         _client_cache = SyftClientSessionCache.get_client(
