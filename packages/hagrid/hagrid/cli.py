@@ -130,8 +130,10 @@ def get_compose_src_path(
     **kwargs: TypeDict[str, Any],
 ) -> str:
     grid_path = GRID_SRC_PATH()
-    tag = kwargs.get("tag", None)
-    if EDITABLE_MODE and template_location is None or tag == "0.7.0":  # type: ignore
+    tag = kwargs["tag"]
+    # Use local compose files if in editable mode and
+    # template_location is None and (kwargs["dev"] is True or tag is local)
+    if EDITABLE_MODE and template_location is None and (kwargs["dev"] is True or tag == "local"):  # type: ignore
         path = grid_path
     else:
         path = deployment_dir(node_name)
@@ -1356,25 +1358,64 @@ def create_launch_cmd(
     if (
         parsed_kwargs["tag"] is not None
         and parsed_kwargs["template"] is None
-        and parsed_kwargs["tag"] not in ["local", "0.7.0"]
+        and parsed_kwargs["tag"] not in ["local"]
     ):
+        # third party
+        from packaging import version
+
+        pattern = r"[0-9].[0-9].[0-9]"
+        input_tag = parsed_kwargs["tag"]
+        if (
+            not re.match(pattern, input_tag)
+            and input_tag != "latest"
+            and input_tag != "beta"
+            and "b" not in input_tag
+        ):
+            raise Exception(
+                f"Not a valid tag: {parsed_kwargs['tag']}"
+                + "\nValid tags: latest, beta, beta version(ex: 0.8.2b35),[0-9].[0-9].[0-9]"
+            )
+
         # TODO: we need to redo this so that pypi and docker mappings are in a single
         # file inside dev
         if parsed_kwargs["tag"] == "latest":
             parsed_kwargs["template"] = LATEST_STABLE_SYFT
             parsed_kwargs["tag"] = LATEST_STABLE_SYFT
-        elif parsed_kwargs["tag"] == "beta":
-            parsed_kwargs["template"] = "dev"
-            parsed_kwargs["tag"] = LATEST_BETA_SYFT
+        elif parsed_kwargs["tag"] == "beta" or "b" in parsed_kwargs["tag"]:
+            tag = (
+                LATEST_BETA_SYFT
+                if parsed_kwargs["tag"] == "beta"
+                else parsed_kwargs["tag"]
+            )
+
+            # Currently, manifest_template.yml is only supported for beta versions >= 0.8.2b34
+            beta_version = version.parse(tag)
+            MINIMUM_BETA_VERSION = "0.8.2b34"
+            if beta_version < version.parse(MINIMUM_BETA_VERSION):
+                raise Exception(
+                    f"Minimum beta version tag supported is {MINIMUM_BETA_VERSION}"
+                )
+
+            # Check if the beta version is available
+            template_url = f"https://github.com/OpenMined/PySyft/releases/download/v{str(beta_version)}/manifest_template.yml"
+            response = requests.get(template_url)  # nosec
+            if response.status_code != 200:
+                raise Exception(
+                    f"Tag {parsed_kwargs['tag']} is not available"
+                    + " \n for download. Please check the available tags at: "
+                    + "\n https://github.com/OpenMined/PySyft/releases"
+                )
+
+            parsed_kwargs["template"] = template_url
+            parsed_kwargs["tag"] = tag
         else:
-            template = parsed_kwargs["tag"]
-            # 🟡 TODO: Revert to use tags once, we have tag branches with beta
-            # versions also.
-            if "b" in template:
-                template = "dev"
-            # if template == "beta":
-            #     template = "dev"
-            parsed_kwargs["template"] = template
+            MINIMUM_TAG_VERSION = version.parse("0.8.0")
+            tag = version.parse(parsed_kwargs["tag"])
+            if tag < MINIMUM_TAG_VERSION:
+                raise Exception(
+                    f"Minimum supported stable tag version is {MINIMUM_TAG_VERSION}"
+                )
+            parsed_kwargs["template"] = parsed_kwargs["tag"]
 
     if host in ["docker"] and parsed_kwargs["template"] and host is not None:
         # Setup the files from the manifest_template.yml
