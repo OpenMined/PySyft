@@ -12,7 +12,7 @@ from . import gevent_patch  # noqa: F401
 from .abstract_node import NodeType  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
-from .client.client import login_as_guest #noqa: F401
+from .client.client import login_as_guest  # noqa: F401
 from .client.client import register  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
 from .client.domain_client import DomainClient  # noqa: F401

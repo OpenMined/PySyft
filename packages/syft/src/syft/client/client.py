@@ -844,7 +844,7 @@ def login(
     port: Optional[int] = None,
     email: Optional[str] = None,
     password: Optional[str] = None,
-    cache: bool = True
+    cache: bool = True,
 ) -> SyftClient:
     _client = connect(url=url, node=node, port=port)
 
