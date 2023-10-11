@@ -559,6 +559,41 @@ class MongoStorePartition(StorePartition):
         collection: MongoCollection = collection_status.ok()
         return collection.count_documents(filter={})
 
+    def _migrate_data(
+        self, to_klass: SyftObject, credentials: SyftVerifyKey, hash_permission: bool
+    ) -> Result[bool, str]:
+        hash_permission = (credentials == self.root_verify_key) or hash_permission
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+
+        if hash_permission:
+            storage_objs = collection.find({})
+            for storage_obj in storage_objs:
+                obj = self.storage_type(storage_obj)
+                transform_context = TransformContext(output={}, obj=obj)
+                value = obj.to(self.settings.object_type, transform_context)
+                key = obj.get("_id")
+                try:
+                    migrated_value = value.migrate_to(to_klass)
+                except Exception:
+                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                qk = QueryKey.from_obj(key)
+                result = self._update(
+                    credentials,
+                    qk=qk,
+                    obj=migrated_value,
+                    has_permission=hash_permission,
+                )
+
+                if result.is_err():
+                    return result.err()
+
+            return Ok(True)
+
+        return Err("You don't have permissions to migrate data.")
+
 
 @serializable()
 class MongoDocumentStore(DocumentStore):

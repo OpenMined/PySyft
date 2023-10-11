@@ -608,3 +608,29 @@ class KeyValueStorePartition(StorePartition):
             self.searchable_keys[pk_key] = ck_col
 
         self.data[store_query_key.value] = obj
+
+    def _migrate_data(
+        self, to_klass: SyftObject, credentials: SyftVerifyKey, hash_permission: bool
+    ) -> Result[bool, str]:
+        hash_permission = (credentials == self.root_verify_key) or hash_permission
+
+        if hash_permission:
+            for key, value in self.data:
+                try:
+                    migrated_value = value.migrate_to(to_klass)
+                except Exception:
+                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                qk = QueryKey.from_obj(key)
+                result = self._update(
+                    credentials,
+                    qk=qk,
+                    obj=migrated_value,
+                    has_permission=hash_permission,
+                )
+
+                if result.is_err():
+                    return result.err()
+
+            return Ok(True)
+
+        return Err("You don't have permissions to migrate data.")

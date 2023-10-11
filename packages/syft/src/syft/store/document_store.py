@@ -456,6 +456,14 @@ class StorePartition:
     ) -> Result[List[BaseStash.object_type], str]:
         return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
 
+    def migrate_data(
+        self,
+        to_klass: SyftObject,
+        credentials: SyftVerifyKey,
+        has_permission: Optional[bool] = False,
+    ) -> Result[bool, str]:
+        self._thread_safe_cbk(self._migrate_data, to_klass, credentials, has_permission)
+
     # Potentially thread-unsafe methods.
     # CAUTION:
     #       * Don't use self.lock here.
@@ -495,6 +503,14 @@ class StorePartition:
         raise NotImplementedError
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
+        raise NotImplementedError
+
+    def _migrate_data(
+        self,
+        to_klass: SyftObject,
+        credentials: SyftVerifyKey,
+        hash_permission: bool,
+    ) -> Result[bool, str]:
         raise NotImplementedError
 
 
