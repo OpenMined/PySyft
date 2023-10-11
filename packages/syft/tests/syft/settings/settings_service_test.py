@@ -1,5 +1,6 @@
 # stdlib
 from copy import deepcopy
+from datetime import datetime
 from unittest import mock
 
 # third party
@@ -14,7 +15,6 @@ from syft.abstract_node import NodeSideType
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
-from syft.service.metadata.node_metadata import NodeMetadata
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings import NodeSettings
@@ -227,7 +227,7 @@ def test_settings_allow_guest_registration(
     # Create a new worker
 
     verify_key = SyftSigningKey.generate().verify_key
-    mock_node_metadata = NodeMetadata(
+    mock_node_settings = NodeSettings(
         name=faker.name(),
         verify_key=verify_key,
         highest_object_version=1,
@@ -237,12 +237,13 @@ def test_settings_allow_guest_registration(
         admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
+        deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
     )
 
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=mock_node_metadata,
+        return_value=mock_node_settings,
     ):
         worker = syft.Worker.named(name=faker.name(), reset=True)
         guest_domain_client = worker.guest_client
@@ -268,11 +269,11 @@ def test_settings_allow_guest_registration(
         assert any(user.email == email1 for user in root_domain_client.users)
 
     # only after the root client enable other users to signup, they can
-    mock_node_metadata.signup_enabled = True
+    mock_node_settings.signup_enabled = True
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=mock_node_metadata,
+        return_value=mock_node_settings,
     ):
         worker = syft.Worker.named(name=faker.name(), reset=True)
         guest_domain_client = worker.guest_client
@@ -309,7 +310,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         return guest_client
 
     verify_key = SyftSigningKey.generate().verify_key
-    mock_node_metadata = NodeMetadata(
+    mock_node_settings = NodeSettings(
         name=faker.name(),
         verify_key=verify_key,
         highest_object_version=1,
@@ -319,12 +320,13 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
+        deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
     )
 
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=mock_node_metadata,
+        return_value=mock_node_settings,
     ):
         worker = syft.Worker.named(name=faker.name(), reset=True)
         root_client = worker.root_client
