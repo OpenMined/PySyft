@@ -7,6 +7,9 @@ import pytest
 # syft absolute
 from syft.__init__ import __version__
 from syft.abstract_node import NodeSideType
+from syft.abstract_node import NodeType
+from syft.node.credentials import SyftSigningKey
+from syft.node.credentials import SyftVerifyKey
 from syft.service.metadata.node_metadata import NodeMetadataJSON
 from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
@@ -14,6 +17,7 @@ from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
 from syft.types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from syft.types.syft_object import LOWEST_SYFT_OBJECT_VERSION
+from syft.types.uid import UID
 
 
 @pytest.fixture
@@ -24,6 +28,7 @@ def settings_stash(document_store) -> SettingsStash:
 @pytest.fixture
 def settings(worker, faker) -> NodeSettings:
     return NodeSettings(
+        id=UID(),
         name=worker.name,
         organization=faker.text(),
         on_board=faker.boolean(),
@@ -33,6 +38,8 @@ def settings(worker, faker) -> NodeSettings:
         admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
+        verify_key=SyftSigningKey.generate().verify_key,
+        node_type=NodeType.DOMAIN,
     )
 
 
@@ -55,8 +62,6 @@ def metadata_json(faker) -> NodeMetadataJSON:
         highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
         lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
         syft_version=__version__,
-        signup_enabled=False,
-        admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE.value,
         show_warnings=False,
     )
