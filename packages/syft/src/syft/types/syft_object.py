@@ -263,12 +263,18 @@ class SyftMigrationRegistry:
         cls, type_from: Type[SyftBaseObject], type_to: Type[SyftBaseObject]
     ) -> Callable:
         for type_from_mro in type_from.mro():
-            if issubclass(type_from_mro, SyftBaseObject):
+            if (
+                issubclass(type_from_mro, SyftBaseObject)
+                and type_from_mro != SyftBaseObject
+            ):
                 klass_from = type_from_mro.__canonical_name__
                 version_from = type_from_mro.__version__
 
                 for type_to_mro in type_to.mro():
-                    if issubclass(type_to_mro, SyftBaseObject):
+                    if (
+                        issubclass(type_to_mro, SyftBaseObject)
+                        and type_to_mro != SyftBaseObject
+                    ):
                         klass_to = type_to_mro.__canonical_name__
                         version_to = type_to_mro.__version__
 
@@ -286,12 +292,23 @@ class SyftMigrationRegistry:
     def get_migration_for_version(
         cls, type_from: Type[SyftBaseObject], version_to: int
     ) -> Callable:
+        canonical_name = type_from.__canonical_name__
         for type_from_mro in type_from.mro():
-            if issubclass(type_from_mro, SyftBaseObject):
+            if (
+                issubclass(type_from_mro, SyftBaseObject)
+                and type_from_mro != SyftBaseObject
+            ):
                 klass_from = type_from_mro.__canonical_name__
+                if klass_from != canonical_name:
+                    continue
                 version_from = type_from_mro.__version__
                 mapping_string = f"{version_from}x{version_to}"
-                if mapping_string in cls.__migration_transform_registry__[klass_from]:
+                if (
+                    mapping_string
+                    in cls.__migration_transform_registry__[
+                        type_from.__canonical_name__
+                    ]
+                ):
                     return cls.__migration_transform_registry__[klass_from][
                         mapping_string
                     ]
@@ -582,17 +599,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return cls._syft_keys_types_dict("__attr_searchable__")
 
     def migrate_to(self, version: int, context: Optional[Context] = None) -> Any:
-        migration_transform = SyftMigrationRegistry.get_migration_for_version(
-            type_from=type(self), version_to=version
-        )
-        return (
-            migration_transform(
+        if self.__version__ != version:
+            migration_transform = SyftMigrationRegistry.get_migration_for_version(
+                type_from=type(self), version_to=version
+            )
+            return migration_transform(
                 self,
                 context,
             )
-            if self.__version__ != version
-            else self
-        )
+        return self
 
 
 def short_qual_name(name: str) -> str:

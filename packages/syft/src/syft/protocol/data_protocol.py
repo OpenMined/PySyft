@@ -115,7 +115,7 @@ class DataProtocol:
                         or hash_str not in state_versions.values()
                     ):
                         raise Exception(
-                            f"Can't remove {object_metadata} missing from state {versions}"
+                            f"Can't remove {object_metadata} missing from state {versions} for object {canonical_name}."
                         )
                     if action == "add":
                         state_dict[canonical_name][str(version)] = hash_str

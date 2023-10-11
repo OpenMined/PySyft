@@ -9,6 +9,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.protocol.data_protocol import bump_protocol_version
 from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import stage_protocol_changes
 
@@ -61,7 +62,8 @@ def stage_protocol(protocol_file: Path):
     ):
         dp = get_data_protocol()
         stage_protocol_changes()
-        yield
+        bump_protocol_version()
+        yield dp.protocol_history
         dp.save_history(dp.protocol_history)
 
 
