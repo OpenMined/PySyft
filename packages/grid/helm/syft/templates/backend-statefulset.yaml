@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    helm.sh/chart: component-chart-0.9.1
+  labels:
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: devspace-app
+  name: backend
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: devspace-app
+  serviceName: backend-headless
+  template:
+    metadata:
+      annotations:
+        helm.sh/chart: component-chart-0.9.1
+      labels:
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devspace-app
+    spec:
+      affinity: null
+      containers:
+      - args: null
+        command: null
+        env:
+        - name: MONGO_PORT
+          value: {{ .Values.db.mongo.settings.mongoPort }}
+        - name: MONGO_HOST
+          value: {{ .Values.db.mongo.settings.mongoHost }}
+        - name: MONGO_USERNAME
+          value: {{ .Values.secrets.db.mongo.mongoUsername }}
+        - name: MONGO_PASSWORD
+          value: {{ .Values.secrets.db.mongo.mongoPassword }}
+        - name: SERVICE_NAME
+          value: backend
+        - name: RELEASE
+          value: production
+        - name: VERSION
+          value: 0.8.2-beta.33
+        - name: VERSION_HASH
+          value: {{ .Values.node.settings.versionHash }}
+        - name: NODE_TYPE
+          value: {{ .Values.node.settings.nodeType }}
+        - name: NODE_NAME
+          value: {{ .Values.node.settings.nodeName }}
+        - name: STACK_API_KEY
+          value: {{ .Values.secrets.syft.stackApiKey }}
+        - name: PORT
+          value: '80'
+        - name: IGNORE_TLS_ERRORS
+          value: 'False'
+        - name: HTTP_PORT
+          value: '80'
+        - name: HTTPS_PORT
+          value: '443'
+        - name: CONTAINER_HOST
+          value: k8s
+        - name: TRACE
+          value: 'False'
+        - name: JAEGER_HOST
+          value: localhost
+        - name: JAEGER_PORT
+          value: '14268'
+        - name: DEV_MODE
+          value: 'False'
+        - name: DOMAIN_CONNECTION_PORT
+          value: '3030'
+        - name: ENABLE_OBLV
+          value: 'false'
+        - name: DEFAULT_ROOT_EMAIL
+          value: {{ .Values.secrets.syft.defaultRootEmail }}
+        - name: DEFAULT_ROOT_PASSWORD
+          value: {{ .Values.secrets.syft.defaultRootPassword }}
+        - name: BACKEND_STORAGE_PATH
+          value: /storage
+        envFrom: null
+        image: docker.io/openmined/grid-backend:0.8.2-beta.33
+        lifecycle: null
+        livenessProbe: null
+        name: container-0
+        readinessProbe: null
+        securityContext: null
+        startupProbe: null
+        volumeDevices: null
+        volumeMounts:
+        - mountPath: /storage
+          name: credentials-data
+          readOnly: false
+          subPath: credentials-data
+      dnsConfig: null
+      ephemeralContainers: null
+      hostAliases: null
+      imagePullSecrets: null
+      initContainers: null
+      nodeName: null
+      nodeSelector: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      terminationGracePeriodSeconds: 5
+      tolerations: null
+      topologySpreadConstraints: null
+      volumes: null
+  volumeClaimTemplates:
+  - metadata:
+      annotations:
+        helm.sh/chart: component-chart-0.9.1
+      labels:
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devspace-app
+      name: credentials-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
