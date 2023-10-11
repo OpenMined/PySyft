@@ -311,12 +311,6 @@ class MongoActionStore(ActionStore):
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
 
-        # self.data = self.store_config.backing_store(
-        #     "data", self.settings, self.store_config
-        # )
-        # self.permissions = self.store_config.backing_store(
-        #     "permissions", self.settings, self.store_config, ddtype=set
-        # )
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
@@ -351,9 +345,6 @@ class MongoActionStore(ActionStore):
             else:
                 return res["data"]
 
-    # def get_permission(self, id):
-    #     pass
-
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission=False
     ) -> Result[SyftObject, str]:
@@ -364,13 +355,9 @@ class MongoActionStore(ActionStore):
         if has_permission or self.has_permission(read_permission):
             try:
                 if isinstance(uid, LineageID):
-                    # TODO
-                    # syft_object = self.data[uid.id]
                     syft_object = self.get_data(uid.id)
                 elif isinstance(uid, UID):
-                    # TODO
                     syft_object = self.get_data(uid.id)
-                    # syft_object = self.data[uid]
                 else:
                     raise Exception(f"Unrecognized UID type: {type(uid)}")
                 return Ok(syft_object)
@@ -381,7 +368,6 @@ class MongoActionStore(ActionStore):
     def get_mock(self, uid: UID) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
         try:
-            # syft_object = self.data[uid]
             syft_object = self.get_data(uid.id)
             if isinstance(syft_object, TwinObject) and not is_action_data_empty(
                 syft_object.mock
@@ -401,7 +387,6 @@ class MongoActionStore(ActionStore):
         try:
             if self.exists(uid):
                 obj = self.get_data(uid.id)
-                # obj = self.data[uid]
                 read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
 
                 # if you have permission you can have private data
@@ -425,11 +410,6 @@ class MongoActionStore(ActionStore):
         uid = uid.id  # We only need the UID from LineageID or UID
         return self.get_data(uid) is not None
 
-    # def permission_exists(self, uid: UID) -> bool:
-    #     uid = uid.id  # We only need the UID from LineageID or UID
-    #     #TODO: mongo exists
-    #     # return uid in self.data
-
     def set(
         self,
         uid: UID,
@@ -441,9 +421,6 @@ class MongoActionStore(ActionStore):
 
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
         can_write = self.has_permission(write_permission)
-
-        # store_query_key: QueryKey = self.settings.store_key.with_obj(uid)
-        # qks={"_id": uid}
 
         with lock:
             collection_status = self.collection
@@ -470,20 +447,11 @@ class MongoActionStore(ActionStore):
                 can_write = True if ownership_result.is_ok() else False
 
         if can_write:
-            # TODO: set
-            # self.data[uid] = syft_object
             data = {"data": syft_object, "_id": uid}
-            # storage_obj = syft_object.to(self.storage_type)
             with lock:
                 collection.insert_one(data)
 
             if has_result_read_permission:
-                # if not self.permission_exists(uid):
-                # if uid not in self.permissions:
-                # create default permissions
-
-                # TODO: set permission
-                # self.permissions[uid] = set()
                 self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
             else:
                 self.add_permissions(
@@ -506,7 +474,6 @@ class MongoActionStore(ActionStore):
             collection_permissions: MongoCollection = collection_permissions_status.ok()
 
         data: List[ActionObject] = self.get_data(uid)
-        # data: List[UID] = collection.find_one({"_id": uid})
         with lock:
             permissions: List[UID] = collection_permissions.find_one({"_id": uid})
 
@@ -618,9 +585,6 @@ class MongoActionStore(ActionStore):
                 return collection_permissions_status
             collection_permissions: MongoCollection = collection_permissions_status.ok()
 
-            # find the permissions for the given permission.uid
-            # e.g. permissions = {"_id": "7b88fdef6bff42a8991d294c3d66f757",
-            #                      "permissions": set(["permission_str_1", "permission_str_2"]}}
             permissions: Optional[Dict] = collection_permissions.find_one(
                 {"_id": permission.uid}
             )

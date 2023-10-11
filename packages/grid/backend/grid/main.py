@@ -28,7 +28,6 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-
 app.include_router(api_router, prefix=settings.API_V2_STR)
 
 

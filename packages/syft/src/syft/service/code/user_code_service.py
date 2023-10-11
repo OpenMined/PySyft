@@ -302,8 +302,6 @@ class UserCodeService(AbstractService):
             # stdlib
             import traceback
 
-            # import ipdb
-            # ipdb.set_trace()
             return SyftError(message=f"Failed to run. {e}, {traceback.format_exc()}")
 
     def has_code_permission(self, code_item, context):

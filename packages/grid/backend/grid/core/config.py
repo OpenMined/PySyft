@@ -107,12 +107,12 @@ class Settings(BaseSettings):
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
 
+    # ZMQ stuff
     QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", 0))
     CREATE_PRODUCER: bool = (
         True if os.getenv("CREATE_PRODUCER", "false").lower() == "true" else False
     )
     N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 0))
-    # IS_WORKER_NODE: bool = (True if os.getenv("CREATE_PRODUCER", "false").lower() == "true" else False)
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
