@@ -43,6 +43,7 @@ from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
+from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
@@ -90,6 +91,7 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
@@ -126,6 +128,7 @@ NODE_NAME = "NODE_NAME"
 NODE_SIDE_TYPE = "NODE_SIDE_TYPE"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
+DEFAULT_ROOT_USERNAME = "DEFAULT_ROOT_USERNAME"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
 
 
@@ -157,6 +160,10 @@ def get_default_root_email() -> Optional[str]:
     return get_env(DEFAULT_ROOT_EMAIL, "info@openmined.org")
 
 
+def get_default_root_username() -> Optional[str]:
+    return get_env(DEFAULT_ROOT_USERNAME, "Jane Doe")
+
+
 def get_default_root_password() -> Optional[str]:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
@@ -182,6 +189,7 @@ signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
 default_root_email = get_default_root_email()
+default_root_username = get_default_root_username()
 default_root_password = get_default_root_password()
 
 
@@ -235,6 +243,7 @@ class Node(AbstractNode):
         action_store_config: Optional[StoreConfig] = None,
         document_store_config: Optional[StoreConfig] = None,
         root_email: str = default_root_email,
+        root_username: str = default_root_username,
         root_password: str = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
@@ -318,7 +327,7 @@ class Node(AbstractNode):
         self._construct_services()
 
         create_admin_new(  # nosec B106
-            name="Jane Doe",
+            name=root_username,
             email=root_email,
             password=root_password,
             node=self,
@@ -392,10 +401,15 @@ class Node(AbstractNode):
             for _ in range(queue_config.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
+                print("INITIALIZING CONSUMER")
                 consumer = self.queue_manager.create_consumer(
                     message_handler, address=address
                 )
                 consumer.run()
+                # third party
+                import gevent
+
+                gevent.sleep(0.0)
 
             # consumer = self.queue_manager.create_consumer(
             #     message_handler, producer.address
@@ -612,6 +626,12 @@ class Node(AbstractNode):
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
             )
+        elif isinstance(action_store_config, MongoStoreConfig):
+            action_store_type = MongoActionStore
+            self.action_store = action_store_type(
+                root_verify_key=self.verify_key, store_config=action_store_config
+            )
+
         else:
             self.action_store = DictActionStore(root_verify_key=self.verify_key)
 
@@ -835,9 +855,12 @@ class Node(AbstractNode):
         self,
         api_call: Union[SyftAPICall, SignedSyftAPICall],
         job_id: Optional[UID] = None,
+        check_call_location=True,
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
-        result = self.handle_api_call_with_unsigned_result(api_call, job_id=job_id)
+        result = self.handle_api_call_with_unsigned_result(
+            api_call, job_id=job_id, check_call_location=check_call_location
+        )
         # Sign the result
         signed_result = SyftAPIData(data=result).sign(self.signing_key)
 
@@ -847,6 +870,7 @@ class Node(AbstractNode):
         self,
         api_call: Union[SyftAPICall, SignedSyftAPICall],
         job_id: Optional[UID] = None,
+        check_call_location=True,
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
@@ -856,7 +880,7 @@ class Node(AbstractNode):
             if not api_call.is_valid:
                 return SyftError(message="Your message signature is invalid")  # type: ignore
 
-        if api_call.message.node_uid != self.id:
+        if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
         if api_call.message.path == "queue":
             return self.resolve_future(
@@ -869,7 +893,7 @@ class Node(AbstractNode):
         result = None
         is_blocking = api_call.message.blocking
 
-        if is_blocking or self.is_subprocess or self.processes == 0:
+        if is_blocking or self.is_subprocess:
             credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
@@ -1110,6 +1134,7 @@ def create_admin_new(
             user = create_user.to(User)
             user.signing_key = node.signing_key
             user.verify_key = user.signing_key.verify_key
+            print(node.id, node.signing_key, node.signing_key.verify_key, email, name)
             result = user_stash.set(credentials=node.signing_key.verify_key, user=user)
             if result.is_ok():
                 return result.ok()

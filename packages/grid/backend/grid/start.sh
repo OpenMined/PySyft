@@ -1,6 +1,7 @@
 #! /usr/bin/env bash
 set -e
 
+pip install nltk
 echo "Running start.sh with RELEASE=${RELEASE}"
 export GEVENT_MONKEYPATCH="False"
 

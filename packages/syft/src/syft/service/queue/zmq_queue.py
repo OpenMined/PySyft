@@ -3,6 +3,7 @@ from collections import OrderedDict
 from collections import defaultdict
 from random import randint
 import socketserver
+import threading
 import time
 from typing import DefaultDict
 from typing import Dict
@@ -36,6 +37,8 @@ INTERVAL_MAX = 32
 #  Paranoid Pirate Protocol constants
 PPP_READY = b"\x01"  # Signals worker is ready
 PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
+
+lock = threading.Lock()
 
 
 class Worker:
@@ -122,17 +125,17 @@ class ZMQProducer(QueueProducer):
     def run(self):
         # stdlib
 
-        self.thread = gevent.spawn(self._run)
-        self.thread.start()
-
-        self.producer_thread = gevent.spawn(self.read_items)
-        self.producer_thread.start()
-
-        # self.thread = threading.Thread(target=self._run)
+        # self.thread = gevent.spawn(self._run)
         # self.thread.start()
 
-        # self.producer_thread = threading.Thread(target=self.read_items)
+        # self.producer_thread = gevent.spawn(self.read_items)
         # self.producer_thread.start()
+
+        self.thread = threading.Thread(target=self._run)
+        self.thread.start()
+
+        self.producer_thread = threading.Thread(target=self.read_items)
+        self.producer_thread.start()
 
     def _run(self):
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
@@ -147,15 +150,17 @@ class ZMQProducer(QueueProducer):
                         frames = self.message_queue.pop()
                         worker_address = self.workers.next()
                         connecting_workers.add(worker_address)
-                        # print("SENDING FROM PRODUCER")
+                        print("SENDING JOB FROM PRODUCER")
                         # print(self.workers.queue.keys())
                         # print(worker_address)
                         frames.insert(0, worker_address)
-                        self.backend.send_multipart(frames)
+                        with lock:
+                            self.backend.send_multipart(frames)
 
                 # Handle worker message
                 if socks.get(self.backend) == zmq.POLLIN:
-                    frames = self.backend.recv_multipart()
+                    with lock:
+                        frames = self.backend.recv_multipart()
                     if not frames:
                         print("error in producer")
                         break
@@ -179,7 +184,8 @@ class ZMQProducer(QueueProducer):
                     if time.time() >= heartbeat_at:
                         for worker in self.workers.queue:
                             msg = [worker, PPP_HEARTBEAT]
-                            self.backend.send_multipart(msg)
+                            with lock:
+                                self.backend.send_multipart(msg)
                         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
 
                 self.workers.purge()
@@ -224,25 +230,31 @@ class ZMQConsumer(QueueConsumer):
         self.thread = None
 
     def _run(self):
+        print("ABCDEF", flush=True)
         liveness = HEARTBEAT_LIVENESS
         interval = INTERVAL_INIT
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         while True:
             try:
+                time.sleep(0.1)
                 socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))
                 if socks.get(self.worker) == zmq.POLLIN:
-                    frames = self.worker.recv_multipart()
+                    with lock:
+                        frames = self.worker.recv_multipart()
                     if not frames or len(frames) not in [1, 3]:
                         print(f"Worker error: Invalid message: {frames}")
                         break  # Interrupted
 
                     # get normal message
                     if len(frames) == 3:
-                        self.worker.send_multipart(frames)
+                        with lock:
+                            self.worker.send_multipart(frames)
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
+                            print("HANDLING MESSAGE IN CONSUMER")
                             self.message_handler.handle_message(message=message)
+                            print("done handling message")
                             # print("DONE DOING THE WORK")
                         except Exception as e:
                             print(f"ERROR HANDLING MESSAGE {e}")
@@ -281,10 +293,10 @@ class ZMQConsumer(QueueConsumer):
     def run(self):
         # stdlib
 
-        # self.thread = threading.Thread(target=self._run)
-        # self.thread.start()
-        self.thread = gevent.spawn(self._run)
+        self.thread = threading.Thread(target=self._run)
         self.thread.start()
+        # self.thread = gevent.spawn(self._run)
+        # self.thread.start()
 
     def close(self):
         if self.thread is not None:

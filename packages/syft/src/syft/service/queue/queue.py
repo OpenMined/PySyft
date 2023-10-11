@@ -93,6 +93,9 @@ class APICallMessageHandler(AbstractMessageHandler):
             queue_config=queue_config,
             is_subprocess=True,
         )
+        # otherwise it reads it from env
+        worker.id = worker_settings.id
+        worker.signing_key = worker_settings.signing_key
 
         # queue_item = worker.queue_stash.get_by_uid(
         #     api_call.credentials, queue_item_id
@@ -114,7 +117,9 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_status = JobStatus.COMPLETED
 
         try:
-            result = worker.handle_api_call(api_call, job_id=job_item.id)
+            result = worker.handle_api_call(
+                api_call, job_id=job_item.id, check_call_location=False
+            )
             if isinstance(result, SyftError):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
@@ -123,6 +128,8 @@ class APICallMessageHandler(AbstractMessageHandler):
             job_status = JobStatus.ERRORED
             result = SyftError(message=f"Failed with exception: {e}")
             print("HAD AN ERROR WHILE HANDLING MESSAGE")
+        # print("result", type(result.message.data))
+        # print("result of job", result.message.data)
         queue_item = QueueItem(
             node_uid=worker.id,
             id=queue_item.id,

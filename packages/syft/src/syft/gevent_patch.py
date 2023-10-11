@@ -2,9 +2,6 @@
 import os
 from typing import Optional
 
-# third party
-from gevent import monkey
-
 
 def str_to_bool(bool_str: Optional[str]) -> bool:
     result = False
@@ -37,6 +34,6 @@ def is_notebook() -> bool:
 
 jupyter_notebook = is_notebook()
 
-if jupyter_notebook:
-    # print("Patching Gevent in Jupyter")
-    monkey.patch_all(thread=False)
+# if jupyter_notebook:
+#     # print("Patching Gevent in Jupyter")
+#     monkey.patch_all(thread=False)

@@ -969,7 +969,7 @@ def execute_byte_code(
                     ).sign(node.signing_key)
 
                     # original_print("ID", context.job.log_id)
-                    # original_print(f"LAUNCHING JOB {func.service_func_name}")
+                    original_print(f"LAUNCHING JOB {func.service_func_name}")
                     job = node.add_api_call_to_queue(
                         api_call, parent_job_id=context.job_id
                     )

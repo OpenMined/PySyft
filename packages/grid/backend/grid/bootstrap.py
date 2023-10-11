@@ -76,7 +76,6 @@ def key_to_str(key: bytes) -> str:
 
 
 def generate_private_key() -> str:
-    print("GENERATING KEY")
     return key_to_str(SigningKey.generate())
 
 

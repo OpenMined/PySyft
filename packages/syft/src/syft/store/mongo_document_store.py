@@ -223,6 +223,9 @@ class MongoStorePartition(StorePartition):
 
         return Ok(self._permissions)
 
+    def set(self, *args, **kwargs):
+        return self._set(*args, **kwargs)
+
     def _set(
         self,
         credentials: SyftVerifyKey,
@@ -349,6 +352,11 @@ class MongoStorePartition(StorePartition):
             credentials=credentials, qks=qks, order_by=order_by
         )
 
+    @property
+    def data(self):
+        values: List = self._all(credentials=None, has_permission=True).ok()
+        return {v.id: v for v in values}
+
     def _get_all_from_store(
         self,
         credentials: SyftVerifyKey,
@@ -375,7 +383,9 @@ class MongoStorePartition(StorePartition):
         # TODO: maybe do this in loop before this
         res = []
         for s in syft_objs:
-            if self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials)):
+            if has_permission or self.has_permission(
+                ActionObjectREAD(uid=s.id, credentials=credentials)
+            ):
                 res.append(s)
         return Ok(res)
 

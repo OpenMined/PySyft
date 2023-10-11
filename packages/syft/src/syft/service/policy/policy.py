@@ -232,8 +232,11 @@ def retrieve_from_db(
     )
     if context.node.node_type == NodeType.DOMAIN:
         for var_name, arg_id in allowed_inputs.items():
-            kwarg_value = action_service.get(
-                context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
+            kwarg_value = action_service._get(
+                context=root_context,
+                uid=arg_id,
+                twin_mode=TwinMode.NONE,
+                has_permission=True,
             )
             if kwarg_value.is_err():
                 return SyftError(message=kwarg_value.err())
