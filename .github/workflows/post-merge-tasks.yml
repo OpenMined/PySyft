@@ -21,6 +21,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install pip packages
+        run: |
+          python -m pip install --upgrade --user pip tox
+
       - name: Check and Bump Protocol Version
         run: |
           tox -e syft.protocol.check
