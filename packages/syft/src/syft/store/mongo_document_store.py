@@ -573,11 +573,21 @@ class MongoDocumentStore(DocumentStore):
 
 @serializable(attrs=["index_name", "settings", "store_config"])
 class MongoBackingStore(KeyValueBackingStore):
-    """ """
+    """
+    Core logic for the MongoDB key-value store
+
+    Parameters:
+        `index_name`: str
+            Index name (can be either 'data' or 'permissions')
+        `settings`: PartitionSettings
+            Syft specific settings
+        `store_config`: StoreConfig
+            Connection Configuration
+    """
 
     def __init__(
         self,
-        index_name: str,  # 'data' or 'permission'
+        index_name: str,
         settings: PartitionSettings,
         store_config: StoreConfig,
     ) -> None:
@@ -643,8 +653,23 @@ class MongoBackingStore(KeyValueBackingStore):
     def __setitem__(self, key: Any, value: Any) -> None:
         self._set(key, value)
 
+    def _get(self, key: UID) -> Any:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+
+        result: Optional[Dict] = collection.find_one({"_id": key})
+        if result is not None:
+            return result[f"{key}"]
+        else:
+            raise KeyError(f"{key} does not exist")
+
     def __getitem__(self, key: Any) -> Self:
-        raise NotImplementedError
+        try:
+            return self._get(key)
+        except KeyError as e:
+            raise e
 
     def __repr__(self) -> str:
         raise NotImplementedError
