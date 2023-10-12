@@ -172,31 +172,18 @@ class NodeHandle:
             )
 
     def login_as_guest(self, **kwargs: Any) -> Optional[Any]:
-        client = self.client
-
-        session = client.login_as_guest(**kwargs)
-
-        if isinstance(session, SyftError):
-            return session
-
-        return session
+        return self.client.login_as_guest(**kwargs)
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
     ) -> Optional[Any]:
-        client = self.client
-
         if not email:
             email = input("Email: ")
+
         if not password:
             password = getpass.getpass("Password: ")
 
-        session = client.login(email=email, password=password, **kwargs)
-
-        if isinstance(session, SyftError):
-            return session
-
-        return session
+        return self.client.login(email=email, password=password, **kwargs)
 
     def register(
         self,
