@@ -560,15 +560,15 @@ class MongoStorePartition(StorePartition):
         return collection.count_documents(filter={})
 
     def _migrate_data(
-        self, to_klass: SyftObject, credentials: SyftVerifyKey, hash_permission: bool
+        self, to_klass: SyftObject, credentials: SyftVerifyKey, has_permission: bool
     ) -> Result[bool, str]:
-        hash_permission = (credentials == self.root_verify_key) or hash_permission
+        has_permission = (credentials == self.root_verify_key) or has_permission
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
         collection: MongoCollection = collection_status.ok()
 
-        if hash_permission:
+        if has_permission:
             storage_objs = collection.find({})
             for storage_obj in storage_objs:
                 obj = self.storage_type(storage_obj)
@@ -584,7 +584,7 @@ class MongoStorePartition(StorePartition):
                     credentials,
                     qk=qk,
                     obj=migrated_value,
-                    has_permission=hash_permission,
+                    has_permission=has_permission,
                 )
 
                 if result.is_err():

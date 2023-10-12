@@ -610,11 +610,11 @@ class KeyValueStorePartition(StorePartition):
         self.data[store_query_key.value] = obj
 
     def _migrate_data(
-        self, to_klass: SyftObject, credentials: SyftVerifyKey, hash_permission: bool
+        self, to_klass: SyftObject, credentials: SyftVerifyKey, has_permission: bool
     ) -> Result[bool, str]:
-        hash_permission = (credentials == self.root_verify_key) or hash_permission
+        has_permission = (credentials == self.root_verify_key) or has_permission
 
-        if hash_permission:
+        if has_permission:
             for key, value in self.data:
                 try:
                     migrated_value = value.migrate_to(to_klass)
@@ -625,7 +625,7 @@ class KeyValueStorePartition(StorePartition):
                     credentials,
                     qk=qk,
                     obj=migrated_value,
-                    has_permission=hash_permission,
+                    has_permission=has_permission,
                 )
 
                 if result.is_err():

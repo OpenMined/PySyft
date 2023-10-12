@@ -247,6 +247,30 @@ class KeyValueActionStore(ActionStore):
         for permission in permissions:
             self.add_permission(permission)
 
+    def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey):
+        has_root_permission = credentials == self.root_verify_key
+
+        if has_root_permission:
+            for key, value in self.data:
+                try:
+                    if value.__canonical_name__ != to_klass.__canonical_name__:
+                        continue
+                    migrated_value = value.migrate_to(to_klass)
+                except Exception:
+                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                result = self.set(
+                    uid=key,
+                    credentials=credentials,
+                    syft_object=migrated_value,
+                )
+
+                if result.is_err():
+                    return result.err()
+
+            return Ok(True)
+
+        return Err("You don't have permissions to migrate data.")
+
 
 @serializable()
 class DictActionStore(KeyValueActionStore):

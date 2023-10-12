@@ -509,7 +509,7 @@ class StorePartition:
         self,
         to_klass: SyftObject,
         credentials: SyftVerifyKey,
-        hash_permission: bool,
+        has_permission: bool,
     ) -> Result[bool, str]:
         raise NotImplementedError
 
