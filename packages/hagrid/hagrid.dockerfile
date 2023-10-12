@@ -1,4 +1,4 @@
-FROM python:3.11.3-slim as build
+FROM python:3.11-slim as build
 
 WORKDIR /hagrid
 COPY ./ /hagrid
