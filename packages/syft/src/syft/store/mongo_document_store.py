@@ -688,16 +688,40 @@ class MongoBackingStore(KeyValueBackingStore):
             raise e
 
     def __repr__(self) -> str:
+        # 🟡 TODO
         raise NotImplementedError
+
+    def _len(self) -> int:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return 0
+        collection: MongoCollection = collection_status.ok()
+        return collection.count_documents(filter={})
 
     def __len__(self) -> int:
-        raise NotImplementedError
+        return self._len()
+
+    def _delete(self, key: UID) -> None:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+        result = collection.delete_one({"_id": key})
+        if result.deleted_count != 1:
+            raise KeyError(f"{key} does not exist")
 
     def __delitem__(self, key: str):
-        raise NotImplementedError
+        self._delete(key)
+
+    def _delete_all(self) -> None:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+        collection.delete_many({})
 
     def clear(self) -> Self:
-        raise NotImplementedError
+        self._delete_all()
 
     def copy(self) -> Self:
         raise NotImplementedError
@@ -705,22 +729,38 @@ class MongoBackingStore(KeyValueBackingStore):
     def update(self, *args: Any, **kwargs: Any) -> Self:
         raise NotImplementedError
 
+    def _get_all_keys(self):
+        # 🟡 TODO
+        pass
+
     def keys(self) -> Any:
-        raise NotImplementedError
+        return self._get_all_keys()
+
+    def _get_all(self):
+        # 🟡 TODO
+        pass
 
     def values(self) -> Any:
-        raise NotImplementedError
+        return self._get_all().values()
 
     def items(self) -> Any:
-        raise NotImplementedError
+        return self._get_all().items()
 
-    def pop(self, *args: Any) -> Self:
-        raise NotImplementedError
+    def pop(self, key: Any) -> Self:
+        value = self._get(key)
+        self._delete(key)
+        return value
 
     def __contains__(self, item: Any) -> bool:
         raise NotImplementedError
 
     def __iter__(self) -> Any:
+        raise NotImplementedError
+
+    def __del__(self):
+        """
+        Close the mongo client connection
+        """
         raise NotImplementedError
 
 
