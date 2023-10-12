@@ -647,8 +647,24 @@ class MongoBackingStore(KeyValueBackingStore):
                 raise ValueError(f"Cannot insert data. Error message: {e}")
 
     def _update(self, key: UID, value: Any) -> None:
-        print("TODO: to be implemented")
-        pass
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+        try:
+            collection.update_one(
+                {"_id": key},
+                {
+                    "$set": {
+                        f"{key}": value,
+                        "_repr_debug_": _repr_debug_(value),
+                    }
+                },
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to update obj: {key} with value: {value}. Error: {e}"
+            )
 
     def __setitem__(self, key: Any, value: Any) -> None:
         self._set(key, value)
