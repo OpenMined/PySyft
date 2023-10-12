@@ -14,6 +14,7 @@ from syft.serde.serializable import serializable
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.service import AbstractService
+from syft.service.service import ServiceConfigRegistry
 from syft.service.service import service_method
 from syft.service.user.user_roles import GUEST_ROLE_LEVEL
 from syft.store.document_store import BaseStash
@@ -29,7 +30,7 @@ from syft.types.transforms import rename
 from syft.types.uid import UID
 from syft.util.util import index_syft_by_module_name
 
-MY_TEST_TYPE_BANK = deepcopy(TYPE_BANK)
+MOCK_TYPE_BANK = deepcopy(TYPE_BANK)
 
 
 def get_klass_version_1():
@@ -166,11 +167,10 @@ def test_client_server_running_different_protocols(stage_protocol):
         return index_syft_by_module_name(fully_qualified_name)
 
     node_name = UID().to_string()
-
-    with mock.patch("syft.serde.recursive.TYPE_BANK", MY_TEST_TYPE_BANK):
+    with mock.patch("syft.serde.recursive.TYPE_BANK", MOCK_TYPE_BANK):
         with mock.patch(
             "syft.protocol.data_protocol.TYPE_BANK",
-            MY_TEST_TYPE_BANK,
+            MOCK_TYPE_BANK,
         ):
             with mock.patch(
                 "syft.client.api.index_syft_by_module_name",
@@ -230,3 +230,4 @@ def test_client_server_running_different_protocols(stage_protocol):
                     assert isinstance(data, klass_v1)
                     assert data.name == sample_data.full_name
                     assert data.version == int(sample_data.version)
+    ServiceConfigRegistry.__service_config_registry__.pop("dummy.syft_object", None)
