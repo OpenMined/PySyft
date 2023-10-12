@@ -89,7 +89,7 @@ jobs:
       - name: Check and Bump Protocol Version
         if: github.event_name == 'schedule'
         run: |
-          BUMP=True tox -e syft.protocol.check
+          tox -e syft.protocol.check
 
       - name: Commit changes to Syft
         uses: EndBug/add-and-commit@v9
