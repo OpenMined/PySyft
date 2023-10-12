@@ -22,7 +22,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Check and Bump Protocol Version
-        if: github.event_name == 'schedule'
         run: |
           tox -e syft.protocol.check
 
