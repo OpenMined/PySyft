@@ -34,6 +34,9 @@ from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
+from ..protocol.data_protocol import DataProtocol
+from ..protocol.data_protocol import PROTOCOL_TYPE
+from ..protocol.data_protocol import get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
@@ -214,14 +217,22 @@ class HTTPConnection(NodeConnection):
             metadata_json = json.loads(response)
             return NodeMetadataJSON(**metadata_json)
 
-    def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        params = {"verify_key": str(credentials.verify_key)}
+    def get_api(
+        self, credentials: SyftSigningKey, communication_protocol: int
+    ) -> SyftAPI:
+        params = {
+            "verify_key": str(credentials.verify_key),
+            "communication_protocol": communication_protocol,
+        }
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="api",
-                kwargs={"credentials": credentials},
+                kwargs={
+                    "credentials": credentials,
+                    "communication_protocol": communication_protocol,
+                },
                 credentials=credentials,
             )
         else:
@@ -229,6 +240,7 @@ class HTTPConnection(NodeConnection):
             obj = _deserialize(content, from_bytes=True)
         obj.connection = self
         obj.signing_key = credentials
+        obj.communication_protocol = communication_protocol
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
@@ -333,20 +345,29 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
-    def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
+    def get_api(
+        self, credentials: SyftSigningKey, communication_protocol: int
+    ) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="api",
-                kwargs={"credentials": credentials},
+                kwargs={
+                    "credentials": credentials,
+                    "communication_protocol": communication_protocol,
+                },
                 credentials=credentials,
             )
         else:
-            obj = self.node.get_api(for_user=credentials.verify_key)
+            obj = self.node.get_api(
+                for_user=credentials.verify_key,
+                communication_protocol=communication_protocol,
+            )
         obj.connection = self
         obj.signing_key = credentials
+        obj.communication_protocol = communication_protocol
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return obj
@@ -444,6 +465,8 @@ class SyftClient:
         self.metadata = metadata
         self.credentials: Optional[SyftSigningKey] = credentials
         self._api = api
+        self.communication_protocol = None
+        self.current_protocol = None
 
         self.post_init()
 
@@ -453,6 +476,32 @@ class SyftClient:
     def post_init(self) -> None:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
+
+        self.communication_protocol = self._get_communication_protocol(
+            self.metadata.supported_protocols
+        )
+
+    def _get_communication_protocol(
+        self, protocols_supported_by_server: List
+    ) -> Union[int, str]:
+        data_protocol: DataProtocol = get_data_protocol()
+        protocols_supported_by_client: List[
+            PROTOCOL_TYPE
+        ] = data_protocol.supported_protocols
+
+        self.current_protocol = data_protocol.latest_version
+        common_protocols = set(protocols_supported_by_client).intersection(
+            protocols_supported_by_server
+        )
+
+        if len(common_protocols) == 0:
+            raise Exception(
+                "No common communication protocol found between the client and the server."
+            )
+
+        if "dev" in common_protocols:
+            return "dev"
+        return max(common_protocols)
 
     def create_project(
         self, name: str, description: str, user_email_address: str
@@ -759,7 +808,10 @@ class SyftClient:
             self.metadata = metadata
 
     def _fetch_api(self, credentials: SyftSigningKey):
-        _api: SyftAPI = self.connection.get_api(credentials=credentials)
+        _api: SyftAPI = self.connection.get_api(
+            credentials=credentials,
+            communication_protocol=self.communication_protocol,
+        )
 
         def refresh_callback():
             return self._fetch_api(self.credentials)

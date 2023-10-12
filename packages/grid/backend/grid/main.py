@@ -6,6 +6,9 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
+# syft absolute
+from syft.protocol.data_protocol import stage_protocol_changes
+
 # grid absolute
 from grid.api.router import api_router
 from grid.core.config import settings
@@ -29,6 +32,12 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V2_STR)
+
+
+if settings.DEV_MODE:
+    print("Staging protocol changes...")
+    status = stage_protocol_changes()
+    print(status)
 
 
 # needed for Google Kubernetes Engine LoadBalancer Healthcheck

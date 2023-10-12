@@ -26,6 +26,7 @@ try:
     # syft absolute
     from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
+    from syft.protocol.data_protocol import stage_protocol_changes
     from syft.service.response import SyftError
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
@@ -245,6 +246,10 @@ def deploy_to_python(
         worker_classes[NodeType.ENCLAVE] = sy.Enclave
     if hasattr(NodeType, "GATEWAY"):
         worker_classes[NodeType.GATEWAY] = sy.Gateway
+
+    if dev_mode:
+        print("Staging Protocol Changes...")
+        stage_protocol_changes()
 
     if port:
         if port == "auto":
