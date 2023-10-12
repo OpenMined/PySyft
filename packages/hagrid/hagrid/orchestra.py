@@ -163,13 +163,23 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
+            return sy.login(url=self.url, port=self.port)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
         else:
             raise NotImplementedError(
                 f"client not implemented for the deployment type:{self.deployment_type}"
             )
+
+    def login_as_guest(self, **kwargs: Any) -> Optional[Any]:
+        client = self.client
+
+        session = client.login_as_guest(**kwargs)
+
+        if isinstance(session, SyftError):
+            return session
+
+        return session
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
@@ -182,6 +192,7 @@ class NodeHandle:
             password = getpass.getpass("Password: ")
 
         session = client.login(email=email, password=password, **kwargs)
+
         if isinstance(session, SyftError):
             return session
 

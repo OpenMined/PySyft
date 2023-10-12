@@ -593,6 +593,16 @@ class SyftClient:
             return self.api.services.user.get_current_user()
         return None
 
+    def login_as_guest(self) -> Self:
+        _guest_client = self.guest()
+
+        print(
+            f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+            f"{self.metadata.node_type.capitalize()}> as GUEST"
+        )
+
+        return _guest_client
+
     def login(
         self, email: str, password: str, cache: bool = True, register=False, **kwargs
     ) -> Self:
@@ -806,6 +816,27 @@ def register(
 
 
 @instrument
+def login_as_guest(
+    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
+    node: Optional[AbstractNode] = None,
+    port: Optional[int] = None,
+    verbose: bool = True,
+):
+    _client = connect(url=url, node=node, port=port)
+
+    if isinstance(_client, SyftError):
+        return _client
+
+    if verbose:
+        print(
+            f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
+            f"side {_client.metadata.node_type.capitalize()}> as GUEST"
+        )
+
+    return _client.guest()
+
+
+@instrument
 def login(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
@@ -813,11 +844,12 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     cache: bool = True,
-    verbose: bool = True,
 ) -> SyftClient:
     _client = connect(url=url, node=node, port=port)
+
     if isinstance(_client, SyftError):
         return _client
+
     connection = _client.connection
 
     login_credentials = None
@@ -826,14 +858,6 @@ def login(
         if not password:
             password = getpass("Password: ")
         login_credentials = UserLoginCredentials(email=email, password=password)
-
-    if login_credentials is None:
-        if verbose:
-            print(
-                f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
-                f"side {_client.metadata.node_type.capitalize()}> as GUEST"
-            )
-        return _client.guest()
 
     if cache and login_credentials:
         _client_cache = SyftClientSessionCache.get_client(
