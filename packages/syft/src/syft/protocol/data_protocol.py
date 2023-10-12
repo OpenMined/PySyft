@@ -249,6 +249,18 @@ class DataProtocol:
         self.load_state()
         return SyftSuccess(message=f"Protocol Updated to {next_highest_protocol}")
 
+    def check_protocol(self) -> Result[SyftSuccess, SyftError]:
+        if len(self.diff) != 0:
+            return SyftError(message="Protocol Changes Unstanged")
+        else:
+            return SyftSuccess(message="Protocol Stable")
+
+    def check_or_stage_protocol(self) -> Result[SyftSuccess, SyftError]:
+        if not self.check_protocol():
+            self.stage_protocol_changes()
+        result = self.check_protocol()
+        return result
+
     @property
     def supported_protocols(self) -> list[Union[int, str]]:
         """Returns a list of protocol numbers that are marked as supported."""
@@ -295,6 +307,11 @@ def stage_protocol_changes() -> Result[SyftSuccess, SyftError]:
 def bump_protocol_version() -> Result[SyftSuccess, SyftError]:
     data_protocol = get_data_protocol()
     return data_protocol.bump_protocol_version()
+
+
+def check_or_stage_protocol() -> Result[SyftSuccess, SyftError]:
+    data_protocol = get_data_protocol()
+    return data_protocol.check_or_stage_protocol()
 
 
 def debox_arg_and_migrate(arg: Any, protocol_state: dict):

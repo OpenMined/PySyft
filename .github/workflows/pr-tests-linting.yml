@@ -47,3 +47,7 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - uses: pre-commit/action@v3.0.0
+
+      - name: Check Protocol Version
+        run: |
+          tox -e syft.protocol.check
