@@ -233,3 +233,6 @@ class MongoClient:
             return Err(str(e))
 
         return Ok(collection_permissions)
+
+    def close(self):
+        self.client.close()

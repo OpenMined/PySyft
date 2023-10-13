@@ -594,11 +594,12 @@ class MongoBackingStore(KeyValueBackingStore):
         self.index_name = index_name
         self.settings = settings
         self.store_config = store_config
+        self.client: MongoClient
 
     def init_client(self) -> Union[None, Err]:
-        client = MongoClient(config=self.store_config.client_config)
+        self.client = MongoClient(config=self.store_config.client_config)
 
-        collection_status = client.with_collection(
+        collection_status = self.client.with_collection(
             collection_settings=self.settings,
             store_config=self.store_config,
             collection_name=f"{self.settings.name}_{self.index_name}",
@@ -745,29 +746,34 @@ class MongoBackingStore(KeyValueBackingStore):
         self._delete(key)
         return value
 
-    def __contains__(self, item: Any) -> bool:
-        raise NotImplementedError
+    def __contains__(self, key: Any) -> bool:
+        return self._exist(key)
 
     def __iter__(self) -> Any:
-        raise NotImplementedError
+        return iter(self.keys())
 
     def __repr__(self) -> str:
-        # 🟡 TODO
-        raise NotImplementedError
+        return repr(self._get_all())
 
     def copy(self) -> Self:
         # 🟡 TODO
         raise NotImplementedError
 
     def update(self, *args: Any, **kwargs: Any) -> Self:
+        """
+        Inserts the specified items to the dictionary.
+        """
         # 🟡 TODO
         raise NotImplementedError
 
     def __del__(self):
         """
-        Close the mongo client connection
+        Close the mongo client connection:
+            - Cleanup client resources and disconnect from MongoDB
+            - End all server sessions created by this client
+            - Close all sockets in the connection pools and stop the monitor threads
         """
-        raise NotImplementedError
+        self.client.close()
 
 
 @serializable()
