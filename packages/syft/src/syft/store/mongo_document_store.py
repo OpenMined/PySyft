@@ -687,10 +687,6 @@ class MongoBackingStore(KeyValueBackingStore):
         except KeyError as e:
             raise e
 
-    def __repr__(self) -> str:
-        # 🟡 TODO
-        raise NotImplementedError
-
     def _len(self) -> int:
         collection_status = self.collection
         if collection_status.is_err():
@@ -723,22 +719,20 @@ class MongoBackingStore(KeyValueBackingStore):
     def clear(self) -> Self:
         self._delete_all()
 
-    def copy(self) -> Self:
-        raise NotImplementedError
-
-    def update(self, *args: Any, **kwargs: Any) -> Self:
-        raise NotImplementedError
-
-    def _get_all_keys(self):
-        # 🟡 TODO
-        pass
+    def _get_all(self) -> Any:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+        result = collection.find()
+        keys, values = [], []
+        for row in result:
+            keys.append(row["_id"])
+            values.append(row[f"{row['_id']}"])
+        return dict(zip(keys, values))
 
     def keys(self) -> Any:
-        return self._get_all_keys()
-
-    def _get_all(self):
-        # 🟡 TODO
-        pass
+        return self._get_all().keys()
 
     def values(self) -> Any:
         return self._get_all().values()
@@ -755,6 +749,18 @@ class MongoBackingStore(KeyValueBackingStore):
         raise NotImplementedError
 
     def __iter__(self) -> Any:
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        # 🟡 TODO
+        raise NotImplementedError
+
+    def copy(self) -> Self:
+        # 🟡 TODO
+        raise NotImplementedError
+
+    def update(self, *args: Any, **kwargs: Any) -> Self:
+        # 🟡 TODO
         raise NotImplementedError
 
     def __del__(self):
