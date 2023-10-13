@@ -871,6 +871,10 @@ def execute_byte_code(
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
+    import random
+    random_number = random.randint(1,100)
+    import copy
+
     try:
         # stdlib
         import builtins as __builtin__
@@ -878,12 +882,14 @@ def execute_byte_code(
         original_print = __builtin__.print
 
         class LocalDomainClient:
-            def __init__(self):
+            def __init__(self, context):
+                self.context = context
+                # self.print_func = copy.copy(print_func)
                 pass
 
             def init_checkpoint(self, max_checkpoints):
-                if context.job is not None:
-                    node = context.node
+                if self.context.job is not None:
+                    node = self.context.node
                     job_service = node.get_service("jobservice")
                     # user_service = node.get_service("userservice")
                     # admin_context = AuthedServiceContext(
@@ -891,19 +897,19 @@ def execute_byte_code(
                     #     credentials=user_service.admin_verify_key(),
                     #     role=ServiceRole.ADMIN,
                     # )
-                    job = context.job
+                    job = self.context.job
                     job.current_checkpoint = 0
                     job.max_checkpoints = max_checkpoints
-                    job_service.update(context, job)
+                    job_service.update(self.context, job)
                     # return res
 
             def checkpoint(self):
-                if context.job is not None:
-                    node = context.node
+                if self.context.job is not None:
+                    node = self.context.node
                     job_service = node.get_service("jobservice")
-                    job = context.job
+                    job = self.context.job
                     job.current_checkpoint += 1
-                    job_service.update(context, job)
+                    job_service.update(self.context, job)
                     # return res
 
             def launch_job(self, func: UserCode, **kwargs):
@@ -911,7 +917,7 @@ def execute_byte_code(
                 from ... import UID
 
                 # get reference to node (TODO)
-                node = context.node
+                node = self.context.node
                 action_service = node.get_service("actionservice")
                 user_service = node.get_service("userservice")
                 user_code_service = node.get_service("usercodeservice")
@@ -923,7 +929,7 @@ def execute_byte_code(
                 kw2id = {}
                 for k, v in kwargs.items():
                     value = ActionObject.from_obj(v)
-                    ptr = action_service.set(context, value)
+                    ptr = action_service.set(self.context, value)
                     ptr = ptr.ok()
                     kw2id[k] = ptr.id
 
@@ -941,7 +947,7 @@ def execute_byte_code(
 
                 # TODO: throw exception for enclaves
                 request = user_code_service._request_code_execution_inner(
-                    context, new_user_code
+                    self.context, new_user_code
                 ).ok()
                 admin_context = AuthedServiceContext(
                     node=node,
@@ -964,16 +970,16 @@ def execute_byte_code(
 
                     original_print(f"LAUNCHING JOB {func.service_func_name}")
                     job = node.add_api_call_to_queue(
-                        api_call, parent_job_id=context.job_id
+                        api_call, parent_job_id=self.context.job_id
                     )
 
                     # set api in global scope to enable using .get(), .wait())
                     user_signing_key = [
                         x.signing_key
                         for x in user_service.stash.partition.data.values()
-                        if x.verify_key == context.credentials
+                        if x.verify_key == self.context.credentials
                     ][0]
-                    user_api = node.get_api(context.credentials)
+                    user_api = node.get_api(self.context.credentials)
                     user_api.signing_key = user_signing_key
                     # We hardcode a python connection here since we have access to the node
                     # TODO: this is not secure
@@ -981,7 +987,7 @@ def execute_byte_code(
 
                     APIRegistry.set_api_for(
                         node_uid=node.id,
-                        user_verify_key=context.credentials,
+                        user_verify_key=self.context.credentials,
                         api=user_api,
                     )
 
@@ -991,7 +997,8 @@ def execute_byte_code(
                     raise ValueError(f"error while launching job:\n{e}")
 
         if context.job is not None:
-
+            job_id = context.job_id
+            log_id = context.job.log_id
             def print(*args, sep=" ", end="\n"):
                 def to_str(arg: Any) -> str:
                     if isinstance(arg, bytes):
@@ -1008,10 +1015,10 @@ def execute_byte_code(
                 new_str = sep.join(new_args) + end
                 log_service = context.node.get_service("LogService")
                 log_service.append(
-                    context=context, uid=context.job.log_id, new_str=new_str
+                    context=context, uid=log_id, new_str=new_str
                 )
                 return __builtin__.print(
-                    f"FUNCTION LOG ({context.job.log_id}):",
+                    f"FUNCTION LOG ({job_id, random_number}):",
                     *new_args,
                     end=end,
                     sep=sep,
@@ -1022,7 +1029,7 @@ def execute_byte_code(
             print = original_print
 
         if code_item.uses_domain:
-            kwargs["domain"] = LocalDomainClient()
+            kwargs["domain"] = LocalDomainClient(context=context)
 
         stdout = StringIO()
         stderr = StringIO()
@@ -1030,16 +1037,19 @@ def execute_byte_code(
         # statisfy lint checker
         result = None
 
-        exec(code_item.byte_code)  # nosec
+        # res = exec(code_item.byte_code, {'print': print}, None)  # nosec
+        
         _locals = locals()
-
+        _globals = {}
+        
         user_code_service = context.node.get_service("usercodeservice")
         for user_code in user_code_service.stash.get_all(context.credentials).ok():
-            globals()[user_code.service_func_name] = user_code
-        globals()["print"] = print
-
+            _globals[user_code.service_func_name] = user_code
+        _globals['print'] = print
+        exec(code_item.parsed_code, _globals, locals())  # nosec
+        
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, None, _locals)  # nosec
+        result = eval(evil_string, _globals, _locals)  # nosec
 
         # reset print
         print = original_print
