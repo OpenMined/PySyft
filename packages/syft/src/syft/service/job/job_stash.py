@@ -55,10 +55,10 @@ class Job(SyftObject):
     parent_job_id: Optional[UID]
     max_checkpoints: Optional[int] = 0
     current_checkpoint: Optional[int] = 0
-    start_time: Optional[str] = str(datetime.now())
+    creation_time: Optional[str] = str(datetime.now())
 
     __attr_searchable__ = ["parent_job_id"]
-    __repr_attrs__ = ["id", "result", "resolved", "progress", "start_time"]
+    __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
 
     @property
     def progress(self) -> str:
@@ -70,7 +70,7 @@ class Job(SyftObject):
                 return_string += f" Almost done..."
             elif self.current_checkpoint > 0:
                 now = datetime.now()
-                time_passed = now - datetime.fromisoformat(self.start_time)
+                time_passed = now - datetime.fromisoformat(self.creation_time)
                 time_per_checkpoint = time_passed/self.current_checkpoint
                 remaining_checkpoints = self.max_checkpoints - self.current_checkpoint
                 
@@ -108,6 +108,15 @@ class Job(SyftObject):
         )
         return api.services.job.get_subjobs(self.id)
 
+    @property
+    def owner(self):
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        return api.services.user.get_current_user(self.id)
+        
+
     def logs(self, _print=True):
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
@@ -139,10 +148,11 @@ class Job(SyftObject):
 
         return {
             "progress": self.progress,
-            "start date": self.start_time[:-7],
-            "logs": logs,
+            "creation date": self.creation_time[:-7],
+            # "logs": logs,
             # "result": result,
-            "has_parent": self.has_parent,
+            "owner email": self.owner.email,
+            "parent_id": str(self.parent_job_id) if self.parent_job_id else '-',
             "subjobs": len(subjobs),
         }
 
