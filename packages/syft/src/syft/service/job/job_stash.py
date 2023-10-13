@@ -53,17 +53,33 @@ class Job(SyftObject):
     status: JobStatus = JobStatus.CREATED
     log_id: Optional[UID]
     parent_job_id: Optional[UID]
-    max_checkpoints: Optional[int]
+    max_checkpoints: Optional[int] = 0
     current_checkpoint: Optional[int] = 0
     start_time: Optional[str] = str(datetime.now())
 
     __attr_searchable__ = ["parent_job_id"]
-    __repr_attrs__ = ["id", "result", "resolved", "progress", start_time]
+    __repr_attrs__ = ["id", "result", "resolved", "progress", "start_time"]
 
     @property
     def progress(self) -> str:
         if self.status == JobStatus.PROCESSING:
-            return f"{self.status}: {self.max_checkpoints}/{self.current_checkpoint}"
+            return_string = self.status
+            if self.max_checkpoints > 0:
+                return_string += f": {self.current_checkpoint}/{self.max_checkpoints}"
+            if self.current_checkpoint == self.max_checkpoints:
+                return_string += f" Almost done..."
+            elif self.current_checkpoint > 0:
+                now = datetime.now()
+                time_passed = now - datetime.fromisoformat(self.start_time)
+                time_per_checkpoint = time_passed/self.current_checkpoint
+                remaining_checkpoints = self.max_checkpoints - self.current_checkpoint
+                
+                # Probably need to divide by the number of consumers
+                remaining_time = remaining_checkpoints * time_per_checkpoint
+                return_string += f" Remaining time: " + str(remaining_time)[:-7]
+            else:
+                return_string += f" Estimating remaining time..."
+            return return_string
         return self.status
 
     def fetch(self) -> None:
@@ -123,7 +139,7 @@ class Job(SyftObject):
 
         return {
             "progress": self.progress,
-            "start date": self.start_time,
+            "start date": self.start_time[:-7],
             "logs": logs,
             "result": result,
             "has_parent": self.has_parent,
@@ -196,7 +212,7 @@ class JobStash(BaseStash):
         item: Job,
         add_permissions: Optional[List[ActionObjectPermission]] = None,
     ) -> Result[Optional[Job], str]:
-        if item.resolved:
+        if True:#item.resolved:
             valid = self.check_type(item, self.object_type)
             if valid.is_err():
                 return SyftError(message=valid.err())
