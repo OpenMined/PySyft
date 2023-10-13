@@ -256,6 +256,60 @@ def retrieve_from_db(
     return Ok(code_inputs)
 
 
+def allowed_ids_only(
+    allowed_inputs: Dict[str, UID],
+    kwargs: Dict[str, Any],
+    context: AuthedServiceContext,
+) -> Dict[str, UID]:
+    if context.node.node_type == NodeType.DOMAIN:
+        node_identity = NodeIdentity(
+            node_name=context.node.name,
+            node_id=context.node.id,
+            verify_key=context.node.signing_key.verify_key,
+        )
+        allowed_inputs = allowed_inputs[node_identity]
+    elif context.node.node_type == NodeType.ENCLAVE:
+        base_dict = {}
+        for key in allowed_inputs.values():
+            base_dict.update(key)
+        allowed_inputs = base_dict
+    else:
+        raise Exception(
+            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+        )
+    filtered_kwargs = {}
+    for key in allowed_inputs.keys():
+        if key in kwargs:
+            value = kwargs[key]
+            uid = value
+            if not isinstance(uid, UID):
+                uid = getattr(value, "id", None)
+
+            if uid != allowed_inputs[key]:
+                raise Exception(
+                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
+                )
+            filtered_kwargs[key] = value
+    return filtered_kwargs
+
+
+@serializable()
+class ExactMatch(InputPolicy):
+    # version
+    __canonical_name__ = "ExactMatch"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def filter_kwargs(
+        self, kwargs: Dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
+    ) -> Dict[Any, Any]:
+        allowed_inputs = allowed_ids_only(
+            allowed_inputs=self.inputs, kwargs=kwargs, context=context
+        )
+        results = retrieve_from_db(
+            code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
+        )
+        return results
+
 @serializable()
 class OutputHistory(SyftObject):
     # version
