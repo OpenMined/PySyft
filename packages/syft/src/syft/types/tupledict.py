@@ -4,6 +4,7 @@ from collections.abc import Collection
 from collections.abc import Iterable
 from collections.abc import Iterator
 from collections.abc import Mapping
+from types import MappingProxyType
 from typing import Generic
 from typing import Optional
 from typing import SupportsIndex
@@ -81,7 +82,7 @@ class _Meta(type):
 
 
 class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
-    __mapping: OrderedDict[_KT, int]
+    __mapping: MappingProxyType[_KT, int]
 
     @overload
     def __init__(self) -> None:
@@ -103,12 +104,14 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
         self, __value: Optional[Union[Mapping[_KT, int], Iterable[_KT]]] = None, /
     ) -> None:
         match __value:
-            case OrderedDict():
+            case MappingProxyType():
                 self.__mapping = __value
             case Mapping():
-                self.__mapping = OrderedDict(__value)
+                self.__mapping = MappingProxyType(__value)
             case Iterable():
-                self.__mapping = OrderedDict((k, i) for i, k in enumerate(__value))
+                self.__mapping = MappingProxyType(
+                    OrderedDict((k, i) for i, k in enumerate(__value))
+                )
             case _:
                 pass
 
