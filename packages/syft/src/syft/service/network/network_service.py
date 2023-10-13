@@ -165,7 +165,9 @@ class NetworkService(AbstractService):
         # Verifying if the challenge is valid
 
         try:
-            remote_node_verify_key.verify_key.verify(random_challenge, challenge_signature)
+            remote_node_verify_key.verify_key.verify(
+                random_challenge, challenge_signature
+            )
         except Exception as E:
             return SyftError(message=str(E))
 
@@ -205,13 +207,11 @@ class NetworkService(AbstractService):
         remote_client = peer.client_with_context(context=context)
         random_challenge = secrets.token_bytes(16)
 
-        remote_res = remote_client.api.services.network.ping(
-            challenge=random_challenge
-        )
+        remote_res = remote_client.api.services.network.ping(challenge=random_challenge)
 
         if isinstance(remote_res, SyftError):
             return remote_res
-        
+
         challenge_signature = remote_res
 
         # Verifying if the challenge is valid
@@ -219,8 +219,6 @@ class NetworkService(AbstractService):
             peer.verify_key.verify_key.verify(random_challenge, challenge_signature)
         except Exception as E:
             return SyftError(message=str(E))
-
-        
 
         result = self.stash.update_peer(context.node.verify_key, peer)
         if result.is_err():
