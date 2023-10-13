@@ -141,7 +141,7 @@ class Job(SyftObject):
             "progress": self.progress,
             "start date": self.start_time[:-7],
             "logs": logs,
-            "result": result,
+            # "result": result,
             "has_parent": self.has_parent,
             "subjobs": len(subjobs),
         }

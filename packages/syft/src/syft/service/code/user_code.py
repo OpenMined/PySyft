@@ -871,10 +871,6 @@ def execute_byte_code(
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
-    import random
-    random_number = random.randint(1,100)
-    import copy
-
     try:
         # stdlib
         import builtins as __builtin__
@@ -1018,7 +1014,7 @@ def execute_byte_code(
                     context=context, uid=log_id, new_str=new_str
                 )
                 return __builtin__.print(
-                    f"FUNCTION LOG ({job_id, random_number}):",
+                    f"FUNCTION LOG ({job_id}):",
                     *new_args,
                     end=end,
                     sep=sep,
