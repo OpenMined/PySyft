@@ -778,6 +778,7 @@ def list_dict_repr_html(self) -> str:
 aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type(set()), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(tuple, "_repr_html_", list_dict_repr_html)
 
 
 class StorableObjectType:

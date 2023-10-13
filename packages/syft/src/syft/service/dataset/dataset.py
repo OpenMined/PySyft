@@ -32,6 +32,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
+from ...types.tupledict import DictTuple
 from ...types.tupledict import TupleDict
 from ...types.uid import UID
 from ...util import options
@@ -525,11 +526,8 @@ class Dataset(SyftObject):
         return data
 
     @property
-    def assets(self) -> TupleDict[str, Asset]:
-        data = TupleDict()
-        for asset in self.asset_list:
-            data[asset.name] = asset
-        return data
+    def assets(self) -> DictTuple[str, Asset]:
+        return DictTuple((asset.name, asset) for asset in self.asset_list)
 
     def _old_repr_markdown_(self) -> str:
         _repr_str = f"Syft Dataset: {self.name}\n"
