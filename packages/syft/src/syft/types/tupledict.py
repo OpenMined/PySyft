@@ -34,6 +34,26 @@ class TupleDict(OrderedDict[_KT, _VT]):
         yield from self.values()
 
 
+# To correctly implement the creation of a DictTuple instance with
+# DictTuple(key_value_pairs: Iterable[tuple[_KT, _VT]]),
+# implementing just __init__ and __new__ is not enough.
+#
+# We need to extract the keys and values from keys_value_pairs
+# and pass the values to __new__ (needs to call tuple.__new__(values) to create the tuple)
+# and the keys to __init__ to create the mapping _KT -> int,
+# but we can only iterate over key_value_pairs once since keys_value_pairs,
+# being just an Iterable, might be ephemeral.
+#
+# Implementing just __new__ and __init__ for DictTuple is not enough since when
+# calling DictTuple(key_value_pairs), __new__(keys_and_values) and __init__(key_value_pairs)
+# are called in 2 separate function calls. If keys_and_values are ephemeral, like a generator,
+# by the time it's passed to __init__() it's already been exhausted and there is no way to
+# extract the keys out to create the mapping.
+#
+# Thus it is necessary to override __call__ of the metaclass
+# to customize the way __new__ and __init__ work together, by iterating over key_value_pairs
+# once to extract both keys and values, then passing keys to __new__, values to __init__
+# within the same function call.
 class _Meta(type):
     def __call__(
         cls: type[_T],
