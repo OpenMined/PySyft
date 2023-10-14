@@ -26,6 +26,7 @@ try:
     # syft absolute
     from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
+    from syft.protocol.data_protocol import stage_protocol_changes
     from syft.service.response import SyftError
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
@@ -163,13 +164,23 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
+            return sy.login(url=self.url, port=self.port)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
         else:
             raise NotImplementedError(
                 f"client not implemented for the deployment type:{self.deployment_type}"
             )
+
+    def login_as_guest(self, **kwargs: Any) -> Optional[Any]:
+        client = self.client
+
+        session = client.login_as_guest(**kwargs)
+
+        if isinstance(session, SyftError):
+            return session
+
+        return session
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
@@ -182,6 +193,7 @@ class NodeHandle:
             password = getpass.getpass("Password: ")
 
         session = client.login(email=email, password=password, **kwargs)
+
         if isinstance(session, SyftError):
             return session
 
@@ -247,6 +259,10 @@ def deploy_to_python(
         worker_classes[NodeType.ENCLAVE] = sy.Enclave
     if hasattr(NodeType, "GATEWAY"):
         worker_classes[NodeType.GATEWAY] = sy.Gateway
+
+    if dev_mode:
+        print("Staging Protocol Changes...")
+        stage_protocol_changes()
 
     if port:
         if port == "auto":

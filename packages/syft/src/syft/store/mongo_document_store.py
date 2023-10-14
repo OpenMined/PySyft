@@ -27,6 +27,7 @@ from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
 from ..service.response import SyftSuccess
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -50,6 +51,9 @@ from .mongo_client import MongoStoreClientConfig
 
 @serializable()
 class MongoDict(SyftBaseObject):
+    __canonical_name__ = "MongoDict"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     keys: List[Any]
     values: List[Any]
 
@@ -778,6 +782,7 @@ class MongoBackingStore(KeyValueBackingStore):
 
 @serializable()
 class MongoStoreConfig(StoreConfig):
+    __canonical_name__ = "MongoStoreConfig"
     """Mongo Store configuration
 
     Parameters:

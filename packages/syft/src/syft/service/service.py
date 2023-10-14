@@ -21,6 +21,7 @@ from result import OkErr
 # relative
 from ..abstract_node import AbstractNode
 from ..node.credentials import SyftVerifyKey
+from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.lib_permissions import CMPCRUDPermission
 from ..serde.lib_permissions import CMPPermission
 from ..serde.lib_service_registry import CMPBase
@@ -32,6 +33,7 @@ from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
@@ -73,6 +75,9 @@ class AbstractService:
 
 @serializable()
 class BaseConfig(SyftBaseObject):
+    __canonical_name__ = "BaseConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     public_path: str
     private_path: str
     public_name: str
@@ -85,6 +90,7 @@ class BaseConfig(SyftBaseObject):
 
 @serializable()
 class ServiceConfig(BaseConfig):
+    __canonical_name__ = "ServiceConfig"
     permissions: List
     roles: List[ServiceRole]
 
@@ -94,6 +100,7 @@ class ServiceConfig(BaseConfig):
 
 @serializable()
 class LibConfig(BaseConfig):
+    __canonical_name__ = "LibConfig"
     permissions: Set[CMPPermission]
 
     def has_permission(self, credentials: SyftVerifyKey):
@@ -329,6 +336,12 @@ def service_method(
         input_signature = deepcopy(signature)
 
         def _decorator(self, *args, **kwargs):
+            communication_protocol = kwargs.pop("communication_protocol", None)
+
+            if communication_protocol:
+                args, kwargs = migrate_args_and_kwargs(
+                    args=args, kwargs=kwargs, to_latest_protocol=True
+                )
             if autosplat is not None and len(autosplat) > 0:
                 args, kwargs = reconstruct_args_kwargs(
                     signature=input_signature,
@@ -337,6 +350,13 @@ def service_method(
                     kwargs=kwargs,
                 )
             result = func(self, *args, **kwargs)
+            if communication_protocol:
+                result, _ = migrate_args_and_kwargs(
+                    args=(result,),
+                    kwargs={},
+                    to_protocol=communication_protocol,
+                )
+                result = result[0]
             context = kwargs.get("context", None)
             context = args[0] if context is None else context
             attrs_to_attach = {

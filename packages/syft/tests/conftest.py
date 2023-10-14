@@ -1,9 +1,17 @@
+# stdlib
+import json
+from pathlib import Path
+from unittest import mock
+
 # third party
 from faker import Faker
 import pytest
 
 # syft absolute
 import syft as sy
+from syft.protocol.data_protocol import bump_protocol_version
+from syft.protocol.data_protocol import get_data_protocol
+from syft.protocol.data_protocol import stage_protocol_changes
 
 # relative
 from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
@@ -26,8 +34,41 @@ def faker():
     return Faker()
 
 
+def create_file(filepath: Path, data: dict):
+    with open(filepath, "w") as fp:
+        fp.write(json.dumps(data))
+
+
+def remove_file(filepath: Path):
+    filepath.unlink(missing_ok=True)
+
+
 @pytest.fixture(autouse=True)
-def worker(faker):
+def protocol_file():
+    random_name = sy.UID().to_string()
+    protocol_dir = sy.SYFT_PATH / "protocol"
+    file_path = protocol_dir / f"{random_name}.json"
+    dp = get_data_protocol()
+    create_file(filepath=file_path, data=dp.protocol_history)
+    yield file_path
+    remove_file(filepath=file_path)
+
+
+@pytest.fixture(autouse=True)
+def stage_protocol(protocol_file: Path):
+    with mock.patch(
+        "syft.protocol.data_protocol.PROTOCOL_STATE_FILENAME",
+        protocol_file.name,
+    ):
+        dp = get_data_protocol()
+        stage_protocol_changes()
+        bump_protocol_version()
+        yield dp.protocol_history
+        dp.save_history(dp.protocol_history)
+
+
+@pytest.fixture(autouse=True)
+def worker(faker, stage_protocol):
     return sy.Worker.named(name=faker.name())
 
 
