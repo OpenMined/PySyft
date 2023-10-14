@@ -145,5 +145,8 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
 
         return super().__getitem__(self.__mapping[__key])
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__qualname__}{super().__repr__()}"
+
     def keys(self):
         return self.__mapping.keys()
