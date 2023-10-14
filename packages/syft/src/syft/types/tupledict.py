@@ -87,6 +87,43 @@ class _Meta(type):
 
 
 class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
+    """
+    OVERVIEW
+
+        tuple with support for dict-like __getitem__(key)
+
+            dict_tuple = DictTuple({"x": 1, "y": 2})
+
+            dict_tuple["x"] == 1
+
+            dict_tuple["y"] == 2
+
+            dict_tuple[0] == 1
+
+            dict_tuple[1] == 2
+
+        everything else, e.g. __contains__, __iter__, behaves similarly to a tuple
+
+
+    CREATION
+
+        DictTuple(iterable) -> DictTuple([("x", 1), ("y", 2)])
+
+        DictTuple(mapping) -> DictTuple({"x": 1, "y": 2})
+
+        DictTuple(values, keys) -> DictTuple([1, 2], ["x", "y"])
+
+
+    IMPLEMENTATION DETAILS
+
+        DictTuple[_KT, _VT] is essentially a tuple[_VT, ...] that maintains an immutable Mapping[_KT, int]
+        from the key to the tuple index internally.
+
+        For example DictTuple({"x": 12, "y": 34}) is just a tuple (12, 34) with a {"x": 0, "y": 1} mapping.
+
+        types.MappingProxyType is used for the mapping for immutability.
+    """
+
     __mapping: MappingProxyType[_KT, int]
 
     @overload
