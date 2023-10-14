@@ -15,6 +15,7 @@ from typing import overload
 # third party
 from typing_extensions import Self
 
+_T = TypeVar("_T")
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 
@@ -34,8 +35,11 @@ class TupleDict(OrderedDict[_KT, _VT]):
 
 class _Meta(type):
     def __call__(
-        cls, __value: Optional[Iterable] = None, __key: Optional[Collection] = None, /
-    ):
+        cls: type[_T],
+        __value: Optional[Iterable] = None,
+        __key: Optional[Collection] = None,
+        /,
+    ) -> _T:
         if __value is None and __key is None:
             obj = cls.__new__(cls)
             obj.__init__()
