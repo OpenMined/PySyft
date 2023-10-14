@@ -3,6 +3,7 @@ from collections import OrderedDict
 from collections.abc import Collection
 from collections.abc import Iterable
 from collections.abc import Iterator
+from collections.abc import KeysView
 from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Generic
@@ -148,5 +149,5 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
     def __repr__(self) -> str:
         return f"{self.__class__.__qualname__}{super().__repr__()}"
 
-    def keys(self):
+    def keys(self) -> KeysView[_KT]:
         return self.__mapping.keys()
