@@ -27,8 +27,10 @@ from result import Result
 import zmq.green as zmq
 
 # relative
+from ..types.tupledict import DictTuple
 from ..types.tupledict import TupleDict
 from .deserialize import _deserialize as deserialize
+from .recursive_primitives import _serialize_kv_pairs
 from .recursive_primitives import deserialize_kv
 from .recursive_primitives import recursive_serde_register
 from .recursive_primitives import recursive_serde_register_type
@@ -132,6 +134,17 @@ recursive_serde_register(
     TupleDict,
     serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, TupleDict),
+)
+
+
+def _serialize_dicttuple(x: DictTuple) -> bytes:
+    return _serialize_kv_pairs(size=len(x), kv_pairs=zip(x.keys(), x, strict=True))
+
+
+recursive_serde_register(
+    DictTuple,
+    serialize=_serialize_dicttuple,
+    deserialize=functools.partial(deserialize_kv, DictTuple),
 )
 
 
