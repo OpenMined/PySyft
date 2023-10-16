@@ -9,9 +9,7 @@ from syft.service.user.user_roles import ServiceRole
 
 
 def test_domain_connect_to_gateway(domain_1_port, gateway_port):
-    gateway_client: GatewayClient = sy.login(
-        port=gateway_port, email="info@openmined.org", password="changethis"
-    )
+    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
 
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
