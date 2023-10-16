@@ -690,7 +690,9 @@ class MongoBackingStore(KeyValueBackingStore):
         if result is not None:
             return result[f"{key}"]
         else:
-            raise KeyError(f"{key} does not exist")
+            # raise KeyError(f"{key} does not exist")
+            # return an empty set which is the same with SQLiteBackingStore
+            return set()
 
     def __getitem__(self, key: Any) -> Self:
         try:
