@@ -187,6 +187,7 @@ class ActionService(AbstractService):
         filtered_kwargs = input_policy.filter_kwargs(
             kwargs=kwargs, context=context, code_item_id=code_item.id
         )
+        # update input policy to track any input state
         code_item.input_policy = input_policy
 
         expected_input_kwargs = set()

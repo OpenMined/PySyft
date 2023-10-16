@@ -55,7 +55,7 @@ class JobService(AbstractService):
             return res
 
     @service_method(
-        path="job.udpate",
+        path="job.update",
         name="update",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )

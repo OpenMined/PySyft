@@ -219,7 +219,6 @@ class ZMQConsumer(QueueConsumer):
         self.thread = None
 
     def _run(self):
-        print("ABCDEF", flush=True)
         liveness = HEARTBEAT_LIVENESS
         interval = INTERVAL_INIT
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL

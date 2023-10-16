@@ -880,33 +880,23 @@ def execute_byte_code(
         class LocalDomainClient:
             def __init__(self, context):
                 self.context = context
-                # self.print_func = copy.copy(print_func)
-                pass
 
-            def init_checkpoint(self, max_checkpoints):
-                if self.context.job is not None:
-                    node = self.context.node
-                    job_service = node.get_service("jobservice")
-                    # user_service = node.get_service("userservice")
-                    # admin_context = AuthedServiceContext(
-                    #     node=node,
-                    #     credentials=user_service.admin_verify_key(),
-                    #     role=ServiceRole.ADMIN,
-                    # )
-                    job = self.context.job
-                    job.current_checkpoint = 0
-                    job.max_checkpoints = max_checkpoints
-                    job_service.update(self.context, job)
-                    # return res
-
-            def checkpoint(self):
+            def init_progress(self, n_iters):
                 if self.context.job is not None:
                     node = self.context.node
                     job_service = node.get_service("jobservice")
                     job = self.context.job
-                    job.current_checkpoint += 1
+                    job.current_iter = 0
+                    job.n_iters = n_iters
                     job_service.update(self.context, job)
-                    # return res
+
+            def update_progress(self, n=1):
+                if self.context.job is not None:
+                    node = self.context.node
+                    job_service = node.get_service("jobservice")
+                    job = self.context.job
+                    job.current_iter += n
+                    job_service.update(self.context, job)
 
             def launch_job(self, func: UserCode, **kwargs):
                 # relative
@@ -1031,8 +1021,6 @@ def execute_byte_code(
 
         # statisfy lint checker
         result = None
-
-        # res = exec(code_item.byte_code, {'print': print}, None)  # nosec
 
         _locals = locals()
         _globals = {}

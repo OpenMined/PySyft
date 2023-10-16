@@ -30,9 +30,6 @@ from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
 
-# create custom object
-# item_queue: Queue = Queue()
-
 
 @serializable()
 class BlobFile(SyftObject):
@@ -41,49 +38,39 @@ class BlobFile(SyftObject):
 
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
-    data: Optional[Any] = None
 
     def read(self, stream=False, chunk_size=512, force=False):
         # get blob retrieval object from api + syft_blob_storage_entry_id
-        # if self.data_cached and not force:
-        #     return self.data_cached
         read_method = from_api_or_context(
             "blob_storage.read", self.syft_node_location, self.syft_client_verify_key
         )
         blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
-        print(blob_retrieval_object.url)
-        # self.data_cached = blob_retrieval_object._read_data(stream=stream, chunk_size=chunk_size)
         return blob_retrieval_object._read_data(stream=stream, chunk_size=chunk_size)
 
-    def old_iter_lines(self, chunk_size=512):
+    def _iter_lines(self, chunk_size=512):
+        """Synchronous version of the async iter_lines"""
         return self.read(stream=True, chunk_size=chunk_size)
 
-    def read_queue(self, queue, init_chunk_size):
-        for line in self.old_iter_lines(chunk_size=init_chunk_size):
-            # self.data.append(line)
+    def read_queue(self, queue, chunk_size):
+        for line in self._iter_lines(chunk_size=chunk_size):
             queue.put(line)
         # Put anything not a string at the end
         queue.put(0)
 
-    def iter_lines(self, chunk_size=512, init_chunk_size=128):
+    def iter_lines(self, chunk_size=512):
         item_queue: Queue = Queue()
-        self.data = []
-        # change to green threads
         threading.Thread(
             target=self.read_queue,
             args=(
                 item_queue,
-                init_chunk_size,
+                chunk_size,
             ),
             daemon=True,
         ).start()
-        item = None
-        while True:
+        item = item_queue.get()
+        while item != 0:
+            yield item
             item = item_queue.get()
-            if item != 0:
-                yield item
-            else:
-                break
 
 
 class BlobFileType(type):

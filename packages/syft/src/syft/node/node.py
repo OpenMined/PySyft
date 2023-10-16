@@ -387,7 +387,6 @@ class Node(AbstractNode):
             for _ in range(queue_config.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
-                print("INITIALIZING CONSUMER")
                 consumer = self.queue_manager.create_consumer(
                     message_handler, address=address
                 )
