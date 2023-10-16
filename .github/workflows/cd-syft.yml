@@ -346,3 +346,4 @@ jobs:
           message: "Update Helm package from Syft Repo"
           add: "helm/"
           push: "origin gh-pages"
+          cwd: "./ghpages/"
