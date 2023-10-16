@@ -23,7 +23,7 @@ db:
 node:
   settings:
     tls: false
-    hostname: "localhost"
+    hostname: "" # do not make this localhost
     nodeName: "mynode"
     nodeType: "domain"
     versionHash: "abc"
