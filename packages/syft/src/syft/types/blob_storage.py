@@ -1,7 +1,9 @@
 # stdlib
 import mimetypes
 from pathlib import Path
+from queue import Queue
 import sys
+import threading
 from typing import Any
 from typing import ClassVar
 from typing import List
@@ -37,16 +39,38 @@ class BlobFile(SyftObject):
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
 
-    def read(self, stream=False):
+    def read(self, stream=False, chunk_size=512, force=False):
         # get blob retrieval object from api + syft_blob_storage_entry_id
         read_method = from_api_or_context(
             "blob_storage.read", self.syft_node_location, self.syft_client_verify_key
         )
         blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
-        return blob_retrieval_object._read_data(stream=stream)
+        return blob_retrieval_object._read_data(stream=stream, chunk_size=chunk_size)
 
-    def iter_lines(self):
-        return self.read(stream=True)
+    def _iter_lines(self, chunk_size=512):
+        """Synchronous version of the async iter_lines"""
+        return self.read(stream=True, chunk_size=chunk_size)
+
+    def read_queue(self, queue, chunk_size):
+        for line in self._iter_lines(chunk_size=chunk_size):
+            queue.put(line)
+        # Put anything not a string at the end
+        queue.put(0)
+
+    def iter_lines(self, chunk_size=512):
+        item_queue: Queue = Queue()
+        threading.Thread(
+            target=self.read_queue,
+            args=(
+                item_queue,
+                chunk_size,
+            ),
+            daemon=True,
+        ).start()
+        item = item_queue.get()
+        while item != 0:
+            yield item
+            item = item_queue.get()
 
 
 class BlobFileType(type):
@@ -97,6 +121,7 @@ class BlobStorageEntry(SyftObject):
     type_: Optional[Type]
     mimetype: str = "bytes"
     file_size: int
+    no_lines: Optional[int] = 0
     uploaded_by: SyftVerifyKey
     created_at: DateTime = DateTime.now()
 
@@ -109,6 +134,7 @@ class BlobStorageMetadata(SyftObject):
     type_: Optional[Type[SyftObject]]
     mimetype: str = "bytes"
     file_size: int
+    no_lines: Optional[int] = 0
 
 
 @serializable()

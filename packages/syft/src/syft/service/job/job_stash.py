@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 from enum import Enum
 from typing import Any
 from typing import Dict
@@ -52,9 +53,35 @@ class Job(SyftObject):
     status: JobStatus = JobStatus.CREATED
     log_id: Optional[UID]
     parent_job_id: Optional[UID]
+    n_iters: Optional[int] = 0
+    current_iter: Optional[int] = 0
+    creation_time: Optional[str] = str(datetime.now())
 
     __attr_searchable__ = ["parent_job_id"]
-    __repr_attrs__ = ["id", "result", "resolved"]
+    __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+
+    @property
+    def progress(self) -> str:
+        if self.status == JobStatus.PROCESSING:
+            return_string = self.status
+            if self.n_iters > 0:
+                return_string += f": {self.current_iter}/{self.n_iters}"
+            if self.current_iter == self.n_iters:
+                return_string += " Almost done..."
+            elif self.current_iter > 0:
+                now = datetime.now()
+                time_passed = now - datetime.fromisoformat(self.creation_time)
+                time_per_checkpoint = time_passed / self.current_iter
+                remaining_checkpoints = self.n_iters - self.current_iter
+
+                # Probably need to divide by the number of consumers
+                remaining_time = remaining_checkpoints * time_per_checkpoint
+                remaining_time = str(remaining_time)[:-7]
+                return_string += f" Remaining time: {remaining_time}"
+            else:
+                return_string += " Estimating remaining time..."
+            return return_string
+        return self.status
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
@@ -82,6 +109,14 @@ class Job(SyftObject):
         )
         return api.services.job.get_subjobs(self.id)
 
+    @property
+    def owner(self):
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        return api.services.user.get_current_user(self.id)
+
     def logs(self, _print=True):
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
@@ -107,15 +142,17 @@ class Job(SyftObject):
             logs = logs
 
         if self.result is None:
-            result = ""
+            pass
         else:
-            result = str(self.result.syft_action_data)
+            str(self.result.syft_action_data)
 
         return {
-            "status": self.status,
-            "logs": logs,
-            "result": result,
-            "has_parent": self.has_parent,
+            "progress": self.progress,
+            "creation date": self.creation_time[:-7],
+            # "logs": logs,
+            # "result": result,
+            "owner email": self.owner.email,
+            "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
             "subjobs": len(subjobs),
         }
 
@@ -185,12 +222,10 @@ class JobStash(BaseStash):
         item: Job,
         add_permissions: Optional[List[ActionObjectPermission]] = None,
     ) -> Result[Optional[Job], str]:
-        if item.resolved:
-            valid = self.check_type(item, self.object_type)
-            if valid.is_err():
-                return SyftError(message=valid.err())
-            return super().update(credentials, item, add_permissions)
-        return None
+        valid = self.check_type(item, self.object_type)
+        if valid.is_err():
+            return SyftError(message=valid.err())
+        return super().update(credentials, item, add_permissions)
 
     def set_placeholder(
         self,

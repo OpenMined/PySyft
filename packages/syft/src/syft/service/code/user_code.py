@@ -893,15 +893,32 @@ def execute_byte_code(
         original_print = __builtin__.print
 
         class LocalDomainClient:
-            def __init__(self):
-                pass
+            def __init__(self, context):
+                self.context = context
+
+            def init_progress(self, n_iters):
+                if self.context.job is not None:
+                    node = self.context.node
+                    job_service = node.get_service("jobservice")
+                    job = self.context.job
+                    job.current_iter = 0
+                    job.n_iters = n_iters
+                    job_service.update(self.context, job)
+
+            def update_progress(self, n=1):
+                if self.context.job is not None:
+                    node = self.context.node
+                    job_service = node.get_service("jobservice")
+                    job = self.context.job
+                    job.current_iter += n
+                    job_service.update(self.context, job)
 
             def launch_job(self, func: UserCode, **kwargs):
                 # relative
                 from ... import UID
 
                 # get reference to node (TODO)
-                node = context.node
+                node = self.context.node
                 action_service = node.get_service("actionservice")
                 user_service = node.get_service("userservice")
                 user_code_service = node.get_service("usercodeservice")
@@ -913,7 +930,7 @@ def execute_byte_code(
                 kw2id = {}
                 for k, v in kwargs.items():
                     value = ActionObject.from_obj(v)
-                    ptr = action_service.set(context, value)
+                    ptr = action_service.set(self.context, value)
                     ptr = ptr.ok()
                     kw2id[k] = ptr.id
 
@@ -931,7 +948,7 @@ def execute_byte_code(
 
                 # TODO: throw exception for enclaves
                 request = user_code_service._request_code_execution_inner(
-                    context, new_user_code
+                    self.context, new_user_code
                 ).ok()
                 admin_context = AuthedServiceContext(
                     node=node,
@@ -954,16 +971,16 @@ def execute_byte_code(
 
                     original_print(f"LAUNCHING JOB {func.service_func_name}")
                     job = node.add_api_call_to_queue(
-                        api_call, parent_job_id=context.job_id
+                        api_call, parent_job_id=self.context.job_id
                     )
 
                     # set api in global scope to enable using .get(), .wait())
                     user_signing_key = [
                         x.signing_key
                         for x in user_service.stash.partition.data.values()
-                        if x.verify_key == context.credentials
+                        if x.verify_key == self.context.credentials
                     ][0]
-                    user_api = node.get_api(context.credentials)
+                    user_api = node.get_api(self.context.credentials)
                     user_api.signing_key = user_signing_key
                     # We hardcode a python connection here since we have access to the node
                     # TODO: this is not secure
@@ -971,7 +988,7 @@ def execute_byte_code(
 
                     APIRegistry.set_api_for(
                         node_uid=node.id,
-                        user_verify_key=context.credentials,
+                        user_verify_key=self.context.credentials,
                         api=user_api,
                     )
 
@@ -981,6 +998,8 @@ def execute_byte_code(
                     raise ValueError(f"error while launching job:\n{e}")
 
         if context.job is not None:
+            job_id = context.job_id
+            log_id = context.job.log_id
 
             def print(*args, sep=" ", end="\n"):
                 def to_str(arg: Any) -> str:
@@ -997,11 +1016,9 @@ def execute_byte_code(
                 new_args = [to_str(arg) for arg in args]
                 new_str = sep.join(new_args) + end
                 log_service = context.node.get_service("LogService")
-                log_service.append(
-                    context=context, uid=context.job.log_id, new_str=new_str
-                )
+                log_service.append(context=context, uid=log_id, new_str=new_str)
                 return __builtin__.print(
-                    f"FUNCTION LOG ({context.job.log_id}):",
+                    f"FUNCTION LOG ({job_id}):",
                     *new_args,
                     end=end,
                     sep=sep,
@@ -1012,7 +1029,7 @@ def execute_byte_code(
             print = original_print
 
         if code_item.uses_domain:
-            kwargs["domain"] = LocalDomainClient()
+            kwargs["domain"] = LocalDomainClient(context=context)
 
         stdout = StringIO()
         stderr = StringIO()
@@ -1020,16 +1037,17 @@ def execute_byte_code(
         # statisfy lint checker
         result = None
 
-        exec(code_item.byte_code)  # nosec
         _locals = locals()
+        _globals = {}
 
         user_code_service = context.node.get_service("usercodeservice")
         for user_code in user_code_service.stash.get_all(context.credentials).ok():
-            globals()[user_code.service_func_name] = user_code
-        globals()["print"] = print
+            _globals[user_code.service_func_name] = user_code
+        _globals["print"] = print
+        exec(code_item.parsed_code, _globals, locals())  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, None, _locals)  # nosec
+        result = eval(evil_string, _globals, _locals)  # nosec
 
         # reset print
         print = original_print

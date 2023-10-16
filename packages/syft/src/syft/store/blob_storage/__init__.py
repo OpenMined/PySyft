@@ -115,7 +115,7 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             return self._read_data()
 
-    def _read_data(self, stream=False):
+    def _read_data(self, stream=False, chunk_size=512):
         # relative
         from ...client.api import APIRegistry
 
@@ -136,7 +136,7 @@ class BlobRetrievalByURL(BlobRetrieval):
             response.raise_for_status()
             if self.type_ is BlobFileType:
                 if stream:
-                    return response.iter_lines()
+                    return response.iter_lines(chunk_size=chunk_size)
                 else:
                     return response.content
             return deserialize(response.content, from_bytes=True)
