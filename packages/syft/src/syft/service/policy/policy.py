@@ -310,6 +310,7 @@ class ExactMatch(InputPolicy):
         )
         return results
 
+
 @serializable()
 class OutputHistory(SyftObject):
     # version
