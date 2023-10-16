@@ -587,6 +587,9 @@ class MongoBackingStore(KeyValueBackingStore):
             Syft specific settings
         `store_config`: StoreConfig
             Connection Configuration
+         `ddtype`: Type
+            Optional and should be None
+            Used to make a consistent interface with SQLiteBackingStore
     """
 
     def __init__(
@@ -594,11 +597,13 @@ class MongoBackingStore(KeyValueBackingStore):
         index_name: str,
         settings: PartitionSettings,
         store_config: StoreConfig,
+        ddtype: Optional[type] = None,
     ) -> None:
         self.index_name = index_name
         self.settings = settings
         self.store_config = store_config
         self.client: MongoClient
+        self.ddtype = ddtype
         self.init_client()
 
     def init_client(self) -> Union[None, Err]:
