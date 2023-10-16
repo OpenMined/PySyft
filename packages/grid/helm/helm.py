@@ -91,6 +91,26 @@ def get_yaml_name(doc: dict) -> Any:
         return ""
 
 
+def apply_patches(yaml: str, resource_name: str) -> str:
+    # apply resource specific patches
+    if resource_name.startswith("seaweedfs"):
+        yaml = (
+            '{{- if ne .Values.node.settings.nodeType "gateway"}}\n'
+            + yaml.rstrip()
+            + "\n{{ end }}\n"
+        )
+
+    # global patches
+    yaml = (
+        yaml.replace("'{{", "{{")
+        .replace("}}'", "}}")
+        .replace("''{{", "{{")
+        .replace("}}''", "}}")
+    )
+
+    return yaml
+
+
 def main() -> None:
     # Argument parsing
     parser = argparse.ArgumentParser(description="Process devspace yaml file.")
@@ -149,12 +169,7 @@ def main() -> None:
             # Create new file with name or append if it already exists
             new_file = os.path.join(helm_chart_template_dir, f"{name}-{kind}.yaml")
             yaml_dump = yaml.dump(doc)
-            yaml_dump = (
-                yaml_dump.replace("'{{", "{{")
-                .replace("}}'", "}}")
-                .replace("''{{", "{{")
-                .replace("}}''", "}}")
-            )
+            yaml_dump = apply_patches(yaml_dump, name)
 
             with open(new_file, "w") as f:
                 f.write(yaml_dump)  # add document separator

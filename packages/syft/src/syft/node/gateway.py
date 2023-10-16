@@ -11,10 +11,10 @@ class Gateway(Node):
     def post_init(self) -> None:
         self.node_type = NodeType.GATEWAY
         super().post_init()
-        try:
-            self.connect_to_vpn_self()
-        except Exception as e:
-            print("Error connecting to VPN: ", e)
+        # try:
+        #     self.connect_to_vpn_self()
+        # except Exception as e:
+        #     print("Error connecting to VPN: ", e)
 
     def connect_to_vpn_self(self) -> None:
         network_service = self.get_service(NetworkService)
