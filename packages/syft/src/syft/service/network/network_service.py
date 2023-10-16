@@ -204,10 +204,9 @@ class NetworkService(AbstractService):
                 message="verify_key does not match the remote node's verify_key for add_peer"
             )
 
-        remote_client = peer.client_with_context(context=context)
-        random_challenge = secrets.token_bytes(16)
-
         try:
+            remote_client = peer.client_with_context(context=context)
+            random_challenge = secrets.token_bytes(16)
             remote_res = remote_client.api.services.network.ping(
                 challenge=random_challenge
             )
