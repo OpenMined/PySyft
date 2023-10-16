@@ -599,6 +599,7 @@ class MongoBackingStore(KeyValueBackingStore):
         self.settings = settings
         self.store_config = store_config
         self.client: MongoClient
+        self.init_client()
 
     def init_client(self) -> Union[None, Err]:
         self.client = MongoClient(config=self.store_config.client_config)
