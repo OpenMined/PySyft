@@ -137,36 +137,6 @@ jobs:
             echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           fi
 
-      # Checkout to gh-pages and update helm repo
-      - name: Checkout to gh-pages
-        uses: actions/checkout@v3
-        with:
-          ref: gh-pages
-          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
-
-      - name: Copy helm repo files from Syft Repo
-        run: |
-          git checkout dev -- packages/grid/helm/repo/
-          git reset gh-pages
-          cp -R packages/grid/helm/repo/. helm/
-          rm -rf packages/
-
-      - name: Commit changes to gh-pages
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: ${{ secrets.OM_BOT_NAME }}
-          author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "Update Helm package from Syft Repo"
-          add: "helm/"
-          push: "origin gh-pages"
-
-      # Checkout dev
-      - name: Checkout to dev Branch
-        uses: actions/checkout@v3
-        with:
-          ref: dev
-          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
-
       # Checkout Infra repo (nested)
       - name: Checkout Infra Repo
         uses: actions/checkout@v3
@@ -354,3 +324,25 @@ jobs:
         run: |
           helm registry login registry-1.docker.io -u ${{ secrets.DOCKER_LOGIN }} --password ${{secrets.DOCKER_PASSWORD}}
           cd packages/grid/helm/repo && helm push syft-${{ steps.grid-version.outputs.GRID_VERSION }}.tgz oci://registry-1.docker.io/openmined
+
+      # Checkout to gh-pages and update helm repo
+      - name: Checkout to gh-pages
+        uses: actions/checkout@v3
+        with:
+          ref: gh-pages
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+          path: ghpages
+
+      - name: Copy helm repo files from Syft Repo
+        run: |
+          rm -rf ghpages/helm/repo/
+          cp -R packages/grid/helm/repo/. ghpages/helm/
+
+      - name: Commit changes to gh-pages
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "Update Helm package from Syft Repo"
+          add: "helm/"
+          push: "origin gh-pages"
