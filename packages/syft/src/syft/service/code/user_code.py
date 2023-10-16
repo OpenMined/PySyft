@@ -1001,6 +1001,8 @@ def execute_byte_code(
             log_id = context.job.log_id
             def print(*args, sep=" ", end="\n"):
                 def to_str(arg: Any) -> str:
+                    if isinstance(arg, int):
+                        return str(arg)
                     if isinstance(arg, bytes):
                         return arg.decode("utf-8")
                     if isinstance(arg, Job):

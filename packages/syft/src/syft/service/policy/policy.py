@@ -333,62 +333,23 @@ def allowed_ids_from_list(
             f"Invalid Node Type for Code Submission:{context.node.node_type}"
         )
     filtered_kwargs = {}
+    print(allowed_inputs, file=sys.stderr)
+    action_service = context.node.get_service("ActionService")
     for key in allowed_inputs.keys():
         if key in kwargs:
             value = kwargs[key]
             uid = value
-            if not isinstance(uid, UID):
-                uid = getattr(value, "id", None)
+            if isinstance(uid, UID):
+                uid = action_service.get(context, uid).ok()
 
-            if uid not in allowed_inputs[key]:
+            data = action_service.get(context, allowed_inputs[key]).ok()
+            print(uid, data, file=sys.stderr)
+            if uid not in data:
                 raise Exception(
                     f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
                 )
             filtered_kwargs[key] = value
     return filtered_kwargs
-
-
-def multi_partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, List[UID]]:
-    # relative
-    from ...client.api import APIRegistry
-    from ...client.api import NodeIdentity
-    from ...types.twin_object import TwinObject
-    from ..action.action_object import ActionObject
-
-    # fetches the all the current api's connected
-    api_list = APIRegistry.get_all_api()
-    output_kwargs = {}
-    for key, values in kwargs.items():
-        for v in values:
-            if isinstance(v, ActionObject):
-                uid = v.id
-            if isinstance(v, TwinObject):
-                uid = v.id
-            if isinstance(v, Asset):
-                uid = v.action_id
-            if not isinstance(uid, UID):
-                raise Exception(f"Input {key} must have a UID not {type(v)}")
-
-            _obj_exists = False
-            for api in api_list:
-                if api.services.action.exists(uid):
-                    node_identity = NodeIdentity.from_api(api)
-                    if node_identity not in output_kwargs:
-                        output_kwargs[node_identity] = {key: [uid]}
-                    else:
-                        if key in output_kwargs[node_identity]:
-                            output_kwargs[node_identity][key].append(uid)
-                        else:
-                            output_kwargs[node_identity].update({key: [uid]})
-
-                    _obj_exists = True
-                    break
-
-            if not _obj_exists:
-                raise Exception(f"Input data {key}:{uid} does not belong to any Domain")
-
-    return output_kwargs
-
 
 @serializable()
 class ExecuteOncePerCombination(InputPolicy):
@@ -396,7 +357,7 @@ class ExecuteOncePerCombination(InputPolicy):
     __canonical_name__ = "ExecuteOncePerCombination"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    used_combinations: Optional[List[Dict[str, UID]]] = []
+    used_combinations: Optional[List[Dict[str, Any]]] = []
     max_retries: Optional[int] = 100
     failed_retries: int = 0
 
@@ -406,7 +367,7 @@ class ExecuteOncePerCombination(InputPolicy):
             del kwargs["init_kwargs"]
         else:
             # TODO: remove this tech debt, dont remove the id mapping functionality
-            init_kwargs = multi_partition_by_node(kwargs)
+            init_kwargs = partition_by_node(kwargs)
         super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
 
     def filter_kwargs(
