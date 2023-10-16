@@ -141,8 +141,8 @@ jobs:
       - name: Checkout to gh-pages
         uses: actions/checkout@v3
         with:
+          ref: gh-pages
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
-          path: gh-pages
 
       - name: Copy helm repo files from Syft Repo
         run: |
@@ -164,8 +164,8 @@ jobs:
       - name: Checkout to dev Branch
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
-          path: dev
+          ref: dev
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
 
       # Checkout Infra repo (nested)
       - name: Checkout Infra Repo
