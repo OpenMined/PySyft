@@ -314,6 +314,14 @@ dev:
       - path: ./backend/grid:/app/grid
       - path: ../syft:/app/syft
 
+profiles:
+  - name: gateway
+    patches:
+      - op: remove
+        path: deployments.seaweedfs
+      - op: remove
+        path: deployments.seaweedfs-config
+
 commands:
   dev:
     command: |-

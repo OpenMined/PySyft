@@ -1,3 +1,4 @@
+{{- if ne .Values.node.settings.nodeType "gateway"}}
 apiVersion: v1
 data:
   filer.toml: |
@@ -14,3 +15,4 @@ data:
 kind: ConfigMap
 metadata:
   name: seaweedfs-config
+{{ end }}
