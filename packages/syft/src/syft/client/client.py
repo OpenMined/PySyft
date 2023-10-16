@@ -923,6 +923,13 @@ def login(
             )
             _client = _client_cache
 
+    if login_credentials is None:
+        print(
+            f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-side "
+            f"{_client.metadata.node_type.capitalize()}> as GUEST"
+        )
+        return _client.guest()
+
     if not _client.authed and login_credentials:
         _client.login(
             email=login_credentials.email,
