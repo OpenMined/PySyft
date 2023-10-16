@@ -660,9 +660,6 @@ class SyftClient:
         register: bool = False,
         **kwargs: Any,
     ) -> Self:
-        if not register and email is None and password is None:
-            return self.login_as_guest()
-
         if email is None:
             email = input("Email: ")
         if password is None:
