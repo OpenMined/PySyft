@@ -138,6 +138,7 @@ services:
     network_mode: service:proxy
     volumes:
       - ${BACKEND_STORAGE_PATH}:/storage
+      - /var/run/docker.sock:/var/run/docker.sock
     stdin_open: true
     tty: true
     labels:

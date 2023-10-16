@@ -106,6 +106,7 @@ class Settings(BaseSettings):
     MONGO_PORT: int = int(os.getenv("MONGO_PORT", 0))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
+    DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
 
     # ZMQ stuff
     QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", 0))

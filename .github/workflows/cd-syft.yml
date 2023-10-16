@@ -73,7 +73,8 @@ jobs:
         shell: bash
         run: |
           # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/v5.5.1/k3d-linux-amd64
+          K3D_VERSION=v5.6.0
+          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH
@@ -175,6 +176,7 @@ jobs:
           files: |
             ./packages/syftcli/manifest.yml
             ./build/syftcli-config/*
+            ./packages/hagrid/hagrid/manifest_template.yml
           tag_name: v${{ steps.release_checks.outputs.github_release_version }}
 
       - name: Set up QEMU

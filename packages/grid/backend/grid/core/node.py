@@ -75,4 +75,5 @@ else:
         document_store_config=mongo_store_config,
         enable_warnings=enable_warnings,
         blob_storage_config=blob_storage_config,
+        dev_mode=settings.DEV_MODE,
     )

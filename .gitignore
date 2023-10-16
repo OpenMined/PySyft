@@ -73,3 +73,5 @@ nohup.out
 
 # notebook data
 notebooks/helm/scenario_data.jsonl
+# tox syft.build.helm generated file
+out.txt

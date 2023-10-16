@@ -105,6 +105,7 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
+      - mongo
     env_file:
       - .env
     environment:
@@ -134,10 +135,12 @@ services:
       - QUEUE_PORT=${QUEUE_PORT}
       - CREATE_PRODUCER=true
       - N_CONSUMERS=0
+      - HOST_GRID_PATH=${PWD}
     command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
       - ${BACKEND_STORAGE_PATH}:/storage
+      - /var/run/docker.sock:/var/run/docker.sock
     stdin_open: true
     tty: true
     labels:

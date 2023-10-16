@@ -71,9 +71,12 @@ class ChangeContext(SyftBaseObject):
     node: Optional[AbstractNode] = None
     approving_user_credentials: Optional[SyftVerifyKey]
     requesting_user_credentials: Optional[SyftVerifyKey]
+    extra_kwargs: Dict = {}
 
     @staticmethod
     def from_service(context: AuthedServiceContext) -> Self:
         return ChangeContext(
-            node=context.node, approving_user_credentials=context.credentials
+            node=context.node,
+            approving_user_credentials=context.credentials,
+            extra_kwargs=context.extra_kwargs,
         )

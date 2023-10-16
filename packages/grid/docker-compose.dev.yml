@@ -46,6 +46,7 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
+      - WATCHFILES_FORCE_POLLING=true
     stdin_open: true
     tty: true
 

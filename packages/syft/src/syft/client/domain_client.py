@@ -25,6 +25,7 @@ from ..service.user.user_roles import ServiceRole
 from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
+from ..util.util import prompt_warning_message
 from .api import APIModule
 from .client import SyftClient
 from .client import login
@@ -49,7 +50,7 @@ def add_default_uploader(
             name=user.name,
             email=user.email,
         )
-        obj.contributors.append(uploader)
+        obj.contributors.add(uploader)
     obj.uploader = uploader
     return obj
 
@@ -71,6 +72,20 @@ class DomainClient(SyftClient):
 
         dataset._check_asset_must_contain_mock()
         dataset_size = 0
+
+        # TODO: Refactor so that object can also be passed to generate warnings
+        metadata = self.api.connection.get_node_metadata(self.api.signing_key)
+
+        if (
+            metadata.show_warnings
+            and metadata.node_side_type == NodeSideType.HIGH_SIDE.value
+        ):
+            message = (
+                "You're approving a request on "
+                f"{metadata.node_side_type} side {metadata.node_type} "
+                "which may host datasets with private information."
+            )
+            prompt_warning_message(message=message, confirm=True)
 
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
@@ -136,6 +151,12 @@ class DomainClient(SyftClient):
         #     self.api.refresh_api_callback()
         if self.api.has_service("code"):
             return self.api.services.code
+        return None
+
+    @property
+    def worker(self) -> Optional[APIModule]:
+        if self.api.has_service("worker"):
+            return self.api.services.worker
         return None
 
     @property

@@ -1,5 +1,4 @@
 # stdlib
-from collections import OrderedDict
 from datetime import datetime
 from enum import Enum
 from typing import Any
@@ -7,6 +6,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Union
 
@@ -32,6 +32,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
+from ...types.tupledict import TupleDict
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST
@@ -50,14 +51,6 @@ from ..response import SyftException
 from ..response import SyftSuccess
 
 DATA_SIZE_WARNING_LIMIT = 512
-
-
-@serializable()
-class TupleDict(OrderedDict):
-    def __getitem__(self, key: Union[str, int]) -> Any:
-        if isinstance(key, int):
-            return list(self.values())[key]
-        return super().__getitem__(key)
 
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -88,6 +81,16 @@ class Contributor(SyftObject):
                 <p><strong>Email: </strong>{self.email}</p>
             </div>
             """
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Contributor):
+            return False
+
+        # We assoctiate two contributors as equal if they have the same email
+        return self.email == value.email
+
+    def __hash__(self) -> int:
+        return hash(self.email)
 
 
 @serializable()
@@ -125,12 +128,12 @@ class Asset(SyftObject):
     node_uid: UID
     name: str
     description: Optional[MarkdownDescription] = None
-    contributors: List[Contributor] = []
+    contributors: Set[Contributor] = set()
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
     shape: Optional[Tuple]
     created_at: DateTime = DateTime.now()
-    uploader: Contributor
+    uploader: Optional[Contributor]
 
     __repr_attrs__ = ["name", "shape"]
 
@@ -154,11 +157,12 @@ class Asset(SyftObject):
         # relative
         from ...service.action.action_object import ActionObject
 
-        uploaded_by_line = "n/a"
-        if len(self.contributors) > 0:
-            uploaded_by_line = (
-                f"<p><strong>Uploaded by: </strong>{self.uploader.name}</p>"
-            )
+        uploaded_by_line = (
+            f"<p><strong>Uploaded by: </strong>{self.uploader.name} ({self.uploader.email})</p>"
+            if self.uploader
+            else ""
+        )
+
         if isinstance(self.data, ActionObject):
             data_table_line = itables.to_html_datatable(
                 df=self.data.syft_action_data, css=itables_css
@@ -167,6 +171,18 @@ class Asset(SyftObject):
             data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
         else:
             data_table_line = self.data
+
+        if isinstance(self.mock, ActionObject):
+            mock_table_line = itables.to_html_datatable(
+                df=self.mock.syft_action_data, css=itables_css
+            )
+        elif isinstance(self.data, pd.DataFrame):
+            mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
+        else:
+            mock_table_line = self.mock
+            if isinstance(mock_table_line, SyftError):
+                mock_table_line = mock_table_line.message
+
         return f"""
             <style>
             {fonts_css}
@@ -187,7 +203,7 @@ class Asset(SyftObject):
             <p><strong>Data:</strong></p>
             {data_table_line}
             <p><strong>Mock Data:</strong></p>
-            {itables.to_html_datatable(df=self.mock, css=itables_css)}
+            {mock_table_line}
             </div>"""
 
     def _repr_markdown_(self) -> str:
@@ -200,6 +216,21 @@ class Asset(SyftObject):
         for contributor in self.contributors:
             _repr_str += f"\t{contributor.name}: {contributor.email}\n"
         return as_markdown_python_code(_repr_str)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Asset):
+            return False
+        return (
+            self.action_id == other.action_id
+            and self.name == other.name
+            and self.contributors == other.contributors
+            and self.shape == other.shape
+            and self.description == other.description
+            and self.data_subjects == other.data_subjects
+            and self.mock_is_real == other.mock_is_real
+            and self.uploader == other.uploader
+            and self.created_at == other.created_at
+        )
 
     @property
     def pointer(self) -> Any:
@@ -282,7 +313,7 @@ class CreateAsset(SyftObject):
     id: Optional[UID] = None
     name: str
     description: Optional[MarkdownDescription] = None
-    contributors: List[Contributor] = []
+    contributors: Set[Contributor] = set()
     data_subjects: List[DataSubjectCreate] = []
     node_uid: Optional[UID]
     action_id: Optional[UID]
@@ -335,7 +366,12 @@ class CreateAsset(SyftObject):
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
-            self.contributors.append(contributor)
+            if contributor in self.contributors:
+                return SyftError(
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
+                )
+            self.contributors.add(contributor)
+
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Asset."
             )
@@ -416,7 +452,7 @@ class Dataset(SyftObject):
     name: str
     node_uid: Optional[UID]
     asset_list: List[Asset] = []
-    contributors: List[Contributor] = []
+    contributors: Set[Contributor] = set()
     citation: Optional[str]
     url: Optional[str]
     description: Optional[MarkdownDescription] = None
@@ -451,12 +487,15 @@ class Dataset(SyftObject):
         }
 
     def _repr_html_(self) -> Any:
-        uploaded_by_line = "n/a"
-        if len(self.contributors) > 0:
-            uploaded_by_line = (
+        uploaded_by_line = (
+            (
                 "<p class='paragraph-sm'><strong>"
-                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name}</p>"
+                + f"<span class='pr-8'>Uploaded by:</span></strong>{self.uploader.name} ({self.uploader.email})</p>"
             )
+            if self.uploader
+            else ""
+        )
+
         return f"""
             <style>
             {fonts_css}
@@ -486,7 +525,7 @@ class Dataset(SyftObject):
         return data
 
     @property
-    def assets(self) -> TupleDict:
+    def assets(self) -> TupleDict[str, Asset]:
         data = TupleDict()
         for asset in self.asset_list:
             data[asset.name] = asset
@@ -567,7 +606,7 @@ class DatasetPageView(SyftObject):
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    datasets: List[Dataset]
+    datasets: TupleDict[str, Dataset]
     total: int
 
 
@@ -619,7 +658,11 @@ class CreateDataset(Dataset):
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
-            self.contributors.append(contributor)
+            if contributor in self.contributors:
+                return SyftError(
+                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
+                )
+            self.contributors.add(contributor)
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Dataset."
             )

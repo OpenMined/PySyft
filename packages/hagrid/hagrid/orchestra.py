@@ -295,6 +295,7 @@ def deploy_to_python(
             sig = inspect.signature(worker_class.named)
             if "node_type" in sig.parameters.keys():
                 worker = worker_class.named(
+                    dev_mode=dev_mode,
                     name=name,
                     processes=processes,
                     reset=reset,

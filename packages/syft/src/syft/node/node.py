@@ -38,6 +38,7 @@ from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
+from ..exceptions.exception import PySyftException
 from ..external import OBLV
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
@@ -86,6 +87,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.worker_service import WorkerService
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
@@ -254,9 +256,11 @@ class Node(AbstractNode):
         queue_config: Optional[QueueConfig] = None,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
+        dev_mode: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
+        self.dev_mode = dev_mode
         if node_uid_env is not None:
             self.id = UID.from_string(node_uid_env)
         else:
@@ -282,6 +286,7 @@ class Node(AbstractNode):
         services = (
             [
                 UserService,
+                WorkerService,
                 SettingsService,
                 ActionService,
                 LogService,
@@ -350,6 +355,37 @@ class Node(AbstractNode):
 
         NodeRegistry.set_node_for(self.id, self)
 
+    @property
+    def host_syft_location(self):
+        """e.g. /Users/<user>/workspace/pysyft"""
+        if not self.dev_mode:
+            raise ValueError("You can only get host location in dev mode")
+        # We set this variable in docker compose (from pwd)
+        env_val = os.environ.get("HOST_GRID_PATH", None)
+        # stdlib
+        from pathlib import Path
+
+        # if in docker
+        if env_val is not None:
+            return str(Path(env_val).parent.parent)
+        # if in python during development
+        else:
+            # syft absolute
+            import syft as sy
+
+            # /Users/<user>/workspace/PySyft/packages/syft/src/syft/__init__.py ->
+            # /Users/<user>/workspace/PySyft
+            return Path(sy.__file__).parent.parent.parent.parent.parent
+
+    @property
+    def runs_in_docker(self):
+        path = "/proc/self/cgroup"
+        return (
+            os.path.exists("/.dockerenv")
+            or os.path.isfile(path)
+            and any("docker" in line for line in open(path))
+        )
+
     def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
         if config is None:
             root_directory = get_root_data_path()
@@ -408,6 +444,7 @@ class Node(AbstractNode):
         n_consumers: int = 0,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
+        dev_mode: bool = False,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -479,6 +516,7 @@ class Node(AbstractNode):
             enable_warnings=enable_warnings,
             blob_storage_config=blob_storage_config,
             queue_config=queue_config,
+            dev_mode=dev_mode,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -626,6 +664,7 @@ class Node(AbstractNode):
                 kwargs["store"] = self.action_store
             store_services = [
                 UserService,
+                WorkerService,
                 SettingsService,
                 DatasetService,
                 UserCodeService,
@@ -893,6 +932,8 @@ class Node(AbstractNode):
             method = self.get_service_method(_private_api_path)
             try:
                 result = method(context, *api_call.args, **api_call.kwargs)
+            except PySyftException as e:
+                return e.handle()
             except Exception:
                 result = SyftError(
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
