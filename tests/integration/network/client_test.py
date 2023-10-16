@@ -22,7 +22,7 @@ def test_client_type(node_metadata):
 
 
 @pytest.mark.parametrize(
-    "node_metadata", [(NETWORK_PORT, "test_gateway_1"), (DOMAIN_PORT, "test_domain_1")]
+    "node_metadata", [(NETWORK_PORT, "test-gateway-1"), (DOMAIN_PORT, "test-domain-1")]
 )
 @pytest.mark.network
 def test_client_name(node_metadata):
