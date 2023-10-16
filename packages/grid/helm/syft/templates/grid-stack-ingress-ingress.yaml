@@ -11,8 +11,7 @@ spec:
       port:
         number: 80
   rules:
-  - host: {{ .Values.node.settings.hostname }}
-    http:
+  - http:
       paths:
       - backend:
           service:
@@ -21,6 +20,3 @@ spec:
               number: 80
         path: /
         pathType: Prefix
-  tls:
-  - hosts:
-    - {{ .Values.node.settings.hostname }}
