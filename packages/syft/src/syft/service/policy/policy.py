@@ -351,6 +351,7 @@ def allowed_ids_from_list(
             filtered_kwargs[key] = value
     return filtered_kwargs
 
+
 @serializable()
 class ExecuteOncePerCombination(InputPolicy):
     # version
@@ -388,7 +389,6 @@ class ExecuteOncePerCombination(InputPolicy):
             code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
         )
         return results
-
 
 
 @serializable()

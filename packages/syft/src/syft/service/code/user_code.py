@@ -871,9 +871,11 @@ def execute_byte_code(
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
+    # stdlib
     import random
-    random_number = random.randint(1,100)
-    import copy
+
+    random_number = random.randint(1, 100)
+    # stdlib
 
     try:
         # stdlib
@@ -999,6 +1001,7 @@ def execute_byte_code(
         if context.job is not None:
             job_id = context.job_id
             log_id = context.job.log_id
+
             def print(*args, sep=" ", end="\n"):
                 def to_str(arg: Any) -> str:
                     if isinstance(arg, int):
@@ -1016,9 +1019,7 @@ def execute_byte_code(
                 new_args = [to_str(arg) for arg in args]
                 new_str = sep.join(new_args) + end
                 log_service = context.node.get_service("LogService")
-                log_service.append(
-                    context=context, uid=log_id, new_str=new_str
-                )
+                log_service.append(context=context, uid=log_id, new_str=new_str)
                 return __builtin__.print(
                     f"FUNCTION LOG ({job_id, random_number}):",
                     *new_args,
@@ -1040,16 +1041,16 @@ def execute_byte_code(
         result = None
 
         # res = exec(code_item.byte_code, {'print': print}, None)  # nosec
-        
+
         _locals = locals()
         _globals = {}
-        
+
         user_code_service = context.node.get_service("usercodeservice")
         for user_code in user_code_service.stash.get_all(context.credentials).ok():
             _globals[user_code.service_func_name] = user_code
-        _globals['print'] = print
+        _globals["print"] = print
         exec(code_item.parsed_code, _globals, locals())  # nosec
-        
+
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         result = eval(evil_string, _globals, _locals)  # nosec
 

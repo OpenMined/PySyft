@@ -11,7 +11,6 @@ from typing import Optional
 from typing import Union
 
 # third party
-import gevent
 import zmq.green as zmq
 
 # relative
