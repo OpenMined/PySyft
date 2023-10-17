@@ -14,7 +14,8 @@ from pydantic import BaseModel
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -45,7 +46,7 @@ def check_version(
 @serializable()
 class NodeMetadataUpdate(SyftObject):
     __canonical_name__ = "NodeMetadataUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     name: Optional[str]
     organization: Optional[str]
@@ -61,7 +62,7 @@ class NodeMetadataUpdate(SyftObject):
 @serializable()
 class NodeMetadata(SyftObject):
     __canonical_name__ = "NodeMetadata"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
     name: str
     id: UID
