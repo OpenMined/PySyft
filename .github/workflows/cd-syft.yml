@@ -137,6 +137,29 @@ jobs:
             echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           fi
 
+      # Checkout to gh-pages and update helm repo
+      - name: Checkout to gh-pages
+        uses: actions/checkout@v3
+        with:
+          ref: gh-pages
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+          path: ghpages
+
+      - name: Copy helm repo files from Syft Repo
+        run: |
+          rm -rf ghpages/helm/*
+          cp -R packages/grid/helm/repo/. ghpages/helm/
+
+      - name: Commit changes to gh-pages
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "Update Helm package from Syft Repo"
+          add: "helm/"
+          push: "origin gh-pages"
+          cwd: "./ghpages/"
+
       # Checkout Infra repo (nested)
       - name: Checkout Infra Repo
         uses: actions/checkout@v3
@@ -325,25 +348,4 @@ jobs:
           helm registry login registry-1.docker.io -u ${{ secrets.DOCKER_LOGIN }} --password ${{secrets.DOCKER_PASSWORD}}
           cd packages/grid/helm/repo && helm push syft-${{ steps.grid-version.outputs.GRID_VERSION }}.tgz oci://registry-1.docker.io/openmined
 
-      # Checkout to gh-pages and update helm repo
-      - name: Checkout to gh-pages
-        uses: actions/checkout@v3
-        with:
-          ref: gh-pages
-          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
-          path: ghpages
-
-      - name: Copy helm repo files from Syft Repo
-        run: |
-          rm -rf ghpages/helm/*
-          cp -R packages/grid/helm/repo/. ghpages/helm/
-
-      - name: Commit changes to gh-pages
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: ${{ secrets.OM_BOT_NAME }}
-          author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "Update Helm package from Syft Repo"
-          add: "helm/"
-          push: "origin gh-pages"
-          cwd: "./ghpages/"
+      # Move the helm chart repo back to end
