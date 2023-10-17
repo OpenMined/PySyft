@@ -66,9 +66,9 @@ class DomainClient(SyftClient):
 
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
-        for i in range(len(dataset.assets)):
-            asset = dataset.assets[i]
-            dataset.assets[i] = add_default_uploader(user, asset)
+        for i in range(len(dataset.asset_list)):
+            asset = dataset.asset_list[i]
+            dataset.asset_list[i] = add_default_uploader(user, asset)
 
         dataset._check_asset_must_contain_mock()
         dataset_size = 0

@@ -78,6 +78,7 @@ class DictDocumentStore(DocumentStore):
 
 @serializable()
 class DictStoreConfig(StoreConfig):
+    __canonical_name__ = "DictStoreConfig"
     """Dictionary-based configuration
 
     Parameters:

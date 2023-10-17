@@ -14,6 +14,7 @@ from typing_extensions import Annotated
 
 # relative
 from ..abstract_node import AbstractNode
+from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..serde.deserialize import _deserialize as deserialize
 from ..serde.serialize import _serialize as serialize
 from ..service.context import NodeServiceContext
@@ -68,15 +69,21 @@ def make_routes(worker: Worker) -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    def handle_syft_new_api(user_verify_key: SyftVerifyKey) -> Response:
+    def handle_syft_new_api(
+        user_verify_key: SyftVerifyKey, communication_protocol: PROTOCOL_TYPE
+    ) -> Response:
         return Response(
-            serialize(worker.get_api(user_verify_key), to_bytes=True),
+            serialize(
+                worker.get_api(user_verify_key, communication_protocol), to_bytes=True
+            ),
             media_type="application/octet-stream",
         )
 
     # get the SyftAPI object
     @router.get("/api")
-    def syft_new_api(request: Request, verify_key: str) -> Response:
+    def syft_new_api(
+        request: Request, verify_key: str, communication_protocol: PROTOCOL_TYPE
+    ) -> Response:
         user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api.__module__).start_as_current_span(
@@ -84,9 +91,9 @@ def make_routes(worker: Worker) -> APIRouter:
                 context=extract(request.headers),
                 kind=trace.SpanKind.SERVER,
             ):
-                return handle_syft_new_api(user_verify_key)
+                return handle_syft_new_api(user_verify_key, communication_protocol)
         else:
-            return handle_syft_new_api(user_verify_key)
+            return handle_syft_new_api(user_verify_key, communication_protocol)
 
     def handle_new_api_call(data: bytes) -> Response:
         obj_msg = deserialize(blob=data, from_bytes=True)

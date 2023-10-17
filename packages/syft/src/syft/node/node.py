@@ -40,8 +40,12 @@ from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..exceptions.exception import PySyftException
 from ..external import OBLV
+from ..protocol.data_protocol import PROTOCOL_TYPE
+from ..protocol.data_protocol import get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serialize import _serialize
+from ..service.action.action_object import Action
+from ..service.action.action_object import ActionObject
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
@@ -64,6 +68,7 @@ from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadata
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
+from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
@@ -96,12 +101,12 @@ from ..store.document_store import StoreConfig
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
-from ..types.syft_object import LOWEST_SYFT_OBJECT_VERSION
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
+from ..util.util import get_env
 from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
@@ -132,10 +137,6 @@ NODE_SIDE_TYPE = "NODE_SIDE_TYPE"
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
 DEFAULT_ROOT_USERNAME = "DEFAULT_ROOT_USERNAME"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
-
-
-def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
-    return os.environ.get(key, default)
 
 
 def get_private_key_env() -> Optional[str]:
@@ -305,6 +306,7 @@ class Node(AbstractNode):
                 CodeHistoryService,
                 MetadataService,
                 BlobStorageService,
+                MigrateStateService,
             ]
             if services is None
             else services
@@ -534,9 +536,57 @@ class Node(AbstractNode):
         root_client.api.refresh_api_callback()
         return root_client
 
+    def _find_pending_migrations(self):
+        klasses_to_be_migrated = []
+
+        context = AuthedServiceContext(
+            node=self,
+            credentials=self.verify_key,
+            role=ServiceRole.ADMIN,
+        )
+        migration_state_service = self.get_service(MigrateStateService)
+
+        canonical_name_version_map = []
+
+        # Track all object types from document store
+        for partition in self.document_store.partitions.values():
+            object_type = partition.settings.object_type
+            canonical_name = object_type.__canonical_name__
+            object_version = object_type.__version__
+            canonical_name_version_map.append((canonical_name, object_version))
+
+        # Track all object types from action store
+        action_object_types = [Action, ActionObject]
+        action_object_types.extend(ActionObject.__subclasses__())
+        for object_type in action_object_types:
+            canonical_name = object_type.__canonical_name__
+            object_version = object_type.__version__
+            canonical_name_version_map.append((canonical_name, object_version))
+
+        for canonical_name, current_version in canonical_name_version_map:
+            migration_state = migration_state_service.get_state(context, canonical_name)
+            if (
+                migration_state is not None
+                and migration_state.current_version != migration_state.latest_version
+            ):
+                klasses_to_be_migrated.append(canonical_name)
+            else:
+                migration_state_service.register_migration_state(
+                    context,
+                    current_version=current_version,
+                    canonical_name=canonical_name,
+                )
+
+        return klasses_to_be_migrated
+
     @property
     def guest_client(self):
         return self.get_guest_client()
+
+    @property
+    def current_protocol(self) -> List:
+        data_protocol = get_data_protocol()
+        return data_protocol.latest_version
 
     def get_guest_client(self, verbose: bool = True):
         # relative
@@ -681,6 +731,7 @@ class Node(AbstractNode):
                 CodeHistoryService,
                 MetadataService,
                 BlobStorageService,
+                MigrateStateService,
             ]
 
             if OBLV:
@@ -747,8 +798,8 @@ class Node(AbstractNode):
             name=name,
             id=self.id,
             verify_key=self.verify_key,
-            highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
-            lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
+            highest_version=SYFT_OBJECT_VERSION_1,
+            lowest_version=SYFT_OBJECT_VERSION_1,
             syft_version=__version__,
             deployed_on=deployed_on,
             description=description,
@@ -980,8 +1031,16 @@ class Node(AbstractNode):
             return result
         return job
 
-    def get_api(self, for_user: Optional[SyftVerifyKey] = None) -> SyftAPI:
-        return SyftAPI.for_user(node=self, user_verify_key=for_user)
+    def get_api(
+        self,
+        for_user: Optional[SyftVerifyKey] = None,
+        communication_protocol: Optional[PROTOCOL_TYPE] = None,
+    ) -> SyftAPI:
+        return SyftAPI.for_user(
+            node=self,
+            user_verify_key=for_user,
+            communication_protocol=communication_protocol,
+        )
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext

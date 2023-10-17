@@ -15,13 +15,13 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.2-beta.35 -t dev-latest
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.2-beta.38 -t dev-latest
       create_deployments --all
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.8.2-beta.35"
+  VERSION: "0.8.2-beta.38"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -304,6 +304,8 @@ dev:
     imageSelector: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
     ports:
       - port: "9333" # admin
+      - port: "8888" # filer
+      - port: "8333" # S3
   backend:
     imageSelector: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
     env:
@@ -314,7 +316,25 @@ dev:
       - path: ./backend/grid:/app/grid
       - path: ../syft:/app/syft
 
+profiles:
+  - name: gateway
+    patches:
+      - op: remove
+        path: deployments.seaweedfs
+      - op: remove
+        path: deployments.seaweedfs-config
+
 commands:
+  deploy:
+    command: |-
+      devspace use context k3d-syft-dev
+      devspace use namespace syft
+      devspace deploy --var CONTAINER_REGISTRY=k3d-registry.localhost:12345
   dev:
     command: |-
-      devspace --var CONTAINER_REGISTRY=k3d-registry.localhost:12345 dev --config=devspace.yaml
+      devspace use context k3d-syft-dev
+      devspace use namespace syft
+      devspace dev --var CONTAINER_REGISTRY=k3d-registry.localhost:12345
+  contexts:
+    command: |-
+      kubectl config get-contexts

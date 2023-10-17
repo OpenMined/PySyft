@@ -163,7 +163,13 @@ class NetworkService(AbstractService):
         challenge_signature, remote_node_peer = remote_res
 
         # Verifying if the challenge is valid
-        remote_node_verify_key.verify_key.verify(random_challenge, challenge_signature)
+
+        try:
+            remote_node_verify_key.verify_key.verify(
+                random_challenge, challenge_signature
+            )
+        except Exception as e:
+            return SyftError(message=str(e))
 
         # save the remote peer for later
         result = self.stash.update_peer(context.node.verify_key, remote_node_peer)
@@ -198,6 +204,26 @@ class NetworkService(AbstractService):
                 message="verify_key does not match the remote node's verify_key for add_peer"
             )
 
+        try:
+            remote_client = peer.client_with_context(context=context)
+            random_challenge = secrets.token_bytes(16)
+            remote_res = remote_client.api.services.network.ping(
+                challenge=random_challenge
+            )
+        except Exception as e:
+            return SyftError(message="Remote Peer cannot ping peer:" + str(e))
+
+        if isinstance(remote_res, SyftError):
+            return remote_res
+
+        challenge_signature = remote_res
+
+        # Verifying if the challenge is valid
+        try:
+            peer.verify_key.verify_key.verify(random_challenge, challenge_signature)
+        except Exception as e:
+            return SyftError(message=str(e))
+
         result = self.stash.update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -218,15 +244,15 @@ class NetworkService(AbstractService):
 
         return [challenge_signature, self_node_peer]
 
-    @service_method(path="network.ping", name="ping")
+    @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
     def ping(
         self, context: AuthedServiceContext, challenge: bytes
     ) -> Union[bytes, SyftError]:
         """To check alivesness/authenticity of a peer"""
 
-        # Only the root user can ping the node to check its state
-        if context.node.verify_key != context.credentials:
-            return SyftError(message=("Only the root user can access ping endpoint"))
+        # # Only the root user can ping the node to check its state
+        # if context.node.verify_key != context.credentials:
+        #     return SyftError(message=("Only the root user can access ping endpoint"))
 
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify
@@ -503,7 +529,6 @@ def http_connection_to_node_route() -> List[Callable]:
 
 def get_python_node_route(context: TransformContext) -> TransformContext:
     context.output["id"] = context.obj.node.id
-    print("Store config....", context.obj.node.blob_store_config)
     context.output["worker_settings"] = WorkerSettings.from_node(context.obj.node)
     context.output["proxy_target_uid"] = context.obj.proxy_target_uid
     return context

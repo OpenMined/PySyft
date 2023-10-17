@@ -230,8 +230,8 @@ def test_settings_allow_guest_registration(
     mock_node_metadata = NodeMetadata(
         name=faker.name(),
         verify_key=verify_key,
-        highest_object_version=1,
-        lowest_object_version=2,
+        highest_version=1,
+        lowest_version=2,
         syft_version=syft.__version__,
         signup_enabled=False,
         admin_email="info@openmined.org",
@@ -312,8 +312,8 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
     mock_node_metadata = NodeMetadata(
         name=faker.name(),
         verify_key=verify_key,
-        highest_object_version=1,
-        lowest_object_version=2,
+        highest_version=1,
+        lowest_version=2,
         syft_version=syft.__version__,
         signup_enabled=False,
         admin_email="info@openmined.org",

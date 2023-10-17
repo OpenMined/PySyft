@@ -1,4 +1,4 @@
-__version__ = "0.8.2-beta.35"
+__version__ = "0.8.2-beta.38"
 
 # stdlib
 import pathlib
@@ -12,6 +12,7 @@ from . import gevent_patch  # noqa: F401
 from .abstract_node import NodeType  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
+from .client.client import login_as_guest  # noqa: F401
 from .client.client import register  # noqa: F401
 from .client.deploy import Orchestra  # noqa: F401
 from .client.domain_client import DomainClient  # noqa: F401
@@ -32,6 +33,10 @@ from .node.gateway import Gateway  # noqa: F401
 from .node.server import serve_node  # noqa: F401
 from .node.server import serve_node as bind_worker  # noqa: F401
 from .node.worker import Worker  # noqa: F401
+from .protocol.data_protocol import bump_protocol_version  # noqa: F401
+from .protocol.data_protocol import check_or_stage_protocol  # noqa: F401
+from .protocol.data_protocol import get_data_protocol  # noqa: F401
+from .protocol.data_protocol import stage_protocol_changes  # noqa: F401
 from .serde import NOTHING  # noqa: F401
 from .serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .serde.serializable import serializable  # noqa: F401

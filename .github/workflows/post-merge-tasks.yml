@@ -1,4 +1,4 @@
-name: Post Merge - Cleanup Notebooks
+name: Post Merge Tasks
 
 on:
   workflow_call:
@@ -7,7 +7,6 @@ on:
     branches:
       - dev
       - main
-      - "0.8"
 
 jobs:
   post-merge-cleanup-notebooks:
@@ -22,11 +21,20 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Commit changes to remove notebooks
+      - name: Install pip packages
+        run: |
+          python -m pip install --upgrade --user pip tox
+
+      - name: Check and Bump Protocol Version
+        run: |
+          tox -e syft.protocol.check
+
+      - name: Commit changes to bump protocol and remove notebooks
         uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "cleanup notebooks"
+          message: "bump protocol and remove notebooks"
           remove: "-r notebooks/Experimental/"
+          add: "['packages/syft/src/syft/protocol/protocol_version.json']"
           commit: "-a"
