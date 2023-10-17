@@ -165,17 +165,14 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
     def __init__(
         self, __value: Optional[Union[Mapping[_KT, int], Iterable[_KT]]] = None, /
     ) -> None:
-        match __value:
-            case MappingProxyType():
-                self.__mapping = __value
-            case Mapping():
-                self.__mapping = MappingProxyType(__value)
-            case Iterable():
-                self.__mapping = MappingProxyType(
-                    OrderedDict((k, i) for i, k in enumerate(__value))
-                )
-            case _:
-                pass
+        if isinstance(__value, MappingProxyType):
+            self.__mapping = __value
+        elif isinstance(__value, Mapping):
+            self.__mapping = MappingProxyType(__value)
+        elif isinstance(__value, Iterable):
+            self.__mapping = MappingProxyType(
+                OrderedDict((k, i) for i, k in enumerate(__value))
+            )
 
         super().__init__()
 
