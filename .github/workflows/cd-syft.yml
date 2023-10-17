@@ -335,7 +335,7 @@ jobs:
 
       - name: Copy helm repo files from Syft Repo
         run: |
-          rm -rf ghpages/helm/
+          rm -rf ghpages/helm/*
           cp -R packages/grid/helm/repo/. ghpages/helm/
 
       - name: Commit changes to gh-pages
