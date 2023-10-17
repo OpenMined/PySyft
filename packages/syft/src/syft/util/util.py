@@ -22,6 +22,7 @@ import socket
 import sys
 import threading
 import time
+import types
 from types import ModuleType
 from typing import Any
 from typing import Callable
@@ -40,7 +41,6 @@ from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import requests
-from rich.prompt import Confirm
 
 # relative
 from .logger import critical
@@ -50,6 +50,10 @@ from .logger import traceback_and_raise
 
 DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
 PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
+
+
+def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
+    return os.environ.get(key, default)
 
 
 def full_name_with_qualname(klass: type) -> str:
@@ -451,11 +455,15 @@ def prompt_warning_message(message: str, confirm: bool = False) -> bool:
     warning = SyftWarning(message=message)
     display(warning)
 
-    if confirm:
-        allowed = Confirm.ask("Would you like to proceed?")
-        if not allowed:
+    while confirm:
+        response = input("Would you like to proceed? [y/n]: ").lower()
+        if response == "y":
+            return True
+        elif response == "n":
             display("Aborted !!")
             return False
+        else:
+            print("Invalid response. Please enter Y or N.")
 
     return True
 
@@ -862,3 +870,12 @@ if os_name() == "macOS":
 
 def thread_ident() -> int:
     return threading.current_thread().ident
+
+
+def set_klass_module_to_syft(klass, module_name):
+    if module_name not in sys.modules["syft"].__dict__:
+        new_module = types.ModuleType(module_name)
+    else:
+        new_module = sys.modules["syft"].__dict__[module_name]
+    setattr(new_module, klass.__name__, klass)
+    sys.modules["syft"].__dict__[module_name] = new_module

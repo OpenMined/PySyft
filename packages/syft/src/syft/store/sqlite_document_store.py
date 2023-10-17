@@ -386,6 +386,7 @@ class SQLiteStoreClientConfig(StoreClientConfig):
 
 @serializable()
 class SQLiteStoreConfig(StoreConfig):
+    __canonical_name__ = "SQLiteStoreConfig"
     """SQLite Store config, used by SQLiteStorePartition
 
     Parameters:

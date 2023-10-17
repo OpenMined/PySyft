@@ -63,6 +63,7 @@ def metadata_json(faker) -> NodeMetadataJSON:
         syft_version=__version__,
         node_side_type=NodeSideType.LOW_SIDE.value,
         show_warnings=False,
+        node_type=NodeType.DOMAIN.value,
     )
 
 

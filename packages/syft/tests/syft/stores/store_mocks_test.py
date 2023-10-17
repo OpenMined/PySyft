@@ -52,17 +52,19 @@ class MockObjectType(SyftObject):
 
 @serializable()
 class MockStore(DocumentStore):
+    __canonical_name__ = "MockStore"
     pass
 
 
 @serializable()
 class MockSyftObject(SyftObject):
-    __canonical_name__ = UID()
+    __canonical_name__ = str(UID())
     data: Any
 
 
 @serializable()
 class MockStoreConfig(StoreConfig):
+    __canonical_name__ = "MockStoreConfig"
     store_type: Type[DocumentStore] = MockStore
     db_name: str = "testing"
     backing_store: Type[KeyValueBackingStore] = MockKeyValueBackingStore

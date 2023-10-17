@@ -344,6 +344,8 @@ class NetworkXBackingStore(BaseGraphStore):
 
 @serializable()
 class InMemoryGraphConfig(StoreConfig):
+    __canonical_name__ = "InMemoryGraphConfig"
+
     store_type: Type[BaseGraphStore] = NetworkXBackingStore
     client_config: StoreClientConfig = InMemoryStoreClientConfig()
     locking_config: LockingConfig = ThreadingLockingConfig()
@@ -356,6 +358,8 @@ class ActionGraphStore:
 
 @serializable()
 class InMemoryActionGraphStore(ActionGraphStore):
+    __canonical_name__ = "InMemoryActionGraphStore"
+
     def __init__(self, store_config: StoreConfig, reset: bool = False):
         self.store_config: StoreConfig = store_config
         self.graph: Type[BaseGraphStore] = self.store_config.store_type(
