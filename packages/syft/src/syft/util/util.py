@@ -41,7 +41,6 @@ from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import requests
-from rich.prompt import Confirm
 
 # relative
 from .logger import critical
@@ -456,11 +455,15 @@ def prompt_warning_message(message: str, confirm: bool = False) -> bool:
     warning = SyftWarning(message=message)
     display(warning)
 
-    if confirm:
-        allowed = Confirm.ask("Would you like to proceed?")
-        if not allowed:
+    while confirm:
+        response = input("Would you like to proceed? [y/n]: ").lower()
+        if response == "y":
+            return True
+        elif response == "n":
             display("Aborted !!")
             return False
+        else:
+            print("Invalid response. Please enter Y or N.")
 
     return True
 

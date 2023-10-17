@@ -57,11 +57,31 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
 ## Deploy Kubernetes Helm Chart
 
+**Note**: Assuming we have a Kubernetes cluster already setup.
+
+#### 1. Add and update Helm repo for Syft
+
 ```sh
-$ kubectl create namespace syft
-$ SYFT_VERSION="0.8.2-beta.26"
-$ helm pull oci://registry-1.docker.io/openmined/syft --version $SYFT_VERSION
-$ helm install my-domain "./syft-$SYFT_VERSION.tgz" --namespace syft --create-namespace
+$ helm repo add openmined https://openmined.github.io/PySyft/helm
+$ helm repo update openmined
+```
+
+#### 2. Search for available Syft versions
+
+```sh
+$ helm search repo openmined/syft --versions --devel
+```
+
+#### 3. Set your preferred Syft Chart version
+
+```sh
+SYFT_VERSION="<paste the chart version number>"
+```
+
+#### 4. Provisioning Helm Charts
+
+```sh
+$ helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace
 ```
 
 ### Azure or GCP Ingress

@@ -65,8 +65,9 @@ def replace_variables(d: Any) -> None:
     if "kubernetes.io/ingress.class" in d:
         d["kubernetes.io/ingress.class"] = "{{ .Values.ingress.ingressClass }}"
 
-    if "kind" in d and d["kind"] == "Ingress" and "spec" in d:
-        d["spec"]["tls"] = [{"hosts": ["{{ .Values.node.settings.hostname }}"]}]
+    # ONLY FOR TLS
+    if d.get("kind") == "Ingress" and "tls" in d.get("spec", {}):
+        d["spec"]["tls"][0]["hosts"][0] = "{{ .Values.node.settings.hostname }}"
         d["spec"]["rules"][0]["host"] = "{{ .Values.node.settings.hostname }}"
 
 
@@ -89,6 +90,46 @@ def get_yaml_name(doc: dict) -> Any:
         return doc.get("metadata", {}).get("name", "")
     except Exception:  # nosec
         return ""
+
+
+def ingress_with_tls() -> str:
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    manifest_path = os.path.normpath(
+        os.path.join(script_path, "..", "k8s", "manifests")
+    )
+    ingress_tls = os.path.join(manifest_path, "ingress-tls.yaml")
+
+    with open(ingress_tls) as fp:
+        return fp.read()
+
+
+def apply_patches(yaml: str, resource_name: str, resource_kind: str) -> str:
+    # print(resource_kind, resource_name)
+    # apply resource specific patches
+    if resource_name.startswith("seaweedfs"):
+        yaml = (
+            '{{- if ne .Values.node.settings.nodeType "gateway"}}\n'
+            + yaml.rstrip()
+            + "\n{{ end }}\n"
+        )
+    elif resource_kind == "ingress" and resource_name.endswith("tls"):
+        yaml = "{{- if .Values.node.settings.tls }}\n" + yaml.rstrip() + "\n{{ end }}\n"
+    elif resource_kind == "ingress" and not resource_name.endswith("tls"):
+        yaml = (
+            "{{- if not .Values.node.settings.tls }}\n"
+            + yaml.rstrip()
+            + "\n{{ end }}\n"
+        )
+
+    # global patches
+    yaml = (
+        yaml.replace("'{{", "{{")
+        .replace("}}'", "}}")
+        .replace("''{{", "{{")
+        .replace("}}''", "}}")
+    )
+
+    return yaml
 
 
 def main() -> None:
@@ -120,6 +161,14 @@ def main() -> None:
 
     # Load the multi-doc yaml file
     try:
+        # append custom docs
+        input_data = "\n---\n".join(
+            [
+                input_data,
+                ingress_with_tls(),
+            ]
+        )
+
         yaml_docs = list(yaml.safe_load_all(input_data))
     except Exception as e:
         print(f"❌ Error while parsing yaml file: {e}")
@@ -149,12 +198,7 @@ def main() -> None:
             # Create new file with name or append if it already exists
             new_file = os.path.join(helm_chart_template_dir, f"{name}-{kind}.yaml")
             yaml_dump = yaml.dump(doc)
-            yaml_dump = (
-                yaml_dump.replace("'{{", "{{")
-                .replace("}}'", "}}")
-                .replace("''{{", "{{")
-                .replace("}}''", "}}")
-            )
+            yaml_dump = apply_patches(yaml_dump, name, kind)
 
             with open(new_file, "w") as f:
                 f.write(yaml_dump)  # add document separator
