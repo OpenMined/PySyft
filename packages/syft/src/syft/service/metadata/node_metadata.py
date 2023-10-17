@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import StorableObjectType
@@ -44,6 +45,23 @@ def check_version(
 
 
 @serializable()
+class NodeMetadataUpdateV1(SyftObject):
+    __canonical_name__ = "NodeMetadataUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    name: Optional[str]
+    organization: Optional[str]
+    description: Optional[str]
+    on_board: Optional[bool]
+    id: Optional[UID]
+    verify_key: Optional[SyftVerifyKey]
+    highest_object_version: Optional[int]
+    lowest_object_version: Optional[int]
+    syft_version: Optional[str]
+    admin_email: Optional[str]
+
+
+@serializable()
 class NodeMetadataUpdate(SyftObject):
     __canonical_name__ = "NodeMetadataUpdate"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -58,6 +76,63 @@ class NodeMetadataUpdate(SyftObject):
     lowest_object_version: Optional[int]
     syft_version: Optional[str]
 
+
+@serializable()
+class NodeMetadataV1(SyftObject):
+    __canonical_name__ = "NodeMetadata"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    name: str
+    id: UID
+    verify_key: SyftVerifyKey
+    highest_object_version: int
+    lowest_object_version: int
+    syft_version: str
+    node_type: NodeType = NodeType.DOMAIN
+    deployed_on: str = "Date"
+    organization: str = "OpenMined"
+    on_board: bool = False
+    description: str = "Text"
+    signup_enabled: bool
+    admin_email: str
+    node_side_type: str
+    show_warnings: bool
+
+    def check_version(self, client_version: str) -> bool:
+        return check_version(
+            client_version=client_version,
+            server_version=self.syft_version,
+            server_name=self.name,
+        )
+
+
+@serializable()
+class NodeMetadataV2(SyftObject):
+    __canonical_name__ = "NodeMetadata"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    name: str
+    highest_version: int
+    lowest_version: int
+    id: UID
+    verify_key: SyftVerifyKey
+    syft_version: str
+    node_type: NodeType = NodeType.DOMAIN
+    deployed_on: str = "Date"
+    organization: str = "OpenMined"
+    on_board: bool = False
+    description: str = "Text"
+    signup_enabled: bool
+    admin_email: str
+    node_side_type: str
+    show_warnings: bool
+
+    def check_version(self, client_version: str) -> bool:
+        return check_version(
+            client_version=client_version,
+            server_version=self.syft_version,
+            server_name=self.name,
+        )
 
 @serializable()
 class NodeMetadata(SyftObject):
