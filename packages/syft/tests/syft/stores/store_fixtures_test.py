@@ -12,6 +12,7 @@ from pytest_mock_resources import create_mongo_fixture
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_store import DictActionStore
+from syft.service.action.action_store import MongoActionStore
 from syft.service.action.action_store import SQLiteActionStore
 from syft.service.queue.queue_stash import QueueStash
 from syft.store.dict_document_store import DictDocumentStore
@@ -269,6 +270,26 @@ def mongo_queue_stash(root_verify_key, mongo_server_mock, request):
         **mongo_kwargs,
     )
     return mongo_queue_stash_fn(store)
+
+
+@pytest.fixture(scope="function", params=locking_scenarios)
+def mongo_action_store(mongo_server_mock, request):
+    mongo_db_name = generate_db_name()
+    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
+    locking_config_name = request.param
+    locking_config = str_to_locking_config(locking_config_name)
+
+    mongo_client = MongoClient(**mongo_kwargs)
+    mongo_config = MongoStoreClientConfig(client=mongo_client)
+    store_config = MongoStoreConfig(
+        client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
+    )
+    ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
+    mongo_action_store = MongoActionStore(
+        store_config=store_config, root_verify_key=ver_key
+    )
+
+    return mongo_action_store
 
 
 def dict_store_partition_fn(
