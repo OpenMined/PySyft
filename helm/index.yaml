@@ -2,8 +2,616 @@ apiVersion: v1
 entries:
   syft:
   - apiVersion: v2
+    appVersion: 0.8.2-beta.38
+    created: "2023-10-17T06:39:49.344041525Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 85a41b375f6436994c7c363b8985addcf1540e354c542cd960d5cef24bda8159
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.38.tgz
+    version: 0.8.2-beta.38
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.37
+    created: "2023-10-17T06:39:49.343453096Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: a7bfbe113d473c4edec3ffe69703633756207c8faeb9d41ac333616b97a085ce
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.37.tgz
+    version: 0.8.2-beta.37
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.36
+    created: "2023-10-17T06:39:49.342909561Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 4cec77678aedd98dc9c33ed9731b81ea5a1a126c5bf4be0692ab03c80f50dadb
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.36.tgz
+    version: 0.8.2-beta.36
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.35
+    created: "2023-10-17T06:39:49.342361197Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 29d7ed3c7e2c9bf375cfa107555fd13847b4a26a0957b34814df35c21505aae7
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.35.tgz
+    version: 0.8.2-beta.35
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.34
+    created: "2023-10-17T06:39:49.341667582Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: d9fd70258e5f60a89e87a1635d6e0410fd179c9850def738ab7b3216d81561ce
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.34.tgz
+    version: 0.8.2-beta.34
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.33
+    created: "2023-10-17T06:39:49.340626888Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: c9c6971034ccc30996b7d136a43a12d18687bcff158b6b8853cb824d1ebf1285
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.33.tgz
+    version: 0.8.2-beta.33
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.32
+    created: "2023-10-17T06:39:49.340136192Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 2daca9dbf41826d7d2366df64fe51660155eded693620a778743be20f7f2705a
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.32.tgz
+    version: 0.8.2-beta.32
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.31
+    created: "2023-10-17T06:39:49.339568201Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 5f3e7ddc72dbf3991f4546925d661e8066b3a703329cd35cd68d66f6f70ab260
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.31.tgz
+    version: 0.8.2-beta.31
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.30
+    created: "2023-10-17T06:39:49.339079719Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: a9ca6669569e8ec990c054b1f1c95ff8f932cc4e3844c0d26ff5c40e44873c30
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.30.tgz
+    version: 0.8.2-beta.30
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.29
+    created: "2023-10-17T06:39:49.338097415Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: f6a9159e31f41141b6508a9c49d9c01be694f46463aaf769797027e00fb57681
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.29.tgz
+    version: 0.8.2-beta.29
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.28
+    created: "2023-10-17T06:39:49.337609564Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 50a697c502634565c0f5bbe219173e5d3ac7dbe02adccfd62a32732be7824528
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.28.tgz
+    version: 0.8.2-beta.28
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.27
+    created: "2023-10-17T06:39:49.337118968Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 65b5beea01de3ef6e76cf9a33b325dbe5c91a210cc2f76df6e0fe78304c3b5ea
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.27.tgz
+    version: 0.8.2-beta.27
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.26
+    created: "2023-10-17T06:39:49.336626909Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 11e07208da5eb7aa020102db8baada6bd08dd70e1a216e7d27d45f2b22c9ec53
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.26.tgz
+    version: 0.8.2-beta.26
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.25
+    created: "2023-10-17T06:39:49.336098843Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 1ff25d3547b90db309c89c76712fe517da8ebc2fcf2e2dc5d86aec68377b2128
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.25.tgz
+    version: 0.8.2-beta.25
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.24
+    created: "2023-10-17T06:39:49.335495716Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: c8433c92d634de1da8ed6ffa5cace5343765717eb50f9672232905c32f012861
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.24.tgz
+    version: 0.8.2-beta.24
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.23
+    created: "2023-10-17T06:39:49.334371564Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 9aa8b61d3402a3ad80af038b4a8119fe780abac83de9efaa9b1615e8deed542a
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.23.tgz
+    version: 0.8.2-beta.23
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.22
+    created: "2023-10-17T06:39:49.333818401Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 2ff337dd56ec9429af58cf0edf6faa67aca948a8ee30002f237fdb5aba049acc
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.22.tgz
+    version: 0.8.2-beta.22
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.21
+    created: "2023-10-17T06:39:49.333211097Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 44bdb41f8e6e90c14744a95db8ea4799fe28688eeaf524d80fad468162bf75ea
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.21.tgz
+    version: 0.8.2-beta.21
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.20
+    created: "2023-10-17T06:39:49.332711083Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: a455a1c6e6e9ee31c7a28000987e7a5ebb22d7e268935adfde460ff337fdb3a1
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.20.tgz
+    version: 0.8.2-beta.20
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.19
+    created: "2023-10-17T06:39:49.331727005Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 133ce65c5bed15408200e988f2c71fc003b6506480c4d1731ebe000ab5c00747
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.19.tgz
+    version: 0.8.2-beta.19
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.18
+    created: "2023-10-17T06:39:49.331203067Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: fa172c8d54df94a61dc74b0b87e5e56d479084a89d82ec6c9cc9263002ccaf1a
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.18.tgz
+    version: 0.8.2-beta.18
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.17
+    created: "2023-10-17T06:39:49.33071186Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: daa2087c084a9a635b22d3840d5ecd653be06ebeb89c2980ca2ba70442a21b9d
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.17.tgz
+    version: 0.8.2-beta.17
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.16
+    created: "2023-10-17T06:39:49.330206246Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 2432b2670bb37dbf43bc7d6b0cbfa4700ac4094b73c9b1f25db0e9b50b324ba8
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.16.tgz
+    version: 0.8.2-beta.16
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.15
+    created: "2023-10-17T06:39:49.329707715Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: f6458586e536846a802c24257c15c191ec2e0fba3e36f1ff672a1db5f70de870
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.15.tgz
+    version: 0.8.2-beta.15
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.14
+    created: "2023-10-17T06:39:49.329186972Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: b792911196f30cddfee30db30bbf5caf18b203fcecd62734c94577cb2e8f58e2
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.14.tgz
+    version: 0.8.2-beta.14
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.13
+    created: "2023-10-17T06:39:49.328645181Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 3ee0a3793880f91177fbd6bd435daab837d2bb8581c88f2c9482b91b2970d242
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.13.tgz
+    version: 0.8.2-beta.13
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.12
+    created: "2023-10-17T06:39:49.327556025Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 4fc88c5d3cca5e72f0cef69d3ae7b34ba588740f1d3134cdd6fd6f05f9fd984d
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.12.tgz
+    version: 0.8.2-beta.12
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.11
+    created: "2023-10-17T06:39:49.327042686Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 8ba00feb3c41d26c3bce5bd563812976e0fd382db7b5a7dd0c94527b5a82bc63
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.11.tgz
+    version: 0.8.2-beta.11
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.10
+    created: "2023-10-17T06:39:49.326548874Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: a0e9ac14c466e5bc0b19459024710a629b8d67defa8ef43aa99b547b5204e378
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.10.tgz
+    version: 0.8.2-beta.10
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.9
+    created: "2023-10-17T06:39:49.347070401Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 8c224c4833f0f380442395af0a09d507b605f5642bb376a3f4a8fbb8dec38eb7
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.9.tgz
+    version: 0.8.2-beta.9
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.8
+    created: "2023-10-17T06:39:49.34658778Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: c286a429e94e7098ba1f9854536741b247ae3d00f4ec0c2458cdfb405c2720e1
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.8.tgz
+    version: 0.8.2-beta.8
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.7
+    created: "2023-10-17T06:39:49.346104618Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: e52ce2d32a90f1c181e42c01970b637e78f64cf6e70daca22b2765f6aa89e2c3
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.7.tgz
+    version: 0.8.2-beta.7
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.6
+    created: "2023-10-17T06:39:49.34561858Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: b764c5515e5ebc76aea36d59022ca451d840a88d8e47057c64528ae8827ffcd6
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.6.tgz
+    version: 0.8.2-beta.6
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.5
+    created: "2023-10-17T06:39:49.345130268Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: bad9095fc119e545fdb76bd13680b10443e2989de562fe9483517214419138a8
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.5.tgz
+    version: 0.8.2-beta.5
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.4
+    created: "2023-10-17T06:39:49.344534405Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 8f58e7e654dc0005d2d1b6ddafe6ba7a4fc3e1d987c3f6dd09acced56c7a9ea6
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.4.tgz
+    version: 0.8.2-beta.4
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.3
+    created: "2023-10-17T06:39:49.338595144Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 6d313cf2128768b74596d8dea74c53146fe063f90d0c6ffe8d5990d738290b59
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.3.tgz
+    version: 0.8.2-beta.3
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.2
+    created: "2023-10-17T06:39:49.332223753Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: d2a7c88a73ef9e70237844cb8628c82262291352f95bbed434c574c2b6362432
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.2.tgz
+    version: 0.8.2-beta.2
+  - apiVersion: v2
+    appVersion: 0.8.2-beta.1
+    created: "2023-10-17T06:39:49.326053118Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.8.6
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 53e23cb249cdb9d77c0bc2ed9f1a3173e28421297c02aa53ed0c0aaf0476257a
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.1.tgz
+    version: 0.8.2-beta.1
+  - apiVersion: v2
     appVersion: 0.8.1
-    created: "2023-06-24T14:33:37.795115+10:00"
+    created: "2023-10-17T06:39:49.325541112Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -19,7 +627,7 @@ entries:
     version: 0.8.1
   - apiVersion: v2
     appVersion: 0.8.1-beta.21
-    created: "2023-06-24T14:33:37.794684+10:00"
+    created: "2023-10-17T06:39:49.32503108Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -35,7 +643,7 @@ entries:
     version: 0.8.1-beta.21
   - apiVersion: v2
     appVersion: 0.8.1-beta.20
-    created: "2023-06-24T14:33:37.793671+10:00"
+    created: "2023-10-17T06:39:49.324540894Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -51,7 +659,7 @@ entries:
     version: 0.8.1-beta.20
   - apiVersion: v2
     appVersion: 0.8.1-beta.19
-    created: "2023-06-24T14:33:37.793224+10:00"
+    created: "2023-10-17T06:39:49.324012738Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -67,7 +675,7 @@ entries:
     version: 0.8.1-beta.19
   - apiVersion: v2
     appVersion: 0.8.1-beta.15
-    created: "2023-06-24T14:33:37.792792+10:00"
+    created: "2023-10-17T06:39:49.323459194Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -83,7 +691,7 @@ entries:
     version: 0.8.1-beta.15
   - apiVersion: v2
     appVersion: 0.8.1-beta.12
-    created: "2023-06-24T14:33:37.79222+10:00"
+    created: "2023-10-17T06:39:49.322784504Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -97,4 +705,4 @@ entries:
     urls:
     - https://openmined.github.io/PySyft/helm/syft-0.8.1-beta.12.tgz
     version: 0.8.1-beta.12
-generated: "2023-06-24T14:33:37.791438+10:00"
+generated: "2023-10-17T06:39:49.321540968Z"
