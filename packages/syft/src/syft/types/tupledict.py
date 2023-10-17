@@ -94,7 +94,7 @@ class _Meta(type):
 
         if isinstance(__value, Iterable) and __key is not None:
             if len(__key) != len(__value):
-                raise ValueError("`__keys` has to be of the same length as `__values`")
+                raise ValueError("`__key` has to be of the same length as `__value`")
 
             keys = OrderedDict((k, i) for i, k in enumerate(__key))
 
