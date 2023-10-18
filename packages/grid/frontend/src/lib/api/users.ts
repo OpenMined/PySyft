@@ -1,9 +1,7 @@
-import { getUserIdFromStorage } from "./keys"
-import { makeSyftUID, syftCall } from "./syft-api-call"
-import { js_syft_call } from "./syft_api"
+import { jsSyftCall } from "./syft_api"
 
 export async function getAllUsers(page_size = 0, page_index = 0) {
-  return await syftCall({
+  return await jsSyftCall({
     path: "user.get_all",
     payload: { page_size: page_size, page_index: page_index },
   })
@@ -15,14 +13,13 @@ export async function getUser(
   node_id: string
 ) {
   try {
-    const user = await js_syft_call({
+    const user = await jsSyftCall({
       path: "user.view",
       payload: { uid: { value: uid, fqn: "syft.types.uid.UID" } },
       node_id,
       signing_key,
     })
 
-    console.log({ user })
     return {
       uid: user.id.value,
       email: user.email,
@@ -36,19 +33,12 @@ export async function getUser(
   }
 }
 
-export async function getSelf() {
-  return await syftCall({
-    path: "user.view",
-    payload: { uid: makeSyftUID(getUserIdFromStorage()) },
-  })
-}
-
 export async function searchUsersByName(
   name: string,
   page_size = 0,
   page_index = 0
 ) {
-  return await syftCall({
+  return await jsSyftCall({
     path: "user.search",
     payload: {
       user_search: { name: name, fqn: "syft.service.user.user.UserSearch" },
@@ -74,7 +64,7 @@ export async function updateCurrentUser(
     fqn: "syft.service.user.user.UserUpdate",
   }
 
-  return await syftCall({
+  return await jsSyftCall({
     path: "user.update",
     payload: {
       uid: makeSyftUID(getUserIdFromStorage()),

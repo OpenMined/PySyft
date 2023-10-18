@@ -1,6 +1,5 @@
 <script lang="ts">
   import { enhance } from "$app/forms"
-  import { metadata } from "$lib/store"
   import Button from "$lib/components/Button.svelte"
   import Modal from "$lib/components/Modal.svelte"
   import DomainMetadataPanel from "$lib/components/authentication/DomainMetadataPanel.svelte"
@@ -14,16 +13,17 @@
   /** @type {import('./$types').ActionData} */
   export let form
 
-  let status: DomainOnlineStatus = "online"
-  $: loginError = ""
+  const { metadata } = data
 
   console.log({ data })
+
+  let status: DomainOnlineStatus = "online"
 </script>
 
 <div
   class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12"
 >
-  <DomainMetadataPanel metadata={$metadata} />
+  <DomainMetadataPanel {metadata} />
   <form method="POST" class="contents" use:enhance>
     <section class="w-full max-w-[681px]">
       <Modal>
@@ -55,7 +55,8 @@
             id="email"
             name="email"
             placeholder="info@openmined.org"
-            bind:error={loginError}
+            autocomplete="username"
+            error={form?.invalid}
             required
             data-testid="email"
           />
@@ -65,21 +66,21 @@
             id="password"
             name="password"
             placeholder="******"
-            bind:error={loginError}
+            error={form?.invalid}
+            autocomplete="current-password"
             required
             data-testid="password"
           />
-          <p class="text-center text-rose-500" hidden={!loginError}>
-            {loginError}
-          </p>
-          <p class="text-center">
-            Don't have an account yet? Apply for an account <a
-              href="/signup"
-              class="text-primary-600 underline hover:opacity-50"
-            >
-              here
-            </a>
-          </p>
+          {#if metadata.signup_enabled}
+            <p class="text-center">
+              Don't have an account yet? Apply for an account <a
+                href="/signup"
+                class="text-primary-600 underline hover:opacity-50"
+              >
+                here
+              </a>
+            </p>
+          {/if}
         </div>
         <Button type="submit" variant="secondary" slot="button-group">
           Login

@@ -1,5 +1,5 @@
 import ky from "ky"
-import { syftCall } from "./syft-api-call"
+import { jsSyftCall } from "./syft_api"
 import { API_BASE_URL } from "../constants"
 import { deserialize } from "./serde"
 
@@ -36,5 +36,5 @@ export async function updateMetadata(newMetadata) {
       fqn: "syft.service.settings.settings.NodeSettingsUpdate",
     },
   }
-  return await syftCall({ path: "settings.update", payload })
+  return await jsSyftCall({ path: "settings.update", payload })
 }

@@ -1,14 +1,18 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { metadata } from '$lib/store';
-  import { register } from '$lib/api/auth';
-  import Button from '$lib/components/Button.svelte';
-  import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import Modal from '$lib/components/Modal.svelte';
+  import { goto } from "$app/navigation"
+  import { metadata } from "$lib/store"
+  import { register } from "$lib/api/auth"
+  import Button from "$lib/components/Button.svelte"
+  import DomainMetadataPanel from "$lib/components/authentication/DomainMetadataPanel.svelte"
+  import Input from "$lib/components/Input.svelte"
+  import Modal from "$lib/components/Modal.svelte"
 
-  let signUpError = '';
-  let signUpSuccess = '';
+  let signUpError = ""
+  let signUpSuccess = ""
+
+  export let data
+
+  console.log({ data })
 
   async function createUser({
     email,
@@ -16,10 +20,10 @@
     confirm_password,
     fullName,
     organization,
-    website
+    website,
   }) {
     if (password.value !== confirm_password.value) {
-      throw Error('Password and password confirmation mismatch');
+      throw Error("Password and password confirmation mismatch")
     }
 
     let newUser = {
@@ -28,25 +32,27 @@
       password_verify: confirm_password.value,
       name: fullName.value,
       institution: organization.value,
-      website: website.value
-    };
+      website: website.value,
+    }
 
     // Filter attributes that doesn't exist
-    Object.keys(newUser).forEach((k) => newUser[k] == '' && delete newUser[k]);
+    Object.keys(newUser).forEach((k) => newUser[k] == "" && delete newUser[k])
 
     try {
-      let response = await register(newUser);
-      signUpSuccess = response[0].message;
+      let response = await register(newUser)
+      signUpSuccess = response[0].message
       setTimeout(() => {
-        goto('/login');
-      }, 2000);
+        goto("/login")
+      }, 2000)
     } catch (e) {
-      signUpError = e.message;
+      signUpError = e.message
     }
   }
 </script>
 
-<div class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12">
+<div
+  class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12"
+>
   <DomainMetadataPanel metadata={$metadata} />
   <form class="contents" on:submit|preventDefault={(e) => createUser(e.target)}>
     <Modal>
@@ -105,8 +111,12 @@
           placeholder="https://openmined.org"
           data-testid="website"
         />
-        <p class="text-center text-green-500" hidden={!signUpSuccess}>{signUpSuccess}</p>
-        <p class="text-center text-rose-500" hidden={!signUpError}>{signUpError}</p>
+        <p class="text-center text-green-500" hidden={!signUpSuccess}>
+          {signUpSuccess}
+        </p>
+        <p class="text-center text-rose-500" hidden={!signUpError}>
+          {signUpError}
+        </p>
         <p class="text-center">
           Already have an account? Sign in <a
             class="text-primary-600 underline hover:opacity-50"
@@ -117,7 +127,12 @@
           .
         </p>
       </div>
-      <Button type="submit" variant="secondary" slot="button-group" data-testid="submit">
+      <Button
+        type="submit"
+        variant="secondary"
+        slot="button-group"
+        data-testid="submit"
+      >
         Sign up
       </Button>
     </Modal>

@@ -3,6 +3,19 @@ import { login } from "$lib/api/auth"
 import { default_cookie_config } from "$lib/utils"
 import { COOKIES } from "$lib/constants"
 
+export const load = async ({ parent }) => {
+  const { metadata, user } = await parent()
+
+  if (!metadata.signup_enabled) {
+    throw redirect(302, user ? "/users" : "/login")
+  }
+
+  return {
+    metadata,
+    user,
+  }
+}
+
 /** @type {import('./$types').Actions} */
 export const actions = {
   default: async ({ cookies, request }) => {
