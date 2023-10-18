@@ -205,3 +205,6 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
 
     def keys(self) -> KeysView[_KT]:
         return self.__mapping.keys()
+
+    def items(self) -> Iterable[tuple[_KT, _VT]]:
+        return zip(self.__mapping.keys(), self)
