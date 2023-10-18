@@ -1,65 +1,84 @@
-ARG PYTHON_VERSION='3.11'
+# ==================== [BASE] Setup deps + rootless user ==================== #
 
-FROM python:3.11-slim as build
+FROM cgr.dev/chainguard/wolfi-base as base
 
-# set UTC timezone
+ARG PYTHON_VERSION="3.11"
 ENV TZ=Etc/UTC
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN mkdir -p /root/.local
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk update && \
+    apk add bash tzdata python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update && apt-get upgrade -y
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
-    DEBIAN_FRONTEND=noninteractive \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-    curl python3-dev gcc make build-essential cmake git
+ARG HOME=/home/nonroot
+ARG NONROOT=nonroot:nonroot
 
-RUN --mount=type=cache,target=/root/.cache \
-    pip install -U pip
+# use wolfi-base provided rootless user
+USER nonroot
 
-#install jupyterlab
-RUN --mount=type=cache,target=/root/.cache \
+ENV PATH=$PATH:$HOME/.local/bin
+
+# ==================== [BUILD CACHE] Jupyterlab Cache ==================== #
+
+FROM base as jupyter
+
+RUN --mount=type=cache,target=$HOME/.cache/ \
     pip install --user jupyterlab
 
-WORKDIR /app
+# ==================== [BUILD CACHE] Syft deps changes ==================== #
 
-# Backend
-FROM python:$PYTHON_VERSION-slim as backend
-RUN apt-get update && apt-get upgrade -y
-COPY --from=build /root/.local /root/.local
+FROM base as syft_deps_changes
 
-ENV PYTHONPATH=/app
-ENV PATH=/root/.local/bin:$PATH
+WORKDIR $HOME/
 
-RUN --mount=type=cache,target=/root/.cache \
-    pip install -U pip
+COPY --chown=$NONROOT syft/setup.cfg $HOME/setup.cfg
 
-WORKDIR /app
+# setup.cfg might change, but ML dependencies may not
+# so we take a snapshot of everything in DOCKER:CACHED
+RUN awk '/DOCKER:CACHED:START/,/DOCKER:CACHED:END/ {if (!/#/) print}' $HOME/setup.cfg | sed 's/ //g' | sort > $HOME/requirements.txt;
 
-# copy grid
-COPY grid/backend /app/
+# ==================== [BUILD CACHE] Syft ML Cache ==================== #
+
+FROM base as syft_cached_deps
+
+COPY --from=syft_deps_changes $HOME/requirements.txt $HOME/requirements.txt
+
+# Should hopefully be run only when req.txt changes
+RUN --mount=type=cache,target=$HOME/.cache/ \
+    pip install --user -r $HOME/requirements.txt && \
+    rm $HOME/requirements.txt
+
+# ==================== [MAIN] Setup Syft ==================== #
+
+FROM syft_cached_deps
+
+# Copy pre-built jupyterlab
+COPY --from=jupyter --chown=$NONROOT $HOME/.local $HOME/.local
+
+WORKDIR $HOME/app
+ENV PYTHONPATH=$HOME/app
+ENV APPDIR=$HOME/app
 
 # copy skeleton to do package install
-COPY syft/setup.py /app/syft/setup.py
-COPY syft/setup.cfg /app/syft/setup.cfg
-COPY syft/pyproject.toml /app/syft/pyproject.toml
-COPY syft/MANIFEST.in /app/syft/MANIFEST.in
-COPY syft/src/syft/VERSION /app/syft/src/syft/VERSION
-COPY syft/src/syft/capnp /app/syft/src/syft/capnp
+COPY --chown=$NONROOT syft/setup.py ./syft/setup.py
+COPY --chown=$NONROOT syft/setup.cfg ./syft/setup.cfg
+COPY --chown=$NONROOT syft/pyproject.toml ./syft/pyproject.toml
+COPY --chown=$NONROOT syft/MANIFEST.in ./syft/MANIFEST.in
+COPY --chown=$NONROOT syft/src/syft/VERSION ./syft/src/syft/VERSION
+COPY --chown=$NONROOT syft/src/syft/capnp ./syft/src/syft/capnp
 
-# install syft
-RUN --mount=type=cache,target=/root/.cache \
-    pip install --user -e /app/syft && \
-    pip uninstall ansible ansible-core -y && \
-    rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
+# Install Syft
+RUN pip install --user pip-autoremove && \
+    pip install --user -e ./syft/ && \
+    pip-autoremove ansible ansible-core -y && \
+    pip uninstall pip-autoremove -y && \
+    rm -rf $HOME/.cache/
 
-# security patches
-RUN apt purge --auto-remove linux-libc-dev -y || true
-RUN apt purge --auto-remove libldap-2.5-0 -y || true
+# copy grid
+COPY --chown=$NONROOT grid/backend .
 
 # copy any changed source
-COPY syft/src /app/syft/src
+COPY --chown=$NONROOT syft/src ./syft/src
 
 # change to worker-start.sh or start-reload.sh as needed
-CMD ["bash", "/app/grid/start.sh"]
+CMD ["bash", "./grid/start.sh"]
