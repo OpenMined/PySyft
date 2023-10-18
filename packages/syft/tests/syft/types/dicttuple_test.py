@@ -22,6 +22,14 @@ def test_should_iter_over_value(dict_tuple: DictTuple) -> None:
 
 
 @pytest.mark.parametrize("dict_tuple", TEST_CASES)
+def test_indexing(dict_tuple: DictTuple) -> None:
+    assert dict_tuple[0] == 1
+    assert dict_tuple[1] == 2
+    assert dict_tuple["x"] == 1
+    assert dict_tuple["y"] == 2
+
+
+@pytest.mark.parametrize("dict_tuple", TEST_CASES)
 def test_convert_to_other_iterable_types(dict_tuple: DictTuple) -> None:
     assert list(dict_tuple) == [1, 2]
     assert tuple(dict_tuple) == (1, 2)
