@@ -938,8 +938,6 @@ def login(
             password=login_credentials.password,
             cache=cache,
         )
-        if not _client.authed:
-            return SyftError(message=f"Failed to login as {login_credentials.email}")
 
     return _client
 
