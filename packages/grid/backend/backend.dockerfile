@@ -7,7 +7,7 @@ ENV TZ=Etc/UTC
 
 RUN --mount=type=cache,target=/var/cache/apk \
     apk update && \
-    apk add bash tzdata python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
+    apk add build-base gcc python-$PYTHON_VERSION-dev bash tzdata python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ARG HOME=/home/nonroot
