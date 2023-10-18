@@ -1,37 +1,30 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { metadata, user } from '$lib/store';
-  import { login } from '$lib/api/auth';
-  import Button from '$lib/components/Button.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import DomainOnlineIndicator from '$lib/components/DomainOnlineIndicator.svelte';
-  import type { DomainOnlineStatus } from '../../../types/domain/onlineIndicator';
-  import { getUserIdFromStorage } from '$lib/api/keys';
-  import { getSelf } from '$lib/api/users';
+  import { enhance } from "$app/forms"
+  import { metadata } from "$lib/store"
+  import Button from "$lib/components/Button.svelte"
+  import Modal from "$lib/components/Modal.svelte"
+  import DomainMetadataPanel from "$lib/components/authentication/DomainMetadataPanel.svelte"
+  import Input from "$lib/components/Input.svelte"
+  import DomainOnlineIndicator from "$lib/components/DomainOnlineIndicator.svelte"
+  import type { DomainOnlineStatus } from "../../../types/domain/onlineIndicator"
 
-  let status: DomainOnlineStatus = 'online';
-  let email = '';
-  let password = '';
-  $: loginError = '';
-  async function handleSubmit() {
-    try {
-      await login({ email, password });
-      if (getUserIdFromStorage()) {
-        const updatedUser = await getSelf();
-        user.set(updatedUser);
-      }
-      goto('/datasets');
-    } catch (error) {
-      loginError = error.message;
-    }
-  }
+  /** @type {import('./$types').PageData} */
+  export let data
+
+  /** @type {import('./$types').ActionData} */
+  export let form
+
+  let status: DomainOnlineStatus = "online"
+  $: loginError = ""
+
+  console.log({ data })
 </script>
 
-<div class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12">
+<div
+  class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12"
+>
   <DomainMetadataPanel metadata={$metadata} />
-  <form class="contents" on:submit|preventDefault={handleSubmit}>
+  <form method="POST" class="contents" use:enhance>
     <section class="w-full max-w-[681px]">
       <Modal>
         <div
@@ -43,10 +36,13 @@
           </span>
         </div>
         <div class="contents" slot="body">
+          {#if form?.invalid}
+            <p class="w-full text-center text-red-600">Invalid credentials!</p>
+          {/if}
           <div class="flex justify-center items-center gap-2">
             <DomainOnlineIndicator />
             <p class="text-600">
-              {#if status === 'pending'}
+              {#if status === "pending"}
                 Checking connection
               {:else}
                 Domain {status}
@@ -57,9 +53,9 @@
             label="Email"
             type="email"
             id="email"
+            name="email"
             placeholder="info@openmined.org"
             bind:error={loginError}
-            bind:value={email}
             required
             data-testid="email"
           />
@@ -67,13 +63,15 @@
             label="Password"
             type="password"
             id="password"
+            name="password"
             placeholder="******"
-            bind:value={password}
             bind:error={loginError}
             required
             data-testid="password"
           />
-          <p class="text-center text-rose-500" hidden={!loginError}>{loginError}</p>
+          <p class="text-center text-rose-500" hidden={!loginError}>
+            {loginError}
+          </p>
           <p class="text-center">
             Don't have an account yet? Apply for an account <a
               href="/signup"
@@ -81,10 +79,11 @@
             >
               here
             </a>
-            .
           </p>
         </div>
-        <Button type="submit" variant="secondary" slot="button-group">Login</Button>
+        <Button type="submit" variant="secondary" slot="button-group">
+          Login
+        </Button>
       </Modal>
     </section>
   </form>

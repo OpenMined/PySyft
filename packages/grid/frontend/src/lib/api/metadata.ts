@@ -1,37 +1,40 @@
-import ky from 'ky';
-import { syftCall } from './syft-api-call';
-import { API_BASE_URL } from '../constants';
-import { deserialize } from './serde';
-import { parse as uuidParse } from 'uuid';
-import { UUID } from '../client/objects/uid';
+import ky from "ky"
+import { syftCall } from "./syft-api-call"
+import { API_BASE_URL } from "../constants"
+import { deserialize } from "./serde"
 
 export async function getMetadata() {
   try {
-    const res = await ky.get(`${API_BASE_URL}/metadata_capnp`);
-    const metadata = await deserialize(res);
+    const res = await ky.get(`${API_BASE_URL}/metadata_capnp`)
 
-    const nodeUIDString = metadata?.id?.value;
-    const nodeIdHyphen = hyphenateUUIDv4(nodeUIDString);
-    window.localStorage.setItem('metadata', JSON.stringify(metadata));
-    window.localStorage.setItem('nodeId', nodeIdHyphen);
+    const metadata = await deserialize(res)
 
-    return metadata;
+    return {
+      admin_email: metadata?.admin_email,
+      deployed_on: metadata?.deployed_on,
+      description: metadata?.description,
+      highest_version: metadata?.highest_version,
+      lowest_version: metadata?.lowest_version,
+      name: metadata?.name,
+      node_id: metadata?.id?.value,
+      node_side: metadata?.node_side_type,
+      node_type: metadata?.node_type?.value,
+      organization: metadata?.organization,
+      signup_enabled: metadata?.signup_enabled,
+      syft_version: metadata?.syft_version,
+    }
   } catch (error) {
-    // TODO: Log error in debug mode
-    throw error;
+    console.log(error)
+    throw error
   }
-}
-
-function hyphenateUUIDv4(uuid: string): string {
-  return uuid.replace(
-    /([a-z0-9]{8})([a-z0-9]{4})([a-z0-9]{4})([a-z0-9]{4})([a-z0-9]{12})/,
-    '$1-$2-$3-$4-$5'
-  );
 }
 
 export async function updateMetadata(newMetadata) {
   const payload = {
-    settings: { ...newMetadata, fqn: 'syft.service.settings.settings.NodeSettingsUpdate' }
-  };
-  return await syftCall({ path: 'settings.update', payload });
+    settings: {
+      ...newMetadata,
+      fqn: "syft.service.settings.settings.NodeSettingsUpdate",
+    },
+  }
+  return await syftCall({ path: "settings.update", payload })
 }

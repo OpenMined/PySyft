@@ -1,13 +1,17 @@
 <script>
-  import { goto } from '$app/navigation';
+  import { goto } from "$app/navigation"
+
+  export let data
+
+  console.log({ data })
 
   async function lazyLoad() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return
 
-    if (!window.localStorage.getItem('key')) {
-      goto('/login');
+    if (!window.localStorage.getItem("key")) {
+      goto("/login")
     } else {
-      goto('/datasets');
+      goto("/datasets")
     }
   }
 </script>
