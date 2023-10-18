@@ -13,7 +13,7 @@ TEST_CASES = [
 
 
 @pytest.mark.parametrize("dict_tuple", TEST_CASES)
-def test_should_iter_over_value(dict_tuple) -> None:
+def test_should_iter_over_value(dict_tuple: DictTuple) -> None:
     values = []
     for v in dict_tuple:
         values.append(v)
@@ -22,7 +22,7 @@ def test_should_iter_over_value(dict_tuple) -> None:
 
 
 @pytest.mark.parametrize("dict_tuple", TEST_CASES)
-def test_convert_to_other_iterable_types(dict_tuple) -> None:
+def test_convert_to_other_iterable_types(dict_tuple: DictTuple) -> None:
     assert list(dict_tuple) == [1, 2]
     assert tuple(dict_tuple) == (1, 2)
 
@@ -33,12 +33,12 @@ def test_keys(dict_tuple) -> None:
 
 
 @pytest.mark.parametrize("dict_tuple", TEST_CASES)
-def test_get_mapping(dict_tuple) -> None:
+def test_get_mapping(dict_tuple: DictTuple) -> None:
     assert dict(dict_tuple.items()) == {"x": 1, "y": 2}
 
 
 @pytest.mark.parametrize("dict_tuple", TEST_CASES)
-def test_iter_over_items(dict_tuple) -> None:
+def test_iter_over_items(dict_tuple: DictTuple) -> None:
     items = []
     for k, v in dict_tuple.items():
         items.append((k, v))
