@@ -682,6 +682,12 @@ class SyftClient:
             credentials=signing_key,
         )
 
+        client.__logged_in_user = email
+
+        if user_private_key is not None:
+            client.__user_role = user_private_key.role
+            client.__logged_in_username = client.users.get_current_user().name
+
         if signing_key is not None:
             print(
                 f"Logged into <{client.name}: {client.metadata.node_side_type.capitalize()} side "
