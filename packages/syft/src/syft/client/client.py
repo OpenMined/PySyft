@@ -933,7 +933,7 @@ def login(
             _client = _client_cache
 
     if not _client.authed and login_credentials:
-        _client.login(
+        _client = _client.login(
             email=login_credentials.email,
             password=login_credentials.password,
             cache=cache,
