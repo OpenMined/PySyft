@@ -719,8 +719,8 @@ class SyftClient:
                 # combining both email, password and verify key and uid
                 SyftClientSessionCache.add_client_by_uid_and_verify_key(
                     verify_key=signing_key.verify_key,
-                    node_uid=self.id,
-                    syft_client=self,
+                    node_uid=client.id,
+                    syft_client=client,
                 )
 
         # relative
@@ -899,10 +899,10 @@ def login_as_guest(
 
 @instrument
 def login(
+    email: str,
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
-    email: Optional[str] = None,
     password: Optional[str] = None,
     cache: bool = True,
 ) -> SyftClient:
@@ -915,10 +915,9 @@ def login(
 
     login_credentials = None
 
-    if email:
-        if not password:
-            password = getpass("Password: ")
-        login_credentials = UserLoginCredentials(email=email, password=password)
+    if not password:
+        password = getpass("Password: ")
+    login_credentials = UserLoginCredentials(email=email, password=password)
 
     if cache and login_credentials:
         _client_cache = SyftClientSessionCache.get_client(
