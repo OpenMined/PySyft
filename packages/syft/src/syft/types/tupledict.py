@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from collections.abc import KeysView
 from collections.abc import Mapping
 from types import MappingProxyType
+from typing import Callable
 from typing import Generic
 from typing import Optional
 from typing import SupportsIndex
@@ -58,7 +59,7 @@ class _Meta(type):
     def __call__(
         cls: type[_T],
         __value: Optional[Iterable] = None,
-        __key: Optional[Collection] = None,
+        __key: Optional[Union[Callable, Collection]] = None,
         /,
     ) -> _T:
         if __value is None and __key is None:
@@ -66,7 +67,7 @@ class _Meta(type):
             obj.__init__()
             return obj
 
-        if isinstance(__value, Mapping) and __key is None:
+        elif isinstance(__value, Mapping) and __key is None:
             keys = OrderedDict()
             values = []
 
@@ -79,7 +80,7 @@ class _Meta(type):
 
             return obj
 
-        if isinstance(__value, Iterable) and __key is None:
+        elif isinstance(__value, Iterable) and __key is None:
             keys = OrderedDict()
             values = []
 
@@ -92,7 +93,20 @@ class _Meta(type):
 
             return obj
 
-        if isinstance(__value, Iterable) and __key is not None:
+        elif isinstance(__value, Iterable) and isinstance(__key, Callable):
+            keys = OrderedDict()
+            values = []
+
+            for i, v in enumerate(__value):
+                keys[i] = __key(v)
+                values.append(v)
+
+            obj = cls.__new__(cls, values)
+            obj.__init__(keys)
+
+            return obj
+
+        elif isinstance(__value, Iterable) and __key is not None:
             if len(__key) != len(__value):
                 raise ValueError("`__key` has to be of the same length as `__value`")
 
@@ -160,6 +174,10 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
 
     @overload
     def __init__(self, __value: Iterable[_VT], __key: Collection[_KT]) -> None:
+        ...
+
+    @overload
+    def __init__(self, __value: Iterable[_VT], __key: Callable[[_VT], _KT]) -> None:
         ...
 
     def __init__(
