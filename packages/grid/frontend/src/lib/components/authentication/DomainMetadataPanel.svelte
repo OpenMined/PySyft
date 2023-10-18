@@ -24,11 +24,6 @@
     {#if metadata.organization}
       <p class="text-lg font-semibold flex-shrink-0">{metadata.organization}</p>
     {/if}
-    {#if metadata.description}
-      <p class="text-base">
-        {metadata.description}
-      </p>
-    {/if}
     <hr />
     <div class="flex flex-col gap-2.5 flex-shrink-0 pt-2 pb-4">
       <div class="flex gap-1 items-center group relative">
