@@ -1,5 +1,6 @@
 # stdlib
 from pathlib import Path
+import sys
 import tempfile
 from typing import Generator
 from typing import Tuple
@@ -7,7 +8,9 @@ from typing import Tuple
 # third party
 from pymongo import MongoClient
 import pytest
-from pytest_mock_resources import create_mongo_fixture
+from pytest_mock_resources.container.mongo import MongoConfig
+from pytest_mock_resources.fixture.mongo import _create_clean_database
+from pytest_mock_resources.fixture.mongo import get_container
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
@@ -38,7 +41,46 @@ from .store_constants_test import sqlite_workspace_folder
 from .store_constants_test import test_verify_key_string_root
 from .store_mocks_test import MockObjectType
 
-mongo_server_mock = create_mongo_fixture(scope="session")
+
+@pytest.fixture(scope="session")
+def pmr_mongo_config():
+    """Override this fixture with a :class:`MongoConfig` instance to specify different defaults.
+
+    Examples:
+        >>> @pytest.fixture(scope='session')
+        ... def pmr_mongo_config():
+        ...     return MongoConfig(image="mongo:3.4", root_database="foo")
+    """
+    return MongoConfig()
+
+
+@pytest.fixture(scope="session")
+def pmr_mongo_container(pytestconfig, pmr_mongo_config):
+    yield from get_container(pytestconfig, pmr_mongo_config)
+
+
+def create_mongo_fixture_no_windows(scope="function"):
+    """Produce a mongo fixture.
+
+    Any number of fixture functions can be created. Under the hood they will all share the same
+    database server.
+
+    Arguments:
+        scope: Passthrough pytest's fixture scope.
+    """
+
+    @pytest.fixture(scope=scope)
+    def _no_windows():
+        return pytest.skip("PyResources Issue with Docker + Windows")
+
+    @pytest.fixture(scope=scope)
+    def _(pmr_mongo_container, pmr_mongo_config):
+        return _create_clean_database(pmr_mongo_config)
+
+    return _ if sys.platform != "win32" else _no_windows
+
+
+mongo_server_mock = create_mongo_fixture_no_windows(scope="session")
 
 locking_scenarios = [
     "nop",
