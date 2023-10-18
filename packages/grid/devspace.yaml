@@ -313,8 +313,8 @@ dev:
         value: "True"
     logs: {}
     sync:
-      - path: ./backend/grid:/app/grid
-      - path: ../syft:/app/syft
+      - path: ./backend/grid:/home/nonroot/app/grid
+      - path: ../syft:/home/nonroot/app/syft
 
 profiles:
   - name: gateway

@@ -15,12 +15,12 @@ if [[ ${DEV_MODE} == "True" ]];
 then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
-    pip install -e "/app/syft[telemetry]"
+    pip install -e "$APPDIR/syft[telemetry]"
 fi
 
 set +e
-NODE_PRIVATE_KEY=$(python /app/grid/bootstrap.py --private_key)
-NODE_UID=$(python /app/grid/bootstrap.py --uid)
+NODE_PRIVATE_KEY=$(python $APPDIR/grid/bootstrap.py --private_key)
+NODE_UID=$(python $APPDIR/grid/bootstrap.py --uid)
 set -e
 
 echo "NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY"
