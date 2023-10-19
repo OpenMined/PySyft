@@ -30,7 +30,7 @@ from ...types.transforms import transform_method
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
-from ..metadata.node_metadata import NodeMetadata
+from ..metadata.node_metadata import NodeMetadataV2
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -556,7 +556,7 @@ def node_route_to_http_connection(
     return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
 
 
-@transform(NodeMetadata, NodePeer)
+@transform(NodeMetadataV2, NodePeer)
 def metadata_to_peer() -> List[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),

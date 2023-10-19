@@ -64,7 +64,7 @@ from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadata
+from ..service.metadata.node_metadata import NodeMetadataV2
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -314,6 +314,9 @@ class Node(AbstractNode):
         self.services = services
         self._construct_services()
 
+        # Migrate data before any operation on db
+        self.find_and_migrate_data()
+
         create_admin_new(  # nosec B106
             name="Jane Doe",
             email=root_email,
@@ -336,8 +339,6 @@ class Node(AbstractNode):
             self.init_queue_manager(queue_config=queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
-
-        self.find_and_migrate_data()
 
         NodeRegistry.set_node_for(self.id, self)
 
@@ -724,7 +725,7 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def metadata(self) -> NodeMetadata:
+    def metadata(self) -> NodeMetadataV2:
         name = ""
         deployed_on = ""
         organization = ""
@@ -747,7 +748,7 @@ class Node(AbstractNode):
             admin_email = settings_data.admin_email
             show_warnings = settings_data.show_warnings
 
-        return NodeMetadata(
+        return NodeMetadataV2(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
