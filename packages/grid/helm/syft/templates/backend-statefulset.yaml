@@ -36,9 +36,15 @@ spec:
         - name: MONGO_HOST
           value: {{ .Values.db.mongo.settings.mongoHost }}
         - name: MONGO_USERNAME
-          value: {{ .Values.secrets.db.mongo.mongoUsername }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.db.mongo.mongoSecret }}
+              key: mongo-username-secret
         - name: MONGO_PASSWORD
-          value: {{ .Values.secrets.db.mongo.mongoPassword }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.db.mongo.mongoSecret }}
+              key: mongo-password-secret
         - name: SERVICE_NAME
           value: backend
         - name: RELEASE
