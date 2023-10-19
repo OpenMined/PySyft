@@ -10,8 +10,8 @@ from syft.abstract_node import NodeSideType
 from syft.abstract_node import NodeType
 from syft.node.credentials import SyftSigningKey
 from syft.service.metadata.node_metadata import NodeMetadataJSON
-from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
+from syft.service.settings.settings import NodeSettingsV2
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
 from syft.types.syft_object import HIGHEST_SYFT_OBJECT_VERSION
@@ -25,8 +25,8 @@ def settings_stash(document_store) -> SettingsStash:
 
 
 @pytest.fixture
-def settings(worker, faker) -> NodeSettings:
-    return NodeSettings(
+def settings(worker, faker) -> NodeSettingsV2:
+    return NodeSettingsV2(
         id=UID(),
         name=worker.name,
         organization=faker.text(),

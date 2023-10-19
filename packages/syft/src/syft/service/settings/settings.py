@@ -27,7 +27,7 @@ class NodeSettingsUpdate(PartialSyftObject):
 
 
 @serializable()
-class NodeSettingsV1(SyftObject):
+class NodeSettings(SyftObject):
     __canonical_name__ = "NodeSettings"
     __version__ = SYFT_OBJECT_VERSION_1
     __repr_attrs__ = [
@@ -50,7 +50,7 @@ class NodeSettingsV1(SyftObject):
 
 
 @serializable()
-class NodeSettings(SyftObject):
+class NodeSettingsV2(SyftObject):
     __canonical_name__ = "NodeSettings"
     __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [

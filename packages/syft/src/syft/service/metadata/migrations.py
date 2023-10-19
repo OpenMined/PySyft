@@ -7,11 +7,11 @@ from ...types.transforms import TransformContext
 from ...types.transforms import drop
 from ...types.transforms import rename
 from .node_metadata import NodeMetadata
-from .node_metadata import NodeMetadataV1
 from .node_metadata import NodeMetadataV2
+from .node_metadata import NodeMetadataV3
 
 
-@migrate(NodeMetadataV1, NodeMetadataV2)
+@migrate(NodeMetadata, NodeMetadataV2)
 def upgrade_metadata_v1_to_v2():
     return [
         rename("highest_object_version", "highest_version"),
@@ -19,7 +19,7 @@ def upgrade_metadata_v1_to_v2():
     ]
 
 
-@migrate(NodeMetadataV2, NodeMetadataV1)
+@migrate(NodeMetadataV2, NodeMetadata)
 def downgrade_metadata_v2_to_v1():
     return [
         rename("highest_version", "highest_object_version"),
@@ -27,7 +27,7 @@ def downgrade_metadata_v2_to_v1():
     ]
 
 
-@migrate(NodeMetadataV2, NodeMetadata)
+@migrate(NodeMetadataV2, NodeMetadataV3)
 def upgrade_metadata_v2_to_v3():
     return [drop(["deployed_on", "on_board", "signup_enabled", "admin_email"])]
 
@@ -50,6 +50,6 @@ def _downgrade_metadata_v3_to_v2() -> Callable:
     return set_defaults_from_settings
 
 
-@migrate(NodeMetadata, NodeMetadataV2)
+@migrate(NodeMetadataV3, NodeMetadataV2)
 def downgrade_metadata_v3_to_v2():
     return [_downgrade_metadata_v3_to_v2()]

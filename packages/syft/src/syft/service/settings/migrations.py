@@ -6,7 +6,7 @@ from ...types.syft_migration import migrate
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
 from .settings import NodeSettings
-from .settings import NodeSettingsV1
+from .settings import NodeSettingsV2
 
 
 def set_from_node_to_key(node_attr: str, key: str) -> Callable:
@@ -17,7 +17,7 @@ def set_from_node_to_key(node_attr: str, key: str) -> Callable:
     return extract_from_node
 
 
-@migrate(NodeSettingsV1, NodeSettings)
+@migrate(NodeSettings, NodeSettingsV2)
 def upgrade_metadata_v1_to_v2():
     return [
         set_from_node_to_key("verify_key", "verify_key"),
@@ -25,7 +25,7 @@ def upgrade_metadata_v1_to_v2():
     ]
 
 
-@migrate(NodeSettings, NodeSettingsV1)
+@migrate(NodeSettingsV2, NodeSettings)
 def downgrade_metadata_v2_to_v1():
     return [
         drop(["verify_key", "node_type"]),

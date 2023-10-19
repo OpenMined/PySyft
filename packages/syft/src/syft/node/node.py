@@ -64,7 +64,7 @@ from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadata
+from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -81,7 +81,7 @@ from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
-from ..service.settings.settings import NodeSettings
+from ..service.settings.settings import NodeSettingsV2
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
@@ -679,7 +679,7 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def settings(self) -> NodeSettings:
+    def settings(self) -> NodeSettingsV2:
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key)
         if settings.is_ok() and len(settings.ok()) > 0:
@@ -687,7 +687,7 @@ class Node(AbstractNode):
         return settings_data
 
     @property
-    def metadata(self) -> NodeMetadata:
+    def metadata(self) -> NodeMetadataV3:
         name = ""
         organization = ""
         description = ""
@@ -698,7 +698,7 @@ class Node(AbstractNode):
         description = settings_data.description
         show_warnings = settings_data.show_warnings
 
-        return NodeMetadata(
+        return NodeMetadataV3(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
@@ -895,7 +895,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettings]:
+    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettingsV2]:
         if self.name is None:
             self.name = random_name()
         try:
@@ -909,7 +909,7 @@ class Node(AbstractNode):
                 # as enclaves do not have superusers
                 if self.node_type == NodeType.ENCLAVE:
                     flags.CAN_REGISTER = True
-                new_settings = NodeSettings(
+                new_settings = NodeSettingsV2(
                     id=self.id,
                     name=self.name,
                     verify_key=self.verify_key,
