@@ -13,7 +13,6 @@ from result import Result
 from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
-from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -38,12 +37,13 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..vpn.headscale_client import HeadscaleAuthToken
-from ..vpn.headscale_client import HeadscaleClient
-from ..vpn.tailscale_client import TailscaleClient
-from ..vpn.tailscale_client import TailscaleState
-from ..vpn.tailscale_client import TailscaleStatus
-from ..vpn.tailscale_client import get_vpn_client
+
+# from ..vpn.headscale_client import HeadscaleAuthToken
+# from ..vpn.headscale_client import HeadscaleClient
+# from ..vpn.tailscale_client import TailscaleClient
+# from ..vpn.tailscale_client import TailscaleState
+# from ..vpn.tailscale_client import TailscaleStatus
+# from ..vpn.tailscale_client import get_vpn_client
 from ..warnings import CRUDWarning
 from .node_peer import NodePeer
 from .routes import HTTPNodeRoute
@@ -356,156 +356,158 @@ class NetworkService(AbstractService):
         # Return peers or an empty list when result is None
         return result.ok() or []
 
-    @service_method(path="network.join_vpn", name="join_vpn")
-    def join_vpn(
-        self,
-        context: AuthedServiceContext,
-        peer: Optional[NodePeer] = None,
-        client: Optional[SyftClient] = None,
-    ) -> Union[SyftSuccess, SyftError]:
-        """Join a VPN Service"""
 
-        if isinstance(client, SyftClient):
-            remote_peer = NodePeer.from_client(client)
-        else:
-            remote_peer = peer
-        if remote_peer is None:
-            return SyftError("join_vpn requires peer or client")
+# Disable VPN code -----------------------------------------
+# @service_method(path="network.join_vpn", name="join_vpn")
+# def join_vpn(
+#     self,
+#     context: AuthedServiceContext,
+#     peer: Optional[NodePeer] = None,
+#     client: Optional[SyftClient] = None,
+# ) -> Union[SyftSuccess, SyftError]:
+#     """Join a VPN Service"""
 
-        result = self.stash.get_by_uid(
-            credentials=context.node.verify_key, uid=remote_peer.id
-        )
+#     if isinstance(client, SyftClient):
+#         remote_peer = NodePeer.from_client(client)
+#     else:
+#         remote_peer = peer
+#     if remote_peer is None:
+#         return SyftError("join_vpn requires peer or client")
 
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
+#     result = self.stash.get_by_uid(
+#         credentials=context.node.verify_key, uid=remote_peer.id
+#     )
 
-        # tell the remote peer our details
-        if not context.node:
-            return SyftError(message=f"{type(context)} has no node")
+#     if result.is_err():
+#         return SyftError(message=f"{result.err()}")
 
-        # switch to the nodes signing key
-        client = remote_peer.client_with_context(context=context)
+#     # tell the remote peer our details
+#     if not context.node:
+#         return SyftError(message=f"{type(context)} has no node")
 
-        auth_token = client.api.services.network.register_to_vpn()
+#     # switch to the nodes signing key
+#     client = remote_peer.client_with_context(context=context)
 
-        if isinstance(auth_token, SyftError):
-            return auth_token
+#     auth_token = client.api.services.network.register_to_vpn()
 
-        result = get_vpn_client(TailscaleClient)
+#     if isinstance(auth_token, SyftError):
+#         return auth_token
 
-        if result.is_err():
-            return SyftError(message=result.err())
+#     result = get_vpn_client(TailscaleClient)
 
-        tailscale_client = result.ok()
+#     if result.is_err():
+#         return SyftError(message=result.err())
 
-        result = tailscale_client.disconnect()
+#     tailscale_client = result.ok()
 
-        if isinstance(result, SyftError):
-            return result
+#     result = tailscale_client.disconnect()
 
-        # TODO: move this url information /vpn stuff to the client
-        vpn_url = GridURL.from_url(client.connection.url).with_path(path="/vpn")
+#     if isinstance(result, SyftError):
+#         return result
 
-        result = tailscale_client.connect(
-            headscale_host=vpn_url,
-            headscale_auth_token=auth_token.key,
-        )
+#     # TODO: move this url information /vpn stuff to the client
+#     vpn_url = GridURL.from_url(client.connection.url).with_path(path="/vpn")
 
-        if isinstance(result, SyftError):
-            return result
+#     result = tailscale_client.connect(
+#         headscale_host=vpn_url,
+#         headscale_auth_token=auth_token.key,
+#     )
 
-        # save vpn token information to peer
-        remote_peer.vpn_auth_key = auth_token.key
-        remote_peer.is_vpn = True
+#     if isinstance(result, SyftError):
+#         return result
 
-        # save the remote peer for later
-        result = self.stash.update_peer(
-            credentials=context.node.verify_key, peer=remote_peer
-        )
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+#     # save vpn token information to peer
+#     remote_peer.vpn_auth_key = auth_token.key
+#     remote_peer.is_vpn = True
 
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+#     # save the remote peer for later
+#     result = self.stash.update_peer(
+#         credentials=context.node.verify_key, peer=remote_peer
+#     )
+#     if result.is_err():
+#         return SyftError(message=str(result.err()))
 
-        return SyftSuccess(
-            message=f"Successfully joined {remote_peer.name} via VPN !!!"
-        )
+#     if result.is_err():
+#         return SyftError(message=str(result.err()))
 
-    @service_method(path="network.vpn_status", name="vpn_status")
-    def get_vpn_status(
-        self,
-        context: AuthedServiceContext,
-    ) -> Union[TailscaleStatus, SyftError]:
-        """Join a VPN Service"""
-        result = get_vpn_client(TailscaleClient)
+#     return SyftSuccess(
+#         message=f"Successfully joined {remote_peer.name} via VPN !!!"
+#     )
 
-        if result.is_err():
-            return SyftError(message=result.err())
+# @service_method(path="network.vpn_status", name="vpn_status")
+# def get_vpn_status(
+#     self,
+#     context: AuthedServiceContext,
+# ) -> Union[TailscaleStatus, SyftError]:
+#     """Join a VPN Service"""
+#     result = get_vpn_client(TailscaleClient)
 
-        tailscale_client = result.ok()
+#     if result.is_err():
+#         return SyftError(message=result.err())
 
-        return tailscale_client.status()
+#     tailscale_client = result.ok()
 
-    @service_method(
-        path="network.register_to_vpn",
-        name="register_to_vpn",
-        roles=GUEST_ROLE_LEVEL,
-    )
-    def register_to_vpn(
-        self,
-        context: AuthedServiceContext,
-    ) -> Union[HeadscaleAuthToken, SyftError]:
-        """Register node to the VPN."""
+#     return tailscale_client.status()
 
-        result = get_vpn_client(HeadscaleClient)
+# @service_method(
+#     path="network.register_to_vpn",
+#     name="register_to_vpn",
+#     roles=GUEST_ROLE_LEVEL,
+# )
+# def register_to_vpn(
+#     self,
+#     context: AuthedServiceContext,
+# ) -> Union[HeadscaleAuthToken, SyftError]:
+#     """Register node to the VPN."""
 
-        if result.is_err():
-            return SyftError(message=result.err())
+#     result = get_vpn_client(HeadscaleClient)
 
-        headscale_client = result.ok()
+#     if result.is_err():
+#         return SyftError(message=result.err())
 
-        token = headscale_client.generate_token()
+#     headscale_client = result.ok()
 
-        return token
+#     token = headscale_client.generate_token()
 
-    def connect_self(
-        self, context: AuthedServiceContext
-    ) -> Union[SyftSuccess, SyftError]:
-        tailscale_status = self.get_vpn_status(context=context)
+#     return token
 
-        if isinstance(tailscale_status, SyftError):
-            return tailscale_status
+# def connect_self(
+#     self, context: AuthedServiceContext
+# ) -> Union[SyftSuccess, SyftError]:
+#     tailscale_status = self.get_vpn_status(context=context)
 
-        if tailscale_status.state is TailscaleState.RUNNING.value:
-            return SyftSuccess(message="Connection already established !!")
+#     if isinstance(tailscale_status, SyftError):
+#         return tailscale_status
 
-        auth_token = self.register_to_vpn(context=context)
+#     if tailscale_status.state is TailscaleState.RUNNING.value:
+#         return SyftSuccess(message="Connection already established !!")
 
-        if isinstance(auth_token, SyftError):
-            return auth_token
+#     auth_token = self.register_to_vpn(context=context)
 
-        result = get_vpn_client(TailscaleClient)
+#     if isinstance(auth_token, SyftError):
+#         return auth_token
 
-        if result.is_err():
-            return SyftError(message=result.err())
+#     result = get_vpn_client(TailscaleClient)
 
-        tailscale_client = result.ok()
+#     if result.is_err():
+#         return SyftError(message=result.err())
 
-        result = tailscale_client.disconnect()
+#     tailscale_client = result.ok()
 
-        if isinstance(result, SyftError):
-            return result
+#     result = tailscale_client.disconnect()
 
-        result = tailscale_client.connect(
-            headscale_host="http://headscale:8080",
-            headscale_auth_token=auth_token.key,
-        )
+#     if isinstance(result, SyftError):
+#         return result
 
-        if isinstance(result, SyftError):
-            return result
+#     result = tailscale_client.connect(
+#         headscale_host="http://headscale:8080",
+#         headscale_auth_token=auth_token.key,
+#     )
 
-        return SyftSuccess(message="Successfully joined VPN !!!")
+#     if isinstance(result, SyftError):
+#         return result
+
+#     return SyftSuccess(message="Successfully joined VPN !!!")
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService

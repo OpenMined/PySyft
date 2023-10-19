@@ -13,7 +13,7 @@ files:
     - redis/redis.conf
     - seaweedfs/filer.toml
     - seaweedfs/start.sh
-    - vpn/config.yaml
+#    - vpn/config.yaml
     - default.env
     docker:
     - default.env
@@ -27,8 +27,8 @@ files:
     - traefik/docker/dynamic.yml
     - traefik/docker/traefik-tls.template.yml
     - traefik/docker/traefik.yml
-    - vpn/headscale.dockerfile
-    - vpn/tailscale.dockerfile
+#    - vpn/headscale.dockerfile
+#    - vpn/tailscale.dockerfile
     k8s:
     - devspace.yaml
     - traefik/k8s/dynamic.yml

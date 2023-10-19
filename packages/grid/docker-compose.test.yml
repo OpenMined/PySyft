@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   proxy:
     ports:
@@ -5,11 +6,11 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
 
-  tailscale:
-    profiles:
-      - vpn
-    volumes:
-      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
+  #  tailscale:
+  #    profiles:
+  #      - vpn
+  #    volumes:
+  #      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
 
   # redis:
   #   ports:
@@ -21,11 +22,11 @@ services:
   #     - "5672"
   #     - "15672"
 
-  headscale:
-    profiles:
-      - network
-    ports:
-      - "4000"
+  #  headscale:
+  #    profiles:
+  #      - network
+  #    ports:
+  #      - "4000"
 
   seaweedfs:
     profiles:

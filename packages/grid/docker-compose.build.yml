@@ -1,9 +1,9 @@
 version: "3.8"
 services:
-  tailscale:
-    build:
-      context: ${RELATIVE_PATH}./vpn
-      dockerfile: tailscale.dockerfile
+  #  tailscale:
+  #    build:
+  #      context: ${RELATIVE_PATH}./vpn
+  #      dockerfile: tailscale.dockerfile
 
   frontend:
     build:
@@ -28,8 +28,7 @@ services:
   #     context: ${RELATIVE_PATH}../
   #     dockerfile: ./grid/backend/backend.dockerfile
   #     target: "backend"
-
-  headscale:
-    build:
-      context: ${RELATIVE_PATH}./vpn
-      dockerfile: headscale.dockerfile
+#  headscale:
+#    build:
+#      context: ${RELATIVE_PATH}./vpn
+#      dockerfile: headscale.dockerfile
