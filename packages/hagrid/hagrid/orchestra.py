@@ -36,6 +36,8 @@ DEFAULT_PORT = 8080
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
 
+ClientAlias = Any  # we don't want to import Client in case it changes
+
 
 # Define a function to read and print a stream
 def read_stream(stream: subprocess.PIPE) -> None:
@@ -172,32 +174,19 @@ class NodeHandle:
                 f"client not implemented for the deployment type:{self.deployment_type}"
             )
 
-    def login_as_guest(self, **kwargs: Any) -> Optional[Any]:
-        client = self.client
-
-        session = client.login_as_guest(**kwargs)
-
-        if isinstance(session, SyftError):
-            return session
-
-        return session
+    def login_as_guest(self, **kwargs: Any) -> ClientAlias:
+        return self.client.login_as_guest(**kwargs)
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
-    ) -> Optional[Any]:
-        client = self.client
-
+    ) -> ClientAlias:
         if not email:
             email = input("Email: ")
+
         if not password:
             password = getpass.getpass("Password: ")
 
-        session = client.login(email=email, password=password, **kwargs)
-
-        if isinstance(session, SyftError):
-            return session
-
-        return session
+        return self.client.login(email=email, password=password, **kwargs)
 
     def register(
         self,
