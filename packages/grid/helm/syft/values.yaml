@@ -9,10 +9,14 @@ secrets:
     defaultRootPassword: "changethis"
   db:
     mongo:
-      mongoPassword: "example"
-      mongoInitdbRootPassword: "example"
-      mongoUsername: "root"
-      mongoInitdbRootUsername: "root"
+      # mongoPassword: "example"
+      # mongoInitdbRootPassword: "example"
+      # mongoUsername: "root"
+      # mongoInitdbRootUsername: "root"
+      mongo-secret: "mongo-secret"
+
+configuration:
+  devmode: false
 
 db:
   mongo:
