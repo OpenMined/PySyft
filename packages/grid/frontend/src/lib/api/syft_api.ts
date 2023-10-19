@@ -30,8 +30,7 @@ const getSignedMessage = ({
   payload,
   node_id,
   signing_key,
-}: SyftAPICall) => {
-  console.log(typeof signing_key)
+}: Omit<SyftAPICall, "signing_key"> & { signing_key: Uint8Array }) => {
   const syftAPIPayload = {
     path,
     node_uid: { value: node_id, fqn: FQN.UID },

@@ -11,10 +11,10 @@ dependencies:
     specifier: ^0.33.3
     version: 0.33.3
   libsodium:
-    specifier: ^0.7.11
+    specifier: 0.7.11
     version: 0.7.11
   libsodium-wrappers:
-    specifier: ^0.7.11
+    specifier: 0.7.11
     version: 0.7.11
   prismjs:
     specifier: ^1.29.0
@@ -36,6 +36,9 @@ devDependencies:
   '@sveltejs/kit':
     specifier: 1.25.2
     version: 1.25.2(svelte@3.59.2)(vite@4.4.4)
+  '@types/libsodium-wrappers':
+    specifier: 0.7.11
+    version: 0.7.11
   '@types/prismjs':
     specifier: ^1.26.0
     version: 1.26.0
@@ -598,6 +601,10 @@ packages:
 
   /@types/json-schema@7.0.13:
     resolution: {integrity: sha512-RbSSoHliUbnXj3ny0CNFOoxrIDV6SUGyStHsvDqosw6CkdPV8TtWGlfecuK4ToyMEAql6pzNxgCFKanovUzlgQ==}
+    dev: true
+
+  /@types/libsodium-wrappers@0.7.11:
+    resolution: {integrity: sha512-8avZYJny690B6lFZQEDz4PEdCgC8D8qmGE/mhJBzCwzZvsqne61tCRbtJOhxsjYMItEZd3k4SoR4xKKLnI9Ztg==}
     dev: true
 
   /@types/node@20.8.2:

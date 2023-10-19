@@ -1,7 +1,7 @@
 import { fail, redirect } from "@sveltejs/kit"
 import { login } from "$lib/api/auth"
-import { default_cookie_config } from "$lib/utils"
 import { COOKIES } from "$lib/constants"
+import { default_cookie_config } from "$lib/utils"
 
 export const load = async ({ parent }) => {
   const { metadata, user } = await parent()

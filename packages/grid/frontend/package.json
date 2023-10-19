@@ -16,6 +16,7 @@
     "@playwright/test": "^1.36.1",
     "@sveltejs/adapter-node": "^1.3.1",
     "@sveltejs/kit": "1.25.2",
+    "@types/libsodium-wrappers": "0.7.11",
     "@types/prismjs": "^1.26.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
@@ -41,8 +42,8 @@
     "capnp-ts": "^0.7.0",
     "just-debounce-it": "^3.2.0",
     "ky": "^0.33.3",
-    "libsodium": "^0.7.11",
-    "libsodium-wrappers": "^0.7.11",
+    "libsodium": "0.7.11",
+    "libsodium-wrappers": "0.7.11",
     "prismjs": "^1.29.0",
     "semver": "^7.5.4",
     "uuid": "^9.0.0"
