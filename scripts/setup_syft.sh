@@ -50,7 +50,7 @@ else
 fi
 
 # Run the docker compose command
-docker-compose --env-file ./.env -p "$NODE_NAME" --profile blob-storage --profile frontend --file docker-compose.yml up -d
+docker compose --env-file ./.env -p "$NODE_NAME" --profile blob-storage --profile frontend --file docker-compose.yml up -d
 
 # Clean up the downloaded file
 rm -f file.tgz
