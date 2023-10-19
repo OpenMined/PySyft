@@ -24,6 +24,7 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
+from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -370,6 +371,7 @@ class KeyValueStorePartition(StorePartition):
         qk: QueryKey,
         obj: SyftObject,
         has_permission=False,
+        overwrite=False,
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
@@ -396,11 +398,15 @@ class KeyValueStorePartition(StorePartition):
                 )
 
                 # update the object with new data
-                for key, value in obj.to_dict(exclude_empty=True).items():
-                    if key == "id":
-                        # protected field
-                        continue
-                    setattr(_original_obj, key, value)
+                if overwrite:
+                    # Overwrite existing object and their values
+                    _original_obj = obj
+                else:
+                    for key, value in obj.to_dict(exclude_empty=True).items():
+                        if key == "id":
+                            # protected field
+                            continue
+                        setattr(_original_obj, key, value)
 
                 # update data and keys
                 self._set_data_and_keys(
@@ -610,22 +616,23 @@ class KeyValueStorePartition(StorePartition):
         self.data[store_query_key.value] = obj
 
     def _migrate_data(
-        self, to_klass: SyftObject, credentials: SyftVerifyKey, has_permission: bool
+        self, to_klass: SyftObject, context: AuthedServiceContext, has_permission: bool
     ) -> Result[bool, str]:
+        credentials = context.credentials
         has_permission = (credentials == self.root_verify_key) or has_permission
-
         if has_permission:
-            for key, value in self.data:
+            for key, value in self.data.items():
                 try:
-                    migrated_value = value.migrate_to(to_klass)
+                    migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
                     return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
-                qk = QueryKey.from_obj(key)
+                qk = self.settings.store_key.with_obj(key)
                 result = self._update(
                     credentials,
                     qk=qk,
                     obj=migrated_value,
                     has_permission=has_permission,
+                    overwrite=True,
                 )
 
                 if result.is_err():

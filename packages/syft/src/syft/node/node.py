@@ -314,9 +314,6 @@ class Node(AbstractNode):
         self.services = services
         self._construct_services()
 
-        # Migrate data before any operation on db
-        self.find_and_migrate_data()
-
         create_admin_new(  # nosec B106
             name="Jane Doe",
             email=root_email,
@@ -339,6 +336,9 @@ class Node(AbstractNode):
             self.init_queue_manager(queue_config=queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
+
+        # Migrate data before any operation on db
+        self.find_and_migrate_data()
 
         NodeRegistry.set_node_for(self.id, self)
 
@@ -493,6 +493,11 @@ class Node(AbstractNode):
 
     def find_and_migrate_data(self):
         # Track all object type that need migration for document store
+        context = AuthedServiceContext(
+            node=self,
+            credentials=self.verify_key,
+            role=ServiceRole.ADMIN,
+        )
         document_store_object_types = [
             partition.settings.object_type
             for partition in self.document_store.partitions.values()
@@ -502,10 +507,11 @@ class Node(AbstractNode):
             object_types=document_store_object_types
         )
 
-        print(
-            "Object in Document Store that needs migration: ",
-            object_pending_migration,
-        )
+        if object_pending_migration:
+            print(
+                "Object in Document Store that needs migration: ",
+                object_pending_migration,
+            )
 
         # Migrate data for objects in document store
         for object_type in object_pending_migration:
@@ -514,8 +520,9 @@ class Node(AbstractNode):
             if object_partition is None:
                 continue
 
+            print(f"Migrating data for: {canonical_name} table.")
             migration_status = object_partition.migrate_data(
-                to_klass=object_type, credentials=self.verify_key
+                to_klass=object_type, context=context
             )
             if migration_status.is_err():
                 raise Exception(
@@ -529,10 +536,11 @@ class Node(AbstractNode):
             action_object_types
         )
 
-        print(
-            "Object in Action Store that needs migration: ",
-            action_object_pending_migration,
-        )
+        if action_object_pending_migration:
+            print(
+                "Object in Action Store that needs migration: ",
+                action_object_pending_migration,
+            )
 
         # Migrate data for objects in action store
         for object_type in action_object_pending_migration:
@@ -545,6 +553,7 @@ class Node(AbstractNode):
                 raise Exception(
                     f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
                 )
+        print("Data Migrated to latest version !!!")
 
     @property
     def guest_client(self):

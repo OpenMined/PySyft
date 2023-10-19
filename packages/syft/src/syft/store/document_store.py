@@ -26,6 +26,7 @@ from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
 from ..service.action.action_permissions import ActionObjectPermission
+from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
@@ -459,10 +460,12 @@ class StorePartition:
     def migrate_data(
         self,
         to_klass: SyftObject,
-        credentials: SyftVerifyKey,
+        context: AuthedServiceContext,
         has_permission: Optional[bool] = False,
     ) -> Result[bool, str]:
-        self._thread_safe_cbk(self._migrate_data, to_klass, credentials, has_permission)
+        return self._thread_safe_cbk(
+            self._migrate_data, to_klass, context, has_permission
+        )
 
     # Potentially thread-unsafe methods.
     # CAUTION:
@@ -508,7 +511,7 @@ class StorePartition:
     def _migrate_data(
         self,
         to_klass: SyftObject,
-        credentials: SyftVerifyKey,
+        context: AuthedServiceContext,
         has_permission: bool,
     ) -> Result[bool, str]:
         raise NotImplementedError

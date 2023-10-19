@@ -25,6 +25,7 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
+from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
@@ -560,8 +561,9 @@ class MongoStorePartition(StorePartition):
         return collection.count_documents(filter={})
 
     def _migrate_data(
-        self, to_klass: SyftObject, credentials: SyftVerifyKey, has_permission: bool
+        self, to_klass: SyftObject, context: AuthedServiceContext, has_permission: bool
     ) -> Result[bool, str]:
+        credentials = context.credentials
         has_permission = (credentials == self.root_verify_key) or has_permission
         collection_status = self.collection
         if collection_status.is_err():
@@ -576,7 +578,7 @@ class MongoStorePartition(StorePartition):
                 value = obj.to(self.settings.object_type, transform_context)
                 key = obj.get("_id")
                 try:
-                    migrated_value = value.migrate_to(to_klass)
+                    migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
                     return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
                 qk = QueryKey.from_obj(key)
