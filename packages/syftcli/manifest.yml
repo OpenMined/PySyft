@@ -22,8 +22,6 @@ configFiles:
     - packages/grid/traefik/docker/dynamic.yml
     - packages/grid/traefik/docker/traefik-tls.template.yml
     - packages/grid/traefik/docker/traefik.yml
-  #    - packages/grid/vpn/headscale.dockerfile
-  #    - packages/grid/vpn/tailscale.dockerfile
   k8s:
     - packages/grid/devspace.yaml
     - packages/grid/traefik/k8s/dynamic.yml

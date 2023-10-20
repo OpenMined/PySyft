@@ -16,10 +16,10 @@ http:
       loadBalancer:
         servers:
           - url: "http://seaweedfs:8333"
-    headscale:
-      loadBalancer:
-        servers:
-          - url: "http://headscale:8080"
+    # headscale:
+    #   loadBalancer:
+    #     servers:
+    #       - url: "http://headscale:8080"
   routers:
     frontend:
       rule: "PathPrefix(`/`)"

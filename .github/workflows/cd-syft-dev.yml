@@ -127,38 +127,38 @@ jobs:
       #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev-${{ github.sha }}
       #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
 
-      - name: Build and push `grid-headscale` image to registry
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/headscale.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ steps.grid.outputs.GRID_VERSION }}
+      # - name: Build and push `grid-headscale` image to registry
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: ./packages/grid/vpn
+      #     file: ./packages/grid/vpn/headscale.dockerfile
+      #     push: true
+      #     tags: |
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev-${{ github.sha }}
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ steps.grid.outputs.GRID_VERSION }}
 
-      - name: Build and push `grid-tailscale` image to registry
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/tailscale.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ steps.grid.outputs.GRID_VERSION }}
+      # - name: Build and push `grid-tailscale` image to registry
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: ./packages/grid/vpn
+      #     file: ./packages/grid/vpn/tailscale.dockerfile
+      #     push: true
+      #     tags: |
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev-${{ github.sha }}
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ steps.grid.outputs.GRID_VERSION }}
 
-      - name: Build and push `grid-vpn-iptables` image to registry
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/iptables.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:${{ steps.grid.outputs.GRID_VERSION }}
+      # - name: Build and push `grid-vpn-iptables` image to registry
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: ./packages/grid/vpn
+      #     file: ./packages/grid/vpn/iptables.dockerfile
+      #     push: true
+      #     tags: |
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev-${{ github.sha }}
+      #       ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build Helm Chart & Copy to infra
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
