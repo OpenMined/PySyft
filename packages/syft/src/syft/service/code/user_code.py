@@ -32,6 +32,7 @@ from ...client.api import SyftAPICall
 from ...client.client import PythonConnection
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
+from ...protocol.data_protocol import get_data_protocol
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -980,7 +981,10 @@ def execute_byte_code(
                         for x in user_service.stash.partition.data.values()
                         if x.verify_key == self.context.credentials
                     ][0]
-                    user_api = node.get_api(self.context.credentials)
+                    data_protcol = get_data_protocol()
+                    user_api = node.get_api(
+                        self.context.credentials, data_protcol.latest_version
+                    )
                     user_api.signing_key = user_signing_key
                     # We hardcode a python connection here since we have access to the node
                     # TODO: this is not secure
