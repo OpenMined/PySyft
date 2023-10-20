@@ -11,14 +11,14 @@ DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
 packages = [
     "ascii_magic",
-    "click>=7.1",
-    "cryptography>=37.0.2",
+    "click>=8.1.7",
+    "cryptography>=41.0.4",
     "gitpython",
     "jinja2",
     "names",
-    "packaging>=21.3",
+    "packaging>=23.0",
     "paramiko",
-    "pyOpenSSL>=22.0.0",
+    "pyOpenSSL>=23.2.0",
     "requests",
     "rich",
     "setuptools",
