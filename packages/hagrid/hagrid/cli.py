@@ -1185,8 +1185,8 @@ def copy_credentials_to_local() -> str:
     filter_cmd = (
         "docker ps --filter  name=" "backend-1" " --format " "{{" ".Names" "}}" ""
     )
-    node_list = shell(filter_cmd)
-    node_list = node_list.split("\n")
+    nodes = shell(filter_cmd)
+    node_list = nodes.split("\n")
     node_list = list(filter(None, node_list))
     for node in node_list:
         target_directory = str(root_directory) + "/" + node
