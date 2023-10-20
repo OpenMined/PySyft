@@ -55,7 +55,6 @@ def generate_key_callback(context: Dict, future: Future) -> None:
     print(context, future.result())
 
 
-
 shell2http.register_command(
     endpoint="help",
     command_name="weed help"
@@ -65,7 +64,7 @@ shell2http.register_command(
 
 shell2http.register_command(
     endpoint="configure_azure",
-    command_name='bash command.sh'
+    command_name="bash command.sh"
     # callback_fn=generate_key_callback,
     # decorators=[],
 )

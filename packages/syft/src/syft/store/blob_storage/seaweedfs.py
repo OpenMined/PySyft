@@ -148,10 +148,11 @@ class SeaweedFSConnection(BlobStorageConnection):
     def __exit__(self, *exc) -> None:
         self.client.close()
 
-
-    def read(self, fp: SecureFilePathLocation, type_: Optional[Type], bucket_name=None) -> BlobRetrieval:
+    def read(
+        self, fp: SecureFilePathLocation, type_: Optional[Type], bucket_name=None
+    ) -> BlobRetrieval:
         if bucket_name is None:
-            bucket_name=self.default_bucket_name
+            bucket_name = self.default_bucket_name
         try:
             url = self.client.generate_presigned_url(
                 ClientMethod="get_object",

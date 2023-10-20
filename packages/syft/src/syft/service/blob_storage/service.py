@@ -1,20 +1,26 @@
 # stdlib
+import json
 from pathlib import Path
 from typing import List
 from typing import Optional
 from typing import Union
-import json
+
+# third party
+import requests
 
 # relative
 from ...serde.serializable import serializable
+from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
 from ...store.document_store import UIDPartitionKey
+from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.blob_storage import SecureFilePathLocation
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -24,9 +30,6 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .stash import BlobStorageStash
-import requests
-from ...types.blob_storage import SecureFilePathLocation, BlobStorageEntry, BlobFileType
-from ...service.action.action_object import ActionObject
 
 BlobDepositType = Union[OnDiskBlobDeposit, SeaweedFSBlobDeposit]
 
@@ -51,66 +54,76 @@ class BlobStorageService(AbstractService):
 
     @service_method(path="blob_storage.mount_azure", name="mount_azure")
     def mount_azure(
-        self, 
-        context: AuthedServiceContext, 
+        self,
+        context: AuthedServiceContext,
         account_name: str,
         account_key: str,
         container_name: str,
         remote_name: str,
         bucket_name: str,
     ):
+        # stdlib
         import sys
+
         # TODO: fix arguments
         args_dict = {"args": []}
         # TODO: possible wrap this in try catch
-        init_request = requests.post(url='http://0.0.0.0:4000/commands/configure_azure', json=args_dict)
-        first_res = json.loads(init_request.content.decode('utf-8').replace("'", '"'))
-        result_url = first_res['result_url'][:-5] + "true"
+        init_request = requests.post(
+            url="http://0.0.0.0:4000/commands/configure_azure", json=args_dict
+        )
+        first_res = json.loads(init_request.content.decode("utf-8").replace("'", '"'))
+        result_url = first_res["result_url"][:-5] + "true"
         get_result = requests.get(result_url)
         print(get_result.content)
         # TODO check return code
-        
+
         print(bucket_name, file=sys.stderr)
-        
-        res = context.node.blob_storage_client.connect().client.list_objects(Bucket=bucket_name)
+
+        res = context.node.blob_storage_client.connect().client.list_objects(
+            Bucket=bucket_name
+        )
         print(res)
-        objects = res['Contents']
-        file_sizes = [object['Size'] for object in objects]
-        file_paths = [object['Key'] for object in objects]
-        secure_file_paths = [SecureFilePathLocation(path=file_path) for file_path in file_paths]
-        
-        for (sfp, file_size) in zip(secure_file_paths,file_sizes):
+        objects = res["Contents"]
+        file_sizes = [object["Size"] for object in objects]
+        file_paths = [object["Key"] for object in objects]
+        secure_file_paths = [
+            SecureFilePathLocation(path=file_path) for file_path in file_paths
+        ]
+
+        for sfp, file_size in zip(secure_file_paths, file_sizes):
             blob_storage_entry = BlobStorageEntry(
-                location=sfp, 
-                uploaded_by=context.credentials, 
-                file_size=file_size, 
-                type_=BlobFileType, 
-                bucket_name="azurebucket") 
+                location=sfp,
+                uploaded_by=context.credentials,
+                file_size=file_size,
+                type_=BlobFileType,
+                bucket_name="azurebucket",
+            )
             self.stash.set(context.credentials, blob_storage_entry)
-        
-        return SyftSuccess(message='Mounting Azure Successful!')
-        
-    
-    @service_method(path="blob_storage.get_files_from_bucket", name="get_files_from_bucket")
-    def get_files_from_bucket(
-        self, context: AuthedServiceContext, bucket_name: str
-    ):
+
+        return SyftSuccess(message="Mounting Azure Successful!")
+
+    @service_method(
+        path="blob_storage.get_files_from_bucket", name="get_files_from_bucket"
+    )
+    def get_files_from_bucket(self, context: AuthedServiceContext, bucket_name: str):
         result = self.stash.find_all(context.credentials, bucket_name=bucket_name)
         if result.is_err():
             return result
         bse_list = result.ok()
+        # stdlib
         import sys
+
         print(bse_list, file=sys.stderr)
         blob_files = []
         for bse in bse_list:
             self.stash.set(obj=bse, credentials=context.credentials)
             blob_file = ActionObject.empty()
             blob_file.syft_blob_storage_entry_id = bse.id
-            blob_file.syft_client_verify_key = context.credentials 
+            blob_file.syft_client_verify_key = context.credentials
             blob_file.syft_node_location = context.node.id
             blob_file.reload_cache()
             blob_files.append(blob_file.syft_action_data)
-        
+
         return blob_files
 
     @service_method(path="blob_storage.get_by_uid", name="get_by_uid")
