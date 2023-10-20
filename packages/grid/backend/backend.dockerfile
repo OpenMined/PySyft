@@ -41,7 +41,7 @@ RUN --mount=type=cache,target=/home/nonroot/.cache/,rw,uid=65532 \
 
 # ==================== [Final] Setup Syft Server ==================== #
 
-FROM cgr.dev/chainguard/wolfi-base as python_prod
+FROM cgr.dev/chainguard/wolfi-base as backend
 
 # inherit from global
 ARG PYTHON_VERSION
