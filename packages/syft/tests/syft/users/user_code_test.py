@@ -64,7 +64,7 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
 
     guest_client = root_client.guest()
     credentials.pop("name")
-    guest_client.login(**credentials)
+    guest_client = guest_client.login(**credentials)
 
     root_client.upload_dataset(dataset=dataset)
 
