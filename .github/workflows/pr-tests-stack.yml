@@ -247,8 +247,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [ubuntu-latest]
-        # os: [om-ci-16vcpu-ubuntu2204] # broken
+        os: [om-ci-16vcpu-ubuntu2204]
         python-version: ["3.11"]
         notebook-paths: ["api/0.8"]
       fail-fast: false
@@ -460,8 +459,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [ubuntu-latest]
-        # os: [om-ci-16vcpu-ubuntu2204] # broken
+        os: [om-ci-16vcpu-ubuntu2204]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
