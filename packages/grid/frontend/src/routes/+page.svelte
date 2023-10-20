@@ -1,19 +1,21 @@
 <script>
-  import { goto } from '$app/navigation';
-
-  async function lazyLoad() {
-    if (typeof window === 'undefined') return;
-
-    if (!window.localStorage.getItem('key')) {
-      goto('/login');
-    } else {
-      goto('/datasets');
-    }
-  }
+  import { metadata } from '$lib/store';
+  import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
+  import AuthCircles from '$lib/components/AuthCircles.svelte';
+  import Nav from '$lib/components/authentication/Nav.svelte';
+  import Footer from '$lib/components/authentication/Footer.svelte';
 </script>
 
-<main>
-  {#await lazyLoad()}
-    <title>PyGrid</title>
-  {/await}
+<title>PySyft</title>
+<div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
+  <AuthCircles />
+</div>
+<main class="flex flex-col p-10 gap-10 h-screen">
+  <Nav />
+  <div class="grow flex-shrink-0">
+    <div class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12">
+      <DomainMetadataPanel metadata={$metadata} />
+    </div>
+  </div>
+  <Footer />
 </main>

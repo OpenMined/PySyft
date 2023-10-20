@@ -1216,7 +1216,7 @@ class ProjectSubmit(SyftObject):
         if len(clients) > 0:
             emails = {client.logged_in_user for client in clients}
             if len(emails) > 1:
-                raise SyftException(
+                raise ValueError(
                     f"All clients must be logged in from the same account. Found multiple: {emails}"
                 )
         return val

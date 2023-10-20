@@ -39,8 +39,12 @@ def test_domain_connect_to_gateway(domain_1_port, gateway_port):
     assert proxy_domain_client.metadata == domain_client.metadata
     assert proxy_domain_client.user_role == ServiceRole.NONE
 
-    domain_client.login(email="info@openmined.org", password="changethis")
-    proxy_domain_client.login(email="info@openmined.org", password="changethis")
+    domain_client = domain_client.login(
+        email="info@openmined.org", password="changethis"
+    )
+    proxy_domain_client = proxy_domain_client.login(
+        email="info@openmined.org", password="changethis"
+    )
 
     assert proxy_domain_client.logged_in_user == "info@openmined.org"
     assert proxy_domain_client.user_role == ServiceRole.ADMIN
