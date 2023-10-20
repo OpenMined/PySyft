@@ -581,7 +581,7 @@ class MongoStorePartition(StorePartition):
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
                     return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
-                qk = QueryKey.from_obj(key)
+                qk = self.settings.store_key.with_obj(key)
                 result = self._update(
                     credentials,
                     qk=qk,
