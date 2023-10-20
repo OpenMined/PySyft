@@ -306,8 +306,9 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         assert not isinstance(result, SyftError)
 
         guest_client = root_client.guest()
-        guest_client.login(email=user_create.email, password=user_create.password)
-        return guest_client
+        return guest_client.login(
+            email=user_create.email, password=user_create.password
+        )
 
     verify_key = SyftSigningKey.generate().verify_key
     mock_node_settings = NodeSettingsV2(
