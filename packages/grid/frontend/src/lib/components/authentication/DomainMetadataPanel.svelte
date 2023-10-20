@@ -11,7 +11,10 @@
   $: domainInitials = getInitials(metadata?.name);
 </script>
 
-<section class="flex flex-col w-full sm:w-[36%] sm:min-w-[544px] max-w-[784px] gap-4 py-11 px-8">
+<section
+  class="flex flex-col w-full sm:w-[36%] sm:min-w-[544px] max-w-[784px] gap-4 py-11 px-8"
+  data-testid="domain-metadata-panel"
+>
   {#if metadata}
     <TagCloud tags={metadata.tags} />
     <div class="w-[97.5px] relative">
