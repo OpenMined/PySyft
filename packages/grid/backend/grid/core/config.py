@@ -92,6 +92,7 @@ class Settings(BaseSettings):
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
         os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
     )  # 30 minutes in seconds
+    SEAWEED_MOUNT_PORT: int = int(os.getenv("SEAWEED_MOUNT_PORT", 4001))
 
     REDIS_HOST: str = str(os.getenv("REDIS_HOST", "redis"))
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))

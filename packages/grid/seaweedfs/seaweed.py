@@ -64,28 +64,7 @@ shell2http.register_command(
 
 shell2http.register_command(
     endpoint="configure_azure",
-    command_name="bash command.sh"
+    command_name="bash mount_command.sh"
     # callback_fn=generate_key_callback,
     # decorators=[],
 )
-
-
-# shell2http.register_command(
-#     endpoint="generate_key",
-#     command_name=f"headscale -u {network_name} preauthkeys create -o json",
-#     callback_fn=generate_key_callback,
-#     decorators=[basic_auth_check],
-# )
-
-
-# def list_nodes_callback(context: Dict, future: Future) -> None:
-#     # optional user-defined callback function
-#     print(context, future.result())
-
-
-# shell2http.register_command(
-#     endpoint="list_nodes",
-#     command_name=f"headscale -u {network_name} nodes list -o json",
-#     callback_fn=list_nodes_callback,
-#     decorators=[basic_auth_check],
-# )

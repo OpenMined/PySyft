@@ -16,6 +16,10 @@ http:
       loadBalancer:
         servers:
           - url: "http://seaweedfs:8333"
+    seaweedfsmount:
+      loadBalancer:
+        servers:
+          - url: "http://seaweedfs:4001"
     headscale:
       loadBalancer:
         servers:
@@ -48,6 +52,14 @@ http:
       middlewares:
         - "blob-storage-url"
         - "blob-storage-host"
+    blob-storage-mount:
+      rule: "PathPrefix(`/mount`)"
+      entryPoints:
+        - web
+        - vpn
+      service: "seaweedfsmount"
+      middlewares:
+        - "blob-storage-mount-url"
     vpn:
       rule: "PathPrefix(`/vpn`)"
       entryPoints:
@@ -73,6 +85,10 @@ http:
     blob-storage-url:
       stripprefix:
         prefixes: /blob
+        forceslash: true
+    blob-storage-mount-url:
+      stripprefix:
+        prefixes: /mount
         forceslash: true
     vpn-url:
       stripprefix:

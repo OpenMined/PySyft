@@ -104,6 +104,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 class SeaweedFSClientConfig(BlobStorageClientConfig):
     host: str
     port: int
+    mount_port: int
     access_key: str
     secret_key: str
     region: str
@@ -113,6 +114,10 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
     def endpoint_url(self) -> str:
         grid_url = GridURL(host_or_ip=self.host, port=self.port)
         return grid_url.url
+
+    @property
+    def mount_url(self) -> str:
+        return f"http://{self.host}:{self.mount_port}/commands/configure_azure"
 
 
 @serializable()

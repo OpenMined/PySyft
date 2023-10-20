@@ -235,15 +235,17 @@ services:
       - blob-storage
     depends_on:
       - proxy
-    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${SEAWEEDFS_VERSION}"
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${SEAWEEDFS_VERSION:-latest}"
+    # image: "omseaweedfs:latest"
     environment:
       - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
       - S3_ROOT_USER=${S3_ROOT_USER:-admin}
       - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
       - S3_PORT=${S3_PORT:-8888}
+      - SEAWEED_MOUNT_PORT=${SEAWEED_MOUNT_PORT:-4001}
     entrypoint: ["/bin/sh"]
     command:
-      - "/etc/seaweedfs/start.sh"
+      - "/new_seaweed.sh"
     volumes:
       - seaweedfs-data:/data/blob
       - seaweedfs-data-2:/data
@@ -251,6 +253,8 @@ services:
       - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
     labels:
       - "orgs.openmined.syft=this is a syft seaweedfs container"
+    # ports:
+    #   - "4001:4001"
 
   mongo:
     image: "${MONGO_IMAGE}:${MONGO_VERSION}"

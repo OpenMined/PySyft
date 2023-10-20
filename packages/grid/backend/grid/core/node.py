@@ -44,6 +44,7 @@ seaweed_client_config = SeaweedFSClientConfig(
     secret_key=settings.S3_ROOT_PWD,
     region=settings.S3_REGION,
     default_bucket_name=get_node_uid_env(),
+    mount_port=settings.SEAWEED_MOUNT_PORT
 )
 
 blob_storage_config = SeaweedFSConfig(client_config=seaweed_client_config)

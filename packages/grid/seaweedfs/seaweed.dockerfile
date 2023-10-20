@@ -14,11 +14,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./new_seaweed.sh /new_seaweed.sh
 COPY ./seaweed.py /app.py
-COPY ./command.sh /command.sh
+COPY ./mount_command.sh /mount_command.sh
 
 
 RUN chmod +x /new_seaweed.sh
-RUN chmod +x /command.sh
+RUN chmod +x /mount_command.sh
 
 
 ENTRYPOINT ["bash", "new_seaweed.sh"]

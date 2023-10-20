@@ -68,9 +68,12 @@ class BlobStorageService(AbstractService):
         # TODO: fix arguments
         args_dict = {"args": []}
         # TODO: possible wrap this in try catch
+        cfg = context.node.blob_store_config.client_config
         init_request = requests.post(
-            url="http://0.0.0.0:4000/commands/configure_azure", json=args_dict
+            url=cfg.mount_url, json=args_dict
         )
+        import pdb
+        pdb.set_trace()
         first_res = json.loads(init_request.content.decode("utf-8").replace("'", '"'))
         result_url = first_res["result_url"][:-5] + "true"
         get_result = requests.get(result_url)
