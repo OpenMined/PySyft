@@ -66,15 +66,18 @@ class BlobStorageService(AbstractService):
         import sys
 
         # TODO: fix arguments
-        args_dict = {"args": []}
+        args_dict = {  
+            "account_name": account_name,
+            "account_key": account_key,
+            "container_name": container_name,
+            "remote_name": remote_name,
+            "bucket_name": bucket_name,
+        }
         # TODO: possible wrap this in try catch
         init_request = requests.post(
-            url="http://0.0.0.0:4000/commands/configure_azure", json=args_dict
+            url="http://0.0.0.0:4000/configure_azure", json=args_dict
         )
-        first_res = json.loads(init_request.content.decode("utf-8").replace("'", '"'))
-        result_url = first_res["result_url"][:-5] + "true"
-        get_result = requests.get(result_url)
-        print(get_result.content)
+        print(init_request.content)
         # TODO check return code
 
         print(bucket_name, file=sys.stderr)
