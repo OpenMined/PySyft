@@ -124,7 +124,9 @@ class BlobStorageEntry(SyftObject):
     no_lines: Optional[int] = 0
     uploaded_by: SyftVerifyKey
     created_at: DateTime = DateTime.now()
+    bucket_name: Optional[str]
 
+    __attr_searchable__ = ['bucket_name']
 
 @serializable()
 class BlobStorageMetadata(SyftObject):
