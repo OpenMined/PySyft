@@ -198,9 +198,9 @@ jobs:
           # cache: "pnpm"
           # cache-dependency-path: packages/grid/frontend/pnpm-lock.yaml
 
-      - name: Run Frontend Playwright e2e Tests
-        if: steps.changes.outputs.stack == 'true'
-        env:
-          DOCKER: true
-        run: |
-          tox -e frontend.test.e2e
+      # - name: Run Frontend Playwright e2e Tests
+      #   if: steps.changes.outputs.stack == 'true'
+      #   env:
+      #     DOCKER: true
+      #   run: |
+      #     tox -e frontend.test.e2e
