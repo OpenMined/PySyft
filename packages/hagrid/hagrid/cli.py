@@ -1193,9 +1193,7 @@ def copy_credentials_to_local() -> str:
         shell("mkdir " + target_directory)
         copy_cmd = f"docker cp {node}:/storage/credentials.json {target_directory}"
         shell(copy_cmd)
-        result += (
-            f"Node credentials copied to local directory at {target_directory}. "
-        )
+        result += f"Node credentials copied to local directory at {target_directory}. "
     return result
 
 
