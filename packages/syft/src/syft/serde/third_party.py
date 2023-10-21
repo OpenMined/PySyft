@@ -28,13 +28,11 @@ import zmq.green as zmq
 
 # relative
 from ..types.tupledict import DictTuple
-from ..types.tupledict import TupleDict
 from .deserialize import _deserialize as deserialize
 from .recursive_primitives import _serialize_kv_pairs
 from .recursive_primitives import deserialize_kv
 from .recursive_primitives import recursive_serde_register
 from .recursive_primitives import recursive_serde_register_type
-from .recursive_primitives import serialize_kv
 from .serialize import _serialize as serialize
 
 recursive_serde_register(
@@ -128,12 +126,6 @@ recursive_serde_register(
     Timestamp,
     serialize=lambda x: serialize(x.value, to_bytes=True),
     deserialize=lambda x: Timestamp(deserialize(x, from_bytes=True)),
-)
-
-recursive_serde_register(
-    TupleDict,
-    serialize=serialize_kv,
-    deserialize=functools.partial(deserialize_kv, TupleDict),
 )
 
 

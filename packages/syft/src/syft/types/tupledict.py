@@ -2,7 +2,6 @@
 from collections import OrderedDict
 from collections.abc import Collection
 from collections.abc import Iterable
-from collections.abc import Iterator
 from collections.abc import KeysView
 from collections.abc import Mapping
 from types import MappingProxyType
@@ -20,19 +19,6 @@ from typing_extensions import Self
 _T = TypeVar("_T")
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
-
-
-class TupleDict(OrderedDict[_KT, _VT]):
-    def __getitem__(self, key: Union[int, _KT]) -> _VT:
-        if isinstance(key, int):
-            return list(self.values())[key]
-        return super().__getitem__(key)
-
-    def __len__(self) -> int:
-        return len(self.keys())
-
-    def __iter__(self) -> Iterator[_VT]:
-        yield from self.values()
 
 
 # To correctly implement the creation of a DictTuple instance with
