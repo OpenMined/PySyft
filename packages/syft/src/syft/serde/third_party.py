@@ -133,7 +133,7 @@ recursive_serde_register(
 
 
 def _serialize_dicttuple(x: DictTuple) -> bytes:
-    return _serialize_kv_pairs(size=len(x), kv_pairs=zip(x.keys(), x, strict=True))
+    return _serialize_kv_pairs(size=len(x), kv_pairs=zip(x.keys(), x))
 
 
 recursive_serde_register(
