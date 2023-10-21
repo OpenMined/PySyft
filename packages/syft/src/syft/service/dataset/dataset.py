@@ -33,7 +33,6 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.tupledict import DictTuple
-from ...types.tupledict import TupleDict
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST
@@ -604,7 +603,7 @@ class DatasetPageView(SyftObject):
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    datasets: TupleDict[str, Dataset]
+    datasets: DictTuple[str, Dataset]
     total: int
 
 
