@@ -27,8 +27,8 @@ from result import Result
 import zmq.green as zmq
 
 # relative
-from ..types.tupledict import DictTuple
-from ..types.tupledict import _Meta as _DictTupleMetaClass
+from ..types.dicttuple import DictTuple
+from ..types.dicttuple import _Meta as _DictTupleMetaClass
 from .deserialize import _deserialize as deserialize
 from .recursive_primitives import _serialize_kv_pairs
 from .recursive_primitives import deserialize_kv

@@ -7,7 +7,7 @@ from typing import Union
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ...types.tupledict import DictTuple
+from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission

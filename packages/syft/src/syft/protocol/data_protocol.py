@@ -23,8 +23,8 @@ from ..serde.recursive import TYPE_BANK
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
+from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
-from ..types.tupledict import DictTuple
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
 PROTOCOL_TYPE = Union[str, int]

@@ -26,13 +26,13 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
+from ...types.dicttuple import DictTuple
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
-from ...types.tupledict import DictTuple
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST

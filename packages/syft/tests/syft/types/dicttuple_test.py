@@ -2,7 +2,7 @@
 import pytest
 
 # syft absolute
-from syft.types.tupledict import DictTuple
+from syft.types.dicttuple import DictTuple
 
 # different ways to create a DictTuple
 TEST_CASES = [

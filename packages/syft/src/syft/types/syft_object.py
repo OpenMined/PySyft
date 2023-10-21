@@ -34,13 +34,13 @@ from typeguard import check_type
 from ..node.credentials import SyftVerifyKey
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
-from ..types.tupledict import DictTuple
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.notebook_addons import create_table_template
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
