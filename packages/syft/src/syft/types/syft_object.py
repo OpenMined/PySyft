@@ -1,6 +1,8 @@
 # stdlib
 from collections import defaultdict
 from collections.abc import Mapping
+from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 from collections.abc import Set
 from hashlib import sha256
 import inspect
@@ -32,6 +34,7 @@ from typeguard import check_type
 from ..node.credentials import SyftVerifyKey
 from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
+from ..types.tupledict import DictTuple
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.notebook_addons import create_table_template
@@ -839,20 +842,25 @@ recursive_serde_register_type(PartialSyftObject)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> Any:
-    box_to_result_type = None
-
-    if type(result) in OkErr:
-        box_to_result_type = type(result)
-        result = result.value
+    constructor = None
+    extra_args = []
 
     single_entity = False
-    is_tuple = isinstance(result, tuple)
 
-    if isinstance(result, (list, tuple)):
-        iterable_keys = range(len(result))
-        result = list(result)
-    elif isinstance(result, Mapping):
+    if isinstance(result, OkErr):
+        constructor = type(result)
+        result = result.value
+
+    if isinstance(result, MutableMapping):
         iterable_keys = result.keys()
+    elif isinstance(result, MutableSequence):
+        iterable_keys = range(len(result))
+    elif isinstance(result, tuple):
+        iterable_keys = range(len(result))
+        constructor = type(result)
+        if isinstance(result, DictTuple):
+            extra_args.append(result.keys())
+        result = list(result)
     else:
         iterable_keys = range(1)
         result = [result]
@@ -873,8 +881,7 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> A
         result[key] = _object
 
     wrapped_result = result[0] if single_entity else result
-    wrapped_result = tuple(wrapped_result) if is_tuple else wrapped_result
-    if box_to_result_type is not None:
-        wrapped_result = box_to_result_type(wrapped_result)
+    if constructor is not None:
+        wrapped_result = constructor(wrapped_result, *extra_args)
 
     return wrapped_result
