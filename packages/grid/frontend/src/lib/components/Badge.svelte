@@ -2,7 +2,7 @@
   export let variant: 'gray' | 'primary-light' | 'primary-dark' = 'gray';
 </script>
 
-<span class={variant}>
+<span class={variant} data-testid="badge">
   <slot />
 </span>
 
