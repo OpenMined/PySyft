@@ -39,7 +39,7 @@ from ...util.constants import DEFAULT_TIMEOUT
 
 READ_EXPIRATION_TIME = 1800  # seconds
 WRITE_EXPIRATION_TIME = 900  # seconds
-DEFAULT_CHUNK_SIZE = 1024**2  # 1 GB
+DEFAULT_CHUNK_SIZE = 1024**3  # 1 GB
 
 
 def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes, None, None]:

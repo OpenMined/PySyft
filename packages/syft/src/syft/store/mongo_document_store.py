@@ -650,7 +650,7 @@ class MongoBackingStore(KeyValueBackingStore):
             try:
                 bson_data = {
                     "_id": key,
-                    f"{key}": value,
+                    f"{key}": _serialize(value, to_bytes=True),
                     "_repr_debug_": _repr_debug_(value),
                 }
                 collection.insert_one(bson_data)
@@ -667,7 +667,7 @@ class MongoBackingStore(KeyValueBackingStore):
                 {"_id": key},
                 {
                     "$set": {
-                        f"{key}": value,
+                        f"{key}": _serialize(value, to_bytes=True),
                         "_repr_debug_": _repr_debug_(value),
                     }
                 },
@@ -688,7 +688,7 @@ class MongoBackingStore(KeyValueBackingStore):
 
         result: Optional[Dict] = collection.find_one({"_id": key})
         if result is not None:
-            return result[f"{key}"]
+            return _deserialize(result[f"{key}"], from_bytes=True)
         else:
             # raise KeyError(f"{key} does not exist")
             # return an empty set which is the same with SQLiteBackingStore
@@ -741,7 +741,7 @@ class MongoBackingStore(KeyValueBackingStore):
         keys, values = [], []
         for row in result:
             keys.append(row["_id"])
-            values.append(row[f"{row['_id']}"])
+            values.append(_deserialize(row[f"{row['_id']}"], from_bytes=True))
         return dict(zip(keys, values))
 
     def keys(self) -> Any:
