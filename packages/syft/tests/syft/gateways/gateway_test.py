@@ -76,8 +76,12 @@ def test_domain_connect_to_gateway(faker: Faker):
     assert proxy_domain_client.metadata == domain_client.metadata
     assert proxy_domain_client.user_role == ServiceRole.NONE
 
-    domain_client.login(email="info@openmined.org", password="changethis")
-    proxy_domain_client.login(email="info@openmined.org", password="changethis")
+    domain_client = domain_client.login(
+        email="info@openmined.org", password="changethis"
+    )
+    proxy_domain_client = proxy_domain_client.login(
+        email="info@openmined.org", password="changethis"
+    )
 
     assert proxy_domain_client.logged_in_user == "info@openmined.org"
     assert proxy_domain_client.user_role == ServiceRole.ADMIN
@@ -129,8 +133,10 @@ def test_enclave_connect_to_gateway(faker: Faker):
         password_verify=password,
     )
 
-    enclave_client.login(email=user_email, password=password)
-    proxy_enclave_client.login(email=user_email, password=password)
+    enclave_client = enclave_client.login(email=user_email, password=password)
+    proxy_enclave_client = proxy_enclave_client.login(
+        email=user_email, password=password
+    )
 
     assert proxy_enclave_client.logged_in_user == user_email
     assert proxy_enclave_client.user_role == enclave_client.user_role

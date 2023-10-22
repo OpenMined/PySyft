@@ -166,7 +166,7 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port)  # type: ignore
+            return sy.login_as_guest(url=self.url, port=self.port)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
         else:
