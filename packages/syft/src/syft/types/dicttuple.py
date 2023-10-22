@@ -1,5 +1,6 @@
 # stdlib
 from collections import OrderedDict
+from collections import deque
 from collections.abc import Collection
 from collections.abc import Iterable
 from collections.abc import KeysView
@@ -54,21 +55,14 @@ class _Meta(type):
             return obj
 
         elif isinstance(__value, Mapping) and __key is None:
-            keys = OrderedDict()
-            values = []
-
-            for i, k in enumerate(__value.keys()):
-                keys[k] = i
-                values.append(__value[k])
-
-            obj = cls.__new__(cls, values)
-            obj.__init__(keys)
+            obj = cls.__new__(cls, __value.values())
+            obj.__init__(__value.keys())
 
             return obj
 
         elif isinstance(__value, Iterable) and __key is None:
             keys = OrderedDict()
-            values = []
+            values = deque()
 
             for i, (k, v) in enumerate(__value):
                 keys[k] = i
@@ -79,27 +73,17 @@ class _Meta(type):
 
             return obj
 
-        elif isinstance(__value, Iterable) and isinstance(__key, Callable):
-            keys = OrderedDict()
-            values = []
-
-            for i, v in enumerate(__value):
-                keys[i] = __key(v)
-                values.append(v)
-
-            obj = cls.__new__(cls, values)
-            obj.__init__(keys)
-
-            return obj
-
-        elif isinstance(__value, Iterable) and __key is not None:
-            if len(__key) != len(__value):
-                raise ValueError("`__key` has to be of the same length as `__value`")
-
+        elif isinstance(__value, Iterable) and isinstance(__key, Iterable):
             keys = OrderedDict((k, i) for i, k in enumerate(__key))
 
             obj = cls.__new__(cls, __value)
             obj.__init__(keys)
+
+            return obj
+
+        elif isinstance(__value, Iterable) and isinstance(__key, Callable):
+            obj = cls.__new__(cls, __value)
+            obj.__init__(__key)
 
             return obj
 
@@ -177,8 +161,15 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
             self.__mapping = MappingProxyType(
                 OrderedDict((k, i) for i, k in enumerate(__value))
             )
+        elif isinstance(__value, Callable):
+            self.__mapping = MappingProxyType(
+                OrderedDict((__value(v), i) for i, v in enumerate(self))
+            )
 
         super().__init__()
+
+        if len(self.__mapping) != len(self):
+            raise ValueError("__keys and __values do not have the same length")
 
     @overload
     def __getitem__(self, __key: _KT) -> _VT:
