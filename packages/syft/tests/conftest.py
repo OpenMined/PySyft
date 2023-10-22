@@ -68,43 +68,43 @@ def stage_protocol(protocol_file: Path):
         dp.save_history(dp.protocol_history)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def worker(faker, stage_protocol):
     return sy.Worker.named(name=faker.name())
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def root_domain_client(worker):
     return worker.root_client
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def root_verify_key(worker):
     return worker.root_client.credentials.verify_key
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_client(worker):
     return worker.guest_client
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_verify_key(worker):
     return worker.guest_client.credentials.verify_key
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_domain_client(root_domain_client):
     return root_domain_client.guest()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def document_store(worker):
     yield worker.document_store
     worker.document_store.reset()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def action_store(worker):
     return worker.action_store
 
