@@ -6,16 +6,12 @@
   import Input from "$lib/components/Input.svelte"
   import DomainOnlineIndicator from "$lib/components/DomainOnlineIndicator.svelte"
   import type { DomainOnlineStatus } from "../../../types/domain/onlineIndicator"
+  import type { PageData, ActionData } from "./$types"
 
-  /** @type {import('./$types').PageData} */
-  export let data
-
-  /** @type {import('./$types').ActionData} */
-  export let form
+  export let data: PageData
+  export let form: ActionData
 
   const { metadata } = data
-
-  console.log({ data })
 
   let status: DomainOnlineStatus = "online"
 </script>
@@ -37,7 +33,9 @@
         </div>
         <div class="contents" slot="body">
           {#if form?.invalid}
-            <p class="w-full text-center text-red-600">Invalid credentials!</p>
+            <p class="w-full text-center text-red-600">
+              Invalid credentials! Try again.
+            </p>
           {/if}
           <div class="flex justify-center items-center gap-2">
             <DomainOnlineIndicator />
@@ -49,6 +47,7 @@
               {/if}
             </p>
           </div>
+          <input hidden name="node_id" value={metadata?.node_id} />
           <Input
             label="Email"
             type="email"
@@ -71,7 +70,7 @@
             required
             data-testid="password"
           />
-          {#if metadata.signup_enabled}
+          {#if metadata?.signup_enabled}
             <p class="text-center">
               Don't have an account yet? Apply for an account <a
                 href="/signup"
