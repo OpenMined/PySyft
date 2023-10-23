@@ -151,7 +151,7 @@ class Case(Generic[_KT, _VT]):
         return f"{self.__class__.__qualname__}{self.mapping}"
 
 
-TEST_CASES: list[Case] = [Case([1, 2, 3], ["x", "y", "z"])]
+TEST_CASES: list[Case] = [Case(values=[1, 2, 3], keys=["x", "y", "z"])]
 
 
 @pytest.mark.parametrize(
@@ -199,3 +199,11 @@ class TestDictTupleProperties:
         self, dict_tuple: DictTuple, case: Case
     ) -> None:
         assert not isinstance(dict_tuple, Mapping)
+
+
+@pytest.mark.parametrize(
+    "args", Case(values=["z", "b"], keys=[1, 2]).constructor_args()
+)
+def test_keys_should_not_be_int(args: Callable[[], tuple]) -> None:
+    with pytest.raises(ValueError, match="int"):
+        DictTuple(*args())

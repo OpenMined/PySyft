@@ -169,7 +169,13 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
         super().__init__()
 
         if len(self.__mapping) != len(self):
-            raise ValueError("__keys and __values do not have the same length")
+            raise ValueError("`__keys` and `__values` do not have the same length")
+
+        if any(isinstance(k, SupportsIndex) for k in self.__mapping.keys()):
+            raise ValueError(
+                "values of `__keys` should not have type `int`, "
+                "or implements `__index__()`"
+            )
 
     @overload
     def __getitem__(self, __key: _KT) -> _VT:
