@@ -174,7 +174,7 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
         if any(isinstance(k, SupportsIndex) for k in self.__mapping.keys()):
             raise ValueError(
                 "values of `__keys` should not have type `int`, "
-                "or implements `__index__()`"
+                "or implement `__index__()`"
             )
 
     @overload
