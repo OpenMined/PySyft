@@ -103,6 +103,7 @@ services:
   backend:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    user: 65532:65532
     depends_on:
       - proxy
     env_file:
@@ -130,11 +131,9 @@ services:
       - ENABLE_OBLV=${ENABLE_OBLV}
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
-      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
-    command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
-      - ${BACKEND_STORAGE_PATH}:/storage
+      - ${CREDENTIALS_VOLUME}:/storage
     stdin_open: true
     tty: true
     labels:

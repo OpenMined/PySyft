@@ -182,8 +182,6 @@ deployments:
                 value: "${DEFAULT_ROOT_EMAIL}"
               - name: DEFAULT_ROOT_PASSWORD
                 value: "${DEFAULT_ROOT_PASSWORD}"
-              - name: BACKEND_STORAGE_PATH
-                value: "/storage"
         volumes:
           - name: credentials-data
             size: "100Mi"

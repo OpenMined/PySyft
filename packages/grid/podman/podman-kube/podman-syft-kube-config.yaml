@@ -102,7 +102,7 @@ data:
 
   # Syft
   SYFT_TUTORIAL_MODE: False
-  BACKEND_STORAGE_PATH: credentials-data
+  CREDENTIALS_VOLUME: credentials-data
   NODE_SIDE_TYPE: high
 
   # Worker

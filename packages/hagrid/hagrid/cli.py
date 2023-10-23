@@ -2174,7 +2174,7 @@ def create_launch_docker_cmd(
     )
 
     # use a docker volume
-    backend_storage = "credentials-data"
+    host_path = "credentials-data"
 
     # in development use a folder mount
     if kwargs.get("release", "") == "development":
@@ -2182,7 +2182,7 @@ def create_launch_docker_cmd(
         # if EDITABLE_MODE:
         #     RELATIVE_PATH = "../"
         # we might need to change this for the hagrid template mode
-        backend_storage = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
+        host_path = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
 
     envs = {
         "RELEASE": "production",
@@ -2202,7 +2202,7 @@ def create_launch_docker_cmd(
             generate_sec_random_password(length=48, special_chars=False)
         ),
         "ENABLE_OBLV": str(enable_oblv).lower(),
-        "BACKEND_STORAGE_PATH": backend_storage,
+        "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
     }
 
