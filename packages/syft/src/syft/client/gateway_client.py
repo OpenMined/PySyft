@@ -62,7 +62,7 @@ class GatewayClient(SyftClient):
             return SyftError(message=f"No domain with name {name}")
         res = self.proxy_to(peer)
         if email and password:
-            res.login(email=email, password=password, **kwargs)
+            res = res.login(email=email, password=password, **kwargs)
         return res
 
     @property
