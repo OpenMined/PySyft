@@ -54,7 +54,7 @@ RUN apk update && \
     apk add --no-cache tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     rm -rf /var/cache/apk/* && \
-    mkdir -p /var/log/pygrid RUN mkdir -p /home/nonroot/data/creds /home/nonroot/data/db && \
+    mkdir -p /var/log/pygrid /home/nonroot/data/creds /home/nonroot/data/db && \
     chown -R $NONROOT_UG /var/log/pygrid /home/nonroot/data
 
 USER nonroot
