@@ -1,27 +1,23 @@
 import { getMetadata } from "$lib/api/metadata"
-import { getUser } from "$lib/api/users"
-import { COOKIES } from "$lib/constants"
+import { unload_cookies } from "$lib/utils"
+import type { LayoutServerLoad } from "./$types"
 
-/** @type {import('./$types').LayoutServerLoad} */
-export async function load({ cookies }) {
-  const user_id = cookies.get(COOKIES.UID)
-  const signing_key = cookies.get(COOKIES.SIGNING_KEY)
-
-  let user
+export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
+  let current_user
   let metadata
 
   try {
     metadata = await getMetadata()
-
-    if (user_id) {
-      user = await getUser(user_id, signing_key, metadata.node_id)
-    }
+    const { uid, signing_key, node_id } = unload_cookies(cookies)
+    console.log("req", uid)
+    const res = await fetch(`/_syft_api/users/${uid}`)
+    current_user = await res.json()
   } catch (error) {
     console.log(error)
   } finally {
     return {
       metadata,
-      user,
+      current_user,
     }
   }
 }

@@ -5,7 +5,7 @@
   export let id: string
   export let required = false
   export let value: HTMLInputElement["value"] = ""
-  export let error = ""
+  export let error: boolean | undefined
   export const warning = ""
   $: borderColor = !error ? "border-gray-300/10" : "border-rose-500/100"
 </script>

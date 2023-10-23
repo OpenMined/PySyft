@@ -1,21 +1,9 @@
 <script>
-  import TopNav from '$lib/components/Navigation/TopNav.svelte';
-  import SideNav from '$lib/components/Navigation/SideNav.svelte';
-  import OnBoardModal from '$lib/components/onBoardModal.svelte';
-  import { getMetadata } from '$lib/api/metadata';
-  import { getSelf } from '$lib/api/users';
-  import { onMount } from 'svelte';
+  import TopNav from "$lib/components/Navigation/TopNav.svelte"
+  import SideNav from "$lib/components/Navigation/SideNav.svelte"
+  import OnBoardModal from "$lib/components/onBoardModal.svelte"
 
-  let open = false;
-  onMount(async () => {
-    const metadata = await getMetadata();
-    const user = await getSelf();
-    if (metadata?.on_board && user?.role?.value === 128) {
-      setTimeout(function () {
-        open = true;
-      }, 2000);
-    }
-  });
+  let open = false
 </script>
 
 <SideNav />

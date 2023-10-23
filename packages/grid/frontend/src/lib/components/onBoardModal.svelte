@@ -1,103 +1,113 @@
 <script lang="ts">
-  import Dialog from '$lib/components/Dialog.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import UserGearIcon from '$lib/components/icons/UserGearIcon.svelte';
-  import XIcon from '$lib/components/icons/XIcon.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import ButtonGhost from '$lib/components/ButtonGhost.svelte';
-  import NodeIcon from '$lib/components/icons/NodeIcon.svelte';
-  import CheckIcon from '$lib/components/icons/CheckIcon.svelte';
-  import { metadata } from '$lib/store';
-  import { updateMetadata, getMetadata } from '$lib/api/metadata';
-  import { updateCurrentUser } from '$lib/api/users';
+  import Dialog from "$lib/components/Dialog.svelte"
+  import Modal from "$lib/components/Modal.svelte"
+  import UserGearIcon from "$lib/components/icons/UserGearIcon.svelte"
+  import XIcon from "$lib/components/icons/XIcon.svelte"
+  import Button from "$lib/components/Button.svelte"
+  import Progress from "$lib/components/Progress.svelte"
+  import Input from "$lib/components/Input.svelte"
+  import ButtonGhost from "$lib/components/ButtonGhost.svelte"
+  import NodeIcon from "$lib/components/icons/NodeIcon.svelte"
+  import CheckIcon from "$lib/components/icons/CheckIcon.svelte"
+  import { metadata } from "$lib/store"
+  import { updateMetadata, getMetadata } from "$lib/api/metadata"
+  import { updateCurrentUser } from "$lib/api/users"
 
-  export let open = true;
-  let currentStep = 1;
+  export let open = true
+  let currentStep = 1
 
   let userSettings = {
-    name: '',
-    email: '',
-    password: '',
-    institution: '',
-    website: ''
-  };
+    name: "",
+    email: "",
+    password: "",
+    institution: "",
+    website: "",
+  }
 
   let domainSettings = {
-    name: '',
-    description: '',
-    organization: '',
-    on_board: false
-  };
+    name: "",
+    description: "",
+    organization: "",
+    on_board: false,
+  }
 
   let checkRequiredDomainFields = () => {
-    return domainSettings.name !== '' ? true : false;
-  };
+    return domainSettings.name !== "" ? true : false
+  }
 
   let checkRequiredUserFields = () => {
-    return userSettings.name !== '' && userSettings.email !== '' && userSettings.password !== ''
+    return userSettings.name !== "" &&
+      userSettings.email !== "" &&
+      userSettings.password !== ""
       ? true
-      : false;
-  };
+      : false
+  }
 
   let handleUpdate = async () => {
-    await updateMetadata(domainSettings);
+    await updateMetadata(domainSettings)
     await updateCurrentUser(
       userSettings.name,
       userSettings.email,
       userSettings.password,
       userSettings.institution,
       userSettings.website
-    );
+    )
 
     try {
-      const updatedMetadata = await getMetadata();
-      metadata.set(updatedMetadata);
-      currentStep = currentStep + 1;
+      const updatedMetadata = await getMetadata()
+      metadata.set(updatedMetadata)
+      currentStep = currentStep + 1
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
-  };
+  }
 
   let handleForward = () => {
-    currentStep = currentStep + 1;
-  };
+    currentStep = currentStep + 1
+  }
 
   let handleBack = () => {
-    currentStep = currentStep - 1;
-  };
+    currentStep = currentStep - 1
+  }
 
   let onClose: () => void = () => {
-    open = false;
-    currentStep = 1;
+    open = false
+    currentStep = 1
 
     userSettings = {
-      name: '',
-      email: '',
-      password: '',
-      institution: '',
-      website: ''
-    };
+      name: "",
+      email: "",
+      password: "",
+      institution: "",
+      website: "",
+    }
 
     domainSettings = {
-      name: '',
-      description: '',
-      organization: ''
-    };
-  };
+      name: "",
+      description: "",
+      organization: "",
+    }
+  }
 </script>
 
 <Dialog bind:open>
   {#if currentStep === 1}
     <Modal>
       <div class="flex w-full" slot="header">
-        <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
+        <div
+          class="flex flex-col justify-center items-center w-full gap-2 pt-4"
+        >
           <div class="flex justify-center items-center w-full">
-            <img width="264px" height="224px" src="assets/2023_welcome_to_pygrid.png" />
+            <img
+              width="264px"
+              height="224px"
+              src="/assets/2023_welcome_to_pygrid.png"
+            />
           </div>
           <div class="text-center space-y-2">
-            <h3 class="text-2xl capitalize font-bold">Welcome to PyGrid Admin!</h3>
+            <h3 class="text-2xl capitalize font-bold">
+              Welcome to PyGrid Admin!
+            </h3>
             <p class="text-primary-500">Step 1 of 4</p>
           </div>
         </div>
@@ -110,10 +120,11 @@
           <Progress max={4} value={1} />
         </div>
         <p class="text-gray-400 py-2">
-          Congratulations on logging into {$metadata?.name ?? ''} node. This wizard will help get you
-          started in setting up your user account. You can skip this wizard by pressing “Cancel” below.
-          You can edit any of your responses later by going to "Account Settings" indicated by your avatar
-          in the top right corner of the navigation.
+          Congratulations on logging into {$metadata?.name ?? ""} node. This wizard
+          will help get you started in setting up your user account. You can skip
+          this wizard by pressing “Cancel” below. You can edit any of your responses
+          later by going to "Account Settings" indicated by your avatar in the top
+          right corner of the navigation.
         </p>
       </div>
       <div class="flex w-full justify-end px-4 gap-4" slot="button-group">
@@ -126,8 +137,12 @@
   {:else if currentStep == 2}
     <Modal>
       <div class="flex w-full" slot="header">
-        <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
-          <div class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2">
+        <div
+          class="flex flex-col justify-center items-center w-full gap-2 pt-4"
+        >
+          <div
+            class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2"
+          >
             <NodeIcon class="w-6 h-6" />
           </div>
           <div class="text-center space-y-2">
@@ -139,7 +154,12 @@
           <XIcon class="w-6 h-6" />
         </button>
       </div>
-      <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
         <path
           d="m21 7.702-8.5 4.62v9.678c1.567-.865 6.379-3.517 7.977-4.399.323-.177.523-.519.523-.891zm-9.5 4.619-8.5-4.722v9.006c0 .37.197.708.514.887 1.59.898 6.416 3.623 7.986 4.508zm-8.079-5.629 8.579 4.763 8.672-4.713s-6.631-3.738-8.186-4.614c-.151-.085-.319-.128-.486-.128-.168 0-.335.043-.486.128-1.555.876-8.093 4.564-8.093 4.564z"
           fill-rule="nonzero"
@@ -157,8 +177,9 @@
           <Progress max={4} value={2} />
         </div>
         <p class="text-gray-400 py-2">
-          Let's begin by describing some basic information about this domain node. This information
-          will be shown to outside users to help them find and understand what your domain offers.
+          Let's begin by describing some basic information about this domain
+          node. This information will be shown to outside users to help them
+          find and understand what your domain offers.
         </p>
         <Input
           label="Domain Name"
@@ -184,8 +205,12 @@
   {:else if currentStep == 3}
     <Modal>
       <div class="flex w-full" slot="header">
-        <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
-          <div class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2">
+        <div
+          class="flex flex-col justify-center items-center w-full gap-2 pt-4"
+        >
+          <div
+            class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2"
+          >
             <UserGearIcon class="w-6 h-6" />
           </div>
           <div class="text-center space-y-2">
@@ -202,9 +227,10 @@
           <Progress max={3} value={2} />
         </div>
         <p class="text-gray-400 py-2">
-          Now that we have described our domain, let's update our password and describe some basic
-          information about ourselves for our "User Profile". User profile information will be shown
-          to teammates and collaborators when working on studies together.
+          Now that we have described our domain, let's update our password and
+          describe some basic information about ourselves for our "User
+          Profile". User profile information will be shown to teammates and
+          collaborators when working on studies together.
         </p>
         <div class="py-2 flex flex-col gap-6">
           <Input
@@ -225,8 +251,8 @@
           <div>
             <p class="text-gray-400 font-bold">Profile Information</p>
             <p class="text-gray-400">
-              Now, some profile information to help your teammates and collaborators get to know you
-              better.
+              Now, some profile information to help your teammates and
+              collaborators get to know you better.
             </p>
           </div>
           <Input
@@ -261,8 +287,12 @@
   {:else if currentStep == 4}
     <Modal>
       <div class="flex w-full" slot="header">
-        <div class="flex flex-col justify-center items-center w-full gap-2 pt-4">
-          <div class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2">
+        <div
+          class="flex flex-col justify-center items-center w-full gap-2 pt-4"
+        >
+          <div
+            class="w-min h-min rounded-full bg-primary-500 text-gray-800 p-2"
+          >
             <CheckIcon class="w-6 h-6" />
           </div>
           <div class="text-center space-y-2">
@@ -278,8 +308,9 @@
           <Progress max={3} value={3} />
         </div>
         <p class="text-gray-400 py-2">
-          Congratulations on setting up your account. To edit any of your responses you can go to
-          "Account Settings" indicated by your avatar in the top right corner of the navigation.
+          Congratulations on setting up your account. To edit any of your
+          responses you can go to "Account Settings" indicated by your avatar in
+          the top right corner of the navigation.
         </p>
       </div>
       <div class="flex w-full justify-end px-4 gap-4" slot="button-group">
