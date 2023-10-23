@@ -133,7 +133,7 @@ services:
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
     network_mode: service:proxy
     volumes:
-      - ${CREDENTIALS_VOLUME}:/storage
+      - ${CREDENTIALS_VOLUME}:/home/nonroot/data/creds/
     stdin_open: true
     tty: true
     labels:
@@ -167,10 +167,9 @@ services:
   #     - DEV_MODE=${DEV_MODE}
   #     - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
   #     - ENABLE_OBLV=${ENABLE_OBLV}
-  #   command: "/app/grid/start.sh"
   #   network_mode: service:proxy
   #   volumes:
-  #     - credentials-data:/storage
+  #     - credentials-data:/home/nonroot/data/creds/
 
   # celeryworker:
   #   restart: always

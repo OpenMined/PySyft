@@ -41,9 +41,9 @@ services:
 
   backend:
     volumes:
-      - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}../syft:/app/syft
-      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
+      - ${RELATIVE_PATH}./backend/grid:/home/nonroot/app/grid
+      - ${RELATIVE_PATH}../syft:/home/nonroot/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/home/nonroot/.cache
     environment:
       - DEV_MODE=True
     stdin_open: true
@@ -51,16 +51,16 @@ services:
 
   # backend_stream:
   #   volumes:
-  #     - ${RELATIVE_PATH}./backend/grid:/app/grid
-  #     - ${RELATIVE_PATH}../syft:/app/syft
+  #     - ${RELATIVE_PATH}./backend/grid:/home/nonroot/app/grid
+  #     - ${RELATIVE_PATH}../syft:/home/nonroot/app/syft
   #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
   #   environment:
   #     - DEV_MODE=True
 
   # celeryworker:
   #   volumes:
-  #     - ${RELATIVE_PATH}./backend/grid:/app/grid
-  #     - ${RELATIVE_PATH}../syft/:/app/syft
+  #     - ${RELATIVE_PATH}./backend/grid:/home/nonroot/app/grid
+  #     - ${RELATIVE_PATH}../syft/:/home/nonroot/app/syft
   #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
   #   environment:
   #     - DEV_MODE=True

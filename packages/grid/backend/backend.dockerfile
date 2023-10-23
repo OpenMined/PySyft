@@ -53,7 +53,9 @@ ARG NONROOT_UG
 RUN apk update && \
     apk add --no-cache tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    rm -rf /var/cache/apk/*
+    rm -rf /var/cache/apk/* && \
+    mkdir -p /var/log/pygrid RUN mkdir -p /home/nonroot/data/creds /home/nonroot/data/db && \
+    chown -R $NONROOT_UG /var/log/pygrid /home/nonroot/data
 
 USER nonroot
 WORKDIR $SYFT_WORKDIR
@@ -61,7 +63,26 @@ WORKDIR $SYFT_WORKDIR
 # Update environment variables
 ENV PATH=$PATH:/home/nonroot/.local/bin \
     PYTHONPATH=$SYFT_WORKDIR \
-    APPDIR=$SYFT_WORKDIR
+    APPDIR=$SYFT_WORKDIR \
+    NODE_NAME="default_node_name" \
+    NODE_TYPE="domain" \
+    SERVICE_NAME="backend" \
+    RELEASE="production" \
+    DEV_MODE="False" \
+    CONTAINER_HOST="docker" \
+    PORT=80\
+    HTTP_PORT=80 \
+    HTTPS_PORT=443 \
+    DOMAIN_CONNECTION_PORT=3030 \
+    IGNORE_TLS_ERRORS="False" \
+    DEFAULT_ROOT_EMAIL="info@openmined.org" \
+    DEFAULT_ROOT_PASSWORD="changethis" \
+    STACK_API_KEY="changeme" \
+    MONGO_HOST="localhost" \
+    MONGO_PORT="27017" \
+    MONGO_USERNAME="root" \
+    MONGO_PASSWORD="example" \
+    CREDENTIALS_PATH="/home/nonroot/data/creds/credentials.json"
 
 # Copy pre-built jupyterlab, syft dependencies
 COPY --chown=$NONROOT_UG --from=syft_deps /home/nonroot/.local /home/nonroot/.local

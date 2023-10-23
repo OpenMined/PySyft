@@ -26,7 +26,7 @@ mongo_client_config = MongoStoreClientConfig(
 mongo_store_config = MongoStoreConfig(client_config=mongo_client_config)
 
 
-client_config = SQLiteStoreClientConfig(path="./storage/")
+client_config = SQLiteStoreClientConfig(path=settings.SQLITE_PATH)
 sql_store_config = SQLiteStoreConfig(client_config=client_config)
 
 node_type = get_node_type()

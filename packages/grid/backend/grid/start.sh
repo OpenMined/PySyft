@@ -31,5 +31,9 @@ export NODE_UID=$NODE_UID
 export NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY
 export NODE_TYPE=$NODE_TYPE
 
+# For debugging permissions
+id
+ls -lisa /home/nonroot/data/
+
 # export GEVENT_MONKEYPATCH="True"
 exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"

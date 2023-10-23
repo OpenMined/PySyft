@@ -29,7 +29,8 @@ def get_env(key: str, default: str = "") -> Optional[str]:
     return None
 
 
-CREDENTIALS_PATH = str(get_env("CREDENTIALS_PATH", "./storage/credentials.json"))
+DEFAULT_CREDENTIALS_PATH = os.path.expandvars("$HOME/data/creds/credentials.json")
+CREDENTIALS_PATH = str(get_env("CREDENTIALS_PATH", DEFAULT_CREDENTIALS_PATH))
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 
@@ -59,7 +60,7 @@ def save_credential(key: str, value: str) -> str:
     try:
         dirname = os.path.dirname(CREDENTIALS_PATH)
         if not os.path.exists(dirname):
-            os.mkdir(dirname)
+            os.makedirs(dirname, exist_ok=True)
         with open(CREDENTIALS_PATH, "w") as f:
             f.write(f"{json.dumps(credentials)}")
     except Exception as e:
