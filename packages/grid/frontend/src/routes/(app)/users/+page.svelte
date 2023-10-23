@@ -1,58 +1,61 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import debounce from 'just-debounce-it';
-  import { getAllUsers, getSelf, searchUsersByName } from '$lib/api/users';
-  import Badge from '$lib/components/Badge.svelte';
-  import Filter from '$lib/components/Filter.svelte';
-  import Search from '$lib/components/Search.svelte';
-  import Pagination from '$lib/components/Pagination.svelte';
-  import UserListItem from '$lib/components/Users/UserListItem.svelte';
-  import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
-  import UserNewModal from '$lib/components/Users/UserNewModal.svelte';
-  import UserCreateModal from '$lib/components/Users/UserCreateModal.svelte';
-  import type { UserListView } from '../../../types/domain/users';
+  import { invalidate } from "$app/navigation"
+  import debounce from "just-debounce-it"
+  import { searchUsersByName } from "$lib/api/users"
+  import Badge from "$lib/components/Badge.svelte"
+  import Filter from "$lib/components/Filter.svelte"
+  import Search from "$lib/components/Search.svelte"
+  import Pagination from "$lib/components/Pagination.svelte"
+  import UserListItem from "$lib/components/Users/UserListItem.svelte"
+  import PlusIcon from "$lib/components/icons/PlusIcon.svelte"
+  import UserNewModal from "$lib/components/Users/UserNewModal.svelte"
+  import UserCreateModal from "$lib/components/Users/UserCreateModal.svelte"
+  import type { UserListView } from "../../../types/domain/users"
+  import type { PageData } from "./$types"
 
-  let searchTerm = '';
-  let userList: UserListView[] = [];
-  let total: number = 0;
-  let paginators: number[] = [5, 10, 15, 20, 25];
-  let page_size: number = 5,
-    page_index: number = 0,
-    page_row: number = 5;
+  export let data: PageData
 
-  let openModal: string | null = null;
+  let searchTerm = ""
+  let userList: UserListView[] = data.list || []
+  let total: number = data.total || 0
+  let paginators: number[] = [5, 10, 15, 20, 25]
+  let page_size: number = 5
+  let page_index: number = 0
+  let page_row: number = 5
 
-  onMount(async () => {
-    const results = await getAllUsers(page_size, page_index);
-    userList = results.users;
-    total = results.total;
-  });
+  let openModal: string | null = null
 
   const closeModal = () => {
-    openModal = null;
-  };
+    openModal = null
+  }
 
   const onCreateGeneralUser = () => {
-    openModal = 'step1';
-  };
+    openModal = "step1"
+  }
 
   const search = debounce(async () => {
-    if (searchTerm === '') {
-      const results = await getAllUsers(page_size);
-      userList = results.users;
-      total = results.total;
-    } else {
-      const results = await searchUsersByName(searchTerm, page_size);
-      userList = results.users;
-      total = results.total;
-    }
-  }, 300);
+    if (!searchTerm) return invalidate("user:list")
+    const res = await fetch(
+      `/_syft_api/users/search?name=${searchTerm}&page_size=${page_size}`
+    )
+    const json = await res.json()
+    userList = json.users
+    total = json.total
+  }, 300)
 
   const handleUpdate = async () => {
-    const results = await getAllUsers(page_size, page_index);
-    userList = results.users;
-    total = results.total;
-  };
+    try {
+      const res = await fetch(
+        `/_syft_api/users?page_size=${page_size}&page_index=${page_index}`
+      )
+      const json = await res.json()
+      userList = json.list
+      total = json.total
+    } catch (error) {
+      console.error({ error })
+      invalidate("user:list")
+    }
+  }
 </script>
 
 <div class="pt-8 desktop:pt-2 pl-16 pr-[140px] flex flex-col gap-[46px]">
@@ -67,7 +70,12 @@
   </div>
   <div class="flex items-center justify-between w-full gap-8">
     <div class="w-full max-w-[378px]">
-      <Search type="text" placeholder="Search by name" bind:value={searchTerm} on:input={search} />
+      <Search
+        type="text"
+        placeholder="Search by name"
+        bind:value={searchTerm}
+        on:input={search}
+      />
     </div>
     <div class="flex-shrink-0">
       <div class="flex gap-2.5">
@@ -86,7 +94,10 @@
   </div>
   <div class="divide-y divide-gray-100">
     {#each userList as user}
-      <a class="block hover:bg-primary-100 cursor-pointer" href={`/users/${user.id.value}`}>
+      <a
+        class="block hover:bg-primary-100 cursor-pointer"
+        href={`/users/${user.id.value}`}
+      >
         <UserListItem {user} />
       </a>
     {/each}
@@ -105,11 +116,19 @@
 <div class="fixed bottom-10 right-12">
   <button
     class="bg-black text-white rounded-full w-14 h-14 flex items-center justify-center"
-    on:click={() => (openModal = 'newUser')}
+    on:click={() => (openModal = "newUser")}
   >
     <PlusIcon class="w-6 h-6" />
   </button>
 </div>
 
-<UserNewModal open={openModal === 'newUser'} onClose={closeModal} {onCreateGeneralUser} />
-<UserCreateModal open={openModal === 'step1'} onClose={closeModal} on:userUpdate={handleUpdate} />
+<UserNewModal
+  open={openModal === "newUser"}
+  onClose={closeModal}
+  {onCreateGeneralUser}
+/>
+<UserCreateModal
+  open={openModal === "step1"}
+  onClose={closeModal}
+  on:userUpdate={handleUpdate}
+/>
