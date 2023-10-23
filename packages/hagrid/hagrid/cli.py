@@ -40,9 +40,6 @@ from rich.progress import SpinnerColumn
 from rich.progress import TextColumn
 from virtualenvapi.manage import VirtualEnvironment
 
-# syft absolute
-from syft.util.util import get_root_data_path
-
 # relative
 from .art import RichEmoji
 from .art import hagrid
@@ -1195,7 +1192,7 @@ def copy_credentials_to_local() -> str:
         shell("mkdir " + target_directory)
         copy_cmd = f"docker cp {node}:/storage/credentials.json {target_directory}"
         shell(copy_cmd)
-        result += f"Node credentials copied to local directory at {target_directory}. " 
+        result += f"Node credentials copied to local directory at {target_directory}. "
     return result
 
 
