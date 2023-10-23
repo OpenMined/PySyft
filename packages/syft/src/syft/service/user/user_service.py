@@ -178,8 +178,11 @@ class UserService(AbstractService):
             results = [
                 results[i : i + page_size] for i in range(0, len(results), page_size)
             ]
+
             # Return the proper slice using page_index
-            results = results[page_index]
+            if results:
+                results = results[page_index]
+
             results = UserViewPage(users=results, total=total)
 
         return results
