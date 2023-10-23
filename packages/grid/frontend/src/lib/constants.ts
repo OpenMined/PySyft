@@ -1,4 +1,4 @@
-export const API_BASE_URL = "http://cranky_isbell-proxy-1/api/v2"
+export const API_BASE_URL = "http://127.0.0.1:8081/api/v2"
 
 export const syftRoles = {
   1: "Guest",
@@ -8,6 +8,6 @@ export const syftRoles = {
 }
 
 export const COOKIES = {
-  UID: "_user_id",
-  SIGNING_KEY: "_signing_key",
+  USER: "_user",
+  KEY: "_signing_key",
 }
