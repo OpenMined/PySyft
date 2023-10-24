@@ -62,7 +62,12 @@ def test_keys(dict_tuple) -> None:
 
 
 @pytest.mark.parametrize("dict_tuple", SIMPLE_TEST_CASES)
-def test_get_mapping(dict_tuple: DictTuple) -> None:
+def test_convert_to_dict(dict_tuple: DictTuple) -> None:
+    assert dict(dict_tuple) == {"x": 1, "y": 2}
+
+
+@pytest.mark.parametrize("dict_tuple", SIMPLE_TEST_CASES)
+def test_convert_items_to_dicttest_get_mapping(dict_tuple: DictTuple) -> None:
     assert dict(dict_tuple.items()) == {"x": 1, "y": 2}
 
 
@@ -118,7 +123,7 @@ class Case(Generic[_KT, _VT]):
         return zip(self.keys, self.values)
 
     @cached_property
-    def mapping(self) -> Mapping[_KT, _VT]:
+    def mapping(self) -> dict[_KT, _VT]:
         return dict(self.kv())
 
     def constructor_args(self, mapping: bool = True) -> list[Callable[[], tuple]]:
@@ -203,13 +208,16 @@ class TestDictTupleProperties:
     def test_keys(self, dict_tuple: DictTuple, case: Case) -> None:
         assert list(dict_tuple.keys()) == list(case.keys)
 
-    def test_get_mapping(self, dict_tuple: DictTuple, case: Case) -> None:
-        assert dict(dict_tuple.items()) == dict(case.mapping)
-
     def test_dicttuple_is_not_a_mapping(
         self, dict_tuple: DictTuple, case: Case
     ) -> None:
         assert not isinstance(dict_tuple, Mapping)
+
+    def test_convert_to_dict(self, dict_tuple: DictTuple, case: Case) -> None:
+        assert dict(dict_tuple) == case.mapping
+
+    def test_convert_items_to_dict(self, dict_tuple: DictTuple, case: Case) -> None:
+        assert dict(dict_tuple.items()) == case.mapping
 
 
 @pytest.mark.parametrize(
