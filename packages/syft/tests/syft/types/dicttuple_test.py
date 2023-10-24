@@ -148,7 +148,7 @@ class Case(Generic[_KT, _VT]):
     def generate(self) -> Generator[DictTuple[_KT, _VT], Any, None]:
         return (DictTuple(*args()) for args in self.constructor_args())
 
-    def generate_one(self) -> DictTuple:
+    def generate_one(self) -> DictTuple[_KT, _VT]:
         return next(self.generate())
 
     @classmethod
@@ -179,19 +179,19 @@ def test_all_equal(args1: Callable[[], tuple], args2: Callable[[], tuple]) -> No
 
 @pytest.mark.parametrize(
     "dict_tuple,case",
-    ((c.generate_one(), c) for c in TEST_CASES),
+    [(c.generate_one(), c) for c in TEST_CASES],
 )
 class TestDictTupleProperties:
-    def test_should_iter_over_value(self, dict_tuple: DictTuple, case: Case):
+    def test_should_iter_over_value(self, dict_tuple: DictTuple, case: Case) -> None:
         itered = (v for v in dict_tuple)
         assert all(a == b for a, b in zip(itered, case.values))
 
-    def test_int_indexing(self, dict_tuple: DictTuple, case: Case):
-        for i in len(dict_tuple):
-            assert dict_tuple[i] == case.keys[i]
+    def test_int_indexing(self, dict_tuple: DictTuple, case: Case) -> None:
+        for i in range(len(dict_tuple)):
+            assert dict_tuple[i] == case.values[i]
 
     def test_key_indexing(self, dict_tuple: DictTuple, case: Case) -> None:
-        for k in case.keys():
+        for k in case.keys:
             assert dict_tuple[k] == case.mapping[k]
 
     def test_convert_to_other_iterable_types(
@@ -201,7 +201,7 @@ class TestDictTupleProperties:
         assert tuple(dict_tuple) == tuple(case.values)
 
     def test_keys(self, dict_tuple: DictTuple, case: Case) -> None:
-        assert list(dict_tuple.keys()) == list(case.keys())
+        assert list(dict_tuple.keys()) == list(case.keys)
 
     def test_get_mapping(self, dict_tuple: DictTuple, case: Case) -> None:
         assert dict(dict_tuple.items()) == dict(case.mapping)
