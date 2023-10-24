@@ -159,7 +159,10 @@ class Case(Generic[_KT, _VT]):
         return f"{self.__class__.__qualname__}{self.mapping}"
 
 
-TEST_CASES: list[Case] = [Case(values=[1, 2, 3], keys=["x", "y", "z"])]
+TEST_CASES: list[Case] = [
+    Case(values=[1, 2, 3], keys=["x", "y", "z"]),
+    Case(values=[1, 2, 3], keys=str),
+]
 
 
 @pytest.mark.parametrize(
