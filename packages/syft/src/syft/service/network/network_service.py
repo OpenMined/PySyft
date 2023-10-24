@@ -150,6 +150,7 @@ class NetworkService(AbstractService):
         remote_client = remote_node_route.client_with_context(context=context)
         random_challenge = secrets.token_bytes(16)
 
+        # TODO: add a route with highest priority for the peer
         remote_res = remote_client.api.services.network.add_peer(
             peer=self_node_peer,
             challenge=random_challenge,

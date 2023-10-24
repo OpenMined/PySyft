@@ -63,6 +63,7 @@ class NodePeer(SyftObject):
     def client_with_context(self, context: NodeServiceContext) -> SyftClient:
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
+        # TODO: select route with highest priority
         route = self.node_routes[0]
         connection = route_to_connection(route=route)
 
@@ -74,6 +75,7 @@ class NodePeer(SyftObject):
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
+        # TODO: select route with highest priority
         route = self.node_routes[0]
         connection = route_to_connection(route=route)
         client_type = connection.get_client_type()
