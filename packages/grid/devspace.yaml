@@ -128,14 +128,14 @@ deployments:
         # PodSecurityContext
         securityContext:
           runAsNonRoot: true
-          runAsUser: 65532
-          runAsGroup: 65532
-          fsGroup: 65532
+          runAsUser: 1000
+          runAsGroup: 1000
+          fsGroup: 1000
           fsGroupChangePolicy: "Always"
         containers:
           - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}:${VERSION}"
             volumeMounts:
-              - containerPath: /home/nonroot/data/creds/
+              - containerPath: /home/syftuser/data/creds/
                 volume:
                   name: credentials-data
                   subPath: /credentials-data
@@ -318,8 +318,8 @@ dev:
         value: "True"
     logs: {}
     sync:
-      - path: ./backend/grid:/home/nonroot/app/grid
-      - path: ../syft:/home/nonroot/app/syft
+      - path: ./backend/grid:/home/syftuser/app/grid
+      - path: ../syft:/home/syftuser/app/syft
 
 profiles:
   - name: gateway
