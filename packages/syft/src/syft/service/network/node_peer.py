@@ -1,4 +1,5 @@
 # stdlib
+from queue import LifoQueue
 from typing import List
 from typing import Optional
 
@@ -24,6 +25,69 @@ from .routes import route_to_connection
 
 
 @serializable()
+class PriorityNodeRoutes:
+    def __init__(self) -> None:
+        raise NotImplementedError
+
+    def __len__(self) -> int:
+        raise NotImplementedError
+
+    def append(self, route: NodeRouteType) -> Self:
+        raise NotImplementedError
+
+    def __add__(self, routes: List[NodeRouteType]) -> Self:
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        raise NotImplementedError
+
+    def __getitem__(self, index: int) -> NodeRouteType:
+        raise NotImplementedError
+
+    def get(self):
+        """Return the route with the highest priority"""
+        raise NotImplementedError
+
+
+@serializable()
+class LifoQueueNodeRoutes(PriorityNodeRoutes):
+    """
+    Last in first out priority queue
+    The newest route has the highest priority
+    """
+
+    _queue: LifoQueue[NodeRouteType]
+
+    def __init__(self) -> None:
+        self._queue = LifoQueue()
+        self._index = 0
+
+    def __len__(self) -> int:
+        return self._queue.qsize()
+
+    def append(self, route: NodeRouteType) -> Self:
+        self._queue.put(route)
+        return self
+
+    def __add__(self, routes: List[NodeRouteType]) -> Self:
+        if not isinstance(routes, List):
+            raise TypeError(f"{type(routes)} object is not a list of NodeRouteType")
+        for r in routes:
+            self.append(r)
+        return self
+
+    def __repr__(self) -> str:
+        return str(self._queue.queue)
+
+    def __getitem__(self, index: int) -> NodeRouteType:
+        return self._queue.queue[index]
+
+    def get(self) -> NodeRouteType:
+        """Return the route with the highest priority (the newest added route)"""
+        return self._queue.queue[-1]
+
+
+@serializable()
 class NodePeer(SyftObject):
     # version
     __canonical_name__ = "NodePeer"
@@ -38,17 +102,30 @@ class NodePeer(SyftObject):
     verify_key: SyftVerifyKey
     is_vpn: bool = False
     vpn_auth_key: Optional[str] = None
+    # node_routes: PriorityNodeRoutes = LifoQueueNodeRoutes()
     node_routes: List[NodeRouteType] = []
     node_type: NodeType
     admin_email: str
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []
-        existing_routes = set(self.node_routes)
+        # TODO: possible bug here. Instead of using `set`, find another way to check we are
+        # connecting to the same node since `self.node_routes` contains all different routes due to UID
         for new_route in new_routes:
-            if new_route not in existing_routes:
+            if not self.existed_route(new_route):
                 add_routes.append(new_route)
         self.node_routes += add_routes
+
+    def existed_route(self, route: NodeRoute) -> bool:
+        """Check if a route exists based on protocol, host_or_ip (url) and port"""
+        for r in set(self.node_routes):
+            if (
+                (route.host_or_ip == r.host_or_ip)
+                and (route.port == r.port)
+                and (route.protocol == r.protocol)
+            ):
+                return True
+        return False
 
     @staticmethod
     def from_client(client: SyftClient) -> Self:
@@ -63,8 +140,8 @@ class NodePeer(SyftObject):
     def client_with_context(self, context: NodeServiceContext) -> SyftClient:
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
-        # TODO: select route with highest priority
-        route = self.node_routes[0]
+        # select the latest added route
+        route = self.node_routes[-1]
         connection = route_to_connection(route=route)
 
         client_type = connection.get_client_type()
@@ -75,8 +152,8 @@ class NodePeer(SyftObject):
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
-        # TODO: select route with highest priority
-        route = self.node_routes[0]
+        # select the latest added route
+        route = self.node_routes[-1]
         connection = route_to_connection(route=route)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):

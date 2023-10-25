@@ -33,8 +33,6 @@ if TYPE_CHECKING:
 
 
 class NodeRoute:
-    priority: int = 0  # the higher the more prioritized
-
     def client_with_context(self, context: NodeServiceContext) -> SyftClient:
         connection = route_to_connection(route=self, context=context)
         client_type = connection.get_client_type()
