@@ -77,6 +77,7 @@ class BlobRetrieval(SyftObject):
     type_: Optional[Type]
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
+    file_size: Optional[int]
 
     def read(self) -> Union[SyftObject, SyftError]:
         pass
@@ -111,6 +112,7 @@ class BlobRetrievalByURL(BlobRetrieval):
                 syft_client_verify_key=self.syft_client_verify_key,
                 syft_node_location=self.syft_node_location,
                 syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
+                file_size=self.file_size
             )
         else:
             return self._read_data()
@@ -131,7 +133,7 @@ class BlobRetrievalByURL(BlobRetrieval):
             blob_url = self.url
         try:
             response = requests.get(
-                str(blob_url), stream=stream, timeout=DEFAULT_TIMEOUT
+                str(blob_url), stream=stream
             )
             response.raise_for_status()
             if self.type_ is BlobFileType:

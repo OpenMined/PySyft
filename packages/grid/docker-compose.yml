@@ -253,8 +253,9 @@ services:
       - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
     labels:
       - "orgs.openmined.syft=this is a syft seaweedfs container"
-    # ports:
-    #   - "4001:4001"
+    ports:
+      - "8888:8888"
+      - "9333:9333"
 
   mongo:
     image: "${MONGO_IMAGE}:${MONGO_VERSION}"

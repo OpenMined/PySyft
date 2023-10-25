@@ -512,6 +512,8 @@ class ActionObject(SyftObject):
                     return blob_retrieval_object
                 self.syft_action_data_cache = blob_retrieval_object.read()
                 self.syft_action_data_type = type(self.syft_action_data)
+            else:
+                print("cannot reload cache")
 
     def _save_to_blob_storage_(self, data: Any) -> None:
         # relative

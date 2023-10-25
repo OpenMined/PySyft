@@ -240,9 +240,16 @@ class ActionService(AbstractService):
                 )
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
-                mock_exec_result = execute_byte_code(code_item, mock_kwargs, context)
+                from syft.service.action.action_data_empty import ActionDataEmpty
+
+                if any(isinstance(v, ActionDataEmpty) for v in mock_kwargs.values()):
+                    mock_exec_result_obj = ActionDataEmpty()
+                else:
+                    mock_exec_result = execute_byte_code(code_item, mock_kwargs, context)
+                    mock_exec_result_obj = mock_exec_result.result
+                    
                 result_action_object_mock = wrap_result(
-                    result_id, mock_exec_result.result
+                    result_id, mock_exec_result_obj
                 )
 
                 result_action_object = TwinObject(
@@ -256,7 +263,11 @@ class ActionService(AbstractService):
 
     def set_result_to_store(self, result_action_object, context, output_policy):
         result_id = result_action_object.id
-        result_blob_id = result_action_object.syft_blob_storage_entry_id
+        # result_blob_id = result_action_object.syft_blob_storage_entry_id
+        if isinstance(result_action_object, TwinObject):
+            result_blob_id = result_action_object.private.syft_blob_storage_entry_id
+        else:
+            result_blob_id = result_action_object.syft_blob_storage_entry_id
         output_readers = output_policy.output_readers
         read_permission = ActionPermission.READ
 

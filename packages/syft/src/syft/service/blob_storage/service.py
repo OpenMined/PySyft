@@ -59,25 +59,26 @@ class BlobStorageService(AbstractService):
         account_name: str,
         account_key: str,
         container_name: str,
-        remote_name: str,
         bucket_name: str,
     ):
         # stdlib
         import sys
 
         # TODO: fix arguments
-        args_dict = {"args": []}
+
+        args_dict = {  
+            "account_name": account_name,
+            "account_key": account_key,
+            "container_name": container_name,
+            "remote_name": f"{account_name}{container_name}",
+            "bucket_name": bucket_name,
+        }
         # TODO: possible wrap this in try catch
         cfg = context.node.blob_store_config.client_config
         init_request = requests.post(
             url=cfg.mount_url, json=args_dict
         )
-        import pdb
-        pdb.set_trace()
-        first_res = json.loads(init_request.content.decode("utf-8").replace("'", '"'))
-        result_url = first_res["result_url"][:-5] + "true"
-        get_result = requests.get(result_url)
-        print(get_result.content)
+        print(init_request.content)
         # TODO check return code
 
         print(bucket_name, file=sys.stderr)
@@ -99,7 +100,7 @@ class BlobStorageService(AbstractService):
                 uploaded_by=context.credentials,
                 file_size=file_size,
                 type_=BlobFileType,
-                bucket_name="azurebucket",
+                bucket_name=bucket_name,
             )
             self.stash.set(context.credentials, blob_storage_entry)
 
@@ -163,8 +164,9 @@ class BlobStorageService(AbstractService):
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
 
             with context.node.blob_storage_client.connect() as conn:
-                res = conn.read(obj.location, obj.type_, bucket_name=obj.bucket_name)
+                res: BlobRetrieval = conn.read(obj.location, obj.type_, bucket_name=obj.bucket_name)
                 res.syft_blob_storage_entry_id = uid
+                res.file_size = obj.file_size
                 return res
         return SyftError(message=result.err())
 

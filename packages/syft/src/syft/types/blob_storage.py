@@ -38,6 +38,9 @@ class BlobFile(SyftObject):
 
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
+    file_size: Optional[int] = None
+
+    __repr_attrs__ = ["id", "file_name"]
 
     def read(self, stream=False, chunk_size=512, force=False):
         # get blob retrieval object from api + syft_blob_storage_entry_id
@@ -51,19 +54,25 @@ class BlobFile(SyftObject):
         """Synchronous version of the async iter_lines"""
         return self.read(stream=True, chunk_size=chunk_size)
 
-    def read_queue(self, queue, chunk_size):
+    def read_queue(self, queue, chunk_size, progress=False):
+        total_read = 0
         for line in self._iter_lines(chunk_size=chunk_size):
-            queue.put(line)
+            total_read += len(line)
+            if progress:
+                queue.put((total_read, line))
+            else:
+                queue.put(line)
         # Put anything not a string at the end
         queue.put(0)
 
-    def iter_lines(self, chunk_size=512):
+    def iter_lines(self, chunk_size=512, progress=False):
         item_queue: Queue = Queue()
         threading.Thread(
             target=self.read_queue,
             args=(
                 item_queue,
                 chunk_size,
+                progress
             ),
             daemon=True,
         ).start()
@@ -71,6 +80,11 @@ class BlobFile(SyftObject):
         while item != 0:
             yield item
             item = item_queue.get()
+    
+    def _coll_repr_(self):
+        return {
+            "file_name": self.file_name
+        }
 
 
 class BlobFileType(type):

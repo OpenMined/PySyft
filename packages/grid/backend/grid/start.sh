@@ -16,7 +16,10 @@ if [[ ${DEV_MODE} == "True" ]];
 then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
-    pip install -e "/app/syft[telemetry]"
+    pip install -vvv --no-cache-dir ansible_core==2.15.5
+    pip install -vvv --no-cache-dir ansible==8.5.0
+    pip install -e "/app/syft"
+    echo "done installing syft in dev mode"
 fi
 
 set +e

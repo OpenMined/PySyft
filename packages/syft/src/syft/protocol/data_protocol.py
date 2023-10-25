@@ -76,7 +76,10 @@ class DataProtocol:
         return hashlib.sha256(json.dumps(obj_meta_info).encode()).hexdigest()
 
     def read_history(self) -> Dict:
-        return json.loads(self.file_path.read_text())
+        try:
+            return json.loads(self.file_path.read_text())
+        except Exception as e:
+            return {}
 
     def save_history(self, history: dict) -> None:
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")

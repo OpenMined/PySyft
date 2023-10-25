@@ -13,9 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # RUN pip install flask_shell2http==1.9.1 --root-user-action=ignore 
 
 COPY ./new_seaweed.sh /new_seaweed.sh
-COPY ./seaweed.py /app.py
 COPY ./mount_command.sh /mount_command.sh
-
+COPY ./app.py /app.py
 
 RUN chmod +x /new_seaweed.sh
 RUN chmod +x /mount_command.sh

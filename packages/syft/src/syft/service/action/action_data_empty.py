@@ -47,4 +47,6 @@ class ActionFileData(SyftObject):
         if v.exists() and v.is_file():
             return v
 
-        raise ValueError(f"Not a valid path to file. {v}")
+        # this breaks server side during deserialization
+        # raise ValueError(f"Not a valid path to file. {v}")
+

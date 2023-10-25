@@ -226,7 +226,7 @@
       "BlobFile": {
         "1": {
           "version": 1,
-          "hash": "07099e4280c3200a190382ae168837ba9ae94d0a174d0e1eec7b97f43f6d3c65",
+          "hash": "d8e958f955fbe17f8953d8ab2fffa645d6ad6fd80d77e453b26c4f81b5842a4c",
           "action": "add"
         }
       },
@@ -275,21 +275,21 @@
       "BlobRetrieval": {
         "1": {
           "version": 1,
-          "hash": "9776f3ebc49e58485d6f28ff78552fb0a8c93de535f87be28d4cf4de124eb7d0",
+          "hash": "d87df13032e818c54b70e2ba978d0da1b257f27f66973913941c697f2e8e8db4",
           "action": "add"
         }
       },
       "SyftObjectRetrieval": {
         "1": {
           "version": 1,
-          "hash": "d48d229da8129f93dcefd71f37b39d516107e94844a380061328e2e8cfcee7ee",
+          "hash": "6a8b2da766cf1ef33af898bff195af248b56b8bdcab4d94b2b9b160442d68f5e",
           "action": "add"
         }
       },
       "BlobRetrievalByURL": {
         "1": {
           "version": 1,
-          "hash": "f0a9f9933166e50143a1c1045d92b1828a56a112af44f29fe74d27bf7f0d3b21",
+          "hash": "9ac526aa842c8cbfb4cabf4eb973139193277e7e565c7126558e55c02e9a13eb",
           "action": "add"
         }
       },

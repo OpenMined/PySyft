@@ -7,6 +7,7 @@ from copy import deepcopy
 from enum import Enum
 import hashlib
 import inspect
+import datetime
 from io import StringIO
 import itertools
 import sys
@@ -970,7 +971,6 @@ def execute_byte_code(
                         blocking=False,
                     ).sign(node.signing_key)
 
-                    original_print(f"LAUNCHING JOB {func.service_func_name}")
                     job = node.add_api_call_to_queue(
                         api_call, parent_job_id=self.context.job_id
                     )
@@ -1015,14 +1015,15 @@ def execute_byte_code(
                         return f"JOB: {arg.message}"
                     if isinstance(arg, ActionObject):
                         return str(arg.syft_action_data)
-                    return arg
+                    return str(arg)
 
                 new_args = [to_str(arg) for arg in args]
                 new_str = sep.join(new_args) + end
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_str=new_str)
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 return __builtin__.print(
-                    f"FUNCTION LOG ({job_id}):",
+                    f"{time} FUNCTION LOG ({job_id}):",
                     *new_args,
                     end=end,
                     sep=sep,
@@ -1070,7 +1071,6 @@ def execute_byte_code(
     except Exception as e:
         # stdlib
         import traceback
-
         print = original_print
         # print("execute_byte_code failed", e, file=stderr_)
         print(traceback.format_exc())

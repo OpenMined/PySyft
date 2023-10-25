@@ -2,6 +2,7 @@
 import os
 from typing import List
 from typing import Union
+from time import sleep
 
 # third party
 import docker
@@ -113,7 +114,8 @@ def get_env_vars(context: AuthedServiceContext):
     return result
 
 
-BACKEND_CONTAINER = "openmined/grid-backend"
+# TODO: version
+BACKEND_CONTAINER = "openmined/grid-backend:0.8.2-beta.38"
 
 
 def start_worker_container(context: AuthedServiceContext):
@@ -125,6 +127,34 @@ def start_worker_container(context: AuthedServiceContext):
         extra_volumes = {
             f"{context.node.host_syft_location}/packages/syft": {
                 "bind": "/app/syft",
+                "mode": "rw",
+            },
+            f"/dev/null": {
+                "bind": "/app/syft/src/syft.egg-info/entry_points.txt",
+                "mode": "rw",
+            },
+            f"/dev/null": {
+                "bind": "/app/syft/src/syft.egg-info/PKG-INFO",
+                "mode": "rw",
+            },
+            f"/dev/null": {
+                "bind": "/app/syft/src/syft.egg-info/requires.txt",
+                "mode": "rw",
+            },
+            f"/dev/null": {
+                "bind": "/app/syft/src/syft.egg-info/SOURCES.txt",
+                "mode": "rw",
+            },
+            f"/dev/null": {
+                "bind": "/app/syft/src/syft.egg-info/top_level.txt",
+                "mode": "rw",
+            },
+            f"/dev/null": {
+                "bind": "/app/syft/src/__pycache__/",
+                "mode": "rw",
+            },
+            f"/dev/null": {
+                "bind": "/app/syft/src/syft/protocol/protocol_version.json",
                 "mode": "rw",
             },
             f"{context.node.host_syft_location}/packages/grid/backend/grid": {
@@ -163,7 +193,6 @@ class WorkerService(AbstractService):
         self, context: AuthedServiceContext, n: int = 1
     ) -> Union[SyftSuccess, SyftError]:
         """Add a Container Image."""
-
         for _ in range(n):
             res = start_worker_container(context)
             obj = DockerWorker(container_id=res.id, created_at=DateTime.now())

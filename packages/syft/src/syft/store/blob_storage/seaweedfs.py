@@ -104,11 +104,11 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 class SeaweedFSClientConfig(BlobStorageClientConfig):
     host: str
     port: int
-    mount_port: int
+    mount_port: Optional[int] = None
     access_key: str
     secret_key: str
     region: str
-    default_bucket_name: str
+    default_bucket_name: str = "defaultbucket"
 
     @property
     def endpoint_url(self) -> str:
@@ -117,7 +117,9 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
 
     @property
     def mount_url(self) -> str:
-        return f"http://{self.host}:{self.mount_port}/commands/configure_azure"
+        if self.mount_port is None:
+            raise ValueError("Seaweed should be configuer with a mount port to mount")
+        return f"http://{self.host}:{self.mount_port}/configure_azure"
 
 
 @serializable()
