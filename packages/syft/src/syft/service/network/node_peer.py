@@ -18,6 +18,7 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..context import NodeServiceContext
 from ..metadata.node_metadata import NodeMetadata
+from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
 from .routes import connection_to_route
@@ -118,14 +119,20 @@ class NodePeer(SyftObject):
 
     def existed_route(self, route: NodeRoute) -> bool:
         """Check if a route exists based on protocol, host_or_ip (url) and port"""
-        for r in set(self.node_routes):
-            if (
-                (route.host_or_ip == r.host_or_ip)
-                and (route.port == r.port)
-                and (route.protocol == r.protocol)
-            ):
+        existing_routes = set(self.node_routes)
+        if isinstance(route, HTTPNodeRoute):
+            for r in existing_routes:
+                if (
+                    (route.host_or_ip == r.host_or_ip)
+                    and (route.port == r.port)
+                    and (route.protocol == r.protocol)
+                ):
+                    return True
+            return False
+        else:  # PythonNodeRoute
+            if route in existing_routes:
                 return True
-        return False
+            return False
 
     @staticmethod
     def from_client(client: SyftClient) -> Self:
