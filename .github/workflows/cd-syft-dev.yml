@@ -17,7 +17,7 @@ on:
 
 jobs:
   check-last-run:
-    runs-on: [self-hosted, linux] #ubuntu-latest
+    runs-on: [self-hosted, Linux] #ubuntu-latest
 
     outputs:
       same-commit: ${{ steps.cache.outputs.cache-hit }}
@@ -41,7 +41,7 @@ jobs:
     needs: check-last-run
     if: needs.check-last-run.outputs.same-commit != 'true'
 
-    runs-on: [self-hosted, linux] #ubuntu-latest
+    runs-on: [self-hosted, Linux] #ubuntu-latest
 
     steps:
       - name: Permission to home directory
