@@ -155,7 +155,7 @@ class DataProtocol:
                 if canonical_name not in state:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["version"] = int(version)
                     object_diff[canonical_name][str(version)]["hash"] = hash_str
                     object_diff[canonical_name][str(version)]["action"] = "add"
                     continue
@@ -172,7 +172,9 @@ class DataProtocol:
                     if is_protocol_dev:
                         # force overwrite existing object so its an add
                         object_diff[canonical_name][str(version)] = {}
-                        object_diff[canonical_name][str(version)]["version"] = version
+                        object_diff[canonical_name][str(version)]["version"] = int(
+                            version
+                        )
                         object_diff[canonical_name][str(version)]["hash"] = hash_str
                         object_diff[canonical_name][str(version)]["action"] = "add"
                         continue
@@ -188,18 +190,18 @@ class DataProtocol:
                 else:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["version"] = int(version)
                     object_diff[canonical_name][str(version)]["hash"] = hash_str
                     object_diff[canonical_name][str(version)]["action"] = "add"
                     continue
 
         # now check for remove actions
         for canonical_name in state:
-            for version, hash_str in state[canonical_name].items():
+            for version, (hash_str, _) in state[canonical_name].items():
                 if canonical_name not in compare_dict:
                     # missing so its a remove
                     object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["version"] = int(version)
                     object_diff[canonical_name][str(version)]["hash"] = hash_str
                     object_diff[canonical_name][str(version)]["action"] = "remove"
                     continue
@@ -207,7 +209,7 @@ class DataProtocol:
                 if str(version) not in versions.keys():
                     # missing so its a remove
                     object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["version"] = int(version)
                     object_diff[canonical_name][str(version)]["hash"] = hash_str
                     object_diff[canonical_name][str(version)]["action"] = "remove"
                     continue
@@ -225,7 +227,7 @@ class DataProtocol:
                 if canonical_name not in object_versions:
                     object_versions[canonical_name] = {}
                 change_count += 1
-                object_versions[canonical_name][version] = version_metadata
+                object_versions[canonical_name][str(version)] = version_metadata
 
         current_history["dev"]["object_versions"] = object_versions
 
