@@ -330,11 +330,6 @@ def clean(location: str) -> None:
     type=str,
     help="Run docker with a different platform like linux/arm64",
 )
-# @click.option(
-#     "--vpn",
-#     is_flag=True,
-#     help="Disable tailscale vpn container",
-# )
 @click.option(
     "--verbose",
     is_flag=True,
@@ -1332,8 +1327,6 @@ def create_launch_cmd(
     else:
         parsed_kwargs["jupyter"] = False
 
-    # parsed_kwargs["vpn"] = bool(kwargs["vpn"])
-
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
@@ -2327,9 +2320,6 @@ def create_launch_docker_cmd(
 
     if kwargs["deployment_type"] == "single_container":
         return create_launch_worker_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
-
-    # if bool(kwargs["vpn"]):
-    #     cmd += " --profile vpn"
 
     if str(node_type.input) in ["network", "gateway"]:
         cmd += " --profile network"
@@ -3582,12 +3572,9 @@ def get_docker_status(
         if not _backend_exists:
             return False, ("", "")
 
-        # # Identifying Type of Node.
-        # headscale_containers = shell(
-        #     "docker ps --format '{{.Names}}' | grep 'headscale' "
-        # ).split()
-
         node_type = "Domain"
+
+        # TODO: Identify if node_type is Gateway
         # for container in headscale_containers:
         #     if host_name in container:
         #         node_type = "Gateway"

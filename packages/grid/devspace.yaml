@@ -34,14 +34,6 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
-  # tailscale:
-  #   image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_TAILSCALE}"
-  #   buildKit: {}
-  #   dockerfile: ./vpn/tailscale.dockerfile
-  #   context: ./vpn
-  #   tags:
-  #     - dev-latest
-  #     - "${VERSION}"
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
@@ -87,25 +79,7 @@ deployments:
             env:
               - name: SERVICE_NAME
                 value: "proxy"
-          # - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
-          #   securityContext:
-          #     capabilities:
-          #       add: ["NET_ADMIN", "SYS_MODULE"]
-          #     privileged: true
-          #   env:
-          #     - name: HOSTNAME
-          #       value: "${NODE_NAME}"
-          #     - name: STACK_API_KEY
-          #       value: "changeme"
-          #   volumeMounts:
-          #     - containerPath: /var/lib/tailscale
-          #       volume:
-          #         name: tailscale-data
-          #         subPath: /tailscale-data
-          #         readOnly: false
         volumes:
-          # - name: tailscale-data
-          #   size: "100Mi"
           - name: traefik-conf
             configMap:
               name: traefik-main-config

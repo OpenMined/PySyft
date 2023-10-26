@@ -6,12 +6,6 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
 
-  #  tailscale:
-  #    profiles:
-  #      - vpn
-  #    volumes:
-  #      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
-
   # redis:
   #   ports:
   #     - "6379"
@@ -21,12 +15,6 @@ services:
   #   ports:
   #     - "5672"
   #     - "15672"
-
-  #  headscale:
-  #    profiles:
-  #      - network
-  #    ports:
-  #      - "4000"
 
   seaweedfs:
     profiles:

@@ -16,56 +16,38 @@ http:
       loadBalancer:
         servers:
           - url: "http://seaweedfs:8333"
-    # headscale:
-    #   loadBalancer:
-    #     servers:
-    #       - url: "http://headscale:8080"
   routers:
     frontend:
       rule: "PathPrefix(`/`)"
       entryPoints:
         - web
-        #        - vpn
         - websecure
       service: "frontend"
     backend:
       rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
       entryPoints:
         - web
-        #        - vpn
         - websecure
       service: "backend"
     backend-stream:
       rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
       entryPoints:
         - web
-        #        - vpn
         - websecure
       service: "backend-stream"
     blob-storage:
       rule: "PathPrefix(`/blob`)"
       entryPoints:
         - web
-        #       - vpn
         - websecure
       service: "seaweedfs"
       middlewares:
         - "blob-storage-url"
         - "blob-storage-host"
-    #    vpn:
-    #      rule: "PathPrefix(`/vpn`)"
-    #      entryPoints:
-    #        - web
-    #        - vpn
-    #        - websecure
-    #      service: "headscale"
-    #      middlewares:
-    #        - "vpn-url"
     ping:
       rule: "PathPrefix(`/ping`)"
       entryPoints:
         - web
-        #        - vpn
         - websecure
       service: "ping@internal"
 
@@ -80,10 +62,6 @@ http:
       stripprefix:
         prefixes: /blob
         forceslash: true
-#    vpn-url:
-#      stripprefix:
-#        prefixes: /vpn
-#        forceslash: true
 
 tls:
   certificates:

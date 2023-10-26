@@ -32,30 +32,6 @@ services:
     # depends_on:
     #   - "docker-host"
 
-  #  tailscale:
-  #    profiles:
-  #      - vpn
-  #    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
-  #    environment:
-  #      - SERVICE_NAME=tailscale
-  #      - RELEASE=${RELEASE:-production}
-  #      - HOSTNAME=${NODE_NAME?Variable not set}
-  #      - STACK_API_KEY=$STACK_API_KEY
-  #    volumes:
-  #      - tailscale-data:/var/lib/tailscale
-  #      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
-  #    cap_add: # Required for tailscale to work
-  #      - net_admin
-  #      - sys_module
-  #    # ports:
-  #    #   - "41641/udp"
-  #    #   - "4000"
-  #    depends_on:
-  #      - proxy
-  #    network_mode: service:proxy
-  #    labels:
-  #      - "orgs.openmined.syft=this is a syft tailscale container"
-
   frontend:
     restart: always
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
@@ -208,22 +184,6 @@ services:
   #   volumes:
   #     - credentials-data:/storage
 
-  #  headscale:
-  #    profiles:
-  #      - network
-  #    depends_on:
-  #      - proxy
-  #    hostname: headscale
-  #    image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
-  #    volumes:
-  #      - headscale-data:/headscale/data
-  #    environment:
-  #      - RELEASE=${RELEASE:-production}
-  #      - NETWORK_NAME=omnet
-  #      - STACK_API_KEY=$STACK_API_KEY
-  #    labels:
-  #      - "orgs.openmined.syft=this is a syft headscale container"
-
   seaweedfs:
     profiles:
       - blob-storage
@@ -285,8 +245,6 @@ services:
 
 volumes:
   credentials-data:
-  #  tailscale-data:
-  #  headscale-data:
   # app-redis-data:
   seaweedfs-data:
     labels:
