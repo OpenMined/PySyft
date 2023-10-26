@@ -330,16 +330,15 @@ profiles:
         path: deployments.seaweedfs-config
 
 commands:
+  start:
+    command: |-
+      tox -e dev.k8s.start
   deploy:
     command: |-
-      devspace use context k3d-syft-dev
-      devspace use namespace syft
-      devspace deploy --var CONTAINER_REGISTRY=k3d-registry.localhost:12345
+      devspace deploy --kube-context k3d-syft-dev --namespace syft --var CONTAINER_REGISTRY=k3d-registry.localhost:12345
   dev:
     command: |-
-      devspace use context k3d-syft-dev
-      devspace use namespace syft
-      devspace dev --var CONTAINER_REGISTRY=k3d-registry.localhost:12345
-  contexts:
+      devspace dev --kube-context k3d-syft-dev --namespace syft --var CONTAINER_REGISTRY=k3d-registry.localhost:12345
+  info:
     command: |-
-      kubectl config get-contexts
+      tox -e dev.k8s.info

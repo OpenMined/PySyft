@@ -1,4 +1,4 @@
-line-length = 120
+line-length = 88
 
 # Enable flake8-bugbear (`B`) rules.
 # https://beta.ruff.rs/docs/configuration/#using-rufftoml
@@ -16,6 +16,9 @@ ignore = [
 ]
 
 target-version = "py38"
+
+[pycodestyle]
+max-line-length = 120
 
 [pyupgrade]
 # this keeps annotation syntaxes like Union[X, Y] instead of X | Y
