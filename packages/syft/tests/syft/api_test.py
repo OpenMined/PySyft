@@ -49,7 +49,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
     assert guest_client.register(
         name="q", email="a@b.org", password="aaa", password_verify="aaa"
     )
-    guest_client.login(email="a@b.org", password="aaa")
+    guest_client = guest_client.login(email="a@b.org", password="aaa")
     user_id = worker.document_store.partitions["User"].all(root_verify_key).value[-1].id
 
     def get_role(verify_key):
@@ -75,6 +75,6 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
 
     assert get_role(guest_client.credentials.verify_key) == ServiceRole.DATA_OWNER
 
-    guest_client.login(email="a@b.org", password="aaa")
+    guest_client = guest_client.login(email="a@b.org", password="aaa")
 
     assert guest_client.upload_dataset(dataset)

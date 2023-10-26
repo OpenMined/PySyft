@@ -5,7 +5,7 @@
   export let version: string = $page.data?.metadata?.syft_version
 </script>
 
-<nav class="flex justify-between items-center">
+<nav class="flex justify-between items-center" data-testid="auth-nav">
   <section class="flex gap-6 items-center w-min h-min">
     <img
       src="/assets/small-logo.png"
@@ -13,7 +13,9 @@
       class="h-10 object-contain"
     />
     {#if version}
-      <p class="text-gray-400 whitespace-nowrap">Version {version}</p>
+      <p class="text-gray-400 whitespace-nowrap" data-testid="auth-nav-version">
+        Version {version}
+      </p>
     {/if}
   </section>
   <section>
