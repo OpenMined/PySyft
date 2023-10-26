@@ -50,6 +50,8 @@ COPY syft/src/syft/capnp /app/syft/src/syft/capnp
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
+    # force cpu torch
+    pip install --user torch==2.1.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html \
     pip install --user -e /app/syft && \
     pip uninstall ansible ansible-core -y && \
     rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
