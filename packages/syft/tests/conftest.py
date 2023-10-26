@@ -18,6 +18,7 @@ from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_store_partition  # noqa: F401
+from .syft.stores.store_fixtures_test import mongo_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_server_mock  # noqa: F401
@@ -113,6 +114,7 @@ __all__ = [
     "mongo_server_mock",
     "mongo_document_store",
     "mongo_queue_stash",
+    "mongo_action_store",
     "sqlite_store_partition",
     "sqlite_workspace",
     "sqlite_document_store",
