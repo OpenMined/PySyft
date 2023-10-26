@@ -7,6 +7,8 @@ export GEVENT_MONKEYPATCH="False"
 # For debugging permissions
 id
 ls -lisa ~/data/
+ls -lisa ~/app/syft/
+ls -lisa ~/app/grid/
 
 APP_MODULE=grid.main:app
 LOG_LEVEL=${LOG_LEVEL:-info}
