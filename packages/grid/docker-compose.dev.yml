@@ -40,11 +40,10 @@ services:
       - "27017"
 
   backend:
-    user: 1000:1000
     volumes:
-      - ${RELATIVE_PATH}./backend/grid:/home/syftuser/app/grid
-      - ${RELATIVE_PATH}../syft:/home/syftuser/app/syft
-      - ${RELATIVE_PATH}./data/package-cache:/home/syftuser/.cache
+      - ${RELATIVE_PATH}./backend/grid:/root/app/grid
+      - ${RELATIVE_PATH}../syft:/root/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
     stdin_open: true
@@ -52,16 +51,16 @@ services:
 
   # backend_stream:
   #   volumes:
-  #     - ${RELATIVE_PATH}./backend/grid:/home/syftuser/app/grid
-  #     - ${RELATIVE_PATH}../syft:/home/syftuser/app/syft
+  #     - ${RELATIVE_PATH}./backend/grid:/root/app/grid
+  #     - ${RELATIVE_PATH}../syft:/root/app/syft
   #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
   #   environment:
   #     - DEV_MODE=True
 
   # celeryworker:
   #   volumes:
-  #     - ${RELATIVE_PATH}./backend/grid:/home/syftuser/app/grid
-  #     - ${RELATIVE_PATH}../syft/:/home/syftuser/app/syft
+  #     - ${RELATIVE_PATH}./backend/grid:/root/app/grid
+  #     - ${RELATIVE_PATH}../syft/:/root/app/syft
   #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
   #   environment:
   #     - DEV_MODE=True

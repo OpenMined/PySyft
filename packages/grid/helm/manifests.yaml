@@ -110,7 +110,7 @@ spec:
         startupProbe: null
         volumeDevices: null
         volumeMounts:
-        - mountPath: /home/syftuser/data/creds/
+        - mountPath: /root/data/creds/
           name: credentials-data
           readOnly: false
           subPath: credentials-data
@@ -123,12 +123,7 @@ spec:
       nodeSelector: null
       overhead: null
       readinessGates: null
-      securityContext:
-        fsGroup: 1000
-        fsGroupChangePolicy: Always
-        runAsGroup: 1000
-        runAsNonRoot: true
-        runAsUser: 1000
+      securityContext: null
       terminationGracePeriodSeconds: 5
       tolerations: null
       topologySpreadConstraints: null

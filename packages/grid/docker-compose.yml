@@ -103,7 +103,6 @@ services:
   backend:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
-    user: 1000:1000
     depends_on:
       - proxy
     env_file:
@@ -133,7 +132,7 @@ services:
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
     network_mode: service:proxy
     volumes:
-      - ${CREDENTIALS_VOLUME}:/home/syftuser/data/creds/
+      - ${CREDENTIALS_VOLUME}:/root/data/creds/
     stdin_open: true
     tty: true
     labels:
@@ -169,7 +168,7 @@ services:
   #     - ENABLE_OBLV=${ENABLE_OBLV}
   #   network_mode: service:proxy
   #   volumes:
-  #     - credentials-data:/home/syftuser/data/creds/
+  #     - credentials-data:/root/data/creds/
 
   # celeryworker:
   #   restart: always

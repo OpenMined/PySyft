@@ -125,17 +125,17 @@ deployments:
         name: component-chart
         repo: https://charts.devspace.sh
       values:
-        # PodSecurityContext
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          runAsGroup: 1000
-          fsGroup: 1000
-          fsGroupChangePolicy: "Always"
+        # PodSecurityContext (uncomment for rootless "syftuser")
+        # securityContext:
+        #   runAsNonRoot: true
+        #   runAsUser: 1000
+        #   runAsGroup: 1000
+        #   fsGroup: 1000
+        #   fsGroupChangePolicy: "Always"
         containers:
           - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}:${VERSION}"
             volumeMounts:
-              - containerPath: /home/syftuser/data/creds/
+              - containerPath: /root/data/creds/
                 volume:
                   name: credentials-data
                   subPath: /credentials-data
@@ -318,8 +318,8 @@ dev:
         value: "True"
     logs: {}
     sync:
-      - path: ./backend/grid:/home/syftuser/app/grid
-      - path: ../syft:/home/syftuser/app/syft
+      - path: ./backend/grid:/root/app/grid
+      - path: ../syft:/root/app/syft
 
 profiles:
   - name: gateway

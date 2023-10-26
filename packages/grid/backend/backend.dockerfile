@@ -1,10 +1,12 @@
 ARG PYTHON_VERSION="3.11"
 ARG TZ="Etc/UTC"
-ARG USER="syftuser"
-ARG UID=1000
+
+# change to USER="syftuser", UID=1000 and HOME="/home/$USER" for rootless
+ARG USER="root"
+ARG UID=0
 ARG USER_GRP=$USER:$USER
-ARG HOME="/home/$USER"
-ARG SYFT_WORKDIR="$HOME/app"
+ARG HOME="/root"
+ARG APPDIR="$HOME/app"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
 
@@ -18,21 +20,22 @@ ARG UID
 # Setup Python DEV
 RUN apk update && \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    adduser -D -u $UID $USER
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+    # uncomment for creating rootless user
+    # && adduser -D -u $UID $USER
 
 # ==================== [BUILD STEP] Install Syft Dependency ==================== #
 
 FROM python_dev as syft_deps
 
-ARG SYFT_WORKDIR
-ARG USER_GRP
-ARG USER
+ARG APPDIR
 ARG HOME
 ARG UID
+ARG USER
+ARG USER_GRP
 
 USER $USER
-WORKDIR $SYFT_WORKDIR
+WORKDIR $APPDIR
 ENV PATH=$PATH:$HOME/.local/bin
 
 # copy skeleton to do package install
@@ -54,29 +57,30 @@ RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
 FROM cgr.dev/chainguard/wolfi-base as backend
 
 # inherit from global
+ARG APPDIR
+ARG HOME
 ARG PYTHON_VERSION
 ARG TZ
-ARG SYFT_WORKDIR
-ARG USER_GRP
 ARG USER
-ARG HOME
+ARG USER_GRP
 
 # Setup Python
 RUN apk update && \
     apk add --no-cache tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     rm -rf /var/cache/apk/* && \
-    adduser -D -u 1000 $USER && \
-    mkdir -p /var/log/pygrid $HOME/data/creds $HOME/data/db $HOME/.cache $HOME/.local && \
-    chown -R $USER_GRP /var/log/pygrid $HOME/
+    # Uncomment for rootless user
+    # adduser -D -u 1000 $USER && \
+    mkdir -p /var/log/pygrid $HOME/data/creds $HOME/data/db $HOME/.cache $HOME/.local
+    # chown -R $USER_GRP /var/log/pygrid $HOME/
 
 USER $USER
-WORKDIR $SYFT_WORKDIR
+WORKDIR $APPDIR
 
 # Update environment variables
 ENV PATH=$PATH:$HOME/.local/bin \
-    PYTHONPATH=$SYFT_WORKDIR \
-    APPDIR=$SYFT_WORKDIR \
+    PYTHONPATH=$APPDIR \
+    APPDIR=$APPDIR \
     NODE_NAME="default_node_name" \
     NODE_TYPE="domain" \
     SERVICE_NAME="backend" \
