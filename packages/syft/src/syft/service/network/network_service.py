@@ -176,6 +176,9 @@ class NetworkService(AbstractService):
         result = self.stash.update_peer(context.node.verify_key, remote_node_peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
+        print(f"{result.ok().node_routes = }")
+        r = result.ok().pick_highest_priority_route()
+        print(f"{r.dict() = }")
 
         return SyftSuccess(message="Routes Exchanged")
 
@@ -520,7 +523,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
     context.output["port"] = url.port
     context.output["private"] = False
     context.output["proxy_target_uid"] = context.obj.proxy_target_uid
-    context.output["priority"] = 0
+    context.output["priority"] = 1
     return context
 
 

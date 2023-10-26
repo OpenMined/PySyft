@@ -116,6 +116,12 @@ class NodePeer(SyftObject):
                 add_routes.append(new_route)
         self.node_routes += add_routes
 
+        print(f"after updating priority: {self.node_routes = }")
+        print(f"{new_routes = }")
+        print(
+            f"after updating priority: {self.pick_highest_priority_route().dict() = }"
+        )
+
     def update_route_priorities(self, new_routes: List[NodeRoute]) -> List[NodeRoute]:
         """
         Latest route has the biggest priority
@@ -125,6 +131,8 @@ class NodePeer(SyftObject):
             if route.priority > current_max_priority:
                 current_max_priority = route.priority
         for route in new_routes:
+            print(f"{route = }")
+            print(f"{route.dict() = }")
             route.priority = current_max_priority + 1
             current_max_priority += 1
         return new_routes
@@ -163,10 +171,7 @@ class NodePeer(SyftObject):
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         # select the latest added route
-        final_route = self.node_routes[-1]
-        for route in self.node_routes:
-            if route.priority > final_route.priority:
-                final_route = route
+        final_route = self.pick_highest_priority_route()
         print(f"using route {final_route.to_dict()}")
         print(f"{len(self.node_routes) = }")
         print(f"{context.node.name = }")
@@ -181,10 +186,7 @@ class NodePeer(SyftObject):
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         # select the latest added route
-        final_route = self.node_routes[-1]
-        for route in self.node_routes:
-            if route.priority > final_route.priority:
-                final_route = route
+        final_route = self.pick_highest_priority_route()
         connection = route_to_connection(route=final_route)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
@@ -199,3 +201,10 @@ class NodePeer(SyftObject):
 
     def proxy_from(self, client: SyftClient) -> SyftClient:
         return client.proxy_to(self)
+
+    def pick_highest_priority_route(self) -> NodeRoute:
+        final_route = self.node_routes[-1]
+        for route in self.node_routes:
+            if route.priority > final_route.priority:
+                final_route = route
+        return final_route
