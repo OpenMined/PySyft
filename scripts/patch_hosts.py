@@ -51,7 +51,7 @@ class Hosts:
         elif Platform.windows():
             p = "C:\Windows\System32\drivers\etc\hosts"
         else:
-            raise Exception(f"Unsupported OS: {Platform.system()}")
+            raise Exception(f"Unsupported OS: {Platform.system}")
 
         p = Path(p).absolute()
         assert p.exists(), "Host file does not exist"
