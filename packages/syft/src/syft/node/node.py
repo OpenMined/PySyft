@@ -859,7 +859,9 @@ class Node(AbstractNode):
                         f"you have has no access to: {api_call.path}"
                     )  # type: ignore
                 else:
-                    return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+                    return SyftError(
+                        message=f"API call not in registered services: {api_call.path}"
+                    )  # type: ignore
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
