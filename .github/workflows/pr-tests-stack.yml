@@ -56,6 +56,9 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -545,6 +548,7 @@ jobs:
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+          GITHUB_CI: true
         shell: bash
         run: |
           # install k3d
@@ -558,8 +562,7 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T 6uFh31PSApiW503d9xuFDY ytXm7Bb8cLMvMtavKUTVqw au.relay.tunshell.com
-          # tox -e stack.test.integration.k8s
-          # tox -e syft.build.helm
-          # tox -e syft.package.helm
-          # # tox -e syft.test.helm
+          tox -e stack.test.integration.k8s
+          tox -e syft.build.helm
+          tox -e syft.package.helm
+          # tox -e syft.test.helm
