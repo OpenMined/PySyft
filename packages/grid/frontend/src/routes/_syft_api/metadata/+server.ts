@@ -30,17 +30,19 @@ export const GET: RequestHandler = async () => {
   }
 }
 
-export const POST: RequestHandler = async ({ cookies, request }) => {
+export const PATCH: RequestHandler = async ({ cookies, request }) => {
   try {
     const { signing_key, node_id } = unload_cookies(cookies)
 
-    const metadata = request.json()
+    const metadata = await request.json()
 
     const new_metadata = await jsSyftCall({
       path: "settings.update",
       payload: {
-        ...metadata,
-        fqn: "syft.service.settings.settings.NodeSettingsUpdate",
+        settings: {
+          ...metadata,
+          fqn: "syft.service.settings.settings.NodeSettingsUpdate",
+        },
       },
       node_id,
       signing_key,

@@ -15,10 +15,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
       signing_key,
     })
 
-    console.log({ dataset })
-
     const dataset_view = { ...dataset }
-    console.log({ dataset_view })
 
     return json(dataset_view)
   } catch (err) {

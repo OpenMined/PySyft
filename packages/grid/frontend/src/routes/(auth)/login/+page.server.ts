@@ -37,6 +37,6 @@ export const actions: Actions = {
       return fail(400, { invalid: true })
     }
 
-    throw redirect(302, "/datasets")
+    throw redirect(302, "/users")
   },
 }

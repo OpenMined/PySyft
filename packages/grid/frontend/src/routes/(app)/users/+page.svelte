@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidate } from "$app/navigation"
+  import { invalidateAll } from "$app/navigation"
   import debounce from "just-debounce-it"
   import Badge from "$lib/components/Badge.svelte"
   import Pagination from "$lib/components/Pagination.svelte"
@@ -56,7 +56,7 @@
       if (res.ok) {
         const json = await res.json()
         throwIfError(json)
-        invalidate("/users")
+        invalidateAll()
       }
 
       openModal = "step1"
@@ -66,24 +66,9 @@
     }
   }
 
-  const handleUpdate = async () => {
-    try {
-      const res = await fetch(
-        `/_syft_api/users?page_size=${page_size}&page_index=${page_index}`
-      )
-      const json = await res.json()
-
-      console.log("hU", { json })
-      userList = json.list
-      total = json.total
-    } catch (err) {
-      console.error({ err })
-      invalidate("/users")
-    }
-  }
-
   $: pagedData =
     userList.slice(page_index * page_size, (page_index + 1) * page_size) ?? []
+  $: userList = data.list
 </script>
 
 <div
