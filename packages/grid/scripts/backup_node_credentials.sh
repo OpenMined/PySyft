@@ -2,7 +2,6 @@
 
 ROOT_DATA_PATH="$HOME/.syft/data"
 
-
 calculate_checksum() {
     # Calculate the checksum of a file
     local file="$1"
@@ -11,11 +10,10 @@ calculate_checksum() {
     echo "$checksum"
 }
 
-
 docker_cp() {
     # Exit in case of error
     set -e
-
+    
     # Define the container name pattern
     CONTAINER_NAME_PATTERN="backend-1"
 
@@ -27,9 +25,6 @@ docker_cp() {
         exit 1
     fi
 
-    mkdir -p "$ROOT_DATA_PATH"
-
-    # Loop through each matching container
     for CONTAINER_NAME in $CONTAINER_NAMES; do
         # Define the source path of the credentials.json file in the container
         SOURCE_PATH="/storage/credentials.json"
@@ -37,22 +32,31 @@ docker_cp() {
         # Define the destination path on the host machine
         DESTINATION_PATH="$ROOT_DATA_PATH/$CONTAINER_NAME"
 
-        # Create the directory for the specific container
-        mkdir -p "$DESTINATION_PATH"
+        # Check if the destination directory already exists
+        if [ ! -d "$DESTINATION_PATH" ]; then
+            mkdir -p "$DESTINATION_PATH"
+        fi
 
-        # Calculate the checksum of the source file
-        SOURCE_CHECKSUM=$(calculate_checksum "$DESTINATION_PATH/credentials.json")
+        # Copy the credentials.json file from the container to the host, placing it in the destination folder
+        # Suppress output from docker cp command.
+        docker cp "${CONTAINER_NAME}:${SOURCE_PATH}" "$DESTINATION_PATH/credentials.json" >/dev/null
 
-        # Copy the credentials.json file from the container to the host
-        docker cp "${CONTAINER_NAME}:${SOURCE_PATH}" "$DESTINATION_PATH"
+        # Check if the copy was successful
+        if [ $? -eq 0 ]; then
+            # Calculate the checksum of the source file
+            SOURCE_CHECKSUM=$(calculate_checksum "$DESTINATION_PATH/credentials.json")
 
-        # Calculate the checksum of the destination file
-        DESTINATION_CHECKSUM=$(calculate_checksum "$DESTINATION_PATH/credentials.json")
+            # Calculate the checksum of the destination file
+            DESTINATION_CHECKSUM=$(calculate_checksum "$DESTINATION_PATH/credentials.json")
 
-        if [ $? -eq 0 ] && [ "$SOURCE_CHECKSUM" = "$DESTINATION_CHECKSUM" ]; then
-            echo "Copied credentials.json from $CONTAINER_NAME to $DESTINATION_PATH."
+            # Check if the source and destination checksums match
+            if [ "$SOURCE_CHECKSUM" = "$DESTINATION_CHECKSUM" ]; then
+                echo "Copied credentials.json from container $CONTAINER_NAME to $DESTINATION_PATH/credentials.json"
+            else
+                echo "Failed to copy credentials.json from $CONTAINER_NAME. Checksum mismatch."
+            fi
         else
-            echo "Failed to copy credentials.json from $CONTAINER_NAME, or checksum mismatch."
+            echo "Failed to copy credentials.json from $CONTAINER_NAME"
         fi
     done
 }
@@ -84,22 +88,33 @@ k8s_cp() {
                 POD_NAME="${PODS_AND_NAMESPACES[i]}"
                 NAMESPACE="${PODS_AND_NAMESPACES[i + 1]}"
 
-                mkdir -p "$ROOT_DATA_PATH/$NAMESPACE"
-
-                # Calculate the checksum of the source file
-                SOURCE_CHECKSUM=$(calculate_checksum "$ROOT_DATA_PATH/$NAMESPACE/credentials.json")
+                DESTINATION_FOLDER="$ROOT_DATA_PATH/$CONTEXT""_""$NAMESPACE"
+                mkdir -p $DESTINATION_FOLDER
 
                 # Copy the file (suppress error message from kubectl cp command: "tar: Removing leading `/' from member names")
-                kubectl cp "$NAMESPACE/$POD_NAME:$FILE_PATH_IN_POD" "$ROOT_DATA_PATH/$NAMESPACE/credentials.json" &>/dev/null
+                kubectl cp "$NAMESPACE/$POD_NAME:$FILE_PATH_IN_POD" "$DESTINATION_FOLDER/credentials.json" &>/dev/null
 
-                # Calculate the checksum of the destination file
-                DESTINATION_CHECKSUM=$(calculate_checksum "$ROOT_DATA_PATH/$NAMESPACE/credentials.json")
+                # Check if the copy was successful
+                if [ $? -eq 0 ]; then
+                    # Calculate the checksum of the source file
+                    SOURCE_CHECKSUM=$(calculate_checksum "$DESTINATION_FOLDER/credentials.json")
 
-                # Check if the copy was successful and if the checksums match
-                if [ $? -eq 0 ] && [ "$SOURCE_CHECKSUM" = "$DESTINATION_CHECKSUM" ]; then
-                    echo "Copied credentials.json from $POD_NAME in namespace $NAMESPACE to $ROOT_DATA_PATH/$NAMESPACE in context $CONTEXT."
+                    # Check if the file exists before calculating its checksum
+                    if [ -f "$DESTINATION_FOLDER/credentials.json" ]; then
+                        # Calculate the checksum of the destination file
+                        DESTINATION_CHECKSUM=$(calculate_checksum "$DESTINATION_FOLDER/credentials.json")
+
+                        # Check if the checksums match
+                        if [ "$SOURCE_CHECKSUM" = "$DESTINATION_CHECKSUM" ]; then
+                            echo "Copied credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT to $DESTINATION_FOLDER"
+                        else
+                            echo "Failed to copy credentials.json. Checksum mismatch."
+                        fi
+                    else
+                        echo "Failed to copy credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT. File not found."
+                    fi
                 else
-                    echo "Failed to copy credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT, or checksum mismatch."
+                    echo "Failed to copy credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT."
                 fi
             done
         fi
