@@ -95,8 +95,8 @@ class DataProtocol:
     def build_state(self, stop_key: Optional[str] = None) -> dict:
         sorted_dict = sort_dict_naturally(self.protocol_history)
         state_dict = defaultdict(dict)
-        for k, _v in sorted_dict.items():
-            object_versions = sorted_dict[k]["object_versions"]
+        for protocol_number in sorted_dict:
+            object_versions = sorted_dict[protocol_number]["object_versions"]
             for canonical_name, versions in object_versions.items():
                 for version, object_metadata in versions.items():
                     action = object_metadata["action"]
@@ -118,11 +118,14 @@ class DataProtocol:
                             f"Can't remove {object_metadata} missing from state {versions} for object {canonical_name}."
                         )
                     if action == "add":
-                        state_dict[canonical_name][str(version)] = hash_str
+                        state_dict[canonical_name][str(version)] = (
+                            hash_str,
+                            protocol_number,
+                        )
                     elif action == "remove":
                         del state_dict[canonical_name][str(version)]
             # stop early
-            if stop_key == k:
+            if stop_key == protocol_number:
                 return state_dict
         return state_dict
 
@@ -160,17 +163,27 @@ class DataProtocol:
                 versions = state[canonical_name]
                 if (
                     str(version) in versions.keys()
-                    and versions[str(version)] == hash_str
+                    and versions[str(version)][0] == hash_str
                 ):
                     # already there so do nothing
                     continue
                 elif str(version) in versions.keys():
+                    is_protocol_dev = versions[str(version)][1] == "dev"
+                    if is_protocol_dev:
+                        # force overwrite existing object so its an add
+                        object_diff[canonical_name][str(version)] = {}
+                        object_diff[canonical_name][str(version)]["version"] = version
+                        object_diff[canonical_name][str(version)]["hash"] = hash_str
+                        object_diff[canonical_name][str(version)]["action"] = "add"
+                        continue
+
                     raise Exception(
                         f"{canonical_name} for class {cls.__name__} fqn {cls} "
                         + f"version {version} hash has changed. "
                         + f"{hash_str} not in {versions.values()}. "
                         + "Is a unique __canonical_name__ for this subclass missing? "
-                        + "If the class has changed you will need to bump the version number."
+                        + "If the class has changed you will need to define a new class with the changes, "
+                        + "with same __canonical_name__ and bump the __version__ number."
                     )
                 else:
                     # new object so its an add
