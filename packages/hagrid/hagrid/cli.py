@@ -1176,26 +1176,6 @@ def generate_key_at_path(key_path: str) -> str:
     return key_path
 
 
-def copy_credentials_to_local() -> str:
-    result = ""
-    data_dir = Path.home() / ".syft" / "data"
-    data_dir.mkdir(parents=True, exist_ok=True)
-    filter_cmd = (
-        "docker ps --filter  name=" "backend-1" " --format " "{{" ".Names" "}}" ""
-    )
-    nodes = shell(filter_cmd)
-    node_list = nodes.split("\n")
-    # remove empty string which is the last element
-    node_list = list(filter(None, node_list))
-    for node in node_list:
-        target_directory = str(data_dir) + "/" + node
-        shell("mkdir " + target_directory)
-        copy_cmd = f"docker cp {node}:/storage/credentials.json {target_directory}"
-        shell(copy_cmd)
-        result += f"Node credentials copied to local directory at {target_directory}. "
-    return result
-
-
 def validate_password(password: str) -> str:
     """Validate if the password entered by the user is valid.
 
