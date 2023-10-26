@@ -520,6 +520,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
     context.output["port"] = url.port
     context.output["private"] = False
     context.output["proxy_target_uid"] = context.obj.proxy_target_uid
+    context.output["priority"] = 0
     return context
 
 

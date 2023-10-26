@@ -110,15 +110,30 @@ class NodePeer(SyftObject):
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []
-        # TODO: possible bug here. Instead of using `set`, find another way to check we are
-        # connecting to the same node since `self.node_routes` contains all different routes due to UID
+        new_routes = self.update_route_priorities(new_routes)
         for new_route in new_routes:
             if not self.existed_route(new_route):
                 add_routes.append(new_route)
         self.node_routes += add_routes
 
+    def update_route_priorities(self, new_routes: List[NodeRoute]) -> List[NodeRoute]:
+        """
+        Latest route has the biggest priority
+        """
+        current_max_priority: int = 0
+        for route in self.node_routes:
+            if route.priority > current_max_priority:
+                current_max_priority = route.priority
+        for route in new_routes:
+            route.priority = current_max_priority + 1
+            current_max_priority += 1
+        return new_routes
+
     def existed_route(self, route: NodeRoute) -> bool:
-        """Check if a route exists based on protocol, host_or_ip (url) and port"""
+        """Check if a route exists
+        - For HTTPNodeRoute: check based on protocol, host_or_ip (url) and port
+        - For PythonNodeRoute: check if the route exists in the set of all node_routes
+        """
         existing_routes = set(self.node_routes)
         if isinstance(route, HTTPNodeRoute):
             for r in existing_routes:
@@ -148,8 +163,14 @@ class NodePeer(SyftObject):
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         # select the latest added route
-        route = self.node_routes[-1]
-        connection = route_to_connection(route=route)
+        final_route = self.node_routes[-1]
+        for route in self.node_routes:
+            if route.priority > final_route.priority:
+                final_route = route
+        print(f"using route {final_route.to_dict()}")
+        print(f"{len(self.node_routes) = }")
+        print(f"{context.node.name = }")
+        connection = route_to_connection(route=final_route)
 
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
@@ -160,8 +181,11 @@ class NodePeer(SyftObject):
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         # select the latest added route
-        route = self.node_routes[-1]
-        connection = route_to_connection(route=route)
+        final_route = self.node_routes[-1]
+        for route in self.node_routes:
+            if route.priority > final_route.priority:
+                final_route = route
+        connection = route_to_connection(route=final_route)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
