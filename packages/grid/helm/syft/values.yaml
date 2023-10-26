@@ -13,7 +13,7 @@ secrets:
       # mongoInitdbRootPassword: "example"
       # mongoUsername: "root"
       # mongoInitdbRootUsername: "root"
-      mongoSecret: "mongoSecret"
+      mongosecret: "mongosecret"
 
 configuration:
   devmode: false

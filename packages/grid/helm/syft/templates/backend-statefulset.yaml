@@ -38,12 +38,12 @@ spec:
         - name: MONGO_USERNAME
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.db.mongo.mongoSecret }}
+              name: {{ .Values.secrets.db.mongo.mongosecret }}
               key: mongo-username-secret
         - name: MONGO_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.db.mongo.mongoSecret }}
+              name: {{ .Values.secrets.db.mongo.mongosecret }}
               key: mongo-password-secret
         - name: SERVICE_NAME
           value: backend
