@@ -2,6 +2,7 @@
 
 ROOT_DATA_PATH="$HOME/.syft/data"
 
+
 docker_cp() {
     # Exit in case of error
     set -e
@@ -42,37 +43,48 @@ docker_cp() {
     done
 }
 
-# Not tested for multiple pods
+
 k8s_cp() {
     IMAGE_TAG="grid-backend"
     FILE_PATH_IN_POD="/storage/credentials.json"
 
-    # Find all pods and namespaces with the specified image tag
-    PODS_AND_NAMESPACES=($(kubectl get pods --all-namespaces -o=jsonpath="{range .items[*]}{.metadata.name}{'\t'}{.metadata.namespace}{'\t'}{range .spec.containers[*]}{.image}{'\n'}{end}{end}" | grep "$IMAGE_TAG" | awk '{print $1, $2}'))
+    # Get a list of available contexts
+    CONTEXTS=($(kubectl config get-contexts -o name))
 
-    if [ ${#PODS_AND_NAMESPACES[@]} -eq 0 ]; then
-        echo "No pods found with image tag: $IMAGE_TAG"
-        exit 1
-    fi
+    for CONTEXT in "${CONTEXTS[@]}"; do
+        # Skip the "docker-desktop" context
+        if [ "$CONTEXT" = "docker-desktop" ]; then
+            continue
+        fi
 
-    for ((i = 0; i < ${#PODS_AND_NAMESPACES[@]}; i += 2)); do
-        POD_NAME="${PODS_AND_NAMESPACES[i]}"
-        NAMESPACE="${PODS_AND_NAMESPACES[i + 1]}"
+        # Set the context for kubectl
+        kubectl config use-context "$CONTEXT"
 
-        mkdir -p $ROOT_DATA_PATH/$NAMESPACE
+        # Find all pods and namespaces with the specified image tag
+        PODS_AND_NAMESPACES=($(kubectl get pods --all-namespaces -o=jsonpath="{range .items[*]}{.metadata.name}{'\t'}{.metadata.namespace}{'\t'}{range .spec.containers[*]}{.image}{'\n'}{end}{end}" | grep "$IMAGE_TAG" | awk '{print $1, $2}'))
 
-        # Copy the file (suppress error message from kubectl cp command: "tar: Removing leading `/' from member names")
-        kubectl cp "$NAMESPACE/$POD_NAME:$FILE_PATH_IN_POD" "$ROOT_DATA_PATH/$NAMESPACE/credentials.json" &>/dev/null
-
-        # Check if the copy was successful
-        if [ $? -eq 0 ]; then
-            echo "Copied credentials.json from $POD_NAME in namespace $NAMESPACE to $ROOT_DATA_PATH/$NAMESPACE"
+        if [ ${#PODS_AND_NAMESPACES[@]} -eq 0 ]; then
+            echo "No pods found with image tag: $IMAGE_TAG in context $CONTEXT"
         else
-            echo "Failed to copy credentials.json from $POD_NAME in namespace $NAMESPACE"
+            for ((i = 0; i < ${#PODS_AND_NAMESPACES[@]}; i += 2)); do
+                POD_NAME="${PODS_AND_NAMESPACES[i]}"
+                NAMESPACE="${PODS_AND_NAMESPACES[i + 1]}"
+
+                mkdir -p "$ROOT_DATA_PATH/$NAMESPACE"
+
+                # Copy the file (suppress error message from kubectl cp command: "tar: Removing leading `/' from member names")
+                kubectl cp "$NAMESPACE/$POD_NAME:$FILE_PATH_IN_POD" "$ROOT_DATA_PATH/$NAMESPACE/credentials.json" &>/dev/null
+
+                # Check if the copy was successful
+                if [ $? -eq 0 ]; then
+                    echo "Copied credentials.json from $POD_NAME in namespace $NAMESPACE to $ROOT_DATA_PATH/$NAMESPACE in context $CONTEXT"
+                else
+                    echo "Failed to copy credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT"
+                fi
+            done
         fi
     done
 }
-
 
 
 # Check if the "--docker" flag is set
