@@ -127,18 +127,22 @@ def cli() -> None:
 def get_compose_src_path(
     node_name: str,
     template_location: Optional[str] = None,
-    **kwargs: TypeDict[str, Any],
+    **kwargs: Any,
 ) -> str:
     grid_path = GRID_SRC_PATH()
     tag = kwargs["tag"]
     # Use local compose files if in editable mode and
     # template_location is None and (kwargs["dev"] is True or tag is local)
-    if EDITABLE_MODE and template_location is None and (kwargs["dev"] is True or tag == "local"):  # type: ignore
+    if (
+        EDITABLE_MODE
+        and template_location is None
+        and (kwargs["dev"] is True or tag == "local")
+    ):
         path = grid_path
     else:
         path = deployment_dir(node_name)
 
-    if kwargs["deployment_type"] == "single_container":  # type: ignore
+    if kwargs["deployment_type"] == "single_container":
         path = path + "/worker"
 
     os.makedirs(path, exist_ok=True)
@@ -3420,7 +3424,7 @@ cli.add_command(clean)
     help="Show HAGrid debug information", context_settings={"show_default": True}
 )
 @click.argument("args", type=str, nargs=-1)
-def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+def debug(args: TypeTuple[str], **kwargs: Any) -> None:
     debug_info = gather_debug()
     print("\n\nWhen reporting bugs, please copy everything between the lines.")
     print("==================================================================\n")
