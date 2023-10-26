@@ -66,7 +66,6 @@ from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ...util.constants import DEFAULT_TIMEOUT
 
 
 @serializable()
@@ -112,7 +111,7 @@ class BlobRetrievalByURL(BlobRetrieval):
                 syft_client_verify_key=self.syft_client_verify_key,
                 syft_node_location=self.syft_node_location,
                 syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
-                file_size=self.file_size
+                file_size=self.file_size,
             )
         else:
             return self._read_data()
@@ -132,9 +131,7 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             blob_url = self.url
         try:
-            response = requests.get(
-                str(blob_url), stream=stream
-            )
+            response = requests.get(str(blob_url), stream=stream)
             response.raise_for_status()
             if self.type_ is BlobFileType:
                 if stream:

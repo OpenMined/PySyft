@@ -49,4 +49,3 @@ class ActionFileData(SyftObject):
 
         # this breaks server side during deserialization
         # raise ValueError(f"Not a valid path to file. {v}")
-

@@ -4,10 +4,10 @@ from __future__ import annotations
 # stdlib
 import ast
 from copy import deepcopy
+import datetime
 from enum import Enum
 import hashlib
 import inspect
-import datetime
 from io import StringIO
 import itertools
 import sys
@@ -1071,6 +1071,7 @@ def execute_byte_code(
     except Exception as e:
         # stdlib
         import traceback
+
         print = original_print
         # print("execute_byte_code failed", e, file=stderr_)
         print(traceback.format_exc())

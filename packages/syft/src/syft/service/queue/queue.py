@@ -122,8 +122,12 @@ class APICallMessageHandler(AbstractMessageHandler):
         except Exception as e:  # nosec
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
+            # stdlib
             import traceback
-            result = SyftError(message=f"Failed with exception: {e}, {traceback.format_exc()}")
+
+            result = SyftError(
+                message=f"Failed with exception: {e}, {traceback.format_exc()}"
+            )
             print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
 
         queue_item = QueueItem(
