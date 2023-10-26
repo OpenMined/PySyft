@@ -45,6 +45,7 @@ COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
+    pip install --user torch==2.1.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
     pip install --user pip-autoremove jupyterlab==4.0.7 -e ./syft/ && \
     pip-autoremove ansible ansible-core -y
 

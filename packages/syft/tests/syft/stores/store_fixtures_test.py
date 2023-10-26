@@ -1,5 +1,6 @@
 # stdlib
 from pathlib import Path
+import sys
 import tempfile
 from typing import Generator
 from typing import Tuple
@@ -7,11 +8,14 @@ from typing import Tuple
 # third party
 from pymongo import MongoClient
 import pytest
-from pytest_mock_resources import create_mongo_fixture
+from pytest_mock_resources.container.mongo import MongoConfig
+from pytest_mock_resources.fixture.mongo import _create_clean_database
+from pytest_mock_resources.fixture.mongo import get_container
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_store import DictActionStore
+from syft.service.action.action_store import MongoActionStore
 from syft.service.action.action_store import SQLiteActionStore
 from syft.service.queue.queue_stash import QueueStash
 from syft.store.dict_document_store import DictDocumentStore
@@ -37,7 +41,46 @@ from .store_constants_test import sqlite_workspace_folder
 from .store_constants_test import test_verify_key_string_root
 from .store_mocks_test import MockObjectType
 
-mongo_server_mock = create_mongo_fixture(scope="session")
+
+@pytest.fixture(scope="session")
+def pmr_mongo_config():
+    """Override this fixture with a :class:`MongoConfig` instance to specify different defaults.
+
+    Examples:
+        >>> @pytest.fixture(scope='session')
+        ... def pmr_mongo_config():
+        ...     return MongoConfig(image="mongo:3.4", root_database="foo")
+    """
+    return MongoConfig()
+
+
+@pytest.fixture(scope="session")
+def pmr_mongo_container(pytestconfig, pmr_mongo_config):
+    yield from get_container(pytestconfig, pmr_mongo_config)
+
+
+def create_mongo_fixture_no_windows(scope="function"):
+    """Produce a mongo fixture.
+
+    Any number of fixture functions can be created. Under the hood they will all share the same
+    database server.
+
+    Arguments:
+        scope: Passthrough pytest's fixture scope.
+    """
+
+    @pytest.fixture(scope=scope)
+    def _no_windows():
+        return pytest.skip("PyResources Issue with Docker + Windows")
+
+    @pytest.fixture(scope=scope)
+    def _(pmr_mongo_container, pmr_mongo_config):
+        return _create_clean_database(pmr_mongo_config)
+
+    return _ if sys.platform != "win32" else _no_windows
+
+
+mongo_server_mock = create_mongo_fixture_no_windows(scope="session")
 
 locking_scenarios = [
     "nop",
@@ -269,6 +312,26 @@ def mongo_queue_stash(root_verify_key, mongo_server_mock, request):
         **mongo_kwargs,
     )
     return mongo_queue_stash_fn(store)
+
+
+@pytest.fixture(scope="function", params=locking_scenarios)
+def mongo_action_store(mongo_server_mock, request):
+    mongo_db_name = generate_db_name()
+    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
+    locking_config_name = request.param
+    locking_config = str_to_locking_config(locking_config_name)
+
+    mongo_client = MongoClient(**mongo_kwargs)
+    mongo_config = MongoStoreClientConfig(client=mongo_client)
+    store_config = MongoStoreConfig(
+        client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
+    )
+    ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
+    mongo_action_store = MongoActionStore(
+        store_config=store_config, root_verify_key=ver_key
+    )
+
+    return mongo_action_store
 
 
 def dict_store_partition_fn(

@@ -775,6 +775,20 @@
           "hash": "a0bba2b7792c9e08c453e9e256f0ac6e6185610726566bcd50b057ae83b42d9a",
           "action": "add"
         }
+      },
+      "MongoDict": {
+        "1": {
+          "version": 1,
+          "hash": "640734396edae801e1601fe7777710e67685e552acb0244ad8b4f689599baca9",
+          "action": "add"
+        }
+      },
+      "MongoStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "e52aa382e300b0b69aaa2d80aadb4e3a9a3c02b3c741b71d56f959c4d3891ce5",
+          "action": "add"
+        }
       }
     }
   }
