@@ -250,7 +250,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [om-ci-16vcpu-ubuntu2204]
+        os: [ubuntu-latest]
         python-version: ["3.11"]
         notebook-paths: ["api/0.8"]
       fail-fast: false
@@ -270,6 +270,16 @@ jobs:
           rm ${GITHUB_WORKSPACE}/.git/config
 
       - uses: actions/checkout@v3
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
