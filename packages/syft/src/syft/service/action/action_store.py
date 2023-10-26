@@ -280,3 +280,17 @@ class SQLiteActionStore(KeyValueActionStore):
     """
 
     pass
+
+
+@serializable()
+class MongoActionStore(KeyValueActionStore):
+    """Mongo-Based  Action store.
+
+    Parameters:
+        store_config: StoreConfig
+            Mongo specific configuration.
+        root_verify_key: Optional[SyftVerifyKey]
+            Signature verification key, used for checking access permissions.
+    """
+
+    pass
