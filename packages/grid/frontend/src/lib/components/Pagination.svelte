@@ -1,115 +1,47 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  export let total: number
+  export let page_size: number
+  export let page_index: number
 
-  const dispatch = createEventDispatcher();
+  $: totalPages = Math.ceil(total / page_size) || 0
 
-  export let variant: 'gray' | 'primary-light' | 'primary-dark' = 'gray';
-  export let total: number;
-  export let page_size: number;
-  export let page_index: number;
-  export let page_row: number;
-
-  const pageNumbers = (total: number, max: number, size: number, current: number) => {
-    const half = Math.floor(max / 2);
-    let to = max;
-
-    if (current + half >= total) {
-      to = total;
-    } else if (current > half) {
-      to = current + half;
-    }
-
-    let from = Math.max(to - max, 0);
-
-    return Array.from({ length: Math.min(Math.ceil(total / size), max) }, (_, i) => i + 1 + from);
-  };
-
-  $: paginators = Math.ceil(total / page_size) || 0;
-  $: paginations = pageNumbers(total, page_row, page_size, page_index);
-
-  const handlePaginate = (index: number) => {
-    page_index = index;
-    dispatch('setPagination', page_index);
-  };
-
-  const handlePrev = () => {
-    if (page_index - 1 < 0) return;
-    else dispatch('setPagination', page_index--);
-  };
-
-  const handleNext = () => {
-    if (page_index + 1 >= paginators) return;
-    else dispatch('setPagination', page_index++);
-  };
+  const handlePrev = () => page_index > 0 && page_index--
+  const handleNext = () => page_index < totalPages - 1 && page_index++
 </script>
 
-<span class="flex gap-2.5">
+<nav
+  class="flex justify-between items-center gap-6 bg-gray-50 px-4 py-2 rounded"
+  aria-label="page selector"
+>
   <button
-    type="button"
-    title="Previous"
-    class={`${variant} pagination-button`}
-    style=""
-    style:cursor={page_index === 0 ? 'not-allowed' : 'pointer'}
-    aria-pressed="false"
-    aria-label="LEFT-POINTING ANGLE"
-    disabled={page_index === 0}
+    class="prev"
     on:click={handlePrev}
+    disabled={page_index === 0}
+    aria-label="last page"
   >
-    &#10094;
+    ←
   </button>
-  {#each paginations as pagination}
-    <button
-      type="button"
-      title={`Page ${pagination}`}
-      class={`${variant} pagination-button ${pagination - 1 === page_index ? 'primary-light' : ''}`}
-      style=""
-      aria-pressed="false"
-      aria-label="Paginate"
-      on:click={() => {
-        handlePaginate(pagination - 1);
-      }}
-    >
-      {pagination}
-    </button>
-  {/each}
+  <span>Page {page_index + 1} of {totalPages}</span>
   <button
-    type="button"
-    title="Next"
-    class={`${variant} pagination-button`}
-    style=""
-    style:cursor={page_index + 1 === paginators ? 'not-allowed' : 'pointer'}
-    aria-pressed="false"
-    aria-label="RIGHT-POINTING ANGLE"
-    disabled={page_index + 1 === paginators}
+    class="next"
     on:click={handleNext}
+    disabled={page_index === totalPages - 1}
+    aria-label="next page"
   >
-    &#10095;
+    →
   </button>
-</span>
+</nav>
 
-<style lang="postcss">
-  span {
-    @apply h-5;
-  }
-  .gray {
-    @apply bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded-sm items-center inline-flex font-bold font-roboto text-xs leading-normal;
-  }
-
-  .primary-light {
-    @apply bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded-sm items-center inline-flex font-bold font-roboto text-xs leading-normal w-fit;
+<style>
+  button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
   }
 
-  .primary-dark {
-    @apply bg-gray-800 text-primary-200 px-1.5 py-0.5 rounded-sm items-center inline-flex font-bold font-roboto text-xs leading-normal w-fit;
-  }
-
-  .pagination-button {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-    font-size: 1rem;
-    line-height: 1.25rem;
-    font-weight: 800;
+  button:disabled {
+    color: #ccc;
+    cursor: not-allowed;
   }
 </style>

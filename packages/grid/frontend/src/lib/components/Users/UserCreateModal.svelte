@@ -74,6 +74,8 @@
   }
 
   const href = $page.url.href.replace("/users", "")
+
+  $: if (!open && currentStep === 3) currentStep = 1
 </script>
 
 <Dialog bind:open>

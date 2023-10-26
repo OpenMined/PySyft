@@ -11,7 +11,9 @@
 
 <SideNav metadata={data.metadata} />
 
-<main class="desktop:pl-72 tablet:pl-[76px] h-full w-full">
+<main
+  class="desktop:pl-72 tablet:pl-[76px] h-full w-full flex flex-col flex-grow"
+>
   <TopNav user={data.current_user} metadata={data.metadata} />
   <slot />
 </main>
