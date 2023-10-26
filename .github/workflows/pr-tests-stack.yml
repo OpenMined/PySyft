@@ -247,7 +247,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [self-hosted]
+        os: [self-hosted, linux]
         #os: [ubuntu-latest]
         python-version: ["3.11"]
         notebook-paths: ["api/0.8"]
@@ -460,7 +460,7 @@ jobs:
       max-parallel: 99
       matrix:
         #os: [ubuntu-latest]
-        os: [self-hosted]
+        os: [self-hosted, linux]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
