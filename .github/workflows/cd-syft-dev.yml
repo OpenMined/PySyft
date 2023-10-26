@@ -17,7 +17,7 @@ on:
 
 jobs:
   check-last-run:
-    runs-on: ubuntu-latest #om-ci-16vcpu-ubuntu2204
+    runs-on: self-hosted #ubuntu-latest
 
     outputs:
       same-commit: ${{ steps.cache.outputs.cache-hit }}
@@ -41,7 +41,7 @@ jobs:
     needs: check-last-run
     if: needs.check-last-run.outputs.same-commit != 'true'
 
-    runs-on: ubuntu-latest #om-ci-16vcpu-ubuntu2204
+    runs-on: self-hosted #ubuntu-latest
 
     steps:
       - name: Permission to home directory
