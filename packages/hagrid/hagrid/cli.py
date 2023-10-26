@@ -261,7 +261,7 @@ def clean(location: str) -> None:
 )
 @click.option("--tls", is_flag=True, help="Launch with TLS configuration")
 @click.option("--test", is_flag=True, help="Launch with test configuration")
-@click.option("--dev", is_flag=True, help="Shortcut for development release")
+@click.option("--dev", is_flag=True, help="Shortcut for development mode")
 @click.option(
     "--release",
     default="production",
@@ -2058,9 +2058,9 @@ def build_command(cmd: str) -> TypeList[str]:
     return [build_cmd]
 
 
-def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
+def deploy_command(cmd: str, tail: bool, dev_mode: bool) -> TypeList[str]:
     up_cmd = str(cmd)
-    up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
+    up_cmd += " --file docker-compose.dev.yml" if dev_mode else ""
     up_cmd += " up"
     if not tail:
         up_cmd += " -d"
@@ -2357,9 +2357,8 @@ def create_launch_docker_cmd(
         my_build_command = build_command(cmd)
         final_commands["Building"] = my_build_command
 
-    release_type = kwargs["release"]
-
-    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
+    dev_mode = kwargs.get("dev", False)
+    final_commands["Launching"] = deploy_command(cmd, tail, dev_mode)
     return final_commands
 
 
@@ -2369,8 +2368,6 @@ def create_launch_worker_cmd(
     build: bool,
     tail: bool = True,
 ) -> TypeDict[str, TypeList[str]]:
-    release_type = kwargs["release"]
-
     final_commands = {}
     final_commands["Pulling"] = pull_command(cmd, kwargs)
     cmd += " --file docker-compose.yml"
@@ -2379,9 +2376,8 @@ def create_launch_worker_cmd(
         my_build_command = build_command(cmd)
         final_commands["Building"] = my_build_command
 
-    release_type = kwargs["release"]
-
-    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
+    dev_mode = kwargs.get("dev", False)
+    final_commands["Launching"] = deploy_command(cmd, tail, dev_mode)
     return final_commands
 
 
