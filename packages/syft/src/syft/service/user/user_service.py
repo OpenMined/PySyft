@@ -180,8 +180,7 @@ class UserService(AbstractService):
             ]
 
             # Return the proper slice using page_index
-            if results:
-                results = results[page_index]
+            results = results[page_index]
 
             results = UserViewPage(users=results, total=total)
 

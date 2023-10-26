@@ -71,7 +71,6 @@ class SettingsService(AbstractService):
                     update=settings.to_dict(exclude_empty=True)
                 )
                 update_result = self.stash.update(context.credentials, new_settings)
-                print(update_result.name)
                 if update_result.is_ok():
                     return result
                 else:
