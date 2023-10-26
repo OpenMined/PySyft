@@ -2,6 +2,7 @@ import { ServiceRoles } from "../types/domain/users"
 import { COOKIES } from "./constants"
 import type { CookieSerializeOptions } from "cookie"
 import type { Cookies } from "@sveltejs/kit"
+import { onDestroy } from "svelte"
 
 export function shortName(name: string) {
   const nameList = name.split(" ")
@@ -61,4 +62,22 @@ export function unload_cookies(cookies: Cookies): CookieData {
   if (!cookieUser || !signing_key) throw Error("Cookie is empty")
 
   return { ...JSON.parse(cookieUser), signing_key }
+}
+
+export function get_url_page_params(url: URL) {
+  const page_size = parseInt(url.searchParams.get("page_size") || "10")
+  const page_index = parseInt(url.searchParams.get("page_index") || "0")
+  return { page_size, page_index }
+}
+
+export function get_form_data_values(data: FormData) {
+  return Object.fromEntries(data.entries())
+}
+
+export function onInterval(callback: () => void, ms: number) {
+  const interval = setInterval(callback, ms)
+
+  onDestroy(() => {
+    clearInterval(interval)
+  })
 }

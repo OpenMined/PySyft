@@ -25,6 +25,15 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
       signing_key,
     })
 
+    console.log(
+      "req:",
+      name,
+      page_size,
+      page_index,
+      "res:",
+      users.users,
+      users.total
+    )
     return json({ list: users.users, total: users.total })
   } catch (err) {
     console.log(err)

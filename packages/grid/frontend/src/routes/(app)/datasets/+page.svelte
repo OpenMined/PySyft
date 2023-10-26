@@ -1,53 +1,48 @@
-<script>
-  import { onMount } from 'svelte';
-  import debounce from 'just-debounce-it';
-  import Filter from '$lib/components/Filter.svelte';
-  import Search from '$lib/components/Search.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import LoadingDatasets from '$lib/components/LoadingDatasets.svelte';
-  import Pagination from '$lib/components/Pagination.svelte';
-  import DatasetListItem from '$lib/components/Datasets/DatasetListItem.svelte';
-  import NoDatasetFound from '$lib/components/Datasets/DatasetNoneFound.svelte';
-  import PlusIcon from '$lib/components/icons/PlusIcon.svelte';
-  import DatasetModalNew from '$lib/components/Datasets/DatasetModalNew.svelte';
-  import { getAllDatasets, searchDataset } from '$lib/api/datasets';
+<script lang="ts">
+  import debounce from "just-debounce-it"
+  import Filter from "$lib/components/Filter.svelte"
+  import Search from "$lib/components/Search.svelte"
+  import Button from "$lib/components/Button.svelte"
+  import LoadingDatasets from "$lib/components/LoadingDatasets.svelte"
+  import Pagination from "$lib/components/Pagination.svelte"
+  import DatasetListItem from "$lib/components/Datasets/DatasetListItem.svelte"
+  import NoDatasetFound from "$lib/components/Datasets/DatasetNoneFound.svelte"
+  import PlusIcon from "$lib/components/icons/PlusIcon.svelte"
+  import DatasetModalNew from "$lib/components/Datasets/DatasetModalNew.svelte"
+  import { invalidate } from "$app/navigation"
+  import type { PageData } from "./$types"
 
-  let datasets = null;
-  let total = 0;
-  let paginators = [5, 10, 15, 20, 25];
+  export let data: PageData
+
+  let datasets = null
+  let total = 0
+  let paginators = [5, 10, 15, 20, 25]
   let page_size = 5,
     page_index = 0,
-    page_row = 5;
-  let openModalNew = false;
-  let searchTerm = '';
+    page_row = 5
+  let openModalNew = false
+  let searchTerm = ""
 
   function handleClick() {
-    openModalNew = !openModalNew;
+    openModalNew = !openModalNew
   }
 
   const search = debounce(async () => {
-    if (searchTerm === '') {
-      const results = await getAllDatasets(page_size);
-      datasets = results.datasets;
-      total = results.total;
-    } else {
-      const results = await searchDataset(searchTerm, page_size);
-      datasets = results.datasets;
-      total = results.total;
-    }
-  }, 300);
-
-  onMount(async () => {
-    const results = await getAllDatasets(page_size, page_index);
-    datasets = results.datasets;
-    total = results.total;
-  });
+    if (searchTerm === "") return invalidate("dataset:list")
+    const res = await fetch(
+      `/_syft_api/datasets/search?name=${searchTerm}&page_size=${page_size}`
+    )
+    const json = await res.json()
+    datasets = json.datasets
+    total = json.total
+  }, 300)
 
   const handleUpdate = async () => {
-    const results = await getAllDatasets(page_size, page_index);
-    datasets = results.datasets;
-    total = results.total;
-  };
+    const res = await fetch("/_syft_api/datasets")
+    const json = await res.json()
+    datasets = json.datasets
+    total = json.total
+  }
 </script>
 
 <div class="grid grid-cols-6">
@@ -97,7 +92,9 @@
         {#each datasets as dataset}
           <DatasetListItem {dataset} />
         {/each}
-        <div class="flex justify-center items-center mt-8 mb-8 divide-y divide-gray-100">
+        <div
+          class="flex justify-center items-center mt-8 mb-8 divide-y divide-gray-100"
+        >
           <Pagination
             variant="gray"
             {total}

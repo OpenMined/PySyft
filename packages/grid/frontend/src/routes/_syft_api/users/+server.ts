@@ -23,3 +23,25 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     throw error(400, "invalid user")
   }
 }
+
+export const POST: RequestHandler = async ({ cookies, request }) => {
+  try {
+    const { signing_key, node_id } = unload_cookies(cookies)
+
+    const new_user = await request.json()
+
+    const user = await jsSyftCall({
+      path: "user.create",
+      payload: {
+        user_create: { ...new_user, fqn: "syft.service.user.user.UserCreate" },
+      },
+      node_id,
+      signing_key,
+    })
+
+    return json(user)
+  } catch (err) {
+    console.log(err)
+    throw error(400, "invalid user")
+  }
+}

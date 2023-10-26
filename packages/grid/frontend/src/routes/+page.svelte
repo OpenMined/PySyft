@@ -1,9 +1,17 @@
-<script>
+<script lang="ts">
   import { goto } from "$app/navigation"
+  import { onMount } from "svelte"
+  import type { PageData } from "./$types"
 
-  export let data
+  export let data: PageData
 
-  console.log({ data })
+  onMount(() => {
+    if (data?.current_user && data.current_user?.email) {
+      goto("/users")
+    } else {
+      goto("/login")
+    }
+  })
 </script>
 
 <main>

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { invalidate } from "$app/navigation"
   import debounce from "just-debounce-it"
-  import { searchUsersByName } from "$lib/api/users"
   import Badge from "$lib/components/Badge.svelte"
   import Filter from "$lib/components/Filter.svelte"
   import Search from "$lib/components/Search.svelte"
@@ -12,6 +11,7 @@
   import UserCreateModal from "$lib/components/Users/UserCreateModal.svelte"
   import type { UserListView } from "../../../types/domain/users"
   import type { PageData } from "./$types"
+  import { throwIfError } from "$lib/api/syft_error_handler"
 
   export let data: PageData
 
@@ -34,14 +34,36 @@
   }
 
   const search = debounce(async () => {
-    if (!searchTerm) return invalidate("user:list")
-    const res = await fetch(
-      `/_syft_api/users/search?name=${searchTerm}&page_size=${page_size}`
-    )
+    console.log("search", { search })
+    const url = searchTerm
+      ? `/_syft_api/users/search?name=${searchTerm}&page_size=${page_size}`
+      : "/_syft_api/users"
+    const res = await fetch(url)
     const json = await res.json()
-    userList = json.users
+    userList = json.list
     total = json.total
+    console.log("search end", { userList, total })
   }, 300)
+
+  const createUser = async (newUser) => {
+    try {
+      const res = await fetch("/_syft_api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newUser),
+      })
+      if (res.ok) {
+        const json = await res.json()
+        throwIfError(json)
+        invalidate("/users")
+      }
+    } catch (err) {
+      console.log(err)
+      return { failed: true }
+    }
+  }
 
   const handleUpdate = async () => {
     try {
@@ -49,13 +71,17 @@
         `/_syft_api/users?page_size=${page_size}&page_index=${page_index}`
       )
       const json = await res.json()
+
+      console.log("hU", { json })
       userList = json.list
       total = json.total
-    } catch (error) {
-      console.error({ error })
-      invalidate("user:list")
+    } catch (err) {
+      console.error({ err })
+      invalidate("/users")
     }
   }
+
+  $: console.log({ userList })
 </script>
 
 <div class="pt-8 desktop:pt-2 pl-16 pr-[140px] flex flex-col gap-[46px]">
@@ -64,7 +90,7 @@
       <img
         src="images/illustrations/user-main.png"
         alt="User main alt"
-        class="w-full h-fill object-contain"
+        class="w-full h-full object-contain"
       />
     </div>
   </div>
@@ -130,5 +156,5 @@
 <UserCreateModal
   open={openModal === "step1"}
   onClose={closeModal}
-  on:userUpdate={handleUpdate}
+  onCreateUser={createUser}
 />

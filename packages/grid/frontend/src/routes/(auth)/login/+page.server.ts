@@ -1,27 +1,24 @@
 import { fail, redirect } from "@sveltejs/kit"
 import { login } from "$lib/api/auth"
-import { default_cookie_config } from "$lib/utils"
+import { default_cookie_config, get_form_data_values } from "$lib/utils"
 import { COOKIES } from "$lib/constants"
 import type { Actions } from "./$types"
 
 export const actions: Actions = {
   default: async ({ cookies, request }) => {
-    const data = await request.formData()
-
-    const email = data.get("email")
-    const password = data.get("password")
-    const node_id = data.get("node_id")
-
-    if (
-      !email ||
-      !password ||
-      typeof email !== "string" ||
-      typeof password !== "string"
-    ) {
-      return fail(400, { invalid: true })
-    }
-
     try {
+      const data = await request.formData()
+      const { email, password, node_id } = get_form_data_values(data)
+
+      if (
+        !email ||
+        !password ||
+        typeof email !== "string" ||
+        typeof password !== "string"
+      ) {
+        throw new Error(`invalid form data: email:${email} node:${node_id}`)
+      }
+
       const { signing_key, uid } = await login({ email, password })
 
       const cookie_user = {
@@ -35,7 +32,8 @@ export const actions: Actions = {
         default_cookie_config
       )
       cookies.set(COOKIES.KEY, signing_key, default_cookie_config)
-    } catch (error) {
+    } catch (err) {
+      console.log(err)
       return fail(400, { invalid: true })
     }
 

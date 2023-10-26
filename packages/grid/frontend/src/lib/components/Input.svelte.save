@@ -1,4 +1,4 @@
-<script lang="ts">
+n:<script lang="ts">
   import type { HTMLInputElement } from "svelte/elements"
 
   export let label: string

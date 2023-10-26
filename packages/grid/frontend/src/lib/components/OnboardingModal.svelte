@@ -9,9 +9,8 @@
   import ButtonGhost from "$lib/components/ButtonGhost.svelte"
   import NodeIcon from "$lib/components/icons/NodeIcon.svelte"
   import CheckIcon from "$lib/components/icons/CheckIcon.svelte"
-  import { metadata } from "$lib/store"
-  import { updateMetadata, getMetadata } from "$lib/api/metadata"
-  import { updateCurrentUser } from "$lib/api/users"
+
+  export let metadata
 
   export let open = true
   let currentStep = 1
@@ -44,21 +43,26 @@
   }
 
   let handleUpdate = async () => {
-    await updateMetadata(domainSettings)
-    await updateCurrentUser(
-      userSettings.name,
-      userSettings.email,
-      userSettings.password,
-      userSettings.institution,
-      userSettings.website
-    )
-
     try {
-      const updatedMetadata = await getMetadata()
-      metadata.set(updatedMetadata)
+      await fetch("/_syft_api/metadata", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(domainSettings),
+      })
+
+      await fetch(`/_syft_api/users/${userSettings.id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userSettings),
+      })
+
       currentStep = currentStep + 1
-    } catch (error) {
-      console.log(error)
+    } catch (err) {
+      console.log(err)
     }
   }
 
@@ -102,6 +106,7 @@
               width="264px"
               height="224px"
               src="/assets/2023_welcome_to_pygrid.png"
+              alt="Welcome to PyGrid"
             />
           </div>
           <div class="text-center space-y-2">
@@ -120,7 +125,7 @@
           <Progress max={4} value={1} />
         </div>
         <p class="text-gray-400 py-2">
-          Congratulations on logging into {$metadata?.name ?? ""} node. This wizard
+          Congratulations on logging into {metadata?.name ?? ""} node. This wizard
           will help get you started in setting up your user account. You can skip
           this wizard by pressing “Cancel” below. You can edit any of your responses
           later by going to "Account Settings" indicated by your avatar in the top

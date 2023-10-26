@@ -1,29 +1,16 @@
 <script lang="ts">
-  import { page } from "$app/stores"
-  import { getUser } from "$lib/api/users"
   import Avatar from "$lib/components/Avatar.svelte"
   import Badge from "$lib/components/Badge.svelte"
   import CaretLeft from "$lib/components/icons/CaretLeft.svelte"
-  import { syftRoles } from "$lib/constants"
   import { getInitials, getUserRole } from "$lib/utils"
-  import { onMount } from "svelte"
   import type { UserView } from "../../../../types/domain/users"
   import type { PageData } from "./$types"
 
-  const uid = $page.params.slug
-
   export let data: PageData
 
-  console.log({ data })
+  let user: UserView = data.user_requested
 
-  let user: UserView | null = data.user_requested
-
-  onMount(async () => {
-    const res = await fetch(`/_syft_api/users/${uid}`)
-    user = await res.json()
-  })
-
-  $: initials = getInitials(user?.name)
+  $: initials = getInitials(user.name)
 </script>
 
 <div class="p-6 flex flex-col gap-8">

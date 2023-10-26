@@ -1,60 +1,22 @@
 <script lang="ts">
-  import { goto } from "$app/navigation"
-  import { metadata } from "$lib/store"
-  import { register } from "$lib/api/auth"
+  import { enhance } from "$app/forms"
   import Button from "$lib/components/Button.svelte"
   import DomainMetadataPanel from "$lib/components/authentication/DomainMetadataPanel.svelte"
   import Input from "$lib/components/Input.svelte"
   import Modal from "$lib/components/Modal.svelte"
+  import type { ActionData, PageData } from "./$types"
 
-  let signUpError = ""
-  let signUpSuccess = ""
+  export let data: PageData
+  export let form: ActionData
 
-  export let data
-
-  console.log({ data })
-
-  async function createUser({
-    email,
-    password,
-    confirm_password,
-    fullName,
-    organization,
-    website,
-  }) {
-    if (password.value !== confirm_password.value) {
-      throw Error("Password and password confirmation mismatch")
-    }
-
-    let newUser = {
-      email: email.value,
-      password: password.value,
-      password_verify: confirm_password.value,
-      name: fullName.value,
-      institution: organization.value,
-      website: website.value,
-    }
-
-    // Filter attributes that doesn't exist
-    Object.keys(newUser).forEach((k) => newUser[k] == "" && delete newUser[k])
-
-    try {
-      let response = await register(newUser)
-      signUpSuccess = response[0].message
-      setTimeout(() => {
-        goto("/login")
-      }, 2000)
-    } catch (e) {
-      signUpError = e.message
-    }
-  }
+  const metadata = data.metadata || {}
 </script>
 
 <div
   class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12"
 >
-  <DomainMetadataPanel metadata={$metadata} />
-  <form class="contents" on:submit|preventDefault={(e) => createUser(e.target)}>
+  <DomainMetadataPanel {metadata} />
+  <form class="contents" method="POST" use:enhance>
     <Modal>
       <div
         class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min"
@@ -69,12 +31,14 @@
           <Input
             label="Full name"
             id="fullName"
+            name="fullName"
             placeholder="Jane Doe"
             required
             data-testid="full_name"
           />
           <Input
             label="Company/Institution"
+            name="organization"
             id="organization"
             placeholder="OpenMined University"
             data-testid="institution"
@@ -83,6 +47,7 @@
         <Input
           label="Email"
           id="email"
+          name="email"
           placeholder="info@openmined.org"
           required
           data-testid="email"
@@ -92,6 +57,7 @@
             type="password"
             label="Password"
             id="password"
+            name="password"
             placeholder="******"
             required
             data-testid="password"
@@ -100,6 +66,7 @@
             type="password"
             label="Confirm Password"
             id="confirm_password"
+            name="confirm_password"
             placeholder="******"
             required
             data-testid="confirm_password"
@@ -108,14 +75,12 @@
         <Input
           label="Website/Profile"
           id="website"
+          name="website"
           placeholder="https://openmined.org"
           data-testid="website"
         />
-        <p class="text-center text-green-500" hidden={!signUpSuccess}>
-          {signUpSuccess}
-        </p>
-        <p class="text-center text-rose-500" hidden={!signUpError}>
-          {signUpError}
+        <p class="text-center text-rose-500" hidden={!form?.invalid}>
+          {form?.message}
         </p>
         <p class="text-center">
           Already have an account? Sign in <a
@@ -124,7 +89,6 @@
           >
             here
           </a>
-          .
         </p>
       </div>
       <Button
