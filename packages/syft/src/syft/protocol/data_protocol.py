@@ -266,7 +266,7 @@ class DataProtocol:
 
     def check_protocol(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff) != 0:
-            return SyftError(message="Protocol Changes Unstanged")
+            return SyftError(message="Protocol Changes Unstaged")
         else:
             return SyftSuccess(message="Protocol Stable")
 

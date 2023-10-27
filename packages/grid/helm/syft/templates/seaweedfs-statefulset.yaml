@@ -43,7 +43,7 @@ spec:
         - name: S3_PORT
           value: '8333'
         envFrom: null
-        image: chrislusf/seaweedfs:3.55
+        image: chrislusf/seaweedfs:3.57
         lifecycle: null
         livenessProbe: null
         name: container-0
