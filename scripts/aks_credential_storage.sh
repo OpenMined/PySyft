@@ -1,5 +1,39 @@
 #!/bin/bash
 
+# Azure Cluster Credentials Storage Script for 1Password
+
+# Overview:
+# This script is designed to simplify the process of storing Azure Kubernetes Service (AKS) cluster credentials
+# securely in a 1Password vault. It automates the retrieval of cluster credentials using kubectl and stores
+# them in a 1Password record for future access.
+
+# Prerequisites:
+# 1. 1Password Command-Line Interface (CLI) must be installed. If not installed, follow the installation instructions:
+#    https://support.1password.com/command-line-getting-started/
+# 2. You should be logged in to 1Password using the 'op signin' command.
+# 3. The 'kubectl' command-line tool and 'kubectl krew' plugin manager must be installed.
+# 4. The 'kubectl passman' plugin must be installed to manage 1Password records.
+# 5. Ensure 'jq' (a command-line JSON processor) is available.
+
+# Usage:
+# 1. Run az login to log in to Azure.
+# 2. Run az aks get-credentials --resource-group <resource-group-name> --name <cluster-name> to get the cluster credentials.
+# 3. Run this script, and it will guide you through the process of storing Azure cluster credentials in 1Password.
+# 4. If the 1Password CLI, kubectl, or krew is not installed, the script will provide instructions for installation.
+# 5. If the 'kubectl passman' plugin is not installed, it will ask if you want to install it.
+# 6. Enter the username associated with your Azure cluster credentials when prompted.
+# 7. The script will retrieve the cluster credentials using kubectl and store them securely in 1Password.
+# 6. Once the credentials are stored, they can be easily accessed using 'kubectl passman' commands.
+
+# Important Note:
+# Make sure that you have appropriate permissions and access to 1Password, as well as the necessary credentials
+# and access to the Azure Kubernetes Service cluster.
+
+# Caution:
+# Keep your 1Password master password and account credentials secure, as they are crucial for accessing
+# and managing stored credentials.
+
+
 # Check if 1password CLI is installed
 if ! command -v op &> /dev/null; then
     echo "1password CLI is not installed. Please install it before proceeding."
@@ -64,4 +98,4 @@ export CONFIG_TOKEN="$config_token"
 
 
 # Execute the specified command with CONFIG_TOKEN as an argument
-kubectl passman 1password kubectl-prod-user "$CONFIG_TOKEN"
+kubectl passman 1password "$name" "$CONFIG_TOKEN"
