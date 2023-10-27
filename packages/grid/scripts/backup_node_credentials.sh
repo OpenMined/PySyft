@@ -13,7 +13,7 @@ calculate_checksum() {
 docker_cp() {
     # Exit in case of error
     set -e
-    
+
     # Define the container name pattern
     CONTAINER_NAME_PATTERN="backend-1"
 
@@ -32,6 +32,9 @@ docker_cp() {
         # Define the destination path on the host machine
         DESTINATION_PATH="$ROOT_DATA_PATH/$CONTAINER_NAME"
 
+        # Calculate the checksum of the source file before copying
+        SOURCE_CHECKSUM=$(docker exec "$CONTAINER_NAME" sha256sum "$SOURCE_PATH" | awk '{print $1}')
+
         # Check if the destination directory already exists
         if [ ! -d "$DESTINATION_PATH" ]; then
             mkdir -p "$DESTINATION_PATH"
@@ -43,9 +46,6 @@ docker_cp() {
 
         # Check if the copy was successful
         if [ $? -eq 0 ]; then
-            # Calculate the checksum of the source file
-            SOURCE_CHECKSUM=$(calculate_checksum "$DESTINATION_PATH/credentials.json")
-
             # Calculate the checksum of the destination file
             DESTINATION_CHECKSUM=$(calculate_checksum "$DESTINATION_PATH/credentials.json")
 
@@ -91,27 +91,22 @@ k8s_cp() {
                 DESTINATION_FOLDER="$ROOT_DATA_PATH/$CONTEXT""_""$NAMESPACE"
                 mkdir -p $DESTINATION_FOLDER
 
+                # Calculate the checksum of the source file inside the pod
+                SOURCE_CHECKSUM=$(kubectl exec -n "$NAMESPACE" -it "$POD_NAME" -- sha256sum "$FILE_PATH_IN_POD" | awk '{print $1}')
+
                 # Copy the file (suppress error message from kubectl cp command: "tar: Removing leading `/' from member names")
                 kubectl cp "$NAMESPACE/$POD_NAME:$FILE_PATH_IN_POD" "$DESTINATION_FOLDER/credentials.json" &>/dev/null
 
                 # Check if the copy was successful
                 if [ $? -eq 0 ]; then
-                    # Calculate the checksum of the source file
-                    SOURCE_CHECKSUM=$(calculate_checksum "$DESTINATION_FOLDER/credentials.json")
+                    # Calculate the checksum of the destination file
+                    DESTINATION_CHECKSUM=$(calculate_checksum "$DESTINATION_FOLDER/credentials.json")
 
-                    # Check if the file exists before calculating its checksum
-                    if [ -f "$DESTINATION_FOLDER/credentials.json" ]; then
-                        # Calculate the checksum of the destination file
-                        DESTINATION_CHECKSUM=$(calculate_checksum "$DESTINATION_FOLDER/credentials.json")
-
-                        # Check if the checksums match
-                        if [ "$SOURCE_CHECKSUM" = "$DESTINATION_CHECKSUM" ]; then
-                            echo "Copied credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT to $DESTINATION_FOLDER"
-                        else
-                            echo "Failed to copy credentials.json. Checksum mismatch."
-                        fi
+                    # Check if the checksums match
+                    if [ "$SOURCE_CHECKSUM" = "$DESTINATION_CHECKSUM" ]; then
+                        echo "Copied credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT to $DESTINATION_FOLDER"
                     else
-                        echo "Failed to copy credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT. File not found."
+                        echo "Failed to copy credentials.json. Checksum mismatch."
                     fi
                 else
                     echo "Failed to copy credentials.json from $POD_NAME in namespace $NAMESPACE in context $CONTEXT."
