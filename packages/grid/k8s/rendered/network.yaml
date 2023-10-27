@@ -15,10 +15,6 @@ data:
           loadBalancer:
             servers:
               - url: "http://backend-stream"
-        headscale:
-          loadBalancer:
-            servers:
-              - url: "http://headscale:8080"
       routers:
         frontend:
           rule: "PathPrefix(`/`)"
@@ -35,19 +31,7 @@ data:
           entryPoints:
             - "web"
           service: "backend-stream"
-        vpn:
-          rule: "PathPrefix(`/vpn`)"
-          entryPoints:
-            - "web"
-          service: "headscale"
-          middlewares:
-            - "vpn-url"
 
-      middlewares:
-        vpn-url:
-          stripprefix:
-            prefixes: /vpn
-            forceslash: true
   traefik.yml: |
     global:
       checkNewVersion: false

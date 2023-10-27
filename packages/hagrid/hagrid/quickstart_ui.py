@@ -269,9 +269,7 @@ class QuickstartUI:
                 jupyter_path = first.replace(os.path.abspath(directory) + "/", "")
 
                 html += f'<div class="alert alert-success">{tutorial_name} downloaded.'
-                html += (
-                    f'<br />📖 <a href="{jupyter_path}">Click to Open Tutorial</a></div>'
-                )
+                html += f'<br />📖 <a href="{jupyter_path}">Click to Open Tutorial</a></div>'
             return NBOutput(html)
 
     def _repr_html_(self) -> str:
