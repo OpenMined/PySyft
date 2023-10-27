@@ -102,9 +102,6 @@ class Job(SyftObject):
 
             # Probably need to divide by the number of consumers
             time_remaining = iters_remaining * iter_duration
-            # time_remaining = str(time_remaining)[:-7]
-            # [time passed<remaining time, it/s]
-            # [00:10<00:00,  1.00s/it]
             time_passed_str = format_timedelta(time_passed)
             time_remaining_str = format_timedelta(time_remaining)
             iter_duration_str = iter_duration.total_seconds()
@@ -198,7 +195,7 @@ class Job(SyftObject):
             "status": self.status,
             "progress": self.progress,
             "eta": self.eta_string,
-            "created": f"{self.creation_time[:-7]}\n{self.owner.email}",
+            "created": f"{self.creation_time[:-7]} by {self.owner.email}",
             "logs": logs,
             # "result": result,
             # "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
