@@ -103,16 +103,17 @@ class DataProtocol:
                     version = object_metadata["version"]
                     hash_str = object_metadata["hash"]
                     state_versions = state_dict[canonical_name]
+                    state_version_hashes = [val[0] for val in state_versions.values()]
                     if action == "add" and (
                         str(version) in state_versions.keys()
-                        or hash_str in state_versions.values()
+                        or hash_str in state_version_hashes
                     ):
                         raise Exception(
                             f"Can't add {object_metadata} already in state {versions}"
                         )
                     elif action == "remove" and (
                         str(version) not in state_versions.keys()
-                        or hash_str not in state_versions.values()
+                        and hash_str not in state_version_hashes
                     ):
                         raise Exception(
                             f"Can't remove {object_metadata} missing from state {versions} for object {canonical_name}."
@@ -227,7 +228,27 @@ class DataProtocol:
                 if canonical_name not in object_versions:
                     object_versions[canonical_name] = {}
                 change_count += 1
-                object_versions[canonical_name][str(version)] = version_metadata
+                action = version_metadata["action"]
+
+                # Allow removal of class that only been staged to dev
+                if (
+                    action == "remove"
+                    and str(version) in object_versions[canonical_name]
+                ):
+                    # Delete the whole class if only single version exists
+                    if len(object_versions[canonical_name]) == 1:
+                        del object_versions[canonical_name]
+                    else:
+                        # In case of multiple versions of the class only delete the selected
+                        del object_versions[canonical_name][str(version)]
+
+                else:  # Add or overwrite existing data in dev
+                    object_versions[canonical_name][str(version)] = version_metadata
+
+            # Sort the version dict
+            object_versions[canonical_name] = sort_dict_naturally(
+                object_versions[canonical_name]
+            )
 
         current_history["dev"]["object_versions"] = object_versions
 
