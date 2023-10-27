@@ -492,49 +492,7 @@
       "NodePeer": {
         "1": {
           "version": 1,
-          "hash": "50c5b7867d450c1af8011830339c07f5e7bd92589daeac976e0ab86151082cbc",
-          "action": "add"
-        }
-      },
-      "CommandReport": {
-        "1": {
-          "version": 1,
-          "hash": "81c6f248e89f6191f75afb7170f82b616377ae46c1d809f6047e13c6f2f299d5",
-          "action": "add"
-        }
-      },
-      "CommandResult": {
-        "1": {
-          "version": 1,
-          "hash": "65588691901dc0562afb650b0abe04fe6e3e3db516abda3ec82a371ce459ed0d",
-          "action": "add"
-        }
-      },
-      "VPNClientConnection": {
-        "1": {
-          "version": 1,
-          "hash": "cf12dcf5066e6c441e6841ae24bd295d8331e7920c79473bfabc17c5e47cf79e",
-          "action": "add"
-        }
-      },
-      "HeadscaleAuthToken": {
-        "1": {
-          "version": 1,
-          "hash": "d88dbe672feb126eb1c5f36208edb1effcfe8721fb6619a9ac62ed3fff8f1546",
-          "action": "add"
-        }
-      },
-      "TailscalePeer": {
-        "1": {
-          "version": 1,
-          "hash": "603da3a1087e8d80a6b7e4cd6ccaccd7e1baf3ec77265d810e3a9e9cd233ac04",
-          "action": "add"
-        }
-      },
-      "TailscaleStatus": {
-        "1": {
-          "version": 1,
-          "hash": "52a7bd4b72f160a8b14466e98bb2b2a70c4f49aaff635e844fa40e955f7d76d2",
+          "hash": "7b88de7e38490e2d69f31295137673e7ddabc16ab0e2272ff491f6cea1835d63",
           "action": "add"
         }
       },

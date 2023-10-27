@@ -101,9 +101,6 @@ class NodePeer(SyftObject):
     id: Optional[UID]
     name: str
     verify_key: SyftVerifyKey
-    is_vpn: bool = False
-    vpn_auth_key: Optional[str] = None
-    # node_routes: PriorityNodeRoutes = LifoQueueNodeRoutes()
     node_routes: List[NodeRouteType] = []
     node_type: NodeType
     admin_email: str
