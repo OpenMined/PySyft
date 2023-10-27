@@ -84,6 +84,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
         self.file_path = self.store_config.client_config.file_path
+
+        path = Path(self.file_path)
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+
         self._db[thread_ident()] = sqlite3.connect(
             self.file_path,
             timeout=self.store_config.client_config.timeout,

@@ -59,7 +59,9 @@ class Settings(BaseSettings):
         return v
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
-    EMAIL_TEMPLATES_DIR: str = "/app/grid/email-templates/build"
+    EMAIL_TEMPLATES_DIR: str = os.path.expandvars(
+        "$HOME/app/grid/email-templates/build"
+    )
     EMAILS_ENABLED: bool = False
 
     @validator("EMAILS_ENABLED", pre=True)
@@ -106,6 +108,7 @@ class Settings(BaseSettings):
     MONGO_PORT: int = int(os.getenv("MONGO_PORT", 0))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
+    SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False

@@ -130,11 +130,9 @@ services:
       - ENABLE_OBLV=${ENABLE_OBLV}
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
-      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
-    command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
-      - ${BACKEND_STORAGE_PATH}:/storage
+      - ${CREDENTIALS_VOLUME}:/root/data/creds/
     stdin_open: true
     tty: true
     labels:
@@ -168,10 +166,9 @@ services:
   #     - DEV_MODE=${DEV_MODE}
   #     - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
   #     - ENABLE_OBLV=${ENABLE_OBLV}
-  #   command: "/app/grid/start.sh"
   #   network_mode: service:proxy
   #   volumes:
-  #     - credentials-data:/storage
+  #     - credentials-data:/root/data/creds/
 
   # celeryworker:
   #   restart: always
