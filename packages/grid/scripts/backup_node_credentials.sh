@@ -1,6 +1,11 @@
 #!/bin/bash
 
+#Define destination path on the host machine
 ROOT_DATA_PATH="$HOME/.syft/data"
+
+# Define the source path of the credentials.json file in the container
+SOURCE_PATH="/root/data/creds/credentials.json"
+
 
 calculate_checksum() {
     # Calculate the checksum of a file
@@ -26,8 +31,7 @@ docker_cp() {
     fi
 
     for CONTAINER_NAME in $CONTAINER_NAMES; do
-        # Define the source path of the credentials.json file in the container
-        SOURCE_PATH="/storage/credentials.json"
+
 
         # Define the destination path on the host machine
         DESTINATION_PATH="$ROOT_DATA_PATH/$CONTAINER_NAME"
@@ -64,7 +68,6 @@ docker_cp() {
 
 k8s_cp() {
     IMAGE_TAG="grid-backend"
-    FILE_PATH_IN_POD="/storage/credentials.json"
 
     # Get a list of available contexts
     CONTEXTS=($(kubectl config get-contexts -o name))
@@ -92,10 +95,10 @@ k8s_cp() {
                 mkdir -p $DESTINATION_FOLDER
 
                 # Calculate the checksum of the source file inside the pod
-                SOURCE_CHECKSUM=$(kubectl exec -n "$NAMESPACE" -it "$POD_NAME" -- sha256sum "$FILE_PATH_IN_POD" | awk '{print $1}')
+                SOURCE_CHECKSUM=$(kubectl exec -n "$NAMESPACE" -it "$POD_NAME" -- sha256sum "$SOURCE_PATH" | awk '{print $1}')
 
                 # Copy the file (suppress error message from kubectl cp command: "tar: Removing leading `/' from member names")
-                kubectl cp "$NAMESPACE/$POD_NAME:$FILE_PATH_IN_POD" "$DESTINATION_FOLDER/credentials.json" &>/dev/null
+                kubectl cp "$NAMESPACE/$POD_NAME:$SOURCE_PATH" "$DESTINATION_FOLDER/credentials.json" &>/dev/null
 
                 # Check if the copy was successful
                 if [ $? -eq 0 ]; then
