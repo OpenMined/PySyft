@@ -69,22 +69,16 @@ class BlobFile(SyftObject):
         item_queue: Queue = Queue()
         threading.Thread(
             target=self.read_queue,
-            args=(
-                item_queue,
-                chunk_size,
-                progress
-            ),
+            args=(item_queue, chunk_size, progress),
             daemon=True,
         ).start()
         item = item_queue.get()
         while item != 0:
             yield item
             item = item_queue.get()
-    
+
     def _coll_repr_(self):
-        return {
-            "file_name": self.file_name
-        }
+        return {"file_name": self.file_name}
 
 
 class BlobFileType(type):

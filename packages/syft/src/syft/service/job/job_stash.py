@@ -8,6 +8,7 @@ from typing import Optional
 from typing import Union
 
 # third party
+import pydantic
 from result import Ok
 from result import Result
 
@@ -54,34 +55,79 @@ class Job(SyftObject):
     log_id: Optional[UID]
     parent_job_id: Optional[UID]
     n_iters: Optional[int] = 0
-    current_iter: Optional[int] = 0
-    creation_time: Optional[str] = str(datetime.now())
+    current_iter: Optional[int] = None
+    creation_time: Optional[str] = None
 
     __attr_searchable__ = ["parent_job_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
 
+    @pydantic.root_validator()
+    def check_time(cls, values: dict) -> dict:
+        if values.get("creation_time", None) is None:
+            values["creation_time"] = str(datetime.now())
+        return values
+
+    @property
+    def time_remaining_string(self):
+        # update state
+        self.fetch()
+        percentage = round((self.current_iter / self.n_iters) * 100)
+        blocks_filled = round(percentage / 20)
+        blocks_empty = 5 - blocks_filled
+        blocks_filled_str = "█" * blocks_filled
+        blocks_empty_str = "&nbsp;&nbsp;" * blocks_empty
+        return f"{percentage}% |{blocks_filled_str}{blocks_empty_str}|\n{self.current_iter}/{self.n_iters}\n"
+
+    @property
+    def eta_string(self):
+        if self.current_iter is None or self.current_iter == 0 or self.n_iters is None:
+            return None
+        else:
+
+            def format_timedelta(timedelta):
+                s = timedelta.total_seconds()
+                hours = int(s // 3600)
+                hours_string = f"{hours}:" if hours != 0 else ""
+                hours_leftover = s % 3600
+                minutes = int(hours_leftover // 60)
+                minutes_string = f"{minutes}:".zfill(3)
+                seconds = round(hours_leftover % 60)
+                seconds_string = f"{seconds}".zfill(2)
+                return f"{hours_string}{minutes_string}{seconds_string}"
+
+            now = datetime.now()
+            time_passed = now - datetime.fromisoformat(self.creation_time)
+            iter_duration = time_passed / self.current_iter
+            iters_remaining = self.n_iters - self.current_iter
+
+            # Probably need to divide by the number of consumers
+            time_remaining = iters_remaining * iter_duration
+            # time_remaining = str(time_remaining)[:-7]
+            # [time passed<remaining time, it/s]
+            # [00:10<00:00,  1.00s/it]
+            time_passed_str = format_timedelta(time_passed)
+            time_remaining_str = format_timedelta(time_remaining)
+            iter_duration_str = iter_duration.total_seconds()
+
+            return f"[{time_passed_str}<{time_remaining_str}]\n{iter_duration_str}s/it"
+
     @property
     def progress(self) -> str:
-        if self.status == JobStatus.PROCESSING:
-            return_string = self.status
-            if self.n_iters > 0:
-                return_string += f": {self.current_iter}/{self.n_iters}"
-            if self.current_iter == self.n_iters:
-                return_string += " Almost done..."
-            elif self.current_iter > 0:
-                now = datetime.now()
-                time_passed = now - datetime.fromisoformat(self.creation_time)
-                time_per_checkpoint = time_passed / self.current_iter
-                remaining_checkpoints = self.n_iters - self.current_iter
-
-                # Probably need to divide by the number of consumers
-                remaining_time = remaining_checkpoints * time_per_checkpoint
-                remaining_time = str(remaining_time)[:-7]
-                return_string += f" Remaining time: {remaining_time}"
+        if self.status in [JobStatus.PROCESSING, JobStatus.COMPLETED]:
+            if self.current_iter is None:
+                return ""
             else:
-                return_string += " Estimating remaining time..."
-            return return_string
-        return self.status
+                if self.n_iters is not None:
+                    return self.time_remaining_string
+                # if self.current_iter !=0
+                # we can compute the remaining time
+
+                # we cannot compute the remaining time
+                else:
+                    n_iters_str = "?" if self.n_iters is None else str(self.n_iters)
+                    return f"{self.current_iter}/{n_iters_str}"
+        else:
+            return ""
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
@@ -100,6 +146,8 @@ class Job(SyftObject):
         if job.resolved:
             self.result = job.result
         self.status = job.status
+        self.n_iters = job.n_iters
+        self.current_iter = job.current_iter
 
     @property
     def subjobs(self):
@@ -136,8 +184,8 @@ class Job(SyftObject):
         logs = self.logs(_print=False)
         log_lines = logs.split("\n")
         subjobs = self.subjobs
-        if len(log_lines) > 4:
-            logs = "...\n" + "\n".join(log_lines[-4:])
+        if len(log_lines) > 2:
+            logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
         else:
             logs = logs
 
@@ -147,12 +195,13 @@ class Job(SyftObject):
             str(self.result.syft_action_data)
 
         return {
+            "status": self.status,
             "progress": self.progress,
-            "creation date": self.creation_time[:-7],
-            # "logs": logs,
+            "eta": self.eta_string,
+            "created": f"{self.creation_time[:-7]}\n{self.owner.email}",
+            "logs": logs,
             # "result": result,
-            "owner email": self.owner.email,
-            "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
+            # "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
             "subjobs": len(subjobs),
         }
 

@@ -1,5 +1,4 @@
 # stdlib
-import json
 from pathlib import Path
 from typing import List
 from typing import Optional
@@ -66,7 +65,7 @@ class BlobStorageService(AbstractService):
 
         # TODO: fix arguments
 
-        args_dict = {  
+        args_dict = {
             "account_name": account_name,
             "account_key": account_key,
             "container_name": container_name,
@@ -75,9 +74,7 @@ class BlobStorageService(AbstractService):
         }
         # TODO: possible wrap this in try catch
         cfg = context.node.blob_store_config.client_config
-        init_request = requests.post(
-            url=cfg.mount_url, json=args_dict
-        )
+        init_request = requests.post(url=cfg.mount_url, json=args_dict)
         print(init_request.content)
         # TODO check return code
 
@@ -164,7 +161,9 @@ class BlobStorageService(AbstractService):
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
 
             with context.node.blob_storage_client.connect() as conn:
-                res: BlobRetrieval = conn.read(obj.location, obj.type_, bucket_name=obj.bucket_name)
+                res: BlobRetrieval = conn.read(
+                    obj.location, obj.type_, bucket_name=obj.bucket_name
+                )
                 res.syft_blob_storage_entry_id = uid
                 res.file_size = obj.file_size
                 return res

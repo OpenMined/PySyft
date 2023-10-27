@@ -240,17 +240,18 @@ class ActionService(AbstractService):
                 )
 
                 mock_kwargs = filter_twin_kwargs(real_kwargs, twin_mode=TwinMode.MOCK)
-                from syft.service.action.action_data_empty import ActionDataEmpty
+                # relative
+                from .action_data_empty import ActionDataEmpty
 
                 if any(isinstance(v, ActionDataEmpty) for v in mock_kwargs.values()):
                     mock_exec_result_obj = ActionDataEmpty()
                 else:
-                    mock_exec_result = execute_byte_code(code_item, mock_kwargs, context)
+                    mock_exec_result = execute_byte_code(
+                        code_item, mock_kwargs, context
+                    )
                     mock_exec_result_obj = mock_exec_result.result
-                    
-                result_action_object_mock = wrap_result(
-                    result_id, mock_exec_result_obj
-                )
+
+                result_action_object_mock = wrap_result(result_id, mock_exec_result_obj)
 
                 result_action_object = TwinObject(
                     id=result_id,

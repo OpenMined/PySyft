@@ -2,7 +2,6 @@
 import os
 from typing import List
 from typing import Union
-from time import sleep
 
 # third party
 import docker
@@ -129,31 +128,31 @@ def start_worker_container(context: AuthedServiceContext):
                 "bind": "/app/syft",
                 "mode": "rw",
             },
-            f"/dev/null": {
-                "bind": "/app/syft/src/syft.egg-info/entry_points.txt",
-                "mode": "rw",
-            },
-            f"/dev/null": {
-                "bind": "/app/syft/src/syft.egg-info/PKG-INFO",
-                "mode": "rw",
-            },
-            f"/dev/null": {
-                "bind": "/app/syft/src/syft.egg-info/requires.txt",
-                "mode": "rw",
-            },
-            f"/dev/null": {
-                "bind": "/app/syft/src/syft.egg-info/SOURCES.txt",
-                "mode": "rw",
-            },
-            f"/dev/null": {
-                "bind": "/app/syft/src/syft.egg-info/top_level.txt",
-                "mode": "rw",
-            },
-            f"/dev/null": {
-                "bind": "/app/syft/src/__pycache__/",
-                "mode": "rw",
-            },
-            f"/dev/null": {
+            # "/dev/null": {
+            #     "bind": "/app/syft/src/syft.egg-info/entry_points.txt",
+            #     "mode": "rw",
+            # },
+            # "/dev/null": {
+            #     "bind": "/app/syft/src/syft.egg-info/PKG-INFO",
+            #     "mode": "rw",
+            # },
+            # "/dev/null": {
+            #     "bind": "/app/syft/src/syft.egg-info/requires.txt",
+            #     "mode": "rw",
+            # },
+            # "/dev/null": {
+            #     "bind": "/app/syft/src/syft.egg-info/SOURCES.txt",
+            #     "mode": "rw",
+            # },
+            # "/dev/null": {
+            #     "bind": "/app/syft/src/syft.egg-info/top_level.txt",
+            #     "mode": "rw",
+            # },
+            # "/dev/null": {
+            #     "bind": "/app/syft/src/__pycache__/",
+            #     "mode": "rw",
+            # },
+            "/dev/null": {
                 "bind": "/app/syft/src/syft/protocol/protocol_version.json",
                 "mode": "rw",
             },
