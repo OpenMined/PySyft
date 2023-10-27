@@ -34,14 +34,6 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
-  # tailscale:
-  #   image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_TAILSCALE}"
-  #   buildKit: {}
-  #   dockerfile: ./vpn/tailscale.dockerfile
-  #   context: ./vpn
-  #   tags:
-  #     - dev-latest
-  #     - "${VERSION}"
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
@@ -87,25 +79,7 @@ deployments:
             env:
               - name: SERVICE_NAME
                 value: "proxy"
-          # - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_TAILSCALE}:${VERSION}"
-          #   securityContext:
-          #     capabilities:
-          #       add: ["NET_ADMIN", "SYS_MODULE"]
-          #     privileged: true
-          #   env:
-          #     - name: HOSTNAME
-          #       value: "${NODE_NAME}"
-          #     - name: STACK_API_KEY
-          #       value: "changeme"
-          #   volumeMounts:
-          #     - containerPath: /var/lib/tailscale
-          #       volume:
-          #         name: tailscale-data
-          #         subPath: /tailscale-data
-          #         readOnly: false
         volumes:
-          # - name: tailscale-data
-          #   size: "100Mi"
           - name: traefik-conf
             configMap:
               name: traefik-main-config
@@ -125,10 +99,17 @@ deployments:
         name: component-chart
         repo: https://charts.devspace.sh
       values:
+        # PodSecurityContext (uncomment for rootless "syftuser")
+        # securityContext:
+        #   runAsNonRoot: true
+        #   runAsUser: 1000
+        #   runAsGroup: 1000
+        #   fsGroup: 1000
+        #   fsGroupChangePolicy: "Always"
         containers:
           - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}:${VERSION}"
             volumeMounts:
-              - containerPath: /storage
+              - containerPath: /root/data/creds/
                 volume:
                   name: credentials-data
                   subPath: /credentials-data
@@ -182,8 +163,6 @@ deployments:
                 value: "${DEFAULT_ROOT_EMAIL}"
               - name: DEFAULT_ROOT_PASSWORD
                 value: "${DEFAULT_ROOT_PASSWORD}"
-              - name: BACKEND_STORAGE_PATH
-                value: "/storage"
         volumes:
           - name: credentials-data
             size: "100Mi"
@@ -313,8 +292,8 @@ dev:
         value: "True"
     logs: {}
     sync:
-      - path: ./backend/grid:/app/grid
-      - path: ../syft:/app/syft
+      - path: ./backend/grid:/root/app/grid
+      - path: ../syft:/root/app/syft
 
 profiles:
   - name: gateway

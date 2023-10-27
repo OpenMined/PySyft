@@ -19,7 +19,7 @@ from syft.service.user.user_stash import UserStash
 from syft.store.document_store import DocumentStore
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def admin_create_user(faker) -> UserCreate:
     password = faker.password()
     user_create = UserCreate(
@@ -34,7 +34,7 @@ def admin_create_user(faker) -> UserCreate:
     return user_create
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_create_user(faker) -> UserCreate:
     password = faker.password()
     user_create = UserCreate(
@@ -49,25 +49,25 @@ def guest_create_user(faker) -> UserCreate:
     return user_create
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def admin_user(admin_create_user) -> User:
     user = admin_create_user.to(User)
     return user
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_user(guest_create_user) -> User:
     user = guest_create_user.to(User)
     return user
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def admin_view_user(admin_user) -> UserView:
     user_view = admin_user.to(UserView)
     return user_view
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_view_user(guest_user) -> UserView:
     user_view = guest_user.to(UserView)
     return user_view
@@ -90,7 +90,7 @@ def guest_user_private_key(guest_user) -> UserPrivateKey:
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def update_user(faker) -> UserSearch:
     return UserUpdate(
         name=faker.name(),
@@ -98,14 +98,14 @@ def update_user(faker) -> UserSearch:
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_user_search(guest_user) -> UserSearch:
     return UserSearch(
         name=guest_user.name, email=guest_user.email, verify_key=guest_user.verify_key
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def user_stash(document_store: DocumentStore) -> UserStash:
     return UserStash(store=document_store)
 

@@ -265,7 +265,7 @@ def clean(location: str) -> None:
 )
 @click.option("--tls", is_flag=True, help="Launch with TLS configuration")
 @click.option("--test", is_flag=True, help="Launch with test configuration")
-@click.option("--dev", is_flag=True, help="Shortcut for development release")
+@click.option("--dev", is_flag=True, help="Shortcut for development mode")
 @click.option(
     "--release",
     default="production",
@@ -333,11 +333,6 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Run docker with a different platform like linux/arm64",
-)
-@click.option(
-    "--vpn",
-    is_flag=True,
-    help="Disable tailscale vpn container",
 )
 @click.option(
     "--verbose",
@@ -1336,8 +1331,6 @@ def create_launch_cmd(
     else:
         parsed_kwargs["jupyter"] = False
 
-    parsed_kwargs["vpn"] = bool(kwargs["vpn"])
-
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
@@ -2062,9 +2055,9 @@ def build_command(cmd: str) -> TypeList[str]:
     return [build_cmd]
 
 
-def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
+def deploy_command(cmd: str, tail: bool, dev_mode: bool) -> TypeList[str]:
     up_cmd = str(cmd)
-    up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
+    up_cmd += " --file docker-compose.dev.yml" if dev_mode else ""
     up_cmd += " up"
     if not tail:
         up_cmd += " -d"
@@ -2178,7 +2171,7 @@ def create_launch_docker_cmd(
     )
 
     # use a docker volume
-    backend_storage = "credentials-data"
+    host_path = "credentials-data"
 
     # in development use a folder mount
     if kwargs.get("release", "") == "development":
@@ -2186,7 +2179,7 @@ def create_launch_docker_cmd(
         # if EDITABLE_MODE:
         #     RELATIVE_PATH = "../"
         # we might need to change this for the hagrid template mode
-        backend_storage = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
+        host_path = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
 
     envs = {
         "RELEASE": "production",
@@ -2206,7 +2199,7 @@ def create_launch_docker_cmd(
             generate_sec_random_password(length=48, special_chars=False)
         ),
         "ENABLE_OBLV": str(enable_oblv).lower(),
-        "BACKEND_STORAGE_PATH": backend_storage,
+        "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
     }
 
@@ -2332,9 +2325,6 @@ def create_launch_docker_cmd(
     if kwargs["deployment_type"] == "single_container":
         return create_launch_worker_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
 
-    if bool(kwargs["vpn"]):
-        cmd += " --profile vpn"
-
     if str(node_type.input) in ["network", "gateway"]:
         cmd += " --profile network"
 
@@ -2361,9 +2351,8 @@ def create_launch_docker_cmd(
         my_build_command = build_command(cmd)
         final_commands["Building"] = my_build_command
 
-    release_type = kwargs["release"]
-
-    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
+    dev_mode = kwargs.get("dev", False)
+    final_commands["Launching"] = deploy_command(cmd, tail, dev_mode)
     return final_commands
 
 
@@ -2373,8 +2362,6 @@ def create_launch_worker_cmd(
     build: bool,
     tail: bool = True,
 ) -> TypeDict[str, TypeList[str]]:
-    release_type = kwargs["release"]
-
     final_commands = {}
     final_commands["Pulling"] = pull_command(cmd, kwargs)
     cmd += " --file docker-compose.yml"
@@ -2383,9 +2370,8 @@ def create_launch_worker_cmd(
         my_build_command = build_command(cmd)
         final_commands["Building"] = my_build_command
 
-    release_type = kwargs["release"]
-
-    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
+    dev_mode = kwargs.get("dev", False)
+    final_commands["Launching"] = deploy_command(cmd, tail, dev_mode)
     return final_commands
 
 
@@ -3586,16 +3572,13 @@ def get_docker_status(
         if not _backend_exists:
             return False, ("", "")
 
-        # Identifying Type of Node.
-        headscale_containers = shell(
-            "docker ps --format '{{.Names}}' | grep 'headscale' "
-        ).split()
-
         node_type = "Domain"
-        for container in headscale_containers:
-            if host_name in container:
-                node_type = "Gateway"
-                break
+
+        # TODO: Identify if node_type is Gateway
+        # for container in headscale_containers:
+        #     if host_name in container:
+        #         node_type = "Gateway"
+        #         break
 
         return True, (host_name, node_type)
     else:
