@@ -2,6 +2,7 @@
 from queue import LifoQueue
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 # third party
 from typing_extensions import Self
@@ -42,7 +43,7 @@ class PriorityNodeRoutes:
     def __repr__(self) -> str:
         raise NotImplementedError
 
-    def __getitem__(self, index: int) -> NodeRouteType:
+    def __getitem__(self, index: int, /) -> NodeRouteType:
         raise NotImplementedError
 
     def get(self):
@@ -80,7 +81,7 @@ class LifoQueueNodeRoutes(PriorityNodeRoutes):
     def __repr__(self) -> str:
         return str(self._queue.queue)
 
-    def __getitem__(self, index: int) -> NodeRouteType:
+    def __getitem__(self, index: int, /) -> NodeRouteType:
         return self._queue.queue[index]
 
     def get(self) -> NodeRouteType:
@@ -106,53 +107,65 @@ class NodePeer(SyftObject):
     admin_email: str
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
+        print("\n--- inside NodePeer.update_routes ---")
         add_routes = []
-        new_routes = self.update_route_priorities(new_routes)
+        new_routes: List[NodeRoute] = self.update_route_priorities(new_routes)
         for new_route in new_routes:
-            if not self.existed_route(new_route):
+            existed, index = self.existed_route(new_route)
+            if not existed:
                 add_routes.append(new_route)
+            else:
+                print(f"The route {new_route.dict()} already exists!")
+                # if the route already exists, we do not append it to self.new_route,
+                # but update its priority
+                self.node_routes[index].priority = new_route.priority
+
         self.node_routes += add_routes
 
-        print(f"after updating priority: {self.node_routes = }")
-        print(f"{new_routes = }")
         print(
-            f"after updating priority: {self.pick_highest_priority_route().dict() = }"
+            f"The current highest priority route is {self.pick_highest_priority_route().dict() = }"
         )
+        print(f"{self = }")
+        print("the current routes in self.node_routes: ")
+        for i, route in enumerate(self.node_routes):
+            print(f"route {i}: {route.dict()}")
+        print()
 
     def update_route_priorities(self, new_routes: List[NodeRoute]) -> List[NodeRoute]:
         """
-        Latest route has the biggest priority
+        Since we pick the newest route has the highest priority, we
+        update the priority of the newly added routes here to be increments of
+        current routes' highest priority.
         """
-        current_max_priority: int = 0
-        for route in self.node_routes:
-            if route.priority > current_max_priority:
-                current_max_priority = route.priority
+        current_max_priority = max(route.priority for route in self.node_routes)
         for route in new_routes:
-            print(f"{route = }")
-            print(f"{route.dict() = }")
             route.priority = current_max_priority + 1
             current_max_priority += 1
         return new_routes
 
-    def existed_route(self, route: NodeRoute) -> bool:
-        """Check if a route exists
+    def existed_route(self, route: NodeRoute) -> Tuple[bool, int]:
+        """Check if a route exists in self.node_routes
         - For HTTPNodeRoute: check based on protocol, host_or_ip (url) and port
         - For PythonNodeRoute: check if the route exists in the set of all node_routes
+        Args:
+            route: the route to be checked
+        Returns:
+            if the route exists, returns (True, index of the existed route in self.node_routes)
+            if the route does not exist returns (False, None)
         """
-        existing_routes = set(self.node_routes)
         if isinstance(route, HTTPNodeRoute):
-            for r in existing_routes:
+            for i, r in enumerate(self.node_routes):
                 if (
                     (route.host_or_ip == r.host_or_ip)
                     and (route.port == r.port)
                     and (route.protocol == r.protocol)
                 ):
-                    return True
-            return False
+                    return (True, i)
+            return (False, None)
         else:  # PythonNodeRoute
-            if route in existing_routes:
-                return True
-            return False
+            if route in set(self.node_routes):
+                return (True, None)
+            return (False, None)
 
     @staticmethod
     def from_client(client: SyftClient) -> Self:
@@ -169,6 +182,7 @@ class NodePeer(SyftObject):
             raise Exception(f"No routes to peer: {self}")
         # select the latest added route
         final_route = self.pick_highest_priority_route()
+        print("\n--- inside NodePeer.client_with_context ---")
         print(f"using route {final_route.to_dict()}")
         print(f"{len(self.node_routes) = }")
         print(f"{context.node.name = }")
@@ -200,7 +214,7 @@ class NodePeer(SyftObject):
         return client.proxy_to(self)
 
     def pick_highest_priority_route(self) -> NodeRoute:
-        final_route = self.node_routes[-1]
+        final_route: NodeRoute = self.node_routes[-1]
         for route in self.node_routes:
             if route.priority > final_route.priority:
                 final_route = route

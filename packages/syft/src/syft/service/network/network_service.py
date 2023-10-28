@@ -13,6 +13,7 @@ from result import Result
 from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
+from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -76,16 +77,26 @@ class NetworkStash(BaseUIDStoreStash):
     def update_peer(
         self, credentials: SyftVerifyKey, peer: NodePeer
     ) -> Result[NodePeer, str]:
+        print("\n--- inside NetworkStash.update_peer ---")
+        print(f"{peer.dict() = }")
         valid = self.check_type(peer, NodePeer)
+        print(f"{valid = }")
         if valid.is_err():
             return SyftError(message=valid.err())
         existing = self.get_by_uid(credentials=credentials, uid=peer.id)
+        print(f"{existing = }")
+        print(f"{existing.is_ok() = }")
+        print(f"{existing.ok() = }")
         if existing.is_ok() and existing.ok():
-            existing = existing.ok()
-            existing.update_routes(peer.node_routes)
+            print("existing ok: update routes")
+            existing: NodePeer = existing.ok()
+            print(f"{existing.dict() = }")
+            existing.update_routes(new_routes=peer.node_routes)
             result = self.update(credentials, existing)
+            print()
             return result
         else:
+            print("existing is not ok: do not update routes\n")
             result = self.set(credentials, peer)
             return result
 
@@ -130,6 +141,10 @@ class NetworkService(AbstractService):
         remote_node_verify_key: SyftVerifyKey,
     ) -> Union[SyftSuccess, SyftError]:
         """Exchange Route With Another Node"""
+        print("\n--- inside exchange_credentials_with ---")
+        print(f"{self_node_route.dict() = }")
+        print(f"{remote_node_route.dict() = }")
+        print(f"{context.node.name = }\n")
 
         # Step 1: Validate the Route
         self_node_peer = self_node_route.validate_with_context(context=context)
@@ -140,10 +155,12 @@ class NetworkService(AbstractService):
         # Step 2: Send the Node Peer to the remote node
         # Also give them their own to validate that it belongs to them
         # random challenge prevents replay attacks
-        remote_client = remote_node_route.client_with_context(context=context)
+        remote_client: SyftClient = remote_node_route.client_with_context(
+            context=context
+        )
         random_challenge = secrets.token_bytes(16)
+        print(f"\n{remote_client = }\n")
 
-        # TODO: add a route with highest priority for the peer
         remote_res = remote_client.api.services.network.add_peer(
             peer=self_node_peer,
             challenge=random_challenge,
@@ -169,9 +186,11 @@ class NetworkService(AbstractService):
         result = self.stash.update_peer(context.node.verify_key, remote_node_peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        print(f"{result.ok().node_routes = }")
-        r = result.ok().pick_highest_priority_route()
-        print(f"{r.dict() = }")
+
+        # print("--- inside NetworkService.exchange_credentials_with ---")
+        # print(f"{result.ok().node_routes = }")
+        # r = result.ok().pick_highest_priority_route()
+        # print(f"{r.dict() = }")
 
         return SyftSuccess(message="Routes Exchanged")
 
@@ -185,6 +204,10 @@ class NetworkService(AbstractService):
         verify_key: SyftVerifyKey,
     ) -> Union[bytes, SyftError]:
         """Add a Network Node Peer"""
+        print("\n--- inside NetworkService.add_peer ---")
+        print(f"{self_node_route.dict() = }")
+        print(f"{peer.dict() = }")
+        print(f"{context.node.name = }\n")
 
         # Using the verify_key of the peer to verify the signature
         # It is also our single source of truth for the peer
@@ -202,7 +225,8 @@ class NetworkService(AbstractService):
             )
 
         try:
-            remote_client = peer.client_with_context(context=context)
+            remote_client: SyftClient = peer.client_with_context(context=context)
+            print(f"result of peer.client_with_context is: {remote_client = }\n")
             random_challenge = secrets.token_bytes(16)
             remote_res = remote_client.api.services.network.ping(
                 challenge=random_challenge
