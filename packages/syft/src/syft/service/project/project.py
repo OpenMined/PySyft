@@ -517,7 +517,9 @@ this wizard is going to guide you through the process of answering the poll."""
 
     print("\t" + "=" * 69)
     print()
-    print(w.fill("All done! You have successfully completed the Poll Answer Wizard! 🎩"))
+    print(
+        w.fill("All done! You have successfully completed the Poll Answer Wizard! 🎩")
+    )
     print()
 
     return choice

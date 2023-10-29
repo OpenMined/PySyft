@@ -78,7 +78,8 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     class Config:
         arbitrary_types_allowed = True
 
-    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
+    # the name which doesn't change even when there are multiple classes
+    __canonical_name__: str
     __version__: int  # data is always versioned
 
     syft_node_location: Optional[UID]
