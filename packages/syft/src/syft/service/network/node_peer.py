@@ -107,7 +107,6 @@ class NodePeer(SyftObject):
     admin_email: str
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
-        print("\n--- inside NodePeer.update_routes ---")
         add_routes = []
         new_routes: List[NodeRoute] = self.update_route_priorities(new_routes)
         for new_route in new_routes:
@@ -115,21 +114,11 @@ class NodePeer(SyftObject):
             if not existed:
                 add_routes.append(new_route)
             else:
-                print(f"The route {new_route.dict()} already exists!")
                 # if the route already exists, we do not append it to self.new_route,
                 # but update its priority
                 self.node_routes[index].priority = new_route.priority
 
         self.node_routes += add_routes
-
-        print(
-            f"The current highest priority route is {self.pick_highest_priority_route().dict() = }"
-        )
-        print(f"{self = }")
-        print("the current routes in self.node_routes: ")
-        for i, route in enumerate(self.node_routes):
-            print(f"route {i}: {route.dict()}")
-        print()
 
     def update_route_priorities(self, new_routes: List[NodeRoute]) -> List[NodeRoute]:
         """
@@ -182,10 +171,6 @@ class NodePeer(SyftObject):
             raise Exception(f"No routes to peer: {self}")
         # select the latest added route
         final_route = self.pick_highest_priority_route()
-        print("\n--- inside NodePeer.client_with_context ---")
-        print(f"using route {final_route.to_dict()}")
-        print(f"{len(self.node_routes) = }")
-        print(f"{context.node.name = }")
         connection = route_to_connection(route=final_route)
 
         client_type = connection.get_client_type()
