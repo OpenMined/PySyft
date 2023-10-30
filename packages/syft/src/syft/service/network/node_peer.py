@@ -1,5 +1,4 @@
 # stdlib
-from queue import LifoQueue
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -24,69 +23,6 @@ from .routes import NodeRoute
 from .routes import NodeRouteType
 from .routes import connection_to_route
 from .routes import route_to_connection
-
-
-@serializable()
-class PriorityNodeRoutes:
-    def __init__(self) -> None:
-        raise NotImplementedError
-
-    def __len__(self) -> int:
-        raise NotImplementedError
-
-    def append(self, route: NodeRouteType) -> Self:
-        raise NotImplementedError
-
-    def __add__(self, routes: List[NodeRouteType]) -> Self:
-        raise NotImplementedError
-
-    def __repr__(self) -> str:
-        raise NotImplementedError
-
-    def __getitem__(self, index: int, /) -> NodeRouteType:
-        raise NotImplementedError
-
-    def get(self):
-        """Return the route with the highest priority"""
-        raise NotImplementedError
-
-
-@serializable()
-class LifoQueueNodeRoutes(PriorityNodeRoutes):
-    """
-    Last in first out priority queue
-    The newest route has the highest priority
-    """
-
-    _queue: LifoQueue[NodeRouteType]
-
-    def __init__(self) -> None:
-        self._queue = LifoQueue()
-        self._index = 0
-
-    def __len__(self) -> int:
-        return self._queue.qsize()
-
-    def append(self, route: NodeRouteType) -> Self:
-        self._queue.put(route)
-        return self
-
-    def __add__(self, routes: List[NodeRouteType]) -> Self:
-        if not isinstance(routes, List):
-            raise TypeError(f"{type(routes)} object is not a list of NodeRouteType")
-        for r in routes:
-            self.append(r)
-        return self
-
-    def __repr__(self) -> str:
-        return str(self._queue.queue)
-
-    def __getitem__(self, index: int, /) -> NodeRouteType:
-        return self._queue.queue[index]
-
-    def get(self) -> NodeRouteType:
-        """Return the route with the highest priority (the newest added route)"""
-        return self._queue.queue[-1]
 
 
 @serializable()
