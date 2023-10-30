@@ -1,6 +1,8 @@
 # stdlib
 import argparse
+import json
 import os
+from pathlib import Path
 import shutil
 import sys
 from typing import Any
@@ -117,8 +119,45 @@ def add_notes(helm_chart_template_dir: str) -> None:
 
     notes_path = os.path.join(helm_chart_template_dir, "NOTES.txt")
 
+    protocol_changelog = get_protocol_changes()
+
+    notes += "\n" + protocol_changelog
+
     with open(notes_path, "w") as fp:
         fp.write(notes)
+
+
+def get_protocol_changes() -> str:
+    """Generate change log of the dev protocol state."""
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    protocol_path = Path(
+        os.path.normpath(
+            os.path.join(
+                script_path,
+                "../../",
+                "syft/src/syft/protocol",
+                "protocol_version.json",
+            )
+        )
+    )
+
+    protocol_changes = ""
+    if protocol_path.exists():
+        dev_protocol_changes = json.loads(protocol_path.read_text())["dev"]
+        protocol_changes = json.dumps(
+            dev_protocol_changes.get("object_versions", {}), indent=4
+        )
+
+    protocol_changelog = f"""
+    Following class versions are either added/removed.
+
+    {protocol_changes}
+
+    This means the existing data will be automatically be migrated to
+    their latest class versions during the upgrade.
+    """
+
+    return protocol_changelog
 
 
 def apply_patches(yaml: str, resource_name: str, resource_kind: str) -> str:
