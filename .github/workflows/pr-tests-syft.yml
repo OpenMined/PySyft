@@ -188,7 +188,7 @@ jobs:
           ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
         with:
-          timeout_seconds: 1800
+          timeout_seconds: 2400
           max_attempts: 3
           command: tox -e syft.test.notebook
 

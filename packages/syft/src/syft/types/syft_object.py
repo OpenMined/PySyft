@@ -319,7 +319,7 @@ class SyftMigrationRegistry:
 
         raise Exception(
             f"No migration found for class type: {type_from} to "
-            "version: {version_to} in the migration registry."
+            f"version: {version_to} in the migration registry."
         )
 
 
