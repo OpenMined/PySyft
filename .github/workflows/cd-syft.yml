@@ -69,6 +69,11 @@ jobs:
           cat packages/grid/devspace.yaml | grep '0\.'
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
 
+      - name: Check Protocol Version
+        if: github.event_name == 'schedule'
+        run: |
+          tox -e syft.protocol.check
+
       - name: Build Helm Chart
         shell: bash
         run: |
@@ -89,6 +94,7 @@ jobs:
       - name: Check and Bump Protocol Version
         if: github.event_name == 'schedule'
         run: |
+          export BUMP=True
           tox -e syft.protocol.check
 
       - name: Commit changes to Syft

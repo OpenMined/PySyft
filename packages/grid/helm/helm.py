@@ -103,6 +103,24 @@ def ingress_with_tls() -> str:
         return fp.read()
 
 
+def add_notes(helm_chart_template_dir: str) -> None:
+    """Add notes or information post helm install or upgrade."""
+
+    notes = """
+    Thank you for installing {{ .Chart.Name }}.
+    Your release is named {{ .Release.Name }}.
+    To learn more about the release, try:
+
+        $ helm status {{ .Release.Name }}
+        $ helm get all {{ .Release.Name }}
+    """
+
+    notes_path = os.path.join(helm_chart_template_dir, "NOTES.txt")
+
+    with open(notes_path, "w") as fp:
+        fp.write(notes)
+
+
 def apply_patches(yaml: str, resource_name: str, resource_kind: str) -> str:
     # print(resource_kind, resource_name)
     # apply resource specific patches
@@ -203,6 +221,9 @@ def main() -> None:
             with open(new_file, "w") as f:
                 f.write(yaml_dump)  # add document separator
                 file_count += 1
+
+    # Add notes
+    add_notes(helm_chart_template_dir)
 
     if file_count > 0:
         print(f"✅ Done: Generated {file_count} template files")
