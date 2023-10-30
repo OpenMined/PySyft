@@ -114,6 +114,9 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -198,9 +201,9 @@ jobs:
           # cache: "pnpm"
           # cache-dependency-path: packages/grid/frontend/pnpm-lock.yaml
 
-      # - name: Run Frontend Playwright e2e Tests
-      #   if: steps.changes.outputs.stack == 'true'
-      #   env:
-      #     DOCKER: true
-      #   run: |
-      #     tox -e frontend.test.e2e
+      - name: Run Frontend Playwright e2e Tests
+        if: steps.changes.outputs.stack == 'true'
+        env:
+          DOCKER: true
+        run: |
+          tox -e frontend.test.e2e

@@ -51,6 +51,7 @@ from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
 from ..service.action.action_service import ActionService
 from ..service.action.action_store import DictActionStore
+from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
@@ -94,6 +95,7 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
@@ -610,6 +612,11 @@ class Node(AbstractNode):
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
             )
+        elif isinstance(action_store_config, MongoStoreConfig):
+            self.action_store = MongoActionStore(
+                store_config=action_store_config,
+                root_verify_key=self.verify_key,
+            )
         else:
             self.action_store = DictActionStore(root_verify_key=self.verify_key)
 
@@ -844,7 +851,9 @@ class Node(AbstractNode):
                         f"you have has no access to: {api_call.path}"
                     )  # type: ignore
                 else:
-                    return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+                    return SyftError(
+                        message=f"API call not in registered services: {api_call.path}"
+                    )  # type: ignore
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
