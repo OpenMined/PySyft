@@ -65,7 +65,7 @@ from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadata
+from ..service.metadata.node_metadata import NodeMetadataV2
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -339,6 +339,9 @@ class Node(AbstractNode):
 
         self.init_blob_storage(config=blob_storage_config)
 
+        # Migrate data before any operation on db
+        self.find_and_migrate_data()
+
         NodeRegistry.set_node_for(self.id, self)
 
     def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
@@ -459,9 +462,9 @@ class Node(AbstractNode):
         root_client.api.refresh_api_callback()
         return root_client
 
-    def _find_pending_migrations(self):
-        klasses_to_be_migrated = []
-
+    def _find_klasses_pending_for_migration(
+        self, object_types: List[SyftObject]
+    ) -> List[SyftObject]:
         context = AuthedServiceContext(
             node=self,
             credentials=self.verify_key,
@@ -469,38 +472,90 @@ class Node(AbstractNode):
         )
         migration_state_service = self.get_service(MigrateStateService)
 
-        canonical_name_version_map = []
+        klasses_to_be_migrated = []
 
-        # Track all object types from document store
-        for partition in self.document_store.partitions.values():
-            object_type = partition.settings.object_type
+        for object_type in object_types:
             canonical_name = object_type.__canonical_name__
             object_version = object_type.__version__
-            canonical_name_version_map.append((canonical_name, object_version))
 
-        # Track all object types from action store
-        action_object_types = [Action, ActionObject]
-        action_object_types.extend(ActionObject.__subclasses__())
-        for object_type in action_object_types:
-            canonical_name = object_type.__canonical_name__
-            object_version = object_type.__version__
-            canonical_name_version_map.append((canonical_name, object_version))
-
-        for canonical_name, current_version in canonical_name_version_map:
             migration_state = migration_state_service.get_state(context, canonical_name)
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version
             ):
-                klasses_to_be_migrated.append(canonical_name)
+                klasses_to_be_migrated.append(object_type)
             else:
                 migration_state_service.register_migration_state(
                     context,
-                    current_version=current_version,
+                    current_version=object_version,
                     canonical_name=canonical_name,
                 )
 
         return klasses_to_be_migrated
+
+    def find_and_migrate_data(self):
+        # Track all object type that need migration for document store
+        context = AuthedServiceContext(
+            node=self,
+            credentials=self.verify_key,
+            role=ServiceRole.ADMIN,
+        )
+        document_store_object_types = [
+            partition.settings.object_type
+            for partition in self.document_store.partitions.values()
+        ]
+
+        object_pending_migration = self._find_klasses_pending_for_migration(
+            object_types=document_store_object_types
+        )
+
+        if object_pending_migration:
+            print(
+                "Object in Document Store that needs migration: ",
+                object_pending_migration,
+            )
+
+        # Migrate data for objects in document store
+        for object_type in object_pending_migration:
+            canonical_name = object_type.__canonical_name__
+            object_partition = self.document_store.partitions.get(canonical_name)
+            if object_partition is None:
+                continue
+
+            print(f"Migrating data for: {canonical_name} table.")
+            migration_status = object_partition.migrate_data(
+                to_klass=object_type, context=context
+            )
+            if migration_status.is_err():
+                raise Exception(
+                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
+                )
+
+        # Track all object types from action store
+        action_object_types = [Action, ActionObject]
+        action_object_types.extend(ActionObject.__subclasses__())
+        action_object_pending_migration = self._find_klasses_pending_for_migration(
+            action_object_types
+        )
+
+        if action_object_pending_migration:
+            print(
+                "Object in Action Store that needs migration: ",
+                action_object_pending_migration,
+            )
+
+        # Migrate data for objects in action store
+        for object_type in action_object_pending_migration:
+            canonical_name = object_type.__canonical_name__
+
+            migration_status = self.action_store.migrate_data(
+                to_klass=object_type, credentials=self.verify_key
+            )
+            if migration_status.is_err():
+                raise Exception(
+                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
+                )
+        print("Data Migrated to latest version !!!")
 
     @property
     def guest_client(self):
@@ -686,7 +741,7 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def metadata(self) -> NodeMetadata:
+    def metadata(self) -> NodeMetadataV2:
         name = ""
         deployed_on = ""
         organization = ""
@@ -709,7 +764,7 @@ class Node(AbstractNode):
             admin_email = settings_data.admin_email
             show_warnings = settings_data.show_warnings
 
-        return NodeMetadata(
+        return NodeMetadataV2(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
