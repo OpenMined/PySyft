@@ -70,7 +70,6 @@ jobs:
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
 
       - name: Check Protocol Version
-        if: github.event_name == 'schedule'
         run: |
           tox -e syft.protocol.check
 
@@ -92,7 +91,6 @@ jobs:
           tox -e syft.package.helm
 
       - name: Check and Bump Protocol Version
-        if: github.event_name == 'schedule'
         run: |
           export BUMP=True
           tox -e syft.protocol.check
