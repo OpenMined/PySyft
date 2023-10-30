@@ -1,5 +1,7 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 import hashlib
 import json
 import os
@@ -21,6 +23,7 @@ from ..serde.recursive import TYPE_BANK
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
+from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
@@ -352,20 +355,25 @@ def check_or_stage_protocol() -> Result[SyftSuccess, SyftError]:
 
 def debox_arg_and_migrate(arg: Any, protocol_state: dict):
     """Debox the argument based on whether it is iterable or single entity."""
-    box_to_result_type = None
-
-    if type(arg) in OkErr:
-        box_to_result_type = type(arg)
-        arg = arg.value
+    constructor = None
+    extra_args = []
 
     single_entity = False
-    is_tuple = isinstance(arg, tuple)
 
-    if isinstance(arg, (list, tuple)):
-        iterable_keys = range(len(arg))
-        arg = list(arg)
-    elif isinstance(arg, dict):
+    if isinstance(arg, OkErr):
+        constructor = type(arg)
+        arg = arg.value
+
+    if isinstance(arg, MutableMapping):
         iterable_keys = arg.keys()
+    elif isinstance(arg, MutableSequence):
+        iterable_keys = range(len(arg))
+    elif isinstance(arg, tuple):
+        iterable_keys = range(len(arg))
+        constructor = type(arg)
+        if isinstance(arg, DictTuple):
+            extra_args.append(arg.keys())
+        arg = list(arg)
     else:
         iterable_keys = range(1)
         arg = [arg]
@@ -385,9 +393,8 @@ def debox_arg_and_migrate(arg: Any, protocol_state: dict):
         arg[key] = _object
 
     wrapped_arg = arg[0] if single_entity else arg
-    wrapped_arg = tuple(wrapped_arg) if is_tuple else wrapped_arg
-    if box_to_result_type is not None:
-        wrapped_arg = box_to_result_type(wrapped_arg)
+    if constructor is not None:
+        wrapped_arg = constructor(wrapped_arg, *extra_args)
 
     return wrapped_arg
 
