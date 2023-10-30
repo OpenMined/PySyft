@@ -88,8 +88,9 @@ class NodePeer(SyftObject):
                     return (True, i)
             return (False, None)
         else:  # PythonNodeRoute
-            if route in set(self.node_routes):
-                return (True, None)
+            for i, r in enumerate(self.node_routes):
+                if route.worker_settings == r.worker_settings:
+                    return (True, i)
             return (False, None)
 
     @staticmethod
