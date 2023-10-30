@@ -1,5 +1,6 @@
 # third party
 from faker import Faker
+from hagrid.orchestra import NodeHandle
 
 # syft absolute
 import syft as sy
@@ -12,7 +13,7 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
-def get_node_handle(node_type: str):
+def get_node_handle(node_type: str) -> NodeHandle:
     node_handle = sy.orchestra.launch(
         name=sy.UID().to_string(),
         node_type=node_type,
@@ -89,6 +90,45 @@ def test_domain_connect_to_gateway(faker: Faker):
     assert (
         proxy_domain_client.api.endpoints.keys() == domain_client.api.endpoints.keys()
     )
+
+
+def test_domain_connect_to_gateway_routes_priority() -> None:
+    """
+    A test for routes' priority (PythonNodeRoute)
+    TODO: Add a similar test for HTTPNodeRoute
+    """
+    gateway_node_handle: NodeHandle = get_node_handle(NodeType.GATEWAY.value)
+    gateway_client: GatewayClient = gateway_node_handle.login(
+        email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = get_admin_client(NodeType.DOMAIN.value)
+
+    result = domain_client.connect_to_gateway(handle=gateway_node_handle)
+    assert isinstance(result, SyftSuccess)
+
+    all_peers = gateway_client.api.services.network.get_all_peers()
+    assert len(all_peers) == 1
+    domain_1_routes = all_peers[0].node_routes
+    assert domain_1_routes[0].priority == 1
+
+    # reconnect to the gateway. The route's priority should be increased by 1
+    result = domain_client.connect_to_gateway(via_client=gateway_node_handle.client)
+    assert isinstance(result, SyftSuccess)
+    all_peers = gateway_client.api.services.network.get_all_peers()
+    assert len(all_peers) == 1
+    domain_1_routes = all_peers[0].node_routes
+    assert domain_1_routes[0].priority == 2
+
+    # another domain client connects to the gateway
+    domain_client_2: DomainClient = get_admin_client(NodeType.DOMAIN.value)
+    result = domain_client_2.connect_to_gateway(handle=gateway_node_handle)
+    assert isinstance(result, SyftSuccess)
+
+    all_peers = gateway_client.api.services.network.get_all_peers()
+    assert len(all_peers) == 2
+    domain_2_routes = all_peers[1].node_routes
+    assert domain_2_routes[0].priority == 1
+    assert domain_1_routes[0].priority == 2
 
 
 def test_enclave_connect_to_gateway(faker: Faker):
