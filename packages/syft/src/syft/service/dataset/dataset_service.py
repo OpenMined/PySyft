@@ -1,5 +1,5 @@
 # stdlib
-from itertools import islice
+from collections.abc import Collection
 from typing import List
 from typing import Optional
 from typing import Union
@@ -7,7 +7,7 @@ from typing import Union
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ...types.tupledict import TupleDict
+from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -31,30 +31,40 @@ from .dataset import DatasetPageView
 from .dataset_stash import DatasetStash
 
 
-def _paginate_dataset_collection(
-    results: TupleDict[str, Dataset],
+def _paginate_collection(
+    collection: Collection,
     page_size: Optional[int] = 0,
     page_index: Optional[int] = 0,
-) -> DatasetPageView:
-    if page_size is None or page_size <= 0:
-        return results
+) -> Optional[slice]:
+    if page_size is None or page_index <= 0:
+        return None
 
     # If chunk size is defined, then split list into evenly sized chunks
-    total = len(results)
+    total = len(collection)
     page_index = 0 if page_index is None else page_index
 
     if page_size > total or page_index >= total // page_size or page_index < 0:
-        pass
-    else:
-        results = TupleDict(
-            islice(
-                results.items(),
-                page_size * page_index,
-                min(page_size * (page_index + 1), total),
-            )
-        )
+        return None
 
-    return DatasetPageView(datasets=results, total=total)
+    start = page_size * page_index
+    stop = min(page_size * (page_index + 1), total)
+    return slice(start, stop)
+
+
+def _paginate_dataset_collection(
+    datasets: Collection[Dataset],
+    page_size: Optional[int] = 0,
+    page_index: Optional[int] = 0,
+) -> Union[DictTuple[str, Dataset], DatasetPageView]:
+    slice_ = _paginate_collection(datasets, page_size=page_size, page_index=page_index)
+    chunk = datasets[slice_] if slice_ is not None else datasets
+    results = DictTuple((dataset.name, dataset) for dataset in chunk)
+
+    return (
+        results
+        if slice_ is None
+        else DatasetPageView(datasets=results, total=len(datasets))
+    )
 
 
 @instrument
@@ -104,7 +114,7 @@ class DatasetService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[DatasetPageView, TupleDict[str, Dataset], SyftError]:
+    ) -> Union[DatasetPageView, DictTuple[str, Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if not result.is_ok():
@@ -112,17 +122,11 @@ class DatasetService(AbstractService):
 
         datasets = result.ok()
 
-        results = TupleDict()
         for dataset in datasets:
             dataset.node_uid = context.node.id
-            results[dataset.name] = dataset
 
-        return (
-            results
-            if page_size <= 0 or page_size is None
-            else _paginate_dataset_collection(
-                results, page_size=page_size, page_index=page_index
-            )
+        return _paginate_dataset_collection(
+            datasets=datasets, page_size=page_size, page_index=page_index
         )
 
     @service_method(
@@ -141,11 +145,9 @@ class DatasetService(AbstractService):
         if isinstance(results, SyftError):
             return results
 
-        filtered_results = TupleDict(
-            (dataset_name, dataset)
-            for dataset_name, dataset in results.items()
-            if name in dataset_name
-        )
+        filtered_results = [
+            dataset for dataset_name, dataset in results.items() if name in dataset_name
+        ]
 
         return _paginate_dataset_collection(
             filtered_results, page_size=page_size, page_index=page_index

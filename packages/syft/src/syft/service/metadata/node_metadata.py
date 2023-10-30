@@ -64,22 +64,6 @@ class NodeMetadataUpdate(SyftObject):
 
 
 @serializable()
-class NodeMetadataUpdateV2(SyftObject):
-    __canonical_name__ = "NodeMetadataUpdate"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    name: Optional[str]
-    organization: Optional[str]
-    description: Optional[str]
-    on_board: Optional[bool]
-    id: Optional[UID]
-    verify_key: Optional[SyftVerifyKey]
-    highest_object_version: Optional[int]
-    lowest_object_version: Optional[int]
-    syft_version: Optional[str]
-
-
-@serializable()
 class NodeMetadata(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -205,6 +189,7 @@ def metadata_to_json() -> List[Callable]:
 
 
 @transform(NodeMetadataJSON, NodeMetadataV3)
+
 def json_to_metadata() -> List[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
