@@ -88,8 +88,20 @@ class NodePeer(SyftObject):
                     return (True, i)
             return (False, None)
         else:  # PythonNodeRoute
-            for i, r in enumerate(self.node_routes):
-                if route.worker_settings == r.worker_settings:
+            for i, r in enumerate(self.node_routes):  # something went wrong here
+                if (
+                    (route.worker_settings.id == r.worker_settings.id)
+                    and (route.worker_settings.name == r.worker_settings.name)
+                    and (route.worker_settings.node_type == r.worker_settings.node_type)
+                    and (
+                        route.worker_settings.node_side_type
+                        == r.worker_settings.node_side_type
+                    )
+                    and (
+                        route.worker_settings.signing_key
+                        == r.worker_settings.signing_key
+                    )
+                ):
                     return (True, i)
             return (False, None)
 

@@ -52,6 +52,10 @@ def test_domain_connect_to_gateway(faker: Faker):
     result = domain_client.connect_to_gateway(handle=gateway_node_handle)
     assert isinstance(result, SyftSuccess)
 
+    # check priority
+    all_peers = gateway_client.api.services.network.get_all_peers()
+    assert all_peers[0].node_routes[0].priority == 1
+
     # Try via client approach
     result_2 = domain_client.connect_to_gateway(via_client=gateway_node_handle.client)
     assert isinstance(result_2, SyftSuccess)
@@ -91,6 +95,10 @@ def test_domain_connect_to_gateway(faker: Faker):
         proxy_domain_client.api.endpoints.keys() == domain_client.api.endpoints.keys()
     )
 
+    # check priority
+    all_peers = gateway_client.api.services.network.get_all_peers()
+    assert all_peers[0].node_routes[0].priority == 2
+
 
 def test_domain_connect_to_gateway_routes_priority() -> None:
     """
@@ -126,9 +134,11 @@ def test_domain_connect_to_gateway_routes_priority() -> None:
 
     all_peers = gateway_client.api.services.network.get_all_peers()
     assert len(all_peers) == 2
-    domain_2_routes = all_peers[1].node_routes
-    assert domain_2_routes[0].priority == 1
-    assert domain_1_routes[0].priority == 2
+    for peer in all_peers:
+        if peer.name == domain_client.metadata.name:
+            assert peer.node_routes[0].priority == 2
+        if peer.name == domain_client_2.metadata.name:
+            assert peer.node_routes[0].priority == 1
 
 
 def test_enclave_connect_to_gateway(faker: Faker):
