@@ -58,7 +58,7 @@ def _paginate_dataset_collection(
 ) -> Union[DictTuple[str, Dataset], DatasetPageView]:
     slice_ = _paginate_collection(datasets, page_size=page_size, page_index=page_index)
     chunk = datasets[slice_] if slice_ is not None else datasets
-    results = DictTuple((dataset.name, dataset) for dataset in chunk)
+    results = DictTuple(chunk, lambda dataset: dataset.name)
 
     return (
         results
