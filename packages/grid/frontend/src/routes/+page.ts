@@ -1,5 +1,6 @@
-/** @type {import('./$types').PageServerLoad} */
-export const load = async ({ params }) => {
+import type { PageServerLoad } from './$types'
+
+export const load: PageServerLoad = async ({ params }) => {
   return {
     slug: params.slug,
   }
