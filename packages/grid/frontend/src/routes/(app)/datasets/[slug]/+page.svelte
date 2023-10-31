@@ -1,45 +1,44 @@
 <script>
-  import { page } from '$app/stores';
-  import CaretLeft from '$lib/components/icons/CaretLeft.svelte';
-  import DatasetModalDelete from '$lib/components/Datasets/DatasetModalDelete.svelte';
-  // import PencilIcon from '$lib/components/icons/PencilIcon.svelte';
-  import TableFillIcon from '$lib/components/icons/TableFillIcon.svelte';
-  import TableIcon from '$lib/components/icons/TableIcon.svelte';
-  import Tabs from '$lib/components/Tabs.svelte';
-  import ThreeDotsVertical from '$lib/components/icons/ThreeDotsVertical.svelte';
-  import { onMount } from 'svelte';
-  import { getDataset, deleteDataset } from '$lib/api/datasets';
-  import { goto } from '$app/navigation';
-  import UserList from '$lib/components/icons/UserList.svelte';
+  import { page } from "$app/stores"
+  import CaretLeft from "$lib/components/icons/CaretLeft.svelte"
+  import DatasetModalDelete from "$lib/components/Datasets/DatasetModalDelete.svelte"
+  import TableFillIcon from "$lib/components/icons/TableFillIcon.svelte"
+  import TableIcon from "$lib/components/icons/TableIcon.svelte"
+  import Tabs from "$lib/components/Tabs.svelte"
+  import ThreeDotsVertical from "$lib/components/icons/ThreeDotsVertical.svelte"
+  import { onMount } from "svelte"
+  import { getDataset, deleteDataset } from "$lib/api/datasets"
+  import { goto } from "$app/navigation"
+  import UserList from "$lib/components/icons/UserList.svelte"
 
-  let dataset = null;
-  let openModalDelete = false;
+  let dataset = null
+  let openModalDelete = false
 
-  let currentTab;
+  let currentTab
   let tabs = [
-    { label: 'Overview', id: 'tab1', content: TableFillIcon },
-    { label: 'Assets', icon: TableFillIcon, id: 'tab2', content: TableIcon }
-  ];
+    { label: "Overview", id: "tab1", content: TableFillIcon },
+    { label: "Assets", icon: TableFillIcon, id: "tab2", content: TableIcon },
+  ]
 
-  let openCitationsAccordion = false;
-  let openContributorsAccordion = false;
+  let openCitationsAccordion = false
+  let openContributorsAccordion = false
 
   function handleClick() {
-    openModalDelete = !openModalDelete;
+    openModalDelete = !openModalDelete
   }
 
   async function handleDelete() {
     try {
-      await deleteDataset(dataset.id.value);
-      goto('/datasets');
+      await deleteDataset(dataset.id.value)
+      goto("/datasets")
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
   }
 
   onMount(async () => {
-    dataset = await getDataset($page.params.slug);
-  });
+    dataset = await getDataset($page.params.slug)
+  })
 </script>
 
 <div class="p-6 flex flex-col gap-8">
@@ -47,7 +46,10 @@
     <h2>Loading</h2>
   {:else if dataset}
     <section>
-      <a href="/datasets" class="inline-flex gap-2 text-primary-500 items-center">
+      <a
+        href="/datasets"
+        class="inline-flex gap-2 text-primary-500 items-center"
+      >
         <CaretLeft class="w-4 h-4" /> Back
       </a>
       <div class="p-4 pb-6">
@@ -59,7 +61,9 @@
             <!-- <PencilIcon class="w-4 h-4 text-primary-500 flex-shrink-0" /> -->
           </span>
           <button class="self-start" on:click={handleClick}>
-            <ThreeDotsVertical class="w-6 h-6 desktop:w-8 desktop:h-8 text-gray-800" />
+            <ThreeDotsVertical
+              class="w-6 h-6 desktop:w-8 desktop:h-8 text-gray-800"
+            />
           </button>
         </div>
         <div class="flex gap-3 text-gray-600">
@@ -93,7 +97,8 @@
                 <button
                   class="w-full min-h-[60px] flex items-center gap-2 p-3 border border-gray-100 cursor-pointer accordion"
                   class:active={openCitationsAccordion}
-                  on:click={() => (openCitationsAccordion = !openCitationsAccordion)}
+                  on:click={() =>
+                    (openCitationsAccordion = !openCitationsAccordion)}
                   disabled={!dataset.citation}
                 >
                   <CaretLeft
@@ -115,7 +120,8 @@
                 <button
                   class="w-full min-h-[60px] flex items-center gap-2 p-3 border border-gray-100 cursor-pointer accordion"
                   class:active={openContributorsAccordion}
-                  on:click={() => (openContributorsAccordion = !openContributorsAccordion)}
+                  on:click={() =>
+                    (openContributorsAccordion = !openContributorsAccordion)}
                   disabled={!dataset.contributors?.length}
                 >
                   <CaretLeft
@@ -137,15 +143,21 @@
                       <li class="flex gap-2 w-full">
                         <div class="flex flex-col py-4 flex-wrap w-full">
                           <h4 class="uppercase text-sm font-bold">Name</h4>
-                          <p class="leading-[1] tracking-[0.75]">{contributor.name}</p>
+                          <p class="leading-[1] tracking-[0.75]">
+                            {contributor.name}
+                          </p>
                         </div>
                         <div class="flex flex-col py-4 flex-wrap w-full">
                           <h4 class="uppercase text-sm font-bold">Email</h4>
-                          <p class="leading-[1] tracking-[0.75]">{contributor.email}</p>
+                          <p class="leading-[1] tracking-[0.75]">
+                            {contributor.email}
+                          </p>
                         </div>
                         <div class="flex flex-col py-4 flex-wrap w-full">
                           <h4 class="uppercase text-sm font-bold">Role</h4>
-                          <p class="leading-[1] tracking-[0.75]">{contributor.role}</p>
+                          <p class="leading-[1] tracking-[0.75]">
+                            {contributor.role}
+                          </p>
                         </div>
                       </li>
                     {/each}
@@ -186,11 +198,13 @@
               <UserList class="w-5 h-5" />
               <p>{asset.data_subjects?.length || 0}</p>
               <span class="dot">●</span>
-              <p>Shape ({asset.shape?.join(' x ')})</p>
+              <p>Shape ({asset.shape?.join(" x ")})</p>
             </div>
             <div class="w-full border-t border-gray-100 gap-4 flex pt-6 pb-10">
               <p>Type</p>
-              <span class="font-bold">{asset.mock_is_real ? 'Mock Data' : 'Asset'}</span>
+              <span class="font-bold">
+                {asset.mock_is_real ? "Mock Data" : "Asset"}
+              </span>
             </div>
           </div>
         {/each}
