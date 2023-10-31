@@ -35,6 +35,6 @@ jobs:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
           message: "bump protocol and remove notebooks"
-          remove: "-r notebooks/Experimental/"
+          remove: "-r notebooks/Experimental/ --ignore-unmatch"
           add: "['packages/syft/src/syft/protocol/protocol_version.json']"
           commit: "-a"
