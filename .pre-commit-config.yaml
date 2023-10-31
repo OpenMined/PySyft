@@ -195,7 +195,7 @@ repos:
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier
-        exclude: ^(packages/grid/helm|packages/hagrid/hagrid/manifest_template.yml)
+        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/hagrid/hagrid/manifest_template.yml)
 
   # - repo: meta
   #   hooks:
