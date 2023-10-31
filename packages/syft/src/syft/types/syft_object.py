@@ -1,6 +1,8 @@
 # stdlib
 from collections import defaultdict
 from collections.abc import Mapping
+from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 from collections.abc import Set
 from hashlib import sha256
 import inspect
@@ -38,6 +40,7 @@ from ..util.notebook_ui.notebook_addons import create_table_template
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -78,7 +81,8 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     class Config:
         arbitrary_types_allowed = True
 
-    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
+    # the name which doesn't change even when there are multiple classes
+    __canonical_name__: str
     __version__: int  # data is always versioned
 
     syft_node_location: Optional[UID]
@@ -315,7 +319,7 @@ class SyftMigrationRegistry:
 
         raise Exception(
             f"No migration found for class type: {type_from} to "
-            "version: {version_to} in the migration registry."
+            f"version: {version_to} in the migration registry."
         )
 
 
@@ -777,6 +781,7 @@ def list_dict_repr_html(self) -> str:
 aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type(set()), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(tuple, "_repr_html_", list_dict_repr_html)
 
 
 class StorableObjectType:
@@ -837,20 +842,25 @@ recursive_serde_register_type(PartialSyftObject)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> Any:
-    box_to_result_type = None
-
-    if type(result) in OkErr:
-        box_to_result_type = type(result)
-        result = result.value
+    constructor = None
+    extra_args = []
 
     single_entity = False
-    is_tuple = isinstance(result, tuple)
 
-    if isinstance(result, (list, tuple)):
-        iterable_keys = range(len(result))
-        result = list(result)
-    elif isinstance(result, Mapping):
+    if isinstance(result, OkErr):
+        constructor = type(result)
+        result = result.value
+
+    if isinstance(result, MutableMapping):
         iterable_keys = result.keys()
+    elif isinstance(result, MutableSequence):
+        iterable_keys = range(len(result))
+    elif isinstance(result, tuple):
+        iterable_keys = range(len(result))
+        constructor = type(result)
+        if isinstance(result, DictTuple):
+            extra_args.append(result.keys())
+        result = list(result)
     else:
         iterable_keys = range(1)
         result = [result]
@@ -871,8 +881,7 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> A
         result[key] = _object
 
     wrapped_result = result[0] if single_entity else result
-    wrapped_result = tuple(wrapped_result) if is_tuple else wrapped_result
-    if box_to_result_type is not None:
-        wrapped_result = box_to_result_type(wrapped_result)
+    if constructor is not None:
+        wrapped_result = constructor(wrapped_result, *extra_args)
 
     return wrapped_result

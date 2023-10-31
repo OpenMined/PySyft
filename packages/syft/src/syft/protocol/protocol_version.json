@@ -268,14 +268,14 @@
       "HTTPNodeRoute": {
         "1": {
           "version": 1,
-          "hash": "199423cebb9427d22a5c0e4e2210230be6c64d2996aa35a1d6f7677d0ebf945d",
+          "hash": "1901b9f53f9970ce2bd8307ba9f7cafc0e7eba1d2ec82e4014c6120e605e3741",
           "action": "add"
         }
       },
       "PythonNodeRoute": {
         "1": {
           "version": 1,
-          "hash": "4ad5eccc9e849c81bd7a6f18199cd434a7eab107c07a6ff3a870d561ae99e69e",
+          "hash": "15711e6e7a1ef726c8e8b5c35a6cb2d30b56ba5213cba489524bf63489e136cf",
           "action": "add"
         }
       },
@@ -345,7 +345,7 @@
       "DatasetPageView": {
         "1": {
           "version": 1,
-          "hash": "68c7a0c3e7796fdabb8f732c6d150ec4a8071ce78d69b30da18393afdcea1e59",
+          "hash": "6741bd16dc6089d9deea37b1bd4e895152d1a0c163b8bdfe45280b9bfc4a1354",
           "action": "add"
         }
       },
@@ -492,49 +492,7 @@
       "NodePeer": {
         "1": {
           "version": 1,
-          "hash": "50c5b7867d450c1af8011830339c07f5e7bd92589daeac976e0ab86151082cbc",
-          "action": "add"
-        }
-      },
-      "CommandReport": {
-        "1": {
-          "version": 1,
-          "hash": "81c6f248e89f6191f75afb7170f82b616377ae46c1d809f6047e13c6f2f299d5",
-          "action": "add"
-        }
-      },
-      "CommandResult": {
-        "1": {
-          "version": 1,
-          "hash": "65588691901dc0562afb650b0abe04fe6e3e3db516abda3ec82a371ce459ed0d",
-          "action": "add"
-        }
-      },
-      "VPNClientConnection": {
-        "1": {
-          "version": 1,
-          "hash": "cf12dcf5066e6c441e6841ae24bd295d8331e7920c79473bfabc17c5e47cf79e",
-          "action": "add"
-        }
-      },
-      "HeadscaleAuthToken": {
-        "1": {
-          "version": 1,
-          "hash": "d88dbe672feb126eb1c5f36208edb1effcfe8721fb6619a9ac62ed3fff8f1546",
-          "action": "add"
-        }
-      },
-      "TailscalePeer": {
-        "1": {
-          "version": 1,
-          "hash": "603da3a1087e8d80a6b7e4cd6ccaccd7e1baf3ec77265d810e3a9e9cd233ac04",
-          "action": "add"
-        }
-      },
-      "TailscaleStatus": {
-        "1": {
-          "version": 1,
-          "hash": "52a7bd4b72f160a8b14466e98bb2b2a70c4f49aaff635e844fa40e955f7d76d2",
+          "hash": "7b88de7e38490e2d69f31295137673e7ddabc16ab0e2272ff491f6cea1835d63",
           "action": "add"
         }
       },
@@ -762,20 +720,6 @@
           "action": "add"
         }
       },
-      "SQLiteStoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "b656b26c14cf4e97aba702dd62a0927aec7f860c12eed512c2c688e1b7109aa5",
-          "action": "add"
-        }
-      },
-      "Plan": {
-        "1": {
-          "version": 1,
-          "hash": "a0bba2b7792c9e08c453e9e256f0ac6e6185610726566bcd50b057ae83b42d9a",
-          "action": "add"
-        }
-      },
       "MongoDict": {
         "1": {
           "version": 1,
@@ -787,6 +731,20 @@
         "1": {
           "version": 1,
           "hash": "e52aa382e300b0b69aaa2d80aadb4e3a9a3c02b3c741b71d56f959c4d3891ce5",
+          "action": "add"
+        }
+      },
+      "SQLiteStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "b656b26c14cf4e97aba702dd62a0927aec7f860c12eed512c2c688e1b7109aa5",
+          "action": "add"
+        }
+      },
+      "Plan": {
+        "1": {
+          "version": 1,
+          "hash": "a0bba2b7792c9e08c453e9e256f0ac6e6185610726566bcd50b057ae83b42d9a",
           "action": "add"
         }
       }

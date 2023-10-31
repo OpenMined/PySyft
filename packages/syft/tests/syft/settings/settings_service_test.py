@@ -14,7 +14,7 @@ from syft.abstract_node import NodeSideType
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
-from syft.service.metadata.node_metadata import NodeMetadata
+from syft.service.metadata.node_metadata import NodeMetadataV2
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings import NodeSettings
@@ -227,7 +227,7 @@ def test_settings_allow_guest_registration(
     # Create a new worker
 
     verify_key = SyftSigningKey.generate().verify_key
-    mock_node_metadata = NodeMetadata(
+    mock_node_metadata = NodeMetadataV2(
         name=faker.name(),
         verify_key=verify_key,
         highest_version=1,
@@ -310,7 +310,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         )
 
     verify_key = SyftSigningKey.generate().verify_key
-    mock_node_metadata = NodeMetadata(
+    mock_node_metadata = NodeMetadataV2(
         name=faker.name(),
         verify_key=verify_key,
         highest_version=1,
