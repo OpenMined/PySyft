@@ -12,12 +12,18 @@ from typing import Generic
 from typing import Optional
 from typing import TypeVar
 from typing import Union
+import uuid
 
 # third party
+from faker import Faker
 import pytest
 from typing_extensions import Self
 
 # syft absolute
+from syft.service.dataset.dataset import Contributor
+from syft.service.dataset.dataset import Dataset
+from syft.service.dataset.dataset import DatasetPageView
+from syft.service.user.roles import Roles
 from syft.types.dicttuple import DictTuple
 
 
@@ -243,3 +249,18 @@ LENGTH_MISMACTH_TEST_CASES = [
 def test_keys_and_values_should_have_same_length(args: Callable[[], tuple]) -> None:
     with pytest.raises(ValueError, match="length"):
         DictTuple(*args())
+
+
+def test_datasetpageview(faker: Faker):
+    uploader = Contributor(
+        name=faker.name(), role=str(Roles.UPLOADER), email=faker.email()
+    )
+
+    length = 10
+    datasets = (
+        Dataset(name=uuid.uuid4().hex, contributor={uploader}, uploader=uploader)
+        for _ in range(length)
+    )
+    dict_tuple = DictTuple(datasets, lambda d: d.name)
+
+    assert DatasetPageView(datasets=dict_tuple, total=length)
