@@ -68,7 +68,7 @@ class NodePeer(SyftObject):
             current_max_priority += 1
         return new_routes
 
-    def existed_route(self, route: NodeRoute) -> Tuple[bool, int]:
+    def existed_route(self, route: NodeRoute) -> Tuple[bool, Optional[int]]:
         """Check if a route exists in self.node_routes
         - For HTTPNodeRoute: check based on protocol, host_or_ip (url) and port
         - For PythonNodeRoute: check if the route exists in the set of all node_routes
