@@ -1,23 +1,23 @@
-import type { SyftUID } from './syft';
+import type { SyftUID } from "./syft"
 
 export interface UserRole {
-  value: ServiceRoles;
+  value: ServiceRoles
 }
 
 export interface UserListView {
-  id: SyftUID;
-  role: UserRole;
-  name: string;
-  email: string;
+  id: SyftUID
+  role: UserRole
+  name: string
+  email: string
 }
 
 export interface UserView {
-  id: SyftUID;
-  role: UserRole;
-  name: string;
-  email: string;
-  institution?: string;
-  website?: string;
+  id: SyftUID
+  role: UserRole
+  name: string
+  email: string
+  institution?: string
+  website?: string
 }
 
 export enum ServiceRoles {
@@ -25,5 +25,5 @@ export enum ServiceRoles {
   GUEST = 1,
   DATA_SCIENTIST = 2,
   DATA_OWNER = 32,
-  ADMIN = 128
+  ADMIN = 128,
 }

@@ -6,6 +6,6 @@
  */
 
 export interface UID {
-  value: UUID;
+  value: UUID
 }
-import type { UUID } from './UUID';
+import type { UUID } from "./UUID"

@@ -6,7 +6,7 @@
  */
 
 export interface LineageID {
-  value: UUID;
-  syft_history_hash: number;
+  value: UUID
+  syft_history_hash: number
 }
-import type { UUID } from './UUID';
+import type { UUID } from "./UUID"

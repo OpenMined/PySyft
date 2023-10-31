@@ -5,4 +5,4 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-import type { UUID } from './UUID';
+import type { UUID } from "./UUID"

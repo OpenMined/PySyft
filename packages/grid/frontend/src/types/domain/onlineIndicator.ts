@@ -1,1 +1,1 @@
-export type DomainOnlineStatus = 'online' | 'offline' | 'pending';
+export type DomainOnlineStatus = "online" | "offline" | "pending"
