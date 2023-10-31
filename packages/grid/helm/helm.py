@@ -1,6 +1,8 @@
 # stdlib
 import argparse
+import json
 import os
+from pathlib import Path
 import shutil
 import sys
 from typing import Any
@@ -103,6 +105,61 @@ def ingress_with_tls() -> str:
         return fp.read()
 
 
+def add_notes(helm_chart_template_dir: str) -> None:
+    """Add notes or information post helm install or upgrade."""
+
+    notes = """
+    Thank you for installing {{ .Chart.Name }}.
+    Your release is named {{ .Release.Name }}.
+    To learn more about the release, try:
+
+        $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+        $ helm get all {{ .Release.Name }}
+    """
+
+    notes_path = os.path.join(helm_chart_template_dir, "NOTES.txt")
+
+    protocol_changelog = get_protocol_changes()
+
+    notes += "\n" + protocol_changelog
+
+    with open(notes_path, "w") as fp:
+        fp.write(notes)
+
+
+def get_protocol_changes() -> str:
+    """Generate change log of the dev protocol state."""
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    protocol_path = Path(
+        os.path.normpath(
+            os.path.join(
+                script_path,
+                "../../",
+                "syft/src/syft/protocol",
+                "protocol_version.json",
+            )
+        )
+    )
+
+    protocol_changes = ""
+    if protocol_path.exists():
+        dev_protocol_changes = json.loads(protocol_path.read_text())["dev"]
+        protocol_changes = json.dumps(
+            dev_protocol_changes.get("object_versions", {}), indent=4
+        )
+
+    protocol_changelog = f"""
+    Following class versions are either added/removed.
+
+    {protocol_changes}
+
+    This means the existing data will be automatically be migrated to
+    their latest class versions during the upgrade.
+    """
+
+    return protocol_changelog
+
+
 def apply_patches(yaml: str, resource_name: str, resource_kind: str) -> str:
     # print(resource_kind, resource_name)
     # apply resource specific patches
@@ -203,6 +260,9 @@ def main() -> None:
             with open(new_file, "w") as f:
                 f.write(yaml_dump)  # add document separator
                 file_count += 1
+
+    # Add notes
+    add_notes(helm_chart_template_dir)
 
     if file_count > 0:
         print(f"✅ Done: Generated {file_count} template files")
