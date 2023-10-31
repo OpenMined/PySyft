@@ -113,7 +113,7 @@ def add_notes(helm_chart_template_dir: str) -> None:
     Your release is named {{ .Release.Name }}.
     To learn more about the release, try:
 
-        $ helm status {{ .Release.Name }}
+        $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
         $ helm get all {{ .Release.Name }}
     """
 
