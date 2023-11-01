@@ -80,6 +80,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     protocol: str = "http"
     port: int = 80
     proxy_target_uid: Optional[UID] = None
+    priority: int = 1
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, HTTPNodeRoute):
@@ -94,6 +95,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
 
     worker_settings: WorkerSettings
     proxy_target_uid: Optional[UID] = None
+    priority: int = 1
 
     @property
     def node(self) -> Optional[AbstractNode]:

@@ -2187,6 +2187,7 @@ def create_launch_docker_cmd(
         "DOCKER_BUILDKIT": 1,
         "HTTP_PORT": int(host_term.free_port),
         "HTTPS_PORT": int(host_term.free_port_tls),
+        "BACKEND_STORAGE_PATH": "credentials-data",
         "TRAEFIK_TAG": str(tag),
         "NODE_NAME": str(snake_name),
         "NODE_TYPE": str(node_type.input),

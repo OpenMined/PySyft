@@ -143,7 +143,7 @@ def get_protocol_changes() -> str:
 
     protocol_changes = ""
     if protocol_path.exists():
-        dev_protocol_changes = json.loads(protocol_path.read_text())["dev"]
+        dev_protocol_changes = json.loads(protocol_path.read_text()).get("dev", {})
         protocol_changes = json.dumps(
             dev_protocol_changes.get("object_versions", {}), indent=4
         )
