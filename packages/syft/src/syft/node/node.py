@@ -65,7 +65,7 @@ from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadataV2
+from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -82,7 +82,7 @@ from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
-from ..service.settings.settings import NodeSettings
+from ..service.settings.settings import NodeSettingsV2
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
@@ -741,43 +741,35 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def metadata(self) -> NodeMetadataV2:
-        name = ""
-        deployed_on = ""
-        organization = ""
-        on_board = False
-        description = ""
-        signup_enabled = False
-        admin_email = ""
-        show_warnings = self.enable_warnings
-
+    def settings(self) -> NodeSettingsV2:
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key)
         if settings.is_ok() and len(settings.ok()) > 0:
             settings_data = settings.ok()[0]
-            name = settings_data.name
-            deployed_on = settings_data.deployed_on
-            organization = settings_data.organization
-            on_board = settings_data.on_board
-            description = settings_data.description
-            signup_enabled = settings_data.signup_enabled
-            admin_email = settings_data.admin_email
-            show_warnings = settings_data.show_warnings
+        return settings_data
 
-        return NodeMetadataV2(
+    @property
+    def metadata(self) -> NodeMetadataV3:
+        name = ""
+        organization = ""
+        description = ""
+        show_warnings = self.enable_warnings
+        settings_data = self.settings
+        name = settings_data.name
+        organization = settings_data.organization
+        description = settings_data.description
+        show_warnings = settings_data.show_warnings
+
+        return NodeMetadataV3(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
             highest_version=SYFT_OBJECT_VERSION_1,
             lowest_version=SYFT_OBJECT_VERSION_1,
             syft_version=__version__,
-            deployed_on=deployed_on,
             description=description,
             organization=organization,
-            on_board=on_board,
             node_type=self.node_type.value,
-            signup_enabled=signup_enabled,
-            admin_email=admin_email,
             node_side_type=self.node_side_type.value,
             show_warnings=show_warnings,
         )
@@ -967,7 +959,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettings]:
+    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettingsV2]:
         if self.name is None:
             self.name = random_name()
         try:
@@ -981,8 +973,11 @@ class Node(AbstractNode):
                 # as enclaves do not have superusers
                 if self.node_type == NodeType.ENCLAVE:
                     flags.CAN_REGISTER = True
-                new_settings = NodeSettings(
+                new_settings = NodeSettingsV2(
+                    id=self.id,
                     name=self.name,
+                    verify_key=self.verify_key,
+                    node_type=self.node_type,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,

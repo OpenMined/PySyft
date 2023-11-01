@@ -749,5 +749,23 @@
         }
       }
     }
+  },
+  "2": {
+    "object_versions": {
+      "NodeMetadata": {
+        "3": {
+          "version": 3,
+          "hash": "3cc67abf394a805066a88aef0bea15bde609b9ecbe7ec15172eac5e7a0b7ef7c",
+          "action": "add"
+        }
+      },
+      "NodeSettings": {
+        "2": {
+          "version": 2,
+          "hash": "29a82afcb006a044b6ae04c6ea8a067d145d28b4210bb038ea9fa86ebde108c8",
+          "action": "add"
+        }
+      }
+    }
   }
 }

@@ -42,7 +42,7 @@ from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
 from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.metadata.node_metadata import NodeMetadataV2
+from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
@@ -597,7 +597,7 @@ class SyftClient:
         result = self.api.services.network.exchange_credentials_with(
             self_node_route=self_node_route,
             remote_node_route=remote_node_route,
-            remote_node_verify_key=client.metadata.to(NodeMetadataV2).verify_key,
+            remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
         )
 
         return result

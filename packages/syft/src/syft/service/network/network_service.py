@@ -17,6 +17,7 @@ from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...service.settings.settings import NodeSettingsV2
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -30,7 +31,7 @@ from ...types.transforms import transform_method
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
-from ..metadata.node_metadata import NodeMetadataV2
+from ..metadata.node_metadata import NodeMetadataV3
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -401,8 +402,15 @@ def node_route_to_http_connection(
     return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
 
 
-@transform(NodeMetadataV2, NodePeer)
+@transform(NodeMetadataV3, NodePeer)
 def metadata_to_peer() -> List[Callable]:
+    return [
+        keep(["id", "name", "verify_key", "node_type", "admin_email"]),
+    ]
+
+
+@transform(NodeSettingsV2, NodePeer)
+def settings_to_peer() -> List[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),
     ]
