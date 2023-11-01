@@ -71,17 +71,30 @@ class _Meta(type):
         __key: Optional[Union[Callable, Collection]] = None,
         /,
     ) -> _T:
+        # DictTuple()
         if __value is None and __key is None:
             obj = cls.__new__(cls)
             obj.__init__()
             return obj
 
+        # DictTuple(DictTuple(...))
+        elif type(__value) is cls:
+            return __value
+
+        # DictTuple({"x": 123, "y": 456})
         elif isinstance(__value, Mapping) and __key is None:
             obj = cls.__new__(cls, __value.values())
             obj.__init__(__value.keys())
 
             return obj
 
+        # DictTuple(EnhancedDictTuple(...))
+        # EnhancedDictTuple(DictTuple(...))
+        # where EnhancedDictTuple subclasses DictTuple
+        elif hasattr(__value, "items") and callable(__value.items):
+            return cls.__call__(__value.items())
+
+        # DictTuple([("x", 123), ("y", 456)])
         elif isinstance(__value, Iterable) and __key is None:
             keys = OrderedDict()
             values = deque()
@@ -95,6 +108,7 @@ class _Meta(type):
 
             return obj
 
+        # DictTuple([123, 456], ["x", "y"])
         elif isinstance(__value, Iterable) and isinstance(__key, Iterable):
             keys = OrderedDict((k, i) for i, k in enumerate(__key))
 
@@ -103,6 +117,8 @@ class _Meta(type):
 
             return obj
 
+        # DictTuple(["abc", "xyz"], lambda x: x[0])
+        # equivalent to DictTuple({"a": "abc", "x": "xyz"})
         elif isinstance(__value, Iterable) and isinstance(__key, Callable):
             obj = cls.__new__(cls, __value)
             obj.__init__(__key)
