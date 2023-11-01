@@ -132,7 +132,7 @@ class ProjectEvent(SyftObject):
                 )
 
             self.creator_verify_key.verify_key.verify(event_hash_bytes, self.signature)
-            return SyftSuccess(message="Event signature is valid")
+            return SyftSuccess(message="Event signature is valid.")
         except Exception as e:
             return SyftError(message=f"Failed to validate message. {e}")
 
