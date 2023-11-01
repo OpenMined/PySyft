@@ -146,6 +146,10 @@ jobs:
           chmod +x devspace
           devspace version
 
+          # Install helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
           export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}
           export VERSION=dev-${{github.sha}}
           tox -e syft.build.helm
