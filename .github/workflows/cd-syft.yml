@@ -132,10 +132,10 @@ jobs:
       #       twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
       #     fi
 
-      # - name: Set Grid package version
-      #   id: grid-version
-      #   shell: bash
-      #   run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+      - name: Set Grid package version
+        id: grid-version
+        shell: bash
+        run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
       # Check if the version is a pre-release
       - name: Check if the version is a pre-release and modify version string
