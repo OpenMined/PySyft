@@ -38,7 +38,8 @@ jobs:
   deploy-syft:
     needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
     if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
-    runs-on: [self-hosted, Linux]
+    # runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
     permissions:
       contents: write # For tag and release notes.
     steps:
