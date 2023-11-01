@@ -189,7 +189,6 @@ def metadata_to_json() -> List[Callable]:
 
 
 @transform(NodeMetadataJSON, NodeMetadataV3)
-
 def json_to_metadata() -> List[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
