@@ -251,6 +251,15 @@ jobs:
           cache-from: type=registry,ref= ${{ steps.meta_grid_frontend.outputs.tags }}
           cache-to: type=inline
 
+      # free 10GB of space
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
       - name: Docker meta for Grid-Enclave
         id: meta_grid_enclave
         uses: docker/metadata-action@v3
@@ -271,6 +280,15 @@ jobs:
           target: worker
           cache-from: type=registry,ref=${{ steps.meta_grid_enclave.outputs.tags }}
           cache-to: type=inline
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Login to Docker-Helm
         run: |
