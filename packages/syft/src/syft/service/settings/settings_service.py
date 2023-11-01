@@ -19,8 +19,8 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..warnings import HighSideCRUDWarning
-from .settings import NodeSettings
 from .settings import NodeSettingsUpdate
+from .settings import NodeSettingsV2
 from .settings_stash import SettingsStash
 
 
@@ -49,7 +49,7 @@ class SettingsService(AbstractService):
 
     @service_method(path="settings.set", name="set")
     def set(
-        self, context: AuthedServiceContext, settings: NodeSettings
+        self, context: AuthedServiceContext, settings: NodeSettingsV2
     ) -> Result[Ok, Err]:
         """Set a new the Node Settings"""
         print("Here!")
