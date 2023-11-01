@@ -83,10 +83,17 @@ jobs:
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
+
+          #Install Devspace
           DEVSPACE_VERSION=v6.3.3
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
+
+          # Install helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
           tox -e syft.build.helm
           tox -e syft.package.helm
 
