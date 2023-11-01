@@ -134,8 +134,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "My cool domain"
-    signup_enabled: bool
-    admin_email: str
+    signup_enabled: Optional[bool]
+    admin_email: Optional[str]
     node_side_type: str
     show_warnings: bool
     supported_protocols: List = []
