@@ -60,19 +60,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade tox setuptools wheel twine bump2version PyYAML
 
-      - name: Bump the Version
-        run: |
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          bump2version prenum --allow-dirty --no-commit
-          tox -e lint || true
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+      # - name: Bump the Version
+      #   run: |
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      #     bump2version prenum --allow-dirty --no-commit
+      #     tox -e lint || true
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      #     python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
 
-      - name: Check Protocol Version
-        run: |
-          tox -e syft.protocol.check
+      # - name: Check Protocol Version
+      #   run: |
+      #     tox -e syft.protocol.check
 
       - name: Build Helm Chart
         shell: bash
@@ -98,39 +98,39 @@ jobs:
           tox -e syft.build.helm
           tox -e syft.package.helm
 
-      - name: Check and Bump Protocol Version
-        run: |
-          export BUMP=True
-          tox -e syft.protocol.check
+      # - name: Check and Bump Protocol Version
+      #   run: |
+      #     export BUMP=True
+      #     tox -e syft.protocol.check
 
-      - name: Commit changes to Syft
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: ${{ secrets.OM_BOT_NAME }}
-          author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "[syft]bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' , 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json']"
+      # - name: Commit changes to Syft
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     author_name: ${{ secrets.OM_BOT_NAME }}
+      #     author_email: ${{ secrets.OM_BOT_EMAIL }}
+      #     message: "[syft]bump version"
+      #     add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' , 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json']"
 
-      - name: Scheduled Build and Publish
-        if: github.event_name == 'schedule'
-        run: |
-          tox -e syft.publish
-          twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+      # - name: Scheduled Build and Publish
+      #   if: github.event_name == 'schedule'
+      #   run: |
+      #     tox -e syft.publish
+      #     twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
 
-      - name: Manual Build and Publish
-        if: github.event_name != 'schedule'
-        run: |
-          tox -e syft.publish
-          if [ "${{ github.event.inputs.release_platform }}" = "REAL_PYPI" ]; then
-            twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
-          fi
-          if [ "${{ github.event.inputs.release_platform }}" = "TEST_PYPI" ]; then
-            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
-          fi
-          if [ "${{ github.event.inputs.release_platform }}" = "REAL_AND_TEST_PYPI" ]; then
-            twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
-            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
-          fi
+      # - name: Manual Build and Publish
+      #   if: github.event_name != 'schedule'
+      #   run: |
+      #     tox -e syft.publish
+      #     if [ "${{ github.event.inputs.release_platform }}" = "REAL_PYPI" ]; then
+      #       twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+      #     fi
+      #     if [ "${{ github.event.inputs.release_platform }}" = "TEST_PYPI" ]; then
+      #       twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
+      #     fi
+      #     if [ "${{ github.event.inputs.release_platform }}" = "REAL_AND_TEST_PYPI" ]; then
+      #       twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+      #       twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
+      #     fi
 
       - name: Set Grid package version
         id: grid-version
@@ -149,52 +149,52 @@ jobs:
             echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           fi
 
-      # Checkout Infra repo (nested)
-      - name: Checkout Infra Repo
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ secrets.INFRA_REPO }}
-          ref: "main"
-          token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
-          path: infrastructure
+      # # Checkout Infra repo (nested)
+      # - name: Checkout Infra Repo
+      #   uses: actions/checkout@v3
+      #   with:
+      #     repository: ${{ secrets.INFRA_REPO }}
+      #     ref: "main"
+      #     token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
+      #     path: infrastructure
 
-      # This step will copy the generated K8s manifest files to the correct directory in Infra repo
-      - name: Copy files to Infra Repo
-        run: |
-          if $is_pre_release; then
-            rm -rf infrastructure/gitops/environments/pre-release/.
-            cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/pre_release/
-          else
-            rm -rf infrastructure/gitops/environments/stable/.
-            cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/stable/
-          fi
+      # # This step will copy the generated K8s manifest files to the correct directory in Infra repo
+      # - name: Copy files to Infra Repo
+      #   run: |
+      #     if $is_pre_release; then
+      #       rm -rf infrastructure/gitops/environments/pre-release/.
+      #       cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/pre_release/
+      #     else
+      #       rm -rf infrastructure/gitops/environments/stable/.
+      #       cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/stable/
+      #     fi
 
-      - name: Commit changes to Infra Repo
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: ${{ secrets.OM_BOT_NAME }}
-          author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "Update K8s Manifests from Syft Repo"
-          add: "."
-          push: "origin main"
-          cwd: "./infrastructure/"
+      # - name: Commit changes to Infra Repo
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     author_name: ${{ secrets.OM_BOT_NAME }}
+      #     author_email: ${{ secrets.OM_BOT_EMAIL }}
+      #     message: "Update K8s Manifests from Syft Repo"
+      #     add: "."
+      #     push: "origin main"
+      #     cwd: "./infrastructure/"
 
-      - name: Create SyftCLI Config assets
-        run: |
-          pip install pyyaml
-          python scripts/create_syftcli_config.py
+      # - name: Create SyftCLI Config assets
+      #   run: |
+      #     pip install pyyaml
+      #     python scripts/create_syftcli_config.py
 
-      - name: GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: v${{ steps.release_checks.outputs.github_release_version }}
-          generate_release_notes: true
-          prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
-          files: |
-            ./packages/syftcli/manifest.yml
-            ./build/syftcli-config/*
-            ./packages/hagrid/hagrid/manifest_template.yml
-          tag_name: v${{ steps.release_checks.outputs.github_release_version }}
+      # - name: GitHub Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     name: v${{ steps.release_checks.outputs.github_release_version }}
+      #     generate_release_notes: true
+      #     prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
+      #     files: |
+      #       ./packages/syftcli/manifest.yml
+      #       ./build/syftcli-config/*
+      #       ./packages/hagrid/hagrid/manifest_template.yml
+      #     tag_name: v${{ steps.release_checks.outputs.github_release_version }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
