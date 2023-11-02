@@ -79,8 +79,8 @@ class NodeMetadata(SyftObject):
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "Text"
-    signup_enabled: bool = False
-    admin_email: str = ""
+    signup_enabled: bool
+    admin_email: str
     node_side_type: str
     show_warnings: bool
 
@@ -158,8 +158,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     node_type: str = NodeType.DOMAIN.value
     organization: str = "OpenMined"
     description: str = "My cool domain"
-    signup_enabled: Optional[bool]
-    admin_email: Optional[str]
+    signup_enabled: bool = False
+    admin_email: str = ""
     node_side_type: str
     show_warnings: bool
     supported_protocols: List = []
