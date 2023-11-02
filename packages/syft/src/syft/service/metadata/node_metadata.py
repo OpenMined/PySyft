@@ -79,8 +79,8 @@ class NodeMetadata(SyftObject):
     organization: str = "OpenMined"
     on_board: bool = False
     description: str = "Text"
-    signup_enabled: bool
-    admin_email: str
+    signup_enabled: bool = False
+    admin_email: str = ""
     node_side_type: str
     show_warnings: bool
 
