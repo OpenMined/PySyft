@@ -2,8 +2,24 @@ apiVersion: v1
 entries:
   syft:
   - apiVersion: v2
+    appVersion: 0.8.2-beta.46
+    created: "2023-11-02T05:57:31.512581166Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 8b92b97ec4fdd149ff78fdb0040ee1ec7af7737dd9cb67e6fb84c2228c1be6cb
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.46.tgz
+    version: 0.8.2-beta.46
+  - apiVersion: v2
     appVersion: 0.8.2-beta.45
-    created: "2023-11-02T03:28:10.139304653Z"
+    created: "2023-11-02T05:57:31.511772054Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -19,7 +35,7 @@ entries:
     version: 0.8.2-beta.45
   - apiVersion: v2
     appVersion: 0.8.2-beta.44
-    created: "2023-11-02T03:28:10.13849002Z"
+    created: "2023-11-02T05:57:31.510652238Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -35,7 +51,7 @@ entries:
     version: 0.8.2-beta.44
   - apiVersion: v2
     appVersion: 0.8.2-beta.43
-    created: "2023-11-02T03:28:10.137397376Z"
+    created: "2023-11-02T05:57:31.50935662Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -51,7 +67,7 @@ entries:
     version: 0.8.2-beta.43
   - apiVersion: v2
     appVersion: 0.8.2-beta.42
-    created: "2023-11-02T03:28:10.133215607Z"
+    created: "2023-11-02T05:57:31.508068001Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -67,7 +83,7 @@ entries:
     version: 0.8.2-beta.42
   - apiVersion: v2
     appVersion: 0.8.2-beta.41
-    created: "2023-11-02T03:28:10.131955956Z"
+    created: "2023-11-02T05:57:31.506884484Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -83,7 +99,7 @@ entries:
     version: 0.8.2-beta.41
   - apiVersion: v2
     appVersion: 0.8.2-beta.40
-    created: "2023-11-02T03:28:10.130697806Z"
+    created: "2023-11-02T05:57:31.505731568Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -99,7 +115,7 @@ entries:
     version: 0.8.2-beta.40
   - apiVersion: v2
     appVersion: 0.8.2-beta.39
-    created: "2023-11-02T03:28:10.12956616Z"
+    created: "2023-11-02T05:57:31.504541451Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -115,7 +131,7 @@ entries:
     version: 0.8.2-beta.39
   - apiVersion: v2
     appVersion: 0.8.2-beta.38
-    created: "2023-11-02T03:28:10.1280713Z"
+    created: "2023-11-02T05:57:31.503374834Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -131,7 +147,7 @@ entries:
     version: 0.8.2-beta.38
   - apiVersion: v2
     appVersion: 0.8.2-beta.37
-    created: "2023-11-02T03:28:10.126922853Z"
+    created: "2023-11-02T05:57:31.500673095Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -147,7 +163,7 @@ entries:
     version: 0.8.2-beta.37
   - apiVersion: v2
     appVersion: 0.8.1
-    created: "2023-11-02T03:28:10.125731105Z"
+    created: "2023-11-02T05:57:31.499515079Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -161,4 +177,4 @@ entries:
     urls:
     - https://openmined.github.io/PySyft/helm/syft-0.8.1.tgz
     version: 0.8.1
-generated: "2023-11-02T03:28:10.123322508Z"
+generated: "2023-11-02T05:57:31.498154259Z"
