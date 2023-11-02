@@ -104,6 +104,16 @@ def ingress_with_tls() -> str:
     with open(ingress_tls) as fp:
         return fp.read()
 
+def add_secrets(helm_chart_template_dir: str) -> None:
+    """
+    Add secrets.txt to secrets.yaml during runtime build. 
+    """
+    secrets_path = os.path.join(helm_chart_template_dir, "secrets.yaml")
+    secrets_source = os.path.join('k8s/manifests', "secrets.txt")
+    with open(secrets_path, "w") as fp:
+        with open(secrets_source, "r") as fp2:
+            fp.write(fp2.read())
+
 
 def add_notes(helm_chart_template_dir: str) -> None:
     """Add notes or information post helm install or upgrade."""
@@ -263,7 +273,7 @@ def main() -> None:
 
     # Add notes
     add_notes(helm_chart_template_dir)
-
+    add_secrets(helm_chart_template_dir)
     if file_count > 0:
         print(f"✅ Done: Generated {file_count} template files")
     else:
