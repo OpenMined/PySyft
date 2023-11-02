@@ -26,7 +26,7 @@ mongo_client_config = MongoStoreClientConfig(
 mongo_store_config = MongoStoreConfig(client_config=mongo_client_config)
 
 
-client_config = SQLiteStoreClientConfig(path="/storage/")
+client_config = SQLiteStoreClientConfig(path=settings.SQLITE_PATH)
 sql_store_config = SQLiteStoreConfig(client_config=client_config)
 
 node_type = get_node_type()
@@ -51,7 +51,7 @@ if node_type == "gateway" or node_type == "network":
     worker = Gateway(
         name=node_name,
         node_side_type=node_side_type,
-        action_store_config=sql_store_config,
+        action_store_config=mongo_store_config,
         document_store_config=mongo_store_config,
         enable_warnings=enable_warnings,
         blob_storage_config=blob_storage_config,
@@ -60,7 +60,7 @@ else:
     worker = Domain(
         name=node_name,
         node_side_type=node_side_type,
-        action_store_config=sql_store_config,
+        action_store_config=mongo_store_config,
         document_store_config=mongo_store_config,
         enable_warnings=enable_warnings,
         blob_storage_config=blob_storage_config,

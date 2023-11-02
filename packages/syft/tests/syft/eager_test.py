@@ -120,8 +120,9 @@ def test_plan_with_object_instantiation(worker, guest_client):
 def test_setattribute(worker, guest_client):
     root_domain_client = worker.root_client
 
-    private_data, mock_data = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), np.array(
-        [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
+    private_data, mock_data = (
+        np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),
+        np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
     )
 
     obj = TwinObject(private_obj=private_data, mock_obj=mock_data)

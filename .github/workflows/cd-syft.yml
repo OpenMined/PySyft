@@ -38,7 +38,8 @@ jobs:
   deploy-syft:
     needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
     if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
-    runs-on: om-ci-16vcpu-ubuntu2204
+    # runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
     permissions:
       contents: write # For tag and release notes.
     steps:
@@ -49,6 +50,15 @@ jobs:
       - uses: actions/checkout@v3
         with:
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -69,6 +79,10 @@ jobs:
           cat packages/grid/devspace.yaml | grep '0\.'
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
 
+      - name: Check Protocol Version
+        run: |
+          tox -e syft.protocol.check
+
       - name: Build Helm Chart
         shell: bash
         run: |
@@ -79,16 +93,23 @@ jobs:
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
+
+          #Install Devspace
           DEVSPACE_VERSION=v6.3.3
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
+
+          # Install helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
           tox -e syft.build.helm
           tox -e syft.package.helm
 
       - name: Check and Bump Protocol Version
-        if: github.event_name == 'schedule'
         run: |
+          export BUMP=True
           tox -e syft.protocol.check
 
       - name: Commit changes to Syft
@@ -239,6 +260,15 @@ jobs:
           cache-from: type=registry,ref= ${{ steps.meta_grid_frontend.outputs.tags }}
           cache-to: type=inline
 
+      # free 10GB of space
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
       - name: Docker meta for Grid-Enclave
         id: meta_grid_enclave
         uses: docker/metadata-action@v3
@@ -260,65 +290,14 @@ jobs:
           cache-from: type=registry,ref=${{ steps.meta_grid_enclave.outputs.tags }}
           cache-to: type=inline
 
-      - name: Docker meta for Grid-Headscale
-        id: meta_grid_headscale
-        uses: docker/metadata-action@v3
-        with:
-          images: openmined/grid-vpn-headscale
-          tags: |
-            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value=beta
-
-      - name: Build and push `grid-headscale` image to DockerHub
-        uses: docker/build-push-action@v4
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/headscale.dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta_grid_headscale.outputs.tags }}
-          cache-from: type=registry,ref= ${{ steps.meta_grid_headscale.outputs.tags }}
-          cache-to: type=inline
-
-      - name: Docker meta for Grid-Tailscale
-        id: meta_grid_tailscale
-        uses: docker/metadata-action@v3
-        with:
-          images: openmined/grid-vpn-tailscale
-          tags: |
-            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value=beta
-
-      - name: Build and push `grid-tailscale` image to DockerHub
-        uses: docker/build-push-action@v4
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/tailscale.dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta_grid_tailscale.outputs.tags }}
-          cache-from: type=registry,ref= ${{ steps.meta_grid_tailscale.outputs.tags }}
-          cache-to: type=inline
-
-      - name: Docker meta for grid-vpn-iptables
-        id: meta_grid_vpn_iptables
-        uses: docker/metadata-action@v3
-        with:
-          images: openmined/grid-vpn-iptables
-          tags: |
-            type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value=beta
-
-      - name: Build and push `grid-vpn-iptables` image to DockerHub
-        uses: docker/build-push-action@v2
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/iptables.dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta_grid_vpn_iptables.outputs.tags }}
-          cache-from: type=registry,ref=  ${{ steps.meta_grid_vpn_iptables.outputs.tags }}
-          cache-to: type=inline
+      # free 10GB of space
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Login to Docker-Helm
         run: |

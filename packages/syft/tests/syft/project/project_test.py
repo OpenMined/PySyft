@@ -72,9 +72,7 @@ def test_exception_different_email(worker):
 
     ds_sheldon = sy.login(node=worker, email="sheldon@caltech.edu", password="bazinga")
 
-    ds_leonard = sy.login(
-        node=worker, email="leonard@princeton.edu", password="starwars"
-    )
+    ds_leonard = sy.login(node=worker, email="leonard@princeton.edu", password="penny")
 
     with pytest.raises(ValidationError):
         sy.Project(

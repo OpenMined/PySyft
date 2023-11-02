@@ -1,9 +1,9 @@
 manifestVersion: 0.1
-hagrid_version: 0.3.77
-syft_version: 0.8.2-beta.39
-dockerTag: 0.8.2-beta.39
+hagrid_version: 0.3.79
+syft_version: 0.8.2-beta.44
+dockerTag: 0.8.2-beta.44
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
-hash: f81ed9bf568322aed2fb6eea423233fb38d05123
+hash: d3bb2705bb609c2f1b106353369d2083f6a38d79
 target_dir: ~/.hagrid/PySyft/
 files:
   grid:
@@ -13,7 +13,6 @@ files:
     - redis/redis.conf
     - seaweedfs/filer.toml
     - seaweedfs/start.sh
-    - vpn/config.yaml
     - default.env
     docker:
     - default.env
@@ -27,8 +26,6 @@ files:
     - traefik/docker/dynamic.yml
     - traefik/docker/traefik-tls.template.yml
     - traefik/docker/traefik.yml
-    - vpn/headscale.dockerfile
-    - vpn/tailscale.dockerfile
     k8s:
     - devspace.yaml
     - traefik/k8s/dynamic.yml

@@ -5,6 +5,7 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Type
+from typing import Union
 
 # third party
 from pymongo import ASCENDING
@@ -25,6 +26,7 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
+from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
@@ -36,10 +38,12 @@ from ..types.transforms import transform_method
 from ..types.uid import UID
 from .document_store import DocumentStore
 from .document_store import PartitionKey
+from .document_store import PartitionSettings
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StoreConfig
 from .document_store import StorePartition
+from .kv_document_store import KeyValueBackingStore
 from .locks import LockingConfig
 from .locks import NoLockingConfig
 from .mongo_client import MongoClient
@@ -559,6 +563,42 @@ class MongoStorePartition(StorePartition):
         collection: MongoCollection = collection_status.ok()
         return collection.count_documents(filter={})
 
+    def _migrate_data(
+        self, to_klass: SyftObject, context: AuthedServiceContext, has_permission: bool
+    ) -> Result[bool, str]:
+        credentials = context.credentials
+        has_permission = (credentials == self.root_verify_key) or has_permission
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+
+        if has_permission:
+            storage_objs = collection.find({})
+            for storage_obj in storage_objs:
+                obj = self.storage_type(storage_obj)
+                transform_context = TransformContext(output={}, obj=obj)
+                value = obj.to(self.settings.object_type, transform_context)
+                key = obj.get("_id")
+                try:
+                    migrated_value = value.migrate_to(to_klass.__version__, context)
+                except Exception:
+                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                qk = self.settings.store_key.with_obj(key)
+                result = self._update(
+                    credentials,
+                    qk=qk,
+                    obj=migrated_value,
+                    has_permission=has_permission,
+                )
+
+                if result.is_err():
+                    return result.err()
+
+            return Ok(True)
+
+        return Err("You don't have permissions to migrate data.")
+
 
 @serializable()
 class MongoDocumentStore(DocumentStore):
@@ -570,6 +610,219 @@ class MongoDocumentStore(DocumentStore):
     """
 
     partition_type = MongoStorePartition
+
+
+@serializable(attrs=["index_name", "settings", "store_config"])
+class MongoBackingStore(KeyValueBackingStore):
+    """
+    Core logic for the MongoDB key-value store
+
+    Parameters:
+        `index_name`: str
+            Index name (can be either 'data' or 'permissions')
+        `settings`: PartitionSettings
+            Syft specific settings
+        `store_config`: StoreConfig
+            Connection Configuration
+         `ddtype`: Type
+            Optional and should be None
+            Used to make a consistent interface with SQLiteBackingStore
+    """
+
+    def __init__(
+        self,
+        index_name: str,
+        settings: PartitionSettings,
+        store_config: StoreConfig,
+        ddtype: Optional[type] = None,
+    ) -> None:
+        self.index_name = index_name
+        self.settings = settings
+        self.store_config = store_config
+        self.client: MongoClient
+        self.ddtype = ddtype
+        self.init_client()
+
+    def init_client(self) -> Union[None, Err]:
+        self.client = MongoClient(config=self.store_config.client_config)
+
+        collection_status = self.client.with_collection(
+            collection_settings=self.settings,
+            store_config=self.store_config,
+            collection_name=f"{self.settings.name}_{self.index_name}",
+        )
+        if collection_status.is_err():
+            return collection_status
+        self._collection: MongoCollection = collection_status.ok()
+
+    @property
+    def collection(self) -> Result[MongoCollection, Err]:
+        if not hasattr(self, "_collection"):
+            res = self.init_client()
+            if res.is_err():
+                return res
+
+        return Ok(self._collection)
+
+    def _exist(self, key: UID) -> bool:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+
+        result: Optional[Dict] = collection.find_one({"_id": key})
+        if result is not None:
+            return True
+
+        return False
+
+    def _set(self, key: UID, value: Any) -> None:
+        if self._exist(key):
+            self._update(key, value)
+        else:
+            collection_status = self.collection
+            if collection_status.is_err():
+                return collection_status
+            collection: MongoCollection = collection_status.ok()
+            try:
+                bson_data = {
+                    "_id": key,
+                    f"{key}": _serialize(value, to_bytes=True),
+                    "_repr_debug_": _repr_debug_(value),
+                }
+                collection.insert_one(bson_data)
+            except Exception as e:
+                raise ValueError(f"Cannot insert data. Error message: {e}")
+
+    def _update(self, key: UID, value: Any) -> None:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+        try:
+            collection.update_one(
+                {"_id": key},
+                {
+                    "$set": {
+                        f"{key}": _serialize(value, to_bytes=True),
+                        "_repr_debug_": _repr_debug_(value),
+                    }
+                },
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to update obj: {key} with value: {value}. Error: {e}"
+            )
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        self._set(key, value)
+
+    def _get(self, key: UID) -> Any:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+
+        result: Optional[Dict] = collection.find_one({"_id": key})
+        if result is not None:
+            return _deserialize(result[f"{key}"], from_bytes=True)
+        else:
+            # raise KeyError(f"{key} does not exist")
+            # return an empty set which is the same with SQLiteBackingStore
+            return set()
+
+    def __getitem__(self, key: Any) -> Self:
+        try:
+            return self._get(key)
+        except KeyError as e:
+            raise e
+
+    def _len(self) -> int:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return 0
+        collection: MongoCollection = collection_status.ok()
+        return collection.count_documents(filter={})
+
+    def __len__(self) -> int:
+        return self._len()
+
+    def _delete(self, key: UID) -> None:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+        result = collection.delete_one({"_id": key})
+        if result.deleted_count != 1:
+            raise KeyError(f"{key} does not exist")
+
+    def __delitem__(self, key: str):
+        self._delete(key)
+
+    def _delete_all(self) -> None:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+        collection.delete_many({})
+
+    def clear(self) -> Self:
+        self._delete_all()
+
+    def _get_all(self) -> Any:
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+        result = collection.find()
+        keys, values = [], []
+        for row in result:
+            keys.append(row["_id"])
+            values.append(_deserialize(row[f"{row['_id']}"], from_bytes=True))
+        return dict(zip(keys, values))
+
+    def keys(self) -> Any:
+        return self._get_all().keys()
+
+    def values(self) -> Any:
+        return self._get_all().values()
+
+    def items(self) -> Any:
+        return self._get_all().items()
+
+    def pop(self, key: Any) -> Self:
+        value = self._get(key)
+        self._delete(key)
+        return value
+
+    def __contains__(self, key: Any) -> bool:
+        return self._exist(key)
+
+    def __iter__(self) -> Any:
+        return iter(self.keys())
+
+    def __repr__(self) -> str:
+        return repr(self._get_all())
+
+    def copy(self) -> Self:
+        # 🟡 TODO
+        raise NotImplementedError
+
+    def update(self, *args: Any, **kwargs: Any) -> Self:
+        """
+        Inserts the specified items to the dictionary.
+        """
+        # 🟡 TODO
+        raise NotImplementedError
+
+    def __del__(self):
+        """
+        Close the mongo client connection:
+            - Cleanup client resources and disconnect from MongoDB
+            - End all server sessions created by this client
+            - Close all sockets in the connection pools and stop the monitor threads
+        """
+        self.client.close()
 
 
 @serializable()
@@ -596,5 +849,6 @@ class MongoStoreConfig(StoreConfig):
     client_config: MongoStoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"
+    backing_store = MongoBackingStore
     # TODO: should use a distributed lock, with RedisLockingConfig
     locking_config: LockingConfig = NoLockingConfig()

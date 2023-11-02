@@ -17,7 +17,8 @@ on:
 
 jobs:
   check-last-run:
-    runs-on: om-ci-16vcpu-ubuntu2204
+    # runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
 
     outputs:
       same-commit: ${{ steps.cache.outputs.cache-hit }}
@@ -41,7 +42,8 @@ jobs:
     needs: check-last-run
     if: needs.check-last-run.outputs.same-commit != 'true'
 
-    runs-on: om-ci-16vcpu-ubuntu2204
+    # runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Permission to home directory
@@ -127,39 +129,6 @@ jobs:
       #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev-${{ github.sha }}
       #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:${{ steps.grid.outputs.GRID_VERSION }}
 
-      - name: Build and push `grid-headscale` image to registry
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/headscale.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:${{ steps.grid.outputs.GRID_VERSION }}
-
-      - name: Build and push `grid-tailscale` image to registry
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/tailscale.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:${{ steps.grid.outputs.GRID_VERSION }}
-
-      - name: Build and push `grid-vpn-iptables` image to registry
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/iptables.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:${{ steps.grid.outputs.GRID_VERSION }}
-
       - name: Build Helm Chart & Copy to infra
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
         shell: bash
@@ -178,6 +147,10 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
+
+          # Install helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
 
           export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}
           export VERSION=dev-${{github.sha}}
