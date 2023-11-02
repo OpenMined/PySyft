@@ -271,8 +271,9 @@ class DataProtocol:
 
         keys = self.protocol_history.keys()
         if "dev" not in keys:
-            raise Exception(
-                "You can't bump the protocol if there are no staged changes."
+            print("You can't bump the protocol if there are no staged changes.")
+            return SyftError(
+                message="Failed to bump version as there are no staged changes."
             )
 
         highest_protocol = 0
