@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import OrderedDict
 import inspect
+from inspect import Parameter
 from inspect import signature
 import types
 from typing import Any
@@ -14,6 +15,8 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 from typing import _GenericAlias
+from typing import get_args
+from typing import get_origin
 
 # third party
 from nacl.exceptions import BadSignatureError
@@ -26,6 +29,9 @@ from typeguard import check_type
 from ..abstract_node import AbstractNode
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
+from ..protocol.data_protocol import PROTOCOL_TYPE
+from ..protocol.data_protocol import get_data_protocol
+from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.deserialize import _deserialize
 from ..serde.recursive import index_syft_by_module_name
 from ..serde.serializable import serializable
@@ -46,6 +52,7 @@ from ..service.warnings import WarningContext
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftBaseObject
+from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
 from ..types.uid import LineageID
 from ..types.uid import UID
@@ -110,6 +117,9 @@ class APIEndpoint(SyftObject):
 
 @serializable()
 class LibEndpoint(SyftBaseObject):
+    __canonical_name__ = "LibEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     # TODO: bad name, change
     service_path: str
     module_path: str
@@ -206,6 +216,7 @@ def generate_remote_function(
     path: str,
     make_call: Callable,
     pre_kwargs: Dict[str, Any],
+    communication_protocol: PROTOCOL_TYPE,
     warning: Optional[APIEndpointWarning],
 ):
     if "blocking" in signature.parameters:
@@ -219,6 +230,11 @@ def generate_remote_function(
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 
+        # Migrate args and kwargs to communication protocol
+        args, kwargs = migrate_args_and_kwargs(
+            to_protocol=communication_protocol, args=args, kwargs=kwargs
+        )
+
         res = validate_callable_args_and_kwargs(args, kwargs, signature)
 
         if isinstance(res, SyftError):
@@ -227,6 +243,8 @@ def generate_remote_function(
 
         if pre_kwargs:
             _valid_kwargs.update(pre_kwargs)
+
+        _valid_kwargs["communication_protocol"] = communication_protocol
 
         api_call = SyftAPICall(
             node_uid=node_uid,
@@ -240,6 +258,11 @@ def generate_remote_function(
         if not allowed:
             return
         result = make_call(api_call=api_call)
+
+        result, _ = migrate_args_and_kwargs(
+            [result], kwargs={}, to_latest_protocol=True
+        )
+        result = result[0]
         return result
 
     wrapper.__ipython_inspector_signature_override__ = signature
@@ -253,6 +276,7 @@ def generate_remote_lib_function(
     path: str,
     module_path: str,
     make_call: Callable,
+    communication_protocol: PROTOCOL_TYPE,
     pre_kwargs: Dict[str, Any],
 ):
     if "blocking" in signature.parameters:
@@ -350,17 +374,14 @@ class APIModule:
             )
 
     def __getitem__(self, key: Union[str, int]) -> Any:
-        if isinstance(key, int) and hasattr(self, "get_all"):
+        if hasattr(self, "get_all"):
             return self.get_all()[key]
         raise NotImplementedError
 
     def _repr_html_(self) -> Any:
         if not hasattr(self, "get_all"):
             return NotImplementedError
-        if hasattr(self, "get_all_unread"):
-            results = self.get_all_unread()
-        else:
-            results = self.get_all()
+        results = self.get_all()
         return results._repr_html_()
 
 
@@ -375,8 +396,80 @@ def debox_signed_syftapicall_response(
     return signed_result.message.data
 
 
+def downgrade_signature(signature: Signature, object_versions: Dict):
+    migrated_parameters = []
+    for _, parameter in signature.parameters.items():
+        annotation = unwrap_and_migrate_annotation(
+            parameter.annotation, object_versions
+        )
+        migrated_parameter = Parameter(
+            name=parameter.name,
+            default=parameter.default,
+            annotation=annotation,
+            kind=parameter.kind,
+        )
+        migrated_parameters.append(migrated_parameter)
+
+    migrated_return_annotation = unwrap_and_migrate_annotation(
+        signature.return_annotation, object_versions
+    )
+
+    try:
+        new_signature = Signature(
+            parameters=migrated_parameters,
+            return_annotation=migrated_return_annotation,
+        )
+    except Exception as e:
+        raise e
+
+    return new_signature
+
+
+def unwrap_and_migrate_annotation(annotation, object_versions):
+    args = get_args(annotation)
+    origin = get_origin(annotation)
+    if len(args) == 0:
+        if (
+            isinstance(annotation, type)
+            and issubclass(annotation, SyftBaseObject)
+            and annotation.__canonical_name__ in object_versions
+        ):
+            downgrade_to_version = int(
+                max(object_versions[annotation.__canonical_name__])
+            )
+            downgrade_klass_name = SyftMigrationRegistry.__migration_version_registry__[
+                annotation.__canonical_name__
+            ][downgrade_to_version]
+            new_arg = index_syft_by_module_name(downgrade_klass_name)
+            return new_arg
+        else:
+            return annotation
+
+    migrated_annotations = []
+    for arg in args:
+        migrated_annotation = unwrap_and_migrate_annotation(arg, object_versions)
+        migrated_annotations.append(migrated_annotation)
+
+    migrated_annotations = tuple(migrated_annotations)
+
+    if hasattr(annotation, "copy_with"):
+        return annotation.copy_with(migrated_annotations)
+    elif origin is not None:
+        return origin[migrated_annotations]
+    else:
+        return migrated_annotation[0]
+
+
 @instrument
-@serializable(attrs=["endpoints", "node_uid", "node_name", "lib_endpoints"])
+@serializable(
+    attrs=[
+        "endpoints",
+        "node_uid",
+        "node_name",
+        "lib_endpoints",
+        "communication_protocol",
+    ]
+)
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
@@ -394,13 +487,16 @@ class SyftAPI(SyftObject):
     # serde / storage rules
     refresh_api_callback: Optional[Callable] = None
     __user_role: ServiceRole = ServiceRole.NONE
+    communication_protocol: PROTOCOL_TYPE
 
     # def __post_init__(self) -> None:
     #     pass
 
     @staticmethod
     def for_user(
-        node: AbstractNode, user_verify_key: Optional[SyftVerifyKey] = None
+        node: AbstractNode,
+        communication_protocol: PROTOCOL_TYPE,
+        user_verify_key: Optional[SyftVerifyKey] = None,
     ) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
@@ -417,6 +513,22 @@ class SyftAPI(SyftObject):
             node=node, role=role, credentials=user_verify_key
         )
 
+        # If server uses a higher protocol version than client, then
+        # signatures needs to be downgraded.
+        if node.current_protocol == "dev" and communication_protocol != "dev":
+            # We assume dev is the highest staged protocol
+            signature_needs_downgrade = True
+        else:
+            signature_needs_downgrade = node.current_protocol != "dev" and int(
+                node.current_protocol
+            ) > int(communication_protocol)
+        data_protocol = get_data_protocol()
+
+        if signature_needs_downgrade:
+            object_version_for_protocol = data_protocol.get_object_versions(
+                communication_protocol
+            )
+
         for (
             path,
             service_config,
@@ -426,13 +538,23 @@ class SyftAPI(SyftObject):
                 if service_warning:
                     service_warning = service_warning.message_from(warning_context)
                     service_warning.enabled = node.enable_warnings
+
+                signature = (
+                    downgrade_signature(
+                        signature=service_config.signature,
+                        object_versions=object_version_for_protocol,
+                    )
+                    if signature_needs_downgrade
+                    else service_config.signature
+                )
+
                 endpoint = APIEndpoint(
                     service_path=path,
                     module_path=path,
                     name=service_config.public_name,
                     description="",
                     doc_string=service_config.doc_string,
-                    signature=service_config.signature,
+                    signature=signature,  # TODO: Migrate signature based on communication protocol
                     has_self=False,
                     warning=service_warning,
                 )
@@ -479,6 +601,7 @@ class SyftAPI(SyftObject):
             endpoints=endpoints,
             lib_endpoints=lib_endpoints,
             __user_role=role,
+            communication_protocol=communication_protocol,
         )
 
     @property
@@ -532,7 +655,7 @@ class SyftAPI(SyftObject):
         _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
-        def build_endpoint_tree(endpoints):
+        def build_endpoint_tree(endpoints, communication_protocol):
             api_module = APIModule(path="")
             for _, v in endpoints.items():
                 signature = v.signature
@@ -547,6 +670,7 @@ class SyftAPI(SyftObject):
                         self.make_call,
                         pre_kwargs=v.pre_kwargs,
                         warning=v.warning,
+                        communication_protocol=communication_protocol,
                     )
                 elif isinstance(v, LibEndpoint):
                     endpoint_function = generate_remote_lib_function(
@@ -557,6 +681,7 @@ class SyftAPI(SyftObject):
                         v.module_path,
                         self.make_call,
                         pre_kwargs=v.pre_kwargs,
+                        communication_protocol=communication_protocol,
                     )
 
                 endpoint_function.__doc__ = v.doc_string
@@ -564,8 +689,12 @@ class SyftAPI(SyftObject):
             return api_module
 
         if self.lib_endpoints is not None:
-            self.libs = build_endpoint_tree(self.lib_endpoints)
-        self.api_module = build_endpoint_tree(self.endpoints)
+            self.libs = build_endpoint_tree(
+                self.lib_endpoints, self.communication_protocol
+            )
+        self.api_module = build_endpoint_tree(
+            self.endpoints, self.communication_protocol
+        )
 
     @property
     def services(self) -> APIModule:

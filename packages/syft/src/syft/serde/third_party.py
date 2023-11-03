@@ -2,6 +2,7 @@
 from datetime import date
 from datetime import datetime
 from datetime import time
+import functools
 from io import BytesIO
 
 # third party
@@ -26,9 +27,15 @@ from result import Result
 import zmq.green as zmq
 
 # relative
+from ..types.dicttuple import DictTuple
+from ..types.dicttuple import _Meta as _DictTupleMetaClass
 from .deserialize import _deserialize as deserialize
+from .recursive_primitives import _serialize_kv_pairs
+from .recursive_primitives import deserialize_kv
+from .recursive_primitives import deserialize_type
 from .recursive_primitives import recursive_serde_register
 from .recursive_primitives import recursive_serde_register_type
+from .recursive_primitives import serialize_type
 from .serialize import _serialize as serialize
 
 recursive_serde_register(
@@ -122,6 +129,22 @@ recursive_serde_register(
     Timestamp,
     serialize=lambda x: serialize(x.value, to_bytes=True),
     deserialize=lambda x: Timestamp(deserialize(x, from_bytes=True)),
+)
+
+
+def _serialize_dicttuple(x: DictTuple) -> bytes:
+    return _serialize_kv_pairs(size=len(x), kv_pairs=zip(x.keys(), x))
+
+
+recursive_serde_register(
+    _DictTupleMetaClass,
+    serialize=serialize_type,
+    deserialize=deserialize_type,
+)
+recursive_serde_register(
+    DictTuple,
+    serialize=_serialize_dicttuple,
+    deserialize=functools.partial(deserialize_kv, DictTuple),
 )
 
 

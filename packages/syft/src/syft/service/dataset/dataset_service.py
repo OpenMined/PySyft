@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Collection
 from typing import List
 from typing import Optional
 from typing import Union
@@ -6,6 +7,7 @@ from typing import Union
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -29,6 +31,42 @@ from .dataset import DatasetPageView
 from .dataset_stash import DatasetStash
 
 
+def _paginate_collection(
+    collection: Collection,
+    page_size: Optional[int] = 0,
+    page_index: Optional[int] = 0,
+) -> Optional[slice]:
+    if page_size is None or page_index <= 0:
+        return None
+
+    # If chunk size is defined, then split list into evenly sized chunks
+    total = len(collection)
+    page_index = 0 if page_index is None else page_index
+
+    if page_size > total or page_index >= total // page_size or page_index < 0:
+        return None
+
+    start = page_size * page_index
+    stop = min(page_size * (page_index + 1), total)
+    return slice(start, stop)
+
+
+def _paginate_dataset_collection(
+    datasets: Collection[Dataset],
+    page_size: Optional[int] = 0,
+    page_index: Optional[int] = 0,
+) -> Union[DictTuple[str, Dataset], DatasetPageView]:
+    slice_ = _paginate_collection(datasets, page_size=page_size, page_index=page_index)
+    chunk = datasets[slice_] if slice_ is not None else datasets
+    results = DictTuple((dataset.name, dataset) for dataset in chunk)
+
+    return (
+        results
+        if slice_ is None
+        else DatasetPageView(datasets=results, total=len(datasets))
+    )
+
+
 @instrument
 @serializable()
 class DatasetService(AbstractService):
@@ -39,7 +77,11 @@ class DatasetService(AbstractService):
         self.store = store
         self.stash = DatasetStash(store=store)
 
-    @service_method(path="dataset.add", name="add", roles=DATA_OWNER_ROLE_LEVEL)
+    @service_method(
+        path="dataset.add",
+        name="add",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
     def add(
         self, context: AuthedServiceContext, dataset: CreateDataset
     ) -> Union[SyftSuccess, SyftError]:
@@ -72,29 +114,20 @@ class DatasetService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[DatasetPageView, List[Dataset], SyftError]:
+    ) -> Union[DatasetPageView, DictTuple[str, Dataset], SyftError]:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            datasets = result.ok()
-            results = []
-            for dataset in datasets:
-                dataset.node_uid = context.node.id
-                results.append(dataset)
+        if not result.is_ok():
+            return SyftError(message=result.err())
 
-            # If chunk size is defined, then split list into evenly sized chunks
-            if page_size:
-                total = len(results)
-                results = [
-                    results[i : i + page_size]
-                    for i in range(0, len(results), page_size)
-                ]
-                # Return the proper slice using chunk_index
-                results = results[page_index]
-                results = DatasetPageView(datasets=results, total=total)
+        datasets = result.ok()
 
-            return results
-        return SyftError(message=result.err())
+        for dataset in datasets:
+            dataset.node_uid = context.node.id
+
+        return _paginate_dataset_collection(
+            datasets=datasets, page_size=page_size, page_index=page_index
+        )
 
     @service_method(
         path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL
@@ -105,26 +138,20 @@ class DatasetService(AbstractService):
         name: str,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[List[Dataset], SyftError]:
+    ) -> Union[DatasetPageView, SyftError]:
         """Search a Dataset by name"""
         results = self.get_all(context)
 
-        if not isinstance(results, SyftError):
-            results = [dataset for dataset in results if name in dataset.name]
+        if isinstance(results, SyftError):
+            return results
 
-            # If chunk size is defined, then split list into evenly sized chunks
+        filtered_results = [
+            dataset for dataset_name, dataset in results.items() if name in dataset_name
+        ]
 
-            if page_size:
-                total = len(results)
-                results = [
-                    results[i : i + page_size]
-                    for i in range(0, len(results), page_size)
-                ]
-                # Return the proper slice using chunk_index
-                results = results[page_index]
-                results = DatasetPageView(datasets=results, total=total)
-
-        return results
+        return _paginate_dataset_collection(
+            filtered_results, page_size=page_size, page_index=page_index
+        )
 
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(

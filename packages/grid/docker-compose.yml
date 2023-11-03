@@ -26,31 +26,11 @@ services:
       - "${HTTP_PORT}:81"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    labels:
+      - "orgs.openmined.syft=this is a syft proxy container"
 
     # depends_on:
     #   - "docker-host"
-
-  tailscale:
-    profiles:
-      - vpn
-    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
-    environment:
-      - SERVICE_NAME=tailscale
-      - RELEASE=${RELEASE:-production}
-      - HOSTNAME=${NODE_NAME?Variable not set}
-      - STACK_API_KEY=$STACK_API_KEY
-    volumes:
-      - tailscale-data:/var/lib/tailscale
-      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
-    cap_add: # Required for tailscale to work
-      - net_admin
-      - sys_module
-    # ports:
-    #   - "41641/udp"
-    #   - "4000"
-    depends_on:
-      - proxy
-    network_mode: service:proxy
 
   frontend:
     restart: always
@@ -72,6 +52,8 @@ services:
       - VITE_PUBLIC_API_BASE_URL=${VITE_PUBLIC_API_BASE_URL}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    labels:
+      - "orgs.openmined.syft=this is a syft frontend container"
 
   # redis:
   #   restart: always
@@ -124,13 +106,13 @@ services:
       - ENABLE_OBLV=${ENABLE_OBLV}
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
-      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
-    command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
-      - ${BACKEND_STORAGE_PATH}:/storage
+      - ${CREDENTIALS_VOLUME}:/root/data/creds/
     stdin_open: true
     tty: true
+    labels:
+      - "orgs.openmined.syft=this is a syft backend container"
 
   # backend_stream:
   #   restart: always
@@ -160,10 +142,9 @@ services:
   #     - DEV_MODE=${DEV_MODE}
   #     - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
   #     - ENABLE_OBLV=${ENABLE_OBLV}
-  #   command: "/app/grid/start.sh"
   #   network_mode: service:proxy
   #   volumes:
-  #     - credentials-data:/storage
+  #     - credentials-data:/root/data/creds/
 
   # celeryworker:
   #   restart: always
@@ -200,20 +181,6 @@ services:
   #   volumes:
   #     - credentials-data:/storage
 
-  headscale:
-    profiles:
-      - network
-    depends_on:
-      - proxy
-    hostname: headscale
-    image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
-    volumes:
-      - headscale-data:/headscale/data
-    environment:
-      - RELEASE=${RELEASE:-production}
-      - NETWORK_NAME=omnet
-      - STACK_API_KEY=$STACK_API_KEY
-
   seaweedfs:
     profiles:
       - blob-storage
@@ -230,8 +197,11 @@ services:
       - "/etc/seaweedfs/start.sh"
     volumes:
       - seaweedfs-data:/data/blob
+      - seaweedfs-data-2:/data
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
       - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
+    labels:
+      - "orgs.openmined.syft=this is a syft seaweedfs container"
 
   mongo:
     image: "${MONGO_IMAGE}:${MONGO_VERSION}"
@@ -241,6 +211,9 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     volumes:
       - mongo-data:/data/db
+      - mongo-config-data:/data/configdb
+    labels:
+      - "orgs.openmined.syft=this is a syft mongo container"
 
   jaeger:
     profiles:
@@ -262,14 +235,29 @@ services:
       # - "14250:14250"
       # - "14269:14269"
       # - "9411:9411"
+    volumes:
+      - jaeger-data:/tmp
+    labels:
+      - "orgs.openmined.syft=this is a syft jaeger container"
 
 volumes:
   credentials-data:
-  tailscale-data:
-  headscale-data:
   # app-redis-data:
   seaweedfs-data:
+    labels:
+      orgs.openmined.syft: "this is a syft seaweedfs volume"
+  seaweedfs-data-2:
+    labels:
+      orgs.openmined.syft: "this is a syft seaweedfs volume"
   mongo-data:
+    labels:
+      orgs.openmined.syft: "this is a syft mongo volume"
+  mongo-config-data:
+    labels:
+      orgs.openmined.syft: "this is a syft mongo volume"
+  jaeger-data:
+    labels:
+      orgs.openmined.syft: "this is a syft jaeger volume"
 
 networks:
   traefik-public:

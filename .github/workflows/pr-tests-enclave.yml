@@ -31,6 +31,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes

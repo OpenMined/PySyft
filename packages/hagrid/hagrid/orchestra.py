@@ -26,6 +26,7 @@ try:
     # syft absolute
     from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
+    from syft.protocol.data_protocol import stage_protocol_changes
     from syft.service.response import SyftError
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
@@ -34,6 +35,8 @@ except Exception:  # nosec
 DEFAULT_PORT = 8080
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
+
+ClientAlias = Any  # we don't want to import Client in case it changes
 
 
 # Define a function to read and print a stream
@@ -163,7 +166,7 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
+            return sy.login_as_guest(url=self.url, port=self.port)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
         else:
@@ -171,21 +174,19 @@ class NodeHandle:
                 f"client not implemented for the deployment type:{self.deployment_type}"
             )
 
+    def login_as_guest(self, **kwargs: Any) -> ClientAlias:
+        return self.client.login_as_guest(**kwargs)
+
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
-    ) -> Optional[Any]:
-        client = self.client
-
+    ) -> ClientAlias:
         if not email:
             email = input("Email: ")
+
         if not password:
             password = getpass.getpass("Password: ")
 
-        session = client.login(email=email, password=password, **kwargs)
-        if isinstance(session, SyftError):
-            return session
-
-        return session
+        return self.client.login(email=email, password=password, **kwargs)
 
     def register(
         self,
@@ -247,6 +248,10 @@ def deploy_to_python(
         worker_classes[NodeType.ENCLAVE] = sy.Enclave
     if hasattr(NodeType, "GATEWAY"):
         worker_classes[NodeType.GATEWAY] = sy.Gateway
+
+    if dev_mode:
+        print("Staging Protocol Changes...")
+        stage_protocol_changes()
 
     if port:
         if port == "auto":
@@ -561,11 +566,16 @@ class Orchestra:
             Orchestra.reset(name, deployment_type_enum=deployment_type_enum)
 
     @staticmethod
-    def shutdown(name: str, deployment_type_enum: DeploymentType) -> None:
+    def shutdown(
+        name: str, deployment_type_enum: DeploymentType, reset: bool = False
+    ) -> None:
         if deployment_type_enum != DeploymentType.PYTHON:
             snake_name = to_snake_case(name)
 
-            land_output = shell(f"hagrid land {snake_name} --force")
+            if reset:
+                land_output = shell(f"hagrid land {snake_name} --force --prune-vol")
+            else:
+                land_output = shell(f"hagrid land {snake_name} --force")
             if "Removed" in land_output:
                 print(f" ✅ {snake_name} Container Removed")
             else:
@@ -580,24 +590,9 @@ class Orchestra:
             deployment_type_enum == DeploymentType.CONTAINER_STACK
             or deployment_type_enum == DeploymentType.SINGLE_CONTAINER
         ):
-            if container_exists(name=name):
-                Orchestra.shutdown(name=name, deployment_type_enum=deployment_type_enum)
-
-            snake_name = to_snake_case(name)
-
-            volumes = ["mongo-data", "credentials-data"]
-
-            for volume in volumes:
-                volume_output = shell(
-                    f"docker volume rm {snake_name}_{volume} --force || true"
-                )
-
-                if "Error" not in volume_output:
-                    print(f" ✅ {snake_name}_{volume} Volume Removed")
-                else:
-                    print(
-                        f"❌ Unable to remove container volume: {snake_name} :{volume_output}"
-                    )
+            Orchestra.shutdown(
+                name=name, deployment_type_enum=deployment_type_enum, reset=True
+            )
         else:
             raise NotImplementedError(
                 f"Reset not implemented for the deployment type:{deployment_type_enum}"

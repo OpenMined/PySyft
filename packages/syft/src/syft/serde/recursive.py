@@ -135,6 +135,7 @@ def recursive_serde_register(
     attributes = set(attribute_list) if attribute_list else None
     attribute_types = get_types(cls, attributes)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
+    version = getattr(cls, "__version__", None)
 
     # without fqn duplicate class names overwrite
     serde_attributes = (
@@ -147,6 +148,7 @@ def recursive_serde_register(
         hash_exclude_attrs,
         cls,
         attribute_types,
+        version,
     )
 
     TYPE_BANK[fqn] = serde_attributes
@@ -203,6 +205,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         hash_exclude_attrs,
         cls,
         attribute_types,
+        version,
     ) = TYPE_BANK[fqn]
 
     if nonrecursive or is_type:
@@ -304,6 +307,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         hash_exclude_attrs,
         cls,
         attribute_types,
+        version,
     ) = TYPE_BANK[proto.fullyQualifiedName]
 
     if class_type == type(None):

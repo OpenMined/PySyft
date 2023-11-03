@@ -1,5 +1,8 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Mapping
+from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 from collections.abc import Set
 from hashlib import sha256
 import inspect
@@ -12,7 +15,6 @@ from typing import ClassVar
 from typing import Dict
 from typing import KeysView
 from typing import List
-from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
@@ -23,7 +25,6 @@ import warnings
 # third party
 import pandas as pd
 import pydantic
-from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic.fields import Undefined
 from result import OkErr
@@ -39,6 +40,7 @@ from ..util.notebook_ui.notebook_addons import create_table_template
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -50,8 +52,13 @@ MappingIntStrAny = Mapping[IntStr, Any]
 
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
+SYFT_OBJECT_VERSION_3 = 3
 
-supported_object_versions = [SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2]
+supported_object_versions = [
+    SYFT_OBJECT_VERSION_1,
+    SYFT_OBJECT_VERSION_2,
+    SYFT_OBJECT_VERSION_3,
+]
 
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
 LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
@@ -80,11 +87,12 @@ class SyftHashableObject:
         return self.__sha256__().hex()
 
 
-class SyftBaseObject(BaseModel, SyftHashableObject):
+class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     class Config:
         arbitrary_types_allowed = True
 
-    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
+    # the name which doesn't change even when there are multiple classes
+    __canonical_name__: str
     __version__: int  # data is always versioned
 
     syft_node_location: Optional[UID]
@@ -96,6 +104,9 @@ class SyftBaseObject(BaseModel, SyftHashableObject):
 
 
 class Context(SyftBaseObject):
+    __canonical_name__ = "Context"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     pass
 
 
@@ -179,10 +190,153 @@ class SyftObjectRegistry:
         )
 
 
+class SyftMigrationRegistry:
+    __migration_version_registry__: Dict[str, Dict[int, str]] = {}
+    __migration_transform_registry__: Dict[str, Dict[str, Callable]] = {}
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """
+        Populate the `__migration_version_registry__` dictionary with format
+        __migration_version_registry__ = {
+            "canonical_name": {version_number: "klass_name"}
+        }
+        For example
+        __migration_version_registry__ = {
+            'APIEndpoint': {1: 'syft.client.api.APIEndpoint'},
+            'Action':      {1: 'syft.service.action.action_object.Action'},
+        }
+        """
+        super().__init_subclass__(**kwargs)
+        klass = type(cls) if not isinstance(cls, type) else cls
+        cls.register_version(klass=klass)
+
+    @classmethod
+    def register_version(cls, klass: type):
+        if hasattr(klass, "__canonical_name__") and hasattr(klass, "__version__"):
+            mapping_string = klass.__canonical_name__
+            klass_version = klass.__version__
+            fqn = f"{klass.__module__}.{klass.__name__}"
+
+            if (
+                mapping_string in cls.__migration_version_registry__
+                and not autoreload_enabled()
+            ):
+                versions = cls.__migration_version_registry__[mapping_string]
+                versions[klass_version] = fqn
+            else:
+                # only if the cls has not been registered do we want to register it
+                cls.__migration_version_registry__[mapping_string] = {
+                    klass_version: fqn
+                }
+
+    @classmethod
+    def get_versions(cls, canonical_name: str) -> List[int]:
+        available_versions: Dict = cls.__migration_version_registry__.get(
+            canonical_name,
+            {},
+        )
+        return list(available_versions.keys())
+
+    @classmethod
+    def register_transform(
+        cls, klass_type_str: str, version_from: int, version_to: int, method: Callable
+    ) -> None:
+        """
+        Populate the __migration_transform_registry__ dictionary with format
+        __migration_version_registry__ = {
+            "canonical_name": {"version_from x version_to": <function transform_function>}
+        }
+        For example
+        {'NodeMetadata': {'1x2': <function transform_function>,
+                          '2x1': <function transform_function>}}
+        """
+        if klass_type_str not in cls.__migration_version_registry__:
+            raise Exception(f"{klass_type_str} is not yet registered.")
+
+        available_versions = cls.__migration_version_registry__[klass_type_str]
+
+        versions_exists = (
+            version_from in available_versions and version_to in available_versions
+        )
+
+        if versions_exists:
+            mapping_string = f"{version_from}x{version_to}"
+            if klass_type_str not in cls.__migration_transform_registry__:
+                cls.__migration_transform_registry__[klass_type_str] = {}
+            cls.__migration_transform_registry__[klass_type_str][
+                mapping_string
+            ] = method
+        else:
+            raise Exception(
+                f"Available versions for {klass_type_str} are: {available_versions}."
+                f"You're trying to add a transform from version: {version_from} to version: {version_to}"
+            )
+
+    @classmethod
+    def get_migration(
+        cls, type_from: Type[SyftBaseObject], type_to: Type[SyftBaseObject]
+    ) -> Callable:
+        for type_from_mro in type_from.mro():
+            if (
+                issubclass(type_from_mro, SyftBaseObject)
+                and type_from_mro != SyftBaseObject
+            ):
+                klass_from = type_from_mro.__canonical_name__
+                version_from = type_from_mro.__version__
+
+                for type_to_mro in type_to.mro():
+                    if (
+                        issubclass(type_to_mro, SyftBaseObject)
+                        and type_to_mro != SyftBaseObject
+                    ):
+                        klass_to = type_to_mro.__canonical_name__
+                        version_to = type_to_mro.__version__
+
+                    if klass_from == klass_to:
+                        mapping_string = f"{version_from}x{version_to}"
+                        if (
+                            mapping_string
+                            in cls.__migration_transform_registry__[klass_from]
+                        ):
+                            return cls.__migration_transform_registry__[klass_from][
+                                mapping_string
+                            ]
+
+    @classmethod
+    def get_migration_for_version(
+        cls, type_from: Type[SyftBaseObject], version_to: int
+    ) -> Callable:
+        canonical_name = type_from.__canonical_name__
+        for type_from_mro in type_from.mro():
+            if (
+                issubclass(type_from_mro, SyftBaseObject)
+                and type_from_mro != SyftBaseObject
+            ):
+                klass_from = type_from_mro.__canonical_name__
+                if klass_from != canonical_name:
+                    continue
+                version_from = type_from_mro.__version__
+                mapping_string = f"{version_from}x{version_to}"
+                if (
+                    mapping_string
+                    in cls.__migration_transform_registry__[
+                        type_from.__canonical_name__
+                    ]
+                ):
+                    return cls.__migration_transform_registry__[klass_from][
+                        mapping_string
+                    ]
+
+        raise Exception(
+            f"No migration found for class type: {type_from} to "
+            f"version: {version_to} in the migration registry."
+        )
+
+
 print_type_cache = defaultdict(list)
 
 
-class SyftObject(SyftBaseObject, SyftObjectRegistry):
+class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -458,6 +612,17 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
 
+    def migrate_to(self, version: int, context: Optional[Context] = None) -> Any:
+        if self.__version__ != version:
+            migration_transform = SyftMigrationRegistry.get_migration_for_version(
+                type_from=type(self), version_to=version
+            )
+            return migration_transform(
+                self,
+                context,
+            )
+        return self
+
 
 def short_qual_name(name: str) -> str:
     # If the name is a qualname of formax a.b.c.d we will only get d
@@ -477,11 +642,11 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
         extra_fields = []
 
     cols = defaultdict(list)
-    for item in iter(_self):
+    for item in iter(_self.items() if isinstance(_self, Mapping) else _self):
         # unpack dict
-        if isinstance(_self, dict):
-            cols["key"].append(item)
-            item = _self.__getitem__(item)
+        if isinstance(_self, Mapping):
+            key, item = item
+            cols["key"].append(key)
 
         # get id
         id_ = getattr(item, "id", None)
@@ -564,20 +729,20 @@ def list_dict_repr_html(self) -> str:
         items_checked = 0
         has_syft = False
         extra_fields = []
-        if isinstance(self, dict):
+        if isinstance(self, Mapping):
             values = list(self.values())
+        elif isinstance(self, Set):
+            values = list(self)
         else:
             values = self
 
         if len(values) == 0:
             return self.__repr__()
 
-        for item in iter(self):
+        for item in iter(self.values() if isinstance(self, Mapping) else self):
             items_checked += 1
             if items_checked > max_check:
                 break
-            if isinstance(self, dict):
-                item = self.__getitem__(item)
 
             if hasattr(type(item), "mro") and type(item) != type:
                 mro = type(item).mro()
@@ -625,6 +790,8 @@ def list_dict_repr_html(self) -> str:
 # give lists and dicts a _repr_html_ if they contain SyftObject's
 aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(type(set()), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(tuple, "_repr_html_", list_dict_repr_html)
 
 
 class StorableObjectType:
@@ -685,20 +852,25 @@ recursive_serde_register_type(PartialSyftObject)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> Any:
-    box_to_result_type = None
-
-    if type(result) in OkErr:
-        box_to_result_type = type(result)
-        result = result.value
+    constructor = None
+    extra_args = []
 
     single_entity = False
-    is_tuple = isinstance(result, tuple)
 
-    if isinstance(result, (list, tuple)):
-        iterable_keys = range(len(result))
-        result = list(result)
-    elif isinstance(result, dict):
+    if isinstance(result, OkErr):
+        constructor = type(result)
+        result = result.value
+
+    if isinstance(result, MutableMapping):
         iterable_keys = result.keys()
+    elif isinstance(result, MutableSequence):
+        iterable_keys = range(len(result))
+    elif isinstance(result, tuple):
+        iterable_keys = range(len(result))
+        constructor = type(result)
+        if isinstance(result, DictTuple):
+            extra_args.append(result.keys())
+        result = list(result)
     else:
         iterable_keys = range(1)
         result = [result]
@@ -719,8 +891,7 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> A
         result[key] = _object
 
     wrapped_result = result[0] if single_entity else result
-    wrapped_result = tuple(wrapped_result) if is_tuple else wrapped_result
-    if box_to_result_type is not None:
-        wrapped_result = box_to_result_type(wrapped_result)
+    if constructor is not None:
+        wrapped_result = constructor(wrapped_result, *extra_args)
 
     return wrapped_result

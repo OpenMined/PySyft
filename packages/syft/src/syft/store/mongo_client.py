@@ -73,7 +73,7 @@ class MongoStoreClientConfig(StoreClientConfig):
             Controls how long (in milliseconds) the driver will wait to find an available, appropriate
             server to carry out a database operation; while it is waiting, multiple server monitoring
             operations may be carried out, each controlled by `connectTimeoutMS`.
-            Defaults to ``30000`` (30 seconds).
+            Defaults to ``120000`` (120 seconds).
         `waitQueueTimeoutMS`: (integer or None)
             How long (in milliseconds) a thread will wait for a socket from the pool if the pool
             has no free sockets. Defaults to ``None`` (no timeout).
@@ -108,7 +108,7 @@ class MongoStoreClientConfig(StoreClientConfig):
     timeoutMS: int = 0
     socketTimeoutMS: int = 0
     connectTimeoutMS: int = 20000
-    serverSelectionTimeoutMS: int = 30000
+    serverSelectionTimeoutMS: int = 120000
     waitQueueTimeoutMS: Optional[int] = None
     heartbeatFrequencyMS: int = 10000
     appname: str = "pysyft"
@@ -188,7 +188,10 @@ class MongoClient:
             return Err(str(e))
 
     def with_collection(
-        self, collection_settings: PartitionSettings, store_config: StoreConfig
+        self,
+        collection_settings: PartitionSettings,
+        store_config: StoreConfig,
+        collection_name: Optional[str] = None,
     ) -> Result[MongoCollection, Err]:
         res = self.with_db(db_name=store_config.db_name)
         if res.is_err():
@@ -196,8 +199,13 @@ class MongoClient:
         db = res.ok()
 
         try:
+            collection_name = (
+                collection_name
+                if collection_name is not None
+                else collection_settings.name
+            )
             collection = db.get_collection(
-                name=collection_settings.name, codec_options=SYFT_CODEC_OPTIONS
+                name=collection_name, codec_options=SYFT_CODEC_OPTIONS
             )
         except BaseException as e:
             return Err(str(e))
@@ -225,3 +233,6 @@ class MongoClient:
             return Err(str(e))
 
         return Ok(collection_permissions)
+
+    def close(self):
+        self.client.close()

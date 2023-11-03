@@ -1,6 +1,8 @@
 # stdlib
 from collections import OrderedDict
 from collections import defaultdict
+from collections.abc import Iterable
+from collections.abc import Mapping
 from enum import Enum
 from enum import EnumMeta
 import functools
@@ -12,7 +14,6 @@ from typing import Any
 from typing import Collection
 from typing import Dict
 from typing import List
-from typing import Mapping
 from typing import Optional
 from typing import Type
 from typing import TypeVar
@@ -31,6 +32,7 @@ from .recursive import recursive_serde_register
 # import types unsupported on python 3.8
 if sys.version_info >= (3, 9):
     # stdlib
+    from typing import GenericAlias
     from typing import _SpecialGenericAlias
     from typing import _UnionGenericAlias
 
@@ -70,21 +72,29 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     return iterable_type(values)
 
 
-def serialize_kv(map: Mapping) -> bytes:
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
+
+
+def _serialize_kv_pairs(size: int, kv_pairs: Iterable[tuple[_KT, _VT]]) -> bytes:
     # relative
     from .serialize import _serialize
 
     message = kv_iterable_schema.new_message()
 
-    message.init("keys", len(map))
-    message.init("values", len(map))
+    message.init("keys", size)
+    message.init("values", size)
 
-    for index, (k, v) in enumerate(map.items()):
+    for index, (k, v) in enumerate(kv_pairs):
         message.keys[index] = _serialize(k, to_bytes=True)
         serialized = _serialize(v, to_bytes=True)
         chunk_bytes(serialized, index, message.values)
 
     return message.to_bytes()
+
+
+def serialize_kv(map: Mapping) -> bytes:
+    return _serialize_kv_pairs(len(map), map.items())
 
 
 def get_deserialized_kv_pairs(blob: bytes) -> List[Any]:
@@ -396,6 +406,7 @@ if sys.version_info >= (3, 9):
         ],
     )
     recursive_serde_register_type(_SpecialGenericAlias)
+    recursive_serde_register_type(GenericAlias)
 
 recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)

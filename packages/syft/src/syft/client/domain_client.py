@@ -25,9 +25,11 @@ from ..service.user.user_roles import ServiceRole
 from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
+from ..util.util import prompt_warning_message
 from .api import APIModule
 from .client import SyftClient
 from .client import login
+from .client import login_as_guest
 
 if TYPE_CHECKING:
     # relative
@@ -49,7 +51,7 @@ def add_default_uploader(
             name=user.name,
             email=user.email,
         )
-        obj.contributors.append(uploader)
+        obj.contributors.add(uploader)
     obj.uploader = uploader
     return obj
 
@@ -65,12 +67,26 @@ class DomainClient(SyftClient):
 
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
-        for i in range(len(dataset.assets)):
-            asset = dataset.assets[i]
-            dataset.assets[i] = add_default_uploader(user, asset)
+        for i in range(len(dataset.asset_list)):
+            asset = dataset.asset_list[i]
+            dataset.asset_list[i] = add_default_uploader(user, asset)
 
         dataset._check_asset_must_contain_mock()
         dataset_size = 0
+
+        # TODO: Refactor so that object can also be passed to generate warnings
+        metadata = self.api.connection.get_node_metadata(self.api.signing_key)
+
+        if (
+            metadata.show_warnings
+            and metadata.node_side_type == NodeSideType.HIGH_SIDE.value
+        ):
+            message = (
+                "You're approving a request on "
+                f"{metadata.node_side_type} side {metadata.node_type} "
+                "which may host datasets with private information."
+            )
+            prompt_warning_message(message=message, confirm=True)
 
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
@@ -106,14 +122,19 @@ class DomainClient(SyftClient):
         url: Optional[str] = None,
         port: Optional[int] = None,
         handle: Optional[NodeHandle] = None,  # noqa: F821
-        **kwargs,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
     ) -> None:
         if via_client is not None:
             client = via_client
         elif handle is not None:
             client = handle.client
         else:
-            client = login(url=url, port=port, **kwargs)
+            client = (
+                login_as_guest(url=url, port=port)
+                if email is None
+                else login(url=url, port=port, email=email, password=password)
+            )
             if isinstance(client, SyftError):
                 return client
 

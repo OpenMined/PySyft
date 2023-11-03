@@ -1,11 +1,11 @@
 manifestVersion: 1.0
 
-syftVersion: 0.8.2-beta.31
-dockerTag: 0.8.2-beta.31
+syftVersion: 0.8.2-beta.47
+dockerTag: 0.8.2-beta.47
 
 images:
-  - docker.io/openmined/grid-frontend:0.8.2-beta.31
-  - docker.io/openmined/grid-backend:0.8.2-beta.31
+  - docker.io/openmined/grid-frontend:0.8.2-beta.47
+  - docker.io/openmined/grid-backend:0.8.2-beta.47
   - docker.io/library/mongo:latest
   - docker.io/traefik:v2.10
 
@@ -22,8 +22,6 @@ configFiles:
     - packages/grid/traefik/docker/dynamic.yml
     - packages/grid/traefik/docker/traefik-tls.template.yml
     - packages/grid/traefik/docker/traefik.yml
-    - packages/grid/vpn/headscale.dockerfile
-    - packages/grid/vpn/tailscale.dockerfile
   k8s:
     - packages/grid/devspace.yaml
     - packages/grid/traefik/k8s/dynamic.yml

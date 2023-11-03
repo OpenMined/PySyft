@@ -8,6 +8,7 @@ from syft import SyftError
 from syft import SyftSuccess
 from syft.client.api import SyftAPICall
 from syft.client.domain_client import DomainClient
+from syft.node.node import get_default_root_email
 from syft.node.worker import Worker
 from syft.service.context import AuthedServiceContext
 from syft.service.user.user import ServiceRole
@@ -32,7 +33,7 @@ def get_users(worker):
     )
 
 
-def get_mock_client(root_client, role):
+def get_mock_client(root_client, role) -> DomainClient:
     worker = root_client.api.connection.node
     client = worker.guest_client
     mail = Faker().email()
@@ -45,7 +46,7 @@ def get_mock_client(root_client, role):
     assert worker.root_client.api.services.user.update(
         user_id, UserUpdate(user_id=user_id, role=role)
     )
-    client.login(email=mail, password=password)
+    client = client.login(email=mail, password=password)
     client._fetch_api(client.credentials)
     # hacky, but useful for testing: patch user id and role on client
     client.user_id = user_id
@@ -66,17 +67,17 @@ def manually_call_service(worker, client, service, args=None, kwargs=None):
 
 
 @pytest.fixture
-def guest_client(worker):
+def guest_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.GUEST)
 
 
 @pytest.fixture
-def ds_client(worker):
+def ds_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_SCIENTIST)
 
 
 @pytest.fixture
-def do_client(worker):
+def do_client(worker) -> DomainClient:
     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
 
 
@@ -233,6 +234,22 @@ def test_user_update(root_client):
         )
 
 
+def test_guest_user_update_to_root_email_failed(
+    root_client: DomainClient,
+    do_client: DomainClient,
+    guest_client: DomainClient,
+    ds_client: DomainClient,
+) -> None:
+    default_root_email: str = get_default_root_email()
+    user_update_to_root_email = UserUpdate(email=default_root_email)
+    for client in [root_client, do_client, guest_client, ds_client]:
+        res = client.api.services.user.update(
+            uid=client.me.id, user_update=user_update_to_root_email
+        )
+        assert isinstance(res, SyftError)
+        assert res.message == "User already exists"
+
+
 def test_user_view_set_password(worker: Worker, root_client: DomainClient) -> None:
     root_client.me.set_password("123", confirm=False)
     email = root_client.me.email
@@ -260,7 +277,6 @@ def test_user_view_set_invalid_email(
     [
         ("syft@gmail.com", "syft_ds@gmail.com"),
         ("syft@openmined.com", "syft_ds@openmined.com"),
-        ("info@openmined.org", "info_ds@openmined.org"),
     ],
 )
 def test_user_view_set_email_success(
@@ -275,26 +291,33 @@ def test_user_view_set_email_success(
     assert isinstance(result2, SyftSuccess)
 
 
+def test_user_view_set_default_admin_email_failed(
+    ds_client: DomainClient, guest_client: DomainClient
+) -> None:
+    default_root_email = get_default_root_email()
+    result = ds_client.me.set_email(default_root_email)
+    assert isinstance(result, SyftError)
+    assert result.message == "User already exists"
+
+    result_2 = guest_client.me.set_email(default_root_email)
+    assert isinstance(result_2, SyftError)
+    assert result_2.message == "User already exists"
+
+
 def test_user_view_set_duplicated_email(
     root_client: DomainClient, ds_client: DomainClient, guest_client: DomainClient
 ) -> None:
     result = ds_client.me.set_email(root_client.me.email)
     result2 = guest_client.me.set_email(root_client.me.email)
+
     assert isinstance(result, SyftError)
-    assert (
-        result.message
-        == f"A user with the email {root_client.me.email} already exists."
-    )
+    assert result.message == "User already exists"
     assert isinstance(result2, SyftError)
-    assert (
-        result2.message
-        == f"A user with the email {root_client.me.email} already exists."
-    )
+    assert result2.message == "User already exists"
+
     result3 = guest_client.me.set_email(ds_client.me.email)
     assert isinstance(result3, SyftError)
-    assert (
-        result3.message == f"A user with the email {ds_client.me.email} already exists."
-    )
+    assert result3.message == "User already exists"
 
 
 def test_user_view_update_name_institution_website(
