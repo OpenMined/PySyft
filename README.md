@@ -81,7 +81,7 @@ SYFT_VERSION="<paste the chart version number>"
 #### 4. Provisioning Helm Charts
 
 ```sh
-$ helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace
+$ helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.ingressClass=traefik
 ```
 
 ### Azure or GCP Ingress
