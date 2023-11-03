@@ -152,9 +152,11 @@ jobs:
         run: |
           if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
             echo "is_pre_release=true" >> $GITHUB_OUTPUT
+            echo "release_tag=beta" >> $GITHUB_OUTPUT
             echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
           else
             echo "is_pre_release=false" >> $GITHUB_OUTPUT
+            echo "release_tag=latest" >> $GITHUB_OUTPUT
             echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           fi
 
@@ -225,7 +227,7 @@ jobs:
           images: openmined/grid-backend
           tags: |
             type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value=beta
+            type=raw,value={{ steps.release_checks.outputs.release_tag }}
 
       - name: Build and push `grid-backend` image to DockerHub
         uses: docker/build-push-action@v5
@@ -246,7 +248,7 @@ jobs:
           images: openmined/grid-frontend
           tags: |
             type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value=beta
+            type=raw,value={{ steps.release_checks.outputs.release_tag }}
 
       - name: Build and push `grid-frontend` image to DockerHub
         uses: docker/build-push-action@v5
@@ -276,7 +278,7 @@ jobs:
           images: openmined/grid-enclave
           tags: |
             type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value=beta
+            type=raw,value={{ steps.release_checks.outputs.release_tag }}
 
       - name: Build and push `grid-enclave` image to DockerHub
         uses: docker/build-push-action@v5
