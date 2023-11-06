@@ -1,21 +1,20 @@
 import pytest
-import syft as sy
-sy.requires(SYFT_VERSION)
-from syft import autocache
+from syft.service.data_subject.data_subject import DataSubjectCreate as DataSubject
+#from syft import autocache
 import pandas as pd
 
 @pytest.fixture
 def data_subjects():
     
-    canada = sy.DataSubject(name="Canada", aliases=["country_code:ca"])
-    germany = sy.DataSubject(name="Germany", aliases=["country_code:de"])
-    spain = sy.DataSubject(name="Spain", aliases=["country_code:es"])
-    france = sy.DataSubject(name="France", aliases=["country_code:fr"])
-    japan = sy.DataSubject(name="Japan", aliases=["country_code:jp"])
-    uk = sy.DataSubject(name="United Kingdom", aliases=["country_code:uk"])
-    usa = sy.DataSubject(name="United States of America", aliases=["country_code:us"])
-    australia = sy.DataSubject(name="Australia", aliases=["country_code:au"])
-    india = sy.DataSubject(name="India", aliases=["country_code:in"])
+    canada = DataSubject(name="Canada", aliases=["country_code:ca"])
+    germany = DataSubject(name="Germany", aliases=["country_code:de"])
+    spain = DataSubject(name="Spain", aliases=["country_code:es"])
+    france = DataSubject(name="France", aliases=["country_code:fr"])
+    japan = DataSubject(name="Japan", aliases=["country_code:jp"])
+    uk = DataSubject(name="United Kingdom", aliases=["country_code:uk"])
+    usa = DataSubject(name="United States of America", aliases=["country_code:us"])
+    australia = DataSubject(name="Australia", aliases=["country_code:au"])
+    india = DataSubject(name="India", aliases=["country_code:in"])
     
     country_list = [canada, germany, spain, france, japan, uk, usa, australia, india]
 
