@@ -6,6 +6,7 @@ from typing import Optional
 from typing import Union
 
 # third party
+from result import Err
 from result import OkErr
 from result import Result
 
@@ -296,6 +297,8 @@ class UserCodeService(AbstractService):
 
             if isinstance(result, TwinObject):
                 return result.mock
+            elif result.syft_action_data_type is Err:
+                return result
             else:
                 return result.as_empty()
         except Exception as e:

@@ -3,6 +3,9 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
+# third party
+from result import Err
+
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
@@ -116,7 +119,14 @@ class APICallMessageHandler(AbstractMessageHandler):
             result = worker.handle_api_call(
                 api_call, job_id=job_item.id, check_call_location=False
             )
-            if isinstance(result, SyftError):
+
+            # Two different error scenarios
+            # 1 - Happens at syft logic level (when we try to process_all again)
+            # 2 - Happens at function level (when the executed function fails)
+            if (
+                isinstance(result.message.data, SyftError)
+                or result.message.data.syft_action_data_type is Err
+            ):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
         except Exception as e:  # nosec

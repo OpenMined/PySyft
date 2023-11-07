@@ -23,6 +23,7 @@ from typing import Union
 
 # third party
 from IPython.display import display
+from result import Err
 from typing_extensions import Self
 
 # relative
@@ -1065,7 +1066,12 @@ def execute_byte_code(
         exec(code_item.parsed_code, _globals, locals())  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, _globals, _locals)  # nosec
+        try:
+            result = eval(evil_string, _globals, _locals)  # nosec
+        except Exception:
+            result = Err(
+                "Ops,something went wrong in this pipeline. Please, contact the Node Admin."
+            )
 
         # reset print
         print = original_print
