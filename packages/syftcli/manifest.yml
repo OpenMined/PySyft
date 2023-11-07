@@ -1,11 +1,11 @@
 manifestVersion: 1.0
 
-syftVersion: 0.8.2-beta.44
-dockerTag: 0.8.2-beta.44
+syftVersion: 0.8.2-beta.47
+dockerTag: 0.8.2-beta.47
 
 images:
-  - docker.io/openmined/grid-frontend:0.8.2-beta.44
-  - docker.io/openmined/grid-backend:0.8.2-beta.44
+  - docker.io/openmined/grid-frontend:0.8.2-beta.47
+  - docker.io/openmined/grid-backend:0.8.2-beta.47
   - docker.io/library/mongo:latest
   - docker.io/traefik:v2.10
 

@@ -1,5 +1,5 @@
 {
-  "1": {
+  "dev": {
     "object_versions": {
       "PartialSyftObject": {
         "1": {
@@ -24,6 +24,32 @@
         "2": {
           "version": 2,
           "hash": "f856169fea72486cd436875ce4411ef935da11eb7c5af48121adfa00d4c0cdb6",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "3cc67abf394a805066a88aef0bea15bde609b9ecbe7ec15172eac5e7a0b7ef7c",
+          "action": "add"
+        }
+      },
+      "StoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "17de8875cf590311ddb042140347ffc79d4a85028e504dad178ca4e1237ec861",
+          "action": "add"
+        }
+      },
+      "MongoDict": {
+        "1": {
+          "version": 1,
+          "hash": "640734396edae801e1601fe7777710e67685e552acb0244ad8b4f689599baca9",
+          "action": "add"
+        }
+      },
+      "MongoStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "e52aa382e300b0b69aaa2d80aadb4e3a9a3c02b3c741b71d56f959c4d3891ce5",
           "action": "add"
         }
       },
@@ -146,13 +172,6 @@
           "action": "add"
         }
       },
-      "StoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "17de8875cf590311ddb042140347ffc79d4a85028e504dad178ca4e1237ec861",
-          "action": "add"
-        }
-      },
       "NodeSettingsUpdate": {
         "1": {
           "version": 1,
@@ -164,6 +183,11 @@
         "1": {
           "version": 1,
           "hash": "b662047bb278f4f5db77c102f94b733c3a929839271b3d6b82ea174a60e2aaf0",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "29a82afcb006a044b6ae04c6ea8a067d145d28b4210bb038ea9fa86ebde108c8",
           "action": "add"
         }
       },
@@ -345,7 +369,7 @@
       "DatasetPageView": {
         "1": {
           "version": 1,
-          "hash": "6741bd16dc6089d9deea37b1bd4e895152d1a0c163b8bdfe45280b9bfc4a1354",
+          "hash": "b1de14bb9b6a259648dfc59b6a48fa526116afe50a689c24b8bb36fd0e6a97f8",
           "action": "add"
         }
       },
@@ -720,20 +744,6 @@
           "action": "add"
         }
       },
-      "MongoDict": {
-        "1": {
-          "version": 1,
-          "hash": "640734396edae801e1601fe7777710e67685e552acb0244ad8b4f689599baca9",
-          "action": "add"
-        }
-      },
-      "MongoStoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "e52aa382e300b0b69aaa2d80aadb4e3a9a3c02b3c741b71d56f959c4d3891ce5",
-          "action": "add"
-        }
-      },
       "SQLiteStoreConfig": {
         "1": {
           "version": 1,
@@ -745,24 +755,6 @@
         "1": {
           "version": 1,
           "hash": "a0bba2b7792c9e08c453e9e256f0ac6e6185610726566bcd50b057ae83b42d9a",
-          "action": "add"
-        }
-      }
-    }
-  },
-  "2": {
-    "object_versions": {
-      "NodeMetadata": {
-        "3": {
-          "version": 3,
-          "hash": "3cc67abf394a805066a88aef0bea15bde609b9ecbe7ec15172eac5e7a0b7ef7c",
-          "action": "add"
-        }
-      },
-      "NodeSettings": {
-        "2": {
-          "version": 2,
-          "hash": "29a82afcb006a044b6ae04c6ea8a067d145d28b4210bb038ea9fa86ebde108c8",
           "action": "add"
         }
       }
