@@ -20,6 +20,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import final
 
 # third party
 from IPython.display import display
@@ -882,6 +883,111 @@ class UserCodeExecutionResult(SyftObject):
     result: Any
 
 
+class SecureContext:
+    def __init__(self, context):
+        node = context.node
+        job_service = node.get_service("jobservice")
+        action_service = node.get_service("actionservice")
+        user_service = node.get_service("userservice")
+        user_code_service = node.get_service("usercodeservice")
+        request_service = node.get_service("requestservice")
+
+        def job_set_n_iters(n_iters):
+            job = context.job
+            job.n_iters = n_iters
+            job_service.update(context, job)
+
+        def job_set_current_iter(current_iter):
+            job = context.job
+            job.current_iter = current_iter
+            job_service.update(context, job)
+
+        def job_increase_current_iter(current_iter):
+            job = context.job
+            job.current_iter += current_iter
+            job_service.update(context, job)
+
+        def launch_job(func: UserCode, **kwargs):
+            # relative
+            from ... import UID
+
+            kw2id = {}
+            for k, v in kwargs.items():
+                value = ActionObject.from_obj(v)
+                ptr = action_service.set(context, value)
+                ptr = ptr.ok()
+                kw2id[k] = ptr.id
+
+            # create new usercode with permissions
+
+            new_user_code = deepcopy(func)
+            new_user_code.id = UID()
+
+            new_user_code.input_policy_type = ExactMatch
+            # assumes all inputs are on the same node
+            node_identity = NodeIdentity(
+                node_id=node.id, verify_key=node.verify_key, node_name=node.name
+            )
+            new_user_code.input_policy_init_kwargs = {node_identity: kw2id}
+
+            # TODO: throw exception for enclaves
+            request = user_code_service._request_code_execution_inner(
+                context, new_user_code
+            ).ok()
+            admin_context = AuthedServiceContext(
+                node=node,
+                credentials=user_service.admin_verify_key(),
+                role=ServiceRole.ADMIN,
+            )
+            res = request_service.apply(admin_context, request.id)
+            if not isinstance(res, SyftSuccess):
+                raise ValueError(res)
+
+            try:
+                # TODO: check permissions here
+                api_call = SyftAPICall(
+                    node_uid=node.id,
+                    path="code.call",
+                    args=[new_user_code.id],
+                    kwargs=kw2id,
+                    blocking=False,
+                ).sign(node.signing_key)
+
+                job = node.add_api_call_to_queue(api_call, parent_job_id=context.job_id)
+
+                # set api in global scope to enable using .get(), .wait())
+                user_signing_key = [
+                    x.signing_key
+                    for x in user_service.stash.partition.data.values()
+                    if x.verify_key == context.credentials
+                ][0]
+                data_protcol = get_data_protocol()
+                user_api = node.get_api(
+                    context.credentials, data_protcol.latest_version
+                )
+                user_api.signing_key = user_signing_key
+                # We hardcode a python connection here since we have access to the node
+                # TODO: this is not secure
+                user_api.connection = PythonConnection(node=node)
+
+                APIRegistry.set_api_for(
+                    node_uid=node.id,
+                    user_verify_key=context.credentials,
+                    api=user_api,
+                )
+
+                return job
+            except Exception as e:
+                print(f"ERROR {e}")
+                raise ValueError(f"error while launching job:\n{e}")
+
+        self.job_set_n_iters = job_set_n_iters
+        self.job_set_current_iter = job_set_current_iter
+        self.job_increase_current_iter = job_increase_current_iter
+        self.launch_job = launch_job
+        self.is_async = context.job is not None
+
+
 def execute_byte_code(
     code_item: UserCode, kwargs: Dict[str, Any], context: AuthedServiceContext
 ) -> Any:
@@ -894,18 +1000,13 @@ def execute_byte_code(
 
         original_print = __builtin__.print
 
-        class LocalDomainClient:
-            def __init__(self, context):
-                self.context = context
+        safe_context = SecureContext(context=context)
 
+        class LocalDomainClient:
             def init_progress(self, n_iters):
-                if self.context.job is not None:
-                    node = self.context.node
-                    job_service = node.get_service("jobservice")
-                    job = self.context.job
-                    job.current_iter = 0
-                    job.n_iters = n_iters
-                    job_service.update(self.context, job)
+                if safe_context.is_async:
+                    safe_context.job_set_current_iter(0)
+                    safe_context.job_set_n_iters(n_iters)
 
             def set_progress(self, to) -> None:
                 self._set_progress(to)
@@ -914,105 +1015,20 @@ def execute_byte_code(
                 self._set_progress(by=n)
 
             def _set_progress(self, to=None, by=None):
-                if self.context.job is not None:
-                    node = self.context.node
-                    job_service = node.get_service("jobservice")
-                    job = self.context.job
-                    if job.current_iter is None:
-                        job.current_iter = 0
+                if safe_context.is_async is not None:
                     if by is None and to is None:
                         by = 1
                     if to is None:
-                        job.current_iter += by
+                        safe_context.job_increase_current_iter(current_iter=by)
                     else:
-                        job.current_iter = to
-                    job_service.update(self.context, job)
+                        safe_context.job_set_current_iter(to)
 
+            @final
             def launch_job(self, func: UserCode, **kwargs):
-                # relative
-                from ... import UID
+                return safe_context.launch_job(func, **kwargs)
 
-                # get reference to node (TODO)
-                node = self.context.node
-                action_service = node.get_service("actionservice")
-                user_service = node.get_service("userservice")
-                user_code_service = node.get_service("usercodeservice")
-                request_service = node.get_service("requestservice")
-
-                # create api call from user code object (func)
-
-                # ActionObjectivy kwargs
-                kw2id = {}
-                for k, v in kwargs.items():
-                    value = ActionObject.from_obj(v)
-                    ptr = action_service.set(self.context, value)
-                    ptr = ptr.ok()
-                    kw2id[k] = ptr.id
-
-                # create new usercode with permissions
-
-                new_user_code = deepcopy(func)
-                new_user_code.id = UID()
-
-                new_user_code.input_policy_type = ExactMatch
-                # assumes all inputs are on the same node
-                node_identity = NodeIdentity(
-                    node_id=node.id, verify_key=node.verify_key, node_name=node.name
-                )
-                new_user_code.input_policy_init_kwargs = {node_identity: kw2id}
-
-                # TODO: throw exception for enclaves
-                request = user_code_service._request_code_execution_inner(
-                    self.context, new_user_code
-                ).ok()
-                admin_context = AuthedServiceContext(
-                    node=node,
-                    credentials=user_service.admin_verify_key(),
-                    role=ServiceRole.ADMIN,
-                )
-                res = request_service.apply(admin_context, request.id)
-                if not isinstance(res, SyftSuccess):
-                    raise ValueError(res)
-
-                try:
-                    # TODO: check permissions here
-                    api_call = SyftAPICall(
-                        node_uid=node.id,
-                        path="code.call",
-                        args=[new_user_code.id],
-                        kwargs=kw2id,
-                        blocking=False,
-                    ).sign(node.signing_key)
-
-                    job = node.add_api_call_to_queue(
-                        api_call, parent_job_id=self.context.job_id
-                    )
-
-                    # set api in global scope to enable using .get(), .wait())
-                    user_signing_key = [
-                        x.signing_key
-                        for x in user_service.stash.partition.data.values()
-                        if x.verify_key == self.context.credentials
-                    ][0]
-                    data_protcol = get_data_protocol()
-                    user_api = node.get_api(
-                        self.context.credentials, data_protcol.latest_version
-                    )
-                    user_api.signing_key = user_signing_key
-                    # We hardcode a python connection here since we have access to the node
-                    # TODO: this is not secure
-                    user_api.connection = PythonConnection(node=node)
-
-                    APIRegistry.set_api_for(
-                        node_uid=node.id,
-                        user_verify_key=self.context.credentials,
-                        api=user_api,
-                    )
-
-                    return job
-                except Exception as e:
-                    print(f"ERROR {e}")
-                    raise ValueError(f"error while launching job:\n{e}")
+            def __setattr__(self, __name: str, __value: Any) -> None:
+                raise Exception("Attempting to alter read-only value")
 
         if context.job is not None:
             job_id = context.job_id
@@ -1047,7 +1063,7 @@ def execute_byte_code(
             print = original_print
 
         if code_item.uses_domain:
-            kwargs["domain"] = LocalDomainClient(context=context)
+            kwargs["domain"] = LocalDomainClient()
 
         stdout = StringIO()
         stderr = StringIO()
