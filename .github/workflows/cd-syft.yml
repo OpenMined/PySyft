@@ -109,9 +109,25 @@ jobs:
           tox -e syft.build.helm
           tox -e syft.package.helm
 
+      # Check if the version is a pre-release
+      - name: Check if the version is a pre-release and modify version string
+        id: release_checks
+        run: |
+          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
+            echo "is_pre_release=true" >> $GITHUB_OUTPUT
+            echo "release_tag=beta" >> $GITHUB_OUTPUT
+            echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
+          else
+            echo "is_pre_release=false" >> $GITHUB_OUTPUT
+            echo "release_tag=latest" >> $GITHUB_OUTPUT
+            echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+          fi
+
       - name: Check and Bump Protocol Version
         run: |
-          # export BUMP=True
+          if [ "${{ steps.release_checks.outputs.is_pre_release }}" = "false" ]; then
+            export BUMP= True
+          fi
           tox -e syft.protocol.check
 
       - name: Update PyPI Readme
@@ -151,20 +167,6 @@ jobs:
         id: grid-version
         shell: bash
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-
-      # Check if the version is a pre-release
-      - name: Check if the version is a pre-release and modify version string
-        id: release_checks
-        run: |
-          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
-            echo "is_pre_release=true" >> $GITHUB_OUTPUT
-            echo "release_tag=beta" >> $GITHUB_OUTPUT
-            echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
-          else
-            echo "is_pre_release=false" >> $GITHUB_OUTPUT
-            echo "release_tag=latest" >> $GITHUB_OUTPUT
-            echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-          fi
 
       # Checkout Infra repo (nested)
       - name: Checkout Infra Repo
