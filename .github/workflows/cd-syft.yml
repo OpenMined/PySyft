@@ -116,7 +116,7 @@ jobs:
 
       - name: Update PyPI Readme
         run: |
-          python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.MD --output-file packages/syft/PYPI.md --version {{ steps.bump-version.outputs.current_version }}
+          python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.MD --output-file packages/syft/PYPI.md --version ${{ steps.bump-version.outputs.current_version }}
 
       - name: Commit changes to Syft
         uses: EndBug/add-and-commit@v9
