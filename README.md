@@ -44,16 +44,16 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 
 ## PySyft in 10 minutes
 
-📝 <a href="/notebooks/api">API Example Notebooks</a>
+📝 <a href="notebooks/api">API Example Notebooks</a>
 
-- <a href="/notebooks/api/0.8/00-load-data.ipynb">00-load-data.ipynb</a>
-- <a href="/notebooks/api/0.8/01-submit-code.ipynb">01-submit-code.ipynb</a>
-- <a href="/notebooks/api/0.8/02-review-code-and-approve.ipynb">02-review-code-and-approve.ipynb</a>
-- <a href="/notebooks/api/0.8/03-data-scientist-download-result.ipynb">03-data-scientist-download-result.ipynb</a>
-- <a href="/notebooks/api/0.8/04-jax-example.ipynb">04-jax-example.ipynb</a>
-- <a href="/notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
-- <a href="/notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
-- <a href="/notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
+- <a href="notebooks/api/0.8/00-load-data.ipynb">00-load-data.ipynb</a>
+- <a href="notebooks/api/0.8/01-submit-code.ipynb">01-submit-code.ipynb</a>
+- <a href="notebooks/api/0.8/02-review-code-and-approve.ipynb">02-review-code-and-approve.ipynb</a>
+- <a href="notebooks/api/0.8/03-data-scientist-download-result.ipynb">03-data-scientist-download-result.ipynb</a>
+- <a href="notebooks/api/0.8/04-jax-example.ipynb">04-jax-example.ipynb</a>
+- <a href="notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
+- <a href="notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
+- <a href="notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
 
 ## Deploy Kubernetes Helm Chart
 
@@ -183,11 +183,11 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <tr>
 <td valign="top">
 
-- <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
-- <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
-- <a href="/notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
+- <a href="notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
+- <a href="notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
+- <a href="notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
 - Manage Privacy Budget</a>
-- <a href="/notebooks/quickstart/data-owner/03-join-network.ipynb">Join a Network</a>
+- <a href="notebooks/quickstart/data-owner/03-join-network.ipynb">Join a Network</a>
 - Learn how PETs streamline Data Policies
 
 </td>
