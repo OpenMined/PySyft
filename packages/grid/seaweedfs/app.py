@@ -1,3 +1,4 @@
+# type: ignore
 # stdlib
 import json
 import subprocess
@@ -20,11 +21,11 @@ def test(
 ):
     first_res = json.loads(request.data.decode("utf-8").replace("'", '"'))
     print(first_res)
-    account_name: str = first_res["account_name"]
-    account_key: str = first_res["account_key"]
-    container_name: str = first_res["container_name"]
-    remote_name: str = first_res["remote_name"]
-    bucket_name: str = first_res["bucket_name"]
+    account_name = first_res["account_name"]
+    account_key = first_res["account_key"]
+    container_name = first_res["container_name"]
+    remote_name = first_res["remote_name"]
+    bucket_name = first_res["bucket_name"]
 
     res = subprocess.run(
         [

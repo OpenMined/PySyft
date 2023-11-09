@@ -152,12 +152,25 @@ def create_new_container_from_existing(
         key = parts[0]
         bind = parts[1]
         mode = parts[2]
+        if "/storage" in bind:
+            # we need this because otherwise we are using the same node private key
+            # which will make account creation fail
+            worker_postfix = worker_name.split("-", 1)[1]
+            key = f"{key}-{worker_postfix}"
         volumes[key] = {"bind": bind, "mode": mode}
 
-    environment.append("CREATE_PRODUCER=false")
-    environment.append("N_CONSUMERS=1")
-    environment.append(f"DEFAULT_ROOT_USERNAME={worker_name}")
-    environment.append(f"DEFAULT_ROOT_EMAIL={worker_name}@openmined.org")
+    # we need this because otherwise we are using the same node private key
+    # which will make account creation fail
+
+    environment = dict([e.split("=", 1) for e in environment])
+    environment["CREATE_PRODUCER"] = "false"
+    environment["N_CONSUMERS"] = 1
+    environment["DEFAULT_ROOT_USERNAME"] = worker_name
+    environment["DEFAULT_ROOT_EMAIL"] = f"{worker_name}@openmined.org"
+    environment["PORT"] = str(8003 + WORKER_NUM)
+    environment["HTTP_PORT"] = str(88 + WORKER_NUM)
+    environment["HTTPS_PORT"] = str(446 + WORKER_NUM)
+    environment.pop("NODE_PRIVATE_KEY", None)
 
     new_container = client.containers.create(
         name=worker_name,
@@ -167,6 +180,7 @@ def create_new_container_from_existing(
         ports=ports,
         detach=True,
         volumes=volumes,
+        network_mode=f"container:{existing_container.id}",
     )
 
     new_container.start()

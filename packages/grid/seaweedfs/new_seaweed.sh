@@ -1,3 +1,4 @@
+#!/bin/sh
 echo "got api key"
 echo ${STACK_API_KEY}
 export STACK_API_KEY=${STACK_API_KEY}
