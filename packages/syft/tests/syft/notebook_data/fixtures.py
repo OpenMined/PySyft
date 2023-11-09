@@ -3,9 +3,9 @@ from syft.service.data_subject.data_subject import DataSubjectCreate as DataSubj
 #from syft import autocache
 import pandas as pd
 
-@pytest.fixture
 def data_subjects():
     
+    country = DataSubject(name="Country", aliases=["country_code"])
     canada = DataSubject(name="Canada", aliases=["country_code:ca"])
     germany = DataSubject(name="Germany", aliases=["country_code:de"])
     spain = DataSubject(name="Spain", aliases=["country_code:es"])
@@ -15,10 +15,18 @@ def data_subjects():
     usa = DataSubject(name="United States of America", aliases=["country_code:us"])
     australia = DataSubject(name="Australia", aliases=["country_code:au"])
     india = DataSubject(name="India", aliases=["country_code:in"])
-    
-    country_list = [canada, germany, spain, france, japan, uk, usa, australia, india]
 
-    return country_list
+    country.add_member(canada)
+    country.add_member(germany)
+    country.add_member(spain)
+    country.add_member(france)
+    country.add_member(japan)
+    country.add_member(uk)
+    country.add_member(usa)
+    country.add_member(australia)
+    country.add_member(india)
+
+    return country
 
 @pytest.fixture
 def default_root_credentials():
