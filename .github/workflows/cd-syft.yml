@@ -125,8 +125,8 @@ jobs:
 
       - name: Check and Bump Protocol Version
         run: |
-          if [ "${{ steps.release_checks.outputs.is_pre_release }}" = "false" ]; then
-            export BUMP= True
+          if [ "${{ steps.release_checks.outputs.is_pre_release }}" == "false" ]; then
+            export BUMP=True
           fi
           tox -e syft.protocol.check
 
@@ -152,13 +152,13 @@ jobs:
         if: github.event_name != 'schedule'
         run: |
           tox -e syft.publish
-          if [ "${{ github.event.inputs.release_platform }}" = "REAL_PYPI" ]; then
+          if [ "${{ github.event.inputs.release_platform }}" == "REAL_PYPI" ]; then
             twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
           fi
-          if [ "${{ github.event.inputs.release_platform }}" = "TEST_PYPI" ]; then
+          if [ "${{ github.event.inputs.release_platform }}" == "TEST_PYPI" ]; then
             twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
           fi
-          if [ "${{ github.event.inputs.release_platform }}" = "REAL_AND_TEST_PYPI" ]; then
+          if [ "${{ github.event.inputs.release_platform }}" == "REAL_AND_TEST_PYPI" ]; then
             twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
             twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
           fi
