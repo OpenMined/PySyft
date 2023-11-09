@@ -233,7 +233,7 @@ jobs:
           images: openmined/grid-backend
           tags: |
             type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value={{ steps.release_checks.outputs.release_tag }}
+            type=raw,value=${{ steps.release_checks.outputs.release_tag }}
 
       - name: Build and push `grid-backend` image to DockerHub
         uses: docker/build-push-action@v5
@@ -254,7 +254,7 @@ jobs:
           images: openmined/grid-frontend
           tags: |
             type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value={{ steps.release_checks.outputs.release_tag }}
+            type=raw,value=${{ steps.release_checks.outputs.release_tag }}
 
       - name: Build and push `grid-frontend` image to DockerHub
         uses: docker/build-push-action@v5
@@ -284,7 +284,7 @@ jobs:
           images: openmined/grid-enclave
           tags: |
             type=raw,value=${{ steps.grid-version.outputs.GRID_VERSION }}
-            type=raw,value={{ steps.release_checks.outputs.release_tag }}
+            type=raw,value=${{ steps.release_checks.outputs.release_tag }}
 
       - name: Build and push `grid-enclave` image to DockerHub
         uses: docker/build-push-action@v5
