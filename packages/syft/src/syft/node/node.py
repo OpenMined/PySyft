@@ -690,6 +690,8 @@ class Node(AbstractNode):
                 root_verify_key=self.verify_key,
             )
         elif isinstance(action_store_config, MongoStoreConfig):
+            print(action_store_config)
+            print(self.verify_key)
             self.action_store = MongoActionStore(
                 root_verify_key=self.verify_key, store_config=action_store_config
             )

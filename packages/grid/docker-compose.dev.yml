@@ -77,8 +77,8 @@ services:
   seaweedfs:
     profiles:
       - blob-storage
-    # volumes:
-    #   - ./data/seaweedfs:/data
+    volumes:
+      - ./data/seaweedfs:/data
     ports:
       - "9333" # admin web port
       - "8888" # filer web port

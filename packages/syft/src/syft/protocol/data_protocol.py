@@ -78,7 +78,7 @@ class DataProtocol:
     def read_history(self) -> Dict:
         try:
             return json.loads(self.file_path.read_text())
-        except Exception as e:
+        except Exception:
             return {}
 
     def save_history(self, history: dict) -> None:

@@ -33,8 +33,12 @@ from .worker import Worker
 def make_routes(worker: Worker) -> APIRouter:
     if TRACE_MODE:
         # third party
-        from opentelemetry import trace
-        from opentelemetry.propagate import extract
+        try:
+            # third party
+            from opentelemetry import trace
+            from opentelemetry.propagate import extract
+        except Exception:
+            print("Failed to import opentelemetry")
 
     router = APIRouter()
 
