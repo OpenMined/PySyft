@@ -47,14 +47,26 @@ jobs:
       - uses: actions/checkout@v3
 
       # actions/setup-python doesn't yet support ARM
-      - if: ${{ !endsWith(matrix.runner, '-arm64') }}
+      - name: Setup Python on x64
+        if: ${{ !endsWith(matrix.runner, '-arm64') }}
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-      - if: ${{ endsWith(matrix.runner, '-arm64') }}
+
+      - name: Setup Python on arm64
+        if: ${{ endsWith(matrix.runner, '-arm64') }}
         run: |
           sudo apt update -y
           sudo apt install python3.11 -y
+          sudo apt install python3.11-venv -y
+          python3.11 -m venv .venv
+          source .venv/bin/activate
+
+      - name: Check python version
+        run: |
+          python --version
+          python3 --version
+          which python
 
       - name: Install dependencies
         run: |
