@@ -309,11 +309,6 @@ jobs:
           docker builder prune --all --force
           docker system prune --all --force
 
-      - name: Login to Docker-Helm
-        run: |
-          helm registry login registry-1.docker.io -u ${{ secrets.DOCKER_LOGIN }} --password ${{secrets.DOCKER_PASSWORD}}
-          cd packages/grid/helm/repo && helm push syft-${{ steps.grid-version.outputs.GRID_VERSION }}.tgz oci://registry-1.docker.io/openmined
-
       # Checkout to gh-pages and update helm repo
       - name: Checkout to gh-pages
         uses: actions/checkout@v3
