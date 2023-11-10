@@ -180,6 +180,8 @@ def create_new_container_from_existing(
         ports=ports,
         detach=True,
         volumes=volumes,
+        tty=True,
+        stdin_open=True,
         network_mode=f"container:{existing_container.id}",
     )
 

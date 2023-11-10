@@ -12,15 +12,8 @@ app = Flask(__name__)
 
 
 @app.route("/configure_azure", methods=["POST"])
-def test(
-    # account_name: str,
-    # account_key: str,
-    # container_name: str,
-    # remote_name: str,
-    # bucket_name: str,
-):
+def test() -> str:
     first_res = json.loads(request.data.decode("utf-8").replace("'", '"'))
-    print(first_res)
     account_name = first_res["account_name"]
     account_key = first_res["account_key"]
     container_name = first_res["container_name"]

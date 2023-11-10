@@ -907,12 +907,25 @@ def execute_byte_code(
                     job.n_iters = n_iters
                     job_service.update(self.context, job)
 
-            def update_progress(self, n=1):
+            def set_progress(self, to) -> None:
+                self._set_progress(to)
+
+            def increment_progress(self, n=1) -> None:
+                self._set_progress(by=n)
+
+            def _set_progress(self, to=None, by=None):
                 if self.context.job is not None:
                     node = self.context.node
                     job_service = node.get_service("jobservice")
                     job = self.context.job
-                    job.current_iter += n
+                    if job.current_iter is None:
+                        job.current_iter = 0
+                    if by is None and to is None:
+                        by = 1
+                    if to is None:
+                        job.current_iter += by
+                    else:
+                        job.current_iter = to
                     job_service.update(self.context, job)
 
             def launch_job(self, func: UserCode, **kwargs):

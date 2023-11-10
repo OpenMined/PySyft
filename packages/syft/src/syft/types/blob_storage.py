@@ -4,6 +4,7 @@ from pathlib import Path
 from queue import Queue
 import sys
 import threading
+from time import sleep
 from typing import Any
 from typing import ClassVar
 from typing import List
@@ -54,14 +55,22 @@ class BlobFile(SyftObject):
         """Synchronous version of the async iter_lines"""
         return self.read(stream=True, chunk_size=chunk_size)
 
-    def read_queue(self, queue, chunk_size, progress=False):
+    def read_queue(self, queue, chunk_size, progress=False, buffer_lines=10000):
         total_read = 0
-        for line in self._iter_lines(chunk_size=chunk_size):
-            total_read += len(line)
+        for _i, line in enumerate(self._iter_lines(chunk_size=chunk_size)):
+            line_size = len(line) + 1  # add byte for \n
+            if self.file_size is not None:
+                total_read = min(self.file_size, total_read + line_size)
+            else:
+                # naive way of doing this, max be 1 byte off because the last
+                # byte can also be a \n
+                total_read += line_size
             if progress:
                 queue.put((total_read, line))
             else:
                 queue.put(line)
+            while queue.qsize() > buffer_lines:
+                sleep(0.1)
         # Put anything not a string at the end
         queue.put(0)
 

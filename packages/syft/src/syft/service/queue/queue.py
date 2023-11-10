@@ -125,6 +125,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             # stdlib
             import traceback
 
+            raise e
             result = SyftError(
                 message=f"Failed with exception: {e}, {traceback.format_exc()}"
             )
@@ -139,6 +140,8 @@ class APICallMessageHandler(AbstractMessageHandler):
             api_call=queue_item.api_call,
             worker_settings=queue_item.worker_settings,
         )
+        # get new job item to get latest iter status
+        job_item = worker.job_stash.get_by_uid(api_call.credentials, job_item.id).ok()
 
         # if result.is_ok():
 
@@ -150,6 +153,9 @@ class APICallMessageHandler(AbstractMessageHandler):
             status=job_status,
             parent_job_id=job_item.parent_job_id,
             log_id=job_item.log_id,
+            creation_time=job_item.creation_time,
+            n_iters=job_item.n_iters,
+            current_iter=job_item.current_iter,
         )
 
         worker.queue_stash.set_result(api_call.credentials, queue_item)

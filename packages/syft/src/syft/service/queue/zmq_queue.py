@@ -242,7 +242,12 @@ class ZMQConsumer(QueueConsumer):
                         try:
                             self.message_handler.handle_message(message=message)
                         except Exception as e:
-                            print(f"ERROR HANDLING MESSAGE {e}")
+                            # stdlib
+                            import traceback
+
+                            print(
+                                f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
+                            )
                     # process heartbeat
                     elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
                         liveness = HEARTBEAT_LIVENESS
