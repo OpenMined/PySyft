@@ -1,0 +1,15 @@
+name: Actions Runner Controller Demo
+on:
+  workflow_dispatch:
+    inputs:
+      runner_name:
+        description: "Enter the name of the runner scale set"
+        required: True
+        default: None
+
+jobs:
+  Explore-GitHub-Actions:
+    # You need to use the INSTALLATION_NAME from the previous step
+    runs-on: sh-arc-linux-x64
+    steps:
+      - run: echo "🎉 This job uses runner scale set runners!"
