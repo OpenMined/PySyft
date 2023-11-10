@@ -46,8 +46,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v3
+      # actions/setup-python doesn't yet support ARM
+      - if: ${{ !endsWith(matrix.runner, '-arm64') }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - if: ${{ endsWith(matrix.runner, '-arm64') }}
+        uses: deadsnakes/action@v3.0.1
         with:
           python-version: "3.11"
 
