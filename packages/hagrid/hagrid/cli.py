@@ -3283,11 +3283,9 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
     """
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
-    containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
 
     # Check if the container name belongs to worker container
-    grid_path = GRID_SRC_PATH()
-    path = grid_path
+    path = GRID_SRC_PATH()
     env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
 
     cmd = ""
