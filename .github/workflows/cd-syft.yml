@@ -52,9 +52,9 @@ jobs:
         with:
           python-version: "3.11"
       - if: ${{ endsWith(matrix.runner, '-arm64') }}
-        uses: deadsnakes/action@v3.0.1
-        with:
-          python-version: "3.11"
+        run: |
+          sudo apt update -y
+          sudo apt install python3.11 -y
 
       - name: Install dependencies
         run: |
