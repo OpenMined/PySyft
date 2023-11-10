@@ -5,9 +5,13 @@ services:
       context: ${RELATIVE_PATH}./frontend
       dockerfile: frontend.dockerfile
       target: "${FRONTEND_TARGET:-grid-ui-development}"
+    profiles:
+      - frontend
 
   backend:
     build:
       context: ${RELATIVE_PATH}../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
+    profiles:
+      - backend

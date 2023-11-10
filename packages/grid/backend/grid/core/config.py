@@ -1,4 +1,5 @@
 # stdlib
+import distutils
 import os
 import secrets
 from typing import Any
@@ -13,6 +14,17 @@ from pydantic import BaseSettings
 from pydantic import EmailStr
 from pydantic import HttpUrl
 from pydantic import validator
+
+
+def str_to_int(bool_str: Any) -> int:
+    try:
+        return distutils.utils.strtobool(str(bool_str))
+    except ValueError:
+        return 0
+
+
+def str_to_bool(bool_str: Any) -> bool:
+    return bool(str_to_bool(bool_str))
 
 
 class Settings(BaseSettings):
@@ -109,6 +121,7 @@ class Settings(BaseSettings):
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
+    SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False

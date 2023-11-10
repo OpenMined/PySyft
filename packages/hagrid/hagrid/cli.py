@@ -142,9 +142,6 @@ def get_compose_src_path(
     else:
         path = deployment_dir(node_name)
 
-    if kwargs["deployment_type"] == "single_container":
-        path = path + "/worker"
-
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -2142,6 +2139,8 @@ def create_launch_docker_cmd(
             **kwargs,
         )
 
+    single_container_mode = kwargs["deployment_type"] == "single_container"
+
     enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - TEMPLATE DIR: " + template_grid_dir)
@@ -2202,6 +2201,7 @@ def create_launch_docker_cmd(
         "ENABLE_OBLV": str(enable_oblv).lower(),
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
+        "SINGLE_CONTAINER_MODE": single_container_mode,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -2323,21 +2323,25 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
-    if kwargs["deployment_type"] == "single_container":
-        return create_launch_worker_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
+    if single_container_mode:
+        cmd += " --profile worker"
+    else:
+        cmd += " --profile backend"
+        cmd += " --profile proxy"
+        cmd += " --profile mongo"
 
-    if str(node_type.input) in ["network", "gateway"]:
-        cmd += " --profile network"
+        if str(node_type.input) in ["network", "gateway"]:
+            cmd += " --profile network"
 
-    if use_blob_storage:
-        cmd += " --profile blob-storage"
+        if use_blob_storage:
+            cmd += " --profile blob-storage"
 
-    # no frontend container so expect bad gateway on the / route
-    if not bool(kwargs["headless"]):
-        cmd += " --profile frontend"
+        # no frontend container so expect bad gateway on the / route
+        if not bool(kwargs["headless"]):
+            cmd += " --profile frontend"
 
-    if "trace" in kwargs and kwargs["trace"]:
-        cmd += " --profile telemetry"
+        if "trace" in kwargs and kwargs["trace"]:
+            cmd += " --profile telemetry"
 
     final_commands = {}
     final_commands["Pulling"] = pull_command(cmd, kwargs)
@@ -3283,12 +3287,8 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
 
     # Check if the container name belongs to worker container
     grid_path = GRID_SRC_PATH()
-    if "proxy" in containers:
-        path = grid_path
-        env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
-    else:
-        path = grid_path + "/worker"
-        env_var = ";export $(cat ../.env | sed 's/#.*//g' | xargs);"
+    path = grid_path
+    env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
 
     cmd = ""
     cmd += "docker compose"
