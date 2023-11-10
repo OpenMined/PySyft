@@ -53,14 +53,17 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Setup Python on arm64
+      - name: Install Metadata packages for arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
         run: |
           sudo apt update -y
-          sudo apt install python3.11 -y
-          sudo apt install python3.11-venv -y
-          python3.11 -m venv .venv
-          source .venv/bin/activate
+          sudo apt install software-properties-common -y
+
+      - name: Setup Python on arm64
+        if: ${{ endsWith(matrix.runner, '-arm64') }}
+        uses: deadsnakes/action@v3.0.1
+        with:
+          python-version: "3.11"
 
       - name: Check python version
         run: |
