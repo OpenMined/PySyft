@@ -124,8 +124,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           target: backend
           outputs: type=image,name=openmined/grid-backend,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.release_platform }}
+          cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.release_platform }},mode=max
 
       - name: Export digest for grid-backend
         run: |
@@ -142,8 +142,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           outputs: type=image,name=openmined/grid-frontend,push-by-digest=true,name-canonical=true,push=true
           target: grid-ui-development
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.release_platform }}
+          cache-to: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.release_platform }},mode=max
 
       - name: Export digest for grid-frontend
         run: |
@@ -160,8 +160,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           outputs: type=image,name=openmined/grid-enclave,push-by-digest=true,name-canonical=true,push=true
           target: worker
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=openmined/grid-enclave:cache-${{ steps.release_metadata.outputs.release_platform }}
+          cache-to: type=registry,ref=openmined/grid-enclave:cache-${{ steps.release_metadata.outputs.release_platform }},mode=max
 
       - name: Export digest for grid-enclave
         run: |
