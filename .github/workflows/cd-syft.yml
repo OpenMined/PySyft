@@ -100,8 +100,10 @@ jobs:
           fi
           if [[ ${{matrix.runner}} == *"x64"* ]]; then
             echo "release_platform=linux/amd64" >> $GITHUB_OUTPUT
+            echo "short_release_platform=amd64" >> $GITHUB_OUTPUT
           else
             echo "release_platform=linux/arm64" >> $GITHUB_OUTPUT
+            echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
           fi
           echo "grid_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
@@ -124,8 +126,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           target: backend
           outputs: type=image,name=openmined/grid-backend,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/grid-backend:cache-${{ replace(steps.release_metadata.outputs.release_platform, 'linux/', '') }}
-          cache-to: type=registry,ref=openmined/grid-backend:cache-${{ replace(steps.release_metadata.outputs.release_platform, 'linux/', '') }},mode=max
+          cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
       - name: Export digest for grid-backend
         run: |
@@ -142,8 +144,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           outputs: type=image,name=openmined/grid-frontend,push-by-digest=true,name-canonical=true,push=true
           target: grid-ui-development
-          cache-from: type=registry,ref=openmined/grid-frontend:cache-${{ replace(steps.release_metadata.outputs.release_platform, 'linux/', '') }}
-          cache-to: type=registry,ref=openmined/grid-frontend:cache-${{ replace(steps.release_metadata.outputs.release_platform, 'linux/', '') }},mode=max
+          cache-from: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
       - name: Export digest for grid-frontend
         run: |
@@ -160,8 +162,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           outputs: type=image,name=openmined/grid-enclave,push-by-digest=true,name-canonical=true,push=true
           target: worker
-          cache-from: type=registry,ref=openmined/grid-enclave:cache-${{ replace(steps.release_metadata.outputs.release_platform, 'linux/', '') }}
-          cache-to: type=registry,ref=openmined/grid-enclave:cache-${{ replace(steps.release_metadata.outputs.release_platform, 'linux/', '') }},mode=max
+          cache-from: type=registry,ref=openmined/grid-enclave:cache-${{ steps.release_metadata.outputs.short_release_platform}}
+          cache-to: type=registry,ref=openmined/grid-enclave:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
       - name: Export digest for grid-enclave
         run: |
