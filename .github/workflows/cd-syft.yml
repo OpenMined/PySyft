@@ -207,7 +207,7 @@ jobs:
           docker buildx imagetools create  \
             -t openmined/grid-backend:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
             -t openmined/grid-backend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'opemined/grid-backend@sha256:%s ' *)
+            $(printf 'openmined/grid-backend@sha256:%s ' *)
 
       - name: Create manifest list and push for grid-frontend
         working-directory: /tmp/digests/grid-frontend
@@ -215,7 +215,7 @@ jobs:
           docker buildx imagetools create  \
             -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
             -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'opemined/grid-frontend@sha256:%s ' *)
+            $(printf 'openmined/grid-frontend@sha256:%s ' *)
 
       - name: Create manifest list and push for grid-enclave
         working-directory: /tmp/digests/grid-enclave
@@ -223,7 +223,7 @@ jobs:
           docker buildx imagetools create  \
             -t openmined/grid-enclave:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
             -t openmined/grid-enclave:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'opemined/grid-enclave@sha256:%s ' *)
+            $(printf 'openmined/grid-enclave@sha256:%s ' *)
 
   deploy-syft:
     needs: [merge-docker-images]
