@@ -128,8 +128,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           tags: ${{ steps.meta_grid_backend.outputs.tags }}
           target: backend
-          cache-from: type=registry,ref=${{ steps.meta_grid_backend.outputs.tags }}
-          cache-to: type=inline
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Docker meta for Grid-Frontend
         id: meta_grid_frontend
@@ -149,8 +149,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
           target: grid-ui-development
-          cache-from: type=registry,ref= ${{ steps.meta_grid_frontend.outputs.tags }}
-          cache-to: type=inline
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Docker meta for Grid-Enclave
         id: meta_grid_enclave
@@ -170,8 +170,8 @@ jobs:
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           tags: ${{ steps.meta_grid_enclave.outputs.tags }}
           target: worker
-          cache-from: type=registry,ref=${{ steps.meta_grid_enclave.outputs.tags }}
-          cache-to: type=inline
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy-syft:
     needs:

@@ -32,7 +32,7 @@ data:
   RABBITMQ_VERSION: 3
   SEAWEEDFS_VERSION: 3.55
   DOCKER_IMAGE_SEAWEEDFS: chrislusf/seaweedfs:3.55
-  VERSION: 0.8.2-beta.53
+  VERSION: 0.8.2-beta.55
   VERSION_HASH: unknown
   STACK_API_KEY: ""
 
