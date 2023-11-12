@@ -1,5 +1,5 @@
 # Mono Repo Global Version
-__version__ = "0.8.2-beta.58"
+__version__ = "0.8.2-beta.59"
 # elsewhere we can call this file: `python VERSION` and simply take the stdout
 
 # stdlib
