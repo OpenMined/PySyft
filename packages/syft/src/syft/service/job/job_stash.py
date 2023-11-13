@@ -81,7 +81,13 @@ class Job(SyftObject):
 
     @property
     def eta_string(self):
-        if self.current_iter is None or self.current_iter == 0 or self.n_iters is None or self.creation_time is None or self.status is JobStatus.COMPLETED:
+        if (
+            self.current_iter is None
+            or self.current_iter == 0
+            or self.n_iters is None
+            or self.creation_time is None
+            or self.status is JobStatus.COMPLETED
+        ):
             return None
 
         def format_timedelta(local_timedelta):
@@ -102,7 +108,7 @@ class Job(SyftObject):
         iter_duration = timedelta(seconds=iter_duration_seconds)
 
         iters_remaining = self.n_iters - self.current_iter
-        # Probably need to divide by the number of consumers
+        # TODO: Adjust by the number of consumers
         time_remaining = iters_remaining * iter_duration
 
         time_passed_str = format_timedelta(time_passed)
