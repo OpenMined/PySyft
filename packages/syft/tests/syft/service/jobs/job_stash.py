@@ -24,6 +24,7 @@ def test_job():
     (0, 10, JobStatus.CREATED, timedelta(days=1), None),
     (10, 100, JobStatus.PROCESSING, timedelta(seconds=3600), "06:00s/it"),
     (100000, 200000, JobStatus.PROCESSING, timedelta(minutes=1), "00:00s/it"),
+    (2, 10, JobStatus.PROCESSING, timedelta(seconds=119.6), "00:59s/it"),
 ])
 def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected):
     job = test_job()
