@@ -29,14 +29,14 @@ jobs:
         id: cache
         uses: actions/cache@v3
         with:
-          path: scripts/k8s_dev_hash # we don't care about the file, just the key
+          path: /tmp/k8s_dev_hash.txt # we don't care about the file, just the key
           key: k8s-dev-${{ github.sha }}
           lookup-only: true
 
       - name: Save Commit SHA
         if: github.event_name == 'schedule' || github.event.inputs.check-cache == 'true'
         # only for making the cache action happy
-        run: echo "${{ github.sha }}" > scripts/k8s_dev_hash
+        run: echo "${{ github.sha }}" > /tmp/k8s_dev_hash.txt
 
   deploy-syft-dev:
     needs: check-last-run
@@ -134,7 +134,7 @@ jobs:
         shell: bash
         run: |
           K3D_VERSION=v5.6.0
-          DEVSPACE_VERSION=v6.3.3
+          DEVSPACE_VERSION=v6.3.4
 
           # install k3d
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
@@ -151,6 +151,10 @@ jobs:
           # Install helm
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
           helm version
+
+          # install tox
+          python -m pip install --upgrade pip
+          pip install tox
 
           export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}
           export VERSION=dev-${{github.sha}}
