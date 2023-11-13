@@ -64,12 +64,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Fix Colima issue on MacOS Runners
-        if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          sudo bash -c 'echo "test" > /var/log/docker.log'
-
       - name: Docker on MacOS
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v2.1.0
@@ -159,12 +153,6 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.21.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
-
-      - name: Fix Colima issue on MacOS Runners
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          sudo bash -c 'echo "test" > /var/log/docker.log'
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
