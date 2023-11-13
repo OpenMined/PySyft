@@ -471,7 +471,7 @@ jobs:
       - name: Install curl for github arc runners
         run: |
           sudo apt-get update
-          sudo apt-get install curl -y
+          sudo apt-get install curl git -y
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
