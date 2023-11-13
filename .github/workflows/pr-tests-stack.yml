@@ -562,7 +562,7 @@ jobs:
       - name: Current Path
         run: |
           echo $PATH
-          echo pwd
+          pwd
           ls -la
 
       - name: Run K8s & Helm integration tests
