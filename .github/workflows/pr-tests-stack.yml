@@ -559,6 +559,12 @@ jobs:
           sudo install -c -m 0755 devspace /usr/local/bin
           devspace version
 
+      - name: Current Path
+        run: |
+          echo $PATH
+          echo pwd
+          ls -la
+
       - name: Run K8s & Helm integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
