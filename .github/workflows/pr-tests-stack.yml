@@ -469,9 +469,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install curl git -y
 
-      # - name: Permission to home directory
-      #   run: |
-      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
 
       - name: Check for file changes
@@ -487,16 +484,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
-
-      # # free 10GB of space
-      # - name: Remove unnecessary files
-      #   if: matrix.os == 'ubuntu-latest'
-      #   run: |
-      #     sudo rm -rf /usr/share/dotnet
-      #     sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      #     docker image prune --all --force
-      #     docker builder prune --all --force
-      #     docker system prune --all --force
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
@@ -559,13 +546,6 @@ jobs:
           curl -L -o devspace https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 && \
           sudo install -c -m 0755 devspace /usr/local/bin
           devspace version
-
-      - name: Current Path
-        run: |
-          echo $PATH
-          pwd
-          ls -la
-          git status
 
       - name: Run K8s & Helm integration tests
         if: steps.changes.outputs.stack == 'true'
