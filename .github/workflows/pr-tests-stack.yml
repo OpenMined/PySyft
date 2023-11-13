@@ -464,14 +464,15 @@ jobs:
     runs-on: sh-arc-linux-x64
 
     steps:
-      # - name: Permission to home directory
-      #   run: |
-      #     sudo chown -R $USER:$USER $HOME
-      - uses: actions/checkout@v3
       - name: Install curl for github arc runners
         run: |
           sudo apt-get update
           sudo apt-get install curl git -y
+
+      # - name: Permission to home directory
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
