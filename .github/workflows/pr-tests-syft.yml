@@ -88,12 +88,6 @@ jobs:
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
 
-      - name: Fix Colima issue on MacOS Runners
-        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          sudo bash -c 'echo "test" > /var/log/docker.log'
-
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v2.1.0
@@ -268,12 +262,6 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker compose version
-
-      - name: Fix Colima issue on MacOS Runners
-        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          sudo bash -c 'echo "test" > /var/log/docker.log'
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
