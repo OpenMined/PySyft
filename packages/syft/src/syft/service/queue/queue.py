@@ -15,6 +15,7 @@ from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
 from .queue_stash import QueueItem
 from .queue_stash import Status
+from ...service.context import AuthedServiceContext
 
 
 @serializable()
@@ -43,8 +44,8 @@ class QueueManager(BaseQueueManager):
     def create_message_queue(self, queue_name: str):
         return self._client.add_message_queue(queue_name)
 
-    def create_producer(self, queue_name: str, queue_stash):
-        return self._client.add_producer(queue_name=queue_name, queue_stash=queue_stash)
+    def create_producer(self, queue_name: str, queue_stash, context: AuthedServiceContext):
+        return self._client.add_producer(queue_name=queue_name, queue_stash=queue_stash, context=context)
 
     def send(
         self,

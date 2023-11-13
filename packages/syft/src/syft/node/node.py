@@ -410,8 +410,13 @@ class Node(AbstractNode):
             queue_name = message_handler.queue_name
             # client config
             if getattr(queue_config_.client_config, "create_producer", True):
+                context = AuthedServiceContext(
+                    node=self,
+                    credentials=self.verify_key,
+                    role=ServiceRole.ADMIN,
+                )
                 producer = self.queue_manager.create_producer(
-                    queue_name=queue_name, queue_stash=self.queue_stash
+                    queue_name=queue_name, queue_stash=self.queue_stash, context=context
                 )
                 producer.run()
                 address = producer.address
