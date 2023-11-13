@@ -564,6 +564,7 @@ jobs:
           echo $PATH
           pwd
           ls -la
+          git status
 
       - name: Run K8s & Helm integration tests
         if: steps.changes.outputs.stack == 'true'
