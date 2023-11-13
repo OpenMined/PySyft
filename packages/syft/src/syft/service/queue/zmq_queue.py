@@ -27,6 +27,13 @@ from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
 from .queue_stash import Status
+from ...serde.deserialize import _deserialize as deserialize
+from ...service.context import AuthedServiceContext
+from ...service.job.job_stash import Job
+from typing import List
+from ..response import SyftNotReady
+import functools
+from ...service.action.action_object import ActionObject
 
 HEARTBEAT_LIVENESS = 3
 HEARTBEAT_INTERVAL = 1
@@ -74,10 +81,11 @@ class WorkerQueue:
 
 @serializable()
 class ZMQProducer(QueueProducer):
-    def __init__(self, queue_name: str, queue_stash, port: int) -> None:
+    def __init__(self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext) -> None:
         self.port = port
         self.queue_name = queue_name
         self.queue_stash = queue_stash
+        self.auth_context = context
         self.post_init()
 
     @property
@@ -108,6 +116,60 @@ class ZMQProducer(QueueProducer):
 
             for item in items:
                 if item.status == Status.CREATED:
+                    des = deserialize(item.api_call.serialized_message, from_bytes=True)
+                    args = des.args
+                    kwargs = des.kwargs
+                    import sys
+                    
+                    action_service = self.auth_context.node.get_service("ActionService")
+                    
+                    def check_for_job(arg):
+                        if isinstance(arg, ActionObject):
+                            arg = arg.get()
+                        if isinstance(arg, Job):
+                            arg.fetch()
+                            return arg.resolved
+                        try:
+                            if isinstance(arg, List):
+                                value = True
+                                for elem in arg:
+                                    value = value and check_for_job(elem)
+                                return value
+                            if isinstance(arg, Dict):
+                                value = True
+                                for elem in arg.values():
+                                    value = value and check_for_job(elem)
+                                return value
+                        except Exception as e:
+                            pass
+                        return True                                           
+                        
+                    
+                    new_args = []
+                    for arg in args:
+                        new_arg = arg
+                        if isinstance(arg, UID):
+                            new_arg = action_service.get(self.auth_context, arg).ok()
+                        new_args.append(new_arg)
+                        
+                    print("Kwargs:", kwargs, file=sys.stderr)
+                    new_kwargs = {}
+                    for kwarg in kwargs:
+                        new_kwarg = kwargs[kwarg]
+                        if isinstance(kwargs[kwarg], UID):
+                            new_kwarg = action_service.get(self.auth_context, kwargs[kwarg]).ok()
+                        new_kwargs[kwarg] = new_kwarg
+                        if kwarg == 'job_results':
+                            # print(job.resolve for job in new_kwarg.get())
+                            print("JOBS:", [job.resolve for job in new_kwarg.get()], file=sys.stderr )
+                            
+                    print("Produder args:", check_for_job(new_args), file=sys.stderr)
+                    print("Produder kwargs:", check_for_job(new_kwargs), file=sys.stderr)
+                    print(items)
+                    
+                    if not (check_for_job(new_args) and check_for_job(new_kwargs)):
+                        continue                        
+                    
                     msg_bytes = sy.serialize(item, to_bytes=True)
                     frames = [self.identity, b"", msg_bytes]
                     # adds to queue for main loop
@@ -331,7 +393,7 @@ class ZMQClient(QueueClient):
         return free_port
 
     def add_producer(
-        self, queue_name: str, port: Optional[int] = None, queue_stash=None
+        self, queue_name: str, port: Optional[int] = None, queue_stash=None, context=None
     ) -> ZMQProducer:
         """Add a producer of a queue.
 
@@ -346,7 +408,7 @@ class ZMQClient(QueueClient):
                 port = self.config.queue_port
 
         producer = ZMQProducer(
-            queue_name=queue_name, queue_stash=queue_stash, port=port
+            queue_name=queue_name, queue_stash=queue_stash, port=port, context=context
         )
         self.producers[queue_name] = producer
         return producer
