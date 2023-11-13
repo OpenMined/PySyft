@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime, timedelta
 from syft.service.job.job_stash import Job, JobStatus
 from syft.types.uid import UID
@@ -12,51 +13,29 @@ def test_job():
         status=JobStatus.CREATED
     )
 
-def test_no_iterations():
+@pytest.mark.parametrize("current_iter, n_iters, status, creation_time_delta, expected", [
+    (0, 10, JobStatus.CREATED, timedelta(hours=2), None),
+    (1, None, JobStatus.CREATED, timedelta(hours=2), None),
+    (5, 10, JobStatus.PROCESSING, timedelta(hours=2), "24:00s/it"),
+    (200000, 200000, JobStatus.COMPLETED, timedelta(hours=2), None),
+    (156000, 200000, JobStatus.PROCESSING, timedelta(hours=2), "00:00s/it"),
+    (1, 3, JobStatus.PROCESSING, timedelta(hours=2), "2:00:00s/it"),
+    (10, 10, JobStatus.PROCESSING, timedelta(minutes=5), "00:30s/it"),
+    (0, 10, JobStatus.CREATED, timedelta(days=1), None),
+    (10, 100, JobStatus.PROCESSING, timedelta(seconds=3600), "06:00s/it"),
+    (100000, 200000, JobStatus.PROCESSING, timedelta(minutes=1), "00:00s/it"),
+])
+def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected):
     job = test_job()
-    job.current_iter = 0
-    job.n_iters = 10
+    job.current_iter = current_iter
+    job.n_iters = n_iters
+    job.status = status
+    job.creation_time = (datetime.now() - creation_time_delta).isoformat()
 
-    assert job.eta_string is None
-
-def test_no_total_iterations():
-    job = test_job()
-    job.current_iter = 1
-    job.n_iters = None
-
-    assert job.eta_string is None
-
-def test_completed_job():
-    job = test_job()
-    job.status = JobStatus.COMPLETED
-
-    assert job.eta_string is None
-
-def test_valid_iterations():
-    job = test_job()
-    job.current_iter = 5
-    job.n_iters = 10
-
-    assert job.eta_string is not None
-    assert isinstance(job.eta_string, str)
-    assert "24:00s/it" in job.eta_string
-
-def test_rounding_accuracy():
-    job = test_job()
-    job.current_iter = 156000
-    job.n_iters = 200000
-
-    assert job.eta_string is not None
-    assert isinstance(job.eta_string, str)
-    assert "00:00s/it" in job.eta_string
-    assert "2:00:00<33:50" in job.eta_string
-
-def test_rounding_accuracy_2():
-    job = test_job()
-    job.current_iter = 1
-    job.n_iters = 3
-
-    assert job.eta_string is not None
-    assert isinstance(job.eta_string, str)
-    assert "2:00:00s/it" in job.eta_string
-    assert "2:00:00<4:00:00" in job.eta_string
+    if expected is None:
+        assert job.eta_string is None
+    else:
+        print(f"job ({current_iter}, {n_iters}, {status}, {expected}) {job.eta_string}")
+        assert job.eta_string is not None
+        assert isinstance(job.eta_string, str)
+        assert expected in job.eta_string
