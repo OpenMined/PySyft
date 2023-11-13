@@ -143,13 +143,11 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         shell: bash
         run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew reinstall qemu
+          sudo bash -c 'echo "test" > /var/log/docker.log'
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.0.0
+        uses: crazy-max/ghaction-setup-docker@v2.1.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -364,13 +362,11 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         shell: bash
         run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew reinstall qemu
+          sudo bash -c 'echo "test" > /var/log/docker.log'
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.0.0
+        uses: crazy-max/ghaction-setup-docker@v2.1.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
