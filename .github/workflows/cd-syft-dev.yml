@@ -29,14 +29,14 @@ jobs:
         id: cache
         uses: actions/cache@v3
         with:
-          path: scripts/k8s_dev_hash # we don't care about the file, just the key
+          path: k8s_dev_hash.txt # we don't care about the file, just the key
           key: k8s-dev-${{ github.sha }}
           lookup-only: true
 
       - name: Save Commit SHA
         if: github.event_name == 'schedule' || github.event.inputs.check-cache == 'true'
         # only for making the cache action happy
-        run: echo "${{ github.sha }}" > scripts/k8s_dev_hash
+        run: echo "${{ github.sha }}" > k8s_dev_hash.txt
 
   deploy-syft-dev:
     needs: check-last-run
