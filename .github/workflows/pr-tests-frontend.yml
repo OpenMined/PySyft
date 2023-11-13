@@ -64,17 +64,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Fix Colima issue on MacOS Runners
-        if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew reinstall qemu
+      # - name: Fix Colima issue on MacOS Runners
+      #   if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
+      #   shell: bash
+      #   run: |
+      #     export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+      #     brew update
+      #     brew reinstall qemu
 
       - name: Docker on MacOS
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.0.0
+        uses: crazy-max/ghaction-setup-docker@v2.1.0
 
       - name: Install Tox
         if: steps.changes.outputs.frontend == 'true'
@@ -162,17 +162,17 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
-      - name: Fix Colima issue on MacOS Runners
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew reinstall qemu
+      # - name: Fix Colima issue on MacOS Runners
+      #   if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+      #   shell: bash
+      #   run: |
+      #     export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+      #     brew update
+      #     brew reinstall qemu
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.0.0
+        uses: crazy-max/ghaction-setup-docker@v2.1.0
 
       - name: Install Tox
         if: steps.changes.outputs.stack == 'true'
