@@ -467,7 +467,7 @@ jobs:
       - name: Install curl for github arc runners
         run: |
           sudo apt-get update
-          sudo apt-get install curl git -y
+          sudo apt-get install curl git jq -y
 
       - uses: actions/checkout@v3
 
