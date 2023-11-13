@@ -455,14 +455,13 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        # os: [om-ci-16vcpu-ubuntu2204]
-        os: [ubuntu-latest]
+        # os: [ubuntu-latest]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
 
-    runs-on: ${{matrix.os}}
+    # runs-on: ${{matrix.os}}
+    runs-on: sh-arc-linux-x64
 
     steps:
       - name: Permission to home directory
@@ -483,15 +482,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # free 10GB of space
-      - name: Remove unnecessary files
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker image prune --all --force
-          docker builder prune --all --force
-          docker system prune --all --force
+      # # free 10GB of space
+      # - name: Remove unnecessary files
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo rm -rf /usr/share/dotnet
+      #     sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      #     docker image prune --all --force
+      #     docker builder prune --all --force
+      #     docker system prune --all --force
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'

@@ -289,7 +289,7 @@ jobs:
           k3d version
 
           #Install Devspace
-          DEVSPACE_VERSION=v6.3.3
+          DEVSPACE_VERSION=v6.3.4
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
