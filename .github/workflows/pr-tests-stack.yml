@@ -468,6 +468,11 @@ jobs:
         run: |
           sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
+      - name: Install curl for github arc runners
+        run: |
+          sudo apt-get update
+          sudo apt-get install curl -y
+
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -528,15 +533,6 @@ jobs:
           chmod +x kubectl
           sudo install kubectl /usr/local/bin;
 
-      - name: Install k9s
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          # install k9s
-          wget https://github.com/derailed/k9s/releases/download/v0.27.4/k9s_Linux_amd64.tar.gz
-          tar -xvf k9s_Linux_amd64.tar.gz
-          chmod +x k9s
-          sudo install k9s /usr/local/bin;
-
       - name: Install helm
         if: steps.changes.outputs.stack == 'true'
         run: |
@@ -544,6 +540,24 @@ jobs:
           curl  -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
           chmod 700 get_helm.sh
           ./get_helm.sh
+          helm version
+
+      - name: Install k3d
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # install k3d
+          K3D_VERSION=v5.6.0
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.0.0 bash
+          k3d version
+
+      - name: Install devspace
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # install devspace
+          DEVSPACE_VERSION=v6.3.4
+          curl -L -o devspace https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 && \
+          sudo install -c -m 0755 devspace /usr/local/bin
+          devspace version
 
       - name: Run K8s & Helm integration tests
         if: steps.changes.outputs.stack == 'true'
@@ -554,17 +568,6 @@ jobs:
           GITHUB_CI: true
         shell: bash
         run: |
-          # install k3d
-          K3D_VERSION=v5.6.0
-          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
-          mv k3d-linux-amd64 k3d
-          chmod +x k3d
-          export PATH=`pwd`:$PATH
-          k3d version
-          DEVSPACE_VERSION=v6.3.3
-          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
-          chmod +x devspace
-          devspace version
           tox -e stack.test.integration.k8s
           tox -e syft.build.helm
           tox -e syft.package.helm
