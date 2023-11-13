@@ -547,7 +547,7 @@ jobs:
         run: |
           # install k3d
           K3D_VERSION=v5.6.0
-          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v${K3D_VERSION} bash
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${K3D_VERSION} bash
           k3d version
 
       - name: Install devspace
