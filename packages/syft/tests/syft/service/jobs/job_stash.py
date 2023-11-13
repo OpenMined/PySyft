@@ -3,16 +3,6 @@ from datetime import datetime, timedelta
 from syft.service.job.job_stash import Job, JobStatus
 from syft.types.uid import UID
 
-def test_job():
-    return Job(
-        id=UID(),
-        node_uid=UID(),
-        n_iters=200000,
-        current_iter=0,
-        creation_time=(datetime.now() - timedelta(hours=2)).isoformat(),
-        status=JobStatus.CREATED
-    )
-
 @pytest.mark.parametrize("current_iter, n_iters, status, creation_time_delta, expected", [
     (0, 10, JobStatus.CREATED, timedelta(hours=2), None),
     (1, None, JobStatus.CREATED, timedelta(hours=2), None),
@@ -27,16 +17,18 @@ def test_job():
     (2, 10, JobStatus.PROCESSING, timedelta(seconds=119.6), "00:59s/it"),
 ])
 def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected):
-    job = test_job()
-    job.current_iter = current_iter
-    job.n_iters = n_iters
-    job.status = status
-    job.creation_time = (datetime.now() - creation_time_delta).isoformat()
+    job = Job(
+        id=UID(),
+        node_uid=UID(),
+        n_iters=n_iters,
+        current_iter=current_iter,
+        creation_time=(datetime.now() - creation_time_delta).isoformat(),
+        status=status
+    )
 
     if expected is None:
         assert job.eta_string is None
     else:
-        print(f"job ({current_iter}, {n_iters}, {status}, {expected}) {job.eta_string}")
         assert job.eta_string is not None
         assert isinstance(job.eta_string, str)
         assert expected in job.eta_string
