@@ -84,15 +84,15 @@ class Job(SyftObject):
         if self.current_iter is None or self.current_iter == 0 or self.n_iters is None or self.creation_time is None or self.status is JobStatus.COMPLETED:
             return None
 
-        def format_timedelta(timedelta):
-            s = timedelta.total_seconds()
-            hours = int(s // 3600)
+        def format_timedelta(local_timedelta):
+            total_seconds = int(local_timedelta.total_seconds())
+            hours, leftover = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(leftover, 60)
+
             hours_string = f"{hours}:" if hours != 0 else ""
-            hours_leftover = s % 3600
-            minutes = int(hours_leftover // 60)
             minutes_string = f"{minutes}:".zfill(3)
-            seconds = round(hours_leftover % 60)
             seconds_string = f"{seconds}".zfill(2)
+
             return f"{hours_string}{minutes_string}{seconds_string}"
 
         now = datetime.now()
