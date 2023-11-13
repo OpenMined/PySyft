@@ -88,13 +88,11 @@ jobs:
         run: |
           pip install --upgrade tox packaging wheel --default-timeout=60
 
-      # - name: Fix Colima issue on MacOS Runners
-      #   if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
-      #   shell: bash
-      #   run: |
-      #     export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-      #     brew update
-      #     brew reinstall qemu
+      - name: Fix Colima issue on MacOS Runners
+        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
+        shell: bash
+        run: |
+          touch /var/log/docker.log
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
@@ -271,13 +269,11 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker compose version
 
-      # - name: Fix Colima issue on MacOS Runners
-      #   if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-      #   shell: bash
-      #   run: |
-      #     export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-      #     brew update
-      #     brew reinstall qemu
+      - name: Fix Colima issue on MacOS Runners
+        if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          touch /var/log/docker.log
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
