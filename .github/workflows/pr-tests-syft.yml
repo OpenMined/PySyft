@@ -92,7 +92,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
         shell: bash
         run: |
-          touch /var/log/docker.log
+          sudo touch /var/log/docker.log
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-13'
@@ -273,7 +273,7 @@ jobs:
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
         shell: bash
         run: |
-          touch /var/log/docker.log
+          sudo touch /var/log/docker.log
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'

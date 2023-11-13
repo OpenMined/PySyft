@@ -68,7 +68,7 @@ jobs:
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
         shell: bash
         run: |
-          touch /var/log/docker.log
+          sudo touch /var/log/docker.log
 
       - name: Docker on MacOS
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
@@ -164,7 +164,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
         shell: bash
         run: |
-          touch /var/log/docker.log
+          sudo touch /var/log/docker.log
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
