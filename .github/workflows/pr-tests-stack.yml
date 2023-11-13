@@ -464,9 +464,9 @@ jobs:
     runs-on: sh-arc-linux-x64
 
     steps:
-      - name: Permission to home directory
-        run: |
-          sudo chown -R $USER:$USER $HOME
+      # - name: Permission to home directory
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v3
       - name: Install curl for github arc runners
         run: |
