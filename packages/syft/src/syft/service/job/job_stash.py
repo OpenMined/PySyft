@@ -1,5 +1,6 @@
 # stdlib
 from datetime import datetime
+from datetime import timedelta
 from enum import Enum
 from typing import Any
 from typing import Dict
@@ -80,33 +81,40 @@ class Job(SyftObject):
 
     @property
     def eta_string(self):
-        if self.current_iter is None or self.current_iter == 0 or self.n_iters is None:
+        if (
+            self.current_iter is None
+            or self.current_iter == 0
+            or self.n_iters is None
+            or self.creation_time is None
+        ):
             return None
-        else:
 
-            def format_timedelta(timedelta):
-                s = timedelta.total_seconds()
-                hours = int(s // 3600)
-                hours_string = f"{hours}:" if hours != 0 else ""
-                hours_leftover = s % 3600
-                minutes = int(hours_leftover // 60)
-                minutes_string = f"{minutes}:".zfill(3)
-                seconds = round(hours_leftover % 60)
-                seconds_string = f"{seconds}".zfill(2)
-                return f"{hours_string}{minutes_string}{seconds_string}"
+        def format_timedelta(local_timedelta):
+            total_seconds = int(local_timedelta.total_seconds())
+            hours, leftover = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(leftover, 60)
 
-            now = datetime.now()
-            time_passed = now - datetime.fromisoformat(self.creation_time)
-            iter_duration = time_passed / self.current_iter
-            iters_remaining = self.n_iters - self.current_iter
+            hours_string = f"{hours}:" if hours != 0 else ""
+            minutes_string = f"{minutes}:".zfill(3)
+            seconds_string = f"{seconds}".zfill(2)
 
-            # Probably need to divide by the number of consumers
-            time_remaining = iters_remaining * iter_duration
-            time_passed_str = format_timedelta(time_passed)
-            time_remaining_str = format_timedelta(time_remaining)
-            iter_duration_str = iter_duration.total_seconds()
+            return f"{hours_string}{minutes_string}{seconds_string}"
 
-            return f"[{time_passed_str}<{time_remaining_str}]\n{iter_duration_str}s/it"
+        now = datetime.now()
+        time_passed = now - datetime.fromisoformat(self.creation_time)
+
+        iter_duration_seconds = time_passed.total_seconds() / self.current_iter
+        iter_duration = timedelta(seconds=iter_duration_seconds)
+
+        iters_remaining = self.n_iters - self.current_iter
+        # TODO: Adjust by the number of consumers
+        time_remaining = iters_remaining * iter_duration
+
+        time_passed_str = format_timedelta(time_passed)
+        time_remaining_str = format_timedelta(time_remaining)
+        iter_duration_str = format_timedelta(iter_duration)
+
+        return f"[{time_passed_str}<{time_remaining_str}]\n{iter_duration_str}s/it"
 
     @property
     def progress(self) -> str:
