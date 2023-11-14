@@ -51,6 +51,13 @@ class BlobFile(SyftObject):
         blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
         return blob_retrieval_object._read_data(stream=stream, chunk_size=chunk_size)
 
+    @classmethod
+    def upload_from_path(self, path, client):
+        # syft absolute
+        import syft as sy
+
+        return sy.ActionObject.from_path(path=path).send(client).syft_action_data
+
     def _iter_lines(self, chunk_size=512):
         """Synchronous version of the async iter_lines"""
         return self.read(stream=True, chunk_size=chunk_size)
