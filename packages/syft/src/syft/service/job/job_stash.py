@@ -86,7 +86,6 @@ class Job(SyftObject):
             or self.current_iter == 0
             or self.n_iters is None
             or self.creation_time is None
-            or self.status is JobStatus.COMPLETED
         ):
             return None
 
