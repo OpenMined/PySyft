@@ -6,6 +6,7 @@ from typing import Union
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
+from ...service.context import AuthedServiceContext
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
 from ..response import SyftError
@@ -43,8 +44,12 @@ class QueueManager(BaseQueueManager):
     def create_message_queue(self, queue_name: str):
         return self._client.add_message_queue(queue_name)
 
-    def create_producer(self, queue_name: str, queue_stash):
-        return self._client.add_producer(queue_name=queue_name, queue_stash=queue_stash)
+    def create_producer(
+        self, queue_name: str, queue_stash, context: AuthedServiceContext
+    ):
+        return self._client.add_producer(
+            queue_name=queue_name, queue_stash=queue_stash, context=context
+        )
 
     def send(
         self,
