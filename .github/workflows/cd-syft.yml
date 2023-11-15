@@ -229,7 +229,7 @@ jobs:
 
   deploy-syft:
     needs: [merge-docker-images]
-    if: always() &&  needs.merge-docker-images.result == 'success' && needs.merge-docker-images.result == 'failure'
+    if: always() &&  needs.merge-docker-images.result == 'success'
 
     runs-on: ubuntu-latest
     permissions:
