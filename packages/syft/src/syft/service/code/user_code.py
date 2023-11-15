@@ -1069,6 +1069,18 @@ def execute_byte_code(
         try:
             result = eval(evil_string, _globals, _locals)  # nosec
         except Exception:
+            if context.job is not None:
+                # stdlib
+                import traceback
+
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                error_msg = traceback.format_exc()
+                __builtin__.print(
+                    f"{time} EXCEPTION LOG ({job_id}):", error_msg, file=sys.stderr
+                )
+                log_service = context.node.get_service("LogService")
+                log_service.append(context=context, uid=log_id, new_err=error_msg)
+
             result = Err(
                 "Ops,something went wrong in this pipeline. Please, contact the Node Admin."
             )
