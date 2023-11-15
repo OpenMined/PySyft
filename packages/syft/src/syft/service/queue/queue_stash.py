@@ -27,7 +27,7 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftSuccess
-
+from ..worker.worker_service import AbstractWorker
 
 @serializable()
 class Status(str, Enum):
@@ -47,9 +47,11 @@ class QueueItem(SyftObject):
     result: Optional[Any]
     resolved: bool = False
     status: Status = Status.CREATED
-    job_id: Optional[UID]
-    api_call: Union[SyftAPICall, SignedSyftAPICall]
+    api_call: Optional[Union[SyftAPICall, SignedSyftAPICall]] = None
+    job_id: UID
+    # method
     worker_settings: WorkerSettings
+    worker: Optional[AbstractWorker] = None
 
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
@@ -57,6 +59,15 @@ class QueueItem(SyftObject):
     def _repr_markdown_(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
 
+    @property
+    def is_action(self):
+        return self.service_path == "Action" and self.method_name == "execute"
+
+    @property
+    def action(self):
+        if self.is_action:
+            return self.kwargs["action"]
+        return SyftError(message="QueueItem not an Action")
 
 @instrument
 @serializable()

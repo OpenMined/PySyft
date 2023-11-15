@@ -12,6 +12,7 @@ from typing import Union
 import pydantic
 from result import Ok
 from result import Result
+from syft.service.action.action_object import Action
 
 # relative
 from ...client.api import APIRegistry
@@ -58,6 +59,7 @@ class Job(SyftObject):
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
+    action: Optional[Action] = None
 
     __attr_searchable__ = ["parent_job_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
