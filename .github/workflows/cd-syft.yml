@@ -1,8 +1,8 @@
 name: CD - Syft
 
 on:
-  schedule:
-    - cron: "00 12 * * */7" # At 12:00 UTC on every seven days
+  # schedule:
+  #   - cron: "00 12 * * */7" # At 12:00 UTC on every seven days
 
   workflow_dispatch:
     inputs:
@@ -261,17 +261,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade tox setuptools wheel twine bump2version PyYAML
 
-      - name: Bump the Version
-        id: bump-version
-        run: |
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          bump2version prenum --allow-dirty --no-commit
-          tox -e lint || true
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
-          echo "current_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
+      # - name: Bump the Version
+      #   id: bump-version
+      #   run: |
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      #     bump2version prenum --allow-dirty --no-commit
+      #     tox -e lint || true
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      #     python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+      #     echo "current_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
 
       - name: Check Protocol Version
         run: |
