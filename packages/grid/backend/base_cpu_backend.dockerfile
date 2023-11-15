@@ -3,13 +3,13 @@ ARG TZ="Etc/UTC"
 
 # change to USER="syftuser", UID=1000 and HOME="/home/$USER" for rootless
 ARG USER="root"
-ARG UID="0"
+ARG UID=0
 ARG USER_GRP=$USER:$USER
 ARG HOME="/root"
 ARG APPDIR="$HOME/app"
 # the DS provides the following args in his cog config file
 ARG SYSTEM_PACKAGES=""
-ARG PIP_PACKAGES=""
+ARG PIP_PACKAGES="nothing --dry-run"
 ARG CUSTOM_CMD="echo no custom commands passed"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
@@ -37,6 +37,7 @@ ARG HOME
 ARG UID
 ARG USER
 ARG USER_GRP
+ARG PIP_PACKAGES
 
 USER $USER
 WORKDIR $APPDIR
@@ -53,8 +54,13 @@ COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
     pip install --user torch==2.1.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
-    pip install --user pip-autoremove $PIP_PACKAGES -e ./syft[data_science]/ && \
+    pip install --user pip-autoremove ./syft[data_science] && \
     pip-autoremove ansible ansible-core -y
+
+# cache PIP_PACKAGES as a separate layer so installation will be faster when a new
+# package is provided
+RUN --mount=type=cache,target=$HOME/.cache/,rw \
+    pip install --user $PIP_PACKAGES
 
 # ==================== [Final] Setup Syft Server ==================== #
 
