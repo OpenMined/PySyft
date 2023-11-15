@@ -160,7 +160,6 @@ class ZMQProducer(QueueProducer):
                             new_kwarg = action_service.get(self.auth_context, kwargs[kwarg]).ok()
                         new_kwargs[kwarg] = new_kwarg
                         if kwarg == 'job_results':
-                            # print(job.resolve for job in new_kwarg.get())
                             print("JOBS:", [job.resolve for job in new_kwarg.get()], file=sys.stderr )
                             
                     print("Produder args:", check_for_job(new_args), file=sys.stderr)
