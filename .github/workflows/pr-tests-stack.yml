@@ -485,6 +485,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Add k3d registry to /etc/hosts
+        run: |
+          sudo python scripts/patch_hosts.py --add-k3d-registry
+
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
