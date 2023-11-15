@@ -389,7 +389,7 @@ jobs:
           python scripts/create_syftcli_config.py
 
       - name: GitHub Release
-        if: github.event.inputs.release_platform  != "TEST_PYPI"
+        if: github.event.inputs.release_platform  != 'TEST_PYPI'
         uses: softprops/action-gh-release@v1
         with:
           name: v${{ steps.release_checks.outputs.github_release_version }}
