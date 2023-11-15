@@ -271,7 +271,6 @@ jobs:
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
-          echo "current_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
 
       - name: Check Protocol Version
         run: |
@@ -312,6 +311,7 @@ jobs:
             echo "is_pre_release=false" >> $GITHUB_OUTPUT
             echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           fi
+          echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
 
       - name: Check and Bump Protocol Version
         run: |
@@ -322,7 +322,7 @@ jobs:
 
       - name: Update PyPI Readme
         run: |
-          python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.bump-version.outputs.current_version }}
+          python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.release_checks.outputs.future_stable_version }}
 
       - name: Commit changes to Syft
         uses: EndBug/add-and-commit@v9
@@ -389,6 +389,7 @@ jobs:
           python scripts/create_syftcli_config.py
 
       - name: GitHub Release
+        if: github.event.inputs.release_platform  != 'TEST_PYPI'
         uses: softprops/action-gh-release@v1
         with:
           name: v${{ steps.release_checks.outputs.github_release_version }}
