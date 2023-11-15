@@ -1,4 +1,4 @@
-__version__ = "0.8.2-beta.60"
+__version__ = "0.8.2"
 
 # stdlib
 import pathlib
@@ -79,7 +79,7 @@ from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
 from .util.version_compare import make_requires
 
-LATEST_STABLE_SYFT = "0.8.1"
+LATEST_STABLE_SYFT = "0.8.2"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 
