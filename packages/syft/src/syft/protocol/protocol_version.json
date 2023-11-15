@@ -725,6 +725,11 @@
           "version": 1,
           "hash": "bd3f62b8fe4b2718a6380c8f05a93c5c40169fc4ab174db291929298e588429e",
           "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "d3ce45794da2e6c4b0cef63b98a553525af50c5d9db42d3d64caef3e7d22b4a9",
+          "action": "add"
         }
       },
       "SyftObjectMigrationState": {
