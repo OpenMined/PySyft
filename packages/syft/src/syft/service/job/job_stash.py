@@ -162,17 +162,32 @@ class Job(SyftObject):
         )
         return api.services.user.get_current_user(self.id)
 
-    def logs(self, _print=True):
+    def logs(self, stdout=True, stderr=False, _print=True):
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        log_item = api.services.log.get(self.log_id)
-        res = log_item.stdout
-        if _print:
-            print(res)
-        else:
-            return res
+        results = []
+        if stdout:
+            stdout_log = api.services.log.get(self.log_id)
+            if _print:
+                print(stdout_log)
+            elif stderr:
+                results.append(stdout_log)
+            else:
+                return stdout_log
+
+        if stderr:
+            std_err_log = api.services.log.get_error(self.log_id)
+            if _print:
+                print(std_err_log)
+            elif stdout:
+                results.append(std_err_log)
+            else:
+                return std_err_log
+
+        if not _print:
+            return results
 
     # def __repr__(self) -> str:
     #     return f"<Job: {self.id}>: {self.status}"
