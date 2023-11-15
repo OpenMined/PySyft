@@ -39,7 +39,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -74,7 +74,7 @@ from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from ..user.user_roles import ServiceRole
-from .code_parse import GlobalsVisitor
+from .code_parse import GlobalsVisitor, LaunchJobVisitor, get_nested_calls, reset_nested_calls
 from .unparse import unparse
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
@@ -241,7 +241,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 class UserCode(SyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     node_uid: Optional[UID]
@@ -264,7 +264,8 @@ class UserCode(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
-
+    nested_requests: Dict[str, UID] = {}
+    
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = []
     __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
@@ -545,7 +546,7 @@ class UserCode(SyftObject):
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2 + 1
 
     id: Optional[UID]
     code: str
@@ -558,6 +559,7 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+    nested_requests: Dict[str, SubmitUserCode] = {}
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -616,19 +618,52 @@ def debox_asset(arg: Any) -> Any:
 
 
 def syft_function_single_use(
-    *args: Any, share_results_with_owners=False, **kwargs: Any
+    *args: Any, share_results_with_owners=False, api=None, **kwargs: Any
 ):
     return syft_function(
         input_policy=ExactMatch(*args, **kwargs),
         output_policy=SingleExecutionExactOutput(),
         share_results_with_owners=share_results_with_owners,
+        api=api
     )
+
+def get_nested_code(user_code: SubmitUserCode, api):
+    tree = ast.parse(inspect.getsource(user_code.local_function))
+
+    # look for domain arg
+    if "domain" in [arg.arg for arg in tree.body[0].args.args]:
+        reset_nested_calls()
+        v = LaunchJobVisitor()
+        v.visit(tree)
+        nested_calls = get_nested_calls()
+        print(nested_calls)
+        
+        ipython = get_ipython()
+        
+        nested_user_codes = {}
+        for func_name in nested_calls:
+            # print(func_name)
+            # check the nb scope
+            specs = ipython.object_inspect(func_name)
+            if specs['type_name'] != 'SubmitUserCode':
+                print("Local UserCode not defined")
+            nested_user_codes[func_name] = ipython.ev(func_name)
+            
+            # check the remote code objects
+            for code in api.services.code.get_all():
+                if code.service_func_name == func_name:
+                    print("UserCode with the same name found remotely")
+                    if func_name not in nested_user_codes:
+                        nested_user_codes[func_name] = func_name
+        return nested_user_codes
+    return {}
 
 
 def syft_function(
     input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
     share_results_with_owners=False,
+    api=None,
 ) -> SubmitUserCode:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -658,6 +693,10 @@ def syft_function(
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
         )
+        
+        # check for nested calls:
+        nested_requests = get_nested_code(res, api=api)
+        res.nested_requests = nested_requests
 
         if share_results_with_owners:
             res.output_policy_init_kwargs[
@@ -852,6 +891,24 @@ def add_submit_time(context: TransformContext) -> TransformContext:
     context.output["submit_time"] = DateTime.now()
     return context
 
+def generate_nested_user_codes(context: TransformContext) -> TransformContext:
+    uids = {}
+    user_code_service = context.node.get_service("UserCodeService")
+    for key, obj in context.output['nested_requests'].items():
+        if isinstance(obj, SubmitUserCode):
+            new_code = obj.to(UserCode, context=context)
+            result = user_code_service.stash.set(context.credentials, new_code)
+            if isinstance(result, SyftError):
+                return result
+            uids[key] = new_code.id
+        elif isinstance(obj, UserCode):
+            uids[key] = obj.id
+        else:
+            raise NotImplementedError(
+                f"Invalid nested request type: {type(obj)} for code submission"
+            )
+    context.output['nested_requests'] = uids
+    return context
 
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
@@ -866,6 +923,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         add_custom_status,
         add_node_uid_for_key("node_uid"),
         add_submit_time,
+        generate_nested_user_codes
     ]
 
 
