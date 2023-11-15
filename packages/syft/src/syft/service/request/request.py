@@ -296,13 +296,25 @@ class Request(SyftObject):
 
     @property
     def code(self) -> Any:
+        if len(self.codes) == 0:
+            return SyftError(
+                message="This type of request does not have code associated with it."
+            )
+
+        if len(self.codes) > 1:
+            return SyftError(
+                message="This type of request has more than one code associated with it."
+            )
+
+        return self.codes[0]
+
+    @property
+    def codes(self) -> Any:
+        codes = []
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                return change.link
-
-        return SyftError(
-            message="This type of request does not have code associated with it."
-        )
+                codes.append(change.link)
+        return codes
 
     def get_results(self) -> Any:
         return self.code.get_results()
@@ -335,18 +347,21 @@ class Request(SyftObject):
 
         return request_status
 
-    def approve(self, disable_warnings: bool = False):
+    def approve(self, disable_warnings: bool = False, approve_all = False):
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
         )
         # TODO: Refactor so that object can also be passed to generate warnings
         metadata = api.connection.get_node_metadata(api.signing_key)
-        code = self.code
         message, is_enclave = None, False
 
-        if code and not isinstance(code, SyftError):
-            is_enclave = getattr(code, "enclave_metadata", None) is not None
+        if len(self.codes) > 1 and not approve_all:
+            return SyftError(message="Multiple codes detected, please use approve_all=True")
+
+        for code in self.codes:
+            if code and not isinstance(code, SyftError):
+                is_enclave = getattr(code, "enclave_metadata", None) is not None
 
         if is_enclave:
             message = "On approval, the result will be released to the enclave."
