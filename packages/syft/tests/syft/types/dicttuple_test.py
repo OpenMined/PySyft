@@ -12,12 +12,18 @@ from typing import Generic
 from typing import Optional
 from typing import TypeVar
 from typing import Union
+import uuid
 
 # third party
+from faker import Faker
 import pytest
 from typing_extensions import Self
 
 # syft absolute
+from syft.service.dataset.dataset import Contributor
+from syft.service.dataset.dataset import Dataset
+from syft.service.dataset.dataset import DatasetPageView
+from syft.service.user.roles import Roles
 from syft.types.dicttuple import DictTuple
 
 
@@ -219,6 +225,13 @@ class TestDictTupleProperties:
     def test_convert_items_to_dict(self, dict_tuple: DictTuple, case: Case) -> None:
         assert dict(dict_tuple.items()) == case.mapping
 
+    def test_constructing_dicttuple_from_itself(
+        self, dict_tuple: DictTuple, case: Case
+    ) -> None:
+        dd = DictTuple(dict_tuple)
+        assert tuple(dd) == tuple(case.values)
+        assert tuple(dd.keys()) == tuple(case.keys)
+
 
 @pytest.mark.parametrize(
     "args", Case(values=["z", "b"], keys=[1, 2]).constructor_args()
@@ -243,3 +256,47 @@ LENGTH_MISMACTH_TEST_CASES = [
 def test_keys_and_values_should_have_same_length(args: Callable[[], tuple]) -> None:
     with pytest.raises(ValueError, match="length"):
         DictTuple(*args())
+
+
+def test_datasetpageview(faker: Faker):
+    uploader = Contributor(
+        name=faker.name(), role=str(Roles.UPLOADER), email=faker.email()
+    )
+
+    length = 10
+    datasets = (
+        Dataset(name=uuid.uuid4().hex, contributor={uploader}, uploader=uploader)
+        for _ in range(length)
+    )
+    dict_tuple = DictTuple(datasets, lambda d: d.name)
+
+    assert DatasetPageView(datasets=dict_tuple, total=length)
+
+
+class EnhancedDictTuple(DictTuple):
+    pass
+
+
+@pytest.mark.parametrize(
+    "args,case",
+    chain.from_iterable(
+        ((args, c) for args in c.constructor_args()) for c in TEST_CASES
+    ),
+)
+def test_subclassing_dicttuple(args: Callable[[], tuple], case: Case):
+    dict_tuple = DictTuple(*args())
+    enhanced_dict_tuple = EnhancedDictTuple(*args())
+    dict_tuple_enhanced_dict_tuple = DictTuple(enhanced_dict_tuple)
+    enhanced_dict_tuple_dict_tuple = EnhancedDictTuple(dict_tuple)
+
+    values = tuple(case.values)
+    keys = tuple(case.keys)
+
+    for d in (
+        dict_tuple,
+        enhanced_dict_tuple,
+        dict_tuple_enhanced_dict_tuple,
+        enhanced_dict_tuple_dict_tuple,
+    ):
+        assert tuple(d) == values
+        assert tuple(d.keys()) == keys
