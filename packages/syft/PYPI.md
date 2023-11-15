@@ -20,7 +20,7 @@ $ pip install -U syft
 ```python
 # from Jupyter / Python
 import syft as sy
-sy.requires(">=0.8.1,<0.8.2")
+sy.requires(">=0.8.2,<0.8.3")
 node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
 ```
 
@@ -35,7 +35,7 @@ Starting syft-node server on 0.0.0.0:8080
 
 ```python
 import syft as sy
-sy.requires(">=0.8.1,<0.8.2")
+sy.requires(">=0.8.2,<0.8.3")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
 ```
 
@@ -116,11 +116,12 @@ $ helm install ... --set ingress.ingressClass="gce"
 # Versions
 
 `0.9.0` - Coming soon...  
-`0.8.2` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
-`0.8.1` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.1/notebooks/api/0.8">API</a>
+`0.8.3` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
+`0.8.2` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.2/notebooks/api/0.8">API</a>
 
 Deprecated:
 
+- `0.8.1` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.1/notebooks/api/0.8">API</a>
 - `0.8.0` - <a href="https://github.com/OpenMined/PySyft/tree/0.8/notebooks/api/0.8">API</a>
 - `0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>
 - `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>
