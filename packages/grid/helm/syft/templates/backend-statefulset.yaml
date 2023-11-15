@@ -58,7 +58,10 @@ spec:
         - name: NODE_NAME
           value: {{ .Values.node.settings.nodeName }}
         - name: STACK_API_KEY
-          value: {{ .Values.secrets.syft.stackApiKey }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.syft.syftsecret }}
+              key: stackApiKey
         - name: PORT
           value: '80'
         - name: IGNORE_TLS_ERRORS
@@ -84,7 +87,10 @@ spec:
         - name: DEFAULT_ROOT_EMAIL
           value: {{ .Values.secrets.syft.defaultRootEmail }}
         - name: DEFAULT_ROOT_PASSWORD
-          value: {{ .Values.secrets.syft.defaultRootPassword }}
+        valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.syft.syftsecret }}
+              key: defaultRootPassword
         envFrom: null
         image: docker.io/openmined/grid-backend:0.8.2-beta.40
         lifecycle: null

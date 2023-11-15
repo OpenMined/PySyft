@@ -109,10 +109,16 @@ def add_secrets(helm_chart_template_dir: str) -> None:
     """
     Add secrets.txt to secrets.yaml during runtime build.
     """
-    secrets_path = os.path.join(helm_chart_template_dir, "secrets.yaml")
-    secrets_source = os.path.join("k8s/manifests", "secrets.txt")
-    with open(secrets_path, "w") as fp:
-        with open(secrets_source) as fp2:
+    mongo_secrets_path = os.path.join(helm_chart_template_dir, "mongo_secrets.yaml")
+    mongo_secrets_source = os.path.join("k8s/manifests", "mongo_secrets.txt")
+    with open(mongo_secrets_path, "w") as fp:
+        with open(mongo_secrets_source) as fp2:
+            fp.write(fp2.read())
+
+    syft_secrets_path = os.path.join(helm_chart_template_dir, "syft_secrets.yaml")
+    syft_secrets_source = os.path.join("k8s/manifests", "syft_secrets.txt")
+    with open(syft_secrets_path, "w") as fp:
+        with open(syft_secrets_source) as fp2:
             fp.write(fp2.read())
 
 
