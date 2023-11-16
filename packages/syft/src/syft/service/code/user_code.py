@@ -12,6 +12,7 @@ from io import StringIO
 import itertools
 import sys
 import time
+import traceback
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -1068,15 +1069,12 @@ def execute_byte_code(
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         try:
             result = eval(evil_string, _globals, _locals)  # nosec
-        except Exception:
+        except Exception as e:
             if context.job is not None:
-                # stdlib
-                import traceback
-
+                error_msg = traceback_from_error(e, user_code.parsed_code)
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                error_msg = traceback.format_exc()
-                __builtin__.print(
-                    f"{time} EXCEPTION LOG ({job_id}):", error_msg, file=sys.stderr
+                original_print(
+                    f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
@@ -1101,7 +1099,6 @@ def execute_byte_code(
 
     except Exception as e:
         # stdlib
-        import traceback
 
         print = original_print
         # print("execute_byte_code failed", e, file=stderr_)
@@ -1110,6 +1107,34 @@ def execute_byte_code(
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+
+def traceback_from_error(e, code):
+    """We do this because the normal traceback.format_exc() does not work well for exec,
+    it missed the references to the actual code"""
+    line_nr = 0
+    tb = e.__traceback__
+    while tb is not None:
+        line_nr = tb.tb_lineno - 1
+        tb = tb.tb_next
+
+    lines = code.split("\n")
+    start_line = max(0, line_nr - 2)
+    end_line = min(len(lines), line_nr + 2)
+    error_lines: str = [
+        e.replace("   ", f"    {i} ", 1)
+        if i != line_nr
+        else e.replace("   ", f"--> {i} ", 1)
+        for i, e in enumerate(lines)
+        if i >= start_line and i < end_line
+    ]
+    error_lines = "\n".join(error_lines)
+
+    error_msg = f"""
+Encountered while executing process_batch:
+{traceback.format_exc()}
+{error_lines}"""
+    return error_msg
 
 
 def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
