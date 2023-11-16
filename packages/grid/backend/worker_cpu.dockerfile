@@ -1,3 +1,4 @@
+# ==================== Base Image for CPU workload ==================== #
 ARG PYTHON_VERSION="3.11"
 ARG TZ="Etc/UTC"
 
