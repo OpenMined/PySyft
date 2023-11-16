@@ -477,6 +477,16 @@ class SyftClient:
 
         self.post_init()
 
+    def rrr(self):
+        x = 5
+        x = 5
+        x = 5
+        x = 5
+        x = 5
+        x = 5
+        x = x + 3
+        raise ValueError("WQF")
+
     def get_env(self) -> str:
         return self.api.services.metadata.get_env()
 

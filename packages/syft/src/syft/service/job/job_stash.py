@@ -10,6 +10,7 @@ from typing import Union
 
 # third party
 import pydantic
+from result import Err
 from result import Ok
 from result import Result
 
@@ -64,15 +65,21 @@ class Job(SyftObject):
     __attr_searchable__ = ["parent_job_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
 
-    @property
-    def action_name(self):
-        raise ValueError("")
-
     @pydantic.root_validator()
     def check_time(cls, values: dict) -> dict:
         if values.get("creation_time", None) is None:
             values["creation_time"] = str(datetime.now())
         return values
+
+    @property
+    def action_display_name(self):
+        if self.action is None:
+            return "action"
+        else:
+            # hacky
+            self.action.syft_node_location = self.syft_node_location
+            self.action.syft_client_verify_key = self.syft_client_verify_key
+            return self.action.job_display_name
 
     @property
     def time_remaining_string(self):
@@ -176,23 +183,40 @@ class Job(SyftObject):
         )
         return api.services.user.get_current_user(self.id)
 
-    def logs(self, _print=True):
+    def logs(self, stdout=True, stderr=True, _print=True):
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        log_item = api.services.log.get(self.log_id)
-        res = log_item.stdout
-        if _print:
-            print(res)
+        results = []
+        if stdout:
+            stdout_log = api.services.log.get(self.log_id)
+            results.append(stdout_log)
+
+        if stderr:
+            try:
+                std_err_log = api.services.log.get_error(self.log_id)
+                results.append(std_err_log)
+            except Exception:
+                # no access
+                if isinstance(self.result, Err):
+                    results.append(self.result.value)
         else:
-            return res
+            # add short error
+            if isinstance(self.result, Err):
+                results.append(self.result.value)
+
+        results_str = "\n".join(results)
+        if not _print:
+            return results_str
+        else:
+            print(results_str)
 
     # def __repr__(self) -> str:
     #     return f"<Job: {self.id}>: {self.status}"
 
     def _coll_repr_(self) -> Dict[str, Any]:
-        logs = self.logs(_print=False)
+        logs = self.logs(_print=False, stderr=False)
         log_lines = logs.split("\n")
         subjobs = self.subjobs
         if len(log_lines) > 2:
@@ -200,14 +224,8 @@ class Job(SyftObject):
         else:
             logs = logs
 
-        if self.result is None:
-            pass
-        else:
-            str(self.result.syft_action_data)
-
         return {
-            "name": self.action_name,
-            "status": self.status,
+            "status": f"{self.action_display_name}: {self.status}",
             "progress": self.progress,
             "eta": self.eta_string,
             "created": f"{self.creation_time[:-7]} by {self.owner.email}",

@@ -26,6 +26,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...client.api import APIRegistry
 from ...client.api import SyftAPI
 from ...client.api import SyftAPICall
 from ...client.client import SyftClient
@@ -122,6 +123,18 @@ class Action(SyftObject):
     def full_path(self) -> str:
         """Action path and operation"""
         return f"{self.path}.{self.op}"
+
+    @property
+    def job_display_name(self) -> str:
+        if self.user_code_id is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_location,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            user_code = api.services.code.get_by_id(self.user_code_id)
+            return user_code.service_func_name
+        else:
+            return f"{self.path}.{self.op}"
 
     @property
     def syft_history_hash(self) -> int:

@@ -12,7 +12,6 @@ from result import Ok
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
-from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -134,25 +133,22 @@ class APICallMessageHandler(AbstractMessageHandler):
             )
 
             result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
+
             if isinstance(result, Ok):
                 result = result.ok()
-            # result = worker.handle_api_call(
-            #     api_call, job_id=job_item.id, check_call_location=False
-            # )
-            if isinstance(result, SyftError) or isinstance(result, Err):
+            elif isinstance(result, SyftError) or isinstance(result, Err):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
         except Exception as e:  # nosec
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
             # stdlib
-            import traceback
 
             raise e
-            result = SyftError(
-                message=f"Failed with exception: {e}, {traceback.format_exc()}"
-            )
-            print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
+            # result = SyftError(
+            #     message=f"Failed with exception: {e}, {traceback.format_exc()}"
+            # )
+            # print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
 
         queue_item.result = result
         queue_item.resolved = True
@@ -163,18 +159,10 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         # if result.is_ok():
 
-        job_item = Job(
-            node_uid=worker.id,
-            id=job_item.id,
-            result=result,
-            resolved=True,
-            status=job_status,
-            parent_job_id=job_item.parent_job_id,
-            log_id=job_item.log_id,
-            creation_time=job_item.creation_time,
-            n_iters=job_item.n_iters,
-            current_iter=job_item.current_iter,
-        )
+        job_item.node_uid = worker.id
+        job_item.result = result
+        job_item.resolved = True
+        job_item.status = job_status
 
         worker.queue_stash.set_result(credentials, queue_item)
         worker.job_stash.set_result(credentials, job_item)

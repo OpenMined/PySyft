@@ -35,6 +35,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
@@ -142,7 +143,9 @@ class UserCodeService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
-    @service_method(path="code.get_by_id", name="get_by_id")
+    @service_method(
+        path="code.get_by_id", name="get_by_id", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
@@ -316,6 +319,9 @@ class UserCodeService(AbstractService):
 
             if isinstance(result, TwinObject):
                 return Ok(result.mock)
+            elif result.syft_action_data_type is Err:
+                # result contains the error but the request was handled correctly
+                return result.syft_action_data
             else:
                 return Ok(result.as_empty())
         except Exception as e:
