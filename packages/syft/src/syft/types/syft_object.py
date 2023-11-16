@@ -6,6 +6,7 @@ from hashlib import sha256
 import inspect
 from inspect import Signature
 import re
+import traceback
 import types
 from typing import Any
 from typing import Callable
@@ -764,7 +765,9 @@ def list_dict_repr_html(self) -> str:
             )
 
     except Exception as e:
-        print(f"error representing {type(self)} of objects. {e}")
+        print(
+            f"error representing {type(self)} of objects. {e}, {traceback.format_exc()}"
+        )
         pass
 
     # stdlib

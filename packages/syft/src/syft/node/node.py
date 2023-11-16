@@ -74,6 +74,7 @@ from ..service.project.project_service import ProjectService
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
+from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
 from ..service.queue.zmq_queue import QueueConfig
@@ -410,8 +411,13 @@ class Node(AbstractNode):
             queue_name = message_handler.queue_name
             # client config
             if getattr(queue_config_.client_config, "create_producer", True):
+                context = AuthedServiceContext(
+                    node=self,
+                    credentials=self.verify_key,
+                    role=ServiceRole.ADMIN,
+                )
                 producer = self.queue_manager.create_producer(
-                    queue_name=queue_name, queue_stash=self.queue_stash
+                    queue_name=queue_name, queue_stash=self.queue_stash, context=context
                 )
                 producer.run()
                 address = producer.address
@@ -992,44 +998,87 @@ class Node(AbstractNode):
             return self.add_api_call_to_queue(api_call)
         return result
 
-    def add_api_call_to_queue(self, api_call, parent_job_id=None):
+    def add_action_to_queue(self, action, credentials, parent_job_id=None):
+        job_id = UID()
         task_uid = UID()
+        worker_settings = WorkerSettings.from_node(node=self)
+
+        queue_item = ActionQueueItem(
+            id=task_uid,
+            node_uid=self.id,
+            syft_client_verify_key=credentials,
+            syft_node_location=self.id,
+            job_id=job_id,
+            worker_settings=worker_settings,
+            args=[],
+            kwargs={"action": action},
+        )
+        return self.add_queueitem_to_queue(
+            queue_item, credentials, action, parent_job_id
+        )
+
+    def add_queueitem_to_queue(
+        self, queue_item, credentials, action=None, parent_job_id=None
+    ):
         log_id = UID()
 
         job = Job(
-            id=UID(),
+            id=queue_item.job_id,
             node_uid=self.id,
-            syft_client_verify_key=api_call.credentials,
+            syft_client_verify_key=credentials,
             syft_node_location=self.id,
             log_id=log_id,
             parent_job_id=parent_job_id,
-        )
-
-        worker_settings = WorkerSettings.from_node(node=self)
-
-        item = QueueItem(
-            id=task_uid,
-            node_uid=self.id,
-            syft_client_verify_key=api_call.credentials,
-            syft_node_location=self.id,
-            job_id=job.id,
-            api_call=api_call,
-            worker_settings=worker_settings,
+            action=action,
         )
 
         # 🟡 TODO 36: Needs distributed lock
-        credentials = api_call.credentials
-        self.queue_stash.set_placeholder(credentials, item)
+        self.queue_stash.set_placeholder(credentials, queue_item)
         self.job_stash.set(credentials, job)
 
         log_service = self.get_service("logservice")
-
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
         result = log_service.add(context, log_id)
         if isinstance(result, SyftError):
             return result
         return job
+
+    def add_api_call_to_queue(self, api_call, parent_job_id=None):
+        unsigned_call = api_call
+        if isinstance(api_call, SignedSyftAPICall):
+            unsigned_call = api_call.message
+
+        is_user_code = unsigned_call.path == "code.call"
+
+        service, method = unsigned_call.path.split(".")
+
+        action = None
+        if is_user_code:
+            action = Action.from_api_call(unsigned_call)
+            return self.add_action_to_queue(
+                action, api_call.credentials, parent_job_id=parent_job_id
+            )
+        else:
+            worker_settings = WorkerSettings.from_node(node=self)
+            queue_item = QueueItem(
+                id=UID(),
+                node_uid=self.id,
+                syft_client_verify_key=api_call.credentials,
+                syft_node_location=self.id,
+                job_id=UID(),
+                worker_settings=worker_settings,
+                service=service,
+                method=method,
+                args=unsigned_call.args,
+                kwargs=unsigned_call.kwargs,
+            )
+            return self.add_queueitem_to_queue(
+                queue_item,
+                api_call.credentials,
+                action=None,
+                parent_job_id=parent_job_id,
+            )
 
     def get_api(
         self,

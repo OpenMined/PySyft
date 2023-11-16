@@ -26,10 +26,10 @@ class ActionDataEmpty(SyftObject):
     syft_internal_type: Optional[Type] = NoneType
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__} UID: {self.id} <{self.syft_internal_type}>"
+        return f"{type(self).__name__} <{self.syft_internal_type}>"
 
     def __str__(self) -> str:
-        return f"{type(self).__name__} UID: {self.id} <{self.syft_internal_type}>"
+        return f"{type(self).__name__} <{self.syft_internal_type}>"
 
 
 @serializable()

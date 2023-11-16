@@ -1,22 +1,23 @@
 # stdlib
+from typing import Any
 from typing import Optional
 from typing import Type
 from typing import Union
 
 # third party
 from result import Err
+from result import Ok
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
-from ..job.job_stash import Job
+from ...service.context import AuthedServiceContext
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
-from .queue_stash import QueueItem
 from .queue_stash import Status
 
 
@@ -46,8 +47,12 @@ class QueueManager(BaseQueueManager):
     def create_message_queue(self, queue_name: str):
         return self._client.add_message_queue(queue_name)
 
-    def create_producer(self, queue_name: str, queue_stash):
-        return self._client.add_producer(queue_name=queue_name, queue_stash=queue_stash)
+    def create_producer(
+        self, queue_name: str, queue_stash, context: AuthedServiceContext
+    ):
+        return self._client.add_producer(
+            queue_name=queue_name, queue_stash=queue_stash, context=context
+        )
 
     def send(
         self,
@@ -79,7 +84,6 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
-        api_call = queue_item.api_call
 
         queue_config = worker_settings.queue_config
         queue_config.client_config.create_producer = False
@@ -99,9 +103,9 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.id = worker_settings.id
         worker.signing_key = worker_settings.signing_key
 
-        job_item = worker.job_stash.get_by_uid(
-            api_call.credentials, queue_item.job_id
-        ).ok()
+        credentials = queue_item.syft_client_verify_key
+
+        job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
 
         queue_item.status = Status.PROCESSING
         queue_item.node_uid = worker.id
@@ -109,64 +113,56 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.status = JobStatus.PROCESSING
         job_item.node_uid = worker.id
 
-        worker.queue_stash.set_result(api_call.credentials, queue_item)
-        worker.job_stash.set_result(api_call.credentials, job_item)
+        worker.queue_stash.set_result(credentials, queue_item)
+        worker.job_stash.set_result(credentials, job_item)
 
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
         try:
-            result = worker.handle_api_call(
-                api_call, job_id=job_item.id, check_call_location=False
+            call_method = getattr(
+                worker.get_service(queue_item.service), queue_item.method
             )
 
-            # Two different error scenarios
-            # 1 - Happens at syft logic level (when we try to process_all again)
-            # 2 - Happens at function level (when the executed function fails)
-            if (
-                isinstance(result.message.data, SyftError)
-                or result.message.data.syft_action_data_type is Err
-            ):
+            role = worker.get_role_for_credentials(credentials=credentials)
+            context = AuthedServiceContext(
+                node=worker,
+                credentials=credentials,
+                role=role,
+                job_id=queue_item.job_id,
+            )
+
+            result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
+
+            if isinstance(result, Ok):
+                result = result.ok()
+            elif isinstance(result, SyftError) or isinstance(result, Err):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
         except Exception as e:  # nosec
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
             # stdlib
-            import traceback
 
             raise e
-            result = SyftError(
-                message=f"Failed with exception: {e}, {traceback.format_exc()}"
-            )
-            print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
+            # result = SyftError(
+            #     message=f"Failed with exception: {e}, {traceback.format_exc()}"
+            # )
+            # print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
 
-        queue_item = QueueItem(
-            node_uid=worker.id,
-            id=queue_item.id,
-            result=result,
-            resolved=True,
-            status=status,
-            api_call=queue_item.api_call,
-            worker_settings=queue_item.worker_settings,
-        )
+        queue_item.result = result
+        queue_item.resolved = True
+        queue_item.status = status
+
         # get new job item to get latest iter status
-        job_item = worker.job_stash.get_by_uid(api_call.credentials, job_item.id).ok()
+        job_item = worker.job_stash.get_by_uid(credentials, job_item.id).ok()
 
         # if result.is_ok():
 
-        job_item = Job(
-            node_uid=worker.id,
-            id=job_item.id,
-            result=result.message.data,
-            resolved=True,
-            status=job_status,
-            parent_job_id=job_item.parent_job_id,
-            log_id=job_item.log_id,
-            creation_time=job_item.creation_time,
-            n_iters=job_item.n_iters,
-            current_iter=job_item.current_iter,
-        )
+        job_item.node_uid = worker.id
+        job_item.result = result
+        job_item.resolved = True
+        job_item.status = job_status
 
-        worker.queue_stash.set_result(api_call.credentials, queue_item)
-        worker.job_stash.set_result(api_call.credentials, job_item)
+        worker.queue_stash.set_result(credentials, queue_item)
+        worker.job_stash.set_result(credentials, job_item)

@@ -3,6 +3,9 @@ import sys
 import traceback
 from typing import Any
 
+# third party
+from result import Err
+
 # relative
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
@@ -45,6 +48,9 @@ class SyftError(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-danger"
+
+    def to_result(self):
+        return Err(value=self.message)
 
 
 @serializable()
