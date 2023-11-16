@@ -29,6 +29,7 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
+from ..action.action_object import Action
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftNotReady
@@ -58,9 +59,14 @@ class Job(SyftObject):
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
+    action: Optional[Action] = None
 
     __attr_searchable__ = ["parent_job_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+
+    @property
+    def action_name(self):
+        raise ValueError("")
 
     @pydantic.root_validator()
     def check_time(cls, values: dict) -> dict:
@@ -200,6 +206,7 @@ class Job(SyftObject):
             str(self.result.syft_action_data)
 
         return {
+            "name": self.action_name,
             "status": self.status,
             "progress": self.progress,
             "eta": self.eta_string,

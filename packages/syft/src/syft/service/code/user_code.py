@@ -30,7 +30,6 @@ from typing_extensions import Self
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
-from ...client.api import SyftAPICall
 from ...client.client import PythonConnection
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
@@ -52,6 +51,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
@@ -907,6 +907,25 @@ class SecureContext:
             job.current_iter += current_iter
             job_service.update(context, job)
 
+        def set_api_registry():
+            user_signing_key = [
+                x.signing_key
+                for x in user_service.stash.partition.data.values()
+                if x.verify_key == context.credentials
+            ][0]
+            data_protcol = get_data_protocol()
+            user_api = node.get_api(context.credentials, data_protcol.latest_version)
+            user_api.signing_key = user_signing_key
+            # We hardcode a python connection here since we have access to the node
+            # TODO: this is not secure
+            user_api.connection = PythonConnection(node=node)
+
+            APIRegistry.set_api_for(
+                node_uid=node.id,
+                user_verify_key=context.credentials,
+                api=user_api,
+            )
+
         def launch_job(func: UserCode, **kwargs):
             # relative
             from ... import UID
@@ -945,36 +964,17 @@ class SecureContext:
 
             try:
                 # TODO: check permissions here
-                api_call = SyftAPICall(
-                    node_uid=node.id,
-                    path="code.call",
-                    args=[new_user_code.id],
-                    kwargs=kw2id,
-                    blocking=False,
-                ).sign(node.signing_key)
+                action = Action.syft_function_action_from_kwargs_and_id(
+                    kw2id, new_user_code.id
+                )
 
-                job = node.add_api_call_to_queue(api_call, parent_job_id=context.job_id)
-
+                job = node.add_action_to_queue(
+                    action=action,
+                    credentials=context.credentials,
+                    parent_job_id=context.job_id,
+                )
                 # set api in global scope to enable using .get(), .wait())
-                user_signing_key = [
-                    x.signing_key
-                    for x in user_service.stash.partition.data.values()
-                    if x.verify_key == context.credentials
-                ][0]
-                data_protcol = get_data_protocol()
-                user_api = node.get_api(
-                    context.credentials, data_protcol.latest_version
-                )
-                user_api.signing_key = user_signing_key
-                # We hardcode a python connection here since we have access to the node
-                # TODO: this is not secure
-                user_api.connection = PythonConnection(node=node)
-
-                APIRegistry.set_api_for(
-                    node_uid=node.id,
-                    user_verify_key=context.credentials,
-                    api=user_api,
-                )
+                set_api_registry()
 
                 return job
             except Exception as e:

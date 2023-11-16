@@ -1,17 +1,15 @@
 # stdlib
 from enum import Enum
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 
 # third party
 from result import Ok
 from result import Result
 
 # relative
-from ...client.api import SignedSyftAPICall
-from ...client.api import SyftAPICall
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -47,8 +45,13 @@ class QueueItem(SyftObject):
     result: Optional[Any]
     resolved: bool = False
     status: Status = Status.CREATED
+
+    # TODO: set
+    method: str
+    service: str
+    args: List
+    kwargs: Dict[str, Any]
     job_id: Optional[UID]
-    api_call: Union[SyftAPICall, SignedSyftAPICall]
     worker_settings: WorkerSettings
 
     def __repr__(self) -> str:
@@ -56,6 +59,25 @@ class QueueItem(SyftObject):
 
     def _repr_markdown_(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
+
+    @property
+    def is_action(self):
+        return self.service_path == "Action" and self.method_name == "execute"
+
+    @property
+    def action(self):
+        if self.is_action:
+            return self.kwargs["action"]
+        return SyftError(message="QueueItem not an Action")
+
+
+@serializable()
+class ActionQueueItem(QueueItem):
+    __canonical_name__ = "ActionQueueItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    method: str = "execute"
+    service: str = "actionservice"
 
 
 @instrument

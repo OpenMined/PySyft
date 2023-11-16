@@ -170,7 +170,7 @@ class ZMQProducer(QueueProducer):
                     # adds to queue for main loop
                     self.message_queue = [frames] + self.message_queue
                     item.status = Status.PROCESSING
-                    res = self.queue_stash.update(item.api_call.credentials, item)
+                    res = self.queue_stash.update(item.syft_client_verify_key, item)
                     if not res.is_ok():
                         print("Failed to update queue item")
 
