@@ -3,6 +3,7 @@ import importlib
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -180,6 +181,7 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         code_item: UserCode,
         kwargs: Dict[str, Any],
+        result_id: Optional[UID] = None,
     ) -> Result[ActionObjectPointer, Err]:
         input_policy = code_item.input_policy
         filtered_kwargs = input_policy.filter_kwargs(
@@ -217,7 +219,7 @@ class ActionService(AbstractService):
                 has_twin_inputs = True
             real_kwargs[key] = kwarg_value
 
-        result_id = UID()
+        result_id = UID() if result_id is None else result_id
 
         try:
             if not has_twin_inputs:
@@ -475,6 +477,16 @@ class ActionService(AbstractService):
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
             # print(action.create_object, "already in blob storage")
+        elif action.action_type == ActionType.SYFTFUNCTION:
+            usercode_service = context.node.get_service("usercodeservice")
+            kwarg_ids = {}
+            for k, v in action.kwargs.items():
+                # transform lineage ids into ids
+                kwarg_ids[k] = v.id
+            result_action_object: Result[ActionObject, Err] = usercode_service._call(
+                context, action.user_code_id, action.result_id, **kwarg_ids
+            )
+            return result_action_object
         elif action.action_type == ActionType.FUNCTION:
             result_action_object = self.call_function(context, action)
         else:

@@ -1,17 +1,15 @@
 # stdlib
 from enum import Enum
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 
 # third party
 from result import Ok
 from result import Result
 
 # relative
-from ...client.api import SignedSyftAPICall
-from ...client.api import SyftAPICall
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -27,7 +25,7 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftSuccess
-from ..worker.worker_service import AbstractWorker
+
 
 @serializable()
 class Status(str, Enum):
@@ -47,11 +45,14 @@ class QueueItem(SyftObject):
     result: Optional[Any]
     resolved: bool = False
     status: Status = Status.CREATED
-    api_call: Optional[Union[SyftAPICall, SignedSyftAPICall]] = None
-    job_id: UID
-    # method
+
+    # TODO: set
+    method: str
+    service: str
+    args: List
+    kwargs: Dict[str, Any]
+    job_id: Optional[UID]
     worker_settings: WorkerSettings
-    worker: Optional[AbstractWorker] = None
 
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
@@ -68,6 +69,16 @@ class QueueItem(SyftObject):
         if self.is_action:
             return self.kwargs["action"]
         return SyftError(message="QueueItem not an Action")
+
+
+@serializable()
+class ActionQueueItem(QueueItem):
+    __canonical_name__ = "ActionQueueItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    method: str = "execute"
+    service: str = "actionservice"
+
 
 @instrument
 @serializable()

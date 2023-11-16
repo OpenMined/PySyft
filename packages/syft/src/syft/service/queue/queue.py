@@ -1,7 +1,12 @@
 # stdlib
+from typing import Any
 from typing import Optional
 from typing import Type
 from typing import Union
+
+# third party
+from result import Err
+from result import Ok
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -14,7 +19,6 @@ from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
-from .queue_stash import QueueItem
 from .queue_stash import Status
 
 
@@ -81,7 +85,6 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
-        api_call = queue_item.api_call
 
         queue_config = worker_settings.queue_config
         queue_config.client_config.create_producer = False
@@ -101,9 +104,9 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.id = worker_settings.id
         worker.signing_key = worker_settings.signing_key
 
-        job_item = worker.job_stash.get_by_uid(
-            api_call.credentials, queue_item.job_id
-        ).ok()
+        credentials = queue_item.syft_client_verify_key
+
+        job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
 
         queue_item.status = Status.PROCESSING
         queue_item.node_uid = worker.id
@@ -111,17 +114,32 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.status = JobStatus.PROCESSING
         job_item.node_uid = worker.id
 
-        worker.queue_stash.set_result(api_call.credentials, queue_item)
-        worker.job_stash.set_result(api_call.credentials, job_item)
+        worker.queue_stash.set_result(credentials, queue_item)
+        worker.job_stash.set_result(credentials, job_item)
 
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
         try:
-            result = worker.handle_api_call(
-                api_call, job_id=job_item.id, check_call_location=False
+            call_method = getattr(
+                worker.get_service(queue_item.service), queue_item.method
             )
-            if isinstance(result, SyftError):
+
+            role = worker.get_role_for_credentials(credentials=credentials)
+            context = AuthedServiceContext(
+                node=worker,
+                credentials=credentials,
+                role=role,
+                job_id=queue_item.job_id,
+            )
+
+            result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
+            if isinstance(result, Ok):
+                result = result.ok()
+            # result = worker.handle_api_call(
+            #     api_call, job_id=job_item.id, check_call_location=False
+            # )
+            if isinstance(result, SyftError) or isinstance(result, Err):
                 status = Status.ERRORED
                 job_status = JobStatus.ERRORED
         except Exception as e:  # nosec
@@ -136,24 +154,19 @@ class APICallMessageHandler(AbstractMessageHandler):
             )
             print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
 
-        queue_item = QueueItem(
-            node_uid=worker.id,
-            id=queue_item.id,
-            result=result,
-            resolved=True,
-            status=status,
-            api_call=queue_item.api_call,
-            worker_settings=queue_item.worker_settings,
-        )
+        queue_item.result = result
+        queue_item.resolved = True
+        queue_item.status = status
+
         # get new job item to get latest iter status
-        job_item = worker.job_stash.get_by_uid(api_call.credentials, job_item.id).ok()
+        job_item = worker.job_stash.get_by_uid(credentials, job_item.id).ok()
 
         # if result.is_ok():
 
         job_item = Job(
             node_uid=worker.id,
             id=job_item.id,
-            result=result.message.data,
+            result=result,
             resolved=True,
             status=job_status,
             parent_job_id=job_item.parent_job_id,
@@ -163,5 +176,5 @@ class APICallMessageHandler(AbstractMessageHandler):
             current_iter=job_item.current_iter,
         )
 
-        worker.queue_stash.set_result(api_call.credentials, queue_item)
-        worker.job_stash.set_result(api_call.credentials, job_item)
+        worker.queue_stash.set_result(credentials, queue_item)
+        worker.job_stash.set_result(credentials, job_item)
