@@ -1,6 +1,6 @@
 # ==================== Base Image for with GPU (CUDA) support ==================== #
 # Set arguments
-ARG CUDA_VERSION="12.3.0"
+ARG CUDA_VERSION="12.1.1"
 ARG PYTHON_VERSION="3.11"
 ARG TZ="Etc/UTC"
 ARG USER="root"
@@ -22,13 +22,23 @@ ARG TZ
 ARG USER
 ARG UID
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Setup Python DEV
 RUN apt update && apt upgrade -y && \
     apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev && \
     apt install -y libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev && \
     apt install -y software-properties-common && add-apt-repository ppa:deadsnakes/ppa -y && apt update &&\
-    apt install -y python$PYTHON_VERSION python$PYTHON_VERSION-dev python$PYTHON_VERSION-pip && \
+    apt install -y python$PYTHON_VERSION python$PYTHON_VERSION-dev python$PYTHON_VERSION-distutils && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# install pip manually with the specified Python version
+RUN wget https://bootstrap.pypa.io/get-pip.py
+RUN python$PYTHON_VERSION get-pip.py
+
+# update the symbolic links for python and python3 to point to Python 3.11.
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VERSION} 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1
 
 # uncomment below for creating rootless user
 # && adduser -D -u $UID $USER
@@ -41,6 +51,7 @@ ARG HOME
 ARG UID
 ARG USER
 ARG USER_GRP
+ARG CUDA_VERSION
 ARG PIP_PACKAGES
 
 USER $USER
@@ -57,7 +68,7 @@ COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=0 \
-    pip install --user torch==2.1.0+cu${CUDA_VERSION} -f https://download.pytorch.org/whl/cu${CUDA_VERSION}/torch_stable.html && \
+    pip install --user pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=12.1 -c pytorch -c nvidia & \
     pip install --user pip-autoremove ./syft[data_science] && \
     pip-autoremove ansible ansible-core -y
 
@@ -66,26 +77,25 @@ RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=0 \
 RUN --mount=type=cache,target=$HOME/.cache/,rw \
     pip install --user $PIP_PACKAGES
 
+# # ==================== [Final] Setup Syft Server ==================== #
+# FROM nvidia/cuda:${CUDA_VERSION}-base-ubuntu20.04 as backend
 
-# ==================== [Final] Setup Syft Server ==================== #
-FROM nvidia/cuda:${CUDA_VERSION}-base-ubuntu20.04 as backend
+# # inherit from global
+# ARG APPDIR
+# ARG HOME
+# ARG PYTHON_VERSION
+# ARG TZ
+# ARG USER
+# ARG USER_GRP
 
-# inherit from global
-ARG APPDIR
-ARG HOME
-ARG PYTHON_VERSION
-ARG TZ
-ARG USER
-ARG USER_GRP
-
-# set up Python
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends tzdata bash python${PYTHON_VERSION} python${PYTHON_VERSION}-dev python3-pip ${SYSTEM_PACKAGES} && \
-    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
-    apt-get clean && \
-    # Uncomment for rootless user
-    # useradd -m -u 1000 -s /bin/bash ${USER} && \
-    mkdir -p /var/log/pygrid ${HOME}/data/creds ${HOME}/data/db ${HOME}/.cache ${HOME}/.local
+# # set up Python
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends tzdata bash python${PYTHON_VERSION} python${PYTHON_VERSION}-dev python3-pip ${SYSTEM_PACKAGES} && \
+#     ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
+#     apt-get clean && \
+#     # Uncomment for rootless user
+#     # useradd -m -u 1000 -s /bin/bash ${USER} && \
+#     mkdir -p /var/log/pygrid ${HOME}/data/creds ${HOME}/data/db ${HOME}/.cache ${HOME}/.local
 
 # Setup final environment variables
 # ENV NODE_NAME="default_node_name" \
