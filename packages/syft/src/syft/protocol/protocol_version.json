@@ -205,7 +205,7 @@
       "Action": {
         "1": {
           "version": 1,
-          "hash": "5cf71ee35097f17fbb1dd05096f875211d71cf07161205d7f6a9c11fd49d5272",
+          "hash": "30c84585fed9d9efb59e69c9d7a3e74b23c8914ebbe364ad27d0e64427084c37",
           "action": "add"
         }
       },
@@ -219,7 +219,7 @@
       "AnyActionObject": {
         "1": {
           "version": 1,
-          "hash": "bcb31f847907edc9c95d2d120dc5427854604f40940e3f41cd0474a1820ac65e",
+          "hash": "c4f6b9e375c5de8cf2618cdaafb2e28b48ad6cd4d7762655ac458f1ff6fa2dbd",
           "action": "add"
         }
       },
@@ -401,7 +401,7 @@
       "JobItem": {
         "1": {
           "version": 1,
-          "hash": "12d14302b422b4fbea75e81f5bf897e6090ef4c4d0d5896f191b3163f034c055",
+          "hash": "7b8723861837b0b7e948b2cf9244159d232185f3407dd6bef108346f941ddf6e",
           "action": "add"
         }
       },
@@ -625,7 +625,14 @@
       "QueueItem": {
         "1": {
           "version": 1,
-          "hash": "44987a5ba91627a88fd0b2a736bcd5cc79011fdfda6cde0ec2b1e677aecfac33",
+          "hash": "957e98c4a851667ac8dec60933f99ea44cf31bc9b837e3496ede14d741805b97",
+          "action": "add"
+        }
+      },
+      "ActionQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "ab417fe80bc0bf2de17a8551321ba3bbea171a76a77f02528dd76040b2c36259",
           "action": "add"
         }
       },
@@ -724,6 +731,11 @@
         "1": {
           "version": 1,
           "hash": "bd3f62b8fe4b2718a6380c8f05a93c5c40169fc4ab174db291929298e588429e",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "d3ce45794da2e6c4b0cef63b98a553525af50c5d9db42d3d64caef3e7d22b4a9",
           "action": "add"
         }
       },

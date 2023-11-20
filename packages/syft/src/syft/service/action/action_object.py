@@ -26,7 +26,9 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...client.api import APIRegistry
 from ...client.api import SyftAPI
+from ...client.api import SyftAPICall
 from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -66,6 +68,7 @@ class ActionType(Enum):
     SETATTRIBUTE = 4
     FUNCTION = 8
     CREATEOBJECT = 16
+    SYFTFUNCTION = 32
 
 
 def repr_cls(c):
@@ -96,14 +99,15 @@ class Action(SyftObject):
 
     __attr_searchable__: List[str] = []
 
-    path: str
-    op: str
+    path: Optional[str]
+    op: Optional[str]
     remote_self: Optional[LineageID]
     args: List[LineageID]
     kwargs: Dict[str, LineageID]
     result_id: Optional[LineageID]
     action_type: Optional[ActionType]
     create_object: Optional[SyftObject] = None
+    user_code_id: Optional[UID] = None
 
     @pydantic.validator("id", pre=True, always=True)
     def make_id(cls, v: Optional[UID]) -> UID:
@@ -119,6 +123,18 @@ class Action(SyftObject):
     def full_path(self) -> str:
         """Action path and operation"""
         return f"{self.path}.{self.op}"
+
+    @property
+    def job_display_name(self) -> str:
+        if self.user_code_id is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_location,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            user_code = api.services.code.get_by_id(self.user_code_id)
+            return user_code.service_func_name
+        else:
+            return f"{self.path}.{self.op}"
 
     @property
     def syft_history_hash(self) -> int:
@@ -138,6 +154,41 @@ class Action(SyftObject):
             hashes += hash(k)
             hashes += hash(arg.syft_history_hash)
         return hashes
+
+    @classmethod
+    def syft_function_action_from_kwargs_and_id(cls, kwargs, user_code_id):
+        kwarg_ids = {}
+        for k, v in kwargs.items():
+            kwarg_ids[k] = LineageID(v)
+        return cls(
+            args=[],
+            kwargs=kwarg_ids,
+            result_id=LineageID(),
+            action_type=ActionType.SYFTFUNCTION,
+            user_code_id=user_code_id,
+        )
+
+    @classmethod
+    def from_api_call(cls, api_call: SyftAPICall) -> Action:
+        # relative
+        from ..code.user_code_service import map_kwargs_to_id
+
+        kwargs = api_call.kwargs
+        kwargs.pop("communication_protocol", None)
+        function_id = kwargs.pop("uid", None)
+        kwargs = map_kwargs_to_id(kwargs)
+        kwarg_ids = {}
+        for k, v in kwargs.items():
+            kwarg_ids[k] = LineageID(v)
+
+        action = cls(
+            args=[],
+            kwargs=kwarg_ids,
+            result_id=LineageID(),
+            action_type=ActionType.SYFTFUNCTION,
+            user_code_id=function_id,
+        )
+        return action
 
     def __repr__(self):
         def repr_uid(_id):
@@ -572,7 +623,7 @@ class ActionObject(SyftObject):
         if isinstance(data, SyftError):
             return data
         if isinstance(data, ActionDataEmpty):
-            return SyftError(f"cannot store empty object {self.id}")
+            return SyftError(message=f"cannot store empty object {self.id}")
         result = self._save_to_blob_storage_(data)
         if isinstance(result, SyftError):
             return result
@@ -1505,7 +1556,7 @@ class ActionObject(SyftObject):
         return self.__call__(*args, **kwds)
 
     def __str__(self) -> str:
-        if not inspect.isclass:
+        if not inspect.isclass(self):
             return self.__str__()
         else:
             return self.syft_action_data_str_
@@ -1664,7 +1715,8 @@ class AnyActionObject(ActionObject):
 
     syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
-    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__"]
+    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__", "syft_action_data_str_"]
+    syft_action_data_str_ = ""
 
     def __float__(self) -> float:
         return float(self.syft_action_data)
