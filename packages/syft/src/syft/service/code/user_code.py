@@ -79,6 +79,8 @@ from .unparse import unparse
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
+ServiceFuncNamePartitionKey = PartitionKey(key="service_func_name", type_=str)
+SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 
 PyCodeObject = Any
 
@@ -264,7 +266,8 @@ class UserCode(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: Dict[str, UID] = {}
+    nested_requests: Dict[str, str] = {}
+    approved_nested_codes: Dict[str, UID] = {}
     
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = []
@@ -559,7 +562,6 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    nested_requests: Dict[str, SubmitUserCode] = {}
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -618,13 +620,12 @@ def debox_asset(arg: Any) -> Any:
 
 
 def syft_function_single_use(
-    *args: Any, share_results_with_owners=False, api=None, **kwargs: Any
+    *args: Any, share_results_with_owners=False, **kwargs: Any
 ):
     return syft_function(
         input_policy=ExactMatch(*args, **kwargs),
         output_policy=SingleExecutionExactOutput(),
         share_results_with_owners=share_results_with_owners,
-        api=api
     )
 
 def get_nested_code(user_code: SubmitUserCode, api):
@@ -663,7 +664,6 @@ def syft_function(
     input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
     share_results_with_owners=False,
-    api=None,
 ) -> SubmitUserCode:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -693,10 +693,6 @@ def syft_function(
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
         )
-        
-        # check for nested calls:
-        nested_requests = get_nested_code(res, api=api)
-        res.nested_requests = nested_requests
 
         if share_results_with_owners:
             res.output_policy_init_kwargs[
@@ -799,6 +795,24 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
     return context
 
+def locate_launch_jobs(context: TransformContext) -> TransformContext:
+    import sys
+    nested_requests = {}
+    tree = ast.parse(context.output["raw_code"])
+    
+    # look for domain arg
+    if "domain" in [arg.arg for arg in tree.body[0].args.args]:
+        reset_nested_calls()
+        v = LaunchJobVisitor()
+        v.visit(tree)
+        nested_calls = v.nested_calls
+        print("FOUND NESTED_CALLS:", nested_calls, file=sys.stderr)
+        for call in nested_calls:
+            nested_requests[call] = "latest"
+            
+            
+    context.output["nested_requests"] = nested_requests
+    return context
 
 def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
     try:
@@ -891,24 +905,6 @@ def add_submit_time(context: TransformContext) -> TransformContext:
     context.output["submit_time"] = DateTime.now()
     return context
 
-def generate_nested_user_codes(context: TransformContext) -> TransformContext:
-    uids = {}
-    user_code_service = context.node.get_service("UserCodeService")
-    for key, obj in context.output['nested_requests'].items():
-        if isinstance(obj, SubmitUserCode):
-            new_code = obj.to(UserCode, context=context)
-            result = user_code_service.stash.set(context.credentials, new_code)
-            if isinstance(result, SyftError):
-                return result
-            uids[key] = new_code.id
-        elif isinstance(obj, UserCode):
-            uids[key] = obj.id
-        else:
-            raise NotImplementedError(
-                f"Invalid nested request type: {type(obj)} for code submission"
-            )
-    context.output['nested_requests'] = uids
-    return context
 
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
@@ -919,11 +915,11 @@ def submit_user_code_to_user_code() -> List[Callable]:
         check_input_policy,
         check_output_policy,
         new_check_code,
+        locate_launch_jobs,
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
         add_node_uid_for_key("node_uid"),
         add_submit_time,
-        generate_nested_user_codes
     ]
 
 
