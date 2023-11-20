@@ -2,7 +2,7 @@
 from enum import Enum
 import hashlib
 import inspect
-from typing import Any
+from typing import Any, Tuple
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -778,6 +778,8 @@ class UserCodeStatusChange(Change):
 
     value: UserCodeStatus
     linked_obj: LinkedObject
+    nested_requests: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
+    nested_solved: bool = False
     match_type: bool = True
     __repr_attrs__ = [
         "link.service_func_name",
@@ -821,6 +823,33 @@ class UserCodeStatusChange(Change):
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
+    def approve_nested_requests(self, context, node):
+        user_code_service = context.node.get_service("usercodeservice")
+        approved_nested_codes = {}
+        for key, node in node.items():
+            code_obj = node[0].resolve_with_context(context)
+            new_node = node[1]
+            approved_nested_codes[key] = code_obj.id
+            
+            res = self.approve_nested_requests(context, new_node)
+            if isinstance(res, SyftError):
+                return res
+            code_obj.approved_nested_codes = res
+            
+            res = code_obj.status.mutate(
+                value=(self.value, ""),
+                node_name=context.node.name,
+                node_id=context.node.id,
+                verify_key=context.node.signing_key.verify_key,
+            )
+            if isinstance(res, SyftError):
+                return res
+            code_obj.status = res
+
+            user_code_service.update_code_state(context, res)
+                
+        return approved_nested_codes
+
     def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
         reason: str = context.extra_kwargs.get("reason", "")
         if not undo:
@@ -830,6 +859,11 @@ class UserCodeStatusChange(Change):
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
+            res = self.approve_nested_requests(context, self.nested_requests)
+            if isinstance(res, SyftError):
+                return res
+
+            obj.approved_nested_codes = res
         else:
             res = obj.status.mutate(
                 value=(UserCodeStatus.DENIED, reason),
@@ -869,6 +903,8 @@ class UserCodeStatusChange(Change):
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
                 user_code = res
+                import sys
+                print(type(user_code), file=sys.stderr)
                 if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=res, context=context
