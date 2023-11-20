@@ -398,13 +398,6 @@
           "action": "add"
         }
       },
-      "JobItem": {
-        "1": {
-          "version": 1,
-          "hash": "7b8723861837b0b7e948b2cf9244159d232185f3407dd6bef108346f941ddf6e",
-          "action": "add"
-        }
-      },
       "TwinObject": {
         "1": {
           "version": 1,
@@ -827,6 +820,13 @@
         "1": {
           "version": 1,
           "hash": "a0bba2b7792c9e08c453e9e256f0ac6e6185610726566bcd50b057ae83b42d9a",
+          "action": "add"
+        }
+      },
+      "JobItem": {
+        "1": {
+          "version": 1,
+          "hash": "e418ad7703e9820f90a90d5533517019890e0b3f225e1efa967cfb3383e91982",
           "action": "add"
         }
       }

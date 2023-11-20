@@ -43,6 +43,7 @@ class JobStatus(str, Enum):
     PROCESSING = "processing"
     ERRORED = "errored"
     COMPLETED = "completed"
+    INTERRUPTED = "interrupted"
 
 
 @serializable()
@@ -61,6 +62,7 @@ class Job(SyftObject):
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
     action: Optional[Action] = None
+    job_pid: Optional[int] = None
 
     __attr_searchable__ = ["parent_job_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
@@ -146,6 +148,22 @@ class Job(SyftObject):
                     return f"{self.current_iter}/{n_iters_str}"
         else:
             return ""
+
+    def kill(self) -> None:
+        if self.job_pid is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.node_uid,
+                user_verify_key=self.syft_client_verify_key,
+            )
+
+            call = SyftAPICall(
+                node_uid=self.node_uid,
+                path="job.kill",
+                args=[],
+                kwargs={"id": self.id},
+                blocking=True,
+            )
+            api.make_call(call)
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
