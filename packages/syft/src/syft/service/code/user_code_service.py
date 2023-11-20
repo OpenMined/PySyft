@@ -62,16 +62,33 @@ class UserCodeService(AbstractService):
         return SyftSuccess(message="User Code Submitted")
 
     def _submit(self, context: AuthedServiceContext, code: SubmitUserCode) -> Result:
-        new_code = code.to(UserCode, context=context)
-        for key, nested_code in new_code.nested_requests.items():
-            if isinstance(nested_code, UserCode):
-                result = self.stash.set(context.credentials, nested_code)
-                if isinstance(result, SyftError):
-                    return result
-                new_code.nested_requests[key] = nested_code.id
-        
-        result = self.stash.set(context.credentials, new_code)
+        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
         return result
+
+    @service_method(
+        path="code.get_by_service_func_name", 
+        name="get_by_service_func_name", 
+        roles=GUEST_ROLE_LEVEL
+    )
+    def get_by_service_name(self, context: AuthedServiceContext, service_func_name: str):
+        result = self.stash.get_by_service_func_name(context.credentials, service_func_name=service_func_name)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
+        
+    def solve_nested_requests(self, context: AuthedServiceContext, code: UserCode):
+        nested_requests = code.nested_requests
+        nested_codes = {}
+        for service_func_name, version in nested_requests.items():
+            codes = self.get_by_service_name(context=context, service_func_name=service_func_name)
+            if isinstance(codes, SyftError):
+                return codes
+            if version == "latest":
+                nested_codes[service_func_name] = codes[-1]
+            else:
+                nested_codes[service_func_name] = codes[int(version)]
+        
+        return nested_codes
 
     def _request_code_execution(
         self,
@@ -88,46 +105,16 @@ class UserCodeService(AbstractService):
         user_code: UserCode,
         reason: Optional[str] = "",
     ):
-                
-        result = self.stash.set(context.credentials, user_code)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        changes = self._request_code_execution_recursive(context=context, user_code=user_code)
-        if isinstance(changes, SyftError):
-            return changes
-        request = SubmitRequest(changes=changes)
-        method = context.node.get_service_method(RequestService.submit)
-        result = method(context=context, request=request, reason=reason)
-        # The Request service already returns either a SyftSuccess or SyftError
-        return result
-
-    def _request_code_execution_recursive(
-        self,
-        context: AuthedServiceContext,
-        user_code: UserCode,
-    ):
         if not all(
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
             raise ValueError("outputs can only be distributed to input owners")
-        
+        result = self.stash.set(context.credentials, user_code)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
         # Create a code history
         code_history_service = context.node.get_service("codehistoryservice")
-        
-        changes = [None]
-        
-        for key, nested_code_id in user_code.nested_requests.items():
-            result = self.stash.get_by_uid(context.credentials, nested_code_id)
-            if isinstance(result, SyftError):
-                return result
-            nested_code = result.ok()
-            nested_changes = self._request_code_execution_recursive(context=context, user_code=nested_code) 
-            if isinstance(nested_changes, SyftError):
-                return nested_changes
-            changes.extend(nested_changes)
-
-
-
         result = code_history_service.submit_version(context=context, code=user_code)
         if isinstance(result, SyftError):
             return result
@@ -145,8 +132,14 @@ class UserCodeService(AbstractService):
         CODE_EXECUTE = UserCodeStatusChange(
             value=UserCodeStatus.APPROVED, linked_obj=linked_obj
         )
-        changes[0] = CODE_EXECUTE
-        return changes
+        changes = [CODE_EXECUTE]
+
+        request = SubmitRequest(changes=changes)
+        method = context.node.get_service_method(RequestService.submit)
+        result = method(context=context, request=request, reason=reason)
+
+        # The Request service already returns either a SyftSuccess or SyftError
+        return result
 
     @service_method(
         path="code.request_code_execution",
@@ -281,8 +274,6 @@ class UserCodeService(AbstractService):
                 return SyftError(message=code_result.err())
             code: UserCode = code_result.ok()
 
-            import sys
-            print(code.service_func_name, code.output_policy, file=sys.stderr)
             output_policy = code.output_policy
             if (
                 can_execute := self.is_execution_allowed(code=code, context=context)
