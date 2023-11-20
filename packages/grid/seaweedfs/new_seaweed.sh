@@ -1,6 +1,7 @@
-#!/bin/bash
-export STACK_API_KEY=w9N59fxaSrb6Vl64mVHR3WVRTMZZQ7XYYTfiJ9GEUkPviQTq
-
+#!/bin/sh
+echo "got api key"
+echo ${STACK_API_KEY}
+export STACK_API_KEY=${STACK_API_KEY}
 
 echo "s3.configure -access_key $S3_ROOT_USER -secret_key $S3_ROOT_PWD \
 -user iam -actions Read,Write,List,Tagging,Admin -apply" | weed shell > /dev/null 2>&1 &

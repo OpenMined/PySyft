@@ -5,16 +5,20 @@ from random import randint
 import socketserver
 import threading
 import time
-from typing import DefaultDict
+from typing import DefaultDict, List
 from typing import Dict
 from typing import Optional
 from typing import Union
+from ...serde import deserialize
+from ...service.action.action_object import ActionObject
+from ...service.job.job_stash import Job
 
 # third party
 import zmq.green as zmq
 
 # relative
 from ...serde.serializable import serializable
+from ...service.context import AuthedServiceContext
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -27,13 +31,6 @@ from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
 from .queue_stash import Status
-from ...serde.deserialize import _deserialize as deserialize
-from ...service.context import AuthedServiceContext
-from ...service.job.job_stash import Job
-from typing import List
-from ..response import SyftNotReady
-import functools
-from ...service.action.action_object import ActionObject
 
 HEARTBEAT_LIVENESS = 3
 HEARTBEAT_INTERVAL = 1
@@ -81,7 +78,9 @@ class WorkerQueue:
 
 @serializable()
 class ZMQProducer(QueueProducer):
-    def __init__(self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext) -> None:
+    def __init__(
+        self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
+    ) -> None:
         self.port = port
         self.queue_name = queue_name
         self.queue_stash = queue_stash
@@ -174,7 +173,7 @@ class ZMQProducer(QueueProducer):
                     # adds to queue for main loop
                     self.message_queue = [frames] + self.message_queue
                     item.status = Status.PROCESSING
-                    res = self.queue_stash.update(item.api_call.credentials, item)
+                    res = self.queue_stash.update(item.syft_client_verify_key, item)
                     if not res.is_ok():
                         print("Failed to update queue item")
 
@@ -392,7 +391,11 @@ class ZMQClient(QueueClient):
         return free_port
 
     def add_producer(
-        self, queue_name: str, port: Optional[int] = None, queue_stash=None, context=None
+        self,
+        queue_name: str,
+        port: Optional[int] = None,
+        queue_stash=None,
+        context=None,
     ) -> ZMQProducer:
         """Add a producer of a queue.
 

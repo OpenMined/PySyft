@@ -6,6 +6,8 @@ from typing import Optional
 from typing import Union
 
 # third party
+from result import Err
+from result import Ok
 from result import OkErr
 from result import Result
 
@@ -33,6 +35,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
@@ -140,7 +143,9 @@ class UserCodeService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
-    @service_method(path="code.get_by_id", name="get_by_id")
+    @service_method(
+        path="code.get_by_id", name="get_by_id", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
@@ -239,6 +244,21 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
+        kwargs.pop("result_id", None)
+        result = self._call(context, uid, **kwargs)
+        if result.is_err():
+            return SyftError(message=result.err())
+        else:
+            return result.ok()
+
+    def _call(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        result_id: Optional[UID] = None,
+        **kwargs: Any,
+    ) -> Result[ActionObject, Err]:
+        """Call a User Code Function"""
         try:
             # Unroll variables
             kwarg2id = map_kwargs_to_id(kwargs)
@@ -246,7 +266,7 @@ class UserCodeService(AbstractService):
             # get code item
             code_result = self.stash.get_by_uid(context.credentials, uid=uid)
             if code_result.is_err():
-                return SyftError(message=code_result.err())
+                return code_result
             code: UserCode = code_result.ok()
 
             output_policy = code.output_policy
@@ -259,24 +279,26 @@ class UserCodeService(AbstractService):
                         result = resolve_outputs(
                             context=context, output_ids=output_policy.last_output_ids
                         )
-                        return result.as_empty()
+                        return Ok(result.as_empty())
                     else:
-                        return is_valid
-                return can_execute
+                        return is_valid.to_result()
+                return can_execute.to_result()
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
 
             result_action_object: Result[
                 Union[ActionObject, TwinObject], str
-            ] = action_service._user_code_execute(context, code, kwarg2id)
+            ] = action_service._user_code_execute(
+                context, code, kwarg2id, result_id=result_id
+            )
 
             output_result = action_service.set_result_to_store(
                 result_action_object, context, code.output_policy
             )
 
             if output_result.is_err():
-                return SyftError(message=output_result.err())
+                return output_result
             result = output_result.ok()
 
             # Apply Output Policy to the results and update the OutputPolicyState
@@ -287,22 +309,26 @@ class UserCodeService(AbstractService):
                     context=context, code_item=code
                 )
             ):
-                return update_success
+                return update_success.to_result()
 
+            # TODO: remove?
             if not isinstance(result, TwinObject) and isinstance(
                 result.syft_action_data, QueueItem
             ):
-                return result.syft_action_data
+                return Ok(result.syft_action_data)
 
             if isinstance(result, TwinObject):
-                return result.mock
+                return Ok(result.mock)
+            elif result.syft_action_data_type is Err:
+                # result contains the error but the request was handled correctly
+                return result.syft_action_data
             else:
-                return result.as_empty()
+                return Ok(result.as_empty())
         except Exception as e:
             # stdlib
             import traceback
 
-            return SyftError(message=f"Failed to run. {e}, {traceback.format_exc()}")
+            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
 
     def has_code_permission(self, code_item, context):
         if not (

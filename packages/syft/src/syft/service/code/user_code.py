@@ -12,6 +12,7 @@ from io import StringIO
 import itertools
 import sys
 import time
+import traceback
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -24,13 +25,13 @@ from typing import final
 
 # third party
 from IPython.display import display
+from result import Err
 from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
-from ...client.api import SyftAPICall
 from ...client.client import PythonConnection
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
@@ -52,6 +53,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
@@ -907,6 +909,25 @@ class SecureContext:
             job.current_iter += current_iter
             job_service.update(context, job)
 
+        def set_api_registry():
+            user_signing_key = [
+                x.signing_key
+                for x in user_service.stash.partition.data.values()
+                if x.verify_key == context.credentials
+            ][0]
+            data_protcol = get_data_protocol()
+            user_api = node.get_api(context.credentials, data_protcol.latest_version)
+            user_api.signing_key = user_signing_key
+            # We hardcode a python connection here since we have access to the node
+            # TODO: this is not secure
+            user_api.connection = PythonConnection(node=node)
+
+            APIRegistry.set_api_for(
+                node_uid=node.id,
+                user_verify_key=context.credentials,
+                api=user_api,
+            )
+
         def launch_job(func: UserCode, **kwargs):
             # relative
             from ... import UID
@@ -945,36 +966,17 @@ class SecureContext:
 
             try:
                 # TODO: check permissions here
-                api_call = SyftAPICall(
-                    node_uid=node.id,
-                    path="code.call",
-                    args=[new_user_code.id],
-                    kwargs=kw2id,
-                    blocking=False,
-                ).sign(node.signing_key)
+                action = Action.syft_function_action_from_kwargs_and_id(
+                    kw2id, new_user_code.id
+                )
 
-                job = node.add_api_call_to_queue(api_call, parent_job_id=context.job_id)
-
+                job = node.add_action_to_queue(
+                    action=action,
+                    credentials=context.credentials,
+                    parent_job_id=context.job_id,
+                )
                 # set api in global scope to enable using .get(), .wait())
-                user_signing_key = [
-                    x.signing_key
-                    for x in user_service.stash.partition.data.values()
-                    if x.verify_key == context.credentials
-                ][0]
-                data_protcol = get_data_protocol()
-                user_api = node.get_api(
-                    context.credentials, data_protcol.latest_version
-                )
-                user_api.signing_key = user_signing_key
-                # We hardcode a python connection here since we have access to the node
-                # TODO: this is not secure
-                user_api.connection = PythonConnection(node=node)
-
-                APIRegistry.set_api_for(
-                    node_uid=node.id,
-                    user_verify_key=context.credentials,
-                    api=user_api,
-                )
+                set_api_registry()
 
                 return job
             except Exception as e:
@@ -1081,7 +1083,22 @@ def execute_byte_code(
         exec(code_item.parsed_code, _globals, locals())  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, _globals, _locals)  # nosec
+        try:
+            result = eval(evil_string, _globals, _locals)  # nosec
+        except Exception as e:
+            if context.job is not None:
+                error_msg = traceback_from_error(e, user_code)
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                original_print(
+                    f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
+                )
+                log_service = context.node.get_service("LogService")
+                log_service.append(context=context, uid=log_id, new_err=error_msg)
+
+            result = Err(
+                f"Exception encountered while running {user_code.service_func_name}"
+                ", please contact the Node Admin for more info."
+            )
 
         # reset print
         print = original_print
@@ -1099,7 +1116,6 @@ def execute_byte_code(
 
     except Exception as e:
         # stdlib
-        import traceback
 
         print = original_print
         # print("execute_byte_code failed", e, file=stderr_)
@@ -1108,6 +1124,34 @@ def execute_byte_code(
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+
+def traceback_from_error(e, code: UserCode):
+    """We do this because the normal traceback.format_exc() does not work well for exec,
+    it missed the references to the actual code"""
+    line_nr = 0
+    tb = e.__traceback__
+    while tb is not None:
+        line_nr = tb.tb_lineno - 1
+        tb = tb.tb_next
+
+    lines = code.parsed_code.split("\n")
+    start_line = max(0, line_nr - 2)
+    end_line = min(len(lines), line_nr + 2)
+    error_lines: str = [
+        e.replace("   ", f"    {i} ", 1)
+        if i != line_nr
+        else e.replace("   ", f"--> {i} ", 1)
+        for i, e in enumerate(lines)
+        if i >= start_line and i < end_line
+    ]
+    error_lines = "\n".join(error_lines)
+
+    error_msg = f"""
+Encountered while executing {code.service_func_name}:
+{traceback.format_exc()}
+{error_lines}"""
+    return error_msg
 
 
 def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
