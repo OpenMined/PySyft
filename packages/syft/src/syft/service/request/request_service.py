@@ -28,7 +28,7 @@ from ..service import service_method
 from ..user.user import UserView
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
-from .request import Change
+from .request import Change, UserCodeStatusChange
 from .request import Request
 from .request import RequestInfo
 from .request import RequestInfoFilter
@@ -99,14 +99,54 @@ class RequestService(AbstractService):
         except Exception as e:
             print("Failed to submit Request", e)
             raise e
+        
+    def expand_node(self, context, code_obj):
+        user_code_service = context.node.get_service("usercodeservice")
+        if code_obj.status.approved:
+            pass
+        if not code_obj.status.denied:
+            nested_requests = user_code_service.solve_nested_requests(context, code_obj)
+        else:
+            return SyftError("cannot use declined objects")
+
+        new_nested_requests = {}
+        for func_name, code in nested_requests.items():
+            nested_dict = self.expand_node(context, code)
+            if isinstance(nested_dict, SyftError):
+                return nested_dict
+            linked_obj = LinkedObject.from_obj(code, node_uid=context.node.id)
+            new_nested_requests[func_name] = (linked_obj, nested_dict)
+        
+        return new_nested_requests
+        
+
+    def resolve_nested_requests(self, context, request):
+        # TODO: change this if we have more UserCode Changes
+        if len(request.changes) != 1:
+            return request
+
+        change = request.changes[0]
+        if isinstance(change, UserCodeStatusChange):    
+            if change.nested_solved:
+                return request
+            code_obj = change.linked_obj.resolve_with_context(context=context).ok()
+            nested_requests = {}
+            # recursively check what other UserCodes to approve            
+            nested_requests = self.expand_node(context, code_obj)
+            change.nested_solved = True
+            change.nested_requests = nested_requests
+            request.changes = [change] 
+            new_request = self.save(context=context, request=request)
+            return new_request
+        return request
 
     @service_method(path="request.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Request], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        requests = result.ok()
-        return requests
+        requests = result.ok()    
+        return [self.resolve_nested_requests(context, request) for request in requests]
 
     @service_method(path="request.get_all_info", name="get_all_info")
     def get_all_info(
