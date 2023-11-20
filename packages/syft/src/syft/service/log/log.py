@@ -25,3 +25,7 @@ class SyftLogV2(SyftLog):
 
     def append_error(self, new_str: str) -> None:
         self.stderr += new_str
+
+    def restart(self) -> None:
+        self.stderr = ""
+        self.stdout = ""
