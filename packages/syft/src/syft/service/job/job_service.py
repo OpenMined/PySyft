@@ -3,11 +3,13 @@ from typing import List
 from typing import Union
 
 # relative
+from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
+from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -15,6 +17,7 @@ from ..service import service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .job_stash import Job
 from .job_stash import JobStash
+from .job_stash import JobStatus
 
 
 @instrument
@@ -53,6 +56,46 @@ class JobService(AbstractService):
         else:
             res = res.ok()
             return res
+
+    @service_method(
+        path="job.restart",
+        name="restart",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def restart(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        res = self.stash.get_by_uid(context.credentials, uid=uid)
+        if res.is_err():
+            return SyftError(message=res.err())
+
+        job = res.ok()
+        job.status = JobStatus.CREATED
+        self.update(context=context, job=job)
+
+        task_uid = UID()
+        worker_settings = WorkerSettings.from_node(context.node)
+
+        queue_item = ActionQueueItem(
+            id=task_uid,
+            node_uid=context.node.id,
+            syft_client_verify_key=context.credentials,
+            syft_node_location=context.node.id,
+            job_id=job.id,
+            worker_settings=worker_settings,
+            args=[],
+            kwargs={"action": job.action},
+        )
+
+        context.node.queue_stash.set_placeholder(context.credentials, queue_item)
+        context.node.job_stash.set(context.credentials, job)
+        log_service = context.node.get_service("logservice")
+        result = log_service.restart(context, job.log_id)
+
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        return SyftSuccess(message="Great Success!")
 
     @service_method(
         path="job.update",

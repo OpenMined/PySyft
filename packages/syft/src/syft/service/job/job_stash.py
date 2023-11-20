@@ -147,6 +147,24 @@ class Job(SyftObject):
         else:
             return ""
 
+    def restart(self) -> None:
+        if self.status != JobStatus.PROCESSING and self.status != JobStatus.CREATED:
+            api = APIRegistry.api_for(
+                node_uid=self.node_uid,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            call = SyftAPICall(
+                node_uid=self.node_uid,
+                path="job.restart",
+                args=[],
+                kwargs={"uid": self.id},
+                blocking=True,
+            )
+
+            api.make_call(call)
+        else:
+            print("Job is already running or in the queue.")
+
     def fetch(self) -> None:
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
