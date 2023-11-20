@@ -16,6 +16,8 @@ from ...util.telemetry import instrument
 from .user_code import CodeHashPartitionKey
 from .user_code import UserCode
 from .user_code import UserVerifyKeyPartitionKey
+from .user_code import ServiceFuncNamePartitionKey
+from .user_code import SubmitTimePartitionKey
 
 
 @instrument
@@ -40,3 +42,10 @@ class UserCodeStash(BaseUIDStoreStash):
     ) -> Result[Optional[UserCode], str]:
         qks = QueryKeys(qks=[CodeHashPartitionKey.with_obj(code_hash)])
         return self.query_one(credentials=credentials, qks=qks)
+
+    def get_by_service_func_name(
+        self, credentials: SyftVerifyKey, service_func_name: str
+    ) -> Result[Optional[UserCode], str]:
+        qks = QueryKeys(qks=[ServiceFuncNamePartitionKey.with_obj(service_func_name)])
+        return self.query_all(credentials=credentials, qks=qks, order_by=SubmitTimePartitionKey)
+        
