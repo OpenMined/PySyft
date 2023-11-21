@@ -295,21 +295,20 @@ class Request(SyftObject):
         }
 
     @property
-    def code(self) -> Any:
-        if len(self.codes) == 0:
-            
-
-        if len(self.codes) > 1:
-            return SyftError(
-                message="This type of request has more than one code associated with it."
+    def codes(self) -> Any:
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.codes
+        return SyftError(
+                message="This type of request does not have code associated with it."
             )
-
-        return self.codes[0]
 
     @property
     def code(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
+                if change.nested_solved and change.nested_requests is not {}:
+                    print("NESTED REQUESTS AVAILABLE, PLEASE USE <request_name>.codes")
                 return change.code
         return SyftError(
                 message="This type of request does not have code associated with it."
@@ -346,7 +345,7 @@ class Request(SyftObject):
 
         return request_status
 
-    def approve(self, disable_warnings: bool = False, approve_all = False):
+    def approve(self, disable_warnings: bool = False, approve_nested = False):
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
@@ -355,8 +354,8 @@ class Request(SyftObject):
         metadata = api.connection.get_node_metadata(api.signing_key)
         message, is_enclave = None, False
 
-        if len(self.codes) > 1 and not approve_all:
-            return SyftError(message="Multiple codes detected, please use approve_all=True")
+        if len(self.codes) > 1 and not approve_nested:
+            return SyftError(message="Multiple codes detected, please use approve_nested=True")
 
         for code in self.codes:
             if code and not isinstance(code, SyftError):
@@ -787,6 +786,23 @@ class UserCodeStatusChange(Change):
         "link.status.approved",
     ]
 
+    @property
+    def code(self):
+        return self.link
+    
+    @property
+    def codes(self):
+        def recursive_code(node):
+            codes = []
+            for _, (obj, new_node) in node.items():
+                codes.append(obj.resolve)
+                codes.extend(recursive_code(new_node))
+            return codes
+        
+        codes = [self.link]
+        codes.extend(recursive_code(self.nested_requests))
+        return codes
+        
     def nested_repr(self, node=None, level=0):
         msg = ''
         if node is None:
