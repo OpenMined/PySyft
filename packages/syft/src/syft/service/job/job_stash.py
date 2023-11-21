@@ -148,7 +148,11 @@ class Job(SyftObject):
             return ""
 
     def restart(self) -> None:
-        if self.status != JobStatus.PROCESSING and self.status != JobStatus.CREATED:
+        if (
+            self.has_parent
+            and self.status != JobStatus.PROCESSING
+            and self.status != JobStatus.CREATED
+        ):
             api = APIRegistry.api_for(
                 node_uid=self.node_uid,
                 user_verify_key=self.syft_client_verify_key,
