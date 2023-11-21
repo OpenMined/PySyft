@@ -16,10 +16,6 @@ http:
       loadBalancer:
         servers:
           - url: "http://seaweedfs:8333"
-    headscale:
-      loadBalancer:
-        servers:
-          - url: "http://headscale:8080"
   routers:
     frontend:
       rule: "PathPrefix(`/`)"
@@ -44,13 +40,6 @@ http:
       middlewares:
         - "blob-storage-url"
         - "blob-storage-host"
-    vpn:
-      rule: "PathPrefix(`/vpn`)"
-      entryPoints:
-        - "web"
-      service: "headscale"
-      middlewares:
-        - "vpn-url"
 
   middlewares:
     blob-storage-host:
@@ -60,8 +49,4 @@ http:
     blob-storage-url:
       stripprefix:
         prefixes: /blob
-        forceslash: true
-    vpn-url:
-      stripprefix:
-        prefixes: /vpn
         forceslash: true

@@ -1,14 +1,14 @@
 # third party
 
 # syft absolute
-from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
+from syft.service.settings.settings import NodeSettingsV2
 from syft.service.settings.settings_stash import SettingsStash
 
 
 def add_mock_settings(
-    root_verify_key, settings_stash: SettingsStash, settings: NodeSettings
-) -> NodeSettings:
+    root_verify_key, settings_stash: SettingsStash, settings: NodeSettingsV2
+) -> NodeSettingsV2:
     # prepare: add mock settings
     result = settings_stash.partition.set(root_verify_key, settings)
     assert result.is_ok()
@@ -20,13 +20,13 @@ def add_mock_settings(
 
 
 def test_settingsstash_set(
-    root_verify_key, settings_stash: SettingsStash, settings: NodeSettings
+    root_verify_key, settings_stash: SettingsStash, settings: NodeSettingsV2
 ) -> None:
     result = settings_stash.set(root_verify_key, settings)
     assert result.is_ok()
 
     created_settings = result.ok()
-    assert isinstance(created_settings, NodeSettings)
+    assert isinstance(created_settings, NodeSettingsV2)
     assert created_settings == settings
     assert settings.id in settings_stash.partition.data
 
@@ -34,7 +34,7 @@ def test_settingsstash_set(
 def test_settingsstash_update(
     root_verify_key,
     settings_stash: SettingsStash,
-    settings: NodeSettings,
+    settings: NodeSettingsV2,
     update_settings: NodeSettingsUpdate,
 ) -> None:
     # prepare: add a mock settings
@@ -50,5 +50,5 @@ def test_settingsstash_update(
 
     assert result.is_ok()
     updated_settings = result.ok()
-    assert isinstance(updated_settings, NodeSettings)
+    assert isinstance(updated_settings, NodeSettingsV2)
     assert mock_settings == updated_settings

@@ -979,7 +979,8 @@ class ActionObject(SyftObject):
     def syft_get_path(self) -> str:
         """Get the type path of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
-            return f"{self.syft_action_data_type.__name__}"  # avoids AnyActionObject errors
+            # avoids AnyActionObject errors
+            return f"{self.syft_action_data_type.__name__}"
         return f"{type(self).__name__}"
 
     def syft_remote_method(

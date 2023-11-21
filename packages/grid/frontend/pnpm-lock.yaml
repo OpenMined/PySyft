@@ -1,5 +1,12 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+overrides:
+  undici@<5.26.2: '>=5.26.2'
+
 dependencies:
   capnp-ts:
     specifier: ^0.7.0
@@ -32,10 +39,10 @@ devDependencies:
     version: 1.36.1
   '@sveltejs/adapter-node':
     specifier: ^1.3.1
-    version: 1.3.1(@sveltejs/kit@1.22.3)
+    version: 1.3.1(@sveltejs/kit@1.25.2)
   '@sveltejs/kit':
-    specifier: ^1.22.3
-    version: 1.22.3(svelte@3.59.2)(vite@4.4.4)
+    specifier: ^1.25.2
+    version: 1.25.2(svelte@3.59.2)(vite@4.4.4)
   '@types/prismjs':
     specifier: ^1.26.0
     version: 1.26.0
@@ -416,6 +423,14 @@ packages:
     engines: { node: ^12.22.0 || ^14.17.0 || >=16.0.0 }
     dev: true
 
+  /@fastify/busboy@2.0.0:
+    resolution:
+      {
+        integrity: sha512-JUFJad5lv7jxj926GPgymrWQxxjPYuJNiNjNMzqT+HiuP6Vl3dk5xzG+8sTX96np0ZAluvaMzPsjhHZ5rNuNQQ==
+      }
+    engines: { node: '>=14' }
+    dev: true
+
   /@humanwhocodes/config-array@0.11.11:
     resolution:
       {
@@ -634,7 +649,7 @@ packages:
       }
     dev: true
 
-  /@sveltejs/adapter-node@1.3.1(@sveltejs/kit@1.22.3):
+  /@sveltejs/adapter-node@1.3.1(@sveltejs/kit@1.25.2):
     resolution:
       {
         integrity: sha512-A0VgRQDCDPzdLNoiAbcOxGw4zT1Mc+n1LwT1OmO350R7WxrEqdMUChPPOd1iMfIDWlP4ie6E2d/WQf5es2d4Zw==
@@ -645,14 +660,14 @@ packages:
       '@rollup/plugin-commonjs': 25.0.5(rollup@3.29.4)
       '@rollup/plugin-json': 6.0.1(rollup@3.29.4)
       '@rollup/plugin-node-resolve': 15.2.2(rollup@3.29.4)
-      '@sveltejs/kit': 1.22.3(svelte@3.59.2)(vite@4.4.4)
+      '@sveltejs/kit': 1.25.2(svelte@3.59.2)(vite@4.4.4)
       rollup: 3.29.4
     dev: true
 
-  /@sveltejs/kit@1.22.3(svelte@3.59.2)(vite@4.4.4):
+  /@sveltejs/kit@1.25.2(svelte@3.59.2)(vite@4.4.4):
     resolution:
       {
-        integrity: sha512-IpHD5wvuoOIHYaHQUBJ1zERD2Iz+fB/rBXhXjl8InKw6X4VKE9BSus+ttHhE7Ke+Ie9ecfilzX8BnWE3FeQyng==
+        integrity: sha512-USuuSpdAPFDiLi58N2Pwd/TG9bcUSPAlzE5iaAXaLyCTWa3l36HDKH6nV5NqBybwfeux1ZwgtIeITLZJDJ6HDg==
       }
     engines: { node: ^16.14 || >=18 }
     hasBin: true
@@ -673,7 +688,8 @@ packages:
       set-cookie-parser: 2.6.0
       sirv: 2.0.3
       svelte: 3.59.2
-      undici: 5.22.1
+      tiny-glob: 0.2.9
+      undici: 5.26.3
       vite: 4.4.4(@types/node@20.8.2)
     transitivePeerDependencies:
       - supports-color
@@ -1213,16 +1229,6 @@ packages:
         integrity: sha512-zhaCDicdLuWN5UbN5IMnFqNMhNfo919sH85y2/ea+5Yg9TsTkeZxpL+JLbp6cgYFS4sRLp3YV4S6yDuqVWHYOw==
       }
     engines: { node: '>=6' }
-    dev: true
-
-  /busboy@1.6.0:
-    resolution:
-      {
-        integrity: sha512-8SFQbg/0hQ9xy3UNTB0YEnsNBbWfhf7RtnzpL7TkBiTBRfrQ9Fxcnz7VJsleJpyp6rVLvXiuORqjlHi5q+PYuA==
-      }
-    engines: { node: '>=10.16.0' }
-    dependencies:
-      streamsearch: 1.1.0
     dev: true
 
   /cac@6.7.14:
@@ -1942,6 +1948,13 @@ packages:
       type-fest: 0.20.2
     dev: true
 
+  /globalyzer@0.1.0:
+    resolution:
+      {
+        integrity: sha512-40oNTM9UfG6aBmuKxk/giHn5nQ8RVz/SS4Ir6zgzOv9/qC3kKZ9v4etGTcJbEl/NyVQH7FGU7d+X1egr57Md2Q==
+      }
+    dev: true
+
   /globby@11.1.0:
     resolution:
       {
@@ -1955,6 +1968,13 @@ packages:
       ignore: 5.2.4
       merge2: 1.4.1
       slash: 3.0.0
+    dev: true
+
+  /globrex@0.1.2:
+    resolution:
+      {
+        integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==
+      }
     dev: true
 
   /graceful-fs@4.2.11:
@@ -3061,14 +3081,6 @@ packages:
       }
     dev: true
 
-  /streamsearch@1.1.0:
-    resolution:
-      {
-        integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==
-      }
-    engines: { node: '>=10.0.0' }
-    dev: true
-
   /strip-ansi@6.0.1:
     resolution:
       {
@@ -3287,6 +3299,16 @@ packages:
       any-promise: 1.3.0
     dev: true
 
+  /tiny-glob@0.2.9:
+    resolution:
+      {
+        integrity: sha512-g/55ssRPUjShh+xkfx9UPDXqhckHEsHr4Vd9zX55oSdGZc/MD0m3sferOkwWtp98bv+kcVfEHtRJgBVJzelrzg==
+      }
+    dependencies:
+      globalyzer: 0.1.0
+      globrex: 0.1.2
+    dev: true
+
   /tinybench@2.5.1:
     resolution:
       {
@@ -3404,14 +3426,14 @@ packages:
       }
     dev: true
 
-  /undici@5.22.1:
+  /undici@5.26.3:
     resolution:
       {
-        integrity: sha512-Ji2IJhFXZY0x/0tVBXeQwgPlLWw13GVzpsWPQ3rV50IFMMof2I55PZZxtm4P6iNq+L5znYN9nSTAq0ZyE6lSJw==
+        integrity: sha512-H7n2zmKEWgOllKkIUkLvFmsJQj062lSm3uA4EYApG8gLuiOM0/go9bIoC3HVaSnfg4xunowDE2i9p8drkXuvDw==
       }
     engines: { node: '>=14.0' }
     dependencies:
-      busboy: 1.6.0
+      '@fastify/busboy': 2.0.0
     dev: true
 
   /update-browserslist-db@1.0.13(browserslist@4.22.1):
