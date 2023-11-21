@@ -24,18 +24,32 @@ from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
+from ..types.transforms import drop
 from ..types.transforms import keep
+from ..types.transforms import make_set_default
 from ..types.transforms import transform
 from .datetime import DateTime
+from .syft_migration import migrate
 from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SyftObject
 from .uid import UID
 
 
 @serializable()
-class BlobFile(SyftObject):
+class BlobFileV1(SyftObject):
     __canonical_name__ = "BlobFile"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    file_name: str
+
+    __repr_attrs__ = ["id", "file_name"]
+
+
+@serializable()
+class BlobFile(SyftObject):
+    __canonical_name__ = "BlobFile"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
@@ -97,6 +111,19 @@ class BlobFile(SyftObject):
         return {"file_name": self.file_name}
 
 
+@migrate(BlobFile, BlobFileV1)
+def downgrade_blobfile_v2_to_v1():
+    return [drop(["syft_blob_storage_entry_id", "file_size"])]
+
+
+@migrate(BlobFileV1, BlobFile)
+def upgrade_blobfile_v1_to_v2():
+    return [
+        make_set_default("syft_blob_storage_entry_id", None),
+        make_set_default("file_size", None),
+    ]
+
+
 class BlobFileType(type):
     pass
 
@@ -136,9 +163,25 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
 
 
 @serializable()
-class BlobStorageEntry(SyftObject):
+class BlobStorageEntryV1(SyftObject):
     __canonical_name__ = "BlobStorageEntry"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
+    type_: Optional[Type]
+    mimetype: str = "bytes"
+    file_size: int
+    uploaded_by: SyftVerifyKey
+    created_at: DateTime = DateTime.now()
+
+    __attr_searchable__ = ["bucket_name"]
+
+
+@serializable()
+class BlobStorageEntry(SyftObject):
+    __canonical_name__ = "BlobStorageEntry"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
@@ -153,6 +196,18 @@ class BlobStorageEntry(SyftObject):
     __attr_searchable__ = ["bucket_name"]
 
 
+@migrate(BlobStorageEntry, BlobStorageEntryV1)
+def downgrade_blobstorageentry_v2_to_v1():
+    return [
+        drop(["no_lines", "bucket_name"]),
+    ]
+
+
+@migrate(BlobStorageEntryV1, BlobStorageEntry)
+def upgrade_blobstorageentry_v1_to_v2():
+    return [make_set_default("no_lines", 1), make_set_default("bucket_name", None)]
+
+
 @serializable()
 class BlobStorageMetadata(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
@@ -162,6 +217,9 @@ class BlobStorageMetadata(SyftObject):
     mimetype: str = "bytes"
     file_size: int
     no_lines: Optional[int] = 0
+
+
+# no lines
 
 
 @serializable()

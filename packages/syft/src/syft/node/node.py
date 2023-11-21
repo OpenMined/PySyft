@@ -428,7 +428,7 @@ class Node(AbstractNode):
                 else:
                     address = None
 
-            for _ in range(queue_config.client_config.n_consumers):
+            for _ in range(queue_config_.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
                 consumer = self.queue_manager.create_consumer(
@@ -510,6 +510,8 @@ class Node(AbstractNode):
                     n_consumers=n_consumers,
                 )
             )
+        else:
+            queue_config = None
 
         return cls(
             name=name,

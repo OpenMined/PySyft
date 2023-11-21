@@ -82,6 +82,10 @@ class BlobRetrieval(SyftObject):
         pass
 
 
+#    syft_blob_storage_entry_id: Optional[UID] = None
+#    file_size: Optional[int]
+
+
 @serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
