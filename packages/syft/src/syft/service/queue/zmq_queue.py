@@ -380,22 +380,16 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     create_producer: bool = False
     n_consumers: int = 0
 
-    # queue_port: Optional[int] = None
-    # # TODO: setting this to false until we can fix the ZMQ
-    # # port issue causing tests to randomly fail
-    # create_producer: bool = False
-    # n_consumers: int = 0
-
 
 @migrate(ZMQClientConfig, ZMQClientConfigV1)
-def downgrade_action_v2_to_v1():
+def downgrade_zmqclientconfig_v2_to_v1():
     return [
         drop(["queue_port", "create_producer", "n_consumers"]),
     ]
 
 
 @migrate(ZMQClientConfigV1, ZMQClientConfig)
-def upgrade_action_v1_to_v2():
+def upgrade_zmqclientconfig_v1_to_v2():
     return [
         make_set_default("queue_port", None),
         make_set_default("create_producer", False),

@@ -579,14 +579,14 @@ class UserCode(SyftObject):
 
 
 @migrate(UserCode, UserCodeV1)
-def downgrade_action_v2_to_v1():
+def downgrade_usercode_v2_to_v1():
     return [
         drop("uses_domain"),
     ]
 
 
 @migrate(UserCodeV1, UserCode)
-def upgrade_action_v1_to_v2():
+def upgrade_usercode_v1_to_v2():
     return [make_set_default("uses_domain", False)]
 
 
