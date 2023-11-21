@@ -1,5 +1,4 @@
 # stdlib
-import distutils
 import os
 import secrets
 from typing import Any
@@ -15,16 +14,29 @@ from pydantic import EmailStr
 from pydantic import HttpUrl
 from pydantic import validator
 
+_truthy = {"yes", "y", "true", "t", "on", "1"}
+_falsy = {"no", "n", "false", "f", "off", "0"}
+
+
+def _distutils_strtoint(s: str) -> int:
+    """implements the deprecated distutils.util.strtoint"""
+    ls = s.lower()
+    if ls in _truthy:
+        return 1
+    if ls in _falsy:
+        return 0
+    raise ValueError(f"invalid truth value '{s}'")
+
 
 def str_to_int(bool_str: Any) -> int:
     try:
-        return distutils.utils.strtobool(str(bool_str))
+        return _distutils_strtoint(str(bool_str))
     except ValueError:
         return 0
 
 
 def str_to_bool(bool_str: Any) -> bool:
-    return bool(str_to_bool(bool_str))
+    return bool(str_to_int(bool_str))
 
 
 class Settings(BaseSettings):
