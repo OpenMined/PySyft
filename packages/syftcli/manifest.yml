@@ -26,11 +26,6 @@ configFiles:
     - packages/grid/devspace.yaml
     - packages/grid/traefik/k8s/dynamic.yml
     - packages/grid/traefik/k8s/traefik.yml
-  worker:
-    - packages/grid/worker/docker-compose.yml
-    - packages/grid/worker/docker-compose.dev.yml
-    - packages/grid/worker/docker-compose.pull.yml
-    - packages/grid/worker/docker-compose.build.yml
   podman:
     - packages/grid/podman/podman-kube/podman-syft-kube-config.yaml
     - packages/grid/podman/podman-kube/podman-syft-kube.yaml
