@@ -824,10 +824,9 @@ class UserCodeStatusChange(Change):
         return SyftSuccess(message=f"{type(self)} valid")
 
     def approve_nested_requests(self, context, node):
-        user_code_service = context.node.get_service("usercodeservice")
         approved_nested_codes = {}
         for key, node in node.items():
-            code_obj = node[0].resolve_with_context(context)
+            code_obj = node[0].resolve_with_context(context).ok()
             new_node = node[1]
             approved_nested_codes[key] = code_obj.id
             
@@ -836,6 +835,7 @@ class UserCodeStatusChange(Change):
                 return res
             code_obj.approved_nested_codes = res
             
+            # TODO: remove nested approval
             res = code_obj.status.mutate(
                 value=(self.value, ""),
                 node_name=context.node.name,
@@ -846,7 +846,8 @@ class UserCodeStatusChange(Change):
                 return res
             code_obj.status = res
 
-            user_code_service.update_code_state(context, res)
+            # user_code_service.update_code_state(context, res)
+            node[0].update_with_context(context, code_obj)
                 
         return approved_nested_codes
 
@@ -859,11 +860,11 @@ class UserCodeStatusChange(Change):
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
-            res = self.approve_nested_requests(context, self.nested_requests)
+            approve_nested_requests = self.approve_nested_requests(context, self.nested_requests)
             if isinstance(res, SyftError):
                 return res
 
-            obj.approved_nested_codes = res
+            obj.approved_nested_codes = approve_nested_requests
         else:
             res = obj.status.mutate(
                 value=(UserCodeStatus.DENIED, reason),
@@ -904,14 +905,14 @@ class UserCodeStatusChange(Change):
 
                 user_code = res
                 import sys
-                print(type(user_code), file=sys.stderr)
+                
                 if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=res, context=context
                     )
                     if isinstance(enclave_res, SyftError):
                         return enclave_res
-                self.linked_obj.update_with_context(context, user_code)
+                res = self.linked_obj.update_with_context(context, user_code)
             else:
                 res = self.mutate(obj, context, undo=True)
                 if isinstance(res, SyftError):
