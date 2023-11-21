@@ -11,6 +11,7 @@ import numpy as np
 from result import Err
 from result import Ok
 from result import Result
+from ..policy.policy import retrieve_from_db
 
 # relative
 from ...serde.serializable import serializable
@@ -183,33 +184,39 @@ class ActionService(AbstractService):
         kwargs: Dict[str, Any],
         result_id: Optional[UID] = None,
     ) -> Result[ActionObjectPointer, Err]:
-        input_policy = code_item.input_policy
-        filtered_kwargs = input_policy.filter_kwargs(
-            kwargs=kwargs, context=context, code_item_id=code_item.id
-        )
+        
+        if not context.has_execute_permissions:
+            input_policy = code_item.input_policy
+            filtered_kwargs = input_policy.filter_kwargs(
+                kwargs=kwargs, context=context, code_item_id=code_item.id
+            )
+            if isinstance(filtered_kwargs, SyftError) or filtered_kwargs.is_err():
+                return filtered_kwargs
+            filtered_kwargs = filtered_kwargs.ok()
+        else:
+            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
         # update input policy to track any input state
         # code_item.input_policy = input_policy
 
-        expected_input_kwargs = set()
-        for _inp_kwarg in code_item.input_policy.inputs.values():
-            keys = _inp_kwarg.keys()
-            for k in keys:
-                if k not in kwargs:
-                    return Err(
-                        f"{code_item.service_func_name}() missing required keyword argument: '{k}'"
-                    )
-            expected_input_kwargs.update(keys)
+        
+        if not context.has_execute_permissions:
+            expected_input_kwargs = set()
+            for _inp_kwarg in code_item.input_policy.inputs.values():
+                keys = _inp_kwarg.keys()
+                for k in keys:
+                    if k not in kwargs:
+                        return Err(
+                            f"{code_item.service_func_name}() missing required keyword argument: '{k}'"
+                        )
+                expected_input_kwargs.update(keys)
 
-        if isinstance(filtered_kwargs, SyftError) or filtered_kwargs.is_err():
-            return filtered_kwargs
-        filtered_kwargs = filtered_kwargs.ok()
 
-        permitted_input_kwargs = list(filtered_kwargs.keys())
-        not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
-        if len(not_approved_kwargs) > 0:
-            return Err(
-                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
-            )
+            permitted_input_kwargs = list(filtered_kwargs.keys())
+            not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+            if len(not_approved_kwargs) > 0:
+                return Err(
+                    f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+                )
 
         has_twin_inputs = False
 
@@ -271,7 +278,7 @@ class ActionService(AbstractService):
             result_blob_id = result_action_object.private.syft_blob_storage_entry_id
         else:
             result_blob_id = result_action_object.syft_blob_storage_entry_id
-        output_readers = output_policy.output_readers
+        output_readers = output_policy.output_readers if not context.has_execute_permissions else []
         read_permission = ActionPermission.READ
 
         result_action_object._set_obj_location_(
