@@ -945,8 +945,6 @@ class SecureContext:
         job_service = node.get_service("jobservice")
         action_service = node.get_service("actionservice")
         user_service = node.get_service("userservice")
-        user_code_service = node.get_service("usercodeservice")
-        request_service = node.get_service("requestservice")
 
         def job_set_n_iters(n_iters):
             job = context.job
@@ -992,42 +990,18 @@ class SecureContext:
                 ptr = action_service.set(context, value)
                 ptr = ptr.ok()
                 kw2id[k] = ptr.id
-
-            # create new usercode with permissions
-
-            new_user_code = deepcopy(func)
-            new_user_code.id = UID()
-
-            new_user_code.input_policy_type = ExactMatch
-            # assumes all inputs are on the same node
-            node_identity = NodeIdentity(
-                node_id=node.id, verify_key=node.verify_key, node_name=node.name
-            )
-            new_user_code.input_policy_init_kwargs = {node_identity: kw2id}
-
-            # TODO: throw exception for enclaves
-            request = user_code_service._request_code_execution_inner(
-                context, new_user_code
-            ).ok()
-            admin_context = AuthedServiceContext(
-                node=node,
-                credentials=user_service.admin_verify_key(),
-                role=ServiceRole.ADMIN,
-            )
-            res = request_service.apply(admin_context, request.id)
-            if not isinstance(res, SyftSuccess):
-                raise ValueError(res)
-
             try:
                 # TODO: check permissions here
                 action = Action.syft_function_action_from_kwargs_and_id(
-                    kw2id, new_user_code.id
+                    kw2id, func.id
                 )
+
 
                 job = node.add_action_to_queue(
                     action=action,
                     credentials=context.credentials,
                     parent_job_id=context.job_id,
+                    has_execute_permissions=True
                 )
                 # set api in global scope to enable using .get(), .wait())
                 set_api_registry()
@@ -1131,8 +1105,11 @@ def execute_byte_code(
         _globals = {}
 
         user_code_service = context.node.get_service("usercodeservice")
-        for user_code in user_code_service.stash.get_all(context.credentials).ok():
-            _globals[user_code.service_func_name] = user_code
+        for service_func_name, code_uid in code_item.approved_nested_codes.items():
+            code_obj = user_code_service.stash.get_by_uid(context.credentials, code_uid)
+            if isinstance(code_obj, Err):
+                raise Exception(code_obj.err())
+            _globals[service_func_name] = code_obj.ok()
         _globals["print"] = print
         exec(code_item.parsed_code, _globals, locals())  # nosec
 
@@ -1141,7 +1118,7 @@ def execute_byte_code(
             result = eval(evil_string, _globals, _locals)  # nosec
         except Exception as e:
             if context.job is not None:
-                error_msg = traceback_from_error(e, user_code)
+                error_msg = traceback_from_error(e, code_item)
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 original_print(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
@@ -1150,7 +1127,7 @@ def execute_byte_code(
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
 
             result = Err(
-                f"Exception encountered while running {user_code.service_func_name}"
+                f"Exception encountered while running {code_item.service_func_name}"
                 ", please contact the Node Admin for more info."
             )
 
