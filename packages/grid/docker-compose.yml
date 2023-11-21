@@ -10,6 +10,8 @@ services:
     restart: always
     hostname: ${NODE_NAME?Variable not set}
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
+    profiles:
+      - proxy
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
@@ -76,9 +78,48 @@ services:
   #   volumes:
   #     - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
 
+  worker:
+    restart: always
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    profiles:
+      - worker
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=worker
+      - RELEASE=${RELEASE:-production}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - NODE_NAME=${NODE_NAME?Variable not set}
+      - STACK_API_KEY=${STACK_API_KEY}
+      - PORT=${HTTP_PORT}
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - TRACE=False # TODO: Trace Mode is set to False, until jaegar is integrated
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
+      - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+      - DEV_MODE=${DEV_MODE}
+      - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
+      - ENABLE_WARNINGS=${ENABLE_WARNINGS}
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
+    volumes:
+      - credentials-data:/root/data/creds/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      - "orgs.openmined.syft=this is a syft worker container"
+
   backend:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    profiles:
+      - backend
     depends_on:
       - proxy
     env_file:
@@ -205,6 +246,8 @@ services:
 
   mongo:
     image: "${MONGO_IMAGE}:${MONGO_VERSION}"
+    profiles:
+      - mongo
     restart: always
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
