@@ -834,19 +834,6 @@ class UserCodeStatusChange(Change):
             if isinstance(res, SyftError):
                 return res
             code_obj.approved_nested_codes = res
-            
-            # TODO: remove nested approval
-            res = code_obj.status.mutate(
-                value=(self.value, ""),
-                node_name=context.node.name,
-                node_id=context.node.id,
-                verify_key=context.node.signing_key.verify_key,
-            )
-            if isinstance(res, SyftError):
-                return res
-            code_obj.status = res
-
-            # user_code_service.update_code_state(context, res)
             node[0].update_with_context(context, code_obj)
                 
         return approved_nested_codes
