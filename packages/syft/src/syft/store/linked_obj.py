@@ -65,6 +65,7 @@ class LinkedObject(SyftObject):
         )
         if result.is_ok():
             return result
+        return result
 
     @classmethod
     def from_obj(
