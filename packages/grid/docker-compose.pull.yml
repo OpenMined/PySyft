@@ -28,3 +28,9 @@ services:
     image: jaegertracing/all-in-one:1.37
     profiles:
       - telemetry
+
+  # Temporary fix until we refactor pull, build, launch UI step during hagrid launch
+  worker:
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    profiles:
+      - worker

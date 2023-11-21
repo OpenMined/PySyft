@@ -404,9 +404,6 @@ def deploy_to_container(
     if dev_mode:
         commands.append("--dev")
 
-    # temporary workaround
-    commands.append("--verbose")
-
     if not enable_warnings:
         commands.append("--no-warnings")
 
@@ -581,6 +578,8 @@ class Orchestra:
                 land_output = shell(f"hagrid land {snake_name} --force")
             if "Removed" in land_output:
                 print(f" ✅ {snake_name} Container Removed")
+            elif "No resource found to remove for project" in land_output:
+                print(f" ✅ {snake_name} Container does not exist")
             else:
                 print(f"❌ Unable to remove container: {snake_name} :{land_output}")
 
