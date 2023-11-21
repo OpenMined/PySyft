@@ -63,15 +63,28 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
+
+
+@serializable()
+class BlobRetrievalV1(SyftObject):
+    __canonical_name__ = "BlobRetrieval"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    type_: Optional[Type]
+    file_name: str
 
 
 @serializable()
 class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     type_: Optional[Type]
     file_name: str
@@ -82,8 +95,19 @@ class BlobRetrieval(SyftObject):
         pass
 
 
-#    syft_blob_storage_entry_id: Optional[UID] = None
-#    file_size: Optional[int]
+@migrate(BlobRetrieval, BlobRetrievalV1)
+def downgrade_blobretrival_v2_to_v1():
+    return [
+        drop(["syft_blob_storage_entry_id", "file_size"]),
+    ]
+
+
+@migrate(BlobRetrievalV1, BlobRetrieval)
+def upgrade_blobretrieval_v1_to_v2():
+    return [
+        make_set_default("syft_blob_storage_entry_id", None),
+        make_set_default("file_size", 1),
+    ]
 
 
 @serializable()

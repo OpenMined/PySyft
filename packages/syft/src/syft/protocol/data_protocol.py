@@ -253,7 +253,7 @@ class DataProtocol:
 
             # Sort the version dict
             object_versions[canonical_name] = sort_dict_naturally(
-                object_versions[canonical_name]
+                object_versions.get(canonical_name, {})
             )
 
         current_history["dev"]["object_versions"] = object_versions
