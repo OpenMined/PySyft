@@ -294,20 +294,21 @@ class UserCodeService(AbstractService):
                 return code_result
             code: UserCode = code_result.ok()
 
-            output_policy = code.output_policy
-            if (
-                can_execute := self.is_execution_allowed(code=code, context=context)
-                is not True
-            ):
-                if not (is_valid := output_policy.valid):
-                    if len(output_policy.output_history) > 0:
-                        result = resolve_outputs(
-                            context=context, output_ids=output_policy.last_output_ids
-                        )
-                        return Ok(result.as_empty())
-                    else:
-                        return is_valid.to_result()
-                return can_execute.to_result()
+            if not context.has_execute_permissions:
+                output_policy = code.output_policy
+                if (
+                    can_execute := self.is_execution_allowed(code=code, context=context)
+                    is not True
+                ):
+                    if not (is_valid := output_policy.valid):
+                        if len(output_policy.output_history) > 0:
+                            result = resolve_outputs(
+                                context=context, output_ids=output_policy.last_output_ids
+                            )
+                            return Ok(result.as_empty())
+                        else:
+                            return is_valid.to_result()
+                    return can_execute.to_result()
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
@@ -317,7 +318,7 @@ class UserCodeService(AbstractService):
             ] = action_service._user_code_execute(
                 context, code, kwarg2id, result_id=result_id
             )
-
+            print(result_action_object)
             output_result = action_service.set_result_to_store(
                 result_action_object, context, code.output_policy
             )
@@ -327,14 +328,16 @@ class UserCodeService(AbstractService):
             result = output_result.ok()
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            output_policy.apply_output(context=context, outputs=result)
-            code.output_policy = output_policy
-            if not (
-                update_success := self.update_code_state(
-                    context=context, code_item=code
-                )
-            ):
-                return update_success.to_result()
+            
+            if not context.has_execute_permissions:
+                output_policy.apply_output(context=context, outputs=result)
+                code.output_policy = output_policy
+                if not (
+                    update_success := self.update_code_state(
+                        context=context, code_item=code
+                    )
+                ):
+                    return update_success.to_result()
 
             # TODO: remove?
             if not isinstance(result, TwinObject) and isinstance(
