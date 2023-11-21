@@ -297,9 +297,7 @@ class Request(SyftObject):
     @property
     def code(self) -> Any:
         if len(self.codes) == 0:
-            return SyftError(
-                message="This type of request does not have code associated with it."
-            )
+            
 
         if len(self.codes) > 1:
             return SyftError(
@@ -309,12 +307,13 @@ class Request(SyftObject):
         return self.codes[0]
 
     @property
-    def codes(self) -> Any:
-        codes = []
+    def code(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                codes.append(change.link)
-        return codes
+                return change.code
+        return SyftError(
+                message="This type of request does not have code associated with it."
+            )
 
     def get_results(self) -> Any:
         return self.code.get_results()
@@ -788,8 +787,28 @@ class UserCodeStatusChange(Change):
         "link.status.approved",
     ]
 
+    def nested_repr(self, node=None, level=0):
+        msg = ''
+        if node is None:
+            node = self.nested_requests
+        for service_func_name, (obj, new_node) in node.items():
+            msg = "├──" + "──"  * level + f"{service_func_name}<br>"
+            msg += self.nested_repr(node=new_node, level=level+1)
+        return msg
+
+
     def __repr_syft_nested__(self):
-        return f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
+        msg = f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
+        if self.nested_solved:
+            if self.nested_requests == {}:
+                msg += ". No nested requests"
+            else:
+                msg += ".<br><br>This change requests the following nested functions calls:<br>"
+                msg += self.nested_repr()
+        else:
+            msg += ". Nested Requests not resolved"
+        return msg
+
 
     def _repr_markdown_(self) -> str:
         link = self.link
