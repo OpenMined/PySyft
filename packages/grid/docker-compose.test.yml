@@ -1,15 +1,12 @@
+version: "3.8"
 services:
   proxy:
+    profiles:
+      - proxy
     ports:
       - "8080"
     extra_hosts:
       - host.docker.internal:host-gateway
-
-  tailscale:
-    profiles:
-      - vpn
-    volumes:
-      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
 
   # redis:
   #   ports:
@@ -21,12 +18,6 @@ services:
   #     - "5672"
   #     - "15672"
 
-  headscale:
-    profiles:
-      - network
-    ports:
-      - "4000"
-
   seaweedfs:
     profiles:
       - blob-storage
@@ -36,6 +27,14 @@ services:
       - "8333" # S3
 
   backend:
+    profiles:
+      - backend
+    environment:
+      - TEST_MODE=1
+
+  worker:
+    profiles:
+      - worker
     environment:
       - TEST_MODE=1
 

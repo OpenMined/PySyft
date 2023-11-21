@@ -34,12 +34,15 @@ from ..abstract_node import NodeType
 from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
+from ..protocol.data_protocol import DataProtocol
+from ..protocol.data_protocol import PROTOCOL_TYPE
+from ..protocol.data_protocol import get_data_protocol
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
-from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
+from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
@@ -214,14 +217,22 @@ class HTTPConnection(NodeConnection):
             metadata_json = json.loads(response)
             return NodeMetadataJSON(**metadata_json)
 
-    def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
-        params = {"verify_key": str(credentials.verify_key)}
+    def get_api(
+        self, credentials: SyftSigningKey, communication_protocol: int
+    ) -> SyftAPI:
+        params = {
+            "verify_key": str(credentials.verify_key),
+            "communication_protocol": communication_protocol,
+        }
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="api",
-                kwargs={"credentials": credentials},
+                kwargs={
+                    "credentials": credentials,
+                    "communication_protocol": communication_protocol,
+                },
                 credentials=credentials,
             )
         else:
@@ -229,6 +240,7 @@ class HTTPConnection(NodeConnection):
             obj = _deserialize(content, from_bytes=True)
         obj.connection = self
         obj.signing_key = credentials
+        obj.communication_protocol = communication_protocol
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
@@ -333,20 +345,29 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
-    def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
+    def get_api(
+        self, credentials: SyftSigningKey, communication_protocol: int
+    ) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="api",
-                kwargs={"credentials": credentials},
+                kwargs={
+                    "credentials": credentials,
+                    "communication_protocol": communication_protocol,
+                },
                 credentials=credentials,
             )
         else:
-            obj = self.node.get_api(for_user=credentials.verify_key)
+            obj = self.node.get_api(
+                for_user=credentials.verify_key,
+                communication_protocol=communication_protocol,
+            )
         obj.connection = self
         obj.signing_key = credentials
+        obj.communication_protocol = communication_protocol
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return obj
@@ -444,6 +465,8 @@ class SyftClient:
         self.metadata = metadata
         self.credentials: Optional[SyftSigningKey] = credentials
         self._api = api
+        self.communication_protocol = None
+        self.current_protocol = None
 
         self.post_init()
 
@@ -453,6 +476,32 @@ class SyftClient:
     def post_init(self) -> None:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
+
+        self.communication_protocol = self._get_communication_protocol(
+            self.metadata.supported_protocols
+        )
+
+    def _get_communication_protocol(
+        self, protocols_supported_by_server: List
+    ) -> Union[int, str]:
+        data_protocol: DataProtocol = get_data_protocol()
+        protocols_supported_by_client: List[
+            PROTOCOL_TYPE
+        ] = data_protocol.supported_protocols
+
+        self.current_protocol = data_protocol.latest_version
+        common_protocols = set(protocols_supported_by_client).intersection(
+            protocols_supported_by_server
+        )
+
+        if len(common_protocols) == 0:
+            raise Exception(
+                "No common communication protocol found between the client and the server."
+            )
+
+        if "dev" in common_protocols:
+            return "dev"
+        return max(common_protocols)
 
     def create_project(
         self, name: str, description: str, user_email_address: str
@@ -548,7 +597,7 @@ class SyftClient:
         result = self.api.services.network.exchange_credentials_with(
             self_node_route=self_node_route,
             remote_node_route=remote_node_route,
-            remote_node_verify_key=client.metadata.to(NodeMetadata).verify_key,
+            remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
         )
 
         return result
@@ -593,39 +642,56 @@ class SyftClient:
             return self.api.services.user.get_current_user()
         return None
 
+    def login_as_guest(self) -> Self:
+        _guest_client = self.guest()
+
+        print(
+            f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+            f"{self.metadata.node_type.capitalize()}> as GUEST"
+        )
+
+        return _guest_client
+
     def login(
-        self, email: str, password: str, cache: bool = True, register=False, **kwargs
+        self,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        cache: bool = True,
+        register: bool = False,
+        **kwargs: Any,
     ) -> Self:
+        if email is None:
+            email = input("Email: ")
+        if password is None:
+            password = getpass("Password: ")
+
         if register:
-            if not email:
-                email = input("Email: ")
-            if not password:
-                password = getpass("Password: ")
             self.register(
                 email=email, password=password, password_verify=password, **kwargs
             )
-        if password is None:
-            password = getpass("Password: ")
+
         user_private_key = self.connection.login(email=email, password=password)
         if isinstance(user_private_key, SyftError):
             return user_private_key
-        signing_key = None
+
+        signing_key = None if user_private_key is None else user_private_key.signing_key
+
+        client = self.__class__(
+            connection=self.connection,
+            metadata=self.metadata,
+            credentials=signing_key,
+        )
+
+        client.__logged_in_user = email
+
         if user_private_key is not None:
-            signing_key = user_private_key.signing_key
-            self.__user_role = user_private_key.role
+            client.__user_role = user_private_key.role
+            client.__logged_in_username = client.users.get_current_user().name
+
         if signing_key is not None:
-            self.credentials = signing_key
-            self.__logged_in_user = email
-
-            # Get current logged in user name
-            self.__logged_in_username = self.users.get_current_user().name
-
-            # TODO: How to get the role of the user?
-            # self.__user_role =
-            self._fetch_api(self.credentials)
             print(
-                f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()} side "
-                f"{self.metadata.node_type.capitalize()}> as <{email}>"
+                f"Logged into <{client.name}: {client.metadata.node_side_type.capitalize()} side "
+                f"{client.metadata.node_type.capitalize()}> as <{email}>"
             )
             # relative
             from ..node.node import get_default_root_password
@@ -641,8 +707,8 @@ class SyftClient:
                 SyftClientSessionCache.add_client(
                     email=email,
                     password=password,
-                    connection=self.connection,
-                    syft_client=self,
+                    connection=client.connection,
+                    syft_client=client,
                 )
                 # Adding another cache storage
                 # as this would be useful in retrieving unique clients
@@ -653,16 +719,16 @@ class SyftClient:
                 # combining both email, password and verify key and uid
                 SyftClientSessionCache.add_client_by_uid_and_verify_key(
                     verify_key=signing_key.verify_key,
-                    node_uid=self.id,
-                    syft_client=self,
+                    node_uid=client.id,
+                    syft_client=client,
                 )
 
         # relative
         from ..node.node import CODE_RELOADER
 
-        CODE_RELOADER[thread_ident()] = self._reload_user_code
+        CODE_RELOADER[thread_ident()] = client._reload_user_code
 
-        return self
+        return client
 
     def _reload_user_code(self):
         # relative
@@ -697,7 +763,9 @@ class SyftClient:
                 password_verify=password_verify,
                 institution=institution,
                 website=website,
-                created_by=self.credentials,
+                created_by=(
+                    None if self.__user_role == ServiceRole.GUEST else self.credentials
+                ),
             )
         except Exception as e:
             return SyftError(message=str(e))
@@ -749,7 +817,10 @@ class SyftClient:
             self.metadata = metadata
 
     def _fetch_api(self, credentials: SyftSigningKey):
-        _api: SyftAPI = self.connection.get_api(credentials=credentials)
+        _api: SyftAPI = self.connection.get_api(
+            credentials=credentials,
+            communication_protocol=self.communication_protocol,
+        )
 
         def refresh_callback():
             return self._fetch_api(self.credentials)
@@ -806,34 +877,47 @@ def register(
 
 
 @instrument
-def login(
+def login_as_guest(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
-    email: Optional[str] = None,
-    password: Optional[str] = None,
-    cache: bool = True,
     verbose: bool = True,
-) -> SyftClient:
+):
     _client = connect(url=url, node=node, port=port)
+
     if isinstance(_client, SyftError):
         return _client
+
+    if verbose:
+        print(
+            f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
+            f"side {_client.metadata.node_type.capitalize()}> as GUEST"
+        )
+
+    return _client.guest()
+
+
+@instrument
+def login(
+    email: str,
+    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
+    node: Optional[AbstractNode] = None,
+    port: Optional[int] = None,
+    password: Optional[str] = None,
+    cache: bool = True,
+) -> SyftClient:
+    _client = connect(url=url, node=node, port=port)
+
+    if isinstance(_client, SyftError):
+        return _client
+
     connection = _client.connection
 
     login_credentials = None
 
-    if email:
-        if not password:
-            password = getpass("Password: ")
-        login_credentials = UserLoginCredentials(email=email, password=password)
-
-    if login_credentials is None:
-        if verbose:
-            print(
-                f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
-                f"side {_client.metadata.node_type.capitalize()}> as GUEST"
-            )
-        return _client.guest()
+    if not password:
+        password = getpass("Password: ")
+    login_credentials = UserLoginCredentials(email=email, password=password)
 
     if cache and login_credentials:
         _client_cache = SyftClientSessionCache.get_client(
@@ -848,13 +932,11 @@ def login(
             _client = _client_cache
 
     if not _client.authed and login_credentials:
-        _client.login(
+        _client = _client.login(
             email=login_credentials.email,
             password=login_credentials.password,
             cache=cache,
         )
-        if not _client.authed:
-            return SyftError(message=f"Failed to login as {login_credentials.email}")
 
     return _client
 

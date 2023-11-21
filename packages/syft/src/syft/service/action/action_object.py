@@ -222,6 +222,9 @@ action_data_empty_must_run = [
 
 
 class PreHookContext(SyftBaseObject):
+    __canonical_name__ = "PreHookContext"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     """Hook context
 
     Parameters:
@@ -446,6 +449,7 @@ BASE_PASSTHROUGH_ATTRS = [
 ]
 
 
+@serializable()
 class ActionObject(SyftObject):
     """Action object for remote execution."""
 
@@ -868,7 +872,8 @@ class ActionObject(SyftObject):
     def syft_get_path(self) -> str:
         """Get the type path of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
-            return f"{self.syft_action_data_type.__name__}"  # avoids AnyActionObject errors
+            # avoids AnyActionObject errors
+            return f"{self.syft_action_data_type.__name__}"
         return f"{type(self).__name__}"
 
     def syft_remote_method(

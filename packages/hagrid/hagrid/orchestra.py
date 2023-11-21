@@ -26,6 +26,7 @@ try:
     # syft absolute
     from syft.abstract_node import NodeSideType
     from syft.abstract_node import NodeType
+    from syft.protocol.data_protocol import stage_protocol_changes
     from syft.service.response import SyftError
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
@@ -34,6 +35,8 @@ except Exception:  # nosec
 DEFAULT_PORT = 8080
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
+
+ClientAlias = Any  # we don't want to import Client in case it changes
 
 
 # Define a function to read and print a stream
@@ -163,7 +166,7 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port, verbose=False)  # type: ignore
+            return sy.login_as_guest(url=self.url, port=self.port)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
         else:
@@ -171,21 +174,19 @@ class NodeHandle:
                 f"client not implemented for the deployment type:{self.deployment_type}"
             )
 
+    def login_as_guest(self, **kwargs: Any) -> ClientAlias:
+        return self.client.login_as_guest(**kwargs)
+
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
-    ) -> Optional[Any]:
-        client = self.client
-
+    ) -> ClientAlias:
         if not email:
             email = input("Email: ")
+
         if not password:
             password = getpass.getpass("Password: ")
 
-        session = client.login(email=email, password=password, **kwargs)
-        if isinstance(session, SyftError):
-            return session
-
-        return session
+        return self.client.login(email=email, password=password, **kwargs)
 
     def register(
         self,
@@ -247,6 +248,10 @@ def deploy_to_python(
         worker_classes[NodeType.ENCLAVE] = sy.Enclave
     if hasattr(NodeType, "GATEWAY"):
         worker_classes[NodeType.GATEWAY] = sy.Gateway
+
+    if dev_mode:
+        print("Staging Protocol Changes...")
+        stage_protocol_changes()
 
     if port:
         if port == "auto":
@@ -573,6 +578,8 @@ class Orchestra:
                 land_output = shell(f"hagrid land {snake_name} --force")
             if "Removed" in land_output:
                 print(f" ✅ {snake_name} Container Removed")
+            elif "No resource found to remove for project" in land_output:
+                print(f" ✅ {snake_name} Container does not exist")
             else:
                 print(f"❌ Unable to remove container: {snake_name} :{land_output}")
 

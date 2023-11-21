@@ -1,6 +1,8 @@
 version: "3.8"
 services:
   proxy:
+    profiles:
+      - proxy
     ports:
       - "${HTTPS_PORT}:${HTTPS_PORT}"
     environment:

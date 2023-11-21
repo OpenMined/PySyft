@@ -29,11 +29,11 @@ from syft.service.user.user_service import UserService
 from syft.types.uid import UID
 
 
-def metadata_with_signup_enabled(worker) -> Type:
-    mock_metadata = worker.metadata
-    mock_metadata.signup_enabled = True
+def settings_with_signup_enabled(worker) -> Type:
+    mock_settings = worker.settings
+    mock_settings.signup_enabled = True
 
-    return mock_metadata
+    return mock_settings
 
 
 def test_userservice_create_when_user_exists(
@@ -476,11 +476,11 @@ def test_userservice_register_user_exists(
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
     expected_error_msg = f"User already exists with email: {guest_create_user.email}"
 
-    # Patch Worker Metadata to enable signup
+    # Patch Worker settings to enable signup
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=metadata_with_signup_enabled(worker),
+        return_value=settings_with_signup_enabled(worker),
     ):
         mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
@@ -503,11 +503,11 @@ def test_userservice_register_error_on_get_email(
 
     monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
 
-    # Patch Worker Metadata to enable signup
+    # Patch Worker settings to enable signup
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=metadata_with_signup_enabled(worker),
+        return_value=settings_with_signup_enabled(worker),
     ):
         mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
@@ -530,12 +530,12 @@ def test_userservice_register_success(
     def mock_set(*args, **kwargs) -> Ok:
         return Ok(guest_user)
 
-        # Patch Worker Metadata to enable signup
+        # Patch Worker settings to enable signup
 
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=metadata_with_signup_enabled(worker),
+        return_value=settings_with_signup_enabled(worker),
     ):
         mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)
@@ -577,9 +577,9 @@ def test_userservice_register_set_fail(
         return Err(expected_error_msg)
 
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=metadata_with_signup_enabled(worker),
+        return_value=settings_with_signup_enabled(worker),
     ):
         mock_worker = Worker.named(name="mock-node")
         node_context = NodeServiceContext(node=mock_worker)

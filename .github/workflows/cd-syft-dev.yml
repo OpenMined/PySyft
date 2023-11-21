@@ -1,19 +1,50 @@
-name: CD - Syft - Deploy `dev` to K8s
+name: CD - Kubernetes - Dev
 
 on:
-  # TODO: Re-enable once merged & tested
-  # schedule:
-  #   - cron: "0 */3 * * *"
+  schedule:
+    - cron: "0 */3 * * *"
 
   workflow_dispatch:
     inputs:
-      none:
-        description: "Run Tests Manually"
-        required: false
+      check-cache:
+        type: boolean
+        description: "Check workflow cache"
+        default: false
+      deploy-helm:
+        type: boolean
+        description: "Deploy Helm Charts"
+        default: false
 
 jobs:
+  check-last-run:
+    # runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
+
+    outputs:
+      same-commit: ${{ steps.cache.outputs.cache-hit }}
+
+    steps:
+      - name: Check for new changes
+        if: github.event_name == 'schedule' || github.event.inputs.check-cache == 'true'
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: /tmp/k8s_dev_hash.txt # we don't care about the file, just the key
+          key: k8s-dev-${{ github.sha }}
+          lookup-only: true
+
+      - name: Save Commit SHA
+        if: github.event_name == 'schedule' || github.event.inputs.check-cache == 'true'
+        # only for making the cache action happy
+        run: echo "${{ github.sha }}" > /tmp/k8s_dev_hash.txt
+
   deploy-syft-dev:
-    runs-on: om-ci-16vcpu-ubuntu2204
+    needs: check-last-run
+    if: needs.check-last-run.outputs.same-commit != 'true'
+
+    # runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
+
     steps:
       - name: Permission to home directory
         run: |
@@ -39,7 +70,17 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Azure container registry
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az version
+
+      - name: Login to Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_GITHUB_CI }}
+
+      - name: Login to Azure Container Registry
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_SERVER }}
@@ -51,8 +92,8 @@ jobs:
         shell: bash
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
-      - name: Build and push `grid-backend` image to DockerHub
-        uses: docker/build-push-action@v4
+      - name: Build and push `grid-backend` image to registry
+        uses: docker/build-push-action@v5
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
@@ -61,9 +102,10 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-backend:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-backend:${{ steps.grid.outputs.GRID_VERSION }}
 
-      - name: Build and push `grid-frontend` image to DockerHub
-        uses: docker/build-push-action@v4
+      - name: Build and push `grid-frontend` image to registry
+        uses: docker/build-push-action@v5
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
@@ -71,55 +113,15 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:${{ steps.grid.outputs.GRID_VERSION }}
           target: grid-ui-development
 
-      # TODO: Re-enable once we have Enclave up and running
-      # - name: Build and push `grid-enclave` image to DockerHub
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: ./packages
-      #     file: ./packages/grid/worker/worker.dockerfile
-      #     push: true
-      #     target: worker
-      #     tags: |
-      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev
-      #       ${{ secrets.ACR_SERVER }}/openmined/grid-enclave:dev-${{ github.sha }}
-
-      - name: Build and push `grid-headscale` image to DockerHub
-        uses: docker/build-push-action@v4
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/headscale.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-headscale:dev-${{ github.sha }}
-
-      - name: Build and push `grid-tailscale` image to DockerHub
-        uses: docker/build-push-action@v4
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/tailscale.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-tailscale:dev-${{ github.sha }}
-
-      - name: Build and push `grid-vpn-iptables` image to DockerHub
-        uses: docker/build-push-action@v2
-        with:
-          context: ./packages/grid/vpn
-          file: ./packages/grid/vpn/iptables.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-vpn-iptables:dev-${{ github.sha }}
-
       - name: Build Helm Chart & Copy to infra
+        if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
         shell: bash
         run: |
           K3D_VERSION=v5.6.0
-          DEVSPACE_VERSION=v6.3.3
+          DEVSPACE_VERSION=v6.3.4
 
           # install k3d
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
@@ -133,6 +135,14 @@ jobs:
           chmod +x devspace
           devspace version
 
+          # Install helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
+          # install tox
+          python -m pip install --upgrade pip
+          pip install tox
+
           export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}
           export VERSION=dev-${{github.sha}}
           tox -e syft.build.helm
@@ -142,6 +152,7 @@ jobs:
           cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/dev/
 
       - name: Commit & push changes to Infra Repo
+        if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
         uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
@@ -150,3 +161,29 @@ jobs:
           add: "."
           push: "origin main"
           cwd: "./infrastructure/"
+
+      - name: Cleanup Azure Container Registry
+        run: |
+          ACR_REGISTRY_NAME=${{ secrets.ACR_REGISTRY_NAME }}
+
+          echo ">> Fetching repo list.."
+          REPO_LIST=$(az acr repository list -n $ACR_REGISTRY_NAME -o tsv)
+
+          KEEP_PREV_VERSIONS=5
+          TAIL_FROM_LINE=$(($KEEP_PREV_VERSIONS + 1))
+
+          for repo in $REPO_LIST
+          do
+              echo "Cleaning up '$repo'"
+              az acr repository show-tags --name $ACR_REGISTRY_NAME --repository $repo --orderby time_desc --output tsv \
+                | grep dev- \
+                | tail -n +$TAIL_FROM_LINE \
+                | xargs -r -I% az acr repository untag --name $ACR_REGISTRY_NAME --image $repo:%
+          done
+
+      - name: Logout and cleanup Azure account
+        if: always()
+        run: |
+          az logout
+          az cache purge
+          az account clear

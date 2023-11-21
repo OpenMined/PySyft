@@ -1,3 +1,9 @@
+**/*.pyc
+
 grid/data
 grid/packer
 grid/.devspace
+syftcli
+
+syft/tests
+syft/README.md

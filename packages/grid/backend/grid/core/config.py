@@ -14,6 +14,30 @@ from pydantic import EmailStr
 from pydantic import HttpUrl
 from pydantic import validator
 
+_truthy = {"yes", "y", "true", "t", "on", "1"}
+_falsy = {"no", "n", "false", "f", "off", "0"}
+
+
+def _distutils_strtoint(s: str) -> int:
+    """implements the deprecated distutils.util.strtoint"""
+    ls = s.lower()
+    if ls in _truthy:
+        return 1
+    if ls in _falsy:
+        return 0
+    raise ValueError(f"invalid truth value '{s}'")
+
+
+def str_to_int(bool_str: Any) -> int:
+    try:
+        return _distutils_strtoint(str(bool_str))
+    except ValueError:
+        return 0
+
+
+def str_to_bool(bool_str: Any) -> bool:
+    return bool(str_to_int(bool_str))
+
 
 class Settings(BaseSettings):
     API_V2_STR: str = "/api/v2"
@@ -59,7 +83,9 @@ class Settings(BaseSettings):
         return v
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
-    EMAIL_TEMPLATES_DIR: str = "/app/grid/email-templates/build"
+    EMAIL_TEMPLATES_DIR: str = os.path.expandvars(
+        "$HOME/app/grid/email-templates/build"
+    )
     EMAILS_ENABLED: bool = False
 
     @validator("EMAILS_ENABLED", pre=True)
@@ -106,11 +132,14 @@ class Settings(BaseSettings):
     MONGO_PORT: int = int(os.getenv("MONGO_PORT", 0))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
+    SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
+    SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
     ASSOCIATION_TIMEOUT: int = 10
+    DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
 
     class Config:
         case_sensitive = True

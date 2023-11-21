@@ -56,6 +56,9 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -136,17 +139,9 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
-      - name: Fix Colima issue on MacOS Runners
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew reinstall qemu
-
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.0.0
+        uses: crazy-max/ghaction-setup-docker@v2.1.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -247,7 +242,7 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [om-ci-16vcpu-ubuntu2204]
+        os: [ubuntu-latest]
         python-version: ["3.11"]
         notebook-paths: ["api/0.8"]
       fail-fast: false
@@ -267,6 +262,16 @@ jobs:
           rm ${GITHUB_WORKSPACE}/.git/config
 
       - uses: actions/checkout@v3
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -347,17 +352,9 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
-      - name: Fix Colima issue on MacOS Runners
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew reinstall qemu
-
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.0.0
+        uses: crazy-max/ghaction-setup-docker@v2.1.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -459,7 +456,8 @@ jobs:
       max-parallel: 99
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        os: [om-ci-16vcpu-ubuntu2204]
+        # os: [om-ci-16vcpu-ubuntu2204]
+        os: [ubuntu-latest]
         python-version: ["3.11"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -484,6 +482,16 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
@@ -538,16 +546,18 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Run integration tests
+      - name: Run K8s & Helm integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+          GITHUB_CI: true
         shell: bash
         run: |
           # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/v5.5.1/k3d-linux-amd64
+          K3D_VERSION=v5.6.0
+          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH
@@ -556,7 +566,7 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
-          # tox -e stack.test.integration.k8s
+          tox -e stack.test.integration.k8s
           tox -e syft.build.helm
           tox -e syft.package.helm
           # tox -e syft.test.helm
