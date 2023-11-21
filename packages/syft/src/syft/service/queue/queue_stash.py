@@ -45,6 +45,7 @@ class QueueItem(SyftObject):
     result: Optional[Any]
     resolved: bool = False
     status: Status = Status.CREATED
+    has_execute_permissions: bool = False
 
     # TODO: set
     method: str
