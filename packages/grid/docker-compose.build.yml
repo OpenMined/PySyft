@@ -15,3 +15,11 @@ services:
       target: "backend"
     profiles:
       - backend
+
+  worker:
+    build:
+      context: ${RELATIVE_PATH}../
+      dockerfile: ./grid/backend/backend.dockerfile
+      target: "backend"
+    profiles:
+      - worker
