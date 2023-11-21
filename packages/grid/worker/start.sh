@@ -8,7 +8,7 @@ if [[ ${DEV_MODE} == "True" ]];
 then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
-    pip install -e "/app/syft[telemetry]"
+    pip install -e "/app/syft[telemetry,data_science]"
 fi
 
 export RUST_BACKTRACE=$RUST_BACKTRACE

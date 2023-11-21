@@ -53,9 +53,8 @@ COPY --chown=$USER_GRP syft/src/syft/VERSION ./syft/src/syft/VERSION
 COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
-RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
-    pip install --user torch==2.1.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
-    pip install --user pip-autoremove ./syft[data_science] && \
+RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=0 \
+    pip install --user pip-autoremove ./syft && \
     pip-autoremove ansible ansible-core -y
 
 # cache PIP_PACKAGES as a separate layer so installation will be faster when a new
@@ -110,7 +109,8 @@ ENV PATH=$PATH:$HOME/.local/bin \
     MONGO_PORT="27017" \
     MONGO_USERNAME="root" \
     MONGO_PASSWORD="example" \
-    CREDENTIALS_PATH="$HOME/data/creds/credentials.json"
+    CREDENTIALS_PATH="$HOME/data/creds/credentials.json" \
+    SYFT_BASE_IMAGE="True"
 
 # Copy pre-built jupyterlab, syft dependencies
 COPY --chown=$USER_GRP --from=syft_deps $HOME/.local $HOME/.local

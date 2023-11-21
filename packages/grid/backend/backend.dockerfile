@@ -21,8 +21,8 @@ ARG UID
 RUN apk update && \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-    # uncomment for creating rootless user
-    # && adduser -D -u $UID $USER
+# uncomment for creating rootless user
+# && adduser -D -u $UID $USER
 
 # ==================== [BUILD STEP] Install Syft Dependency ==================== #
 
@@ -49,7 +49,7 @@ COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
     pip install --user torch==2.1.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
-    pip install --user pip-autoremove jupyterlab==4.0.7 -e ./syft/ && \
+    pip install --user pip-autoremove jupyterlab==4.0.7 -e ./syft[data_science] && \
     pip-autoremove ansible ansible-core -y
 
 # ==================== [Final] Setup Syft Server ==================== #
@@ -72,7 +72,7 @@ RUN apk update && \
     # Uncomment for rootless user
     # adduser -D -u 1000 $USER && \
     mkdir -p /var/log/pygrid $HOME/data/creds $HOME/data/db $HOME/.cache $HOME/.local
-    # chown -R $USER_GRP /var/log/pygrid $HOME/
+# chown -R $USER_GRP /var/log/pygrid $HOME/
 
 USER $USER
 WORKDIR $APPDIR
