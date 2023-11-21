@@ -2361,25 +2361,6 @@ def create_launch_docker_cmd(
     return final_commands
 
 
-def create_launch_worker_cmd(
-    cmd: str,
-    kwargs: TypeDict[str, Any],
-    build: bool,
-    tail: bool = True,
-) -> TypeDict[str, TypeList[str]]:
-    final_commands = {}
-    final_commands["Pulling"] = pull_command(cmd, kwargs)
-    cmd += " --file docker-compose.yml"
-
-    if build:
-        my_build_command = build_command(cmd)
-        final_commands["Building"] = my_build_command
-
-    dev_mode = kwargs.get("dev", False)
-    final_commands["Launching"] = deploy_command(cmd, tail, dev_mode)
-    return final_commands
-
-
 def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -3284,7 +3265,6 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
 
-    # Check if the container name belongs to worker container
     path = GRID_SRC_PATH()
     env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
 
