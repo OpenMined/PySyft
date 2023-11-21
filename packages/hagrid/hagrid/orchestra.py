@@ -404,6 +404,9 @@ def deploy_to_container(
     if dev_mode:
         commands.append("--dev")
 
+    # temporary workaround
+    commands.append("--verbose")
+
     if not enable_warnings:
         commands.append("--no-warnings")
 
