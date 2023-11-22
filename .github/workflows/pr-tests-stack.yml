@@ -169,6 +169,7 @@ jobs:
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
           tox -e stack.test.integration
+          tox -e backend.test.basecpu
 
       #Run log collector python script
       - name: Run log collector
