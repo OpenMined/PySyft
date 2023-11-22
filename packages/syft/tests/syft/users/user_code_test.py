@@ -84,3 +84,25 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
     )
 
     assert status_change.linked_obj.resolve.assets[0] == asset_input
+
+@sy.syft_function()
+def test_inner_func():
+    return 1
+
+
+@sy.syft_function(
+    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+)
+def test_outer_func(domain):
+    job = domain.launch_job(test_inner_func)
+    return job
+
+def test_nested_requests(worker, guest_client: User):
+    guest_client.api.services.code.submit(test_inner_func)
+    guest_client.api.services.code.request_code_execution(test_outer_func)
+    
+    root_domain_client = worker.root_client
+    request = root_domain_client.requests[-1]
+    guest_client.api.services.request.apply(request.id)
+    print(guest_client.code)
+    assert False
