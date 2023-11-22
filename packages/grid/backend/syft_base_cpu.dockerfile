@@ -54,13 +54,13 @@ COPY --chown=$USER_GRP syft/src/syft/VERSION ./syft/src/syft/VERSION
 COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
-RUN --mount=type=cache,target=$HOME/.cache/pip,uid=$UID \
+RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID \
     pip install --user pip-autoremove ./syft && \
     pip-autoremove ansible ansible-core -y
 
 # cache PIP_PACKAGES as a separate layer so installation will be faster when a new
 # package is provided
-RUN --mount=type=cache,target=$HOME/.cache/,rw \
+RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID \
     pip install --user $PIP_PACKAGES
 
 # ==================== [Final] Setup Syft Server ==================== #
