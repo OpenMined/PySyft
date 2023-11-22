@@ -294,6 +294,7 @@ passthrough_attrs = [
     "delete_data",  # syft
     "_save_to_blob_storage_",  # syft
     "syft_action_data",  # syft
+    "migrate_to",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
