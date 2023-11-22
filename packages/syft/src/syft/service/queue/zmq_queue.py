@@ -87,7 +87,7 @@ class ZMQProducer(QueueProducer):
         self.queue_stash = queue_stash
         self.auth_context = context
         self.post_init()
-        self.stop_threads=False
+        self.stop_threads = False
 
     @property
     def address(self):
@@ -273,7 +273,7 @@ class ZMQConsumer(QueueConsumer):
         self.queue_name = queue_name
         self.post_init()
         self.id = UID()
-        self.stop_threads=False
+        self.stop_threads = False
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER

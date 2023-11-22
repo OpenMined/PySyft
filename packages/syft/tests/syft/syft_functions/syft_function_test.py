@@ -1,27 +1,35 @@
-
-from syft import ActionObject
-from syft import syft_function, syft_function_single_use
+# stdlib
 from textwrap import dedent
-import syft as sy
-from syft.service.response import SyftError, SyftSuccess
+
+# third party
 import pytest
+
+# syft absolute
+import syft as sy
+from syft import ActionObject
+from syft import syft_function
+from syft import syft_function_single_use
+from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 
 
 @pytest.fixture
 def node():
-    _node = sy.orchestra.launch(name="nested_job_test_domain",
-                             dev_mode=True,
-                            reset=True, 
-                            n_consumers=3,
-                            create_producer=True,
-                            queue_port=3322)
+    _node = sy.orchestra.launch(
+        name="nested_job_test_domain",
+        dev_mode=True,
+        reset=True,
+        n_consumers=3,
+        create_producer=True,
+        queue_port=3322,
+    )
     # startup code here
     yield _node
     # Cleanup code
-    # _node.land()
+    _node.land()
+
 
 def test_nested_jobs(node):
-                            
     client = node.login(email="info@openmined.org", password="changethis")
 
     res = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
@@ -37,7 +45,7 @@ def test_nested_jobs(node):
     @syft_function()
     def process_batch(batch):
         print(f"starting batch {batch}")
-        return batch+1
+        return batch + 1
 
     process_batch.code = dedent(process_batch.code)
 
@@ -62,9 +70,7 @@ def test_nested_jobs(node):
     assert not isinstance(res, SyftError)
     client.requests[-1].approve()
 
-    print("AAA", flush=True)
-    # job = ds_client.code.process_all(x=x_ptr, blocking=False)
-    # print(job)
-    # job.wait()
-    # assert len(job.sujobs) == 2
-    # assert sum([j.wait().get() for j in job.subjobs]) == 5
+    job = ds_client.code.process_all(x=x_ptr, blocking=False)
+    job.wait()
+    assert len(job.subjobs) == 2
+    assert sum([j.wait().get() for j in job.subjobs]) == 5
