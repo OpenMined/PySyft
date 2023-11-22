@@ -11,6 +11,7 @@ import syft as sy
 from syft.service.action.action_object import ActionObject
 from syft.service.request.request import UserCodeStatusChange
 from syft.service.user.user import User
+from syft.store.linked_obj import LinkedObject
 
 
 @sy.syft_function(
@@ -64,7 +65,7 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
 
     guest_client = root_client.guest()
     credentials.pop("name")
-    guest_client.login(**credentials)
+    guest_client = guest_client.login(**credentials)
 
     root_client.upload_dataset(dataset=dataset)
 
@@ -103,6 +104,16 @@ def test_nested_requests(worker, guest_client: User):
     
     root_domain_client = worker.root_client
     request = root_domain_client.requests[-1]
-    guest_client.api.services.request.apply(request.id)
-    print(guest_client.code)
-    assert False
+    assert request.code.nested_requests == {'test_inner_func': 'latest'}
+    root_domain_client.api.services.request.apply(request.id)
+    request = root_domain_client.requests[-1]
+    
+    codes = root_domain_client.code
+    inner = codes[0] if codes[0].service_func_name == "test_inner_func" else codes[1]
+    outer = codes[0] if codes[0].service_func_name == "test_outer_func" else codes[1]
+    assert list(request.code.nested_codes.keys()) == ["test_inner_func"]    
+    (linked_obj, node) = request.code.nested_codes['test_inner_func']
+    assert node == {}
+    assert linked_obj.resolve.id == inner.id
+    assert outer.status.approved
+    assert not inner.status.approved

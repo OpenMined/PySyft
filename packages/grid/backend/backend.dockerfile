@@ -1,65 +1,113 @@
-ARG PYTHON_VERSION='3.11'
+ARG PYTHON_VERSION="3.11"
+ARG TZ="Etc/UTC"
 
-FROM python:3.11-slim as build
+# change to USER="syftuser", UID=1000 and HOME="/home/$USER" for rootless
+ARG USER="root"
+ARG UID=0
+ARG USER_GRP=$USER:$USER
+ARG HOME="/root"
+ARG APPDIR="$HOME/app"
 
-# set UTC timezone
-ENV TZ=Etc/UTC
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# ==================== [BUILD STEP] Python Dev Base ==================== #
 
-RUN mkdir -p /root/.local
+FROM cgr.dev/chainguard/wolfi-base as python_dev
 
-RUN apt-get update && apt-get upgrade -y
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
-    DEBIAN_FRONTEND=noninteractive \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-    curl python3-dev gcc make build-essential cmake git
+ARG PYTHON_VERSION
+ARG TZ
+ARG USER
+ARG UID
 
-RUN --mount=type=cache,target=/root/.cache \
-    pip install -U pip
+# Setup Python DEV
+RUN apk update && \
+    apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# uncomment for creating rootless user
+# && adduser -D -u $UID $USER
 
-#install jupyterlab
-RUN --mount=type=cache,target=/root/.cache \
-    pip install --user jupyterlab
+# ==================== [BUILD STEP] Install Syft Dependency ==================== #
 
-WORKDIR /app
+FROM python_dev as syft_deps
 
-# Backend
-FROM python:$PYTHON_VERSION-slim as backend
-RUN apt-get update && apt-get upgrade -y
-COPY --from=build /root/.local /root/.local
+ARG APPDIR
+ARG HOME
+ARG UID
+ARG USER
+ARG USER_GRP
 
-ENV PYTHONPATH=/app
-ENV PATH=/root/.local/bin:$PATH
-
-RUN --mount=type=cache,target=/root/.cache \
-    pip install -U pip
-
-WORKDIR /app
-
-# copy grid
-COPY grid/backend /app/
+USER $USER
+WORKDIR $APPDIR
+ENV PATH=$PATH:$HOME/.local/bin
 
 # copy skeleton to do package install
-COPY syft/setup.py /app/syft/setup.py
-COPY syft/setup.cfg /app/syft/setup.cfg
-COPY syft/pyproject.toml /app/syft/pyproject.toml
-COPY syft/MANIFEST.in /app/syft/MANIFEST.in
-COPY syft/src/syft/VERSION /app/syft/src/syft/VERSION
-COPY syft/src/syft/capnp /app/syft/src/syft/capnp
+COPY --chown=$USER_GRP syft/setup.py ./syft/setup.py
+COPY --chown=$USER_GRP syft/setup.cfg ./syft/setup.cfg
+COPY --chown=$USER_GRP syft/pyproject.toml ./syft/pyproject.toml
+COPY --chown=$USER_GRP syft/MANIFEST.in ./syft/MANIFEST.in
+COPY --chown=$USER_GRP syft/src/syft/VERSION ./syft/src/syft/VERSION
+COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 
-# install syft
-RUN --mount=type=cache,target=/root/.cache \
-    pip install --user -e /app/syft && \
-    pip uninstall ansible ansible-core -y && \
-    rm -rf ~/.local/lib/python3.11/site-packages/ansible_collections
+# Install all dependencies together here to avoid any version conflicts across pkgs
+RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
+    pip install --user torch==2.1.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
+    pip install --user pip-autoremove jupyterlab==4.0.7 -e ./syft[data_science] && \
+    pip-autoremove ansible ansible-core -y
 
-# security patches
-RUN apt purge --auto-remove linux-libc-dev -y || true
-RUN apt purge --auto-remove libldap-2.5-0 -y || true
+# ==================== [Final] Setup Syft Server ==================== #
 
-# copy any changed source
-COPY syft/src /app/syft/src
+FROM cgr.dev/chainguard/wolfi-base as backend
 
-# change to worker-start.sh or start-reload.sh as needed
-CMD ["bash", "/app/grid/start.sh"]
+# inherit from global
+ARG APPDIR
+ARG HOME
+ARG PYTHON_VERSION
+ARG TZ
+ARG USER
+ARG USER_GRP
+
+# Setup Python
+RUN apk update && \
+    apk add --no-cache tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
+    rm -rf /var/cache/apk/* && \
+    # Uncomment for rootless user
+    # adduser -D -u 1000 $USER && \
+    mkdir -p /var/log/pygrid $HOME/data/creds $HOME/data/db $HOME/.cache $HOME/.local
+# chown -R $USER_GRP /var/log/pygrid $HOME/
+
+USER $USER
+WORKDIR $APPDIR
+
+# Update environment variables
+ENV PATH=$PATH:$HOME/.local/bin \
+    PYTHONPATH=$APPDIR \
+    APPDIR=$APPDIR \
+    NODE_NAME="default_node_name" \
+    NODE_TYPE="domain" \
+    SERVICE_NAME="backend" \
+    RELEASE="production" \
+    DEV_MODE="False" \
+    CONTAINER_HOST="docker" \
+    PORT=80\
+    HTTP_PORT=80 \
+    HTTPS_PORT=443 \
+    DOMAIN_CONNECTION_PORT=3030 \
+    IGNORE_TLS_ERRORS="False" \
+    DEFAULT_ROOT_EMAIL="info@openmined.org" \
+    DEFAULT_ROOT_PASSWORD="changethis" \
+    STACK_API_KEY="changeme" \
+    MONGO_HOST="localhost" \
+    MONGO_PORT="27017" \
+    MONGO_USERNAME="root" \
+    MONGO_PASSWORD="example" \
+    CREDENTIALS_PATH="$HOME/data/creds/credentials.json"
+
+# Copy pre-built jupyterlab, syft dependencies
+COPY --chown=$USER_GRP --from=syft_deps $HOME/.local $HOME/.local
+
+# copy grid
+COPY --chown=$USER_GRP grid/backend/grid ./grid
+
+# copy syft
+COPY --chown=$USER_GRP syft/ ./syft/
+
+CMD ["bash", "./grid/start.sh"]

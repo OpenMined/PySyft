@@ -1,12 +1,8 @@
 version: "3.8"
 services:
-  tailscale:
-    profiles:
-      - vpn
-    volumes:
-      - ${RELATIVE_PATH}./vpn:/tailscale
-
   proxy:
+    profiles:
+      - proxy
     ports:
       - "8080"
     extra_hosts:
@@ -16,6 +12,8 @@ services:
       - "--api.insecure=true" # admin panel no password
 
   frontend:
+    profiles:
+      - frontend
     volumes:
       - ${RELATIVE_PATH}./frontend/src:/app/src
       - ${RELATIVE_PATH}./frontend/static:/app/static
@@ -36,13 +34,29 @@ services:
   #     # - "5672" # AMQP port
 
   mongo:
+    profiles:
+      - mongo
     ports:
       - "27017"
 
   backend:
+    profiles:
+      - backend
     volumes:
-      - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}../syft:/app/syft
+      - ${RELATIVE_PATH}./backend/grid:/root/app/grid
+      - ${RELATIVE_PATH}../syft:/root/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
+    environment:
+      - DEV_MODE=True
+    stdin_open: true
+    tty: true
+
+  worker:
+    profiles:
+      - worker
+    volumes:
+      - ${RELATIVE_PATH}./backend/grid:/root/app/grid
+      - ${RELATIVE_PATH}../syft:/root/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
@@ -52,27 +66,19 @@ services:
 
   # backend_stream:
   #   volumes:
-  #     - ${RELATIVE_PATH}./backend/grid:/app/grid
-  #     - ${RELATIVE_PATH}../syft:/app/syft
+  #     - ${RELATIVE_PATH}./backend/grid:/root/app/grid
+  #     - ${RELATIVE_PATH}../syft:/root/app/syft
   #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
   #   environment:
   #     - DEV_MODE=True
 
   # celeryworker:
   #   volumes:
-  #     - ${RELATIVE_PATH}./backend/grid:/app/grid
-  #     - ${RELATIVE_PATH}../syft/:/app/syft
+  #     - ${RELATIVE_PATH}./backend/grid:/root/app/grid
+  #     - ${RELATIVE_PATH}../syft/:/root/app/syft
   #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
   #   environment:
   #     - DEV_MODE=True
-
-  headscale:
-    profiles:
-      - network
-    volumes:
-      - ${RELATIVE_PATH}./vpn:/headscale
-    ports:
-      - "4000"
 
   seaweedfs:
     profiles:

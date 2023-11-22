@@ -43,12 +43,16 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
+from ...types.syft_migration import migrate
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -245,7 +249,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 
 
 @serializable()
-class UserCode(SyftObject):
+class UserCodeV1(SyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -566,6 +570,18 @@ class UserCode(SyftObject):
 
         ip = get_ipython()
         ip.set_next_input(warning_message + self.raw_code)
+
+
+@migrate(UserCode, UserCodeV1)
+def downgrade_usercode_v2_to_v1():
+    return [
+        drop("uses_domain"),
+    ]
+
+
+@migrate(UserCodeV1, UserCode)
+def upgrade_usercode_v1_to_v2():
+    return [make_set_default("uses_domain", False)]
 
 
 @serializable(without=["local_function"])

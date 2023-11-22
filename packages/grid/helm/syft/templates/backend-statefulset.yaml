@@ -44,7 +44,7 @@ spec:
         - name: RELEASE
           value: production
         - name: VERSION
-          value: 0.8.2-beta.33
+          value: 0.8.2-beta.40
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
@@ -79,10 +79,8 @@ spec:
           value: {{ .Values.secrets.syft.defaultRootEmail }}
         - name: DEFAULT_ROOT_PASSWORD
           value: {{ .Values.secrets.syft.defaultRootPassword }}
-        - name: BACKEND_STORAGE_PATH
-          value: /storage
         envFrom: null
-        image: docker.io/openmined/grid-backend:0.8.2-beta.33
+        image: docker.io/openmined/grid-backend:0.8.2-beta.40
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -91,7 +89,7 @@ spec:
         startupProbe: null
         volumeDevices: null
         volumeMounts:
-        - mountPath: /storage
+        - mountPath: /root/data/creds/
           name: credentials-data
           readOnly: false
           subPath: credentials-data

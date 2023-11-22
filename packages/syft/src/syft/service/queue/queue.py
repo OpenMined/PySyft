@@ -98,6 +98,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             blob_storage_config=worker_settings.blob_store_config,
             queue_config=queue_config,
             is_subprocess=True,
+            migrate=False,
         )
         # otherwise it reads it from env, resulting in the wrong credentials
         worker.id = worker_settings.id

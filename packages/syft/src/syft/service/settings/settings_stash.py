@@ -13,7 +13,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from .settings import NodeSettings
+from .settings import NodeSettingsV2
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=List[UID])
@@ -22,17 +22,17 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=List[UID])
 @instrument
 @serializable()
 class SettingsStash(BaseUIDStoreStash):
-    object_type = NodeSettings
+    object_type = NodeSettingsV2
     settings: PartitionSettings = PartitionSettings(
-        name=NodeSettings.__canonical_name__, object_type=NodeSettings
+        name=NodeSettingsV2.__canonical_name__, object_type=NodeSettingsV2
     )
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
     def set(
-        self, credentials: SyftVerifyKey, settings: NodeSettings
-    ) -> Result[NodeSettings, str]:
+        self, credentials: SyftVerifyKey, settings: NodeSettingsV2
+    ) -> Result[NodeSettingsV2, str]:
         res = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
@@ -40,8 +40,8 @@ class SettingsStash(BaseUIDStoreStash):
         return super().set(credentials=credentials, obj=res.ok())
 
     def update(
-        self, credentials: SyftVerifyKey, settings: NodeSettings
-    ) -> Result[NodeSettings, str]:
+        self, credentials: SyftVerifyKey, settings: NodeSettingsV2
+    ) -> Result[NodeSettingsV2, str]:
         res = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
