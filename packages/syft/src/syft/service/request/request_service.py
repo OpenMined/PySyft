@@ -102,19 +102,19 @@ class RequestService(AbstractService):
         
     def expand_node(self, context, code_obj):
         user_code_service = context.node.get_service("usercodeservice")
-        if code_obj.status.approved:
-            pass
-        if not code_obj.status.denied:
-            nested_requests = user_code_service.solve_nested_requests(context, code_obj)
-        else:
-            return SyftError("cannot use declined objects")
+        nested_requests = user_code_service.solve_nested_requests(context, code_obj)
 
         new_nested_requests = {}
         for func_name, code in nested_requests.items():
             nested_dict = self.expand_node(context, code)
             if isinstance(nested_dict, SyftError):
                 return nested_dict
+            code.nested_codes = nested_dict
+            res = user_code_service.stash.update(context.credentials, code)
+            if isinstance(res, Err):
+                return res
             linked_obj = LinkedObject.from_obj(code, node_uid=context.node.id)
+            print()
             new_nested_requests[func_name] = (linked_obj, nested_dict)
         
         return new_nested_requests
@@ -133,8 +133,12 @@ class RequestService(AbstractService):
             nested_requests = {}
             # recursively check what other UserCodes to approve            
             nested_requests = self.expand_node(context, code_obj)
+            if isinstance(nested_requests, Err):
+                return SyftError(message=nested_requests.value)
             change.nested_solved = True
-            change.nested_requests = nested_requests
+            code_obj.nested_codes = nested_requests
+            change.linked_obj.update_with_context(context=context, obj=code_obj)
+                
             request.changes = [change] 
             new_request = self.save(context=context, request=request)
             return new_request

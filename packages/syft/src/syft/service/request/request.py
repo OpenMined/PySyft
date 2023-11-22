@@ -263,11 +263,11 @@ class Request(SyftObject):
                 <p><strong>Request time: </strong>{self.request_time}</p>
                 {updated_at_line}
                 {shared_with_line}
-                <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
                 <p><strong>Requested on: </strong> {node_name} of type <strong> \
                     {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
                 <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
+                <p><strong>Changes: </strong> {str_changes}</p>
             </div>
 
             """
@@ -307,8 +307,6 @@ class Request(SyftObject):
     def code(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                if change.nested_solved and change.nested_requests is not {}:
-                    print("NESTED REQUESTS AVAILABLE, PLEASE USE <request_name>.codes")
                 return change.code
         return SyftError(
                 message="This type of request does not have code associated with it."
@@ -357,7 +355,7 @@ class Request(SyftObject):
         if len(self.codes) > 1 and not approve_nested:
             return SyftError(message="Multiple codes detected, please use approve_nested=True")
 
-        for code in self.codes:
+        for code in [self.code]:
             if code and not isinstance(code, SyftError):
                 is_enclave = getattr(code, "enclave_metadata", None) is not None
 
@@ -776,7 +774,6 @@ class UserCodeStatusChange(Change):
 
     value: UserCodeStatus
     linked_obj: LinkedObject
-    nested_requests: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     nested_solved: bool = False
     match_type: bool = True
     __repr_attrs__ = [
@@ -800,13 +797,13 @@ class UserCodeStatusChange(Change):
             return codes
         
         codes = [self.link]
-        codes.extend(recursive_code(self.nested_requests))
+        codes.extend(recursive_code(self.link.nested_codes))
         return codes
         
     def nested_repr(self, node=None, level=0):
         msg = ''
         if node is None:
-            node = self.nested_requests
+            node = self.link.nested_codes
         for service_func_name, (obj, new_node) in node.items():
             msg = "├──" + "──"  * level + f"{service_func_name}<br>"
             msg += self.nested_repr(node=new_node, level=level+1)
@@ -816,7 +813,7 @@ class UserCodeStatusChange(Change):
     def __repr_syft_nested__(self):
         msg = f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
         if self.nested_solved:
-            if self.nested_requests == {}:
+            if self.link.nested_codes == {}:
                 msg += ". No nested requests"
             else:
                 msg += ".<br><br>This change requests the following nested functions calls:<br>"
@@ -868,7 +865,7 @@ class UserCodeStatusChange(Change):
             res = self.approve_nested_requests(context, new_node)
             if isinstance(res, SyftError):
                 return res
-            code_obj.approved_nested_codes = res
+            code_obj.nested_codes = res
             node[0].update_with_context(context, code_obj)
                 
         return approved_nested_codes
@@ -882,11 +879,8 @@ class UserCodeStatusChange(Change):
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
-            approve_nested_requests = self.approve_nested_requests(context, self.nested_requests)
             if isinstance(res, SyftError):
                 return res
-
-            obj.approved_nested_codes = approve_nested_requests
         else:
             res = obj.status.mutate(
                 value=(UserCodeStatus.DENIED, reason),
