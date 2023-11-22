@@ -18,7 +18,8 @@ ARG USER
 ARG UID
 
 # Setup Python DEV
-RUN apk update && \
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk update && \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # uncomment for creating rootless user
@@ -65,10 +66,10 @@ ARG USER
 ARG USER_GRP
 
 # Setup Python
-RUN apk update && \
-    apk add --no-cache tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk update && \
+    apk add tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    rm -rf /var/cache/apk/* && \
     # Uncomment for rootless user
     # adduser -D -u 1000 $USER && \
     mkdir -p /var/log/pygrid $HOME/data/creds $HOME/data/db $HOME/.cache $HOME/.local
