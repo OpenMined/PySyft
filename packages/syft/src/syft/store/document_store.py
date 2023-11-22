@@ -26,6 +26,7 @@ from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
 from ..service.action.action_permissions import ActionObjectPermission
+from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
@@ -457,6 +458,16 @@ class StorePartition:
     ) -> Result[List[BaseStash.object_type], str]:
         return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
 
+    def migrate_data(
+        self,
+        to_klass: SyftObject,
+        context: AuthedServiceContext,
+        has_permission: Optional[bool] = False,
+    ) -> Result[bool, str]:
+        return self._thread_safe_cbk(
+            self._migrate_data, to_klass, context, has_permission
+        )
+
     # Potentially thread-unsafe methods.
     # CAUTION:
     #       * Don't use self.lock here.
@@ -496,6 +507,14 @@ class StorePartition:
         raise NotImplementedError
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
+        raise NotImplementedError
+
+    def _migrate_data(
+        self,
+        to_klass: SyftObject,
+        context: AuthedServiceContext,
+        has_permission: bool,
+    ) -> Result[bool, str]:
         raise NotImplementedError
 
 

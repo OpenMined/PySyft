@@ -1,5 +1,6 @@
 # stdlib
 from copy import deepcopy
+from datetime import datetime
 from unittest import mock
 
 # third party
@@ -14,11 +15,10 @@ from syft.abstract_node import NodeSideType
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
-from syft.service.metadata.node_metadata import NodeMetadata
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
-from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
+from syft.service.settings.settings import NodeSettingsV2
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
 from syft.service.user.user import UserCreate
@@ -28,7 +28,7 @@ from syft.service.user.user_roles import ServiceRole
 def test_settingsservice_get_success(
     monkeypatch: MonkeyPatch,
     settings_service: SettingsService,
-    settings: NodeSettings,
+    settings: NodeSettingsV2,
     authed_context: AuthedServiceContext,
 ) -> None:
     mock_stash_get_all_output = [settings, settings]
@@ -41,7 +41,7 @@ def test_settingsservice_get_success(
 
     response = settings_service.get(context=authed_context)
 
-    assert isinstance(response.ok(), NodeSettings)
+    assert isinstance(response.ok(), NodeSettingsV2)
     assert response == expected_output
 
 
@@ -75,20 +75,20 @@ def test_settingsservice_get_stash_fail(
 
 def test_settingsservice_set_success(
     settings_service: SettingsService,
-    settings: NodeSettings,
+    settings: NodeSettingsV2,
     authed_context: AuthedServiceContext,
 ) -> None:
     response = settings_service.set(authed_context, settings)
 
     assert response.is_ok() is True
-    assert isinstance(response.ok(), NodeSettings)
+    assert isinstance(response.ok(), NodeSettingsV2)
     assert response.ok() == settings
 
 
 def test_settingsservice_set_fail(
     monkeypatch: MonkeyPatch,
     settings_service: SettingsService,
-    settings: NodeSettings,
+    settings: NodeSettingsV2,
     authed_context: AuthedServiceContext,
 ) -> None:
     mock_error_message = "database failure"
@@ -107,8 +107,8 @@ def test_settingsservice_set_fail(
 def add_mock_settings(
     root_verify_key: SyftVerifyKey,
     settings_stash: SettingsStash,
-    settings: NodeSettings,
-) -> NodeSettings:
+    settings: NodeSettingsV2,
+) -> NodeSettingsV2:
     # create a mock settings in the stash so that we can update it
     result = settings_stash.partition.set(root_verify_key, settings)
     assert result.is_ok()
@@ -124,7 +124,7 @@ def test_settingsservice_update_success(
     monkeypatch: MonkeyPatch,
     settings_stash: SettingsStash,
     settings_service: SettingsService,
-    settings: NodeSettings,
+    settings: NodeSettingsV2,
     update_settings: NodeSettingsUpdate,
     authed_context: AuthedServiceContext,
 ) -> None:
@@ -194,7 +194,7 @@ def test_settingsservice_update_stash_empty(
 
 def test_settingsservice_update_fail(
     monkeypatch: MonkeyPatch,
-    settings: NodeSettings,
+    settings: NodeSettingsV2,
     settings_service: SettingsService,
     update_settings: NodeSettingsUpdate,
     authed_context: AuthedServiceContext,
@@ -210,7 +210,7 @@ def test_settingsservice_update_fail(
 
     mock_update_error_message = "Failed to update obj NodeMetadata"
 
-    def mock_stash_update_error(credentials, update_settings: NodeSettings) -> Err:
+    def mock_stash_update_error(credentials, update_settings: NodeSettingsV2) -> Err:
         return Err(mock_update_error_message)
 
     monkeypatch.setattr(settings_service.stash, "update", mock_stash_update_error)
@@ -227,7 +227,7 @@ def test_settings_allow_guest_registration(
     # Create a new worker
 
     verify_key = SyftSigningKey.generate().verify_key
-    mock_node_metadata = NodeMetadata(
+    mock_node_settings = NodeSettingsV2(
         name=faker.name(),
         verify_key=verify_key,
         highest_version=1,
@@ -237,12 +237,13 @@ def test_settings_allow_guest_registration(
         admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
+        deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
     )
 
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=mock_node_metadata,
+        return_value=mock_node_settings,
     ):
         worker = syft.Worker.named(name=faker.name(), reset=True)
         guest_domain_client = worker.guest_client
@@ -268,11 +269,11 @@ def test_settings_allow_guest_registration(
         assert any(user.email == email1 for user in root_domain_client.users)
 
     # only after the root client enable other users to signup, they can
-    mock_node_metadata.signup_enabled = True
+    mock_node_settings.signup_enabled = True
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=mock_node_metadata,
+        return_value=mock_node_settings,
     ):
         worker = syft.Worker.named(name=faker.name(), reset=True)
         guest_domain_client = worker.guest_client
@@ -305,11 +306,12 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         assert not isinstance(result, SyftError)
 
         guest_client = root_client.guest()
-        guest_client.login(email=user_create.email, password=user_create.password)
-        return guest_client
+        return guest_client.login(
+            email=user_create.email, password=user_create.password
+        )
 
     verify_key = SyftSigningKey.generate().verify_key
-    mock_node_metadata = NodeMetadata(
+    mock_node_settings = NodeSettingsV2(
         name=faker.name(),
         verify_key=verify_key,
         highest_version=1,
@@ -319,12 +321,13 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         admin_email="info@openmined.org",
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
+        deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
     )
 
     with mock.patch(
-        "syft.Worker.metadata",
+        "syft.Worker.settings",
         new_callable=mock.PropertyMock,
-        return_value=mock_node_metadata,
+        return_value=mock_node_settings,
     ):
         worker = syft.Worker.named(name=faker.name(), reset=True)
         root_client = worker.root_client

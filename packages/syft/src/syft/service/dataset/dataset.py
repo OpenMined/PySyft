@@ -26,13 +26,13 @@ from result import Result
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
+from ...types.dicttuple import DictTuple
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.transforms import validate_url
-from ...types.tupledict import TupleDict
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST
@@ -176,7 +176,7 @@ class Asset(SyftObject):
             mock_table_line = itables.to_html_datatable(
                 df=self.mock.syft_action_data, css=itables_css
             )
-        elif isinstance(self.data, pd.DataFrame):
+        elif isinstance(self.mock, pd.DataFrame):
             mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
         else:
             mock_table_line = self.mock
@@ -525,11 +525,8 @@ class Dataset(SyftObject):
         return data
 
     @property
-    def assets(self) -> TupleDict[str, Asset]:
-        data = TupleDict()
-        for asset in self.asset_list:
-            data[asset.name] = asset
-        return data
+    def assets(self) -> DictTuple[str, Asset]:
+        return DictTuple((asset.name, asset) for asset in self.asset_list)
 
     def _old_repr_markdown_(self) -> str:
         _repr_str = f"Syft Dataset: {self.name}\n"
@@ -606,7 +603,7 @@ class DatasetPageView(SyftObject):
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    datasets: TupleDict[str, Dataset]
+    datasets: DictTuple
     total: int
 
 
