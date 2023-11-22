@@ -29,7 +29,7 @@ from ..queue.queue_stash import QueueItem
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
-from ..response import SyftError
+from ..response import SyftError, SyftInfo
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -156,7 +156,11 @@ class UserCodeService(AbstractService):
         reason: Optional[str] = "",
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
-        return self._request_code_execution(context=context, code=code, reason=reason)
+        request = self._request_code_execution(context=context, code=code, reason=reason)
+        if request.ok().code.nested_requests != {}:
+            return SyftInfo(message="The function has nested function calls, which were attached to the request. To see them, check the <request_obj> or <request_obj>.code")
+        return request
+
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
