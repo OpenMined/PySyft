@@ -252,7 +252,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 class UserCodeV1(SyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     node_uid: Optional[UID]
@@ -275,9 +275,41 @@ class UserCodeV1(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+
+
+@serializable()
+class UserCode(SyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID
+    node_uid: Optional[UID]
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: bytes = b""
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status: UserCodeStatusCollection
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
+    uses_domain = (
+        False
+    )  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     
+
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = []
     __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
@@ -576,12 +608,18 @@ class UserCodeV1(SyftObject):
 def downgrade_usercode_v2_to_v1():
     return [
         drop("uses_domain"),
+        drop("nested_requests"),
+        drop("nested_codes"),
     ]
 
 
 @migrate(UserCodeV1, UserCode)
 def upgrade_usercode_v1_to_v2():
-    return [make_set_default("uses_domain", False)]
+    return [
+        make_set_default("uses_domain", False),
+        make_set_default("nested_requests", {}),
+        make_set_default("nested_codes", {}),
+    ]
 
 
 @serializable(without=["local_function"])
