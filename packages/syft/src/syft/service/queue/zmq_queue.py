@@ -87,6 +87,7 @@ class ZMQProducer(QueueProducer):
         self.queue_stash = queue_stash
         self.auth_context = context
         self.post_init()
+        self.stop_threads=False
 
     @property
     def address(self):
@@ -104,6 +105,11 @@ class ZMQProducer(QueueProducer):
 
     def read_items(self):
         while True:
+            if self.stop_threads:
+                print("Stopping producer queue")
+                self.backend.close()
+                self.context.term()
+                break
             # stdlib
             from time import sleep
 
@@ -197,6 +203,9 @@ class ZMQProducer(QueueProducer):
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         connecting_workers = set()
         while True:
+            if self.stop_threads:
+                print("Stopping producer socket")
+                break
             try:
                 socks = dict(self.poll_workers.poll(HEARTBEAT_INTERVAL * 1000))
 
@@ -264,6 +273,7 @@ class ZMQConsumer(QueueConsumer):
         self.queue_name = queue_name
         self.post_init()
         self.id = UID()
+        self.stop_threads=False
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
@@ -284,6 +294,9 @@ class ZMQConsumer(QueueConsumer):
         interval = INTERVAL_INIT
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         while True:
+            if self.stop_threads:
+                print("stopping consumer socket")
+                break
             try:
                 time.sleep(0.1)
                 socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))

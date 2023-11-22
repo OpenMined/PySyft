@@ -322,12 +322,17 @@ def deploy_to_python(
                 )
         else:
             raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
+
+        def stop():
+            worker.stop_threads()
+
         return NodeHandle(
             node_type=node_type_enum,
             deployment_type=deployment_type_enum,
             name=name,
             python_node=worker,
             node_side_type=node_side_type,
+            shutdown=stop
         )
 
 
