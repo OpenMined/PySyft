@@ -405,7 +405,7 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
-    def stop_threads(self):
+    def stop(self):
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
                 c.stop_threads = True
