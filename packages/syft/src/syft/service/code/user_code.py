@@ -28,6 +28,8 @@ from IPython.display import display
 from result import Err
 from typing_extensions import Self
 
+from ...store.linked_obj import LinkedObject
+
 # relative
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
@@ -270,7 +272,7 @@ class UserCode(SyftObject):
     submit_time: Optional[DateTime]
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
-    approved_nested_codes: Dict[str, UID] = {}
+    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = []
@@ -513,7 +515,7 @@ class UserCode(SyftObject):
 
         return wrapper
 
-    def _repr_markdown_(self):
+    def _inner_repr(self, level=0):
         shared_with_line = ""
         if len(self.output_readers) > 0:
             owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
@@ -530,8 +532,26 @@ class UserCode(SyftObject):
     {shared_with_line}
     code:
 
-{self.raw_code}"""
-        return as_markdown_code(md)
+{self.raw_code}
+"""
+        if self.nested_codes != {}:
+            md += """
+
+  Nested Requests:
+  """
+        
+        md = "\n".join([f"{'  '*level}{substring}" for substring in md.split('\n')[:-1]])
+        for _, (obj, node) in self.nested_codes.items():
+            
+            code = obj.resolve
+            md += "\n"
+            md += code._inner_repr(level=level+1)
+        
+        return md
+
+    def _repr_markdown_(self):
+        
+        return as_markdown_code(self._inner_repr())
 
     @property
     def show_code(self) -> CodeMarkdown:
@@ -809,7 +829,6 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
         v = LaunchJobVisitor()
         v.visit(tree)
         nested_calls = v.nested_calls
-        print("FOUND NESTED_CALLS:", nested_calls, file=sys.stderr)
         for call in nested_calls:
             nested_requests[call] = "latest"
             
@@ -1105,8 +1124,8 @@ def execute_byte_code(
         _globals = {}
 
         user_code_service = context.node.get_service("usercodeservice")
-        for service_func_name, code_uid in code_item.approved_nested_codes.items():
-            code_obj = user_code_service.stash.get_by_uid(context.credentials, code_uid)
+        for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
+            code_obj = linked_obj.resolve_with_context(context=context)
             if isinstance(code_obj, Err):
                 raise Exception(code_obj.err())
             _globals[service_func_name] = code_obj.ok()
