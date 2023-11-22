@@ -111,9 +111,17 @@ def upgrade_blobretrieval_v1_to_v2():
 
 
 @serializable()
-class SyftObjectRetrieval(BlobRetrieval):
+class SyftObjectRetrievalV1(BlobRetrievalV1):
     __canonical_name__ = "SyftObjectRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    syft_object: bytes
+
+
+@serializable()
+class SyftObjectRetrieval(BlobRetrieval):
+    __canonical_name__ = "SyftObjectRetrieval"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     syft_object: bytes
 
@@ -125,10 +133,32 @@ class SyftObjectRetrieval(BlobRetrieval):
         return deserialize(self.syft_object, from_bytes=True)
 
 
+@migrate(SyftObjectRetrieval, SyftObjectRetrievalV1)
+def downgrade_syftobjretrival_v2_to_v1():
+    return [
+        drop(["syft_blob_storage_entry_id", "file_size"]),
+    ]
+
+
+@migrate(SyftObjectRetrievalV1, SyftObjectRetrieval)
+def upgrade_syftobjretrival_v1_to_v2():
+    return [
+        make_set_default("syft_blob_storage_entry_id", None),
+        make_set_default("file_size", 1),
+    ]
+
+
+class BlobRetrievalByURLV1(BlobRetrievalV1):
+    __canonical_name__ = "BlobRetrievalByURL"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    url: GridURL
+
+
 @serializable()
 class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     url: GridURL
 
@@ -169,6 +199,21 @@ class BlobRetrievalByURL(BlobRetrieval):
             return deserialize(response.content, from_bytes=True)
         except requests.RequestException as e:
             return SyftError(message=f"Failed to retrieve with Error: {e}")
+
+
+@migrate(BlobRetrievalByURL, BlobRetrievalByURLV1)
+def downgrade_blobretrivalbyurl_v2_to_v1():
+    return [
+        drop(["syft_blob_storage_entry_id", "file_size"]),
+    ]
+
+
+@migrate(BlobRetrievalByURLV1, BlobRetrievalByURL)
+def upgrade_blobretrivalbyurl_v1_to_v2():
+    return [
+        make_set_default("syft_blob_storage_entry_id", None),
+        make_set_default("file_size", 1),
+    ]
 
 
 @serializable()
