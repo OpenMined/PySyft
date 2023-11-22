@@ -87,7 +87,7 @@ class ZMQProducer(QueueProducer):
         self.queue_stash = queue_stash
         self.auth_context = context
         self.post_init()
-        self.stop_threads = False
+        self.stop = False
 
     @property
     def address(self):
@@ -103,12 +103,14 @@ class ZMQProducer(QueueProducer):
         self.workers = WorkerQueue()
         self.message_queue = []
 
+    def _stop(self):
+        self.backend.close()
+        self.context.term()
+
     def read_items(self):
         while True:
-            if self.stop_threads:
-                print("Stopping producer queue")
-                self.backend.close()
-                self.context.term()
+            if self.stop:
+                self._stop()
                 break
             # stdlib
             from time import sleep
@@ -203,8 +205,7 @@ class ZMQProducer(QueueProducer):
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         connecting_workers = set()
         while True:
-            if self.stop_threads:
-                print("Stopping producer socket")
+            if self.stop:
                 break
             try:
                 socks = dict(self.poll_workers.poll(HEARTBEAT_INTERVAL * 1000))
@@ -273,7 +274,7 @@ class ZMQConsumer(QueueConsumer):
         self.queue_name = queue_name
         self.post_init()
         self.id = UID()
-        self.stop_threads = False
+        self.stop = False
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
@@ -289,13 +290,17 @@ class ZMQConsumer(QueueConsumer):
         self.create_socket()
         self.thread = None
 
+    def _stop(self):
+        pass
+        # self.worker.close()
+
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
         interval = INTERVAL_INIT
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         while True:
-            if self.stop_threads:
-                print("stopping consumer socket")
+            if self.stop:
+                self._stop()
                 break
             try:
                 time.sleep(0.1)

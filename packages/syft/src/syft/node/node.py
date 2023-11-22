@@ -408,9 +408,9 @@ class Node(AbstractNode):
     def stop(self):
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
-                c.stop_threads = True
+                c.stop = True
         for p in self.queue_manager.producers.values():
-            p.stop_threads = True
+            p.stop = True
 
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
