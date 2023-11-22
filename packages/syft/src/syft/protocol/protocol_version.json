@@ -878,10 +878,7 @@
           "hash": "124d1ab228ff702120a3beb732ea22209ae4116f87809fe7f93c1eff6d0c04e7",
           "action": "add"
         }
-      },
-      "HeadscaleAuthToken": {},
-      "TailscalePeer": {},
-      "TailscaleStatus": {}
+      }
     }
   }
 }
