@@ -37,7 +37,7 @@ class TransformContext(Context):
     def from_context(obj: Any, context: Optional[Context] = None) -> Self:
         t_context = TransformContext()
         t_context.obj = obj
-        t_context.output = dict(obj)
+        t_context.output = obj.__dict__ if hasattr(obj, "__dict__") else dict(obj)
         if hasattr(context, "credentials"):
             t_context.credentials = context.credentials
         if hasattr(context, "node"):
