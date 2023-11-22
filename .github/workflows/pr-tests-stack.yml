@@ -169,6 +169,11 @@ jobs:
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
           tox -e stack.test.integration
+
+      - name: Run syft backend base image building test
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        run: |
           tox -e backend.test.basecpu
 
       #Run log collector python script
