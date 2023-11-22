@@ -46,12 +46,17 @@ WORKDIR $APPDIR
 ENV PATH=$PATH:$HOME/.local/bin
 
 # copy skeleton to do package install
-COPY --chown=$USER_GRP syft/setup.py ./syft/setup.py
-COPY --chown=$USER_GRP syft/setup.cfg ./syft/setup.cfg
-COPY --chown=$USER_GRP syft/pyproject.toml ./syft/pyproject.toml
-COPY --chown=$USER_GRP syft/MANIFEST.in ./syft/MANIFEST.in
-COPY --chown=$USER_GRP syft/src/syft/VERSION ./syft/src/syft/VERSION
-COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
+COPY --chown=$USER_GRP \
+    syft/setup.py \
+    syft/setup.cfg \
+    syft/pyproject.toml \
+    syft/MANIFEST.in \
+    syft/
+
+COPY --chown=$USER_GRP \
+    syft/src/syft/VERSION \
+    syft/src/syft/capnp \
+    syft/src/syft/
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID \
