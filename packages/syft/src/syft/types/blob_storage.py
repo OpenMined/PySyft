@@ -209,9 +209,19 @@ def upgrade_blobstorageentry_v1_to_v2():
 
 
 @serializable()
-class BlobStorageMetadata(SyftObject):
+class BlobStorageMetadataV1(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    type_: Optional[Type[SyftObject]]
+    mimetype: str = "bytes"
+    file_size: int
+
+
+@serializable()
+class BlobStorageMetadata(SyftObject):
+    __canonical_name__ = "BlobStorageMetadata"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     type_: Optional[Type[SyftObject]]
     mimetype: str = "bytes"
@@ -219,7 +229,16 @@ class BlobStorageMetadata(SyftObject):
     no_lines: Optional[int] = 0
 
 
-# no lines
+@migrate(BlobStorageMetadata, BlobStorageMetadataV1)
+def downgrade_blobmeta_v2_to_v1():
+    return [
+        drop(["no_lines"]),
+    ]
+
+
+@migrate(BlobStorageMetadataV1, BlobStorageMetadata)
+def upgrade_blobmeta_v1_to_v2():
+    return [make_set_default("no_lines", 1)]
 
 
 @serializable()

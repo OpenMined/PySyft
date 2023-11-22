@@ -797,6 +797,67 @@
           "action": "add"
         }
       },
+      "BlobStorageMetadata": {
+        "2": {
+          "version": 2,
+          "hash": "674f4c52a8444289d5ef389b919008860e2b0e7acbaafa774d58e492d5b6741a",
+          "action": "add"
+        }
+      },
+      "BlobRetrieval": {
+        "2": {
+          "version": 2,
+          "hash": "4c4fbdb6df5bb9fcbe914a9890bd1c1b6a1b3f382a04cbc8752a5a1b03130111",
+          "action": "add"
+        }
+      },
+      "SyftObjectRetrieval": {
+        "2": {
+          "version": 2,
+          "hash": "d9d7a7e1b8843145c9687fd013c9223700285886073547734267e91ac53e0996",
+          "action": "add"
+        }
+      },
+      "BlobRetrievalByURL": {
+        "1": {
+          "version": 1,
+          "hash": "18fd860cb9de296532fc9ff075932e6a4377cc8f043dd88ed4f620517321077d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+          "action": "add"
+        }
+      },
+      "WorkerSettings": {
+        "2": {
+          "version": 2,
+          "hash": "d623a8a0d6c83b26ba49686bd8be10eccb126f54626fef334a85396c3b8a8ed6",
+          "action": "add"
+        }
+      },
+      "QueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "1d5e054b9af07ba2fbf0c11eeeaa0ae33e0a83ffede911403f56c89472a7ea0d",
+          "action": "add"
+        }
+      },
+      "ActionQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "1ebd77dd0d9494763c2b38f348cf43778b8b53a0f1c2e4e7cb73efab3f0289f8",
+          "action": "add"
+        }
+      },
+      "ZMQClientConfig": {
+        "2": {
+          "version": 2,
+          "hash": "0f9bc88d56cd6eed6fc75459d1f914aed840c66e1195b9e41cc501b488fef2ed",
+          "action": "add"
+        }
+      },
       "JobItem": {
         "1": {
           "version": 1,
@@ -804,52 +865,10 @@
           "action": "add"
         }
       },
-      "CommandReport": {
-        "1": {
-          "version": 1,
-          "hash": "81c6f248e89f6191f75afb7170f82b616377ae46c1d809f6047e13c6f2f299d5",
-          "action": "add"
-        }
-      },
-      "CommandResult": {
-        "1": {
-          "version": 1,
-          "hash": "65588691901dc0562afb650b0abe04fe6e3e3db516abda3ec82a371ce459ed0d",
-          "action": "add"
-        }
-      },
-      "VPNClientConnection": {
-        "1": {
-          "version": 1,
-          "hash": "cf12dcf5066e6c441e6841ae24bd295d8331e7920c79473bfabc17c5e47cf79e",
-          "action": "add"
-        }
-      },
-      "HeadscaleAuthToken": {
-        "1": {
-          "version": 1,
-          "hash": "d88dbe672feb126eb1c5f36208edb1effcfe8721fb6619a9ac62ed3fff8f1546",
-          "action": "add"
-        }
-      },
-      "TailscalePeer": {
-        "1": {
-          "version": 1,
-          "hash": "603da3a1087e8d80a6b7e4cd6ccaccd7e1baf3ec77265d810e3a9e9cd233ac04",
-          "action": "add"
-        }
-      },
-      "TailscaleStatus": {
-        "1": {
-          "version": 1,
-          "hash": "52a7bd4b72f160a8b14466e98bb2b2a70c4f49aaff635e844fa40e955f7d76d2",
-          "action": "add"
-        }
-      },
-      "ActionQueueItem": {
-        "1": {
-          "version": 1,
-          "hash": "ab417fe80bc0bf2de17a8551321ba3bbea171a76a77f02528dd76040b2c36259",
+      "UserCode": {
+        "2": {
+          "version": 2,
+          "hash": "124d1ab228ff702120a3beb732ea22209ae4116f87809fe7f93c1eff6d0c04e7",
           "action": "add"
         }
       },
@@ -870,20 +889,6 @@
           "version": 1,
           "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
           "action": "add"
-        }
-      },
-      "NodeMetadata": {
-        "3": {
-          "version": "3",
-          "hash": "3cc67abf394a805066a88aef0bea15bde609b9ecbe7ec15172eac5e7a0b7ef7c",
-          "action": "remove"
-        }
-      },
-      "NodeSettings": {
-        "2": {
-          "version": "2",
-          "hash": "29a82afcb006a044b6ae04c6ea8a067d145d28b4210bb038ea9fa86ebde108c8",
-          "action": "remove"
         }
       }
     }
