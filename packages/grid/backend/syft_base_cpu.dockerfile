@@ -54,7 +54,7 @@ COPY --chown=$USER_GRP syft/src/syft/VERSION ./syft/src/syft/VERSION
 COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
-RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
+RUN --mount=type=cache,target=$HOME/.cache/pip,uid=$UID \
     pip install --user pip-autoremove ./syft && \
     pip-autoremove ansible ansible-core -y
 
