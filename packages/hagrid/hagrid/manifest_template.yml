@@ -1,9 +1,9 @@
 manifestVersion: 0.1
-hagrid_version: 0.3.84
-syft_version: 0.8.2-beta.59
-dockerTag: 0.8.2-beta.59
+hagrid_version: 0.3.87
+syft_version: 0.8.3-beta.2
+dockerTag: 0.8.3-beta.2
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
-hash: b70e80f0bab66ab80f15061c011dd4481f3f3a9b
+hash: 786f5d6ea9fbedead854c60a8bc52b5a998ab15e
 target_dir: ~/.hagrid/PySyft/
 files:
   grid:
@@ -30,11 +30,6 @@ files:
     - devspace.yaml
     - traefik/k8s/dynamic.yml
     - traefik/k8s/traefik.yml
-    worker:
-    - worker/docker-compose.yml
-    - worker/docker-compose.dev.yml
-    - worker/docker-compose.pull.yml
-    - worker/docker-compose.build.yml
     podman:
     - podman/podman-kube/podman-syft-kube-config.yaml
     - podman/podman-kube/podman-syft-kube.yaml

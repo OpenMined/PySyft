@@ -1,6 +1,8 @@
 version: "3.8"
 services:
   proxy:
+    profiles:
+      - proxy
     ports:
       - "8080"
     extra_hosts:
@@ -25,6 +27,14 @@ services:
       - "8333" # S3
 
   backend:
+    profiles:
+      - backend
+    environment:
+      - TEST_MODE=1
+
+  worker:
+    profiles:
+      - worker
     environment:
       - TEST_MODE=1
 

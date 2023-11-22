@@ -1,11 +1,11 @@
 manifestVersion: 1.0
 
-syftVersion: 0.8.2-beta.59
-dockerTag: 0.8.2-beta.59
+syftVersion: 0.8.3-beta.2
+dockerTag: 0.8.3-beta.2
 
 images:
-  - docker.io/openmined/grid-frontend:0.8.2-beta.59
-  - docker.io/openmined/grid-backend:0.8.2-beta.59
+  - docker.io/openmined/grid-frontend:0.8.3-beta.2
+  - docker.io/openmined/grid-backend:0.8.3-beta.2
   - docker.io/library/mongo:latest
   - docker.io/traefik:v2.10
 
@@ -26,11 +26,6 @@ configFiles:
     - packages/grid/devspace.yaml
     - packages/grid/traefik/k8s/dynamic.yml
     - packages/grid/traefik/k8s/traefik.yml
-  worker:
-    - packages/grid/worker/docker-compose.yml
-    - packages/grid/worker/docker-compose.dev.yml
-    - packages/grid/worker/docker-compose.pull.yml
-    - packages/grid/worker/docker-compose.build.yml
   podman:
     - packages/grid/podman/podman-kube/podman-syft-kube-config.yaml
     - packages/grid/podman/podman-kube/podman-syft-kube.yaml
