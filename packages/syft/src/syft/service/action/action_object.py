@@ -242,6 +242,7 @@ passthrough_attrs = [
     "delete_data",  # syft
     "_save_to_blob_storage_",  # syft
     "syft_action_data",  # syft
+    "syft_resolved", # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -254,6 +255,7 @@ dont_wrap_output_attrs = [
     "__array_wrap__",
     "__bool__",
     "__len__",
+    "syft_resolved", # syft
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -264,6 +266,7 @@ dont_make_side_effects = [
     "__setitem__",
     "__len__",
     "shape",
+    "syft_resolved", # syft
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -496,6 +499,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "_set_obj_location_",
     "syft_action_data_cache",
     "reload_cache",
+    "syft_resolved"
 ]
 
 
@@ -529,6 +533,7 @@ class ActionObject(SyftObject):
     syft_has_bool_attr: Optional[bool]
     syft_resolve_data: Optional[bool]
     syft_created_at: Optional[DateTime]
+    syft_resolved: bool = True
     # syft_dont_wrap_attrs = ["shape"]
 
     @property
@@ -990,7 +995,7 @@ class ActionObject(SyftObject):
         # TODO: fix
         if isinstance(id, LineageID):
             id = id.id
-        return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id)
+        return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id, self.syft_resolved)
 
     @staticmethod
     def from_path(
@@ -1036,6 +1041,7 @@ class ActionObject(SyftObject):
         syft_lineage_id: Optional[LineageID] = None,
         syft_client_verify_key: Optional[SyftVerifyKey] = None,
         syft_node_location: Optional[UID] = None,
+        syft_resolved: Optional[bool] = True,
     ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
@@ -1052,6 +1058,7 @@ class ActionObject(SyftObject):
 
         action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data_cache=syft_action_data)
+        action_object.syft_resolved = syft_resolved
 
         if id is not None:
             action_object.id = id
@@ -1089,6 +1096,7 @@ class ActionObject(SyftObject):
         syft_internal_type: Type[Any] = NoneType,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
+        syft_resolved: Optional[bool] = True,
     ) -> ActionObject:
         """Create an ActionObject from a type, using a ActionDataEmpty object
 
@@ -1103,7 +1111,7 @@ class ActionObject(SyftObject):
 
         empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
         res = ActionObject.from_obj(
-            id=id, syft_lineage_id=syft_lineage_id, syft_action_data=empty
+            id=id, syft_lineage_id=syft_lineage_id, syft_action_data=empty, syft_resolved=syft_resolved
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
