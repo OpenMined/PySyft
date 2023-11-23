@@ -295,6 +295,13 @@ passthrough_attrs = [
     "_save_to_blob_storage_",  # syft
     "syft_action_data",  # syft
     "migrate_to",  # syft
+    "to_dict",  # syft
+    "dict",  # syft
+    "_iter",  # pydantic
+    "__exclude_fields__",  # pydantic
+    "__include_fields__",  # pydantic
+    "_calculate_keys",  # pydantic
+    "_get_value",  # pydantic
 ]
 dont_wrap_output_attrs = [
     "__repr__",
