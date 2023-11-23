@@ -129,6 +129,6 @@ COPY --chown=$USER_GRP grid/backend/grid ./grid
 # copy syft
 COPY --chown=$USER_GRP syft/ ./syft/
 
-RUN $CUSTOM_CMD
+RUN bash -c "$CUSTOM_CMD"
 
 CMD ["bash", "./grid/start.sh"]
