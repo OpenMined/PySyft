@@ -15,6 +15,9 @@ secrets:
       # mongoUsername: "root"
       # mongoInitdbRootUsername: "root"
       mongosecret: "mongosecret"
+  seaweedfs:
+    start_vars:
+      seaweedfsecret: "seaweedfsecret"
 
 configuration:
   devmode: false
@@ -24,6 +27,13 @@ db:
     settings:
       mongoPort: "'27017'"
       mongoHost: "mongo"
+
+seaweedfs:
+  start_variables:
+    S3_VOLUME_SIZE_MB: '1024'
+    S3_ROOT_USER: admin
+    S3_ROOT_PWD: admin
+    S3_PORT: '8333'
 
 node:
   settings:
