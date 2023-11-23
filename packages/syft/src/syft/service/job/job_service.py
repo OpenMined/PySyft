@@ -2,9 +2,6 @@
 from typing import List
 from typing import Union
 
-# third party
-import psutil
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
