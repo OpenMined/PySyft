@@ -29,25 +29,21 @@ http:
       rule: "PathPrefix(`/`)"
       entryPoints:
         - web
-        - vpn
       service: "frontend"
     backend:
       rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
       entryPoints:
         - web
-        - vpn
       service: "backend"
     backend-stream:
       rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
       entryPoints:
         - web
-        - vpn
       service: "backend-stream"
     blob-storage:
       rule: "PathPrefix(`/blob`)"
       entryPoints:
         - web
-        - vpn
       service: "seaweedfs"
       middlewares:
         - "blob-storage-url"
@@ -72,7 +68,6 @@ http:
       rule: "PathPrefix(`/ping`)"
       entryPoints:
         - web
-        - vpn
       service: "ping@internal"
 
   middlewares:

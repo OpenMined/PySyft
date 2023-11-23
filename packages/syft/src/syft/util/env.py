@@ -14,7 +14,7 @@ class Env(SyftObject):
 
     @property
     def packages(self) -> list[tuple[str, str]]:
-        return [(k, v) for k, v in self.packages_dict.items()]
+        return list(self.packages_dict.items())
 
     def create_local_env(self) -> None:
         venv.EnvBuilder()

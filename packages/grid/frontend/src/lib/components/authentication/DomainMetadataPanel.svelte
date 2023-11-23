@@ -3,35 +3,29 @@
   import Badge from '$lib/components/Badge.svelte';
   import TagCloud from '$lib/components/TagCloud.svelte';
   import DomainOnlineIndicator from '$lib/components/DomainOnlineIndicator.svelte';
+  import { getInitials } from '$lib/utils';
   import type { DomainMetadata } from '../../../types/domain/metadata';
 
   export let metadata: DomainMetadata;
 
-  $: initials = metadata
-    ? metadata?.name
-        ?.split(' ')
-        .map((n) => n[0])
-        .join('')
-    : '';
+  $: domainInitials = getInitials(metadata?.name);
 </script>
 
-<section class="flex flex-col w-full sm:w-[36%] sm:min-w-[544px] max-w-[784px] gap-4 py-11 px-8">
+<section
+  class="flex flex-col w-full sm:w-[36%] sm:min-w-[544px] max-w-[784px] gap-4 py-11 px-8"
+  data-testid="domain-metadata-panel"
+>
   {#if metadata}
     <TagCloud tags={metadata.tags} />
     <div class="w-[97.5px] relative">
       <div class="absolute right-0">
         <DomainOnlineIndicator />
       </div>
-      <Avatar {initials} />
+      <Avatar bigText initials={domainInitials} />
     </div>
     <h2>{metadata.name}</h2>
     {#if metadata.organization}
       <p class="text-lg font-semibold flex-shrink-0">{metadata.organization}</p>
-    {/if}
-    {#if metadata.description}
-      <p class="text-base">
-        {metadata.description}
-      </p>
     {/if}
     <hr />
     <div class="flex flex-col gap-2.5 flex-shrink-0 pt-2 pb-4">
