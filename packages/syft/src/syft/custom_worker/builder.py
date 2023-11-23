@@ -47,7 +47,9 @@ class CustomWorkerBuilder:
         }
 
         print(
-            f"Building dockerfile={dockerfile} in context={contextdir} with args=\n{build_args}"
+            f"Building dockerfile={dockerfile} "
+            f"in context={contextdir} "
+            f"with args={build_args}"
         )
 
         try:
