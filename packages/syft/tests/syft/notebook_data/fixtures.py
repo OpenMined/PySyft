@@ -50,7 +50,8 @@ def data_subjects():
 
 @pytest.fixture
 def sync_client_server(client, data_subjects):
-    return_value = client.data_subject_registry.add_data_subject(data_subjects)
+    response = client.data_subject_registry.add_data_subject(data_subjects)
+    return response
 
 
 @pytest.fixture
