@@ -86,10 +86,7 @@ class JobService(AbstractService):
 
         job = res.ok()
         if job.job_pid is not None:
-            process = psutil.Process(job.job_pid)
-            process.terminate()
             job.status = JobStatus.INTERRUPTED
-            job.resolved = True
             res = self.stash.update(context.credentials, obj=job)
             if res.is_err():
                 return SyftError(message=res.err())
