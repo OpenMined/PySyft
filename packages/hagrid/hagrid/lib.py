@@ -217,6 +217,7 @@ def update_repo(repo: git.Repo, branch: str) -> None:
             try:
                 if repo.is_dirty():
                     repo.git.reset("--hard")
+                repo.remotes.origin.fetch()
                 repo.git.checkout(branch)
                 repo.remotes.origin.pull()
                 console.print(f"{OK_EMOJI} Updated HAGrid from branch: {branch}")
@@ -241,6 +242,7 @@ def use_branch(branch: str) -> None:
         try:
             if repo.is_dirty():
                 repo.git.reset("--hard")
+            repo.remotes.origin.fetch()
             repo.git.checkout(branch)
             repo.remotes.origin.pull()
         except Exception as e:

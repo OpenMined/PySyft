@@ -23,7 +23,6 @@ data:
 
   STACK_NAME: grid-openmined-org
   DOCKER_IMAGE_BACKEND: openmined/grid-backend
-  DOCKER_IMAGE_WORKER: openmined/grid-enclave
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SVELTE: openmined/grid-svelte
   DOCKER_IMAGE_TRAEFIK: traefik
@@ -32,7 +31,7 @@ data:
   RABBITMQ_VERSION: 3
   SEAWEEDFS_VERSION: 3.55
   DOCKER_IMAGE_SEAWEEDFS: chrislusf/seaweedfs:3.55
-  VERSION: 0.8.2-beta.53
+  VERSION: 0.8.3-beta.2
   VERSION_HASH: unknown
   STACK_API_KEY: ""
 

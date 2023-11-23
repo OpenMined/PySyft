@@ -169,13 +169,8 @@ def setup_from_manifest_template(
             os.path.join(package_path, f) for f in template_files["common"]
         ]
 
-        # worker
-        if deployment_type == "single_container" and host_type in ["docker"]:
-            files_to_download += [
-                os.path.join(package_path, f) for f in template_files["worker"]
-            ]
         # docker related files
-        elif host_type in ["docker"]:
+        if host_type in ["docker"]:
             files_to_download += [
                 os.path.join(package_path, f) for f in template_files["docker"]
             ]
@@ -266,13 +261,7 @@ def render_templates(
         # common files
         files_to_render += template_files["common"]
 
-        # worker
-        if deployment_type == "single_container" and host_type in ["docker"]:
-            for template_file in template_files["worker"]:
-                if "default.env" not in template_file:
-                    files_to_render.append(template_file)
-
-        elif host_type in ["docker"]:
+        if host_type in ["docker"]:
             # docker related files
             for template_file in template_files["docker"]:
                 if "default.env" not in template_file:
