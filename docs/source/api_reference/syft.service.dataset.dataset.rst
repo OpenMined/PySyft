@@ -36,7 +36,7 @@ syft.service.dataset.dataset
       CreateDataset
       Dataset
       DatasetUpdate
-      TupleDict
+      DictTuple
    
    
 

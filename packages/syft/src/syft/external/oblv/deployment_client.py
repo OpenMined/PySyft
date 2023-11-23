@@ -24,7 +24,8 @@ import requests
 from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...client.client import login
-from ...enclave.metadata import EnclaveMetadata
+from ...client.client import login_as_guest
+from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...types.uid import UID
 from ...util.util import bcolors
@@ -246,7 +247,7 @@ class DeploymentClient:
         website: Optional[str] = None,
     ):
         self.check_connection_string()
-        guest_client = login(url=self.__conn_string)
+        guest_client = login_as_guest(url=self.__conn_string)
         return guest_client.register(
             name=name,
             email=email,

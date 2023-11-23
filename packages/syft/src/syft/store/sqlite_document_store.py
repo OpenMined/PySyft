@@ -84,6 +84,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
         self.file_path = self.store_config.client_config.file_path
+
+        path = Path(self.file_path)
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+
         self._db[thread_ident()] = sqlite3.connect(
             self.file_path,
             timeout=self.store_config.client_config.timeout,
@@ -148,14 +153,18 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if self._exists(key):
             self._update(key, value)
         else:
-            insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
+            insert_sql = (
+                f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
+            )
             data = _serialize(value, to_bytes=True)
             res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
             if res.is_err():
                 raise ValueError(res.err())
 
     def _update(self, key: UID, value: Any) -> None:
-        insert_sql = f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
+        insert_sql = (
+            f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
+        )
         data = _serialize(value, to_bytes=True)
         res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
         if res.is_err():

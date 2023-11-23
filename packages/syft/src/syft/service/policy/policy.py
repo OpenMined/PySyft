@@ -267,7 +267,7 @@ def allowed_ids_only(
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
-        allowed_inputs = allowed_inputs[node_identity]
+        allowed_inputs = allowed_inputs.get(node_identity, {})
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
         for key in allowed_inputs.values():

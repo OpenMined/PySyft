@@ -31,6 +31,7 @@ permissions = [
     [
         pytest.lazy_fixture("dict_action_store"),
         pytest.lazy_fixture("sqlite_action_store"),
+        pytest.lazy_fixture("mongo_action_store"),
     ],
 )
 def test_action_store_sanity(store: Any):
@@ -47,6 +48,7 @@ def test_action_store_sanity(store: Any):
     [
         pytest.lazy_fixture("dict_action_store"),
         pytest.lazy_fixture("sqlite_action_store"),
+        pytest.lazy_fixture("mongo_action_store"),
     ],
 )
 @pytest.mark.parametrize("permission", permissions)
@@ -105,6 +107,7 @@ def test_action_store_test_permissions(store: Any, permission: Any):
     [
         pytest.lazy_fixture("dict_action_store"),
         pytest.lazy_fixture("sqlite_action_store"),
+        pytest.lazy_fixture("mongo_action_store"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=1)

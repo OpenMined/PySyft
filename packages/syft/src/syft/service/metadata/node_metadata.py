@@ -18,6 +18,7 @@ from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -63,7 +64,7 @@ class NodeMetadataUpdate(SyftObject):
 
 
 @serializable()
-class NodeMetadataV1(SyftObject):
+class NodeMetadata(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -92,7 +93,7 @@ class NodeMetadataV1(SyftObject):
 
 
 @serializable()
-class NodeMetadata(SyftObject):
+class NodeMetadataV2(SyftObject):
     __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -121,6 +122,31 @@ class NodeMetadata(SyftObject):
 
 
 @serializable()
+class NodeMetadataV3(SyftObject):
+    __canonical_name__ = "NodeMetadata"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    name: str
+    id: UID
+    verify_key: SyftVerifyKey
+    highest_version: int
+    lowest_version: int
+    syft_version: str
+    node_type: NodeType = NodeType.DOMAIN
+    organization: str = "OpenMined"
+    description: str = "Text"
+    node_side_type: str
+    show_warnings: bool
+
+    def check_version(self, client_version: str) -> bool:
+        return check_version(
+            client_version=client_version,
+            server_version=self.syft_version,
+            server_name=self.name,
+        )
+
+
+@serializable()
 class NodeMetadataJSON(BaseModel, StorableObjectType):
     metadata_version: int
     name: str
@@ -130,12 +156,10 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     lowest_object_version: Optional[int]
     syft_version: str
     node_type: str = NodeType.DOMAIN.value
-    deployed_on: str = "Date"
     organization: str = "OpenMined"
-    on_board: bool = False
     description: str = "My cool domain"
-    signup_enabled: bool
-    admin_email: str
+    signup_enabled: bool = False
+    admin_email: str = ""
     node_side_type: str
     show_warnings: bool
     supported_protocols: List = []
@@ -155,7 +179,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
         )
 
 
-@transform(NodeMetadata, NodeMetadataJSON)
+@transform(NodeMetadataV3, NodeMetadataJSON)
 def metadata_to_json() -> List[Callable]:
     return [
         drop(["__canonical_name__"]),
@@ -166,7 +190,7 @@ def metadata_to_json() -> List[Callable]:
     ]
 
 
-@transform(NodeMetadataJSON, NodeMetadata)
+@transform(NodeMetadataJSON, NodeMetadataV3)
 def json_to_metadata() -> List[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),

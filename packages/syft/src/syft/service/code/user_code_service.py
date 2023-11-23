@@ -228,7 +228,7 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
-    def is_execution_allowed(self, code, context):
+    def is_execution_allowed(self, code, context, output_policy):
         if not code.status.approved:
             return code.status.get_status_message()
         # Check if the user has permission to execute the code.
@@ -236,6 +236,8 @@ class UserCodeService(AbstractService):
             return has_code_permission
         elif code.output_policy is None:
             return SyftError("Output policy not approved", code)
+        elif not output_policy.valid:
+            return output_policy.valid
         else:
             return True
 
@@ -270,10 +272,12 @@ class UserCodeService(AbstractService):
             code: UserCode = code_result.ok()
 
             output_policy = code.output_policy
-            if (
-                can_execute := self.is_execution_allowed(code=code, context=context)
-                is not True
-            ):
+            can_execute = self.is_execution_allowed(
+                code=code, context=context, output_policy=output_policy
+            )
+            if not can_execute:
+                if output_policy is None:
+                    return Err("UserCodeStatus.DENIED: Function has no output policy")
                 if not (is_valid := output_policy.valid):
                     if len(output_policy.output_history) > 0:
                         result = resolve_outputs(

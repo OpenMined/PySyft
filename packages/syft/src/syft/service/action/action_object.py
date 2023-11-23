@@ -36,9 +36,13 @@ from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
@@ -76,7 +80,7 @@ def repr_cls(c):
 
 
 @serializable()
-class Action(SyftObject):
+class ActionV1(SyftObject):
     """Serializable Action object.
 
     Parameters:
@@ -96,6 +100,40 @@ class Action(SyftObject):
 
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    __attr_searchable__: List[str] = []
+
+    path: str
+    op: str
+    remote_self: Optional[LineageID]
+    args: List[LineageID]
+    kwargs: Dict[str, LineageID]
+    result_id: Optional[LineageID]
+    action_type: Optional[ActionType]
+    create_object: Optional[SyftObject] = None
+
+
+@serializable()
+class Action(SyftObject):
+    """Serializable Action object.
+
+    Parameters:
+        path: str
+            The path of the Type of the remote object.
+        op: str
+            The method to be executed from the remote object.
+        remote_self: Optional[LineageID]
+            The extended UID of the SyftObject
+        args: List[LineageID]
+            `op` args
+        kwargs: Dict[str, LineageID]
+            `op` kwargs
+        result_id: Optional[LineageID]
+            Extended UID of the resulted SyftObject
+    """
+
+    __canonical_name__ = "Action"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_searchable__: List[str] = []
 
@@ -206,6 +244,20 @@ class Action(SyftObject):
         )
 
 
+@migrate(Action, ActionV1)
+def downgrade_action_v2_to_v1():
+    return [
+        drop("user_code_id"),
+        make_set_default("op", ""),
+        make_set_default("path", ""),
+    ]
+
+
+@migrate(ActionV1, Action)
+def upgrade_action_v1_to_v2():
+    return [make_set_default("user_code_id", None)]
+
+
 class ActionObjectPointer:
     pass
 
@@ -242,6 +294,14 @@ passthrough_attrs = [
     "delete_data",  # syft
     "_save_to_blob_storage_",  # syft
     "syft_action_data",  # syft
+    "migrate_to",  # syft
+    "to_dict",  # syft
+    "dict",  # syft
+    "_iter",  # pydantic
+    "__exclude_fields__",  # pydantic
+    "__include_fields__",  # pydantic
+    "_calculate_keys",  # pydantic
+    "_get_value",  # pydantic
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -927,7 +987,8 @@ class ActionObject(SyftObject):
     def syft_get_path(self) -> str:
         """Get the type path of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
-            return f"{self.syft_action_data_type.__name__}"  # avoids AnyActionObject errors
+            # avoids AnyActionObject errors
+            return f"{self.syft_action_data_type.__name__}"
         return f"{type(self).__name__}"
 
     def syft_remote_method(
@@ -1709,9 +1770,19 @@ class ActionObject(SyftObject):
 
 
 @serializable()
-class AnyActionObject(ActionObject):
+class AnyActionObjectV1(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
+    # syft_passthrough_attrs: List[str] = []
+    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__", "syft_action_data_str_"]
+
+
+@serializable()
+class AnyActionObject(ActionObject):
+    __canonical_name__ = "AnyActionObject"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
@@ -1723,6 +1794,18 @@ class AnyActionObject(ActionObject):
 
     def __int__(self) -> float:
         return int(self.syft_action_data)
+
+
+@migrate(AnyActionObject, AnyActionObjectV1)
+def downgrade_anyactionobject_v2_to_v1():
+    return [
+        drop("syft_action_data_str"),
+    ]
+
+
+@migrate(AnyActionObjectV1, AnyActionObject)
+def upgrade_anyactionobject_v1_to_v2():
+    return [make_set_default("syft_action_data_str", "")]
 
 
 action_types[Any] = AnyActionObject

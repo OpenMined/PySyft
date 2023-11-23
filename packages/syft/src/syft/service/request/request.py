@@ -241,7 +241,6 @@ class Request(SyftObject):
             )
 
         metadata = api.services.metadata.get_metadata()
-        admin_email = metadata.admin_email
         node_name = api.node_name.capitalize() if api.node_name is not None else ""
 
         email_str = (
@@ -266,7 +265,7 @@ class Request(SyftObject):
                 <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
                 <p><strong>Requested on: </strong> {node_name} of type <strong> \
-                    {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
+                    {metadata.node_type.value.capitalize()}</strong></p>
                 <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
             </div>
 

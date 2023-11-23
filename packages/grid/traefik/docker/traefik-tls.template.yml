@@ -6,8 +6,6 @@ log:
   level: INFO
 
 entryPoints:
-  vpn:
-    address: :80
   web:
     address: :81
     http:

@@ -18,6 +18,7 @@ from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_store_partition  # noqa: F401
+from .syft.stores.store_fixtures_test import mongo_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_server_mock  # noqa: F401
@@ -67,43 +68,43 @@ def stage_protocol(protocol_file: Path):
         dp.save_history(dp.protocol_history)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def worker(faker, stage_protocol):
     return sy.Worker.named(name=faker.name())
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def root_domain_client(worker):
     return worker.root_client
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def root_verify_key(worker):
     return worker.root_client.credentials.verify_key
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_client(worker):
     return worker.guest_client
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_verify_key(worker):
     return worker.guest_client.credentials.verify_key
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def guest_domain_client(root_domain_client):
     return root_domain_client.guest()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def document_store(worker):
     yield worker.document_store
     worker.document_store.reset()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def action_store(worker):
     return worker.action_store
 
@@ -113,6 +114,7 @@ __all__ = [
     "mongo_server_mock",
     "mongo_document_store",
     "mongo_queue_stash",
+    "mongo_action_store",
     "sqlite_store_partition",
     "sqlite_workspace",
     "sqlite_document_store",

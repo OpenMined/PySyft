@@ -22,22 +22,22 @@ test_verify_key_string = (
 test_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def notification_stash(document_store):
     return NotificationStash(store=document_store)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def notification_service(document_store):
     return NotificationService(store=document_store)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
     return AuthedServiceContext(credentials=test_verify_key, node=worker)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def linked_object():
     return LinkedObject(
         node_uid=UID(),
@@ -47,7 +47,7 @@ def linked_object():
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def mock_create_notification(faker) -> CreateNotification:
     test_signing_key1 = SyftSigningKey.generate()
     test_verify_key1 = test_signing_key1.verify_key
@@ -66,7 +66,7 @@ def mock_create_notification(faker) -> CreateNotification:
     return mock_notification
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def mock_notification(
     root_verify_key,
     notification_stash: NotificationStash,
