@@ -865,13 +865,6 @@
           "action": "add"
         }
       },
-      "JobItem": {
-        "1": {
-          "version": 1,
-          "hash": "7b8723861837b0b7e948b2cf9244159d232185f3407dd6bef108346f941ddf6e",
-          "action": "add"
-        }
-      },
       "UserCode": {
         "2": {
           "version": 2,
