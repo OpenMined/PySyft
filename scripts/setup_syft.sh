@@ -1,16 +1,17 @@
 #!/bin/bash
 
 # Check if the required arguments are provided
-if [[ $# -lt 4 ]]; then
-    echo "Usage: $0 <version> <node_name> <node_side_type> <port>"
+if [[ $# -lt 5 ]]; then
+    echo "Usage: $0 <version> <node_name> <node_side_type> <node_type> <port>"
     exit 1
 fi
 
 VERSION=$1
 NODE_NAME=$2
 NODE_SIDE_TYPE=$3
-PORT=$4
-FILE_ID="1ffWtZa-aJkJYsAG8Wkosmvrt3Uvm1bYM" 
+NODE_TYPE=$4
+PORT=$5
+FILE_ID="1ffWtZa-aJkJYsAG8Wkosmvrt3Uvm1bYM"
 
 # Check if gdown is installed, if not, install it using pip
 if ! command -v gdown &> /dev/null; then
@@ -36,16 +37,18 @@ case "$(uname)" in
 esac
 
 # Assuming the .env file is in the current directory after unzipping
-# Update the VERSION, NODE_NAME, NODE_SIDE_TYPE, and PORT values based on the OS
+# Update the VERSION, NODE_NAME, NODE_SIDE_TYPE, NODE_TYPE and PORT values based on the OS
 if [[ "$OS" == "mac" ]]; then
     sed -i '' "s/^VERSION=.*$/VERSION=$VERSION/" .env
     sed -i '' "s/^NODE_NAME=.*$/NODE_NAME=$NODE_NAME/" .env
     sed -i '' "s/^NODE_SIDE_TYPE=.*$/NODE_SIDE_TYPE=$NODE_SIDE_TYPE/" .env
+    sed -i '' "s/^NODE_TYPE=.*$/NODE_TYPE=$NODE_TYPE/" .env
     sed -i '' "s/^PORT=.*$/PORT=$PORT/" .env
 else
     sed -i "s/^VERSION=.*$/VERSION=$VERSION/" .env
     sed -i "s/^NODE_NAME=.*$/NODE_NAME=$NODE_NAME/" .env
     sed -i "s/^NODE_SIDE_TYPE=.*$/NODE_SIDE_TYPE=$NODE_SIDE_TYPE/" .env
+    sed -i "s/^NODE_TYPE=.*$/NODE_TYPE=$NODE_TYPE/" .env
     sed -i "s/^PORT=.*$/PORT=$PORT/" .env
 fi
 
