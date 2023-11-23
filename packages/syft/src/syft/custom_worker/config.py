@@ -16,7 +16,7 @@ PYTHON_MIN_VER = version.parse("3.10")
 PYTHON_MAX_VER = version.parse("3.12")
 
 
-class ImageBuildConfig(SyftBaseModel):
+class CustomBuildConfig(SyftBaseModel):
     gpu: bool = False
     python_version: str = PYTHON_DEFAULT_VER
     python_packages: List[str] = []
@@ -64,22 +64,22 @@ class ImageBuildConfig(SyftBaseModel):
         return sep.join(self.custom_cmds)
 
 
-class CustomImageConfig(SyftBaseModel):
-    build: ImageBuildConfig
+class CustomWorkerConfig(SyftBaseModel):
+    build: CustomBuildConfig
     version: str = "1"
     id: str = None
 
     @classmethod
-    def from_dict(cls, config: dict) -> "CustomImageConfig":
+    def from_dict(cls, config: dict) -> "CustomWorkerConfig":
         return cls(**config)
 
     @classmethod
-    def from_str(cls, content: str) -> "CustomImageConfig":
+    def from_str(cls, content: str) -> "CustomWorkerConfig":
         config = yaml.safe_load(content)
         return cls.from_dict(config)
 
     @classmethod
-    def from_path(cls, path: Path | str) -> "CustomImageConfig":
+    def from_path(cls, path: Path | str) -> "CustomWorkerConfig":
         p = Path(path)
         content = p.read_text()
         return cls.from_str(content)

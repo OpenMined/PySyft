@@ -6,10 +6,10 @@ from pathlib import Path
 import docker
 
 # relative
-from .config import CustomImageConfig
+from .config import CustomWorkerConfig
 
 
-class CustomImageBuilder:
+class CustomWorkerBuilder:
     TYPE_CPU = "cpu"
     TYPE_GPU = "gpu"
 
@@ -20,7 +20,7 @@ class CustomImageBuilder:
 
     BUILD_MAX_WAIT = 30 * 60
 
-    def build_image(self, config: CustomImageConfig) -> bool:
+    def build_image(self, config: CustomWorkerConfig) -> bool:
         """
         Builds a Docker image for the custom worker based on the provided configuration.
         Args:
