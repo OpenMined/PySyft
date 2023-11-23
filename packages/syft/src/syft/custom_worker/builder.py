@@ -18,6 +18,8 @@ class CustomImageBuilder:
 
     CUSTOM_IMAGE_PREFIX = "custom-worker"
 
+    BUILD_MAX_WAIT = 30 * 60
+
     def build_image(self, config: CustomImageConfig) -> bool:
         """
         Builds a Docker image for the custom worker based on the provided configuration.
@@ -27,13 +29,13 @@ class CustomImageBuilder:
             bool: True if the image was built successfully, raises Exception otherwise.
         """
 
+        # remove once GPU is supported
         if config.build.gpu:
-            # TODO: remove once GPU is supported
             raise Exception("GPU custom worker is not supported yet")
 
-        compute_type = self.TYPE_GPU if config.build.gpu else self.TYPE_CPU
+        type = self.TYPE_GPU if config.build.gpu else self.TYPE_CPU
 
-        contextdir, dockerfile = self.find_worker_ctx(compute_type)
+        contextdir, dockerfile = self.find_worker_ctx(type)
 
         imgtag = config.get_signature()[:8]
 
@@ -52,17 +54,14 @@ class CustomImageBuilder:
             client = docker.from_env()
 
             # TODO: Push logs to mongo/seaweed?
-            (image, logs) = client.images.build(
+            client.images.build(
                 path=str(contextdir),
                 dockerfile=dockerfile,
                 pull=True,
-                tag=f"{self.CUSTOM_IMAGE_PREFIX}-{compute_type}:{imgtag}",
-                timeout=30 * 60,  # assuming seconds
+                tag=f"{self.CUSTOM_IMAGE_PREFIX}-{type}:{imgtag}",
+                timeout=self.BUILD_MAX_WAIT,
                 buildargs=build_args,
             )
-            print(image)
-            for log_line in logs:
-                print(log_line)
 
             return True
         except docker.errors.BuildError as e:
@@ -90,7 +89,6 @@ class CustomImageBuilder:
             Path(__file__, self.DOCKERFILE_DEV_PATH, filename).resolve(),
         ]
         for path in lookup_paths:
-            print("Looking for", path)
             if path.exists():
                 return path.parent, filename
 
