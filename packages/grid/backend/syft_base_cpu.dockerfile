@@ -1,3 +1,4 @@
+# ==================== Base Image for CPU workload ==================== #
 ARG PYTHON_VERSION="3.11"
 ARG TZ="Etc/UTC"
 
@@ -7,6 +8,10 @@ ARG UID=0
 ARG USER_GRP=$USER:$USER
 ARG HOME="/root"
 ARG APPDIR="$HOME/app"
+# the DS provides the following args in his cog config file
+ARG SYSTEM_PACKAGES=""
+ARG PIP_PACKAGES="nothing --dry-run"
+ARG CUSTOM_CMD="echo no custom commands passed"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
 
@@ -33,6 +38,7 @@ ARG HOME
 ARG UID
 ARG USER
 ARG USER_GRP
+ARG PIP_PACKAGES
 
 USER $USER
 WORKDIR $APPDIR
@@ -48,9 +54,13 @@ COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
-    pip install --user torch==2.1.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
-    pip install --user pip-autoremove jupyterlab==4.0.7 -e ./syft[data_science] && \
+    pip install --user pip-autoremove ./syft && \
     pip-autoremove ansible ansible-core -y
+
+# cache PIP_PACKAGES as a separate layer so installation will be faster when a new
+# package is provided
+RUN --mount=type=cache,target=$HOME/.cache/,rw \
+    pip install --user $PIP_PACKAGES
 
 # ==================== [Final] Setup Syft Server ==================== #
 
@@ -66,7 +76,7 @@ ARG USER_GRP
 
 # Setup Python
 RUN apk update && \
-    apk add --no-cache tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
+    apk add --no-cache tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip $SYSTEM_PACKAGES && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     rm -rf /var/cache/apk/* && \
     # Uncomment for rootless user
@@ -99,7 +109,8 @@ ENV PATH=$PATH:$HOME/.local/bin \
     MONGO_PORT="27017" \
     MONGO_USERNAME="root" \
     MONGO_PASSWORD="example" \
-    CREDENTIALS_PATH="$HOME/data/creds/credentials.json"
+    CREDENTIALS_PATH="$HOME/data/creds/credentials.json" \
+    SYFT_BASE_IMAGE="True"
 
 # Copy pre-built jupyterlab, syft dependencies
 COPY --chown=$USER_GRP --from=syft_deps $HOME/.local $HOME/.local
@@ -109,5 +120,7 @@ COPY --chown=$USER_GRP grid/backend/grid ./grid
 
 # copy syft
 COPY --chown=$USER_GRP syft/ ./syft/
+
+RUN $CUSTOM_CMD
 
 CMD ["bash", "./grid/start.sh"]
