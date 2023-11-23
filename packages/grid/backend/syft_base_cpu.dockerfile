@@ -23,7 +23,7 @@ ARG USER
 ARG UID
 
 # Setup Python DEV
-RUN --mount=type=cache,target=/var/cache/apk \
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -81,7 +81,7 @@ ARG USER
 ARG USER_GRP
 
 # Setup Python
-RUN --mount=type=cache,target=/var/cache/apk \
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
     apk add tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip $SYSTEM_PACKAGES && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
