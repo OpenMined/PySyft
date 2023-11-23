@@ -248,6 +248,8 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
+      - uses: actions/checkout@v3
+
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
