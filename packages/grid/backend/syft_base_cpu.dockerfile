@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # uncomment for creating rootless user
-# && adduser -D -u $UID $USER
+# && adduser -D -u 0 $USER
 
 # ==================== [BUILD STEP] Install Syft Dependency ==================== #
 
@@ -59,13 +59,13 @@ COPY --chown=$USER_GRP \
     syft/src/syft/
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
-RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID \
+RUN --mount=type=cache,id=pip-0,target=$HOME/.cache/pip,uid=0,gid=0 \
     pip install --user pip-autoremove ./syft && \
     pip-autoremove ansible ansible-core -y
 
 # cache PIP_PACKAGES as a separate layer so installation will be faster when a new
 # package is provided
-RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID \
+RUN --mount=type=cache,id=pip-0,target=$HOME/.cache/pip,uid=0,gid=0 \
     pip install --user $PIP_PACKAGES
 
 # ==================== [Final] Setup Syft Server ==================== #
@@ -78,7 +78,9 @@ ARG HOME
 ARG PYTHON_VERSION
 ARG TZ
 ARG USER
+ARG SYSTEM_PACKAGES
 ARG USER_GRP
+ARG CUSTOM_CMD
 
 # Setup Python
 RUN --mount=type=cache,target=/var/cache/apk \
