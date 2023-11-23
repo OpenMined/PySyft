@@ -65,7 +65,7 @@ spec:
         - name: RELEASE
           value: production
         - name: VERSION
-          value: 0.8.2-beta.33
+          value: 0.8.2-beta.40
         - name: VERSION_HASH
           value: unknown
         - name: NODE_TYPE
@@ -100,10 +100,8 @@ spec:
           value: info@openmined.org
         - name: DEFAULT_ROOT_PASSWORD
           value: changethis
-        - name: BACKEND_STORAGE_PATH
-          value: /storage
         envFrom: null
-        image: docker.io/openmined/grid-backend:0.8.2-beta.33
+        image: docker.io/openmined/grid-backend:0.8.2-beta.40
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -112,7 +110,7 @@ spec:
         startupProbe: null
         volumeDevices: null
         volumeMounts:
-        - mountPath: /storage
+        - mountPath: /root/data/creds/
           name: credentials-data
           readOnly: false
           subPath: credentials-data
@@ -220,7 +218,7 @@ spec:
         command: null
         env:
         - name: VERSION
-          value: 0.8.2-beta.33
+          value: 0.8.2-beta.40
         - name: VERSION_HASH
           value: unknown
         - name: NODE_TYPE
@@ -228,7 +226,7 @@ spec:
         - name: NEXT_PUBLIC_API_URL
           value: ${NEXT_PUBLIC_API_URL}
         envFrom: null
-        image: docker.io/openmined/grid-frontend:0.8.2-beta.33
+        image: docker.io/openmined/grid-frontend:0.8.2-beta.40
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -363,7 +361,7 @@ spec:
         - name: MONGO_INITDB_ROOT_PASSWORD
           value: example
         envFrom: null
-        image: mongo:7.0.0
+        image: mongo:7.0.2
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -582,7 +580,7 @@ spec:
         - name: S3_PORT
           value: '8333'
         envFrom: null
-        image: chrislusf/seaweedfs:3.55
+        image: chrislusf/seaweedfs:3.57
         lifecycle: null
         livenessProbe: null
         name: container-0

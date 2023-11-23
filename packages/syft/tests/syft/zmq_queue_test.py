@@ -1,6 +1,7 @@
 # stdlib
 from collections import defaultdict
 import random
+from time import sleep
 
 # third party
 from faker import Faker
@@ -58,6 +59,12 @@ def test_zmq_client():
     consumer = client.add_consumer(
         queue_name=QueueName, message_handler=MyMessageHandler
     )
+
+    consumer.run()
+    # stdlib
+    from time import sleep
+
+    sleep(1)
     assert isinstance(consumer, ZMQConsumer)
     assert consumer.address is not None
     assert consumer.alive
@@ -70,17 +77,23 @@ def test_zmq_client():
     assert QueueName in client.consumers
     assert len(client.consumers[QueueName]) > 0
 
-    response = client.send_message(message=b"My Message", queue_name=QueueName)
+    msg = [producer.identity, b"", b"My Message"]
+    response = client.send_message(
+        message=msg, queue_name=QueueName, worker=consumer.identity
+    )
 
     assert isinstance(response, SyftSuccess)
 
-    consumer.receive()
+    sleep(0.5)
+    # consumer.receive()
     assert len(received_message) == 1
 
-    response = client.send_message(message="My Message", queue_name="random queue")
+    msg = [producer.identity, b"", b"My Message"]
+    response = client.send_message(message=msg, queue_name="random queue")
     assert isinstance(response, SyftError)
 
     assert isinstance(client.close(), SyftSuccess)
+    sleep(0.5)
     assert client.producers[QueueName].alive is False
     assert client.consumers[QueueName][0].alive is False
 
@@ -90,15 +103,17 @@ def test_zmq_pub_sub(faker: Faker):
 
     pub_port = random.randint(6001, 10004)
 
-    pub_addr = f"tcp://127.0.0.1:{pub_port}"
+    pub_addr = f"tcp://localhost:{pub_port}"
 
     QueueName = "ABC"
 
     # Create a producer
-    producer = ZMQProducer(address=pub_addr, queue_name=QueueName)
+    producer = ZMQProducer(
+        port=pub_port, queue_name=QueueName, queue_stash=None, context=None
+    )
 
     assert producer.address == pub_addr
-    assert isinstance(producer._producer, Socket)
+    assert isinstance(producer.backend, Socket)
     assert isinstance(producer, ZMQProducer)
     assert producer.queue_name == QueueName
     assert producer.alive
@@ -121,24 +136,28 @@ def test_zmq_pub_sub(faker: Faker):
 
     assert isinstance(consumer, ZMQConsumer)
     assert consumer.address == pub_addr
-    assert isinstance(consumer._consumer, Socket)
+    assert isinstance(consumer.worker, Socket)
     assert consumer.queue_name == QueueName
     assert consumer.alive
     assert consumer.thread is None
     assert consumer.message_handler == MyMessageHandler
+    consumer.run()
+    sleep(0.2)
 
-    producer.send(message=first_message)
+    msg = [producer.identity, b"", first_message]
+    producer.send(message=msg, worker=consumer.identity)
 
     # Check if consumer receives the message
-    consumer.receive()
+    # consumer.receive()
+    sleep(0.2)
 
     # Validate if message was correctly received in the handler
     assert len(received_messages) == 1
     assert first_message in received_messages
 
     # Close all socket connections
-    producer.close()
-    consumer.close()
+    producer._stop()
+    consumer._stop()
     assert producer.alive is False
     assert consumer.alive is False
 
@@ -169,11 +188,15 @@ def test_zmq_queue_manager() -> None:
         def handle_message(message: bytes):
             received_messages.append(message)
 
-    producer = queue_manager.create_producer(queue_name=QueueName)
+    producer = queue_manager.create_producer(
+        queue_name=QueueName, queue_stash=None, context=None
+    )
 
     assert isinstance(producer, ZMQProducer)
 
-    consumer = queue_manager.create_consumer(message_handler=CustomHandler)
+    consumer = queue_manager.create_consumer(
+        message_handler=CustomHandler, address=producer.address
+    )
 
     assert isinstance(consumer, ZMQConsumer)
 

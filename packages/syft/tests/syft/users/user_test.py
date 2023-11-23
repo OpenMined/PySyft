@@ -39,14 +39,15 @@ def get_mock_client(root_client, role) -> DomainClient:
     mail = Faker().email()
     name = Faker().name()
     password = "pw"
-    assert root_client.register(
+    user = root_client.register(
         name=name, email=mail, password=password, password_verify=password
     )
+    assert user
     user_id = [u for u in get_users(worker) if u.email == mail][0].id
     assert worker.root_client.api.services.user.update(
         user_id, UserUpdate(user_id=user_id, role=role)
     )
-    client.login(email=mail, password=password)
+    client = client.login(email=mail, password=password)
     client._fetch_api(client.credentials)
     # hacky, but useful for testing: patch user id and role on client
     client.user_id = user_id

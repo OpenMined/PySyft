@@ -19,8 +19,12 @@ import zmq.green as zmq
 # relative
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -86,6 +90,7 @@ class ZMQProducer(QueueProducer):
         self.queue_stash = queue_stash
         self.auth_context = context
         self.post_init()
+        self.stop = False
 
     @property
     def address(self):
@@ -100,6 +105,11 @@ class ZMQProducer(QueueProducer):
         self.poll_workers.register(self.backend, zmq.POLLIN)
         self.workers = WorkerQueue()
         self.message_queue = []
+
+    def _stop(self):
+        self.stop = True
+        self.backend.close()
+        self.context.term()
 
     def read_items(self):
         action_service = self.auth_context.node.get_service("ActionService")   
@@ -157,6 +167,9 @@ class ZMQProducer(QueueProducer):
             res = action_service.set(context=self.auth_context, action_object=new_action_object)
         
         while True:
+            if self.stop:
+                self._stop()
+                break
             # stdlib
             from time import sleep
 
@@ -204,10 +217,17 @@ class ZMQProducer(QueueProducer):
         self.producer_thread = threading.Thread(target=self.read_items)
         self.producer_thread.start()
 
+    def send(self, worker: bytes, message: bytes):
+        message.insert(0, worker)
+        with lock:
+            self.backend.send_multipart(message)
+
     def _run(self):
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         connecting_workers = set()
         while True:
+            if self.stop:
+                break
             try:
                 socks = dict(self.poll_workers.poll(HEARTBEAT_INTERVAL * 1000))
 
@@ -216,9 +236,7 @@ class ZMQProducer(QueueProducer):
                         frames = self.message_queue.pop()
                         worker_address = self.workers.next()
                         connecting_workers.add(worker_address)
-                        frames.insert(0, worker_address)
-                        with lock:
-                            self.backend.send_multipart(frames)
+                        self.send(worker_address, frames)
 
                 # Handle worker message
                 if socks.get(self.backend) == zmq.POLLIN:
@@ -255,11 +273,11 @@ class ZMQProducer(QueueProducer):
                 print(f"Error in producer {e}")
 
     def close(self):
-        self._producer.close()
+        self.backend.close()
 
     @property
     def alive(self):
-        return not self._producer.closed
+        return not self.backend.closed
 
 
 @serializable(attrs=["_subscriber"])
@@ -275,6 +293,7 @@ class ZMQConsumer(QueueConsumer):
         self.queue_name = queue_name
         self.post_init()
         self.id = UID()
+        self.stop = False
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
@@ -290,11 +309,18 @@ class ZMQConsumer(QueueConsumer):
         self.create_socket()
         self.thread = None
 
+    def _stop(self):
+        self.stop = True
+        self.worker.close()
+
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
         interval = INTERVAL_INIT
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         while True:
+            if self.stop:
+                self._stop()
+                break
             try:
                 time.sleep(0.1)
                 socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))
@@ -362,17 +388,26 @@ class ZMQConsumer(QueueConsumer):
     def close(self):
         if self.thread is not None:
             self.thread.kill()
-        self._consumer.close()
+        self.worker.close()
 
     @property
     def alive(self):
-        return not self._consumer.closed
+        return not self.worker.closed
+
+
+@serializable()
+class ZMQClientConfigV1(SyftObject, QueueClientConfig):
+    __canonical_name__ = "ZMQClientConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    hostname: str = "127.0.0.1"
 
 
 @serializable()
 class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: Optional[UID]
     hostname: str = "127.0.0.1"
@@ -381,6 +416,22 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     # port issue causing tests to randomly fail
     create_producer: bool = False
     n_consumers: int = 0
+
+
+@migrate(ZMQClientConfig, ZMQClientConfigV1)
+def downgrade_zmqclientconfig_v2_to_v1():
+    return [
+        drop(["queue_port", "create_producer", "n_consumers"]),
+    ]
+
+
+@migrate(ZMQClientConfigV1, ZMQClientConfig)
+def upgrade_zmqclientconfig_v1_to_v2():
+    return [
+        make_set_default("queue_port", None),
+        make_set_default("create_producer", False),
+        make_set_default("n_consumsers", 0),
+    ]
 
 
 @serializable(attrs=["host"])
@@ -440,7 +491,7 @@ class ZMQClient(QueueClient):
         """
 
         if address is None:
-            address = f"tcp://*:{self.config.queue_port}"
+            address = f"tcp://localhost:{self.config.queue_port}"
 
         consumer = ZMQConsumer(
             queue_name=queue_name,
@@ -455,6 +506,7 @@ class ZMQClient(QueueClient):
         self,
         message: bytes,
         queue_name: str,
+        worker: Optional[bytes] = None,
     ) -> Union[SyftSuccess, SyftError]:
         producer = self.producers.get(queue_name)
         if producer is None:
@@ -462,8 +514,9 @@ class ZMQClient(QueueClient):
                 message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
             )
         try:
-            producer.send(message=message)
+            producer.send(message=message, worker=worker)
         except Exception as e:
+            # stdlib
             return SyftError(
                 message=f"Failed to send message to: {queue_name} with error: {e}"
             )
@@ -475,10 +528,15 @@ class ZMQClient(QueueClient):
         try:
             for _, consumers in self.consumers.items():
                 for consumer in consumers:
-                    consumer.close()
+                    # make sure look is stopped
+                    consumer.stop = True
+                    consumer._stop()
 
             for _, producer in self.producers.items():
-                producer.close()
+                # make sure loop is stopped
+                producer.stop = True
+                # close existing connection.
+                producer._stop()
         except Exception as e:
             return SyftError(message=f"Failed to close connection: {e}")
 
