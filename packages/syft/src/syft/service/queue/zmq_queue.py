@@ -30,7 +30,7 @@ from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
-from .queue_stash import Status
+from .queue_stash import ActionQueueItem, Status
 
 HEARTBEAT_LIVENESS = 3
 HEARTBEAT_INTERVAL = 1
@@ -102,6 +102,60 @@ class ZMQProducer(QueueProducer):
         self.message_queue = []
 
     def read_items(self):
+        action_service = self.auth_context.node.get_service("ActionService")   
+        def check_for_job(arg):
+            if isinstance(arg, UID):
+                arg = action_service.peek(self.auth_context, arg).ok()
+                return check_for_job(arg)
+            if isinstance(arg, ActionObject):
+                if arg.syft_resolved:
+                    arg = arg.get()
+                else:
+                    res = action_service.peek(self.auth_context, arg)
+                    if res.is_err():
+                        return False
+                    arg = res.ok()
+                    return arg.syft_resolved
+
+            if isinstance(arg, Job):
+                arg.fetch()
+                return arg.resolved
+            try:
+                if isinstance(arg, List):
+                    value = True
+                    for elem in arg:
+                        value = value and check_for_job(elem)
+                    return value
+                if isinstance(arg, Dict):
+                    value = True
+                    for elem in arg.values():
+                        value = value and check_for_job(elem)
+                    return value
+            except Exception as e:
+                print(e)
+                pass
+            return True                                           
+                
+        def replace_job_with_result(data):
+            
+            if isinstance(data, List):
+                return [replace_job_with_result(job) for job in data]
+            if isinstance(data, Dict):
+                return {key: replace_job_with_result(job) for key, job in data.items()}
+            if isinstance(data, ActionObject):
+                return data.get()
+            return data
+        
+        def resolve_results(arg):
+            res = action_service.get(context=self.auth_context, uid=arg)
+            if res.is_err():
+                return arg
+            action_object = res.ok()
+            data = action_object.syft_action_data
+            new_data = replace_job_with_result(data)
+            new_action_object = ActionObject.from_obj(new_data, id=action_object.id)
+            res = action_service.set(context=self.auth_context, action_object=new_action_object)
+        
         while True:
             # stdlib
             from time import sleep
@@ -115,44 +169,16 @@ class ZMQProducer(QueueProducer):
 
             for item in items:
                 if item.status == Status.CREATED:
-                    args = item.args
-                    kwargs = item.kwargs
-                    def check_for_job(arg):
-                        if isinstance(arg, UID):
-                            arg = action_service.get(self.auth_context, arg).ok()
-                        if isinstance(arg, ActionObject):
-                            arg = arg.get()
-                        if isinstance(arg, Job):
-                            arg.fetch()
-                            return arg.resolved
-                        try:
-                            if isinstance(arg, List):
-                                value = True
-                                for elem in arg:
-                                    value = value and check_for_job(elem)
-                                return value
-                            if isinstance(arg, Dict):
-                                value = True
-                                for elem in arg.values():
-                                    value = value and check_for_job(elem)
-                                return value
-                        except Exception as e:
-                            print(e, file=sys.stderr)
-                            pass
-                        return True                                           
-    
-                    import sys
-
-                    action_service = self.auth_context.node.get_service("ActionService")
                     
                     
-                    if 'action' in kwargs:
-                        action = kwargs['action']
-                        print("ACTION:", action.args, action.kwargs, file=sys.stderr)
-                        print(check_for_job(action.args), check_for_job(action.kwargs))
-                    
+                    if isinstance(item, ActionQueueItem):
+                        action = item.kwargs['action']         
                         if not (check_for_job(action.args) and check_for_job(action.kwargs)):
                             continue                        
+                        for arg in action.args:
+                            resolve_results(arg)
+                        for _, arg in action.kwargs.items():
+                            resolve_results(arg)
                     
                     msg_bytes = sy.serialize(item, to_bytes=True)
                     frames = [self.identity, b"", msg_bytes]
