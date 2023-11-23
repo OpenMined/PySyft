@@ -1,15 +1,19 @@
 # stdlib
 import multiprocessing
+import threading
+import time
 from typing import Any
 from typing import Optional
 from typing import Type
 from typing import Union
 
 # third party
+import psutil
 from result import Err
 from result import Ok
 
 # relative
+from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
@@ -19,7 +23,44 @@ from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
+from .queue_stash import QueueItem
 from .queue_stash import Status
+
+
+class MonitorThread(threading.Thread):
+    def __init__(
+        self, queue_item: QueueItem, worker, credentials: SyftVerifyKey, interval=5
+    ):
+        super().__init__()
+        self.interval = interval
+        self.stop_requested = threading.Event()
+        self.credentials = credentials
+        self.worker = worker
+        self.queue_item = queue_item
+
+    def run(self):
+        while not self.stop_requested.is_set():
+            self.monitor()
+            time.sleep(self.interval)
+
+    def monitor(self):
+        # Implement the monitoring logic here
+        job = self.worker.job_stash.get_by_uid(
+            self.credentials, self.queue_item.job_id
+        ).ok()
+        if job is None or job.status != JobStatus.INTERRUPTED:
+            return
+        else:
+            job.resolved = True
+            self.queue_item.status = Status.INTERRUPTED
+            self.queue_item.resolved = True
+            self.worker.queue_stash.set_result(self.credentials, self.queue_item)
+            self.worker.job_stash.set_result(self.credentials, job)
+            process = psutil.Process(job.job_pid)
+            process.terminate()
+
+    def stop(self):
+        self.stop_requested.set()
 
 
 @serializable()
@@ -75,6 +116,9 @@ class QueueManager(BaseQueueManager):
 
 
 def handle_message_multiprocessing(worker, queue_item, credentials, job_item):
+    # Set monitor thread for this job.
+    monitor_thread = MonitorThread(queue_item, worker, credentials)
+    monitor_thread.start()
     status = Status.COMPLETED
     job_status = JobStatus.COMPLETED
 
@@ -123,6 +167,8 @@ def handle_message_multiprocessing(worker, queue_item, credentials, job_item):
 
     worker.queue_stash.set_result(credentials, queue_item)
     worker.job_stash.set_result(credentials, job_item)
+    # Finish monitor thread
+    monitor_thread.stop()
 
 
 @serializable()
