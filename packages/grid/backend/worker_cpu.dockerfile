@@ -24,4 +24,4 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
     apk add ${SYSTEM_PACKAGES} && \
     pip install --user ${PIP_PACKAGES} && \
-    ${CUSTOM_CMD}
+    bash -c "$CUSTOM_CMD"
