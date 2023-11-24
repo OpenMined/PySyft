@@ -274,7 +274,6 @@ class UserCodeV1(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
-    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
 
 
 @serializable()
