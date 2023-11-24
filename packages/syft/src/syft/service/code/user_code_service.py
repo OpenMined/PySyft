@@ -296,6 +296,10 @@ class UserCodeService(AbstractService):
             ] = action_service._user_code_execute(
                 context, code, kwarg2id, result_id=result_id
             )
+            if result_action_object.is_err():
+                return result_action_object
+            else:
+                result_action_object = result_action_object.ok()
 
             output_result = action_service.set_result_to_store(
                 result_action_object, context, code.output_policy

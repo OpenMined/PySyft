@@ -261,8 +261,10 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
+            # import traceback
+            # return Err(f"_user_code_execute failed. {e} {traceback.format_exc()}")
             return Err(f"_user_code_execute failed. {e}")
-        return result_action_object
+        return Ok(result_action_object)
 
     def set_result_to_store(self, result_action_object, context, output_policy):
         result_id = result_action_object.id
