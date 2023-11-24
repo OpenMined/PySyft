@@ -1,6 +1,8 @@
 # stdlib
 from collections import OrderedDict
 from collections import defaultdict
+from enum import Enum
+from enum import unique
 from random import randint
 import socketserver
 import threading
@@ -31,6 +33,7 @@ from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
+from .queue_stash import QueueItem
 from .queue_stash import Status
 
 HEARTBEAT_LIVENESS = 3
@@ -101,7 +104,7 @@ class ZMQProducer(QueueProducer):
         self.poll_workers = zmq.Poller()
         self.poll_workers.register(self.backend, zmq.POLLIN)
         self.workers = WorkerQueue()
-        self.message_queue = []
+        self.message_queue: list[list[bytes]] = []
 
     def _stop(self):
         self.stop = True
@@ -178,7 +181,7 @@ class ZMQProducer(QueueProducer):
                     # if not (check_for_job(new_args) and check_for_job(new_kwargs)):
                     #     continue
 
-                    msg_bytes = sy.serialize(item, to_bytes=True)
+                    msg_bytes: bytes = sy.serialize(item, to_bytes=True)
                     frames = [self.identity, b"", msg_bytes]
                     # adds to queue for main loop
                     self.message_queue = [frames] + self.message_queue
@@ -202,7 +205,7 @@ class ZMQProducer(QueueProducer):
         self.producer_thread = threading.Thread(target=self.read_items)
         self.producer_thread.start()
 
-    def send(self, worker: bytes, message: bytes):
+    def send(self, worker: bytes, message: list[bytes]):
         message.insert(0, worker)
         with lock:
             self.backend.send_multipart(message)
@@ -265,6 +268,15 @@ class ZMQProducer(QueueProducer):
         return not self.backend.closed
 
 
+@unique
+class ZMQConsumerStatus(Enum):
+    IDLE = "IDLE"
+    BUSY = "BUSY"
+    DISCONNECTED = "DISCONNECTED"
+    RECONNECTING = "RECONNECTING"
+    TERMINATED = "TERMINATED"
+
+
 @serializable(attrs=["_subscriber"])
 class ZMQConsumer(QueueConsumer):
     def __init__(
@@ -279,6 +291,7 @@ class ZMQConsumer(QueueConsumer):
         self.post_init()
         self.id = UID()
         self.stop = False
+        self.worker_job_id = None
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
@@ -291,11 +304,13 @@ class ZMQConsumer(QueueConsumer):
     def post_init(self):
         self.ctx = zmq.Context.instance()
         self.poller = zmq.Poller()
+        self.status = ZMQConsumerStatus.DISCONNECTED
         self.create_socket()
         self.thread = None
 
     def _stop(self):
         self.stop = True
+        self.status = ZMQConsumerStatus.TERMINATED
         self.worker.close()
 
     def _run(self):
@@ -323,6 +338,14 @@ class ZMQConsumer(QueueConsumer):
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
+                            # syft absolute
+                            import syft as sy
+
+                            queue_item: QueueItem = sy.deserialize(
+                                message, from_bytes=True
+                            )
+                            self.status = ZMQConsumerStatus.BUSY
+                            self.worker_job_id = queue_item.job_id
                             self.message_handler.handle_message(message=message)
                         except Exception as e:
                             # stdlib
@@ -331,8 +354,12 @@ class ZMQConsumer(QueueConsumer):
                             print(
                                 f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
                             )
+                        finally:
+                            self.status = ZMQConsumerStatus.IDLE
+                            self.worker_job_id = None
                     # process heartbeat
                     elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
+                        self.status = ZMQConsumerStatus.IDLE
                         liveness = HEARTBEAT_LIVENESS
                     # process wrong message
                     interval = INTERVAL_INIT
@@ -340,6 +367,8 @@ class ZMQConsumer(QueueConsumer):
                 else:
                     liveness -= 1
                     if liveness == 0:
+                        self.status = ZMQConsumerStatus.RECONNECTING
+
                         print(
                             f"Heartbeat failure, worker can't reach queue, reconnecting in {interval}s"
                         )
@@ -358,6 +387,7 @@ class ZMQConsumer(QueueConsumer):
                     self.worker.send(PPP_HEARTBEAT)
             except zmq.ZMQError as e:
                 if e.errno == zmq.ETERM:
+                    self.status = ZMQConsumerStatus.TERMINATED
                     print("Subscriber connection Terminated")
                 else:
                     raise e
@@ -374,6 +404,7 @@ class ZMQConsumer(QueueConsumer):
         if self.thread is not None:
             self.thread.kill()
         self.worker.close()
+        self.status = ZMQConsumerStatus.TERMINATED
 
     @property
     def alive(self):
