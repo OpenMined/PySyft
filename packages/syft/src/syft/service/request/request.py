@@ -16,6 +16,8 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
+from ...types.syft_migration import migrate
+
 # relative
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
@@ -24,9 +26,9 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
+from ...types.transforms import TransformContext, drop, make_set_default
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -765,11 +767,26 @@ class EnumMutation(ObjectMutation):
             return self.linked_obj.resolve
         return None
 
+@serializable()
+class UserCodeStatusChangeV1(Change):
+    __canonical_name__ = "UserCodeStatusChange"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    value: UserCodeStatus
+    linked_obj: LinkedObject
+    match_type: bool = True
+    __repr_attrs__ = [
+        "link.service_func_name",
+        "link.input_policy_type.__canonical_name__",
+        "link.output_policy_type.__canonical_name__",
+        "link.status.approved",
+    ]
+
 
 @serializable()
 class UserCodeStatusChange(Change):
     __canonical_name__ = "UserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     value: UserCodeStatus
     linked_obj: LinkedObject
@@ -951,3 +968,15 @@ class UserCodeStatusChange(Change):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+@migrate(UserCodeStatusChange, UserCodeStatusChangeV1)
+def downgrade_usercodestatuschange_v2_to_v1():
+    return [
+        drop("nested_solved"),
+    ]
+
+@migrate(UserCodeStatusChangeV1, UserCodeStatusChange)
+def upgrade_usercodestatuschange_v1_to_v2():
+    return [
+        make_set_default("nested_solved", True),
+    ]
