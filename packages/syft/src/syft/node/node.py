@@ -1082,7 +1082,7 @@ class Node(AbstractNode):
         log_id = UID()
 
         result_obj = ActionObject.empty()
-        if action != None:
+        if action is not None:
             result_obj.id = action.result_id
             result_obj.syft_resolved = False
 

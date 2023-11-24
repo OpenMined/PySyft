@@ -40,8 +40,15 @@ def test_nested_jobs(node):
     x = ActionObject.from_obj([1, 2])
     x_ptr = x.send(ds_client)
 
-    ## Batch function
+    ## aggregate function
+    @sy.syft_function()
+    def aggregate_job(job_results):
+        return sum(job_results)
 
+    aggregate_job.code = dedent(aggregate_job.code)
+    res = ds_client.code.submit(aggregate_job)
+
+    ## Batch function
     @syft_function()
     def process_batch(batch):
         print(f"starting batch {batch}")
@@ -56,11 +63,12 @@ def test_nested_jobs(node):
 
     @syft_function_single_use(x=x_ptr)
     def process_all(domain, x):
-        jobs = []
+        job_results = []
         for elem in x:
             batch_job = domain.launch_job(process_batch, batch=elem)
-            jobs += [batch_job]
-        return None
+            job_results += [batch_job.result]
+
+        return domain.launch_job(aggregate_job, job_results=job_results)
 
     process_all.code = dedent(process_all.code)
 
@@ -72,5 +80,6 @@ def test_nested_jobs(node):
 
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
     job.wait()
-    assert len(job.subjobs) == 2
+    assert len(job.subjobs) == 3
+
     assert sum([j.wait().get() for j in job.subjobs]) == 5

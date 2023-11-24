@@ -294,7 +294,7 @@ passthrough_attrs = [
     "delete_data",  # syft
     "_save_to_blob_storage_",  # syft
     "syft_action_data",  # syft
-    "syft_resolved", # syft
+    "syft_resolved",  # syft
     "migrate_to",  # syft
     "to_dict",  # syft
     "dict",  # syft
@@ -315,7 +315,7 @@ dont_wrap_output_attrs = [
     "__array_wrap__",
     "__bool__",
     "__len__",
-    "syft_resolved", # syft
+    "syft_resolved",  # syft
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -326,7 +326,7 @@ dont_make_side_effects = [
     "__setitem__",
     "__len__",
     "shape",
-    "syft_resolved", # syft
+    "syft_resolved",  # syft
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -559,8 +559,9 @@ BASE_PASSTHROUGH_ATTRS = [
     "_set_obj_location_",
     "syft_action_data_cache",
     "reload_cache",
-    "syft_resolved"
+    "syft_resolved",
 ]
+
 
 @serializable()
 class ActionObjectV1(SyftObject):
@@ -592,6 +593,8 @@ class ActionObjectV1(SyftObject):
     syft_has_bool_attr: Optional[bool]
     syft_resolve_data: Optional[bool]
     syft_created_at: Optional[DateTime]
+
+
 @serializable()
 class ActionObject(SyftObject):
     """Action object for remote execution."""
@@ -1078,14 +1081,20 @@ class ActionObject(SyftObject):
         if not isinstance(res, ActionObject):
             return SyftError(message=f"{res}")
         else:
-            return res.syft_action_data
+            nested_res = res.syft_action_data
+            if isinstance(nested_res, ActionObject):
+                nested_res.syft_node_location = res.syft_node_location
+                nested_res.syft_client_verify_key = res.syft_client_verify_key
+            return nested_res
 
     def as_empty(self):
         id = self.id
         # TODO: fix
         if isinstance(id, LineageID):
             id = id.id
-        return ActionObject.empty(self.syft_internal_type, id, self.syft_lineage_id, self.syft_resolved)
+        return ActionObject.empty(
+            self.syft_internal_type, id, self.syft_lineage_id, self.syft_resolved
+        )
 
     @staticmethod
     def from_path(
@@ -1201,7 +1210,10 @@ class ActionObject(SyftObject):
 
         empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
         res = ActionObject.from_obj(
-            id=id, syft_lineage_id=syft_lineage_id, syft_action_data=empty, syft_resolved=syft_resolved
+            id=id,
+            syft_lineage_id=syft_lineage_id,
+            syft_action_data=empty,
+            syft_resolved=syft_resolved,
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
@@ -1818,6 +1830,7 @@ def upgrade_actionobject_v1_to_v2():
     return [
         make_set_default("syft_resolved", True),
     ]
+
 
 @serializable()
 class AnyActionObjectV1(ActionObjectV1):

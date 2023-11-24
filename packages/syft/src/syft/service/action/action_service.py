@@ -123,11 +123,11 @@ class ActionService(AbstractService):
         has_permission=False,
     ) -> Result[Ok[ActionObject], Err[str]]:
         """Get an object from the action store"""
-        
+
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
-        
+
         if result.is_ok():
             obj = result.ok()
             obj._set_obj_location_(
