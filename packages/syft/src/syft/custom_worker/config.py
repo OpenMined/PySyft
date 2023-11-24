@@ -80,9 +80,9 @@ class CustomWorkerConfig(SyftBaseModel):
 
     @classmethod
     def from_path(cls, path: Path | str) -> Self:
-        p = Path(path)
-        content = p.read_text()
-        return cls.from_str(content)
+        with open(path) as f:
+            config = yaml.safe_load(f)
+            return cls.from_dict(config)
 
     def get_signature(self) -> str:
         return sha256(self.json(sort_keys=True).encode()).hexdigest()
