@@ -772,7 +772,7 @@
       "AnyActionObject": {
         "2": {
           "version": 2,
-          "hash": "bd271e1441d7efb9600d759ecccdb70daab000c5b872eddd22eeebf5f216c5ee",
+          "hash": "002d8be821140befebbc0503e6bc1ef8779094e24e46305e5da5af6eecb56b13",
           "action": "add"
         }
       },
@@ -786,7 +786,7 @@
       "BlobFileOBject": {
         "1": {
           "version": 1,
-          "hash": "ba115718531c33b0d5d079db9e77ec511c45cb54895c19f2f68eb6cced274e45",
+          "hash": "8da2c80ced4f0414c671313c4b63d05846df1e397c763d99d803be86c29755bb",
           "action": "add"
         }
       },
@@ -888,6 +888,48 @@
         "1": {
           "version": 1,
           "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
+          "action": "add"
+        }
+      },
+      "ActionObject": {
+        "2": {
+          "version": 2,
+          "hash": "577aa1f010b90194958a18ec38ee21db3718bd96d9e036501c6ddeefabedf432",
+          "action": "add"
+        }
+      },
+      "NumpyArrayObject": {
+        "2": {
+          "version": 2,
+          "hash": "2c631121d9211006edab5620b214dea83e2398bee92244d822227ee316647e22",
+          "action": "add"
+        }
+      },
+      "NumpyScalarObject": {
+        "2": {
+          "version": 2,
+          "hash": "0d5d81b9d45c140f6e07b43ed68d31e0ef060d6b4d0431c9b4795997bb35c69d",
+          "action": "add"
+        }
+      },
+      "NumpyBoolObject": {
+        "2": {
+          "version": 2,
+          "hash": "24839ba1c88ed833a134124750d5f299abcdf318670315028ed87b254f4578b3",
+          "action": "add"
+        }
+      },
+      "PandasDataframeObject": {
+        "2": {
+          "version": 2,
+          "hash": "66729d4ba7a92210d45c5a5c24fbdb4c8e58138a515a7bdb71ac8f6e8b868544",
+          "action": "add"
+        }
+      },
+      "PandasSeriesObject": {
+        "2": {
+          "version": 2,
+          "hash": "cb05a714f75b1140a943f56a3622fcc0477b3a1f504cd545a98510959ffe1528",
           "action": "add"
         }
       }

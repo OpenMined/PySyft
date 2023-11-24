@@ -113,7 +113,9 @@ class BlobFile(SyftObject):
 
 @migrate(BlobFile, BlobFileV1)
 def downgrade_blobfile_v2_to_v1():
-    return [drop(["syft_blob_storage_entry_id", "file_size"])]
+    return [
+        drop(["syft_blob_storage_entry_id", "file_size"]),
+    ]
 
 
 @migrate(BlobFileV1, BlobFile)
