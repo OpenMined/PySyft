@@ -6,6 +6,7 @@ from typing import List
 # third party
 from packaging import version
 from pydantic import validator
+from typing_extensions import Self
 import yaml
 
 # relative
@@ -69,16 +70,16 @@ class CustomWorkerConfig(SyftBaseModel):
     version: str = "1"
 
     @classmethod
-    def from_dict(cls, config: dict) -> "CustomWorkerConfig":
+    def from_dict(cls, config: dict) -> Self:
         return cls(**config)
 
     @classmethod
-    def from_str(cls, content: str) -> "CustomWorkerConfig":
+    def from_str(cls, content: str) -> Self:
         config = yaml.safe_load(content)
         return cls.from_dict(config)
 
     @classmethod
-    def from_path(cls, path: Path | str) -> "CustomWorkerConfig":
+    def from_path(cls, path: Path | str) -> Self:
         p = Path(path)
         content = p.read_text()
         return cls.from_str(content)

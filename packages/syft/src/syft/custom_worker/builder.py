@@ -1,6 +1,7 @@
 # stdlib
 import os.path
 from pathlib import Path
+from typing import Tuple
 
 # third party
 import docker
@@ -73,7 +74,7 @@ class CustomWorkerBuilder:
         except Exception as e:
             raise e
 
-    def find_worker_ctx(self, type: str) -> Path:
+    def find_worker_ctx(self, type: str) -> Tuple[Path, str]:
         """
         Find the Worker Dockerfile and it's context path
         - PROD will be in `$APPDIR/grid/`
