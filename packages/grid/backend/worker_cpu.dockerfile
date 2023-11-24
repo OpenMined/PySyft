@@ -19,7 +19,9 @@ ARG CUSTOM_CMD='echo "No custom commands passed"'
 # Worker specific environment variables go here
 ENV SYFT_WORKER="true"
 
-RUN apk update && \
-    apk add --no-cache ${SYSTEM_PACKAGES} && \
-    pip install --user --no-cache-dir ${PIP_PACKAGES} && \
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    --mount=type=cache,target=$HOME/.cache/pip,sharing=locked \
+    apk update && \
+    apk add ${SYSTEM_PACKAGES} && \
+    pip install --user ${PIP_PACKAGES} && \
     ${CUSTOM_CMD}
