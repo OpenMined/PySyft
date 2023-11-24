@@ -1082,8 +1082,9 @@ class Node(AbstractNode):
         log_id = UID()
 
         result_obj = ActionObject.empty()
-        result_obj.id = action.result_id
-        result_obj.syft_resolved = False
+        if action != None:
+            result_obj.id = action.result_id
+            result_obj.syft_resolved = False
 
         job = Job(
             id=queue_item.job_id,
