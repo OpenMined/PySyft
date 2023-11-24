@@ -616,6 +616,12 @@ class SyftClient:
         return None
 
     @property
+    def queues(self) -> Optional[APIModule]:
+        if self.api.has_service("queue"):
+            return self.api.services.queue
+        return None
+
+    @property
     def users(self) -> Optional[APIModule]:
         if self.api.has_service("user"):
             return self.api.services.user
