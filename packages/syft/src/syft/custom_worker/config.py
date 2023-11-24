@@ -18,25 +18,25 @@ PYTHON_MAX_VER = version.parse("3.12")
 
 class CustomBuildConfig(SyftBaseModel):
     gpu: bool = False
-    python_version: str = PYTHON_DEFAULT_VER
+    # python_version: str = PYTHON_DEFAULT_VER
     python_packages: List[str] = []
     system_packages: List[str] = []
     custom_cmds: List[str] = []
 
-    @validator("python_version")
-    def validate_python_version(cls, ver: str) -> str:
-        parsed_ver = version.parse(ver)
+    # @validator("python_version")
+    # def validate_python_version(cls, ver: str) -> str:
+    #     parsed_ver = version.parse(ver)
 
-        # TODO: Check if Wolfi OS/apk supports minor version of python
-        if parsed_ver.micro != 0:
-            raise ValueError("Provide only major.minor version of python")
+    #     # TODO: Check if Wolfi OS/apk supports minor version of python
+    #     if parsed_ver.micro != 0:
+    #         raise ValueError("Provide only major.minor version of python")
 
-        if PYTHON_MIN_VER <= parsed_ver < PYTHON_MAX_VER:
-            return ver
-        else:
-            raise ValueError(
-                f"Python version must be between {PYTHON_MIN_VER} and {PYTHON_MAX_VER}"
-            )
+    #     if PYTHON_MIN_VER <= parsed_ver < PYTHON_MAX_VER:
+    #         return ver
+    #     else:
+    #         raise ValueError(
+    #             f"Python version must be between {PYTHON_MIN_VER} and {PYTHON_MAX_VER}"
+    #         )
 
     @validator("python_packages")
     def validate_python_packages(cls, pkgs: List[str]) -> List[str]:
@@ -67,7 +67,6 @@ class CustomBuildConfig(SyftBaseModel):
 class CustomWorkerConfig(SyftBaseModel):
     build: CustomBuildConfig
     version: str = "1"
-    id: str = None
 
     @classmethod
     def from_dict(cls, config: dict) -> "CustomWorkerConfig":
