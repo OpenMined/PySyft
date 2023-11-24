@@ -17,7 +17,7 @@ from syft.types.uid import UID
         (0, 10, JobStatus.CREATED, timedelta(hours=2), None),
         (1, None, JobStatus.CREATED, timedelta(hours=2), None),
         (5, 10, JobStatus.PROCESSING, timedelta(hours=2), "24:00s/it"),
-        (200000, 200000, JobStatus.COMPLETED, timedelta(hours=2), None),
+        (200000, 200000, JobStatus.COMPLETED, timedelta(hours=2), "<00:00"),
         (156000, 200000, JobStatus.PROCESSING, timedelta(hours=2), "00:00s/it"),
         (1, 3, JobStatus.PROCESSING, timedelta(hours=2), "2:00:00s/it"),
         (10, 10, JobStatus.PROCESSING, timedelta(minutes=5), "00:30s/it"),
