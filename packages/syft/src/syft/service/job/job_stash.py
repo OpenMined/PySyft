@@ -163,6 +163,7 @@ class Job(SyftObject):
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
+
         self.status = job.status
         self.n_iters = job.n_iters
         self.current_iter = job.current_iter

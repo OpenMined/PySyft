@@ -1084,8 +1084,14 @@ class Node(AbstractNode):
     ):
         log_id = UID()
 
+        result_obj = ActionObject.empty()
+        if action is not None:
+            result_obj.id = action.result_id
+            result_obj.syft_resolved = False
+
         job = Job(
             id=queue_item.job_id,
+            result=result_obj,
             node_uid=self.id,
             syft_client_verify_key=credentials,
             syft_node_location=self.id,

@@ -106,6 +106,50 @@ class ActionService(AbstractService):
             return Ok(action_object)
         return result.err()
 
+    @service_method(path="action.peek", name="peek", roles=GUEST_ROLE_LEVEL)
+    def peek(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        twin_mode: TwinMode = TwinMode.PRIVATE,
+    ) -> Result[Ok[ActionObject], Err[str]]:
+        """Get an object from the action store"""
+        return self._peek(context, uid, twin_mode)
+
+    def _peek(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        twin_mode: TwinMode = TwinMode.PRIVATE,
+        has_permission=False,
+    ) -> Result[Ok[ActionObject], Err[str]]:
+        """Get an object from the action store"""
+
+        result = self.store.get(
+            uid=uid, credentials=context.credentials, has_permission=has_permission
+        )
+
+        if result.is_ok():
+            obj = result.ok()
+            obj._set_obj_location_(
+                context.node.id,
+                context.credentials,
+            )
+            if isinstance(obj, TwinObject):
+                if twin_mode == TwinMode.PRIVATE:
+                    obj = obj.private.as_empty()
+                    obj.syft_point_to(context.node.id)
+                elif twin_mode == TwinMode.MOCK:
+                    obj = obj.mock.as_empty()
+                    obj.syft_point_to(context.node.id)
+                else:
+                    obj.mock.syft_point_to(context.node.id)
+                    obj.private.syft_point_to(context.node.id)
+            else:
+                obj = obj.as_empty()
+            return Ok(obj)
+        return result
+
     @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
     def get(
         self,
@@ -267,8 +311,10 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
+            # import traceback
+            # return Err(f"_user_code_execute failed. {e} {traceback.format_exc()}")
             return Err(f"_user_code_execute failed. {e}")
-        return result_action_object
+        return Ok(result_action_object)
 
     def set_result_to_store(self, result_action_object, context, output_policy):
         result_id = result_action_object.id
