@@ -21,7 +21,7 @@ class CustomWorkerBuilder:
 
     BUILD_MAX_WAIT = 30 * 60
 
-    def build_image(self, config: CustomWorkerConfig) -> bool:
+    def build_image(self, config: CustomWorkerConfig) -> None:
         """
         Builds a Docker image for the custom worker based on the provided configuration.
         Args:
@@ -66,7 +66,7 @@ class CustomWorkerBuilder:
                 buildargs=build_args,
             )
 
-            return True
+            return
         except docker.errors.BuildError as e:
             raise e
         except docker.errors.APIError as e:
