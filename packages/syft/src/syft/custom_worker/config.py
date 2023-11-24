@@ -17,6 +17,10 @@ PYTHON_MIN_VER = version.parse("3.10")
 PYTHON_MAX_VER = version.parse("3.12")
 
 
+def _malformed_python_package_error_msg(pkg: str, name: str = "package_name") -> str:
+    return f'You must pin the package to an exact version. Got "{pkg}" expected "{name}==x.y.z"'
+
+
 class CustomBuildConfig(SyftBaseModel):
     gpu: bool = False
     # python_version: str = PYTHON_DEFAULT_VER
@@ -43,15 +47,17 @@ class CustomBuildConfig(SyftBaseModel):
     def validate_python_packages(cls, pkgs: List[str]) -> List[str]:
         for pkg in pkgs:
             ver_parts = ()
-            name, ver = pkg.split("==")
+            name_ver = pkg.split("==")
+            if len(name_ver) != 2:
+                raise ValueError(_malformed_python_package_error_msg(pkg))
+
+            name, ver = name_ver
 
             if ver:
                 ver_parts = ver.split(".")
 
             if not ver or len(ver_parts) <= 2:
-                raise ValueError(
-                    f'You must pin the package to an exact version. Got "{pkg}" expected "{name}==x.y.z"'
-                )
+                raise ValueError(_malformed_python_package_error_msg(pkg, name))
 
         return pkgs
 
