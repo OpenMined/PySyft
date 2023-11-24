@@ -584,3 +584,22 @@ class ZMQQueueConfig(QueueConfig):
     def __init__(self, client_type=None, client_config=None):
         self.client_type = client_type or ZMQClient
         self.client_config: ZMQClientConfig = client_config or ZMQClientConfig()
+
+
+@serializable()
+class ZMQConsumerView:
+    def __init__(self, consumer: ZMQConsumer) -> None:
+        self.id: UID = consumer.id
+        self.queue_name: str = consumer.queue_name
+        self.identity: str = str(consumer.identity)
+        self.status: str = consumer.status.value
+        self.worker_job_id: Optional[UID] = consumer.worker_job_id
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "Queue": self.queue_name,
+            "Identity": self.identity,
+            "Status": self.status,
+            "Job id": self.worker_job_id.short() if self.worker_job_id else ""
+        }
