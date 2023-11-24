@@ -129,17 +129,17 @@ jobs:
           cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
-      - name: Build and push `syft-base-cpu` image to DockerHub
-        id: syft-base-cpu-build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages
-          file: ./packages/grid/backend/syft_base_cpu.dockerfile
-          platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          target: backend
-          outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+      # - name: Build and push `syft-base-cpu` image to DockerHub
+      #   id: syft-base-cpu-build
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: ./packages
+      #     file: ./packages/grid/backend/syft_base_cpu.dockerfile
+      #     platforms: ${{ steps.release_metadata.outputs.release_platform }}
+      #     target: backend
+      #     outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
+      #     cache-from: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+      #     cache-to: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
       - name: Export digest for grid-backend
         run: |
